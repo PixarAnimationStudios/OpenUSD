@@ -65,6 +65,9 @@ public:
     HGIGL_API
     void Dispatch(int dimX, int dimY) override;
 
+    HGIGL_API
+    void MemoryBarrier(HgiMemoryBarrier barrier) override;
+
 protected:
     friend class HgiGL;
 

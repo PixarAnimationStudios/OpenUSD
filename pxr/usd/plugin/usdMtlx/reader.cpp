@@ -196,17 +196,9 @@ _Children(const std::shared_ptr<T>& mtlx, const std::string& category)
 // that becomes important later.
 class _Attr {
 public:
-    _Attr() = default;
-    explicit _Attr(const std::string& value)
-        : _value(value.empty() ? mx::EMPTY_STRING : value) { }
     template <typename T>
     _Attr(const std::shared_ptr<T>& element, const std::string& name)
         : _Attr(element->getAttribute(name)) { }
-    _Attr(const _Attr&) = default;
-    _Attr(_Attr&&) = default;
-    _Attr& operator=(const _Attr&) = default;
-    _Attr& operator=(_Attr&&) = default;
-    ~_Attr() = default;
 
     explicit operator bool() const      { return !_value.empty(); }
     bool operator!() const              { return _value.empty(); }
@@ -216,6 +208,10 @@ public:
 
     std::string::const_iterator begin() const { return _value.begin(); }
     std::string::const_iterator end()   const { return _value.end(); }
+
+private:
+    explicit _Attr(const std::string& value)
+        : _value(value.empty() ? mx::EMPTY_STRING : value) { }
 
 private:
     const std::string& _value = mx::EMPTY_STRING;
@@ -784,33 +780,16 @@ _NodeGraphBuilder::_AddNode(
     // We deliberately ignore tokens here.
 
     // Add the outputs.
-    if (UsdMtlxOutputNodesRequireMultiOutputStringType()) {
-        if (_Type(mtlxNode) == mx::MULTI_OUTPUT_TYPE_STRING) {
-            if (auto mtlxNodeDef = _GetNodeDef(mtlxNode)) {
-                for (auto i: _GetInheritanceStack(mtlxNodeDef)) {
-                    for (auto mtlxOutput: i->getOutputs()) {
-                        _AddOutput(mtlxOutput, mtlxNode, connectable);
-                    }
-                }
+    if (auto mtlxNodeDef = _GetNodeDef(mtlxNode)) {
+        for (auto i: _GetInheritanceStack(mtlxNodeDef)) {
+            for (auto mtlxOutput: i->getOutputs()) {
+                _AddOutput(mtlxOutput, mtlxNode, connectable);
             }
-        } 
-        else {
-            // Default output.
-            _AddOutput(mtlxNode, mtlxNode, connectable);
         }
     }
     else {
-        if (auto mtlxNodeDef = _GetNodeDef(mtlxNode)) {
-            for (auto i: _GetInheritanceStack(mtlxNodeDef)) {
-                for (auto mtlxOutput: i->getOutputs()) {
-                    _AddOutput(mtlxOutput, mtlxNode, connectable);
-                }
-            }
-        }
-        else {
-            // Do not add any (default) output to the usd node if the mtlxNode
-            // is missing a corresponding mtlxNodeDef.
-        }
+        // Do not add any (default) output to the usd node if the mtlxNode
+        // is missing a corresponding mtlxNodeDef.
     }
 }
 
@@ -912,25 +891,13 @@ _NodeGraphBuilder::_AddOutput(
         }
     }
 
-    // Choose the output name.  If mtlxTyped is-a Output then we use the
-    // output name, otherwise we use the default.
-    const auto isAnOutput = mtlxTyped->isA<mx::Output>();
-    // XXX: Cleanup when cleaning code around handling of default outputs when
-    // mtlxTyped is of type mx::Node and not mx::Output! Basically in 1.37 we 
-    // should not be calling _AddOutput for a node which is not an output.
-    const auto outputName =
-        isAnOutput
-            ? _MakeName(mtlxTyped)
-            : UsdMtlxTokens->DefaultOutputName;
+    const auto outputName = _MakeName(mtlxTyped);
 
     // Get the node name.
     auto& nodeName = _Name(mtlxOwner);
 
-    // Compute a key for finding this output.  Since we'll access this
-    // table with the node name and optionally the output name for a
-    // multioutput node (in 1.36 materialx version and below), it's 
-    // easiest to always have an output name.
-    auto key = nodeName + "." + outputName.GetText();
+    // Compute a key for finding this output.
+    auto key = nodeName;
 
     auto result =
         _outputs[key] = connectable.CreateOutput(outputName, usdType);
@@ -948,11 +915,7 @@ _NodeGraphBuilder::_ConnectPorts(
     const D& usdDownstream)
 {
     if (auto nodeName = _Attr(mtlxDownstream, names.nodename)) {
-        const auto outputAttr = _Attr(mtlxDownstream, names.output);
-        const auto outputName = outputAttr ? 
-            _MakeName(outputAttr.str()) : 
-            UsdMtlxTokens->DefaultOutputName;
-        auto i = _outputs.find(nodeName.str() + "." + outputName.GetText());
+        auto i = _outputs.find(nodeName.str());
         if (i == _outputs.end()) {
             TF_WARN("Output for <%s> missing",
                     usdDownstream.GetAttr().GetPath().GetText());
@@ -1436,20 +1399,8 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
 
             // Create USD output(s) for each MaterialX output with
             // semantic="shader".
-            if (UsdMtlxOutputNodesRequireMultiOutputStringType()) {
-                if (_Type(mtlxNodeDef) == mx::MULTI_OUTPUT_TYPE_STRING) {
-                    for (auto mtlxOutput: i->getOutputs()) {
-                        _AddShaderOutput(mtlxOutput, connectable);
-                    }
-                }
-                else {
-                    _AddShaderOutput(i, connectable);
-                }
-            } 
-            else {
-                for (auto mtlxOutput: i->getOutputs()) {
-                    _AddShaderOutput(mtlxOutput, connectable);
-                }
+            for (auto mtlxOutput: i->getOutputs()) {
+                _AddShaderOutput(mtlxOutput, connectable);
             }
         }
     }
@@ -2549,7 +2500,7 @@ ReadLook(
     }
 
     // Make an object for binding materials.
-    auto binding = UsdShadeMaterialBindingAPI(root);
+    auto binding = UsdShadeMaterialBindingAPI::Apply(root);
 
     // Get the current (inherited) property order.
     const auto inheritedOrder = root.GetPropertyOrder();

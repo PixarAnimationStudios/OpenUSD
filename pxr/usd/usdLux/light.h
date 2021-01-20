@@ -33,7 +33,9 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLux/tokens.h"
 
-#include "pxr/usd/usd/collectionAPI.h" 
+#include "pxr/usd/usd/collectionAPI.h"
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/output.h" 
 
 #include "pxr/base/vt/value.h"
 
@@ -79,8 +81,13 @@ class UsdLuxLight : public UsdGeomXformable
 public:
     /// Compile time constant representing what kind of schema this class is.
     ///
-    /// \sa UsdSchemaType
-    static const UsdSchemaType schemaType = UsdSchemaType::AbstractTyped;
+    /// \sa UsdSchemaKind
+    static const UsdSchemaKind schemaKind = UsdSchemaKind::AbstractTyped;
+
+    /// \deprecated
+    /// Same as schemaKind, provided to maintain temporary backward 
+    /// compatibility with older generated schemas.
+    static const UsdSchemaKind schemaType = UsdSchemaKind::AbstractTyped;
 
     /// Construct a UsdLuxLight on UsdPrim \p prim .
     /// Equivalent to UsdLuxLight::Get(prim.GetStage(), prim.GetPath())
@@ -125,11 +132,17 @@ public:
 
 
 protected:
-    /// Returns the type of schema this class belongs to.
+    /// Returns the kind of schema this class belongs to.
     ///
-    /// \sa UsdSchemaType
+    /// \sa UsdSchemaKind
     USDLUX_API
-    UsdSchemaType _GetSchemaType() const override;
+    UsdSchemaKind _GetSchemaKind() const override;
+
+    /// \deprecated
+    /// Same as _GetSchemaKind, provided to maintain temporary backward 
+    /// compatibility with older generated schemas.
+    USDLUX_API
+    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -151,7 +164,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float intensity = 1` |
+    /// | Declaration | `float inputs:intensity = 1` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
@@ -175,7 +188,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float exposure = 0` |
+    /// | Declaration | `float inputs:exposure = 0` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
@@ -198,7 +211,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float diffuse = 1` |
+    /// | Declaration | `float inputs:diffuse = 1` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
@@ -221,7 +234,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float specular = 1` |
+    /// | Declaration | `float inputs:specular = 1` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
@@ -246,7 +259,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `bool normalize = 0` |
+    /// | Declaration | `bool inputs:normalize = 0` |
     /// | C++ Type | bool |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDLUX_API
@@ -268,7 +281,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `color3f color = (1, 1, 1)` |
+    /// | Declaration | `color3f inputs:color = (1, 1, 1)` |
     /// | C++ Type | GfVec3f |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Color3f |
     USDLUX_API
@@ -290,7 +303,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `bool enableColorTemperature = 0` |
+    /// | Declaration | `bool inputs:enableColorTemperature = 0` |
     /// | C++ Type | bool |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
     USDLUX_API
@@ -318,7 +331,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float colorTemperature = 6500` |
+    /// | Declaration | `float inputs:colorTemperature = 6500` |
     /// | C++ Type | float |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
     USDLUX_API
@@ -357,6 +370,88 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    // -------------------------------------------------------------------------
+    /// \name Conversion to and from UsdShadeConnectableAPI
+    /// 
+    /// @{
+
+    /// Constructor that takes a ConnectableAPI object.
+    /// Allow implicit conversion of a UsdShadeConnectableAPI to UsdLuxLight
+    USDLUX_API
+    UsdLuxLight(const UsdShadeConnectableAPI &connectable);
+
+    /// Contructs and returns a UsdShadeConnectableAPI object with this light.
+    ///
+    /// Note that most tasks can be accomplished without explicitly constructing 
+    /// a UsdShadeConnectable API, since connection-related API such as
+    /// UsdShadeConnectableAPI::ConnectToSource() are static methods, and 
+    /// UsdLuxLight will auto-convert to a UsdShadeConnectableAPI when 
+    /// passed to functions that want to act generically on a connectable
+    /// UsdShadeConnectableAPI object.
+    USDLUX_API
+    UsdShadeConnectableAPI ConnectableAPI() const;
+
+    /// @}
+
+    // -------------------------------------------------------------------------
+    /// \name Outputs API
+    ///
+    /// Outputs represent a typed attribute on a light whose value is computed 
+    /// externally. 
+    /// 
+    /// @{
+        
+    /// Create an output which can either have a value or can be connected.
+    /// The attribute representing the output is created in the "outputs:" 
+    /// namespace. Outputs on a light cannot be connected, as their 
+    /// value is assumed to be computed externally.
+    /// 
+    USDLUX_API
+    UsdShadeOutput CreateOutput(const TfToken& name,
+                                const SdfValueTypeName& typeName);
+
+    /// Return the requested output if it exists.
+    /// 
+    USDLUX_API
+    UsdShadeOutput GetOutput(const TfToken &name) const;
+
+    /// Outputs are represented by attributes in the "outputs:" namespace.
+    /// 
+    USDLUX_API
+    std::vector<UsdShadeOutput> GetOutputs() const;
+
+    /// @}
+
+    // ------------------------------------------------------------------------- 
+
+    /// \name Inputs API
+    ///
+    /// Inputs are connectable attribute with a typed value. 
+    /// 
+    /// Light parameters are encoded as inputs. 
+    /// 
+    /// @{
+        
+    /// Create an input which can either have a value or can be connected.
+    /// The attribute representing the input is created in the "inputs:" 
+    /// namespace. Inputs on lights are connectable.
+    /// 
+    USDLUX_API
+    UsdShadeInput CreateInput(const TfToken& name,
+                              const SdfValueTypeName& typeName);
+
+    /// Return the requested input if it exists.
+    /// 
+    USDLUX_API
+    UsdShadeInput GetInput(const TfToken &name) const;
+
+    /// Inputs are represented by attributes in the "inputs:" namespace.
+    /// 
+    USDLUX_API
+    std::vector<UsdShadeInput> GetInputs() const;
+
+    /// @}
 
     /// Computes the base emission (aka radiant flux density, aka energy
     /// per unit area), incorporating the parameters for intensity,

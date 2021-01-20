@@ -41,6 +41,7 @@
 #include "hdPrman/matfiltResolveVstructs.h"
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 #include "pxr/usd/sdr/registry.h"
@@ -55,7 +56,7 @@ struct _VSCGConditionalBase
     
     typedef std::shared_ptr<_VSCGConditionalBase> Ptr;
 
-    virtual bool Eval(const MatfiltNode & node,
+    virtual bool Eval(const HdMaterialNode2 & node,
             const NdrTokenVec & shaderTypePriority) = 0;
 };
 
@@ -78,7 +79,7 @@ struct ConditionalParamIsConnected : public ConditionalParamBase
     ConditionalParamIsConnected(const TfToken & name)
     : ConditionalParamBase(name) {}
 
-    bool Eval(const MatfiltNode & node, const NdrTokenVec & shaderTypePriority)
+    bool Eval(const HdMaterialNode2 & node, const NdrTokenVec & shaderTypePriority)
             override {
         
         auto I = node.inputConnections.find(paramName);
@@ -95,7 +96,7 @@ struct ConditionalParamIsNotConnected : public ConditionalParamBase
     ConditionalParamIsNotConnected(const TfToken & name)
     : ConditionalParamBase(name) {}
 
-    bool Eval(const MatfiltNode & node,
+    bool Eval(const HdMaterialNode2 & node,
             const NdrTokenVec & shaderTypePriority) override {
         auto I = node.inputConnections.find(paramName);
         if (I == node.inputConnections.end()) {
@@ -111,7 +112,7 @@ struct ConditionalParamIsSet : public ConditionalParamBase
     ConditionalParamIsSet(const TfToken & name)
     : ConditionalParamBase(name) {}
 
-    bool Eval(const MatfiltNode & node, const NdrTokenVec & shaderTypePriority)
+    bool Eval(const HdMaterialNode2 & node, const NdrTokenVec & shaderTypePriority)
             override {
         return (node.parameters.find(paramName)
                 != node.parameters.end());
@@ -123,7 +124,7 @@ struct ConditionalParamIsNotSet : public ConditionalParamBase
     ConditionalParamIsNotSet(const TfToken & name)
     : ConditionalParamBase(name) {}
 
-    bool Eval(const MatfiltNode & node, const NdrTokenVec & shaderTypePriority)
+    bool Eval(const HdMaterialNode2 & node, const NdrTokenVec & shaderTypePriority)
             override {
         return (node.parameters.find(paramName)
                 == node.parameters.end());
@@ -164,7 +165,7 @@ struct ConditionalParamCmpBase : public ConditionalParamBase
     }
 
     static bool GetParameterValue(
-            const MatfiltNode & node,
+            const HdMaterialNode2 & node,
             const TfToken & paramName,
             const NdrTokenVec & shaderTypePriority,
             VtValue * result) {
@@ -193,7 +194,7 @@ struct ConditionalParamCmpBase : public ConditionalParamBase
     virtual bool CompareString(
             const std::string & v1, const std::string & v2) = 0;
 
-    bool Eval(const MatfiltNode & node,
+    bool Eval(const HdMaterialNode2 & node,
             const NdrTokenVec & shaderTypePriority) override {
         VtValue paramValue;
         if (!GetParameterValue(
@@ -324,7 +325,7 @@ struct ConditionalAnd : _VSCGConditionalBase
     ConditionalAnd(_VSCGConditionalBase * left, _VSCGConditionalBase * right)
     : _VSCGConditionalBase(), left(left), right(right) {}
 
-    bool Eval(const MatfiltNode & node,
+    bool Eval(const HdMaterialNode2 & node,
             const NdrTokenVec & shaderTypePriority) override {
 
         return (left && left->Eval(node, shaderTypePriority))
@@ -350,7 +351,7 @@ struct ConditionalOr : _VSCGConditionalBase
         delete left;
         delete right;
     }
-    bool Eval(const MatfiltNode & node, const NdrTokenVec & shaderTypePriority)
+    bool Eval(const HdMaterialNode2 & node, const NdrTokenVec & shaderTypePriority)
             override {
         return (left && left->Eval(node, shaderTypePriority))
                 || (right && right->Eval(node, shaderTypePriority)); 
@@ -1358,7 +1359,7 @@ void MatfiltVstructConditionalEvaluator::Evaluate(
         const SdfPath & upstreamNodeId,
         const TfToken & upstreamNodeOutput,
         const NdrTokenVec & shaderTypePriority,
-        MatfiltNetwork & network) const
+        HdMaterialNetwork2 & network) const
 {
     if (!_impl) {
         TF_CODING_ERROR("MatfiltVstructConditionalEvaluator: No impl");
@@ -1373,7 +1374,7 @@ void MatfiltVstructConditionalEvaluator::Evaluate(
                 nodeId.GetText());
         return;
     }
-    MatfiltNode & node = (*I).second;
+    HdMaterialNode2 & node = (*I).second;
 
     // if it's already connected explicitly, don't do anything
     if (node.inputConnections.find(nodeInput) != node.inputConnections.end()) {
@@ -1388,7 +1389,7 @@ void MatfiltVstructConditionalEvaluator::Evaluate(
         // No upstream node; silently ignore
         return;
     }
-    const MatfiltNode & upstreamNode = (*I2).second;
+    const HdMaterialNode2 & upstreamNode = (*I2).second;
 
     // Decide action to perform.
     if (_impl->condition) {

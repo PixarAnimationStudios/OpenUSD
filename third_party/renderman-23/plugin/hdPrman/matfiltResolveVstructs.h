@@ -38,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 void MatfiltResolveVstructs(
         const SdfPath & networkId,
-        MatfiltNetwork & network,
+        HdMaterialNetwork2 & network,
         const std::map<TfToken, VtValue> & contextValues,
         const NdrTokenVec & shaderTypePriority,
         std::vector<std::string> * outputErrorMessages);
@@ -72,7 +72,7 @@ public:
             const SdfPath & upstreamNodeId,
             const TfToken & upstreamNodeOutput,
             const NdrTokenVec & shaderTypePriority,
-            MatfiltNetwork & network) const;
+            HdMaterialNetwork2 & network) const;
 private:
     MatfiltVstructConditionalEvaluator() = default;
 

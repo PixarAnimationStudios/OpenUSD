@@ -42,11 +42,10 @@
 #include <tchar.h>
 #include <Windows.h>
 #include <intrin.h>
-#include <boost/preprocessor/variadic/size.hpp>
-#include <boost/vmd/is_empty.hpp>
-#include <boost/vmd/is_tuple.hpp>
+#include <map>
 #endif
 #include <atomic>
+#include <cassert>
 #include <cinttypes>
 #include <cmath>
 #include <cstdarg>
@@ -58,10 +57,10 @@
 #include <deque>
 #include <functional>
 #include <initializer_list>
+#include <inttypes.h>
 #include <iosfwd>
 #include <list>
 #include <locale>
-#include <map>
 #include <math.h>
 #include <memory>
 #include <mutex>
@@ -104,10 +103,10 @@
 #include <boost/preprocessor/repetition/enum_trailing_params.hpp>
 #include <boost/preprocessor/repetition/repeat.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
-#include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/tuple/eat.hpp>
 #include <boost/preprocessor/tuple/to_list.hpp>
 #include <boost/preprocessor/tuple/to_seq.hpp>
+#include <boost/preprocessor/variadic/size.hpp>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/python/class.hpp>
 #include <boost/python/converter/from_python.hpp>
@@ -138,16 +137,14 @@
 #undef toupper
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED
-#include <boost/scoped_ptr.hpp>
-#include <boost/type_traits/is_abstract.hpp>
 #include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_const.hpp>
 #include <boost/type_traits/is_convertible.hpp>
-#include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
+#include <boost/vmd/is_empty.hpp>
+#include <boost/vmd/is_tuple.hpp>
 #include <tbb/atomic.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_rw_mutex.h>

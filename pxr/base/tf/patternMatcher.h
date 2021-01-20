@@ -97,6 +97,12 @@ class TfPatternMatcher
     /// set with the error message. If the matcher is not valid, this will
     /// return false. Note that this will cause a compile of the matcher's
     /// pattern if it was not already compiled.
+    ///
+    /// \warning Unlike 'match' functions in other regular expression
+    /// libraries, this method does not implicitly anchor the pattern. If a
+    /// partial match is not acceptable, it is necessary to anchor the pattern
+    /// passed to the constructor, e.g. "^mypattern$".
+    /// 
     TF_API bool Match( const std::string &query,
                        std::string *errorMsg = NULL ) const;
 

@@ -1,0 +1,80 @@
+#sdf 1.4.32
+
+def Scope "Model_source"
+{
+    def Scope "Looks"
+    {
+         def Scope "Material"
+         {
+             string value = "source"
+ 
+             def Scope "Shader"
+             {    
+             }
+         }
+    }
+}
+
+over "Model_overrides" (
+    add references = </Model_source>
+)
+{
+    over "Looks" (
+        instanceable = true
+    )
+    {
+        over "Material"
+        {
+            string value = "override"
+        }
+    }
+}
+
+over "Model_A" (
+    add references = </Model_overrides>
+)
+{
+}
+
+over "Model_B" (
+    add references = </Model_overrides>
+)
+{
+     over "Looks"
+     {
+     }
+}
+
+over "Model_C" (
+    add references = </Model_B>
+)
+{
+}
+
+def "Instances" (
+)
+{
+    over "Ref_Overrides_Looks" (
+        prepend references = </Model_overrides/Looks>
+    )
+    {
+    }
+
+    over "Ref_A_Looks" (
+        prepend references = </Model_A/Looks>
+    )
+    {
+    }
+
+    over "Ref_B_Looks" (
+        prepend references = </Model_B/Looks>
+    )
+    {
+    }
+
+    over "Ref_C_Looks" (
+        prepend references = </Model_C/Looks>
+    )
+    {
+    }
+}

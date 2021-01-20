@@ -38,7 +38,9 @@
 #include "pxr/usd/sdf/proxyTypes.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/usd/ar/ar.h"
 #include "pxr/usd/ar/assetInfo.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/vt/value.h"
 
@@ -159,31 +161,57 @@ public:
                               const FileFormatArguments &args = 
                               FileFormatArguments());
 
-    /// Returns the layer for the given path if found in the layer registry.
-    /// If the layer cannot be found, a null handle is returned.
+    /// Return an existing layer with the given \p identifier and \p args.  If
+    /// the layer can't be found, an error is posted and a null layer is
+    /// returned.
+    ///
+    /// Arguments in \p args will override any arguments specified in
+    /// \p identifier.
     SDF_API
     static SdfLayerHandle Find(
         const std::string &identifier,
         const FileFormatArguments &args = FileFormatArguments());
 
-    /// Returns the layer for \p layerPath, assumed to be relative to the path
-    /// of the \p anchor layer. If the \p anchor layer is invalid, a coding
-    /// error is raised, and a null handle is returned. If \p layerPath is not
-    /// relative, this method is equivalent to \c Find(layerPath).
+    /// Return an existing layer with the given \p identifier and \p args.
+    /// The given \p identifier will be resolved relative to the \p anchor
+    /// layer. If the layer can't be found, an error is posted and a null
+    /// layer is returned.
+    ///
+    /// If the \p anchor layer is invalid, a coding error is raised, and a null
+    /// handle is returned.
+    ///
+    /// Arguments in \p args will override any arguments specified in
+    /// \p identifier.
     SDF_API
     static SdfLayerHandle FindRelativeToLayer(
         const SdfLayerHandle &anchor,
-        const std::string &layerPath,
+        const std::string &identifier,
         const FileFormatArguments &args = FileFormatArguments());
 
-    /// Return an existing layer with the given \p identifier and \p args, or 
-    /// else load it from disk. If the layer can't be found or loaded, 
-    /// an error is posted and a null layer is returned.
+    /// Return an existing layer with the given \p identifier and \p args, or
+    /// else load it. If the layer can't be found or loaded, an error is posted
+    /// and a null layer is returned.
     ///
     /// Arguments in \p args will override any arguments specified in
     /// \p identifier.
     SDF_API
     static SdfLayerRefPtr FindOrOpen(
+        const std::string &identifier,
+        const FileFormatArguments &args = FileFormatArguments());
+
+    /// Return an existing layer with the given \p identifier and \p args, or
+    /// else load it. The given \p identifier will be resolved relative to the
+    /// \p anchor layer. If the layer can't be found or loaded, an error is
+    /// posted and a null layer is returned.
+    ///
+    /// If the \p anchor layer is invalid, issues a coding error and returns
+    /// a null handle.
+    ///
+    /// Arguments in \p args will override any arguments specified in
+    /// \p identifier.
+    SDF_API
+    static SdfLayerRefPtr FindOrOpenRelativeToLayer(
+        const SdfLayerHandle &anchor,
         const std::string &identifier,
         const FileFormatArguments &args = FileFormatArguments());
         
@@ -443,14 +471,16 @@ public:
     void SetIdentifier(const std::string& identifier);
 
     /// Update layer asset information. Calling this method re-resolves the
-    /// layer identifier, which updates asset information such as the layer
-    /// file revision, real path, and repository path. If \p fileVersion is
-    /// supplied, it is used as the layer version if the identifier does not
-    /// have a version or label specifier. This is typically used to tell Sd
-    /// what the version of a layer is after submitting a new revision to the
-    /// asset system.
+    /// layer identifier, which updates asset information such as the layer's
+    /// resolved path and other asset info. This may be used to update the
+    /// layer after external changes to the underlying asset system.
+#if AR_VERSION == 1
     SDF_API
     void UpdateAssetInfo(const std::string& fileVersion = std::string());
+#else
+    SDF_API
+    void UpdateAssetInfo();
+#endif
 
     /// Returns the layer's display name.
     ///
@@ -458,8 +488,13 @@ public:
     SDF_API
     std::string GetDisplayName() const;
 
-    /// Returns the file system path where this layer exists or may exist
-    /// after a call to Save.
+    /// Returns the resolved path for this layer. This is the path where
+    /// this layer exists or may exist after a call to Save().
+    SDF_API
+    const ArResolvedPath& GetResolvedPath() const;
+
+    /// Returns the resolved path for this layer. This is equivalent to
+    /// GetResolvedPath().GetPathString().
     SDF_API
     const std::string& GetRealPath() const;
 
@@ -1384,8 +1419,7 @@ private:
     static SdfLayerRefPtr _CreateNew(
         SdfFileFormatConstPtr fileFormat,
         const std::string& identifier,
-        const ArAssetInfo& assetInfo = ArAssetInfo(),
-        const FileFormatArguments& args = FileFormatArguments());
+        const FileFormatArguments& args);
 
     static SdfLayerRefPtr _CreateNewWithFormat(
         const SdfFileFormatConstPtr &fileFormat,

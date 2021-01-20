@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -80,7 +80,7 @@ My_TestGLDrawing::InitTest()
     std::cout << "My_TestGLDrawing::InitTest() " << _reprName << "\n";
 
     _driver = new HdSt_TestDriver(_reprName);
-    HdSt_UnitTestDelegate &delegate = _driver->GetDelegate();
+    HdUnitTestDelegate &delegate = _driver->GetDelegate();
     delegate.SetRefineLevel(_refineLevel);
 
     GfVec3f center(0);

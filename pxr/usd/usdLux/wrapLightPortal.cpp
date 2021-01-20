@@ -64,7 +64,7 @@ void wrapUsdLuxLightPortal()
 {
     typedef UsdLuxLightPortal This;
 
-    class_<This, bases<UsdGeomXformable> >
+    class_<This, bases<UsdLuxPortalLight> >
         cls("LightPortal");
 
     cls

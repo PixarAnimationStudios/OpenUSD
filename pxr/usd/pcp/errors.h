@@ -50,6 +50,9 @@ class PcpCache;
 enum PcpErrorType {
     PcpErrorType_ArcCycle,
     PcpErrorType_ArcPermissionDenied,
+    PcpErrorType_IndexCapacityExceeded,
+    PcpErrorType_ArcCapacityExceeded,
+    PcpErrorType_ArcNamespaceDepthCapacityExceeded,
     PcpErrorType_InconsistentPropertyType,
     PcpErrorType_InconsistentAttributeType,
     PcpErrorType_InconsistentAttributeVariability,
@@ -97,6 +100,17 @@ public:
     /// contain an additional site to capture more specific information
     /// about the site of the error.)
     PcpSiteStr rootSite;
+
+    /// Return true if this type of error should be reported at most
+    /// once for a given prim.
+    bool ShouldReportAtMostOnce() const {
+        // Capacity errors are reported at most once. (If these limits are
+        // reached, there is likely to be a very large number of whatever
+        // caused it.)
+        return errorType == PcpErrorType_IndexCapacityExceeded ||
+            errorType == PcpErrorType_ArcCapacityExceeded ||
+            errorType == PcpErrorType_ArcNamespaceDepthCapacityExceeded;
+    }
    
 protected:
     /// Constructor.
@@ -160,6 +174,30 @@ public:
 private:
     /// Constructor is private. Use New() instead.
     PcpErrorArcPermissionDenied();
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Forward declarations:
+class PcpErrorCapacityExceeded;
+typedef std::shared_ptr<PcpErrorCapacityExceeded> PcpErrorCapacityExceededPtr;
+
+/// \class PcpErrorCapacityExceeded
+///
+/// Exceeded the capacity for composition arcs at a single site.
+///
+class PcpErrorCapacityExceeded : public PcpErrorBase {
+public:
+    /// Returns a new error object.
+    static PcpErrorCapacityExceededPtr New(PcpErrorType errorType);
+    /// Destructor.
+    PCP_API ~PcpErrorCapacityExceeded();
+    /// Converts error to string message.
+    PCP_API virtual std::string ToString() const;
+    
+private:
+    /// Constructor is private. Use New() instead.
+    PcpErrorCapacityExceeded(PcpErrorType errorType);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

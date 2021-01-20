@@ -45,7 +45,6 @@
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/enum.h"
@@ -363,11 +362,15 @@ PcpPrimIndexInputs::IsEquivalentTo(const PcpPrimIndexInputs& inputs) const
 
 PcpNodeRef 
 PcpPrimIndexOutputs::Append(PcpPrimIndexOutputs&& childOutputs, 
-                            const PcpArc& arcToParent)
+                            const PcpArc& arcToParent,
+                            PcpErrorBasePtr *error)
 {
     PcpNodeRef parent = arcToParent.parent;
     PcpNodeRef newNode = parent.InsertChildSubgraph(
-        childOutputs.primIndex.GetGraph(), arcToParent);
+        childOutputs.primIndex.GetGraph(), arcToParent, error);
+    if (!newNode) {
+        return newNode;
+    }
 
     if (childOutputs.primIndex.GetGraph()->HasPayloads()) {
         parent.GetOwningGraph()->SetHasPayloads(true);
@@ -686,6 +689,47 @@ _CreateMapExpressionForArc(const SdfPath &sourcePath,
     return arcExpr;
 }
 
+// Bitfield of composition arc types
+enum _ArcFlags {
+    _ArcFlagInherits    = 1<<0,
+    _ArcFlagVariants    = 1<<1,
+    _ArcFlagReferences  = 1<<2,
+    _ArcFlagPayloads    = 1<<3,
+    _ArcFlagSpecializes = 1<<4
+};
+
+// Scan a node's specs for presence of fields describing composition arcs.
+// This is used as a preflight check to confirm presence of these arcs
+// before performing additional work to evaluate them.
+// Return a bitmask of the arc types found.
+inline static size_t
+_ScanArcs(PcpNodeRef const& node)
+{
+    size_t arcs = 0;
+    SdfPath const& path = node.GetPath();
+    for (SdfLayerRefPtr const& layer: node.GetLayerStack()->GetLayers()) {
+        if (!layer->HasSpec(path)) {
+            continue;
+        }
+        if (layer->HasField(path, SdfFieldKeys->InheritPaths)) {
+            arcs |= _ArcFlagInherits;
+        }
+        if (layer->HasField(path, SdfFieldKeys->VariantSetNames)) {
+            arcs |= _ArcFlagVariants;
+        }
+        if (layer->HasField(path, SdfFieldKeys->References)) {
+            arcs |= _ArcFlagReferences;
+        }
+        if (layer->HasField(path, SdfFieldKeys->Payload)) {
+            arcs |= _ArcFlagPayloads;
+        }
+        if (layer->HasField(path, SdfFieldKeys->Specializes)) {
+            arcs |= _ArcFlagSpecializes;
+        }
+    }
+    return arcs;
+}
+
 ////////////////////////////////////////////////////////////////////////
 
 namespace {
@@ -997,7 +1041,13 @@ struct Pcp_PrimIndexer
         // If the node does not have specs or cannot contribute specs,
         // we can avoid even enqueueing certain kinds of tasks that will
         // end up being no-ops.
-        bool contributesSpecs = n.HasSpecs() && n.CanContributeSpecs();
+        const bool contributesSpecs = n.HasSpecs() && n.CanContributeSpecs();
+
+        // Preflight scan for arc types that are present in specs.
+        // This reduces pressure on the task queue, and enables more
+        // data access locality, since we avoid interleaving tasks that
+        // re-visit sites later only to determine there is no work to do.
+        const size_t arcMask = contributesSpecs ? _ScanArcs(n) : 0;
 
         // If the caller tells us the new node and its children were already
         // indexed, we do not need to re-scan them for certain arcs based on
@@ -1005,24 +1055,30 @@ struct Pcp_PrimIndexer
         if (skipCompletedNodesForImpliedSpecializes) {
             // In this case, we only need to add tasks that come after 
             // implied specializes.
-            if (contributesSpecs) {
-                if (evaluateVariants) {
-                    AddTask(Task(Task::Type::EvalNodeVariantSets, n));
-                }
+            if (evaluateVariants && (arcMask & _ArcFlagVariants)) {
+                AddTask(Task(Task::Type::EvalNodeVariantSets, n));
             }
-        }
-        else {
-            if (contributesSpecs && evaluateVariants) {
+        } else {
+            // Payloads and variants have expensive
+            // sorting semantics, so do a preflight check
+            // to see if there is any work to do.
+            if (evaluateVariants && (arcMask & _ArcFlagVariants)) {
                 AddTask(Task(Task::Type::EvalNodeVariantSets, n));
             }
             if (!skipCompletedNodesForAncestralOpinions) {
                 // In this case, we only need to add tasks that weren't
                 // evaluated during the recursive prim indexing for
                 // ancestral opinions.
-                if (contributesSpecs) {
+                if (arcMask & _ArcFlagSpecializes) {
                     AddTask(Task(Task::Type::EvalNodeSpecializes, n));
+                }
+                if (arcMask & _ArcFlagInherits) {
                     AddTask(Task(Task::Type::EvalNodeInherits, n));
+                }
+                if (arcMask & _ArcFlagPayloads) {
                     AddTask(Task(Task::Type::EvalNodePayload, n));
+                }
+                if (arcMask & _ArcFlagReferences) {
                     AddTask(Task(Task::Type::EvalNodeReferences, n));
                 }
                 if (!isUsd) {
@@ -1169,6 +1225,15 @@ struct Pcp_PrimIndexer
     static void RecordError(const PcpErrorBasePtr &err,
                             PcpPrimIndex *primIndex,
                             PcpErrorVector *allErrors) {
+        // Capacity errors are reported at most once.
+        if (err->ShouldReportAtMostOnce()) {
+            for (PcpErrorBasePtr const& e: *allErrors) {
+                if (e->errorType == err->errorType) {
+                    // Already reported.
+                    return;
+                }
+            }
+        }
         allErrors->push_back(err);
         if (!primIndex->_localErrors) {
             primIndex->_localErrors.reset(new PcpErrorVector);
@@ -1513,32 +1578,35 @@ _AddArc(
 
     // Create the new node.
     PcpNodeRef newNode;
+    PcpErrorBasePtr newNodeError;
     if (!includeAncestralOpinions) {
         // No ancestral opinions.  Just add the single new site.
-        newNode = parent.InsertChild(site, newArc);
-        newNode.SetInert(!directNodeShouldContributeSpecs);
+        newNode = parent.InsertChild(site, newArc, &newNodeError);
+        if (newNode) {
+            newNode.SetInert(!directNodeShouldContributeSpecs);
 
-        // Compose the existence of primSpecs and update the HasSpecs field 
-        // accordingly.
-        newNode.SetHasSpecs(PcpComposeSiteHasPrimSpecs(newNode));
+            // Compose the existence of primSpecs and update the HasSpecs field 
+            // accordingly.
+            newNode.SetHasSpecs(PcpComposeSiteHasPrimSpecs(newNode));
 
-        if (!newNode.IsInert() && newNode.HasSpecs()) {
-            if (!indexer->inputs.usd) {
-                // Determine whether opinions from this site can be accessed
-                // from other sites in the graph.
-                newNode.SetPermission(PcpComposeSitePermission(
-                                          site.layerStack, site.path));
+            if (!newNode.IsInert() && newNode.HasSpecs()) {
+                if (!indexer->inputs.usd) {
+                    // Determine whether opinions from this site can be accessed
+                    // from other sites in the graph.
+                    newNode.SetPermission(
+                        PcpComposeSitePermission(site.layerStack, site.path));
 
-                // Determine whether this node has any symmetry information.
-                newNode.SetHasSymmetry(PcpComposeSiteHasSymmetry(
-                                           site.layerStack, site.path));
+                    // Determine whether this node has any symmetry information.
+                    newNode.SetHasSymmetry(
+                        PcpComposeSiteHasSymmetry(site.layerStack, site.path));
+                }
             }
-        }
 
-        PCP_INDEXING_UPDATE(
-            indexer, newNode, 
-            "Added new node for site %s to graph",
-            TfStringify(site).c_str());
+            PCP_INDEXING_UPDATE(
+                indexer, newNode, 
+                "Added new node for site %s to graph",
+                TfStringify(site).c_str());
+        }
 
     } else {
         // Ancestral opinions are those above the source site in namespace.
@@ -1593,11 +1661,26 @@ _AddArc(
                             &childOutputs );
 
         // Combine the child output with our current output.
-        newNode = indexer->outputs->Append(std::move(childOutputs), newArc);
-        PCP_INDEXING_UPDATE(
-            indexer, newNode, 
-            "Added subtree for site %s to graph",
-            TfStringify(site).c_str());
+        newNode = indexer->outputs->Append(std::move(childOutputs), newArc,
+                                           &newNodeError);
+        if (newNode) {
+            PCP_INDEXING_UPDATE(
+                indexer, newNode, 
+                "Added subtree for site %s to graph",
+                TfStringify(site).c_str());
+        }
+    }
+
+    // Handle errors.
+    if (newNodeError) {
+        // Provide rootSite as context.
+        newNodeError->rootSite = indexer->rootSite;
+        indexer->RecordError(newNodeError);
+    }
+    if (!newNode) {
+        TF_VERIFY(newNodeError, "Failed to create a node, but did not "
+                  "specify the error.");
+        return PcpNodeRef();
     }
 
     // If culling is enabled, check whether the entire subtree rooted
@@ -1886,7 +1969,7 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
 
             // Relative asset paths will already have been anchored to their 
             // source layers in PcpComposeSiteReferences, so we can just call
-            // SdfLayer::FindOrOpen instead of SdfFindOrOpenRelativeToLayer.
+            // SdfLayer::FindOrOpen instead of FindOrOpenRelativeToLayer.
             layer = SdfLayer::FindOrOpen(refOrPayload.GetAssetPath(), args);
 
             if (!layer) {

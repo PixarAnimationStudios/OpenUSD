@@ -56,7 +56,12 @@ UsdLuxLight::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaType UsdLuxLight::_GetSchemaType() const {
+UsdSchemaKind UsdLuxLight::_GetSchemaKind() const {
+    return UsdLuxLight::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdLuxLight::_GetSchemaType() const {
     return UsdLuxLight::schemaType;
 }
 
@@ -86,13 +91,13 @@ UsdLuxLight::_GetTfType() const
 UsdAttribute
 UsdLuxLight::GetIntensityAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->intensity);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsIntensity);
 }
 
 UsdAttribute
 UsdLuxLight::CreateIntensityAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->intensity,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsIntensity,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -103,13 +108,13 @@ UsdLuxLight::CreateIntensityAttr(VtValue const &defaultValue, bool writeSparsely
 UsdAttribute
 UsdLuxLight::GetExposureAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->exposure);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsExposure);
 }
 
 UsdAttribute
 UsdLuxLight::CreateExposureAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->exposure,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsExposure,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -120,13 +125,13 @@ UsdLuxLight::CreateExposureAttr(VtValue const &defaultValue, bool writeSparsely)
 UsdAttribute
 UsdLuxLight::GetDiffuseAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->diffuse);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsDiffuse);
 }
 
 UsdAttribute
 UsdLuxLight::CreateDiffuseAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->diffuse,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsDiffuse,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -137,13 +142,13 @@ UsdLuxLight::CreateDiffuseAttr(VtValue const &defaultValue, bool writeSparsely) 
 UsdAttribute
 UsdLuxLight::GetSpecularAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->specular);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsSpecular);
 }
 
 UsdAttribute
 UsdLuxLight::CreateSpecularAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->specular,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsSpecular,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -154,13 +159,13 @@ UsdLuxLight::CreateSpecularAttr(VtValue const &defaultValue, bool writeSparsely)
 UsdAttribute
 UsdLuxLight::GetNormalizeAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->normalize);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsNormalize);
 }
 
 UsdAttribute
 UsdLuxLight::CreateNormalizeAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->normalize,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsNormalize,
                        SdfValueTypeNames->Bool,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -171,13 +176,13 @@ UsdLuxLight::CreateNormalizeAttr(VtValue const &defaultValue, bool writeSparsely
 UsdAttribute
 UsdLuxLight::GetColorAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->color);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsColor);
 }
 
 UsdAttribute
 UsdLuxLight::CreateColorAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->color,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsColor,
                        SdfValueTypeNames->Color3f,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -188,13 +193,13 @@ UsdLuxLight::CreateColorAttr(VtValue const &defaultValue, bool writeSparsely) co
 UsdAttribute
 UsdLuxLight::GetEnableColorTemperatureAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->enableColorTemperature);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsEnableColorTemperature);
 }
 
 UsdAttribute
 UsdLuxLight::CreateEnableColorTemperatureAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->enableColorTemperature,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsEnableColorTemperature,
                        SdfValueTypeNames->Bool,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -205,13 +210,13 @@ UsdLuxLight::CreateEnableColorTemperatureAttr(VtValue const &defaultValue, bool 
 UsdAttribute
 UsdLuxLight::GetColorTemperatureAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->colorTemperature);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsColorTemperature);
 }
 
 UsdAttribute
 UsdLuxLight::CreateColorTemperatureAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->colorTemperature,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsColorTemperature,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -251,14 +256,14 @@ UsdLuxLight::GetSchemaAttributeNames(bool includeInherited)
     static TfTokenVector localNames = {
         UsdLuxTokens->collectionLightLinkIncludeRoot,
         UsdLuxTokens->collectionShadowLinkIncludeRoot,
-        UsdLuxTokens->intensity,
-        UsdLuxTokens->exposure,
-        UsdLuxTokens->diffuse,
-        UsdLuxTokens->specular,
-        UsdLuxTokens->normalize,
-        UsdLuxTokens->color,
-        UsdLuxTokens->enableColorTemperature,
-        UsdLuxTokens->colorTemperature,
+        UsdLuxTokens->inputsIntensity,
+        UsdLuxTokens->inputsExposure,
+        UsdLuxTokens->inputsDiffuse,
+        UsdLuxTokens->inputsSpecular,
+        UsdLuxTokens->inputsNormalize,
+        UsdLuxTokens->inputsColor,
+        UsdLuxTokens->inputsEnableColorTemperature,
+        UsdLuxTokens->inputsColorTemperature,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -284,7 +289,98 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usdLux/blackbody.h"
 
+#include "pxr/usd/usdShade/connectableAPI.h"
+#include "pxr/usd/usdShade/connectableAPIBehavior.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+class UsdLuxLight_ConnectableAPIBehavior : public UsdShadeConnectableAPIBehavior
+{
+    bool
+    CanConnectInputToSource(const UsdShadeInput &input,
+                            const UsdAttribute &source,
+                            std::string *reason) override
+    {     
+        // Check the base class CanConnect first.
+        if (!UsdShadeConnectableAPIBehavior::CanConnectInputToSource(
+            input, source, reason)) {
+            return false;
+        }
+
+        // Only allow inputs to connect to sources whose path
+        // contains the light's path as a prefix (i.e. encapsulation)
+        const SdfPath sourcePrimPath = source.GetPrim().GetPath();
+        const SdfPath inputPrimPath = input.GetPrim().GetPath();
+        if (!sourcePrimPath.HasPrefix(inputPrimPath)) {
+            if (reason) {
+                *reason = TfStringPrintf(
+                    "Proposed source <%s> of input '%s' on light at path <%s> "
+                    "must be a descendant of the light.",
+                    sourcePrimPath.GetText(), input.GetFullName().GetText(), 
+                    inputPrimPath.GetText());
+            }
+            return false;
+        }
+        return true;
+    }
+};
+
+TF_REGISTRY_FUNCTION(UsdShadeConnectableAPI)
+{
+    // UsdLuxLight prims are connectable, with special behavior requiring 
+    // connection source to be encapsulated under the light.
+    UsdShadeRegisterConnectableAPIBehavior<
+        UsdLuxLight, UsdLuxLight_ConnectableAPIBehavior>();
+}
+
+UsdLuxLight::UsdLuxLight(const UsdShadeConnectableAPI &connectable)
+    : UsdLuxLight(connectable.GetPrim())
+{
+}
+
+UsdShadeConnectableAPI 
+UsdLuxLight::ConnectableAPI() const
+{
+    return UsdShadeConnectableAPI(GetPrim());
+}
+
+UsdShadeOutput
+UsdLuxLight::CreateOutput(const TfToken& name,
+                          const SdfValueTypeName& typeName)
+{
+    return UsdShadeConnectableAPI(GetPrim()).CreateOutput(name, typeName);
+}
+
+UsdShadeOutput
+UsdLuxLight::GetOutput(const TfToken &name) const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetOutput(name);
+}
+
+std::vector<UsdShadeOutput>
+UsdLuxLight::GetOutputs() const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
+}
+
+UsdShadeInput
+UsdLuxLight::CreateInput(const TfToken& name,
+                         const SdfValueTypeName& typeName)
+{
+    return UsdShadeConnectableAPI(GetPrim()).CreateInput(name, typeName);
+}
+
+UsdShadeInput
+UsdLuxLight::GetInput(const TfToken &name) const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetInput(name);
+}
+
+std::vector<UsdShadeInput>
+UsdLuxLight::GetInputs() const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetInputs();
+}
 
 GfVec3f
 UsdLuxLight::ComputeBaseEmission() const
@@ -315,14 +411,12 @@ UsdLuxLight::ComputeBaseEmission() const
     return e;
 }
 
-USDLUX_API
 UsdCollectionAPI
 UsdLuxLight::GetLightLinkCollectionAPI() const
 {
     return UsdCollectionAPI(GetPrim(), UsdLuxTokens->lightLink);
 }
 
-USDLUX_API
 UsdCollectionAPI
 UsdLuxLight::GetShadowLinkCollectionAPI() const
 {

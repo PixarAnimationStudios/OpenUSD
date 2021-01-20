@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 /// \file baseTexture.cpp
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/glf/baseTexture.h"
 #include "pxr/imaging/glf/baseTextureData.h"
@@ -47,6 +47,8 @@ TF_REGISTRY_FUNCTION(TfType)
 static GLuint
 _GenName()
 {
+    GarchGLApiLoad();
+
     GLuint rval(0);
 
     glGenTextures(1, &rval);
@@ -72,7 +74,7 @@ GlfBaseTexture::GlfBaseTexture()
     /* nothing */
 }
 
-GlfBaseTexture::GlfBaseTexture(GlfImage::ImageOriginLocation originLocation)
+GlfBaseTexture::GlfBaseTexture(HioImage::ImageOriginLocation originLocation)
   : GlfTexture(originLocation),
     _textureName(_GenName()),
     _loaded(false),
@@ -224,6 +226,26 @@ GlfBaseTexture::_OnMemoryRequestedDirty()
     _loaded = false;
 }
 
+static
+GLenum
+_ToGLenum(const HioAddressMode mode)
+{
+    switch(mode) {
+    case HioAddressModeClampToEdge:
+        return GL_CLAMP_TO_EDGE;
+    case HioAddressModeMirrorClampToEdge:
+        return GL_MIRROR_CLAMP_TO_EDGE;
+    case HioAddressModeRepeat:
+        return GL_REPEAT;
+    case HioAddressModeMirrorRepeat:
+        return GL_MIRRORED_REPEAT;
+    case HioAddressModeClampToBorderColor:
+        return GL_CLAMP_TO_BORDER;
+    }
+    // Make compiler happy.
+    return GL_REPEAT;
+}
+
 void 
 GlfBaseTexture::_UpdateTexture(GlfBaseTextureDataConstPtr texData)
 {
@@ -232,13 +254,13 @@ GlfBaseTexture::_UpdateTexture(GlfBaseTextureDataConstPtr texData)
         _currentWidth  = texData->ResizedWidth();
         _currentHeight = texData->ResizedHeight();
         _currentDepth  = texData->ResizedDepth();
-        _format        = GlfGetGLFormat(texData->GetHioFormat());
-        _hasWrapModeS  = texData->GetWrapInfo().hasWrapModeS;
-        _hasWrapModeT  = texData->GetWrapInfo().hasWrapModeT;
-        _hasWrapModeR  = texData->GetWrapInfo().hasWrapModeR;
-        _wrapModeS     = texData->GetWrapInfo().wrapModeS;
-        _wrapModeT     = texData->GetWrapInfo().wrapModeT;
-        _wrapModeR     = texData->GetWrapInfo().wrapModeR;
+        _format        = GlfGetGLFormat(texData->GetFormat());
+        _hasWrapModeS  = texData->GetWrapInfo().wrapModeS.first;
+        _hasWrapModeT  = texData->GetWrapInfo().wrapModeT.first;
+        _hasWrapModeR  = texData->GetWrapInfo().wrapModeR.first;
+        _wrapModeS     = _ToGLenum(texData->GetWrapInfo().wrapModeS.second);
+        _wrapModeT     = _ToGLenum(texData->GetWrapInfo().wrapModeT.second);
+        _wrapModeR     = _ToGLenum(texData->GetWrapInfo().wrapModeR.second);
 
         _SetMemoryUsed(texData->ComputeBytesUsed());
 
@@ -380,7 +402,7 @@ GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
                 _GlCompressedTexImageND(
                     numDimensions,
                     textureTarget, i,
-                    GlfGetGLInternalFormat(texData->GetHioFormat()),
+                    GlfGetGLInternalFormat(texData->GetFormat()),
                     texData->ResizedWidth(i),
                     texData->ResizedHeight(i),
                     texData->ResizedDepth(i),
@@ -391,7 +413,7 @@ GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
         } else {
             // Uncompressed textures can have cropping and other special 
             // behaviours.
-            if (GlfGetNumElements(texData->GetHioFormat()) == 1) {
+            if (GlfGetNumElements(texData->GetFormat()) == 1) {
                 GLint swizzleMask[] = {GL_RED, GL_RED, GL_RED, GL_ONE};
                 glTexParameteriv(
                     textureTarget,
@@ -466,13 +488,13 @@ GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
                 // Send the mip to the driver now
                 _GlTexImageND(numDimensions,
                               textureTarget, 0,
-                              GlfGetGLInternalFormat(texData->GetHioFormat()),
+                              GlfGetGLInternalFormat(texData->GetFormat()),
                               croppedWidth,
                               croppedHeight,
                               croppedDepth,
                               0,
-                              GlfGetGLFormat(texData->GetHioFormat()),
-                              GlfGetGLType(texData->GetHioFormat()),
+                              GlfGetGLFormat(texData->GetFormat()),
+                              GlfGetGLType(texData->GetFormat()),
                               texData->GetRawBuffer(0));
                 
                 // Reset the OpenGL state if we have modify it previously
@@ -482,13 +504,13 @@ GlfBaseTexture::_CreateTexture(GlfBaseTextureDataConstPtr texData,
                 for (int i = 0 ; i < numMipLevels; i++) {
                     _GlTexImageND(numDimensions,
                                   textureTarget, i,
-                                  GlfGetGLInternalFormat(texData->GetHioFormat()),
+                                  GlfGetGLInternalFormat(texData->GetFormat()),
                                   texData->ResizedWidth(i),
                                   texData->ResizedHeight(i),
                                   texData->ResizedDepth(i),
                                   0,
-                                  GlfGetGLFormat(texData->GetHioFormat()),
-                                  GlfGetGLType(texData->GetHioFormat()),
+                                  GlfGetGLFormat(texData->GetFormat()),
+                                  GlfGetGLType(texData->GetFormat()),
                                   texData->GetRawBuffer(i));
                 }
             }

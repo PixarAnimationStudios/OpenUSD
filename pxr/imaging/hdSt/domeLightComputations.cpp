@@ -205,7 +205,7 @@ HdSt_DomeLightComputationGPU::Execute(
     texBind0.stageUsage = HgiShaderStageCompute;
     texBind0.textures.push_back(srcTextureName);
     texBind0.samplers.push_back(srcSamplerName);
-    texBind0.resourceType = HgiBindResourceTypeSamplerImage;
+    texBind0.resourceType = HgiBindResourceTypeCombinedSamplerImage;
     resourceDesc.textures.push_back(std::move(texBind0));
 
     HgiTextureBindDesc texBind1;

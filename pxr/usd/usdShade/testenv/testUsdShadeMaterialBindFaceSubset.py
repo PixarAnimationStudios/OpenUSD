@@ -97,9 +97,9 @@ class TestUsdShadeMaterialBindFaceSubset(unittest.TestCase):
                             UsdShade.Tokens.materialBind)
         self.assertTrue(valid)
         
-        UsdShade.MaterialBindingAPI(subset1.GetPrim()).Bind(mat1)
-        UsdShade.MaterialBindingAPI(subset2.GetPrim()).Bind(mat2)
-        UsdShade.MaterialBindingAPI(subset3.GetPrim()).Bind(mat3)
+        UsdShade.MaterialBindingAPI.Apply(subset1.GetPrim()).Bind(mat1)
+        UsdShade.MaterialBindingAPI.Apply(subset2.GetPrim()).Bind(mat2)
+        UsdShade.MaterialBindingAPI.Apply(subset3.GetPrim()).Bind(mat3)
 
         # Don't save the modified source stage. Export it into a 
         # new layer for baseline diffing.

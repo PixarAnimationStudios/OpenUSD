@@ -41,9 +41,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 HdPrmanInstancer::HdPrmanInstancer(HdSceneDelegate* delegate,
-                                     SdfPath const& id,
-                                     SdfPath const &parentId)
-    : HdInstancer(delegate, id, parentId)
+                                     SdfPath const& id)
+    : HdInstancer(delegate, id)
 {
 }
 
@@ -52,49 +51,45 @@ HdPrmanInstancer::~HdPrmanInstancer()
 }
 
 void
-HdPrmanInstancer::SyncPrimvars()
+HdPrmanInstancer::Sync(HdSceneDelegate* delegate,
+                       HdRenderParam* renderParam,
+                       HdDirtyBits* dirtyBits)
+{
+    _UpdateInstancer(delegate, dirtyBits);
+
+    if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, GetId())) {
+        _SyncPrimvars(delegate, *dirtyBits);
+    }
+}
+
+void
+HdPrmanInstancer::_SyncPrimvars(HdSceneDelegate *delegate,
+                                HdDirtyBits dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneDelegate *delegate = GetDelegate();
-    HdChangeTracker &changeTracker = 
-        delegate->GetRenderIndex().GetChangeTracker();
     SdfPath const& id = GetId();
 
-    // Use the double-checked locking pattern to check if this instancer's
-    // primvars are dirty.
-    int dirtyBits = changeTracker.GetInstancerDirtyBits(id);
-    if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, id)) {
-        std::lock_guard<std::mutex> lock(_instanceLock);
-
-        dirtyBits = changeTracker.GetInstancerDirtyBits(id);
-        if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, id)) {
-            // If this instancer has dirty primvars, get the list of
-            // primvar names and then cache each one.
-            for (HdPrimvarDescriptor const& primvar:
-                 delegate->GetPrimvarDescriptors(id, HdInterpolationInstance)) {
-                // Skip primvars that have special handling elsewhere.
-                // The transform primvars are all handled in
-                // SampleInstanceTransform.
-                if (primvar.name == HdInstancerTokens->instanceTransform ||
-                    primvar.name == HdInstancerTokens->rotate ||
-                    primvar.name == HdInstancerTokens->scale ||
-                    primvar.name == HdInstancerTokens->translate) {
-                    continue;
-                }
-                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id,
-                                                    primvar.name)) {
-                    VtValue value = delegate->Get(id, primvar.name);
-                    if (!value.IsEmpty()) {
-                        _PrimvarValue &entry = _primvarMap[primvar.name];
-                        entry.desc = primvar;
-                        std::swap(entry.value, value);
-                    }
-                }
+    // Get the list of primvar names and then cache each one.
+    for (HdPrimvarDescriptor const& primvar:
+            delegate->GetPrimvarDescriptors(id, HdInterpolationInstance)) {
+        // Skip primvars that have special handling elsewhere.
+        // The transform primvars are all handled in
+        // SampleInstanceTransform.
+        if (primvar.name == HdInstancerTokens->instanceTransform ||
+                primvar.name == HdInstancerTokens->rotate ||
+                primvar.name == HdInstancerTokens->scale ||
+                primvar.name == HdInstancerTokens->translate) {
+            continue;
+        }
+        if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, primvar.name)) {
+            VtValue value = delegate->Get(id, primvar.name);
+            if (!value.IsEmpty()) {
+                _PrimvarValue &entry = _primvarMap[primvar.name];
+                entry.desc = primvar;
+                std::swap(entry.value, value);
             }
-            // Mark the instancer as clean
-            changeTracker.MarkInstancerClean(id);
         }
     }
 }

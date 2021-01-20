@@ -4,16 +4,6 @@
             "Info": {
                 "ShaderResources": "shaders",
                 "Types": {
-                    "Glf_StbImage" : {
-                        "bases": ["GlfImage"],
-                        "imageTypes": ["bmp", "jpg", "jpeg", "png", "tga", "hdr"],
-                        "precedence": 2
-                    },
-                    "GlfPtexTexture" : {
-                        "bases": ["GlfTexture"],
-                        "textureTypes": ["ptx", "ptex"],
-                        "precedence": 1
-                    },
                     "GlfUVTexture" : {
                         "bases": ["GlfBaseTexture"],
                         "textureTypes": ["*"],

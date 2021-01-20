@@ -37,6 +37,7 @@ class "SingleApplyAPI" (
     inherits = </APISchemaBase>
     customData = {
         token apiSchemaType = "singleApply"
+        token[] apiSchemaAutoApplyTo = ["Derived", "ExternalPluginType"]
     }
 )
 {

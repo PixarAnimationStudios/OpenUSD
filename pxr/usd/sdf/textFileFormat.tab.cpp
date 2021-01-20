@@ -6410,17 +6410,18 @@ private:
 };
 }
 
-/// Parse a .menva file into an SdfData
-bool Sdf_ParseMenva(
-     const std::string& fileContext, 
-     const std::shared_ptr<ArAsset>& asset,
-     const std::string& magicId,
-     const std::string& versionString,
-     bool metadataOnly,
-     SdfDataRefPtr data,
-     SdfLayerHints *hints)
+/// Parse a text layer into an SdfData
+bool 
+Sdf_ParseLayer(
+    const std::string& fileContext, 
+    const std::shared_ptr<ArAsset>& asset,
+    const std::string& magicId,
+    const std::string& versionString,
+    bool metadataOnly,
+    SdfDataRefPtr data,
+    SdfLayerHints *hints)
 {
-    TfAutoMallocTag2 tag("Menva", "Menva_Parse");
+    TfAutoMallocTag2 tag("Sdf", "Sdf_ParseLayer");
 
     TRACE_FUNCTION();
 
@@ -6455,8 +6456,8 @@ bool Sdf_ParseMenva(
                 status = textFileFormatYyparse(&context);
                 *hints = context.layerHints;
             } catch (boost::bad_get) {
-                TF_CODING_ERROR("Bad boost:get<T>() in menva parser.");
-                Err(&context, "Internal menva parser error.");
+                TF_CODING_ERROR("Bad boost:get<T>() in layer parser.");
+                Err(&context, "Internal layer parser error.");
             }
         }
     }
@@ -6470,14 +6471,16 @@ bool Sdf_ParseMenva(
     return status == 0;
 }
 
-/// Parse a .menva string into an SdfData
-bool Sdf_ParseMenvaFromString(const std::string & menvaString, 
-                              const std::string & magicId,
-                              const std::string & versionString,
-                              SdfDataRefPtr data,
-                              SdfLayerHints *hints)
+/// Parse a layer text string into an SdfData
+bool
+Sdf_ParseLayerFromString(
+    const std::string & layerString, 
+    const std::string & magicId,
+    const std::string & versionString,
+    SdfDataRefPtr data,
+    SdfLayerHints *hints)
 {
-    TfAutoMallocTag2 tag("Menva", "Menva_Parse");
+    TfAutoMallocTag2 tag("Sdf", "Sdf_ParseLayerFromString");
 
     TRACE_FUNCTION();
 
@@ -6495,16 +6498,16 @@ bool Sdf_ParseMenvaFromString(const std::string & menvaString,
     textFileFormatYyset_extra(&context, context.scanner);
 
     // Run parser.
-    yy_buffer_state *buf = textFileFormatYy_scan_string(menvaString.c_str(), 
-                                               context.scanner);
+    yy_buffer_state *buf = textFileFormatYy_scan_string(
+        layerString.c_str(), context.scanner);
     int status = -1;
     try {
         TRACE_SCOPE("textFileFormatYyParse");
         status = textFileFormatYyparse(&context);
         *hints = context.layerHints;
     } catch (boost::bad_get) {
-        TF_CODING_ERROR("Bad boost:get<T>() in menva parser.");
-        Err(&context, "Internal menva parser error.");
+        TF_CODING_ERROR("Bad boost:get<T>() in layer parser.");
+        Err(&context, "Internal layer parser error.");
     }
 
     // Clean up.

@@ -128,10 +128,7 @@ private:
     HgiSampler(const HgiSampler&) = delete;
 };
 
-
-/// Explicitly instantiate and define texture handle
-template class HgiHandle<class HgiSampler>;
-using HgiSamplerHandle = HgiHandle<class HgiSampler>;
+using HgiSamplerHandle = HgiHandle<HgiSampler>;
 using HgiSamplerHandleVector = std::vector<HgiSamplerHandle>;
 
 

@@ -30,11 +30,7 @@ from pxr import Plug, Ar, Tf
 
 # Test plugins are installed relative to this script
 testRoot = os.path.join(os.path.dirname(__file__), 'ArPlugins')
-testPluginsDsoSearch = testRoot + '/lib/*/Resources/'
-
-# Disable standard plugin search paths to give our
-# test a stable environment.
-os.environ['PXR_DISABLE_STANDARD_PLUG_SEARCH_PATH'] = '1'
+testPluginsDsoSearch = testRoot + '/lib/TestArAdvancedAPI*/Resources/'
 
 class TestArAdvancedAPI(unittest.TestCase):
     def test_GetAvailableResolvers(self):
@@ -46,10 +42,10 @@ class TestArAdvancedAPI(unittest.TestCase):
         pr = Plug.Registry()
         plugins = pr.RegisterPlugins(testPluginsDsoSearch)
         self.assertEqual(len(plugins), 1)
-        self.assertEqual(set(pr.GetAllDerivedTypes('ArResolver')),
-                         set([Tf.Type.FindByName('ArDefaultResolver'),
-                              Tf.Type.FindByName('_TestResolver1'),
-                              Tf.Type.FindByName('_TestResolver2')]))
+
+        resolverTypes = pr.GetAllDerivedTypes('ArResolver')
+        self.assertIn(Tf.Type.FindByName('_TestResolver1'), resolverTypes)
+        self.assertIn(Tf.Type.FindByName('_TestResolver2'), resolverTypes)
 
         # Set _TestResolver2 to be the preferred resolver; 
         # otherwise, _TestResolver1 would be initially constructed

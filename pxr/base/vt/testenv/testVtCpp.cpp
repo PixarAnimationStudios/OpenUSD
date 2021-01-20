@@ -253,9 +253,9 @@ static void testArray() {
         TF_AXIOM(array1.size() == 0);
         array1 = {7, 8, 9};
         TF_AXIOM(array1.size() == 3);
-        TF_AXIOM(array1[0] == 7);
-        TF_AXIOM(array1[1] == 8);
-        TF_AXIOM(array1[2] == 9);
+        TF_AXIOM(array1.AsConst()[0] == 7);
+        TF_AXIOM(array1.AsConst()[1] == 8);
+        TF_AXIOM(array1.AsConst()[2] == 9);
         array1 = {};
         TF_AXIOM(array1.size() == 0);
         
@@ -482,6 +482,7 @@ static void testArray() {
         VtStringArray array({hello});
         TF_AXIOM(array.size() == 1);
         TF_AXIOM(array.front() == "hello");
+        TF_AXIOM(array.cfront() == "hello");
         TF_AXIOM(hello == "hello");
         // Ensure that emplace_back forwards an rvalue to world
         array.emplace_back(std::move(world));
@@ -490,10 +491,12 @@ static void testArray() {
         array.push_back(std::move(ciao));
         TF_AXIOM(array.size() == 3);
         TF_AXIOM(array.back() == "ciao");
+        TF_AXIOM(array.cback() == "ciao");
         // Ensure that the lvalue version of push_back is used
         array.push_back(aloha);
         TF_AXIOM(array.size() == 4);
         TF_AXIOM(array.back() == "aloha");
+        TF_AXIOM(array.cback() == "aloha");
         TF_AXIOM(aloha == "aloha");
     }
 }

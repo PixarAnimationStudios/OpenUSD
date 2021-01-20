@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/glf/baseTextureData.h"
 
 #include "pxr/base/vt/value.h"
@@ -63,8 +63,8 @@ public:
         return 1;
     };
 
-    HioFormat GetHioFormat() const override {
-        return _hioFormat;
+    HioFormat GetFormat() const override {
+        return _format;
     };
 
     size_t TargetMemory() const override {
@@ -92,8 +92,8 @@ public:
     bool Read(
         int degradeLevel, 
         bool generateMipmap,
-        GlfImage::ImageOriginLocation originLocation =
-            GlfImage::OriginUpperLeft) override;
+        HioImage::ImageOriginLocation originLocation =
+            HioImage::OriginUpperLeft) override;
     
     GLF_API
     bool IsCompressed() const override;
@@ -117,7 +117,7 @@ private:
     // if _storageData is used for larger images
     VtValue _storageData; 
 
-    HioFormat _hioFormat;
+    HioFormat _format;
 
     WrapInfo _wrapInfo;
 

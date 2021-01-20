@@ -99,7 +99,7 @@ getitem_ellipsis(VtArray<T> const &self, object idx)
 
 template <typename T>
 object
-getitem_index(VtArray<T> const &self, int idx)
+getitem_index(VtArray<T> const &self, int64_t idx)
 {
     static const bool throwError = true;
     idx = TfPyNormalizeIndex(idx, self.size(), throwError);
@@ -188,8 +188,12 @@ setArraySlice(VtArray<T> &self, slice idx, object value, bool tile = false)
     // Get the number of items to be set.
     const size_t setSize = 1 + (range.stop - range.start) / range.step;
 
-    // Copy from VtArray.
-    if (extract< VtArray<T> >(value).check()) {
+    // Copy from VtArray.  We only want to take this path if the passed value is
+    // *exactly* a VtArray.  That is, we don't want to take this path if it can
+    // merely *convert* to a VtArray, so we check that we can extract a mutable
+    // lvalue reference from the python object, which requires that there be a
+    // real VtArray there.
+    if (extract< VtArray<T> &>(value).check()) {
         const VtArray<T> val = extract< VtArray<T> >(value);
         const size_t length = val.size();
         if (length == 0)
@@ -252,7 +256,7 @@ setitem_ellipsis(VtArray<T> &self, object idx, object value)
 
 template <typename T>
 void
-setitem_index(VtArray<T> &self, int idx, object value)
+setitem_index(VtArray<T> &self, int64_t idx, object value)
 {
     static const bool tile = true;
     setArraySlice(self, slice(idx, idx + 1), value, tile);
@@ -404,7 +408,7 @@ VtArray<T> *VtArray__init__(object const &values)
     return ret.release();
 }
 template <typename T>
-VtArray<T> *VtArray__init__2(unsigned int size, object const &values)
+VtArray<T> *VtArray__init__2(size_t size, object const &values)
 {
     // Make the array.
     unique_ptr<VtArray<T> > ret(new VtArray<T>(size));
@@ -529,6 +533,12 @@ void VtWrapArray()
 
     VTOPERATOR_WRAPDECLARE_BOOL(Equal)
     VTOPERATOR_WRAPDECLARE_BOOL(NotEqual)
+
+    // Wrap conversions from python sequences.
+    TfPyContainerConversions::from_python_sequence<
+        This,
+        TfPyContainerConversions::
+        variable_capacity_all_items_convertible_policy>();
 
     // Wrap implicit conversions from VtArray to TfSpan.
     implicitly_convertible<This, TfSpan<Type> >();

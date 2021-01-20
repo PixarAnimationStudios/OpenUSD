@@ -195,9 +195,7 @@ private:
     HgiResourceBindings(const HgiResourceBindings&) = delete;
 };
 
-/// Explicitly instantiate and define ResourceBindings handle
-template class HgiHandle<class HgiResourceBindings>;
-using HgiResourceBindingsHandle = HgiHandle<class HgiResourceBindings>;
+using HgiResourceBindingsHandle = HgiHandle<HgiResourceBindings>;
 using HgiResourceBindingsHandleVector = std::vector<HgiResourceBindingsHandle>;
 
 

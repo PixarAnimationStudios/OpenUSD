@@ -62,7 +62,12 @@ UsdRiLightAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaType UsdRiLightAPI::_GetSchemaType() const {
+UsdSchemaKind UsdRiLightAPI::_GetSchemaKind() const {
+    return UsdRiLightAPI::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdRiLightAPI::_GetSchemaType() const {
     return UsdRiLightAPI::schemaType;
 }
 

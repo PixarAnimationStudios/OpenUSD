@@ -142,7 +142,7 @@ struct HgiTextureCpuToGpuOp
 /// <li>byteSize:
 ///   Size of the data (in bytes) to copy</li>
 /// <li>gpuDestinationBuffer:
-///   The copy destination cpu buffer.</li>
+///   The copy destination gpu buffer.</li>
 /// <li>destinationByteOffset:
 ///   The byte offset in destination buffer where to start copying the data to.</li>
 /// </ul>
@@ -242,6 +242,93 @@ struct HgiBufferGpuToCpuOp
     size_t byteSize;
     void* cpuDestinationBuffer;
     size_t destinationByteOffset;
+};
+
+//// \struct HgiTextureToBufferOp
+///
+/// Describes the properties needed to copy GPU texture data into a GPU buffer.
+///
+/// It is the responsibility of the caller to:
+///   - ensure the destination buffer is large enough to receive the data
+///     (keep in mind the destinationByteOffset).
+///   - ensure the source texture and destination buffer are valid at the time
+///     the command is executed.
+///
+/// <ul>
+/// <li>gpuSourceTexture:
+///   The gpu texture to copy pixels from.</li>
+/// <li>mipLevel:
+///   Mip level to copy from.</li>
+/// <li>gpuDestinationBuffer:
+///   The GPU buffer to copy the data into.</li>
+/// <li>destinationByteOffset:
+///   The byte offset in destination buffer where to start copying the data to.</li>
+/// <li>byteSize:
+///   Size of the data (in bytes) to copy</li>
+/// </ul>
+///
+struct HgiTextureToBufferOp
+{
+    HgiTextureToBufferOp()
+    : gpuSourceTexture()
+    , sourceTexelOffset(GfVec3i(0))
+    , mipLevel(0)
+    , gpuDestinationBuffer()
+    , destinationByteOffset(0)
+    , byteSize(0)
+    {}
+
+    HgiTextureHandle gpuSourceTexture;
+    GfVec3i sourceTexelOffset;
+    uint32_t mipLevel;
+    HgiBufferHandle gpuDestinationBuffer;
+    size_t destinationByteOffset;
+    size_t byteSize;
+};
+
+//// \struct HgiBufferToTextureOp
+///
+/// Describes the properties needed to copy GPU buffer data into a GPU texture.
+///
+/// It is the responsibility of the caller to:
+///   - ensure the destination textures is large enough to receive the data.
+///   - ensure the source buffer and destination texture are valid at the time
+///     the command is executed.
+///
+/// <ul>
+/// <li>gpuSourceBuffer:
+///   The gpu buffer to copy data from.</li>
+/// <li>sourceByteOffset:
+///   The byte offset in source buffer to start copying the data from.</li>
+/// <li>gpuDestinationTexture:
+///   The GPU texture to upload the data into.</li>
+/// <li>destinationTexelOffset:
+///   The texel offset (width, height, depth) of where to upload the data.
+///   If the texture is a 2d_array the third element is the layer/slice.</li>
+/// <li>mipLevel:
+///   Mip level to upload into.</li>
+/// <li>byteSize:
+///   Size of the data (in bytes) to copy</li>
+/// </ul>
+///
+struct HgiBufferToTextureOp
+{
+    HgiBufferToTextureOp()
+    : gpuSourceBuffer()
+    , sourceByteOffset(0)
+    , gpuDestinationTexture()
+    , destinationTexelOffset(GfVec3i(0))
+    , mipLevel(0)
+    , byteSize(0)
+    {}
+
+    HgiBufferHandle gpuSourceBuffer;
+    size_t sourceByteOffset;
+    HgiTextureHandle gpuDestinationTexture;
+    GfVec3i destinationTexelOffset;
+    uint32_t mipLevel;
+    size_t byteSize;
+    
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

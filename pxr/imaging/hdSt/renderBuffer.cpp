@@ -91,6 +91,20 @@ _GetDebugName(const HdStDynamicUvTextureObjectSharedPtr &textureObject)
     return textureObject->GetTextureIdentifier().GetFilePath().GetString();
 }
 
+static
+void
+_CreateTexture(
+    HdStDynamicUvTextureObjectSharedPtr const &textureObject,
+    const HgiTextureDesc &desc)
+{
+    HgiTextureHandle const texture = textureObject->GetTexture();
+    if (texture && texture->GetDescriptor() == desc) {
+        return;
+    }
+
+    textureObject->CreateTexture(desc);
+}
+
 bool
 HdStRenderBuffer::Allocate(
     GfVec3i const& dimensions,
@@ -145,14 +159,14 @@ HdStRenderBuffer::Allocate(
     texDesc.sampleCount = HgiSampleCount1;
 
     // Allocate actual GPU resource
-    _textureObject->CreateTexture(texDesc);
+    _CreateTexture(_textureObject, texDesc);
 
     if (multiSampled) {
         texDesc.debugName = _GetDebugName(_textureMSAAObject);
         texDesc.sampleCount = HgiSampleCount4;
 
         // Allocate actual GPU resource
-        _textureMSAAObject->CreateTexture(texDesc);
+        _CreateTexture(_textureMSAAObject, texDesc);
     }
 
     return true;

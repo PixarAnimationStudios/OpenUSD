@@ -51,6 +51,8 @@
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
+#include "pxr/base/gf/camera.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -101,28 +103,19 @@ HdxTaskController::_Delegate::Get(SdfPath const& id, TfToken const& key)
 GfMatrix4d
 HdxTaskController::_Delegate::GetTransform(SdfPath const& id)
 {
-    GfMatrix4d xform(1.0);
-    VtValue val;
-
-    // Try to extract from the cache first, otherwise it is a camera
-    _ValueCache *vcache = TfMapLookupPtr(_valueCacheMap, id);
-    if (vcache && TfMapLookup(*vcache, HdTokens->transform, &val)) {
-        if (val.IsHolding<GfMatrix4d>()) {
-            xform = val.Get<GfMatrix4d>();
-            return xform;
+    // Extract from value cache.
+    if (_ValueCache *vcache = TfMapLookupPtr(_valueCacheMap, id)) {
+        if (VtValue * val = TfMapLookupPtr(*vcache, HdTokens->transform)) {
+            if (val->IsHolding<GfMatrix4d>()) {
+                return val->Get<GfMatrix4d>();
+            }
         }
     }
-    
-    // We expect this to be called only for the free cam.
-    val = GetCameraParamValue(id, HdCameraTokens->worldToViewMatrix);
-    if (val.IsHolding<GfMatrix4d>()) {
-        xform = val.Get<GfMatrix4d>().GetInverse(); // camera to world
-    } else {
-        TF_CODING_ERROR(
-            "Unexpected call to GetTransform for %s in HdxTaskController's "
-            "internal scene delegate.\n", id.GetText());
-    }
-    return xform;
+
+    TF_CODING_ERROR(
+        "Unexpected call to GetTransform for %s in HdxTaskController's "
+        "internal scene delegate.\n", id.GetText());
+    return GfMatrix4d(1.0);
 }
 
 /* virtual */
@@ -130,14 +123,19 @@ VtValue
 HdxTaskController::_Delegate::GetCameraParamValue(SdfPath const& id, 
                                                   TfToken const& key)
 {   
-    if (key == HdCameraTokens->worldToViewMatrix ||
-        key == HdCameraTokens->projectionMatrix ||
-        key == HdCameraTokens->clipPlanes ||
-        key == HdCameraTokens->windowPolicy) {
-
+    if ( key == HdCameraTokens->projection ||
+         key == HdCameraTokens->horizontalAperture ||
+         key == HdCameraTokens->verticalAperture ||
+         key == HdCameraTokens->horizontalApertureOffset ||
+         key == HdCameraTokens->verticalApertureOffset ||
+         key == HdCameraTokens->focalLength ||
+         key == HdCameraTokens->clippingRange ||
+         key == HdCameraTokens->clipPlanes ||
+         key == HdCameraTokens->windowPolicy) {
         return Get(id, key);
     } else {
-        // XXX: For now, skip handling physical params on the free cam.
+        // Return empty VtValue for, e.g., fStop not in the
+        // value cache.
         return VtValue();
     }
 }
@@ -154,11 +152,6 @@ HdxTaskController::_Delegate::GetLightParamValue(SdfPath const& id,
 bool
 HdxTaskController::_Delegate::IsEnabled(TfToken const& option) const
 {
-    // The client using this task controller is responsible for setting
-    // GL_SAMPLE_ALPHA_TO_COVERAGE.
-    if (option == HdxOptionTokens->taskSetAlphaToCoverage) {
-        return true;
-    }
     return HdSceneDelegate::IsEnabled(option);
 }
 
@@ -195,17 +188,15 @@ _IsStormRenderingBackend(HdRenderIndex const *index)
     return true;
 }
 
-static GfVec3i
-_ViewportToAovDimension(const GfVec4d& viewport)
+static GfVec2i
+_ViewportToAovDimensions(const GfVec4d& viewport)
 {
     // Ignore the viewport offset and use its size as the aov size.
     // XXX: This is fragile and doesn't handle viewport tricks,
     // such as camera zoom. In the future, we expect to improve the
     // API to better communicate AOV sizing, fill region and camera
     // zoom.
-    int w = viewport[2];
-    int h = viewport[3];
-    return GfVec3i(w, h, 1);
+    return GfVec2i(viewport[2], viewport[3]);
 }
 
 HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
@@ -213,6 +204,8 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
     : _index(renderIndex)
     , _controllerId(controllerId)
     , _delegate(renderIndex, controllerId)
+    , _renderBufferSize(0, 0)
+    , _overrideWindowPolicy{false, CameraUtilFit}
     , _viewport(0, 0, 1, 1)
 {
     _CreateRenderGraph();
@@ -331,10 +324,22 @@ HdxTaskController::_CreateCamera()
 
     _delegate.SetParameter(_freeCamId, HdCameraTokens->windowPolicy,
         VtValue(CameraUtilFit));
-    _delegate.SetParameter(_freeCamId, HdCameraTokens->worldToViewMatrix,
+    _delegate.SetParameter(_freeCamId, HdTokens->transform,
         VtValue(GfMatrix4d(1.0)));
-    _delegate.SetParameter(_freeCamId, HdCameraTokens->projectionMatrix,
-        VtValue(GfMatrix4d(1.0)));
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->projection,
+        VtValue(HdCamera::Perspective));
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->horizontalAperture,
+        VtValue(float(GfCamera::DEFAULT_HORIZONTAL_APERTURE / GfCamera::APERTURE_UNIT)));
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->verticalAperture,
+        VtValue(float(GfCamera::DEFAULT_VERTICAL_APERTURE / GfCamera::APERTURE_UNIT)));
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->horizontalApertureOffset,
+        VtValue(0.0f));
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->verticalApertureOffset,
+        VtValue(0.0f));
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->focalLength,
+        VtValue(5.0f));
+    _delegate.SetParameter(_freeCamId, HdCameraTokens->clippingRange,
+        VtValue(GfRange1f(1.0f, 1000000.0f)));
     _delegate.SetParameter(_freeCamId, HdCameraTokens->clipPlanes,
         VtValue(std::vector<GfVec4d>()));
 }
@@ -356,6 +361,8 @@ HdxTaskController::_CreateRenderTask(TfToken const& materialTag)
     HdxRenderTaskParams renderParams;
     renderParams.camera = _freeCamId;
     renderParams.viewport = _viewport;
+    renderParams.framing = _framing;
+    renderParams.overrideWindowPolicy = _overrideWindowPolicy;
 
     // Set the blend state based on material tag.
     _SetBlendStateForMaterialTag(materialTag, &renderParams);
@@ -431,10 +438,14 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
         renderParams->blendEnable = false;
         renderParams->enableAlphaToCoverage = false;
         renderParams->depthMaskEnable = false;
-    } else {
+    } else if (materialTag == HdStMaterialTagTokens->masked) {
         renderParams->blendEnable = false;
         renderParams->depthMaskEnable = true;
         renderParams->enableAlphaToCoverage = true;
+    } else {
+        renderParams->blendEnable = false;
+        renderParams->depthMaskEnable = true;
+        renderParams->enableAlphaToCoverage = false;
     }
 }
 
@@ -889,8 +900,13 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
     }
     _aovBufferIds.clear();
 
-    // Get the viewport dimensions (for renderbuffer allocation)
-    GfVec3i dimensions = _ViewportToAovDimension(_viewport);
+    // Get the render buffer dimensions.
+    const GfVec2i dimensions =
+        _renderBufferSize != GfVec2i(0)
+            ? _renderBufferSize
+            : _ViewportToAovDimensions(_viewport);
+
+    const GfVec3i dimensions3(dimensions[0], dimensions[1], 1);
 
     // Get default AOV descriptors from the render delegate.
     HdAovDescriptorList outputDescs;
@@ -907,7 +923,7 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
         GetRenderIndex()->InsertBprim(HdPrimTypeTokens->renderBuffer,
             &_delegate, aovId);
         HdRenderBufferDescriptor desc;
-        desc.dimensions = dimensions;
+        desc.dimensions = dimensions3;
         desc.format = outputDescs[i].format;
         desc.multiSampled = outputDescs[i].multiSampled;
         _delegate.SetParameter(aovId, _tokens->renderBufferDescriptor,desc);
@@ -964,7 +980,7 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
 
     // XXX: The viewport data plumbed to tasks unfortunately depends on whether
     // aovs are being used.
-    _SetViewportForTasks();
+    _SetCameraFramingForTasks();
 }
 
 void
@@ -1238,6 +1254,8 @@ HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
         HdxRenderTaskParams mergedParams = params;
         mergedParams.camera = oldParams.camera;
         mergedParams.viewport = oldParams.viewport;
+        mergedParams.framing = oldParams.framing;
+        mergedParams.overrideWindowPolicy = oldParams.overrideWindowPolicy;
         mergedParams.aovBindings = oldParams.aovBindings;
 
         // We also explicitly manage blend params, based on the material tag.
@@ -1587,11 +1605,37 @@ HdxTaskController::SetRenderViewport(GfVec4d const& viewport)
     _viewport = viewport;
 
     // Update the params for tasks that consume viewport info.
-    _SetViewportForTasks();
+    _SetCameraFramingForTasks();
     
     // Update all of the render buffer sizes as well.
-    GfVec3i dimensions = _ViewportToAovDimension(viewport);
-    _UpdateAovDimensions(dimensions);
+    _UpdateAovDimensions(_ViewportToAovDimensions(viewport));
+}
+
+void
+HdxTaskController::SetRenderBufferSize(const GfVec2i &size)
+{
+    if (_renderBufferSize == size) {
+        return;
+    }
+    
+    _renderBufferSize = size;
+
+    _UpdateAovDimensions(size);
+}
+
+void
+HdxTaskController::SetFraming(const CameraUtilFraming &framing)
+{
+    _framing = framing;
+    _SetCameraFramingForTasks();
+}
+
+void
+HdxTaskController::SetOverrideWindowPolicy(
+    const std::pair<bool, CameraUtilConformWindowPolicy> &policy)
+{
+    _overrideWindowPolicy = policy;
+    _SetCameraFramingForTasks();
 }
 
 void
@@ -1610,28 +1654,94 @@ HdxTaskController::SetFreeCameraMatrices(GfMatrix4d const& viewMatrix,
 
     _SetCameraParamForTasks(_freeCamId);
 
-    GfMatrix4d oldView = _delegate.GetParameter<GfMatrix4d>(_freeCamId,
-        HdCameraTokens->worldToViewMatrix);
+    GfCamera cam;
+    cam.SetFromViewAndProjectionMatrix(viewMatrix, projMatrix);
 
-    if (viewMatrix != oldView) {
+    const GfMatrix4d &transform = cam.GetTransform();
+    if (transform != _delegate.GetParameter<GfMatrix4d>(
+            _freeCamId, HdTokens->transform)) {
         // Cache the new view matrix
-        _delegate.SetParameter(_freeCamId, HdCameraTokens->worldToViewMatrix,
-            viewMatrix);
+        _delegate.SetParameter(
+            _freeCamId, HdTokens->transform, transform);
         // Invalidate the camera
-        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_freeCamId,
-            HdCamera::DirtyViewMatrix);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyTransform);
     }
 
-    GfMatrix4d oldProj = _delegate.GetParameter<GfMatrix4d>(_freeCamId,
-        HdCameraTokens->projectionMatrix);
+    const HdCamera::Projection projection =
+        cam.GetProjection() == GfCamera::Perspective
+            ? HdCamera::Perspective
+            : HdCamera::Orthographic;
+    if (projection != _delegate.GetParameter<HdCamera::Projection>(
+            _freeCamId, HdCameraTokens->projection)) {
+        _delegate.SetParameter(
+            _freeCamId, HdCameraTokens->projection, projection);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyParams);
+    }
 
-    if (projMatrix != oldProj) {
-        // Cache the new proj matrix
-        _delegate.SetParameter(_freeCamId, HdCameraTokens->projectionMatrix,
-            projMatrix);
-        // Invalidate the camera
-        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(_freeCamId,
-            HdCamera::DirtyProjMatrix);
+    const float focalLength =
+        cam.GetFocalLength() * float(GfCamera::FOCAL_LENGTH_UNIT);
+    if (focalLength != _delegate.GetParameter<float>(
+            _freeCamId, HdCameraTokens->focalLength)) {
+        _delegate.SetParameter(
+            _freeCamId, HdCameraTokens->focalLength, focalLength);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyParams);
+    }
+
+    const float horizontalAperture =
+        cam.GetHorizontalAperture() * float(GfCamera::APERTURE_UNIT);
+    if (horizontalAperture != _delegate.GetParameter<float>(
+            _freeCamId, HdCameraTokens->horizontalAperture)) {
+        _delegate.SetParameter(
+            _freeCamId, HdCameraTokens->horizontalAperture,
+            horizontalAperture);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyParams);
+    }
+
+    const float verticalAperture =
+        cam.GetVerticalAperture() * float(GfCamera::APERTURE_UNIT);
+    if (verticalAperture != _delegate.GetParameter<float>(
+            _freeCamId, HdCameraTokens->verticalAperture)) {
+        _delegate.SetParameter(
+            _freeCamId, HdCameraTokens->verticalAperture,
+            verticalAperture);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyParams);
+    }
+
+    const float horizontalApertureOffset =
+        cam.GetHorizontalApertureOffset() * float(GfCamera::APERTURE_UNIT);
+    if (horizontalApertureOffset != _delegate.GetParameter<float>(
+            _freeCamId, HdCameraTokens->horizontalApertureOffset)) {
+        _delegate.SetParameter(
+            _freeCamId, HdCameraTokens->horizontalApertureOffset,
+            horizontalApertureOffset);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyParams);
+    }
+
+    const float verticalApertureOffset =
+        cam.GetVerticalApertureOffset() * float(GfCamera::APERTURE_UNIT);
+    if (verticalApertureOffset != _delegate.GetParameter<float>(
+            _freeCamId, HdCameraTokens->verticalApertureOffset)) {
+        _delegate.SetParameter(
+            _freeCamId, HdCameraTokens->verticalApertureOffset,
+            verticalApertureOffset);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyParams);
+    }
+
+    const GfRange1f &clippingRange = cam.GetClippingRange();
+    if (clippingRange != _delegate.GetParameter<GfRange1f>(
+            _freeCamId, HdCameraTokens->clippingRange)) {
+        _delegate.SetParameter(
+            _freeCamId, HdCameraTokens->clippingRange,
+            clippingRange);
+        GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+            _freeCamId, HdCamera::DirtyParams);
     }
 }
 
@@ -1770,17 +1880,25 @@ HdxTaskController::_SetCameraParamForTasks(SdfPath const& id)
     }
 }
 
-void
-HdxTaskController::_SetViewportForTasks()
+static
+GfVec4i
+_ToVec4i(const GfVec4d &v)
 {
-    GfVec4d adjustedViewport = _viewport;
-    if (_UsingAovs()) {
-        // When aovs are in use, the expectation is that each aov is resized to
-        // the non-masked region and we render only the necessary pixels.
-        // The composition step (i.e., the present task) uses the viewport
-        // offset to update the unmasked region of the bound framebuffer.
-        adjustedViewport = GfVec4d(0, 0, _viewport[2], _viewport[3]);
-    }
+    return GfVec4i(int(v[0]), int(v[1]), int(v[2]), int(v[3]));
+}
+
+void
+HdxTaskController::_SetCameraFramingForTasks()
+{
+    // When aovs are in use, the expectation is that each aov is resized to
+    // the non-masked region and we render only the necessary pixels.
+    // The composition step (i.e., the present task) uses the viewport
+    // offset to update the unmasked region of the bound framebuffer.
+    const GfVec4d adjustedViewport =
+        _UsingAovs()
+            ? GfVec4d(0, 0, _viewport[2], _viewport[3])
+            : _viewport;
+
     HdChangeTracker &changeTracker = GetRenderIndex()->GetChangeTracker();
 
     for (SdfPath const& renderTaskId : _renderTaskIds) {
@@ -1788,14 +1906,17 @@ HdxTaskController::_SetViewportForTasks()
             _delegate.GetParameter<HdxRenderTaskParams>(
                 renderTaskId, HdTokens->params);
 
-        if (params.viewport == adjustedViewport) {
-            continue;
-        }
+        if (params.viewport != adjustedViewport ||
+            params.framing != _framing ||
+            params.overrideWindowPolicy != _overrideWindowPolicy) {
 
-        params.viewport = adjustedViewport;
-        _delegate.SetParameter(renderTaskId, HdTokens->params, params);
-        changeTracker.MarkTaskDirty(
-            renderTaskId, HdChangeTracker::DirtyParams);
+            params.framing = _framing;
+            params.overrideWindowPolicy = _overrideWindowPolicy;
+            params.viewport = adjustedViewport;
+            _delegate.SetParameter(renderTaskId, HdTokens->params, params);
+            changeTracker.MarkTaskDirty(
+                renderTaskId, HdChangeTracker::DirtyParams);
+        }
     }
 
     if (!_shadowTaskId.IsEmpty()) {
@@ -1831,10 +1952,13 @@ HdxTaskController::_SetViewportForTasks()
                 _presentTaskId, HdTokens->params);
         // The composition step uses the viewport passed in by the application,
         // which may have a non-zero offset for things like camera masking.
-        GfVec4i iViewport = GfVec4i(int(_viewport[0]), int(_viewport[1]),
-                                    int(_viewport[2]), int(_viewport[3]));
-        if (params.compRegion != iViewport) {
-            params.compRegion = iViewport;
+        const GfVec4i compRegion = 
+            _framing.IsValid()
+                ? GfVec4i(0, 0, _renderBufferSize[0], _renderBufferSize[1])
+                : _ToVec4i(_viewport);
+
+        if (params.compRegion != compRegion) {
+            params.compRegion = compRegion;
             _delegate.SetParameter(_presentTaskId, HdTokens->params, params);
             changeTracker.MarkTaskDirty(
                 _presentTaskId, HdChangeTracker::DirtyParams);
@@ -1843,16 +1967,18 @@ HdxTaskController::_SetViewportForTasks()
 }
 
 void
-HdxTaskController::_UpdateAovDimensions(GfVec3i const& dimensions)
+HdxTaskController::_UpdateAovDimensions(GfVec2i const& dimensions)
 {
+    const GfVec3i dimensions3(dimensions[0], dimensions[1], 1);
+
     HdChangeTracker &changeTracker = GetRenderIndex()->GetChangeTracker();
 
     for (auto const& id : _aovBufferIds) {
         HdRenderBufferDescriptor desc =
             _delegate.GetParameter<HdRenderBufferDescriptor>(id,
                 _tokens->renderBufferDescriptor);
-        if (desc.dimensions != dimensions) {
-            desc.dimensions = dimensions;
+        if (desc.dimensions != dimensions3) {
+            desc.dimensions = dimensions3;
             _delegate.SetParameter(id, _tokens->renderBufferDescriptor, desc);
             changeTracker.MarkBprimDirty(id,
                 HdRenderBuffer::DirtyDescription);

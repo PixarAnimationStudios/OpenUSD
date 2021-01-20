@@ -87,7 +87,6 @@ pxr_library(hd
         strategyBase
         task
         texture
-        textureResource
         timeSampleArray
         tokens
         topology
@@ -111,5 +110,8 @@ pxr_library(hd
 
     RESOURCE_FILES
         plugInfo.json
+
+    DOXYGEN_FILES
+        overview.dox
 )
 

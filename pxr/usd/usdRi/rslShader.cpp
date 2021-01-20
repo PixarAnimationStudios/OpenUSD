@@ -75,7 +75,12 @@ UsdRiRslShader::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdRiRslShader::_GetSchemaType() const {
+UsdSchemaKind UsdRiRslShader::_GetSchemaKind() const {
+    return UsdRiRslShader::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdRiRslShader::_GetSchemaType() const {
     return UsdRiRslShader::schemaType;
 }
 

@@ -87,7 +87,7 @@ public:
     /// held in a registry container.
     explicit HdInstance(KeyType const &key,
                         ValueType const &value,
-                        RegistryLock registryLock,
+                        RegistryLock &&registryLock,
                         Dictionary *container)
         : _key(key)
         , _value(value)

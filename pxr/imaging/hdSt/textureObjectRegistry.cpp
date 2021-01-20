@@ -24,7 +24,9 @@
 
 #include "pxr/imaging/hdSt/textureObjectRegistry.h"
 
+#include "pxr/imaging/hdSt/ptexTextureObject.h"
 #include "pxr/imaging/hdSt/textureObject.h"
+#include "pxr/imaging/hdSt/udimTextureObject.h"
 #include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
@@ -36,7 +38,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdSt_TextureObjectRegistry::HdSt_TextureObjectRegistry(
     HdStResourceRegistry * registry)
-  : _resourceRegistry(registry)
+  : _totalTextureMemory(0)
+  , _resourceRegistry(registry)
 {
 }
 
@@ -94,9 +97,19 @@ HdSt_TextureObjectRegistry::AllocateTextureObject(
 
         inst.SetValue(texture);
         _dirtyTextures.push_back(texture);
+        // Note that this is already protected by the lock that inst
+        // holds for the _textureObjectRegistry.
+        _filePathToTextureObjects[textureId.GetFilePath()].push_back(texture);
     }
 
     return inst.GetValue();
+}
+
+void
+HdSt_TextureObjectRegistry::MarkTextureFilePathDirty(
+    const TfToken &filePath)
+{
+    _dirtyFilePaths.push_back(filePath);
 }
 
 void
@@ -106,18 +119,18 @@ HdSt_TextureObjectRegistry::MarkTextureObjectDirty(
     _dirtyTextures.push_back(texture);
 }
 
-HdStResourceRegistry *
-HdSt_TextureObjectRegistry::GetResourceRegistry() const 
+void
+HdSt_TextureObjectRegistry::AdjustTotalTextureMemory(const int64_t memDiff)
 {
-    return _resourceRegistry;
+    _totalTextureMemory.fetch_add(memDiff);
 }
 
 // Turn a vector into a set, dropping expired weak points.
-template<typename T>
+template<typename T, typename U>
 static
 void
-_Uniquify(const tbb::concurrent_vector<std::weak_ptr<T>> &objects,
-          std::set<std::shared_ptr<T>> *result)
+_Uniquify(const T &objects,
+          std::set<std::shared_ptr<U>> *result)
 {
     // Creating a std:set might be expensive.
     //
@@ -130,14 +143,14 @@ _Uniquify(const tbb::concurrent_vector<std::weak_ptr<T>> &objects,
     // the second time in the _dirtyTextures vector.
 
     TRACE_FUNCTION();
-    for (std::weak_ptr<T> const &objectPtr : objects) {
-        if (std::shared_ptr<T> const object = objectPtr.lock()) {
+    for (std::weak_ptr<U> const &objectPtr : objects) {
+        if (std::shared_ptr<U> const object = objectPtr.lock()) {
             result->insert(object);
         }
     }
 }
 
-// Variable left from a time when Glf_StbImage was not thread-safe
+// Variable left from a time when Hio_StbImage was not thread-safe
 // and testUsdImagingGLTextureWrapStormTextureSystem produced
 // wrong and non-deterministic results.
 //
@@ -150,6 +163,16 @@ HdSt_TextureObjectRegistry::Commit()
 
     std::set<HdStTextureObjectSharedPtr> result;
 
+    // Record all textures as dirty corresponding to file paths
+    // explicitly marked dirty by client.
+    for (const TfToken &dirtyFilePath : _dirtyFilePaths) {
+        const auto it = _filePathToTextureObjects.find(dirtyFilePath);
+        if (it != _filePathToTextureObjects.end()) {
+            _Uniquify(it->second, &result);
+        }
+    }
+
+    // Also record all textures explicitly marked dirty.
     _Uniquify(_dirtyTextures, &result);
 
     {
@@ -183,15 +206,65 @@ HdSt_TextureObjectRegistry::Commit()
         }
     }
 
+    _dirtyFilePaths.clear();
     _dirtyTextures.clear();
 
     return result;
 }
 
+// Remove all expired weak pointers from vector, return true
+// if no weak pointers left.
+static
+bool
+_GarbageCollect(HdStTextureObjectPtrVector *const vec) {
+    // Go from left to right, filling slots that became empty
+    // with valid weak pointers from the right.
+    size_t last = vec->size();
+
+    for (size_t i = 0; i < last; i++) {
+        if ((*vec)[i].expired()) {
+            while(true) {
+                last--;
+                if (i == last) {
+                    break;
+                }
+                if (!(*vec)[last].expired()) {
+                    (*vec)[i] = (*vec)[last];
+                    break;
+                }
+            }
+        }
+    }
+    
+    vec->resize(last);
+    
+    return last == 0;
+}
+
+static
+void _GarbageCollect(
+    std::unordered_map<TfToken, HdStTextureObjectPtrVector,
+                       TfToken::HashFunctor> *const filePathToTextureObjects)
+{
+    for (auto it = filePathToTextureObjects->begin();
+         it != filePathToTextureObjects->end(); ) {
+
+        if (_GarbageCollect(&it->second)) {
+            it = filePathToTextureObjects->erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
 void
 HdSt_TextureObjectRegistry::GarbageCollect()
 {
+    TRACE_FUNCTION();
+
     _textureObjectRegistry.GarbageCollect();
+
+    _GarbageCollect(&_filePathToTextureObjects);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

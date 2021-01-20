@@ -75,7 +75,12 @@ UsdLuxRectLight::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdLuxRectLight::_GetSchemaType() const {
+UsdSchemaKind UsdLuxRectLight::_GetSchemaKind() const {
+    return UsdLuxRectLight::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdLuxRectLight::_GetSchemaType() const {
     return UsdLuxRectLight::schemaType;
 }
 
@@ -105,13 +110,13 @@ UsdLuxRectLight::_GetTfType() const
 UsdAttribute
 UsdLuxRectLight::GetWidthAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->width);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsWidth);
 }
 
 UsdAttribute
 UsdLuxRectLight::CreateWidthAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->width,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsWidth,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -122,13 +127,13 @@ UsdLuxRectLight::CreateWidthAttr(VtValue const &defaultValue, bool writeSparsely
 UsdAttribute
 UsdLuxRectLight::GetHeightAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->height);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsHeight);
 }
 
 UsdAttribute
 UsdLuxRectLight::CreateHeightAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->height,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsHeight,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -139,13 +144,13 @@ UsdLuxRectLight::CreateHeightAttr(VtValue const &defaultValue, bool writeSparsel
 UsdAttribute
 UsdLuxRectLight::GetTextureFileAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->textureFile);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsTextureFile);
 }
 
 UsdAttribute
 UsdLuxRectLight::CreateTextureFileAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->textureFile,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsTextureFile,
                        SdfValueTypeNames->Asset,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -170,9 +175,9 @@ const TfTokenVector&
 UsdLuxRectLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLuxTokens->width,
-        UsdLuxTokens->height,
-        UsdLuxTokens->textureFile,
+        UsdLuxTokens->inputsWidth,
+        UsdLuxTokens->inputsHeight,
+        UsdLuxTokens->inputsTextureFile,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

@@ -1,5 +1,5 @@
---- openexr/IlmBase/Half/half.cpp	2019-09-09 23:40:27.186426000 -0700
-+++ ilmbase_half.cpp	2019-08-05 18:07:51.371334000 -0700
+--- openexr/IlmBase/Half/half.cpp	2020-08-12 16:12:07.000000000 -0700
++++ ilmbase_half.cpp	2020-10-28 14:57:12.094863000 -0700
 @@ -45,18 +45,27 @@
  //---------------------------------------------------------------------------
  
@@ -51,6 +51,24 @@
  half::convert (int i)
  {
      //
+@@ -108,7 +117,7 @@
+ 	{
+ 	    //
+ 	    // E is less than -10.  The absolute value of f is
+-	    // less than HALF_MIN (f may be a small normalized
++	    // less than PXR_HALF_MIN (f may be a small normalized
+ 	    // float, a denormalized float or a zero).
+ 	    //
+ 	    // We convert f to a half zero with the same sign as f.
+@@ -119,7 +128,7 @@
+ 
+ 	//
+ 	// E is between -10 and 0.  F is a normalized float
+-	// whose magnitude is less than HALF_NRM_MIN.
++	// whose magnitude is less than PXR_HALF_NRM_MIN.
+ 	//
+ 	// We convert f to a denormalized half.
+ 	//
 @@ -221,7 +230,7 @@
  // Stream I/O operators
  //---------------------
@@ -113,8 +131,8 @@
 +} // namespace pxr_half
 +
 +PXR_NAMESPACE_CLOSE_SCOPE
---- openexr/IlmBase/Half/half.h	2019-09-09 23:42:36.452479000 -0700
-+++ ilmbase_half.h	2019-09-09 14:25:22.287651000 -0700
+--- openexr/IlmBase/Half/half.h	2020-08-12 16:12:07.000000000 -0700
++++ ilmbase_half.h	2020-10-28 14:55:23.327871000 -0700
 @@ -82,11 +82,17 @@
  //
  //---------------------------------------------------------------------------
@@ -137,29 +155,18 @@
  
  class half
  {
-@@ -96,9 +102,11 @@
-     // Constructors
-     //-------------
- 
--    half ();			// no initialization
-+    half () = default;			// no initialization
+@@ -100,8 +106,8 @@
      half (float f);
- 
-+    constexpr half (const half& h) = default;
-+
+     // rule of 5
+     ~half () = default;
+-    half (const half &) = default;
+-    half (half &&) noexcept = default;
++    constexpr half (const half &) noexcept = default;
++    constexpr half (half &&) noexcept = default;
  
      //--------------------
      // Conversion to float
-@@ -118,7 +126,7 @@
-     // Assignment
-     //-----------
- 
--    half &		operator = (half  h);
-+    half &		operator = (const half &) = default;
-     half &		operator = (float f);
- 
-     half &		operator += (half  h);
-@@ -197,8 +205,8 @@
+@@ -201,8 +207,8 @@
      // Access to the internal representation
      //--------------------------------------
  
@@ -170,7 +177,7 @@
  
  
    public:
-@@ -211,13 +219,13 @@
+@@ -215,13 +221,13 @@
  
    private:
  
@@ -188,7 +195,7 @@
  };
  
  
-@@ -226,18 +234,18 @@
+@@ -230,81 +236,81 @@
  // Stream I/O
  //-----------
  
@@ -213,40 +220,91 @@
  
  
  //-------------------------------------------------------------------------
-@@ -414,17 +422,6 @@
- //---------------------------------------------------------------------------
+ // Limits
+ //
+-// Visual C++ will complain if HALF_MIN, HALF_NRM_MIN etc. are not float
++// Visual C++ will complain if PXR_HALF_MIN, PXR_HALF_NRM_MIN etc. are not float
+ // constants, but at least one other compiler (gcc 2.96) produces incorrect
+ // results if they are.
+ //-------------------------------------------------------------------------
+ 
+ #if (defined _WIN32 || defined _WIN64) && defined _MSC_VER
+ 
+-  #define HALF_MIN	5.96046448e-08f	// Smallest positive half
++  #define PXR_HALF_MIN	5.96046448e-08f	// Smallest positive half
+ 
+-  #define HALF_NRM_MIN	6.10351562e-05f	// Smallest positive normalized half
++  #define PXR_HALF_NRM_MIN	6.10351562e-05f	// Smallest positive normalized half
+ 
+-  #define HALF_MAX	65504.0f	// Largest positive half
++  #define PXR_HALF_MAX	65504.0f	// Largest positive half
+ 
+-  #define HALF_EPSILON	0.00097656f	// Smallest positive e for which
++  #define PXR_HALF_EPSILON	0.00097656f	// Smallest positive e for which
+ 					// half (1.0 + e) != half (1.0)
+ #else
+ 
+-  #define HALF_MIN	5.96046448e-08	// Smallest positive half
++  #define PXR_HALF_MIN	5.96046448e-08	// Smallest positive half
+ 
+-  #define HALF_NRM_MIN	6.10351562e-05	// Smallest positive normalized half
++  #define PXR_HALF_NRM_MIN	6.10351562e-05	// Smallest positive normalized half
+ 
+-  #define HALF_MAX	65504.0		// Largest positive half
++  #define PXR_HALF_MAX	65504.0		// Largest positive half
+ 
+-  #define HALF_EPSILON	0.00097656	// Smallest positive e for which
++  #define PXR_HALF_EPSILON	0.00097656	// Smallest positive e for which
+ 					// half (1.0 + e) != half (1.0)
+ #endif
  
  
--//--------------------
--// Simple constructors
--//--------------------
--
--inline
--half::half ()
--{
--    // no initialization
--}
--
--
- //----------------------------
- // Half-from-float constructor
- //----------------------------
-@@ -573,14 +570,6 @@
+-#define HALF_MANT_DIG	11		// Number of digits in mantissa
++#define PXR_HALF_MANT_DIG	11		// Number of digits in mantissa
+ 					// (significand + hidden leading 1)
  
+ // 
+-// floor( (HALF_MANT_DIG - 1) * log10(2) ) => 3.01... -> 3
+-#define HALF_DIG	3		// Number of base 10 digits that
++// floor( (PXR_HALF_MANT_DIG - 1) * log10(2) ) => 3.01... -> 3
++#define PXR_HALF_DIG	3		// Number of base 10 digits that
+ 					// can be represented without change
  
- inline half &
--half::operator = (half h)
--{
--    _h = h._h;
--    return *this;
--}
--
--
--inline half &
- half::operator = (float f)
- {
-     *this = half (f);
-@@ -758,4 +747,8 @@
+-// ceil(HALF_MANT_DIG * log10(2) + 1) => 4.31... -> 5
+-#define HALF_DECIMAL_DIG	5	// Number of base-10 digits that are
++// ceil(PXR_HALF_MANT_DIG * log10(2) + 1) => 4.31... -> 5
++#define PXR_HALF_DECIMAL_DIG	5	// Number of base-10 digits that are
+ 					// necessary to uniquely represent all
+ 					// distinct values
+ 
+-#define HALF_RADIX	2		// Base of the exponent
++#define PXR_HALF_RADIX	2		// Base of the exponent
+ 
+-#define HALF_MIN_EXP	-13		// Minimum negative integer such that
+-					// HALF_RADIX raised to the power of
++#define PXR_HALF_MIN_EXP	-13		// Minimum negative integer such that
++					// PXR_HALF_RADIX raised to the power of
+ 					// one less than that integer is a
+ 					// normalized half
+ 
+-#define HALF_MAX_EXP	16		// Maximum positive integer such that
+-					// HALF_RADIX raised to the power of
++#define PXR_HALF_MAX_EXP	16		// Maximum positive integer such that
++					// PXR_HALF_RADIX raised to the power of
+ 					// one less than that integer is a
+ 					// normalized half
+ 
+-#define HALF_MIN_10_EXP	-4		// Minimum positive integer such
++#define PXR_HALF_MIN_10_EXP	-4		// Minimum positive integer such
+ 					// that 10 raised to that power is
+ 					// a normalized half
+ 
+-#define HALF_MAX_10_EXP	4		// Maximum positive integer such
++#define PXR_HALF_MAX_10_EXP	4		// Maximum positive integer such
+ 					// that 10 raised to that power is
+ 					// a normalized half
+ 
+@@ -746,4 +752,8 @@
      _h = bits;
  }
  
@@ -255,8 +313,8 @@
 +PXR_NAMESPACE_CLOSE_SCOPE
 +
  #endif
---- openexr/IlmBase/Half/halfLimits.h	2019-09-09 23:40:27.206431000 -0700
-+++ ilmbase_halfLimits.h	2019-08-05 18:07:51.394336000 -0700
+--- openexr/IlmBase/Half/halfLimits.h	2020-08-12 16:12:07.000000000 -0700
++++ ilmbase_halfLimits.h	2020-10-28 14:56:06.167891000 -0700
 @@ -38,8 +38,8 @@
  //     Rod Bogart <rgb@ilm.com>
  
@@ -268,7 +326,7 @@
  
  
  //------------------------------------------------------------------------
-@@ -49,13 +49,16 @@
+@@ -49,33 +49,36 @@
  //------------------------------------------------------------------------
  
  #include <limits>
@@ -287,3 +345,55 @@
    public:
  
      static const bool is_specialized = true;
+ 
+-    static half min () throw () {return HALF_NRM_MIN;}
+-    static half max () throw () {return HALF_MAX;}
++    static half min () throw () {return PXR_HALF_NRM_MIN;}
++    static half max () throw () {return PXR_HALF_MAX;}
+ 
+-    static const int digits = HALF_MANT_DIG;
+-    static const int digits10 = HALF_DIG;
++    static const int digits = PXR_HALF_MANT_DIG;
++    static const int digits10 = PXR_HALF_DIG;
+     static const bool is_signed = true;
+     static const bool is_integer = false;
+     static const bool is_exact = false;
+-    static const int radix = HALF_RADIX;
+-    static half epsilon () throw () {return HALF_EPSILON;}
+-    static half round_error () throw () {return HALF_EPSILON / 2;}
+-
+-    static const int min_exponent = HALF_MIN_EXP;
+-    static const int min_exponent10 = HALF_MIN_10_EXP;
+-    static const int max_exponent = HALF_MAX_EXP;
+-    static const int max_exponent10 = HALF_MAX_10_EXP;
++    static const int radix = PXR_HALF_RADIX;
++    static half epsilon () throw () {return PXR_HALF_EPSILON;}
++    static half round_error () throw () {return PXR_HALF_EPSILON / 2;}
++
++    static const int min_exponent = PXR_HALF_MIN_EXP;
++    static const int min_exponent10 = PXR_HALF_MIN_10_EXP;
++    static const int max_exponent = PXR_HALF_MAX_EXP;
++    static const int max_exponent10 = PXR_HALF_MAX_10_EXP;
+ 
+     static const bool has_infinity = true;
+     static const bool has_quiet_NaN = true;
+@@ -85,7 +88,7 @@
+     static half infinity () throw () {return half::posInf();}
+     static half quiet_NaN () throw () {return half::qNan();}
+     static half signaling_NaN () throw () {return half::sNan();}
+-    static half denorm_min () throw () {return HALF_MIN;}
++    static half denorm_min () throw () {return PXR_HALF_MIN;}
+ 
+     static const bool is_iec559 = false;
+     static const bool is_bounded = false;
+@@ -98,8 +101,8 @@
+ #if __cplusplus >= 201103L
+ 
+     // C++11 additions.
+-    static constexpr int max_digits10 = HALF_DECIMAL_DIG;
+-    static half lowest () {return -HALF_MAX;}
++    static constexpr int max_digits10 = PXR_HALF_DECIMAL_DIG;
++    static half lowest () {return -PXR_HALF_MAX;}
+ 
+ #endif
+ 

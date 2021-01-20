@@ -24,8 +24,7 @@
 // Diagnostic.cpp
 //
 
-
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/debugCodes.h"
@@ -191,7 +190,7 @@ static void
 _GlfPushDebugGroup(char const * message)
 {
 #if defined(GL_KHR_debug)
-    if (GLEW_KHR_debug) {
+    if (GARCH_GLAPI_HAS(KHR_debug)) {
         glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, message);
     }
 #endif
@@ -201,7 +200,7 @@ static void
 _GlfPopDebugGroup()
 {
 #if defined(GL_KHR_debug)
-    if (GLEW_KHR_debug) {
+    if (GARCH_GLAPI_HAS(KHR_debug)) {
         glPopDebugGroup();
     }
 #endif
@@ -226,7 +225,7 @@ GlfDebugLabelBuffer(GLuint id, char const *label)
 {
 #if defined(GL_KHR_debug)
     if (GlfTraceEnabled()) {
-        if (GLEW_KHR_debug) {
+        if (GARCH_GLAPI_HAS(KHR_debug)) {
             glObjectLabel(GL_BUFFER, id, -1, label);
         }
     }
@@ -238,7 +237,7 @@ GlfDebugLabelShader(GLuint id, char const *label)
 {
 #if defined(GL_KHR_debug)
     if (GlfTraceEnabled()) {
-        if (GLEW_KHR_debug) {
+        if (GARCH_GLAPI_HAS(KHR_debug)) {
             glObjectLabel(GL_SHADER, id, -1, label);
         }
     }
@@ -250,7 +249,7 @@ GlfDebugLabelProgram(GLuint id, char const *label)
 {
 #if defined(GL_KHR_debug)
     if (GlfTraceEnabled()) {
-        if (GLEW_KHR_debug) {
+        if (GARCH_GLAPI_HAS(KHR_debug)) {
             glObjectLabel(GL_PROGRAM, id, -1, label);
         }
     }
@@ -260,7 +259,7 @@ GlfDebugLabelProgram(GLuint id, char const *label)
 GlfGLQueryObject::GlfGLQueryObject()
     : _id(0), _target(0)
 {
-    GlfGlewInit();
+    GarchGLApiLoad();
     if (glGenQueries) {
         glGenQueries(1, &_id);
     }

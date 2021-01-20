@@ -43,8 +43,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((normalsGeometryFlat,     "MeshNormal.Geometry.Flat"))
     ((normalsGeometryNoFlat,   "MeshNormal.Geometry.NoFlat"))
 
-    ((doubleSidedFS,           "MeshNormal.Fragment.DoubleSided"))
-    ((singleSidedFS,           "MeshNormal.Fragment.SingleSided"))
+    ((normalsDoubleSidedFS,    "MeshNormal.Fragment.DoubleSided"))
+    ((normalsSingleSidedFS,    "MeshNormal.Fragment.SingleSided"))
+
+    ((faceCullHardwareFS,      "MeshFaceCull.Fragment.None"))
+    ((faceCullSingleSidedFS,   "MeshFaceCull.Fragment.SingleSided"))
+    ((faceCullDoubleSidedFS,   "MeshFaceCull.Fragment.DoubleSided"))
 
     // wireframe mixins
     ((edgeNoneGS,              "MeshWire.Geometry.NoEdge"))
@@ -93,6 +97,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainBezierQuadTES,       "Mesh.TessEval.BezierQuad"))
     ((mainBoxSplineTriangleTCS,"Mesh.TessControl.BoxSplineTriangle"))
     ((mainBezierTriangleTES,   "Mesh.TessEval.BezierTriangle"))
+    ((mainVaryingInterpTES,    "Mesh.TessEval.VaryingInterpolation"))
     ((mainTriangleTessGS,      "Mesh.Geometry.TriangleTess"))
     ((mainTriangleGS,          "Mesh.Geometry.Triangle"))
     ((mainQuadGS,              "Mesh.Geometry.Quad"))
@@ -129,9 +134,13 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     HdCullStyle cullStyle,
     HdMeshGeomStyle geomStyle,
     float lineWidth,
+    bool hasMirroredTransform,
+    bool hasInstancer,
     bool enableScalarOverride)
     : primType(primitiveType)
     , cullStyle(cullStyle)
+    , hasMirroredTransform(hasMirroredTransform)
+    , doubleSided(doubleSided)
     , polygonMode(HdPolygonModeFill)
     , lineWidth(lineWidth)
     , glslfx(_tokens->baseGLSLFX)
@@ -140,6 +149,10 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         geomStyle == HdMeshGeomStyleHullEdgeOnly) {
         polygonMode = HdPolygonModeLine;
     }
+
+    // XXX: Unfortunately instanced meshes can't use h/w culling. This is due to
+    // the possibility that they have instanceTransform/instanceScale primvars.
+    useHardwareFaceCulling = !hasInstancer;
 
     bool isPrimTypePoints = HdSt_GeometricShader::IsPrimTypePoints(primType);
     bool isPrimTypeQuads  = HdSt_GeometricShader::IsPrimTypeQuads(primType);
@@ -206,7 +219,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                                    ? _tokens->mainBezierQuadTES
                                    : _tokens->mainBezierTriangleTES
                                : TfToken();
-    TES[2] = TfToken();
+    TES[2] = _tokens->mainVaryingInterpTES;
+    TES[3] = TfToken();
 
     // geometry shader
     uint8_t gsIndex = 0;
@@ -275,7 +289,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     bool gsStageEnabled = !GS[0].IsEmpty();
     // fragment shader
-     uint8_t fsIndex = 0;
+    uint8_t fsIndex = 0;
     FS[fsIndex++] = _tokens->instancing;
 
     FS[fsIndex++] = (!gsStageEnabled && normalsSource == NormalSourceFlat) ?
@@ -284,7 +298,11 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
          _tokens->normalsPass);
 
     FS[fsIndex++] = doubleSided ?
-        _tokens->doubleSidedFS : _tokens->singleSidedFS;
+        _tokens->normalsDoubleSidedFS : _tokens->normalsSingleSidedFS;
+
+    FS[fsIndex++] = useHardwareFaceCulling ? _tokens->faceCullHardwareFS :
+                    (doubleSided ? _tokens->faceCullDoubleSidedFS :
+                                   _tokens->faceCullSingleSidedFS);
 
     // Wire (edge) related mixins
     if ((geomStyle == HdMeshGeomStyleEdgeOnly ||

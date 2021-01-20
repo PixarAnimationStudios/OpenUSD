@@ -75,7 +75,12 @@ UsdLuxLightFilter::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdLuxLightFilter::_GetSchemaType() const {
+UsdSchemaKind UsdLuxLightFilter::_GetSchemaKind() const {
+    return UsdLuxLightFilter::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdLuxLightFilter::_GetSchemaType() const {
     return UsdLuxLightFilter::schemaType;
 }
 
@@ -143,11 +148,101 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usdShade/connectableAPI.h"
+#include "pxr/usd/usdShade/connectableAPIBehavior.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-#include "pxr/usd/usdLux/tokens.h"
+class UsdLuxLightFilter_ConnectableAPIBehavior : 
+    public UsdShadeConnectableAPIBehavior
+{
+    bool
+    CanConnectInputToSource(const UsdShadeInput &input,
+                            const UsdAttribute &source,
+                            std::string *reason) override
+    {     
+        // Check the base class CanConnect first.
+        if (!UsdShadeConnectableAPIBehavior::CanConnectInputToSource(
+            input, source, reason)) {
+            return false;
+        }
 
-USDLUX_API
+        // Only allow inputs to connect to sources whose path
+        // contains the light's path as a prefix (i.e. encapsulation)
+        const SdfPath sourcePrimPath = source.GetPrim().GetPath();
+        const SdfPath inputPrimPath = input.GetPrim().GetPath();
+        if (!sourcePrimPath.HasPrefix(inputPrimPath)) {
+            if (reason) {
+                *reason = TfStringPrintf(
+                    "Proposed source <%s> of input '%s' on light filter at "
+                    "path <%s> must be a descendant of the light filter.",
+                    sourcePrimPath.GetText(), input.GetFullName().GetText(), 
+                    inputPrimPath.GetText());
+            }
+            return false;
+        }
+        return true;
+    }
+};
+
+
+TF_REGISTRY_FUNCTION(UsdShadeConnectableAPI)
+{
+    // UsdLuxLightFilter prims are connectable, with special behavior requiring 
+    // connection source to be encapsulated under the light.
+    UsdShadeRegisterConnectableAPIBehavior<
+        UsdLuxLightFilter, UsdLuxLightFilter_ConnectableAPIBehavior>();
+}
+
+UsdLuxLightFilter::UsdLuxLightFilter(const UsdShadeConnectableAPI &connectable)
+    : UsdLuxLightFilter(connectable.GetPrim())
+{
+}
+
+UsdShadeConnectableAPI 
+UsdLuxLightFilter::ConnectableAPI() const
+{
+    return UsdShadeConnectableAPI(GetPrim());
+}
+
+UsdShadeOutput
+UsdLuxLightFilter::CreateOutput(const TfToken& name,
+                                const SdfValueTypeName& typeName)
+{
+    return UsdShadeConnectableAPI(GetPrim()).CreateOutput(name, typeName);
+}
+
+UsdShadeOutput
+UsdLuxLightFilter::GetOutput(const TfToken &name) const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetOutput(name);
+}
+
+std::vector<UsdShadeOutput>
+UsdLuxLightFilter::GetOutputs() const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
+}
+
+UsdShadeInput
+UsdLuxLightFilter::CreateInput(const TfToken& name,
+                               const SdfValueTypeName& typeName)
+{
+    return UsdShadeConnectableAPI(GetPrim()).CreateInput(name, typeName);
+}
+
+UsdShadeInput
+UsdLuxLightFilter::GetInput(const TfToken &name) const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetInput(name);
+}
+
+std::vector<UsdShadeInput>
+UsdLuxLightFilter::GetInputs() const
+{
+    return UsdShadeConnectableAPI(GetPrim()).GetInputs();
+}
+
 UsdCollectionAPI
 UsdLuxLightFilter::GetFilterLinkCollectionAPI() const
 {

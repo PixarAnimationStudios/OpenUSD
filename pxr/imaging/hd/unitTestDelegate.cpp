@@ -29,8 +29,6 @@
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/points.h"
 #include "pxr/imaging/hd/renderDelegate.h"
-#include "pxr/imaging/hd/texture.h"
-#include "pxr/imaging/hd/textureResource.h"
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -101,9 +99,6 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id)
     TfToken scheme = PxOsdOpenSubdivTokens->catmullClark;
 
     AddMesh(id, transform, points, numVerts, verts, guide, instancerId, scheme);
-    if (!instancerId.IsEmpty()) {
-        _instancers[instancerId].prototypes.push_back(id);
-    }
 }
 
 void
@@ -121,7 +116,7 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
     HD_TRACE_FUNCTION();
 
     HdRenderIndex& index = GetRenderIndex();
-    index.InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->mesh, this, id);
 
     _meshes[id] = _Mesh(scheme, orientation, transform,
                         points, numVerts, verts, /*holes*/VtIntArray(),
@@ -138,6 +133,7 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
                                HdPrimvarRoleTokens->color) };
 
     if (!instancerId.IsEmpty()) {
+        _instancerBindings[id] = instancerId;
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -163,7 +159,7 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
     HD_TRACE_FUNCTION();
 
     HdRenderIndex& index = GetRenderIndex();
-    index.InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->mesh, this, id);
 
     _meshes[id] = _Mesh(scheme, orientation, transform,
                         points, numVerts, verts, holes, subdivTags,
@@ -179,6 +175,7 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
                                HdPrimvarRoleTokens->color) };
 
     if (!instancerId.IsEmpty()) {
+        _instancerBindings[id] = instancerId;
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -201,9 +198,7 @@ HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
     HD_TRACE_FUNCTION();
 
     HdRenderIndex& index = GetRenderIndex();
-    SdfPath materialId;
-    TfMapLookup(_materialBindings, id, &materialId);
-    index.InsertRprim(HdPrimTypeTokens->basisCurves, this, id, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->basisCurves, this, id);
 
     _curves[id] = _Curves(points, curveVertexCounts, 
                           type,
@@ -232,6 +227,7 @@ HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
     }
 
     if (!instancerId.IsEmpty()) {
+        _instancerBindings[id] = instancerId;
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -250,9 +246,7 @@ HdUnitTestDelegate::AddPoints(SdfPath const &id,
     HD_TRACE_FUNCTION();
 
     HdRenderIndex& index = GetRenderIndex();
-    SdfPath materialId;
-    TfMapLookup(_materialBindings, id, &materialId);
-    index.InsertRprim(HdPrimTypeTokens->points, this, id, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->points, this, id);
 
     _points[id] = _Points(points);
 
@@ -271,6 +265,7 @@ HdUnitTestDelegate::AddPoints(SdfPath const &id,
                  HdPrimvarRoleTokens->none)};
 
     if (!instancerId.IsEmpty()) {
+        _instancerBindings[id] = instancerId;
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -284,11 +279,12 @@ HdUnitTestDelegate::AddInstancer(SdfPath const &id,
 
     HdRenderIndex& index = GetRenderIndex();
     // add instancer
-    index.InsertInstancer(this, id, parentId);
+    index.InsertInstancer(this, id);
     _instancers[id] = _Instancer();
     _instancers[id].rootTransform = rootTransform;
 
     if (!parentId.IsEmpty()) {
+        _instancerBindings[id] = parentId;
         _instancers[parentId].prototypes.push_back(id);
     }
 
@@ -322,6 +318,21 @@ HdUnitTestDelegate::SetInstancerProperties(SdfPath const &id,
     HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
     tracker.MarkInstancerDirty(id, HdChangeTracker::DirtyPrimvar |
                                    HdChangeTracker::DirtyInstanceIndex);
+}
+
+void
+HdUnitTestDelegate::UpdateInstancer(SdfPath const& rprimId, 
+                                    SdfPath const& instancerId)
+{
+    if(_meshes.find(rprimId) != _meshes.end()) {
+        if (!instancerId.IsEmpty()) {
+            _instancerBindings[rprimId] = instancerId;
+            _instancers[instancerId].prototypes.push_back(rprimId);
+
+            HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+            tracker.MarkRprimDirty(rprimId, HdChangeTracker::DirtyInstancer);
+        }
+    }
 }
 
 void
@@ -374,6 +385,17 @@ HdUnitTestDelegate::RemovePrimvar(SdfPath const& id, TfToken const& name)
     } else {
         TF_WARN("Rprim %s has no primvar named %s.\n",
             id.GetText(), name.GetText());
+    }
+}
+
+void
+HdUnitTestDelegate::UpdateTransform(SdfPath const& id,
+                                    GfMatrix4f const& mat)
+{
+    if(_meshes.find(id) != _meshes.end()) {
+        _meshes[id].transform = mat;
+        HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+        tracker.MarkRprimDirty(id, HdChangeTracker::DirtyTransform);
     }
 }
 
@@ -763,6 +785,15 @@ HdUnitTestDelegate::GetMaterialId(SdfPath const& rprimId)
 }
 
 /*virtual*/
+SdfPath
+HdUnitTestDelegate::GetInstancerId(SdfPath const& primId)
+{
+    SdfPath instancerId;
+    TfMapLookup(_instancerBindings, primId, &instancerId);
+    return instancerId;
+}
+
+/*virtual*/
 VtValue 
 HdUnitTestDelegate::GetMaterialResource(SdfPath const &materialId)
 {
@@ -781,20 +812,6 @@ HdUnitTestDelegate::GetCameraParamValue(SdfPath const &cameraId,
         return _cameras[cameraId].params[paramName];
     } 
     return VtValue();
-}
-
-/*virtual*/
-HdTextureResource::ID
-HdUnitTestDelegate::GetTextureResourceID(SdfPath const& textureId)
-{
-    return SdfPath::Hash()(textureId);
-}
-
-/*virtual*/
-HdTextureResourceSharedPtr
-HdUnitTestDelegate::GetTextureResource(SdfPath const& textureId)
-{
-    return nullptr;
 }
 
 /*virtual*/
@@ -1271,27 +1288,16 @@ HdUnitTestDelegate::AddCurves(
     };
 
     VtVec3fArray authNormals;
-    if (authoredNormals && type == HdTokens->linear){
+    if (authoredNormals) {
         GfVec3f normals[] = {
             GfVec3f(   .0f, -.7f,  .7f ),
             GfVec3f(   .0f,  .0f, 1.0f ),
             GfVec3f(  .0f,  .7f,  .7f ),
             GfVec3f(  .7f,  .7f,  .0f ),
-
             GfVec3f(   .0f,  .0f, 1.0f ),
             GfVec3f(   .0f,  .0f, 1.0f ),
             GfVec3f( -1.0f,  .0f,  .0f ),
             GfVec3f( -1.0f,  .0f,  .0f )
-        };
-        authNormals = _BuildArray(normals, sizeof(normals)/sizeof(normals[0]));
-
-    } else if (authoredNormals && type == HdTokens->cubic){
-        GfVec3f normals[] = {
-            GfVec3f(   .0f,  .0f, 1.0f ),
-            GfVec3f(   .0f,  .7f,  .7f ),
-
-            GfVec3f(   .0f,  .7f, .7f ),
-            GfVec3f(  -.7f,  .7f, .0f )
         };
         authNormals = _BuildArray(normals, sizeof(normals)/sizeof(normals[0]));
     }

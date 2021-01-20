@@ -125,6 +125,73 @@ struct HdMaterialNetworkMap {
     std::vector<SdfPath> terminals;
 };
 
+
+///
+/// HdMaterialNetwork2
+///
+/// This struct replaces the previously used MatfiltNetwork and
+/// HdSt_MaterialNetwork. 
+/// In the furuture this HdMaterialNetwork2 will replace the current 
+/// HdMaterialNetwork defined above.
+///
+
+/// \struct HdMaterialConnection2
+///
+/// Describes a single connection to an upsream node and output port 
+/// Replacement for HdRelationship.
+struct HdMaterialConnection2 {
+    SdfPath upstreamNode;
+    TfToken upstreamOutputName;
+
+    bool operator==(const HdMaterialConnection2 & rhs) const {
+        return upstreamNode == rhs.upstreamNode
+            && upstreamOutputName == rhs.upstreamOutputName;
+    }
+};
+
+/// \struct HdMaterialNode2
+///
+/// Describes an instance of a node within a network
+/// A node contains a (shader) type identifier, parameter values, and 
+/// connections to upstream nodes. A single input (mapped by TfToken) may have
+/// multiple upstream connections to describe connected array elements.
+struct HdMaterialNode2 {
+    TfToken nodeTypeId;
+    std::map<TfToken, VtValue> parameters;
+    std::map<TfToken, std::vector<HdMaterialConnection2>> inputConnections;
+
+    bool operator==(const HdMaterialNode2 & rhs) const {
+        return nodeTypeId == rhs.nodeTypeId
+            && parameters == rhs.parameters
+            && inputConnections == rhs.inputConnections;
+    }
+};
+
+/// \struct HdMaterialNetwork2
+/// 
+/// Container of nodes and top-level terminal connections. This is the mutable
+/// representation of a shading network sent to filtering functions by a
+/// MatfiltFilterChain.
+struct HdMaterialNetwork2 {
+    std::map<SdfPath, HdMaterialNode2> nodes;
+    std::map<TfToken, HdMaterialConnection2> terminals;
+    TfTokenVector primvars;
+
+    bool operator==(const HdMaterialNetwork2 & rhs) const {
+        return nodes == rhs.nodes 
+            && terminals == rhs.terminals
+            && primvars == rhs.primvars;
+    }
+};
+
+/// Converts a HdMaterialNetworkMap to a HdMaterialNetwork2
+HD_API
+void HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
+    const HdMaterialNetworkMap & hdNetworkMap,
+    HdMaterialNetwork2 *result, 
+    bool *isVolume = nullptr);
+
+
 // VtValue requirements
 HD_API
 std::ostream& operator<<(std::ostream& out, const HdMaterialNetwork& pv);

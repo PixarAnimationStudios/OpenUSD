@@ -25,7 +25,6 @@
 #define PXR_IMAGING_HGIGL_SHADERFUNCTION_H
 
 #include "pxr/imaging/hgi/shaderFunction.h"
-
 #include "pxr/imaging/hgiGL/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

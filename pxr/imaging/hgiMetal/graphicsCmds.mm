@@ -46,7 +46,6 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
     , _debugLabel(nil)
     , _viewportSet(false)
 {
-    TF_VERIFY(desc.width>0 && desc.height>0);
     TF_VERIFY(desc.colorTextures.size() == desc.colorAttachmentDescs.size());
     
     if (!desc.colorResolveTextures.empty() &&
@@ -425,6 +424,24 @@ HgiMetalGraphicsCmds::PopDebugGroup()
         [_debugLabel release];
         _debugLabel = nil;
     }
+}
+
+void
+HgiMetalGraphicsCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+{
+    TF_VERIFY(barrier==HgiMemoryBarrierAll, "Unknown barrier");
+
+    MTLBarrierScope scope =
+        MTLBarrierScopeBuffers |
+        MTLBarrierScopeTextures |
+        MTLBarrierScopeRenderTargets;
+
+    MTLRenderStages srcStages = MTLRenderStageVertex | MTLRenderStageFragment;
+    MTLRenderStages dstStages = MTLRenderStageVertex | MTLRenderStageFragment;
+
+    [_encoder memoryBarrierWithScope:scope
+                         afterStages:srcStages
+                         beforeStages:dstStages];
 }
 
 bool

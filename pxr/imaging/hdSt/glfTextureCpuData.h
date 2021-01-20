@@ -29,7 +29,7 @@
 
 #include "pxr/imaging/hdSt/textureCpuData.h"
 #include "pxr/imaging/hgi/texture.h"
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/base/tf/declarePtrs.h"
 
 #include <memory>

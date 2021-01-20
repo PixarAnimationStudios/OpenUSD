@@ -324,8 +324,8 @@ HdStExtCompGpuComputation::CreateGpuComputation(
         std::dynamic_pointer_cast<HdStResourceRegistry>(
                               renderIndex.GetResourceRegistry());
 
-    HdSt_ComputeShaderSharedPtr shader(new HdSt_ComputeShader());
-    shader->SetComputeSource(sourceComp->GetGpuKernelSource());
+    HdSt_ExtCompComputeShaderSharedPtr shader = 
+        std::make_shared<HdSt_ExtCompComputeShader>(sourceComp);
 
     // Map the computation outputs onto the destination primvar types
     HdBufferSpecVector outputBufferSpecs;

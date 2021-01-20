@@ -23,9 +23,8 @@
 //
 #include "pxr/pxr.h"
 
-#include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/drawTarget.h"
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
 
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
@@ -397,10 +396,10 @@ void HdEmbree_TestGLDrawing::OffscreenTest()
         // multisampled color, etc.
         rb->Resolve();
 
-        GlfImage::StorageSpec storage;
+        HioImage::StorageSpec storage;
         storage.width = rb->GetWidth();
         storage.height = rb->GetHeight();
-        storage.hioFormat = HdStGLConversions::GetHioFormat(rb->GetFormat());
+        storage.format = HdStGLConversions::GetHioFormat(rb->GetFormat());
         storage.flipped = true;
         storage.data = rb->Map();
 
@@ -412,14 +411,14 @@ void HdEmbree_TestGLDrawing::OffscreenTest()
             _RescaleDepth(reinterpret_cast<float*>(storage.data),
                 storage.width*storage.height);
         } else if (_aov == "primId") {
-            storage.hioFormat =  HioFormatUNorm8Vec4;
+            storage.format =  HioFormatUNorm8Vec4;
             _ColorizeId(reinterpret_cast<int32_t*>(storage.data),
                 storage.width*storage.height);
         }
 
         VtDictionary metadata;
 
-        GlfImageSharedPtr image = GlfImage::OpenForWriting(_outputName);
+        HioImageSharedPtr image = HioImage::OpenForWriting(_outputName);
         if (image) {
             image->Write(storage, metadata);
         }

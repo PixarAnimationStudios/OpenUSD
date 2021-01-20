@@ -24,7 +24,8 @@
 #ifndef PXR_IMAGING_HGIINTEROP_HGIINTEROPMETAL_H
 #define PXR_IMAGING_HGIINTEROP_HGIINTEROPMETAL_H
 
-#include <GL/glew.h>
+#include "pxr/imaging/garch/glApi.h"
+
 #include <Metal/Metal.h>
 #include <AppKit/AppKit.h>
 

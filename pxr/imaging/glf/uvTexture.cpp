@@ -24,9 +24,9 @@
 /// \file UVTexture.cpp
 // 
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/glf/arrayTexture.h"
 #include "pxr/imaging/glf/uvTexture.h"
 #include "pxr/imaging/glf/uvTextureData.h"
@@ -41,8 +41,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Glf_UVTextureFactory : public GlfTextureFactoryBase {
 public:
     virtual GlfTextureRefPtr New(const TfToken& texturePath,
-                                 GlfImage::ImageOriginLocation originLocation =
-                                                GlfImage::OriginUpperLeft) const
+                                 HioImage::ImageOriginLocation originLocation =
+                                                HioImage::OriginUpperLeft) const
     {
         return GlfUVTexture::New(texturePath,
                                  /*cropTop*/ 0,
@@ -53,8 +53,8 @@ public:
     }
 
     virtual GlfTextureRefPtr New(const TfTokenVector& texturePaths,
-                                 GlfImage::ImageOriginLocation originLocation = 
-                                                GlfImage::OriginUpperLeft) const
+                                 HioImage::ImageOriginLocation originLocation = 
+                                                HioImage::OriginUpperLeft) const
     {
         return GlfArrayTexture::New(texturePaths, 
                                     texturePaths.size(), 
@@ -80,7 +80,7 @@ GlfUVTexture::New(
     unsigned int cropBottom,
     unsigned int cropLeft,
     unsigned int cropRight,
-    GlfImage::ImageOriginLocation originLocation)
+    HioImage::ImageOriginLocation originLocation)
 {
     return TfCreateRefPtr(new GlfUVTexture(
             imageFilePath, cropTop, 
@@ -95,7 +95,7 @@ GlfUVTexture::New(
     unsigned int cropBottom,
     unsigned int cropLeft,
     unsigned int cropRight,
-    GlfImage::ImageOriginLocation originLocation)
+    HioImage::ImageOriginLocation originLocation)
 {
     return TfCreateRefPtr(new GlfUVTexture(
             TfToken(imageFilePath), cropTop, 
@@ -118,7 +118,7 @@ GlfUVTexture::IsSupportedImageFile(TfToken const &imageFilePath)
 bool 
 GlfUVTexture::IsSupportedImageFile(std::string const &imageFilePath)
 {
-    return GlfImage::IsSupportedImageFile(imageFilePath);
+    return HioImage::IsSupportedImageFile(imageFilePath);
 }
 
 GlfUVTexture::GlfUVTexture(
@@ -127,7 +127,7 @@ GlfUVTexture::GlfUVTexture(
     unsigned int cropBottom,
     unsigned int cropLeft,
     unsigned int cropRight,
-    GlfImage::ImageOriginLocation originLocation)
+    HioImage::ImageOriginLocation originLocation)
     : GlfBaseTexture(originLocation)
     , _imageFilePath(imageFilePath)
     , _cropTop(cropTop)
@@ -157,6 +157,8 @@ GlfUVTexture::IsMinFilterSupported(GLenum filter)
 void
 GlfUVTexture::_ReadTexture()
 {
+    GarchGLApiLoad();
+
     GlfUVTextureDataRefPtr texData =
         GlfUVTextureData::New(_GetImageFilePath(), GetMemoryRequested(),
                               _GetCropTop(), _GetCropBottom(),

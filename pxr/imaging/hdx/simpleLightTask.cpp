@@ -21,7 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/hdx/simpleLightTask.h"
 
 #include "pxr/imaging/hdx/shadowMatrixComputation.h"
@@ -46,32 +47,27 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-static const GfVec2i _defaultShadowRes = GfVec2i(1024, 1024);
-
 // -------------------------------------------------------------------------- //
 
 HdxSimpleLightTask::HdxSimpleLightTask(
     HdSceneDelegate* delegate, 
     SdfPath const& id)
-    : HdTask(id) 
-    , _cameraId()
-    , _lightIds()
-    , _lightIncludePaths()
-    , _lightExcludePaths()
-    , _numLights(0)
-    , _lightingShader(new HdStSimpleLightingShader())
-    , _enableShadows(false)
-    , _viewport(0.0f, 0.0f, 0.0f, 0.0f)
-    , _material()
-    , _sceneAmbient()
-    , _glfSimpleLights()
+  : HdTask(id) 
+  , _cameraId()
+  , _lightIds()
+  , _lightIncludePaths()
+  , _lightExcludePaths()
+  , _numLights(0)
+  , _lightingShader(std::make_shared<HdStSimpleLightingShader>())
+  , _enableShadows(false)
+  , _viewport(0.0f, 0.0f, 0.0f, 0.0f)
+  , _material()
+  , _sceneAmbient()
+  , _glfSimpleLights()
 {
 }
 
-HdxSimpleLightTask::~HdxSimpleLightTask()
-{
-
-}
+HdxSimpleLightTask::~HdxSimpleLightTask() = default;
 
 void
 HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,

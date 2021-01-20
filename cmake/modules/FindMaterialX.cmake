@@ -67,13 +67,16 @@ find_path(MATERIALX_INCLUDE_DIRS
 )
 
 if (WIN32)
-    set(MATERIALX_CORE_LIB_NAME MaterialXCore.lib)
+    set(MATERIALX_CORE_STATIC_LIB_NAME MaterialXCore.lib)
+    set(MATERIALX_CORE_DYNAMIC_LIB_NAME MaterialXCore.dll)
 else()
-    set(MATERIALX_CORE_LIB_NAME libMaterialXCore.a)
+    set(MATERIALX_CORE_STATIC_LIB_NAME libMaterialXCore.a)
+    set(MATERIALX_CORE_DYNAMIC_LIB_NAME libMaterialXCore.so)
 endif()
 
 find_path(MATERIALX_LIB_DIRS 
-    "${MATERIALX_CORE_LIB_NAME}"
+    "${MATERIALX_CORE_STATIC_LIB_NAME}"
+    "${MATERIALX_CORE_DYNAMIC_LIB_NAME}"
     HINTS
         "${MATERIALX_ROOT}"
         "$ENV{MATERIALX_ROOT}"        
@@ -100,7 +103,15 @@ find_path(MATERIALX_STDLIB_DIR
 
 foreach(MATERIALX_LIB
     Core
-    Format)
+    Format
+    GenGlsl
+    GenOsl
+    GenShader
+    Render
+    RenderGlsl
+    RenderHw
+    RenderOsl
+    )
     find_library(MATERIALX_${MATERIALX_LIB}_LIBRARY
             MaterialX${MATERIALX_LIB}
         HINTS

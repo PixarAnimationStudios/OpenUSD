@@ -1,0 +1,32 @@
+#usda 1.0 
+(
+    subLayers = [ 
+        @baseSchema.usda@
+    ]  
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "usdContrived"
+        string libraryPath = "pxr/usd/usdContrived"
+        dictionary libraryTokens = {
+            dictionary libraryToken1 = {}
+            dictionary libraryToken2 = {
+                string doc = """libraryToken2 doc"""
+            }
+        }
+    }
+)
+{
+}
+
+# Multiple apply schemas can't use the apiSchemaAutoApplyTo customdata field
+class MultipleApplyAPI "MultipleApplyAPI" (
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token[] apiSchemaAutoApplyTo = ["ConcreteType"]
+    }
+    inherits = </APISchemaBase>
+)
+{
+}

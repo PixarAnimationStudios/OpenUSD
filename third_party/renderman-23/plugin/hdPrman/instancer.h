@@ -33,14 +33,12 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
-#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdPrmanInstancer : public HdInstancer {
 public:
-    HdPrmanInstancer(HdSceneDelegate* delegate, SdfPath const& id,
-                      SdfPath const &parentInstancerId);
+    HdPrmanInstancer(HdSceneDelegate* delegate, SdfPath const& id);
 
     /// Destructor.
     ~HdPrmanInstancer();
@@ -48,32 +46,31 @@ public:
     /// Sample the instance transforms for the given prototype,
     /// taking into account the scene delegate's instancerTransform and the
     /// instance primvars "instanceTransform", "translate", "rotate", "scale".
+    /// Note: this needs to be called after Sync().
     void SampleInstanceTransforms(
         SdfPath const& prototypeId,
         VtIntArray const& instanceIndices,
         HdTimeSampleArray<VtMatrix4dArray, HDPRMAN_MAX_TIME_SAMPLES> *sa);
 
     /// Convert instance-rate primvars to Riley attributes, using
-    /// the instance to index into the array.
+    /// the instance to index into the array. Note: this needs to be called
+    /// after Sync().
     void GetInstancePrimvars(
         SdfPath const& prototypeId,
         size_t instanceIndex,
         RtParamList& attrs);
 
-    // Checks the change tracker to determine whether instance primvars are
-    // dirty, and if so pulls them. Since primvars can only be pulled once,
-    // and are cached, this function is not re-entrant. However, this function
-    // is called by HdPrman_Gprim::Sync, which is dispatched in parallel, so
-    // it needs to be guarded by _instanceLock.
-    //
-    // Pulled primvars are cached in _primvarMap.  This function skips pulling
-    // primvars that are pulled explicitly in SampleInstanceTransforms.
-    void SyncPrimvars();
+    /// Update the cached primvar map from scene data.  Pulled primvars are
+    /// cached in _primvarMap.  This function skips pulling primvars that
+    /// are pulled explicitly in SampleInstanceTransforms.
+    void Sync(HdSceneDelegate *sceneDelegate,
+              HdRenderParam   *renderParam,
+              HdDirtyBits     *dirtyBits) override;
 
 private:
 
-    // Mutex guard for SyncPrimvars().
-    std::mutex _instanceLock;
+    void _SyncPrimvars(HdSceneDelegate *sceneDelegate,
+                       HdDirtyBits dirtyBits);
 
     // Map of the latest primvar data for this instancer, keyed by primvar name
     struct _PrimvarValue {

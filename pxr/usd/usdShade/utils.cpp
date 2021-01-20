@@ -24,6 +24,9 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdShade/utils.h"
 #include "pxr/usd/usdShade/tokens.h"
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/tf/stringUtils.h"
@@ -68,12 +71,182 @@ UsdShadeUtils::GetBaseNameAndType(const TfToken &fullName)
 }
 
 /* static */
+UsdShadeAttributeType
+UsdShadeUtils::GetType(const TfToken &fullName)
+{
+    std::pair<std::string, bool> res = 
+        SdfPath::StripPrefixNamespace(fullName, UsdShadeTokens->inputs);
+    if (res.second) {
+        return UsdShadeAttributeType::Input;
+    }
+
+    res = SdfPath::StripPrefixNamespace(fullName, UsdShadeTokens->outputs);
+    if (res.second) {
+        return UsdShadeAttributeType::Output;
+    }
+
+    return UsdShadeAttributeType::Invalid;
+}
+
+/* static */
 TfToken 
 UsdShadeUtils::GetFullName(const TfToken &baseName, 
                            const UsdShadeAttributeType type)
 {
     return TfToken(UsdShadeUtils::GetPrefixForAttributeType(type) + 
                    baseName.GetString());
+}
+
+// Note: to avoid getting stuck in an infinite loop when following connections,
+// we need to check if we've visited an attribute before, so that we can break
+// the cycle and return an invalid result.
+// We expect most connections chains to be very small with most of them having
+// 0 or 1 connection in the chain. Few will include multiple hops. That is why
+// we are going with a vector and not a set to check for previous attributes.
+// To avoid the cost of allocating memory on the heap at each invocation, we
+// use a TfSmallVector to keep the first couple of entries on the stack.
+constexpr unsigned int N = 5;
+typedef TfSmallVector<SdfPath, N> _SmallSdfPathVector;
+
+template <typename UsdShadeInOutput>
+bool
+_GetValueProducingAttributesRecursive(
+    UsdShadeInOutput const & inoutput,
+    _SmallSdfPathVector* foundAttributes,
+    UsdShadeAttributeVector & attrs)
+{
+    if (!inoutput) {
+        return false;
+    }
+
+    // Check if we've visited this attribute before and if so abort with an
+    // error, since this means we have a loop in the chain
+    const SdfPath& thisAttrPath = inoutput.GetAttr().GetPath();
+    if (std::find(foundAttributes->begin(), foundAttributes->end(),
+                  thisAttrPath) != foundAttributes->end()) {
+        TF_WARN("GetValueProducingAttributes: Found cycle with attribute %s",
+                thisAttrPath.GetText());
+        return false;
+    }
+
+    // Remember the path of this attribute, so that we do not visit it again
+    foundAttributes->push_back(thisAttrPath);
+
+    // Retrieve all valid connections
+    UsdShadeSourceInfoVector sourceInfos =
+        UsdShadeConnectableAPI::GetConnectedSources(inoutput);
+
+    // To handle cycle detection in the case of multiple connection we have to
+    // copy the found attributes vector (multiple connections leading to the
+    // same attribute would trigger the cycle detection). Since we want to avoid
+    // that copy we only do it in case of multiple connections.
+    bool copyFoundAttrs = sourceInfos.size() > 1;
+
+    bool foundValidAttr = false;
+
+    // Follow each connection it until we reach an output attribute on an actual
+    // shader node or an input attribute with a value
+    for (const UsdShadeConnectionSourceInfo& sourceInfo : sourceInfos) {
+
+        bool foundValidAttrForSource = false;
+
+        if (sourceInfo.sourceType == UsdShadeAttributeType::Output) {
+            UsdShadeOutput connectedOutput =
+                    sourceInfo.source.GetOutput(sourceInfo.sourceName);
+            if (!sourceInfo.source.IsContainer()) {
+                attrs.push_back(connectedOutput.GetAttr());
+                foundValidAttrForSource = true;
+            } else {
+                _SmallSdfPathVector localFoundAttrs;
+
+                _SmallSdfPathVector* foundAttrs = foundAttributes;
+                if (copyFoundAttrs) {
+                    // Copy the attributes found so far
+                    localFoundAttrs = *foundAttributes;
+                    // Use the local copy for the recursion
+                    foundAttrs = &localFoundAttrs;
+                }
+
+                foundValidAttrForSource =
+                    _GetValueProducingAttributesRecursive(
+                            connectedOutput,
+                            foundAttrs,
+                            attrs);
+            }
+        } else { // sourceType == UsdShadeAttributeType::Input
+            UsdShadeInput connectedInput =
+                    sourceInfo.source.GetInput(sourceInfo.sourceName);
+            if (!sourceInfo.source.IsContainer()) {
+                // Note, this is an invalid situation for a connected
+                // chain. Since we started on an input to either a
+                // Shader or a container we cannot legally connect to an
+                // input on a non-container.
+            } else {
+                _SmallSdfPathVector localFoundAttrs;
+
+                _SmallSdfPathVector* foundAttrs = foundAttributes;
+                if (copyFoundAttrs) {
+                    // Copy the attributes found so far
+                    localFoundAttrs = *foundAttributes;
+                    // Use the local copy for the recursion
+                    foundAttrs = &localFoundAttrs;
+                }
+
+                foundValidAttrForSource =
+                    _GetValueProducingAttributesRecursive(
+                            connectedInput,
+                            foundAttrs,
+                            attrs);
+            }
+        }
+
+        foundValidAttr |= foundValidAttrForSource;
+    }
+
+    // If this input or output doesn't have any valid attributes from
+    // connections, but it has an authored value. Return this attribute.
+    if (!foundValidAttr && inoutput.GetAttr().HasAuthoredValue()) {
+        attrs.push_back(inoutput.GetAttr());
+        foundValidAttr = true;
+    }
+
+    return foundValidAttr;
+}
+
+/* static */
+UsdShadeAttributeVector
+UsdShadeUtils::GetValueProducingAttributes(UsdShadeInput const &input)
+{
+    TRACE_SCOPE("UsdShadeUtils::GetValueProducingAttributes");
+
+    // We track which attributes we've visited so far to avoid getting caught
+    // in an infinite loop, if the network contains a cycle.
+    _SmallSdfPathVector foundAttributes;
+
+    UsdShadeAttributeVector valueAttributes;
+    _GetValueProducingAttributesRecursive(input,
+                                          &foundAttributes,
+                                          valueAttributes);
+
+    return valueAttributes;
+}
+
+/* static */
+UsdShadeAttributeVector
+UsdShadeUtils::GetValueProducingAttributes(UsdShadeOutput const &output)
+{
+    TRACE_SCOPE("UsdShadeUtils::GetValueProducingAttributes");
+
+    // We track which attributes we've visited so far to avoid getting caught
+    // in an infinite loop, if the network contains a cycle.
+    _SmallSdfPathVector foundAttributes;
+
+    UsdShadeAttributeVector valueAttributes;
+    _GetValueProducingAttributesRecursive(output,
+                                          &foundAttributes,
+                                          valueAttributes);
+
+    return valueAttributes;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

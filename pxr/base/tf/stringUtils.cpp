@@ -926,13 +926,13 @@ _IsOctalDigit(const char c)
     return (('0' <= c) && (c <= '7'));
 }
 
-static char
+static unsigned char
 _OctalToDecimal(const char c)
 {
     return (c - '0');
 }
 
-static char
+static unsigned char
 _HexToDecimal(const char c)
 {
          if (('a' <= c) && (c <= 'f')) return ((c - 'a') + 10);
@@ -957,10 +957,11 @@ TfEscapeStringReplaceChar(const char** c, char** out)
         case 'v': *(*out)++ = '\v'; break; // vt
         case 'x':
         {
-            char n(0);
-            size_t nd(0);
-            for (nd = 0; isxdigit(*++(*c)); ++nd)
-                n = ((n * 16) + _HexToDecimal(**c));
+            // Allow only up to 2 hex digits.
+            unsigned char n = 0;
+            for (int nd = 0; isxdigit(*++(*c)) && nd != 2; ++nd) {
+                n = (n * 16) + _HexToDecimal(**c);
+            }
             --(*c);
             *(*out)++ = n;
             break;
@@ -968,10 +969,12 @@ TfEscapeStringReplaceChar(const char** c, char** out)
         case '0': case '1': case '2': case '3':
         case '4': case '5': case '6': case '7':
         {
-            char n(0);
-            size_t nd(0);
-            for (nd = 0; ((nd < 3) && _IsOctalDigit(**c)); ++nd)
-                n = ((n * 8) + _OctalToDecimal(*(*c)++));
+            // Allow only up to 3 octal digits.
+            --(*c);
+            unsigned char n = 0;
+            for (int nd = 0; _IsOctalDigit(*++(*c)) && nd != 3; ++nd) {
+                n = (n * 8) + _OctalToDecimal(**c);
+            }
             --(*c);
             *(*out)++ = n;
             break;

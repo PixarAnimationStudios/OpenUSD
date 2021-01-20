@@ -31,6 +31,9 @@ pxr_library(usdMedia
         plugInfo.json
         generatedSchema.usda
         schema.usda:usdMedia/schema.usda
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 pxr_test_scripts(

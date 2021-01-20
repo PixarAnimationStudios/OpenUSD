@@ -55,9 +55,7 @@ public:
 
     /// HdTinyMesh constructor.
     ///   \param id The scene-graph path to this mesh.
-    ///   \param instancerId If specified, the HdInstancer at this id uses
-    ///                      this mesh as a prototype.
-    HdTinyMesh(SdfPath const& id, SdfPath const& instancerId = SdfPath());
+    HdTinyMesh(SdfPath const& id);
 
     /// HdTinyMesh destructor.
     ~HdTinyMesh() override = default;

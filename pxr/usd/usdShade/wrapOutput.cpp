@@ -50,6 +50,17 @@ _Set(const UsdShadeOutput &self, object val, const UsdTimeCode &time)
 }
 
 static object
+_GetConnectedSources(const UsdShadeOutput &self)
+{
+    SdfPathVector invalidSourcePaths;
+    UsdShadeOutput::SourceInfoVector sources =
+        self.GetConnectedSources(&invalidSourcePaths);
+    return boost::python::make_tuple(
+        std::vector<UsdShadeConnectionSourceInfo>(sources.begin(), sources.end()),
+        invalidSourcePaths);
+}
+
+static object
 _GetConnectedSource(const UsdShadeOutput &self)
 {
     UsdShadeConnectableAPI source;
@@ -93,11 +104,17 @@ void wrapUsdShadeOutput()
     bool (Output::*ConnectToSource_4)(
         UsdShadeOutput const &) const = &Output::ConnectToSource;
 
+    bool (Output::*ConnectToSource_5)(
+        UsdShadeConnectionSourceInfo const &,
+        Output::ConnectionModification const mod) const = &Output::ConnectToSource;
+
     bool (Output::*CanConnect_1)(
         UsdAttribute const &) const = &Output::CanConnect;
 
     class_<Output>("Output")
         .def(init<UsdAttribute>(arg("attr")))
+        .def(self==self)
+        .def(self!=self)
         .def(!self)
 
         .def("GetFullName", &Output::GetFullName,
@@ -133,7 +150,10 @@ void wrapUsdShadeOutput()
         .def("CanConnect", CanConnect_1,
             (arg("source")))
 
-        .def("ConnectToSource", ConnectToSource_1, 
+        .def("ConnectToSource", ConnectToSource_5,
+            (arg("source"),
+             arg("mod")=UsdShadeConnectionModification::Replace))
+        .def("ConnectToSource", ConnectToSource_1,
             (arg("source"), arg("sourceName"), 
              arg("sourceType")=UsdShadeAttributeType::Output,
              arg("typeName")=SdfValueTypeName()))
@@ -144,14 +164,21 @@ void wrapUsdShadeOutput()
         .def("ConnectToSource", ConnectToSource_4,
             (arg("sourceOutput")))
 
+        .def("SetConnectedSources", &Output::SetConnectedSources)
+
+        .def("GetConnectedSources", _GetConnectedSources)
         .def("GetConnectedSource", _GetConnectedSource)
         .def("GetRawConnectedSourcePaths", _GetRawConnectedSourcePaths,
             return_value_policy<TfPySequenceToList>())
         .def("HasConnectedSource", &Output::HasConnectedSource)
         .def("IsSourceConnectionFromBaseMaterial", 
              &Output::IsSourceConnectionFromBaseMaterial)
-        .def("DisconnectSource", &Output::DisconnectSource)
+        .def("DisconnectSource", &Output::DisconnectSource,
+             (arg("sourceAttr")=UsdAttribute()))
+        .def("ClearSources", &Output::ClearSources)
         .def("ClearSource", &Output::ClearSource)
+
+        .def("GetValueProducingAttributes", &Output::GetValueProducingAttributes)
 
         .def("IsOutput", &Output::IsOutput)
         .staticmethod("IsOutput")

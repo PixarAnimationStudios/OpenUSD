@@ -42,5 +42,5 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapArrayTimeCode() {
     VtWrapArray<VtArray<SdfTimeCode> >();
-    VtValueFromPython<VtArray<SdfTimeCode> >();
+    VtValueFromPythonLValue<VtArray<SdfTimeCode> >();
 }

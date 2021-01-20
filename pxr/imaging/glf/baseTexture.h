@@ -28,14 +28,14 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/glf/texture.h"
+
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakPtr.h"
-
-#include "pxr/imaging/garch/gl.h"
 
 #include <string>
 
@@ -88,7 +88,7 @@ protected:
     GlfBaseTexture();
 
     GLF_API
-    GlfBaseTexture(GlfImage::ImageOriginLocation originLocation);
+    GlfBaseTexture(HioImage::ImageOriginLocation originLocation);
 
     GLF_API
     void _OnMemoryRequestedDirty() override final;

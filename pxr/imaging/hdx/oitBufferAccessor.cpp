@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/hdx/oitBufferAccessor.h"
 
-#include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
@@ -177,8 +178,7 @@ HdxOitBufferAccessor::InitializeOitBuffersIfNecessary()
         return;
     }
 
-    // Old versions of glew may be missing glClearNamedBufferData
-    if (ARCH_LIKELY(caps.directStateAccessEnabled) && glClearNamedBufferData) {
+    if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
         glClearNamedBufferData(glBuffer->GetBufferId(),
                                 GL_R32I,
                                 GL_RED_INTEGER,

@@ -78,6 +78,10 @@ pxr_library(usdviewq
         preferencesUI.ui
         primLegendUI.ui
         propertyLegendUI.ui
+
+    DOXYGEN_FILES
+        README.md
+        blackBoxTesting.md
 )
 
 install(DIRECTORY

@@ -79,6 +79,16 @@ pxr_library(usdSkel
         generatedSchema.usda
         plugInfo.json
         schema.usda:usdSkel/schema.usda
+
+    DOXYGEN_FILES
+        overview.dox
+        doxygen/apiIntro.dox
+        doxygen/bestPractices.dox
+        doxygen/instancing.dox
+        doxygen/intro.dox
+        doxygen/objectModel.dox
+        doxygen/schemaOverview.dox
+        doxygen/schemas.dox
 )
    
 pxr_test_scripts(

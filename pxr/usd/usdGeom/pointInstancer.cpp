@@ -75,7 +75,12 @@ UsdGeomPointInstancer::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdGeomPointInstancer::_GetSchemaType() const {
+UsdSchemaKind UsdGeomPointInstancer::_GetSchemaKind() const {
+    return UsdGeomPointInstancer::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdGeomPointInstancer::_GetSchemaType() const {
     return UsdGeomPointInstancer::schemaType;
 }
 
@@ -496,10 +501,7 @@ UsdGeomPointInstancer::DeactivateIds(VtInt64Array const &ids) const
 bool
 UsdGeomPointInstancer::VisId(int64_t id, UsdTimeCode const &time) const
 {
-    VtInt64Array ids(1);
-    
-    ids.push_back(id);
-    return VisIds(ids, time);
+    return VisIds({id}, time);
 }
 
 bool
@@ -520,8 +522,9 @@ UsdGeomPointInstancer::VisIds(VtInt64Array const &ids, UsdTimeCode const &time) 
     if (numRemoved){
         invised.clear();
         invised.reserve(invisSet.size());
-        for ( int64_t id : invisSet )
+        for ( int64_t id : invisSet ) {
             invised.push_back(id);
+        }
     }
 
     return CreateInvisibleIdsAttr().Set(invised, time);
@@ -542,10 +545,7 @@ UsdGeomPointInstancer::VisAllIds(UsdTimeCode const &time) const
 bool
 UsdGeomPointInstancer::InvisId(int64_t id, UsdTimeCode const &time) const
 {
-    VtInt64Array ids(1);
-    
-    ids.push_back(id);
-    return InvisIds(ids, time);
+    return InvisIds({id}, time);
 }
 
 bool

@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 
 #include "pxr/base/tf/diagnostic.h"
@@ -46,7 +47,7 @@ TestOpenAsset()
     ArResolver& resolver = ArGetResolver();
 
     std::shared_ptr<ArAsset> usdzAsset = 
-        resolver.OpenAsset("test.usdz[bogus.file]");
+        resolver.OpenAsset(ArResolvedPath("test.usdz[bogus.file]"));
     TF_AXIOM(!usdzAsset);
 
     auto testAsset = [&resolver](
@@ -59,7 +60,7 @@ TestOpenAsset()
         // Verify that we can open the file within the .usdz file and the
         // size is what we expect.
         std::shared_ptr<ArAsset> asset = 
-            resolver.OpenAsset(packageRelativePath);
+            resolver.OpenAsset(ArResolvedPath(packageRelativePath));
         TF_AXIOM(asset);
         TF_AXIOM(asset->GetSize() == expectedSize);
 

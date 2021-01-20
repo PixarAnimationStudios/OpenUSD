@@ -460,6 +460,8 @@ _IsMasterAttribute(TfToken const& primvarName)
         TfToken("ri:attributes:Ri:Orientation"),
         TfToken("ri:attributes:trace:autobias"),
         TfToken("ri:attributes:trace:bias"),
+        TfToken("ri:attributes:trace:sssautobias"),
+        TfToken("ri:attributes:trace:sssbias"),
         TfToken("ri:attributes:trace:displacements"),
         // Dicing
         TfToken("ri:attributes:dice:micropolygonlength"),
@@ -1113,7 +1115,7 @@ HdPrman_UpdateSearchPathsFromEnvironment(RtParamList& options)
             paths.push_back(TfStringCatPaths(rmantree, "lib/plugins"));
         }
         // Default hdPrman installation under 'plugins/usd'
-        // We need the path to RtxGlfImage and we assume that it lives in the
+        // We need the path to RtxHioImage and we assume that it lives in the
         // same directory as hdPrmanLoader
         PlugPluginPtr plugin =
             PlugRegistry::GetInstance().GetPluginWithName("hdPrmanLoader");

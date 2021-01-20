@@ -46,9 +46,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdRprim::HdRprim(SdfPath const& id,
-                 SdfPath const& instancerId)
-    : _instancerId(instancerId)
+HdRprim::HdRprim(SdfPath const& id)
+    : _instancerId()
     , _materialId()
     , _sharedData(HdDrawingCoord::DefaultNumSlots,
                   /*visible=*/true)
@@ -137,13 +136,6 @@ HdRprim::InitRepr(HdSceneDelegate* delegate,
                   TfToken const &reprToken,
                   HdDirtyBits *dirtyBits)
 {
-    // If _sharedData.instancerLevels == -1, it's uninitialized and we should
-    // compute it now.
-    if (_sharedData.instancerLevels == -1) {
-        _sharedData.instancerLevels = HdInstancer::GetInstancerNumLevels(
-            delegate->GetRenderIndex(), *this);
-    }
-
     _InitRepr(reprToken, dirtyBits);
 }
 
@@ -223,6 +215,30 @@ HdRprim::_UpdateVisibility(HdSceneDelegate* delegate,
 {
     if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, GetId())) {
         _sharedData.visible = delegate->GetVisible(GetId());
+    }
+}
+
+void
+HdRprim::_UpdateInstancer(HdSceneDelegate* delegate,
+                          HdDirtyBits *dirtyBits)
+{
+    if (HdChangeTracker::IsInstancerDirty(*dirtyBits, GetId())) {
+        SdfPath const& instancerId = delegate->GetInstancerId(GetId());
+        if (instancerId == _instancerId) {
+            return;
+        }
+
+        // If we have a new instancer ID, we need to update the dependency
+        // map and also update the stored instancer ID.
+        HdChangeTracker &tracker =
+            delegate->GetRenderIndex().GetChangeTracker();
+        if (!_instancerId.IsEmpty()) {
+            tracker.RemoveInstancerRprimDependency(_instancerId, GetId());
+        }
+        if (!instancerId.IsEmpty()) {
+            tracker.AddInstancerRprimDependency(instancerId, GetId());
+        }
+        _instancerId = instancerId;
     }
 }
 

@@ -92,6 +92,11 @@ API_SCHEMA_TYPE_TOKENS = [NON_APPLIED, SINGLE_APPLY, MULTIPLE_APPLY]
 # schema definition, to define prefix for properties created by the API schema. 
 PROPERTY_NAMESPACE_PREFIX = "propertyNamespacePrefix"
 
+# Custom-data key optionally authored on a single-apply API schema class prim 
+# in the schema definition to define a list of typed schemas that the API 
+# schema will be automatically applied to in the schema registry. 
+API_AUTO_APPLY = "apiSchemaAutoApplyTo"
+
 # Custom-data key authored on a concrete typed schema class prim in the schema
 # definition, to define fallbacks for the type that can be saved in root layer
 # metadata to provide fallback types to versions of Usd without the schema 
@@ -203,6 +208,24 @@ def _GetUseExportAPI(layer):
 
     return _GetLibMetadata(layer).get('useExportAPI', True)
 
+def _IsDynamicSchemaLayer(layer):
+    """ Return whether the layer is defined as a dynamic schema layer."""
+
+    # This can be called on sublayers which may not necessarily have lib 
+    # metadata so we can ignore exceptions and return false.
+    try:
+        return _GetLibMetadata(layer).get('isDynamic', False)
+    except:
+        return False
+
+def _IsDynamicSchemaLib(stage):
+    """ Return whether the given stage has a dynamic schema layer that makes 
+    the schema library itself dynamic"""
+
+    for layer in stage.GetLayerStack():
+        if _IsDynamicSchemaLayer(layer):
+            return True
+    return False
     
 def _UpperCase(aString):
     return aString.upper()
@@ -442,11 +465,12 @@ class ClassInfo(object):
                 SINGLE_APPLY if self.isApi else None)
         self.propertyNamespacePrefix = \
             self.customData.get(PROPERTY_NAMESPACE_PREFIX)
+        self.apiAutoApply = self.customData.get(API_AUTO_APPLY)
 
         if not self.apiSchemaType == MULTIPLE_APPLY and \
             self.propertyNamespacePrefix:
             raise _GetSchemaDefException("propertyNamespacePrefix should only "
-                "be used as a metadata field on multiple-apply API schemas",
+                "be used as a customData field on multiple-apply API schemas",
                 sdfPrim.path)
 
         if self.isApi and \
@@ -456,22 +480,28 @@ class ClassInfo(object):
                 "API schema." % (self.apiSchemaType, API_SCHEMA_TYPE_TOKENS),
                 sdfPrim.path)
 
+        if self.apiAutoApply and self.apiSchemaType != SINGLE_APPLY:
+            raise _GetSchemaDefException("%s should only be used as a "
+                "customData field on single-apply API schemas" % API_AUTO_APPLY,
+                sdfPrim.path)
+
         self.isAppliedAPISchema = \
             self.apiSchemaType in [SINGLE_APPLY, MULTIPLE_APPLY]
         self.isMultipleApply = self.apiSchemaType == MULTIPLE_APPLY
 
         if self.isApi and not self.isAppliedAPISchema:
-            self.schemaType = "UsdSchemaType::NonAppliedAPI";
+            self.schemaKind = "nonAppliedAPI";
         elif self.isApi and self.isAppliedAPISchema and not self.isMultipleApply:
-            self.schemaType = "UsdSchemaType::SingleApplyAPI"
+            self.schemaKind = "singleApplyAPI"
         elif self.isApi and self.isAppliedAPISchema and self.isMultipleApply:
-            self.schemaType = "UsdSchemaType::MultipleApplyAPI"
+            self.schemaKind = "multipleApplyAPI"
         elif self.isConcrete and self.isTyped:
-            self.schemaType = "UsdSchemaType::ConcreteTyped"
+            self.schemaKind = "concreteTyped"
         elif self.isTyped:
-            self.schemaType = "UsdSchemaType::AbstractTyped"
+            self.schemaKind = "abstractTyped"
         else:
-            self.schemaType = "UsdSchemaType::AbstractBase"
+            self.schemaKind = "abstractBase"
+        self.schemaKindEnumValue = "UsdSchemaKind::" + _ProperCase(self.schemaKind)
 
         if self.isConcrete and not self.isTyped:
             raise _GetSchemaDefException('Schema classes must either inherit '
@@ -685,6 +715,7 @@ def ParseUsd(usdFilePath):
             _GetTokensPrefix(sdfLayer),
             _GetUseExportAPI(sdfLayer),
             _GetLibTokens(sdfLayer),
+            _IsDynamicSchemaLib(stage),
             classes)
 
 
@@ -891,7 +922,6 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
         tokensHTemplate = env.get_template('tokens.h')
         tokensCppTemplate = env.get_template('tokens.cpp')
         tokensWrapTemplate = env.get_template('wrapTokens.cpp')
-        plugInfoTemplate = env.get_template('plugInfo.json')
     except TemplateNotFound as tnf:
         raise RuntimeError("Template not found: {0}".format(str(tnf)))
     except TemplateSyntaxError as tse:
@@ -964,6 +994,20 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
         _WriteFile(clsWrapFilePath,
                    wrapTemplate.render(cls=cls) + customCode, validate)
 
+def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env):
+
+    #
+    # Load Templates
+    #
+    Print('Loading Templates from {0}'.format(templatePath))
+    try:
+        plugInfoTemplate = env.get_template('plugInfo.json')
+    except TemplateNotFound as tnf:
+        raise RuntimeError("Template not found: {0}".format(str(tnf)))
+    except TemplateSyntaxError as tse:
+        raise RuntimeError("Syntax error in template {0} at line {1}: {2}"
+                           .format(tse.filename, tse.lineno, tse.message))
+
     #
     # Generate plugInfo.json.
     #
@@ -1014,6 +1058,13 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
                 clsDict.update(cls.customData['extraPlugInfo'])
             clsDict.update({'bases': [cls.parentCppClassName],
                             'autoGenerated': True })
+
+            clsDict.update({"schemaKind": cls.schemaKind})
+
+            # List any auto apply to entries for single apply schemas.
+            if cls.apiSchemaType == SINGLE_APPLY and cls.apiAutoApply:
+                clsDict.update(
+                    {"apiSchemaAutoApplyTo": list(cls.apiAutoApply)})
 
             # Write out alias/primdefs for concrete IsA schemas and API schemas
             if (cls.isConcrete or cls.isApi):
@@ -1092,7 +1143,6 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     primsToKeep = set(cls.usdPrimTypeName for cls in classes)
     if not flatStage.RemovePrim('/GLOBAL'):
         Print.Err("ERROR: Could not remove GLOBAL prim.")
-    allAppliedAPISchemas = []
     allMultipleApplyAPISchemaNamespaces = {}
     allFallbackSchemaPrimTypes = {}
     for p in flatStage.GetPseudoRoot().GetAllChildren():
@@ -1111,9 +1161,7 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
                     raise _GetSchemaDefException("propertyNamespacePrefix "
                         "must exist as a metadata field on multiple-apply "
                         "API schemas with properties", p.GetPath())
-                allAppliedAPISchemas.append(p.GetName())
-            elif apiSchemaType in [None, SINGLE_APPLY]:
-                allAppliedAPISchemas.append(p.GetName())
+
             # API schema classes must not have authored metadata except for 
             # these exceptions:
             #   'documentation' - This is allowed
@@ -1148,10 +1196,9 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
                         ' DO NOT EDIT.'
 
     # Add the list of all applied and multiple-apply API schemas.
-    if allAppliedAPISchemas or allMultipleApplyAPISchemaNamespaces:
+    if allMultipleApplyAPISchemaNamespaces:
         flatLayer.customLayerData = {
-                'appliedAPISchemas' : Vt.StringArray(allAppliedAPISchemas),
-                'multipleApplyAPISchemas' : allMultipleApplyAPISchemaNamespaces
+            'multipleApplyAPISchemas' : allMultipleApplyAPISchemaNamespaces
         }
 
     if allFallbackSchemaPrimTypes:
@@ -1304,6 +1351,7 @@ if __name__ == '__main__':
         tokensPrefix, \
         useExportAPI, \
         libTokens, \
+        isDynamicSchemaLib, \
         classes = ParseUsd(schemaPath)
         tokenData = GatherTokens(classes, libName, libTokens)
         
@@ -1333,10 +1381,16 @@ if __name__ == '__main__':
                               libraryPrefix=libPrefix,
                               tokensPrefix=tokensPrefix,
                               useExportAPI=useExportAPI)
-        GenerateCode(templatePath, codeGenPath, tokenData, classes, 
-                     args.validate,
-                     namespaceOpen, namespaceClose, namespaceUsing,
-                     useExportAPI, j2_env, args.headerTerminatorString)
+
+        # Don't generate code for dynamic schema libraries
+        if not isDynamicSchemaLib:
+            GenerateCode(templatePath, codeGenPath, tokenData, classes, 
+                         args.validate,
+                         namespaceOpen, namespaceClose, namespaceUsing,
+                         useExportAPI, j2_env, args.headerTerminatorString)
+        # We always generate plugInfo and generateSchema.
+        GeneratePlugInfo(templatePath, codeGenPath, classes, args.validate,
+                         j2_env)
         GenerateRegistry(codeGenPath, schemaPath, classes, 
                          args.validate, j2_env)
     

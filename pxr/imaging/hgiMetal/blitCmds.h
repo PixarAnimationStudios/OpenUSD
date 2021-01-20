@@ -65,7 +65,16 @@ public:
     void CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp) override;
 
     HGIMETAL_API
+    void CopyTextureToBuffer(HgiTextureToBufferOp const& copyOp) override;
+    
+    HGIMETAL_API
+    void CopyBufferToTexture(HgiBufferToTextureOp const& copyOp) override;
+
+    HGIMETAL_API
     void GenerateMipMaps(HgiTextureHandle const& texture) override;
+
+    HGIMETAL_API
+    void MemoryBarrier(HgiMemoryBarrier barrier) override;
 
 protected:
     friend class HgiMetal;

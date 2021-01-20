@@ -21,7 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdx/oitResolveTask.h"
@@ -82,10 +83,16 @@ HdxOitResolveTask::_PrepareOitBuffers(
 {
     static const int numSamples = 8; // Should match glslfx files
 
-     HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
+    if (!(screenSize[0] >= 0 && screenSize[1] >= 0)) {
+        TF_CODING_ERROR("Invalid screen size for OIT resolve task %s",
+                        GetId().GetText());
+        return;
+    }
+
+    HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
         std::static_pointer_cast<HdStResourceRegistry>(
             renderIndex->GetResourceRegistry());
-
+    
     const bool createOitBuffers = !_counterBar;
     if (createOitBuffers) { 
         //
@@ -303,6 +310,10 @@ HdxOitResolveTask::Execute(HdTaskContext* ctx)
     if (ctx->erase(HdxTokens->oitRequestFlag) == 0) {
         return;
     }
+
+    // Explicitly erase clear flag so that it can be re-used by subsequent
+    // OIT render and resolve tasks.
+    ctx->erase(HdxTokens->oitClearedFlag);
 
     if (!TF_VERIFY(_renderPassState)) return;
     if (!TF_VERIFY(_renderPassShader)) return;

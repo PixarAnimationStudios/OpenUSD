@@ -37,124 +37,30 @@
             "CompositeFragmentWithDepth": {
                 "source": [ "Composite.FragmentWithDepth" ]
             }
-        },
-        "Metal": {
-            "FullscreenVertex": {
-                "source": [
-                    "Fullscreen.Metal.Common",
-                    "Fullscreen.Metal.Vertex"
-                ]
-            },
-            "CompositeFragmentNoDepth": {
-                "source": [
-                    "Fullscreen.Metal.Common",
-                    "Composite.Metal.FragmentNoDepth"
-                ]
-            },
-            "CompositeFragmentWithDepth": {
-                "source": [
-                    "Fullscreen.Metal.Common",
-                    "Composite.Metal.FragmentWithDepth"
-                ]
-            }
         }
-
     }
 }
 
 -- glsl Fullscreen.Vertex
 
-#version 450
-
-layout(location = 0) in vec4 position;
-layout(location = 1) in  vec2 uvIn;
-
-layout(location = 0) out vec2 uv;
-
 void main(void)
 {
     gl_Position = position;
-    uv = uvIn;
+    uvOut = uvIn;
 }
 
 -- glsl Composite.FragmentNoDepth
 
-#version 450
-
-layout(location = 0) in vec2 uv;
-
-layout (binding = 0) uniform sampler2D color;
-
 void main(void)
 {
-    gl_FragColor = texture(color, uv);
+    hd_FragColor = vec4(HdGet_colorIn(hd_Position));
 }
 
 -- glsl Composite.FragmentWithDepth
 
-#version 450
-
-layout(location = 0) in vec2 uv;
-
-layout (binding = 0) uniform sampler2D color;
-layout (binding = 1) uniform sampler2D depth;
-
 void main(void)
 {
-    float depth = texture(depth, uv).r;
-    gl_FragColor = texture(color, uv);
-    gl_FragDepth = depth;
-}
-
--- glsl Fullscreen.Metal.Common
-
-struct Interpolated {
-    float4 position [[position]];
-    float2 uv;
-};
-
--- glsl Fullscreen.Metal.Vertex
-
-struct Vertex {
-    float4 position [[attribute(0)]];
-    float2 uvIn [[attribute(1)]];
-};
-
-vertex Interpolated vertexEntryPoint(Vertex v [[stage_in]])
-{
-    Interpolated out;
-    out.position = v.position;
-    out.uv = v.uvIn;
-    return out;
-}
-
--- glsl Composite.Metal.FragmentNoDepth
-
-constexpr sampler texSampler(address::clamp_to_edge);
-
-fragment half4 fragmentEntryPoint(
-    Interpolated input[[stage_in]],
-    texture2d<float> color[[texture(0)]])
-{
-    return color.sample(texSampler, input.uv);
-}
-
--- glsl Composite.Metal.FragmentWithDepth
-
-struct Out {
-    float4 color [[color(0)]];
-    float depth [[depth(any)]];
-};
-
-constexpr sampler texSampler(address::clamp_to_edge);
-
-fragment Out fragmentEntryPoint(
-    Interpolated input[[stage_in]],
-    texture2d<float> color[[texture(0)]],
-    depth2d<float> depth[[texture(1)]])
-{
-    Out out;
-    out.depth = depth.sample(texSampler, input.uv);
-    out.color = color.sample(texSampler, input.uv);
-    return out;
+    float depth = HdGet_depth(hd_Position);
+    hd_FragColor = vec4(HdGet_colorIn(hd_Position));
+    hd_FragDepth = depth;
 }

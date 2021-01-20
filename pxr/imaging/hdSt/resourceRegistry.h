@@ -60,11 +60,6 @@ using HdStShaderCodePtr =
 using HdSt_GeometricShaderSharedPtr =
     std::shared_ptr<class HdSt_GeometricShader>;
 
-using HdStTextureResourceSharedPtr =
-    std::shared_ptr<class HdStTextureResource>;
-using HdStTextureResourceHandleSharedPtr =
-    std::shared_ptr<class HdStTextureResourceHandle>;
-
 using HdStTextureHandleSharedPtr =
     std::shared_ptr<class HdStTextureHandle>;
 using HdStTextureObjectSharedPtr =
@@ -190,6 +185,18 @@ public:
         const HdStTextureIdentifier &textureId,
         /// Texture type, e.g., uv, ptex, ...
         HdTextureType textureType);
+
+    /// Sets how much memory a single texture can consume in bytes by
+    /// texture type.
+    ///
+    /// Only has an effect if non-zero and only applies to textures if
+    /// no texture handle referencing the texture has a memory
+    /// request.
+    ///
+    HDST_API
+    void SetMemoryRequestForTextureType(
+        HdTextureType textureType,
+        size_t memoryRequest);
 
     /// ------------------------------------------------------------------------
     /// BAR allocation API
@@ -394,23 +401,6 @@ public:
     RegisterExtComputationDataRange(
         HdInstance<HdBufferArrayRangeSharedPtr>::ID id);
 
-    /// Register a texture into the texture registry.
-    /// Typically the other id's used refer to unique content
-    /// where as for textures it's a unique id provided by the scene delegate.
-    /// Hydra expects the id's to be unique in the context of a scene/stage
-    /// aka render index.  However, the texture registry can be shared between
-    /// multiple render indices, so the renderIndexId is used to create
-    /// a globally unique id for the texture resource.
-    HDST_API
-    HdInstance<HdStTextureResourceSharedPtr>
-    RegisterTextureResource(TextureKey id);
-
-    /// Find a texture in the texture registry. If found, it returns it.
-    /// See RegisterTextureResource() for parameter details.
-    HDST_API
-    HdInstance<HdStTextureResourceSharedPtr>
-    FindTextureResource(TextureKey id, bool *found);
-
     /// Register a geometric shader.
     HDST_API
     HdInstance<HdSt_GeometricShaderSharedPtr>
@@ -425,18 +415,6 @@ public:
     HDST_API
     HdInstance<HioGlslfxSharedPtr>
     RegisterGLSLFXFile(HdInstance<HioGlslfxSharedPtr>::ID id);
-
-    /// Register a texture resource handle.
-    HDST_API
-    HdInstance<HdStTextureResourceHandleSharedPtr>
-    RegisterTextureResourceHandle(
-        HdInstance<HdStTextureResourceHandleSharedPtr>::ID id);
-
-    /// Find a texture resource handle.
-    HDST_API
-    HdInstance<HdStTextureResourceHandleSharedPtr>
-    FindTextureResourceHandle(
-        HdInstance<HdStTextureResourceHandleSharedPtr>::ID id, bool *found);
 
     /// Register a Hgi resource bindings into the registry.
     HDST_API
@@ -470,18 +448,18 @@ public:
     HgiComputeCmds* GetGlobalComputeCmds();
 
     /// Submits blit work queued in global blit cmds for GPU execution.
-    /// We can call this when we want to submit some work to the GPU to ensure
-    /// the GPU isn't starved for work or if we need synchronization (barriers)
-    /// between two Hgi*Cmds objects.
-    /// (Eg. if we need barriers between buffer writes and reads).
+    /// We can call this when we want to submit some work to the GPU.
+    /// To stall the CPU and wait for the GPU to finish, 'wait' can be provided.
+    /// To insert a barrier to ensure memory writes are visible after the
+    /// barrier a HgiMemoryBarrier can be provided.
     HDST_API
     void SubmitBlitWork(HgiSubmitWaitType wait = HgiSubmitWaitTypeNoWait);
 
     /// Submits compute work queued in global compute cmds for GPU execution.
-    /// We can call this when we want to submit some work to the GPU to ensure
-    /// the GPU isn't starved for work or if we need synchronization (barriers)
-    /// between two Hgi*Cmds objects.
-    /// (Eg. if we need barriers between compute shaders).
+    /// We can call this when we want to submit some work to the GPU.
+    /// To stall the CPU and wait for the GPU to finish, 'wait' can be provided.
+    /// To insert a barrier to ensure memory writes are visible after the
+    /// barrier a HgiMemoryBarrier can be provided.
     HDST_API
     void SubmitComputeWork(HgiSubmitWaitType wait = HgiSubmitWaitTypeNoWait);
 
@@ -536,7 +514,6 @@ public:
 protected:
     void _Commit() override;
     void _GarbageCollect() override;
-    void _GarbageCollectBprims() override;
 
 private:
     void _CommitTextures();
@@ -663,9 +640,6 @@ private:
     HdInstanceRegistry<HdBufferArrayRangeSharedPtr>
         _extComputationDataRangeRegistry;
 
-    // texture resource registry
-    HdInstanceRegistry<HdStTextureResourceSharedPtr>
-        _textureResourceRegistry;
     // geometric shader registry
     HdInstanceRegistry<HdSt_GeometricShaderSharedPtr>
         _geometricShaderRegistry;
@@ -677,10 +651,6 @@ private:
     // glslfx file registry
     HdInstanceRegistry<HioGlslfxSharedPtr>
         _glslfxFileRegistry;
-
-    // texture resource handle registry
-    HdInstanceRegistry<HdStTextureResourceHandleSharedPtr>
-        _textureResourceHandleRegistry;
 
     // texture handle registry
     std::unique_ptr<class HdSt_TextureHandleRegistry> _textureHandleRegistry;

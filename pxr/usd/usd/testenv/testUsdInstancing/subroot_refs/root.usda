@@ -1,6 +1,6 @@
 #usda 1.0
 
-def "Ref_1" (
+def "RootRef" (
     instanceable = true
     references = @./ref1.usda@</Ref1>
 )
@@ -17,6 +17,13 @@ def "SubrootRef_1" (
 def "SubrootRef_2" (
     instanceable = true
     references = @./ref1.usda@</Ref1/Ref1_Child>
+)
+{
+}
+
+def "SubrootRef_3" (
+    instanceable = true
+    references = </RootRef/Ref1_Child>
 )
 {
 }

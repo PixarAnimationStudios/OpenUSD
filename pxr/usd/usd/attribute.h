@@ -535,14 +535,6 @@ public:
     USD_API
     bool RemoveConnection(const SdfPath& source) const;
 
-    /// \deprecated Use SetConnections(SdfPathVector()) instead.
-    /// 
-    /// Clears all connection edits from the current EditTarget, and makes
-    /// the opinion explicit, which means we are effectively resetting the
-    /// composed value of the targets list to empty.
-    USD_API
-    bool BlockConnections() const;
-
     /// Make the authoring layer's opinion of the connection list explicit,
     /// and set exactly to \p sources.
     ///

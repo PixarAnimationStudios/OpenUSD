@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hdx/pickTask.h"
 
@@ -83,6 +83,9 @@ _IsStormRenderer(HdRenderDelegate *renderDelegate)
     return true;
 }
 
+// -------------------------------------------------------------------------- //
+// HdxPickTask
+// -------------------------------------------------------------------------- //
 HdxPickTask::HdxPickTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdTask(id)
     , _renderTags()
@@ -90,9 +93,7 @@ HdxPickTask::HdxPickTask(HdSceneDelegate* delegate, SdfPath const& id)
 {
 }
 
-HdxPickTask::~HdxPickTask()
-{
-}
+HdxPickTask::~HdxPickTask() = default;
 
 void
 HdxPickTask::_Init(GfVec2i const& size)
@@ -320,16 +321,17 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         // Make sure translucent pixels can be picked by not discarding them
         state->SetAlphaThreshold(0.0f);
         state->SetCullStyle(_params.cullStyle);
-        state->SetCameraFramingState(_contextParams.viewMatrix, 
-                                     _contextParams.projectionMatrix,
-                                     viewport,
-                                     _contextParams.clipPlanes);
         state->SetLightingEnabled(false);
 
         // If scene materials are disabled in this environment then 
         // let's setup the override shader
         if (HdStRenderPassState* extState =
                 dynamic_cast<HdStRenderPassState*>(state.get())) {
+            extState->SetCameraFramingState(
+                _contextParams.viewMatrix, 
+                _contextParams.projectionMatrix,
+                viewport,
+                _contextParams.clipPlanes);
             _ConfigureSceneMaterials(_params.enableSceneMaterials, extState);
         }
     }
@@ -441,11 +443,8 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     //
     // Enable conservative rasterization, if available.
     //
-    // XXX: This wont work until it's in the Glew build.
-    bool convRstr = glewIsSupported("GL_NV_conservative_raster");
+    bool convRstr = GARCH_GLAPI_HAS(NV_conservative_raster);
     if (convRstr) {
-        // XXX: this should come from Glew
-        #define GL_CONSERVATIVE_RASTERIZATION_NV 0x9346
         glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
     }
 
@@ -463,8 +462,6 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     glDisable(GL_STENCIL_TEST);
 
     if (convRstr) {
-        // XXX: this should come from Glew
-        #define GL_CONSERVATIVE_RASTERIZATION_NV 0x9346
         glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
     }
 
@@ -558,6 +555,9 @@ HdxPickTask::GetRenderTags() const
     return _renderTags;
 }
 
+// -------------------------------------------------------------------------- //
+// HdxPickResult
+// -------------------------------------------------------------------------- //
 HdxPickResult::HdxPickResult(
         int const* primIds,
         int const* instanceIds,
@@ -596,9 +596,7 @@ HdxPickResult::HdxPickResult(
     _ndcToWorld = (viewMatrix * projectionMatrix).GetInverse();
 }
 
-HdxPickResult::~HdxPickResult()
-{
-}
+HdxPickResult::~HdxPickResult() = default;
 
 HdxPickResult::HdxPickResult(HdxPickResult &&) = default;
 
@@ -672,19 +670,18 @@ HdxPickResult::_ResolveHit(int index, int x, int y, float z,
 size_t
 HdxPickResult::_GetHash(int index) const
 {
-    int primId = _GetPrimId(index);
-    int instanceIndex = _GetInstanceId(index);
-    int elementIndex = _GetElementId(index);
-    int edgeIndex = _GetEdgeId(index);
-    int pointIndex = _GetPointId(index);
-
     size_t hash = 0;
-    boost::hash_combine(hash, primId);
-    boost::hash_combine(hash, instanceIndex);
-    boost::hash_combine(hash, elementIndex);
-    boost::hash_combine(hash, size_t(edgeIndex));
-    boost::hash_combine(hash, size_t(pointIndex));
-
+    boost::hash_combine(hash, _GetPrimId(index));
+    boost::hash_combine(hash, _GetInstanceId(index));
+    if (_pickTarget == HdxPickTokens->pickFaces) {
+        boost::hash_combine(hash, _GetElementId(index));
+    }
+    if (_pickTarget == HdxPickTokens->pickEdges) {
+        boost::hash_combine(hash, _GetEdgeId(index));
+    }
+    if (_pickTarget == HdxPickTokens->pickPoints) {
+        boost::hash_combine(hash, _GetPointId(index));
+    }
     return hash;
 }
 
@@ -835,8 +832,8 @@ HdxPickResult::ResolveUnique(HdxPickHitVector* allHits) const
                 // As an optimization, keep track of the previous hash value and
                 // reject indices that match it without performing a map lookup.
                 // Adjacent indices are likely enough to have the same prim,
-                // instance and element ids that this can be a significant
-                // improvement.
+                // instance and if relevant, the same subprim ids, that this can
+                // be a significant improvement.
                 if (hitIndices.empty() || hash != previousHash) {
                     hitIndices.insert(std::make_pair(hash, GfVec2i(x,y)));
                     previousHash = hash;
@@ -861,6 +858,9 @@ HdxPickResult::ResolveUnique(HdxPickHitVector* allHits) const
     }
 }
 
+// -------------------------------------------------------------------------- //
+// HdxPickHit
+// -------------------------------------------------------------------------- //
 size_t
 HdxPickHit::GetHash() const
 {
@@ -884,6 +884,9 @@ HdxPickHit::GetHash() const
     return hash;
 }
 
+// -------------------------------------------------------------------------- //
+// Comparison, equality and logging
+// -------------------------------------------------------------------------- //
 bool
 operator<(HdxPickHit const& lhs, HdxPickHit const& rhs)
 {

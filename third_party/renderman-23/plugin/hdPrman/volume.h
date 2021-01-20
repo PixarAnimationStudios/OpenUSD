@@ -53,8 +53,7 @@ public:
     typedef HdPrman_Gprim<HdVolume> BASE;
 public:
     HF_MALLOC_TAG_NEW("new HdPrman_Volume");
-    HdPrman_Volume(SdfPath const& id,
-                SdfPath const& instancerId = SdfPath());
+    HdPrman_Volume(SdfPath const& id);
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     /// The types of volumes that can be emitted to Prman are extensible, since

@@ -21,7 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/glf/diagnostic.h"
 
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
@@ -70,6 +71,7 @@ HdStRenderPassState::HdStRenderPassState(
     , _fallbackLightingShader(std::make_shared<HdSt_FallbackLightingShader>())
     , _clipPlanesBufferSize(0)
     , _alphaThresholdCurrent(0)
+    , _resolveMultiSampleAov(true)
 {
     _lightingShader = _fallbackLightingShader;
 }
@@ -80,6 +82,24 @@ bool
 HdStRenderPassState::_UseAlphaMask() const
 {
     return (_alphaThreshold > 0.0f);
+}
+
+static
+GfVec4f
+_ComputeDataWindow(
+    const CameraUtilFraming &framing,
+    const GfVec4f &fallbackViewport)
+{
+    if (framing.IsValid()) {
+        const GfRect2i &dataWindow = framing.dataWindow;
+        return GfVec4f(
+            dataWindow.GetMinX(),
+            dataWindow.GetMinY(),
+            dataWindow.GetWidth(),
+            dataWindow.GetHeight());
+    }
+
+    return fallbackViewport;
 }
 
 void
@@ -245,7 +265,9 @@ HdStRenderPassState::Prepare(
     sources.push_back(
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->viewport,
-            VtValue(_viewport)));
+            VtValue(
+                _ComputeDataWindow(
+                    _framing, _viewport))));
 
     if (clipPlanes.size() > 0) {
         sources.push_back(
@@ -261,10 +283,21 @@ HdStRenderPassState::Prepare(
     _lightingShader->SetCamera(worldToViewMatrix, projMatrix);
 
     // Update cull style on renderpass shader
-    // XXX: Ideanlly cullstyle should stay in renderPassState.
-    // However, geometric shader also sets cullstyle during batch
-    // execution.
+    // (Note that the geometric shader overrides the render pass's cullStyle 
+    // opinion if the prim has an opinion).
     _renderPassShader->SetCullStyle(_cullStyle);
+}
+
+void
+HdStRenderPassState::SetResolveAovMultiSample(bool state)
+{
+    _resolveMultiSampleAov = state;
+}
+
+bool
+HdStRenderPassState::GetResolveAovMultiSample() const
+{
+    return _resolveMultiSampleAov;
 }
 
 void
@@ -310,6 +343,37 @@ HdStRenderPassState::GetShaders() const
     return shaders;
 }
 
+// Note: The geometric shader may override the state set below if necessary,
+// including disabling h/w culling altogether. 
+// Disabling h/w culling is required to handle instancing wherein 
+// instanceScale/instanceTransform can flip the xform handedness.
+namespace {
+
+void
+_SetGLCullState(HdCullStyle cullstyle)
+{
+    switch (cullstyle) {
+        case HdCullStyleFront:
+        case HdCullStyleFrontUnlessDoubleSided:
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_FRONT);
+            break;
+        case HdCullStyleBack:
+        case HdCullStyleBackUnlessDoubleSided:
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+            break;
+        case HdCullStyleNothing:
+        case HdCullStyleDontCare:
+        default:
+            // disable culling
+            glDisable(GL_CULL_FACE);
+            break;
+    }
+}
+
+} // anonymous namespace 
+
 void
 HdStRenderPassState::Bind()
 {
@@ -354,6 +418,9 @@ HdStRenderPassState::Bind()
         glDisable(GL_STENCIL_TEST);
     }
     
+    // Face culling
+    _SetGLCullState(_cullStyle);
+
     // Line width
     if (_lineWidth > 0) {
         glLineWidth(_lineWidth);
@@ -378,14 +445,13 @@ HdStRenderPassState::Bind()
         glDisable(GL_BLEND);
     }
 
-    if (!_alphaToCoverageUseDefault) {
-        if (_alphaToCoverageEnabled) {
-            glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-            glEnable(GL_SAMPLE_ALPHA_TO_ONE);
-        } else {
-            glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-        }
+    if (_alphaToCoverageEnabled) {
+        glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+        glEnable(GL_SAMPLE_ALPHA_TO_ONE);
+    } else {
+        glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     }
+    
     glEnable(GL_PROGRAM_POINT_SIZE);
     GLint glMaxClipPlanes;
     glGetIntegerv(GL_MAX_CLIP_PLANES, &glMaxClipPlanes);
@@ -421,6 +487,7 @@ HdStRenderPassState::Unbind()
         return;
     }
 
+    glDisable(GL_CULL_FACE);
     glDisable(GL_POLYGON_OFFSET_FILL);
     glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     glDisable(GL_SAMPLE_ALPHA_TO_ONE);
@@ -441,6 +508,24 @@ HdStRenderPassState::Unbind()
 
     glColorMask(true, true, true, true);
     glDepthMask(true);
+}
+
+void
+HdStRenderPassState::SetCameraFramingState(GfMatrix4d const &worldToViewMatrix,
+                                           GfMatrix4d const &projectionMatrix,
+                                           GfVec4d const &viewport,
+                                           ClipPlanesVector const & clipPlanes)
+{
+    if (_camera) {
+        // If a camera handle was set, reset it.
+        _camera = nullptr;
+    }
+
+    _worldToViewMatrix = worldToViewMatrix;
+    _projectionMatrix = projectionMatrix;
+    _viewport = GfVec4f((float)viewport[0], (float)viewport[1],
+                        (float)viewport[2], (float)viewport[3]);
+    _clipPlanes = clipPlanes;
 }
 
 size_t
@@ -521,6 +606,7 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
 
     static const size_t maxColorTex = 8;
     const bool useMultiSample = GetUseAovMultiSample();
+    const bool resolveMultiSample = GetResolveAovMultiSample();
 
     HgiGraphicsCmdsDesc desc;
 
@@ -552,7 +638,7 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
 
         // Get resolve texture target.
         HgiTextureHandle hgiResolveHandle;
-        if (multiSampled) {
+        if (multiSampled && resolveMultiSample) {
             VtValue resolveRes = renderBuffer->GetResource(/*ms*/false);
             if (!TF_VERIFY(resolveRes.IsHolding<HgiTextureHandle>())) {
                 continue;
@@ -560,14 +646,10 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
             hgiResolveHandle = resolveRes.UncheckedGet<HgiTextureHandle>();
         }
 
-        // Assume AOVs have the same dimensions so pick size of any.
-        desc.width = renderBuffer->GetWidth();
-        desc.height = renderBuffer->GetHeight();
-
         HgiAttachmentDesc attachmentDesc;
 
-        attachmentDesc.format =
-            HdStHgiConversions::GetHgiFormat(renderBuffer->GetFormat());
+        attachmentDesc.format = hgiTexHandle->GetDescriptor().format;
+        attachmentDesc.usage = hgiTexHandle->GetDescriptor().usage;
 
         // We need to use LoadOpLoad instead of DontCare because we can have
         // multiple render passes that use the same attachments.
@@ -581,7 +663,7 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
 
         // Don't store multisample images. Only store the resolved versions.
         // This saves a bunch of bandwith (especially on tiled gpu's).
-        attachmentDesc.storeOp = multiSampled ?
+        attachmentDesc.storeOp = (multiSampled && resolveMultiSample) ?
             HgiAttachmentStoreOpDontCare :
             HgiAttachmentStoreOpStore;
 

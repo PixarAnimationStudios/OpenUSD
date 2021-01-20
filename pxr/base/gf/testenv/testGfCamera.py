@@ -30,6 +30,10 @@ import unittest
 
 class TestGfCamera(unittest.TestCase):
 
+    def AssertListGfClose(self, l1, l2, delta = 1e-6):
+        for v1, v2 in zip(l1, l2):
+            self.assertTrue(Gf.IsClose(v1, v2, delta))
+
     def AssertEqualCams(self, cam1, cam2):
         # Check fields
         self.assertEqual(cam1.transform, cam2.transform)
@@ -50,7 +54,7 @@ class TestGfCamera(unittest.TestCase):
 
         # Check computation of frustum
         self.assertEqual(cam1.frustum.ComputeCorners(),
-                    cam2.frustum.ComputeCorners())
+                         cam2.frustum.ComputeCorners())
 
     def AssertCamSelfEvaluating(self, cam):
 
@@ -131,7 +135,7 @@ class TestGfCamera(unittest.TestCase):
         
         self.AssertCamSelfEvaluating(cam1)
 
-    def TestCameraNonOrthonormal(self):
+    def test_CameraNonOrthonormal(self):
         
         cam = Gf.Camera()
 
@@ -163,8 +167,9 @@ class TestGfCamera(unittest.TestCase):
         self.assertAlmostEqual(cam.horizontalFieldOfView, 37.556064606)
 
         self.assertAlmostEqual(cam.GetFieldOfView(Gf.Camera.FOVVertical),
-                    22.619864948)
-        self.assertAlmostEqual(cam.verticalFieldOfView, 22.619864948)
+                               22.619865, delta = 1e-6)
+        self.assertAlmostEqual(cam.verticalFieldOfView, 22.619865,
+                               delta = 1e-6)
 
         cam.projection = Gf.Camera.Orthographic
 
@@ -192,11 +197,11 @@ class TestGfCamera(unittest.TestCase):
             direction = Gf.Camera.FOVVertical,
             horizontalAperture = 34.0)
 
-        self.assertAlmostEqual(cam.aspectRatio, 2.4)
+        self.assertAlmostEqual(cam.aspectRatio, 2.4, delta = 1e-6)
 
-        self.assertAlmostEqual(cam.verticalAperture, 34.0/2.4)
+        self.assertAlmostEqual(cam.verticalAperture, 34.0/2.4, delta = 1e-6)
 
-        self.assertAlmostEqual(cam.focalLength, 26.6846561432)
+        self.assertAlmostEqual(cam.focalLength, 26.6846561432, delta = 1e-6)
 
         # We have setup focal length, horizontal and vertical
         # aperture. We are now in a position to test the frustum
@@ -206,7 +211,7 @@ class TestGfCamera(unittest.TestCase):
         cam.projection = Gf.Camera.Perspective
         self.assertEqual(cam.projection, Gf.Camera.Perspective)
 
-        self.assertAlmostEqual(
+        self.AssertListGfClose(
             cam.frustum.ComputeCorners(),
             (Gf.Vec3d(192.846230529544, 118.9700660570964, 189.943705234630),
              Gf.Vec3d(204.624699588231, 123.2629367321672, 187.667234572988),
@@ -221,12 +226,12 @@ class TestGfCamera(unittest.TestCase):
         self.assertAlmostEqual(cam.horizontalAperture, 340)
 
         cam.verticalAperture = 340 / 2.4
-        self.assertAlmostEqual(cam.aspectRatio, 2.4)
+        self.assertAlmostEqual(cam.aspectRatio, 2.4, delta = 1e-6)
         
         cam.projection = Gf.Camera.Orthographic
         self.assertEqual(cam.projection, Gf.Camera.Orthographic)
         
-        self.assertAlmostEqual(
+        self.AssertListGfClose(
             cam.frustum.ComputeCorners(),
             (Gf.Vec3d(184.427743371372, 111.227660346205, 191.278291105439),
              Gf.Vec3d(215.858183043795, 122.683038129349, 185.203607422842),
@@ -244,7 +249,7 @@ class TestGfCamera(unittest.TestCase):
         cam.transform = transform
         cam.clippingRange = Gf.Range1f(10, 100)
         
-        self.assertAlmostEqual(
+        self.AssertListGfClose(
             cam.frustum.ComputeCorners(),
             (Gf.Vec3d(184.427743371372, 111.227660346205, 191.278291105439),
              Gf.Vec3d(215.858183043795, 122.683038129349, 185.203607422842),
@@ -262,7 +267,7 @@ class TestGfCamera(unittest.TestCase):
         cam.transform = transform
         cam.clippingRange = Gf.Range1f(10, 100)
         
-        self.assertAlmostEqual(
+        self.AssertListGfClose(
             cam.frustum.ComputeCorners(),
             (Gf.Vec3d(184.427743371372, 111.227660346205, 191.278291105439),
              Gf.Vec3d(215.858183043795, 122.683038129349, 185.203607422842),
@@ -272,7 +277,7 @@ class TestGfCamera(unittest.TestCase):
              Gf.Vec3d(196.885073128745, 128.177545793631, 97.3979613305862),
              Gf.Vec3d(160.952460393365, 130.032471238105, 105.278380686621),
              Gf.Vec3d(192.382900065789, 141.487849021250, 99.2036970040248)),
-            epsilon = 1e-4)
+            delta = 1e-4)
 
         transform = (
             Gf.Matrix4d().SetRotate(
@@ -298,7 +303,7 @@ class TestGfCamera(unittest.TestCase):
 
         self.AssertCamSelfEvaluating(cam)
         
-    def TestCameraOrthonormal(self):
+    def test_CameraOrthonormal(self):
         
         cam = Gf.Camera()
 
@@ -337,8 +342,9 @@ class TestGfCamera(unittest.TestCase):
         self.assertAlmostEqual(cam.horizontalFieldOfView, 37.556064606)
 
         self.assertAlmostEqual(cam.GetFieldOfView(Gf.Camera.FOVVertical),
-                    22.619864948)
-        self.assertAlmostEqual(cam.verticalFieldOfView, 22.619864948)
+                               22.619864948, delta = 1e-6)
+        self.assertAlmostEqual(cam.verticalFieldOfView, 22.619864948,
+                               delta = 1e-6)
 
         cam.projection = Gf.Camera.Orthographic
 
@@ -383,11 +389,11 @@ class TestGfCamera(unittest.TestCase):
             direction = Gf.Camera.FOVVertical,
             horizontalAperture = 34.0)
 
-        self.assertAlmostEqual(cam.aspectRatio, 2.4)
+        self.assertAlmostEqual(cam.aspectRatio, 2.4, delta = 1e-6)
 
-        self.assertAlmostEqual(cam.verticalAperture, 34.0/2.4)
+        self.assertAlmostEqual(cam.verticalAperture, 34.0/2.4, delta = 1e-6)
 
-        self.assertAlmostEqual(cam.focalLength, 26.6846561432)
+        self.assertAlmostEqual(cam.focalLength, 26.6846561432, delta = 1e-6)
 
         # We have setup focal length, horizontal and vertical
         # aperture. We are now in a position to test the frustum
@@ -397,7 +403,7 @@ class TestGfCamera(unittest.TestCase):
         cam.projection = Gf.Camera.Perspective
         self.assertEqual(cam.projection, Gf.Camera.Perspective)
 
-        self.assertAlmostEqual(
+        self.AssertListGfClose(
             cam.frustum.ComputeCorners(),
             (Gf.Vec3d(-102.032919327869, 120.085637354940, 141.38080336149),
              Gf.Vec3d(-90.9077235508873, 124.991168793969, 145.18989392187),
@@ -412,12 +418,12 @@ class TestGfCamera(unittest.TestCase):
         self.assertAlmostEqual(cam.horizontalAperture, 340)
 
         cam.verticalAperture = 340 / 2.4
-        self.assertAlmostEqual(cam.aspectRatio, 2.4)
+        self.assertAlmostEqual(cam.aspectRatio, 2.4, delta = 1e-6)
         
         cam.projection = Gf.Camera.Orthographic
         self.assertEqual(cam.projection, Gf.Camera.Orthographic)
         
-        self.assertAlmostEqual(
+        self.AssertListGfClose(
             cam.frustum.ComputeCorners(),
             (Gf.Vec3d(-109.435916189226, 111.996553352311, 137.8652300230474),
              Gf.Vec3d( -79.748713805783, 125.086795317320, 148.0296572052388),
@@ -435,7 +441,7 @@ class TestGfCamera(unittest.TestCase):
         cam.transform = transform
         cam.clippingRange = Gf.Range1f(10, 100)
         
-        self.assertAlmostEqual(
+        self.AssertListGfClose(
             cam.frustum.ComputeCorners(),
             (Gf.Vec3d(-109.43591651274, 111.9965540408077, 137.8652300812566),
              Gf.Vec3d( -79.74871412929, 125.0867960058159, 148.0296572634480),
@@ -453,7 +459,7 @@ class TestGfCamera(unittest.TestCase):
         cam.transform = transform
         cam.clippingRange = Gf.Range1f(10, 100)
         
-        self.assertAlmostEqual(
+        self.AssertListGfClose(
             cam.frustum.ComputeCorners(),
             (Gf.Vec3d(-109.435917521551, 111.996552764837, 137.8652295668803),
              Gf.Vec3d( -79.748712473457, 125.086795904794, 148.0296576614060),
@@ -463,9 +469,9 @@ class TestGfCamera(unittest.TestCase):
              Gf.Vec3d( -58.111904577026, 142.491485805897,  62.4205149633312),
              Gf.Vec3d( -93.806300097570, 142.185602863221,  53.3369457076135),
              Gf.Vec3d( -64.119095049476, 155.275846003177,  63.5013738021393)),
-            epsilon = 1e-4)
+            delta = 1e-4)
 
-        self.assertAlmostEqual(
+        self.AssertListGfClose(
             Gf.Camera(cam).frustum.ComputeCorners(),
             (Gf.Vec3d(-109.435917521551, 111.996552764837, 137.8652295668803),
              Gf.Vec3d( -79.748712473457, 125.086795904794, 148.0296576614060),
@@ -475,7 +481,7 @@ class TestGfCamera(unittest.TestCase):
              Gf.Vec3d( -58.111904577026, 142.491485805897,  62.4205149633312),
              Gf.Vec3d( -93.806300097570, 142.185602863221,  53.3369457076135),
              Gf.Vec3d( -64.119095049476, 155.275846003177,  63.5013738021393)),
-            epsilon = 1e-4)
+            delta = 1e-4)
 
         transform = (
             Gf.Matrix4d().SetRotate(
@@ -496,7 +502,7 @@ class TestGfCamera(unittest.TestCase):
         cam.focalLength = 50
         cam.verticalApertureOffset = 1.2
         
-        self.assertAlmostEqual(
+        self.AssertListGfClose(
             Gf.Camera(cam).frustum.ComputeCorners(),
             (Gf.Vec3d(-0.20954999923706, -0.128907999992370, -1.0),
              Gf.Vec3d(0.209549999237060, -0.128907999992370, -1.0),
@@ -516,12 +522,38 @@ class TestGfCamera(unittest.TestCase):
 
         self.AssertCamSelfEvaluating(cam)
         
-    def TestConstants(self):
+    def test_Constants(self):
         
         self.assertAlmostEqual(Gf.Camera.DEFAULT_HORIZONTAL_APERTURE, 20.955)
         self.assertAlmostEqual(Gf.Camera.DEFAULT_VERTICAL_APERTURE, 15.2908)
         self.assertAlmostEqual(Gf.Camera.APERTURE_UNIT, 0.1)
         self.assertAlmostEqual(Gf.Camera.FOCAL_LENGTH_UNIT, 0.1)
+
+    def test_SetFromViewAndProjectionMatrix(self):
+
+        for projection in [Gf.Camera.Perspective, Gf.Camera.Orthographic]:
+            cam1 = Gf.Camera()
+            cam1.projection = projection
+            cam1.focalLength = 30
+            cam1.horizontalAperture = 12.4
+            cam1.verticalAperture = 14.3
+            cam1.horizontalApertureOffset = 34.5
+            cam1.verticalApertureOffset = 25.6
+            cam1.clippingRange = Gf.Range1f(0.123, 345.3)
+            cam1.transform = (
+                Gf.Matrix4d().SetRotate(
+                    Gf.Rotation(Gf.Vec3d(1,2,3), 20.3)) *
+                Gf.Matrix4d().SetTranslate(
+                    Gf.Vec3d(100,123,153)))
+            
+            cam2 = Gf.Camera()
+            cam2.SetFromViewAndProjectionMatrix(
+                cam1.frustum.ComputeViewMatrix(),
+                cam1.frustum.ComputeProjectionMatrix())
+
+            self.AssertListGfClose(cam1.frustum.ComputeCorners(),
+                                   cam2.frustum.ComputeCorners(),
+                                   delta = 1e-5)
 
 if __name__ == '__main__':
     unittest.main()

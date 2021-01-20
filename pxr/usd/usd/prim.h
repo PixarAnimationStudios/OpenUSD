@@ -565,11 +565,11 @@ public:
         static_assert(!std::is_same<UsdAPISchemaBase, T>::value,
                       "Provided type must not be UsdAPISchemaBase.");
         static_assert(
-            (T::schemaType == UsdSchemaType::SingleApplyAPI
-            || T::schemaType == UsdSchemaType::MultipleApplyAPI),
+            (T::schemaType == UsdSchemaKind::SingleApplyAPI
+            || T::schemaType == UsdSchemaKind::MultipleApplyAPI),
             "Provided schema type must be an applied API schema.");
 
-        if (T::schemaType != UsdSchemaType::MultipleApplyAPI
+        if (T::schemaType != UsdSchemaKind::MultipleApplyAPI
             && !instanceName.IsEmpty()) {
             TF_CODING_ERROR("HasAPI: single application API schemas like %s do "
                 "not contain an application instanceName ( %s ).",
@@ -614,7 +614,7 @@ public:
             "Provided type must derive UsdAPISchemaBase.");
         static_assert(!std::is_same<UsdAPISchemaBase, SchemaType>::value,
             "Provided type must not be UsdAPISchemaBase.");
-        static_assert(SchemaType::schemaType == UsdSchemaType::SingleApplyAPI,
+        static_assert(SchemaType::schemaType == UsdSchemaKind::SingleApplyAPI,
             "Provided schema type must be an single apply API schema.");
 
         static TfType schemaType = TfType::Find<SchemaType>();
@@ -647,7 +647,7 @@ public:
             "Provided type must derive UsdAPISchemaBase.");
         static_assert(!std::is_same<UsdAPISchemaBase, SchemaType>::value,
             "Provided type must not be UsdAPISchemaBase.");
-        static_assert(SchemaType::schemaType == UsdSchemaType::MultipleApplyAPI,
+        static_assert(SchemaType::schemaType == UsdSchemaKind::MultipleApplyAPI,
             "Provided schema type must be a multiple apply API schema.");
 
         if (instanceName.IsEmpty()) {
@@ -701,7 +701,7 @@ public:
             "Provided type must derive UsdAPISchemaBase.");
         static_assert(!std::is_same<UsdAPISchemaBase, SchemaType>::value,
             "Provided type must not be UsdAPISchemaBase.");
-        static_assert(SchemaType::schemaType == UsdSchemaType::SingleApplyAPI,
+        static_assert(SchemaType::schemaType == UsdSchemaKind::SingleApplyAPI,
             "Provided schema type must be an single apply API schema.");
 
         static TfType schemaType = TfType::Find<SchemaType>();
@@ -735,7 +735,7 @@ public:
             "Provided type must derive UsdAPISchemaBase.");
         static_assert(!std::is_same<UsdAPISchemaBase, SchemaType>::value,
             "Provided type must not be UsdAPISchemaBase.");
-        static_assert(SchemaType::schemaType == UsdSchemaType::MultipleApplyAPI,
+        static_assert(SchemaType::schemaType == UsdSchemaKind::MultipleApplyAPI,
             "Provided schema type must be a multiple apply API schema.");
 
         static TfType schemaType = TfType::Find<SchemaType>();

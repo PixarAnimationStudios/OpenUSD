@@ -126,7 +126,7 @@ struct _BindingToTuple {
 
 WRAP_CUSTOM {
     _class
-        .def("HasLocalBindings", &UsdShadeCoordSysAPI::Bind)
+        .def("HasLocalBindings", &UsdShadeCoordSysAPI::HasLocalBindings)
         .def("GetLocalBindings",
              &UsdShadeCoordSysAPI::GetLocalBindings,
              return_value_policy<TfPySequenceToList>())

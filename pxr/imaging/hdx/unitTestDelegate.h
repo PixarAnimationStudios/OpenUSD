@@ -84,7 +84,7 @@ public:
 
     void SetTaskParam(SdfPath const &id, TfToken const &name, VtValue val);
     VtValue GetTaskParam(SdfPath const &id, TfToken const &name);
-    HdRenderBufferDescriptor GetRenderBufferDescriptor(SdfPath const &id);
+    HdRenderBufferDescriptor GetRenderBufferDescriptor(SdfPath const &id) override;
 
     /// Instancer
     void AddInstancer(SdfPath const &id,
@@ -171,13 +171,11 @@ public:
     SdfPath GetMaterialId(SdfPath const &rprimId) override;
     VtValue GetMaterialResource(SdfPath const &materialId) override;
 
+    SdfPath GetInstancerId(SdfPath const &primId) override;
+
     VtValue GetCameraParamValue(
         SdfPath const &cameraId,
         TfToken const &paramName) override;
-    HdTextureResource::ID GetTextureResourceID(SdfPath const& textureId) 
-        override;
-    HdTextureResourceSharedPtr GetTextureResource(SdfPath const& textureId) 
-        override;
 
     TfTokenVector GetTaskRenderTags(SdfPath const& taskId) override;
 
@@ -249,6 +247,7 @@ private:
 
     typedef std::map<SdfPath, SdfPath> SdfPathMap;
     SdfPathMap _materialBindings;
+    SdfPathMap _instancerBindings;
 
     typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
     typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;

@@ -67,6 +67,7 @@
 #include "pxr/base/work/singularTask.h"
 #include "pxr/base/work/utils.h"
 #include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layerOffset.h"
@@ -2032,7 +2033,7 @@ struct CrateFile::_ValueHandler : public _ArrayValueHandlerBase<T> {};
 /*static*/ bool
 CrateFile::CanRead(string const &assetPath) {
     // Fetch the asset from Ar.
-    auto asset = ArGetResolver().OpenAsset(assetPath);
+    auto asset = ArGetResolver().OpenAsset(ArResolvedPath(assetPath));
     if (!asset) {
         return false;
     }
@@ -2112,7 +2113,7 @@ CrateFile::Open(string const &assetPath)
     std::unique_ptr<CrateFile> result;
 
     // Fetch the asset from Ar.
-    auto asset = ArGetResolver().OpenAsset(assetPath);
+    auto asset = ArGetResolver().OpenAsset(ArResolvedPath(assetPath));
     if (!asset) {
         TF_RUNTIME_ERROR("Failed to open asset '%s'", assetPath.c_str());
         return result;

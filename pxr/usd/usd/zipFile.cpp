@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/zipFile.h"
 #include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 
 #include "pxr/base/arch/fileSystem.h"
@@ -479,7 +480,8 @@ public:
 UsdZipFile
 UsdZipFile::Open(const std::string& filePath)
 {
-    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(filePath);
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
+        ArResolvedPath(filePath));
     if (!asset) {
         return UsdZipFile();
     }

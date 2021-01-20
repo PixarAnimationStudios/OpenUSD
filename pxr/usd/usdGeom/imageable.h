@@ -76,8 +76,13 @@ class UsdGeomImageable : public UsdTyped
 public:
     /// Compile time constant representing what kind of schema this class is.
     ///
-    /// \sa UsdSchemaType
-    static const UsdSchemaType schemaType = UsdSchemaType::AbstractTyped;
+    /// \sa UsdSchemaKind
+    static const UsdSchemaKind schemaKind = UsdSchemaKind::AbstractTyped;
+
+    /// \deprecated
+    /// Same as schemaKind, provided to maintain temporary backward 
+    /// compatibility with older generated schemas.
+    static const UsdSchemaKind schemaType = UsdSchemaKind::AbstractTyped;
 
     /// Construct a UsdGeomImageable on UsdPrim \p prim .
     /// Equivalent to UsdGeomImageable::Get(prim.GetStage(), prim.GetPath())
@@ -122,11 +127,17 @@ public:
 
 
 protected:
-    /// Returns the type of schema this class belongs to.
+    /// Returns the kind of schema this class belongs to.
     ///
-    /// \sa UsdSchemaType
+    /// \sa UsdSchemaKind
     USDGEOM_API
-    UsdSchemaType _GetSchemaType() const override;
+    UsdSchemaKind _GetSchemaKind() const override;
+
+    /// \deprecated
+    /// Same as _GetSchemaKind, provided to maintain temporary backward 
+    /// compatibility with older generated schemas.
+    USDGEOM_API
+    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -487,8 +498,8 @@ public:
     /// on a stack as you traverse.
     ///
     /// \note Currently the returned prim will not contain any instancing
-    /// context if it is inside a master - its path will be relative to the
-    /// master's root.  Once UsdPrim is instancing-aware in the core, we can
+    /// context if it is inside a prototype - its path will be relative to the
+    /// prototype's root.  Once UsdPrim is instancing-aware in the core, we can
     /// change this method to return a context-aware result.
     ///
     /// \sa SetProxyPrim(), GetProxyPrimRel()

@@ -29,14 +29,13 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/glf/texture.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/weakBase.h"
-
-#include "pxr/imaging/garch/gl.h"
 
 #include <map>
 #include <memory>

@@ -46,7 +46,7 @@ def _bugStep1(s):
 
     # Now bind the Material to the card
     mesh = s.GetPrimAtPath('/Scene/Geom/Plane')
-    UsdShade.MaterialBindingAPI(mesh).Bind(material)
+    UsdShade.MaterialBindingAPI.Apply(mesh).Bind(material)
 
 def _bugStep2(s):
     # create texture coordinate reader 

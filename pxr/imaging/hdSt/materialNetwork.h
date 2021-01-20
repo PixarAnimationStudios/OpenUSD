@@ -89,17 +89,10 @@ public:
         // on the texture prim but there is special API to texture prim
         // to obtain the texture.
         //
-        // This is used for draw targets and for scene delegates that
-        // provide textures through
-        // HdSceneDelegate::GetTextureResourceID and
-        // HdSceneDelegate::GetTextureResource.
+        // This is used for draw targets.
         bool useTexturePrimToFindTexture;
-        // The value passed to HdSceneDelegate::GetTextureResourceID.
+        // This is used for draw targets and hashing.
         SdfPath texturePrim;
-        // Fallback value from texture node used when the texture
-        // file does not exist - only used in the implementation of
-        // HdStMaterial::_GetTextureResourceHandleFromSceneDelegate.
-        VtValue fallbackValue;
     };
 
     using TextureDescriptorVector = std::vector<TextureDescriptor>;

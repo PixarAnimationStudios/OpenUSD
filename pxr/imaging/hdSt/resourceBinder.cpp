@@ -21,7 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/resourceBinder.h"
@@ -308,6 +309,28 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         }
     }
 
+    // varying primvar
+    if (HdBufferArrayRangeSharedPtr varyingBar_ =
+        drawItem->GetVaryingPrimvarRange()) {
+
+        HdStBufferArrayRangeSharedPtr varyingBar =
+            std::static_pointer_cast<HdStBufferArrayRange>(varyingBar_);
+
+        for (const auto &resource : varyingBar->GetResources()) {
+            TfToken const& name = resource.first;
+            TfToken glName =  HdStGLConversions::GetGLSLIdentifier(name);
+            HdBinding varyingPrimvarBinding =
+                locator.GetBinding(arrayBufferBindingType, name);
+            _bindingMap[name] = varyingPrimvarBinding;
+
+            HdTupleType valueType = resource.second->GetTupleType();
+            TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
+            metaDataOut->varyingData[varyingPrimvarBinding] =
+                MetaData::Primvar(/*name=*/glName,
+                                  /*type=*/glType);
+        }
+    }
+
     // index buffer
     if (HdBufferArrayRangeSharedPtr topologyBar_ =
         drawItem->GetTopologyRange()) {
@@ -455,7 +478,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     _bindingMap[HdTokens->drawingCoord2] = drawingCoord2Binding;
     metaDataOut->drawingCoord2Binding =
         MetaData::BindingDeclaration(/*name=*/HdTokens->drawingCoord2,
-                                     /*type=*/_tokens->_int,
+                                     /*type=*/_tokens->ivec2,
                                      /*binding=*/drawingCoord2Binding);
 
     if (instancerNumLevels > 0) {
@@ -1114,55 +1137,11 @@ HdSt_ResourceBinder::UnbindInstanceBufferArray(
 void
 HdSt_ResourceBinder::BindShaderResources(HdStShaderCode const *shader) const
 {
-    // bind fallback values and sampler uniforms (unit#? or bindless address)
-
-    // this is bound in batches.
-    //BindBufferArray(shader->GetShaderData());
-
-    // bind textures
-    HdStShaderCode::TextureDescriptorVector textures = shader->GetTextures();
-    TF_FOR_ALL(it, textures) {
-        HdBinding binding = GetBinding(it->name);
-        HdBinding::Type type = binding.GetType();
-
-        if (type == HdBinding::TEXTURE_2D ||
-            type == HdBinding::TEXTURE_FIELD) {
-        } else if (type == HdBinding::BINDLESS_TEXTURE_2D
-                || type == HdBinding::BINDLESS_TEXTURE_FIELD
-                || type == HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL
-                || type == HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT) {
-            // nothing? or make it resident?? but it only binds the first one.
-            // XXX: it looks like this function should take all textures in the batch.
-
-//            if (!glIsTextureHandleResidentARB(it->handle)) {
-//                glMakeTextureHandleResidentARB(it->handle);
-//            }
-        }
-    }
 }
 
 void
 HdSt_ResourceBinder::UnbindShaderResources(HdStShaderCode const *shader) const
 {
-//    UnbindBufferArray(shader->GetShaderData());
-
-    HdStShaderCode::TextureDescriptorVector textures = shader->GetTextures();
-    TF_FOR_ALL(it, textures) {
-        HdBinding binding = GetBinding(it->name);
-        HdBinding::Type type = binding.GetType();
-
-        if (type == HdBinding::TEXTURE_2D ||
-            type == HdBinding::TEXTURE_FIELD) {
-        } else if (type == HdBinding::BINDLESS_TEXTURE_2D
-                || type == HdBinding::BINDLESS_TEXTURE_FIELD
-                || type == HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL
-                   || type == HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT) {
-//            if (glIsTextureHandleResidentARB(it->handle)) {
-//                glMakeTextureHandleNonResidentARB(it->handle);
-//            }
-        }
-        // XXX: unbind
-    }
 }
 
 void
@@ -1389,7 +1368,7 @@ HdSt_ResourceBinder::IntrospectBindings(HgiShaderProgramHandle const & hgiProgra
             } else if (type == HdBinding::TEXTURE_PTEX_TEXEL) {
                 textureName = "sampler2darray_" + name;
             } else if (type == HdBinding::TEXTURE_PTEX_LAYOUT) {
-                textureName = "isamplerbuffer_" + name;
+                textureName = "isampler1darray_" + name;
             } else if (type == HdBinding::TEXTURE_UDIM_ARRAY) {
                 textureName = "sampler2dArray_" + name;
             } else if (type == HdBinding::TEXTURE_UDIM_LAYOUT) {
@@ -1484,6 +1463,13 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     }
     boost::hash_combine(hash, 0); // separator
     TF_FOR_ALL (it, vertexData) {
+        boost::hash_combine(hash, (int)it->first.GetType()); // binding
+        Primvar const &primvar = it->second;
+        boost::hash_combine(hash, primvar.name.Hash());
+        boost::hash_combine(hash, primvar.dataType);
+    }
+    boost::hash_combine(hash, 0); // separator
+    TF_FOR_ALL (it, varyingData) {
         boost::hash_combine(hash, (int)it->first.GetType()); // binding
         Primvar const &primvar = it->second;
         boost::hash_combine(hash, primvar.name.Hash());

@@ -113,7 +113,7 @@ public:
     {
         TRACE_FUNCTION();
         if (!prim.GetPath().HasPrefix(_rootPath) 
-            && !prim.IsInMaster()) {
+            && !prim.IsInPrototype()) {
             TF_CODING_ERROR("Attempt to get value for: %s "
                             "which is not within the specified root: %s",
                             prim.GetPath().GetString().c_str(),
@@ -403,7 +403,7 @@ UsdImaging_ResolvedAttributeCache<Strategy, ImplData>::_GetValue(
     static value_type const default_ = Strategy::MakeDefault();
 
     // Base case.
-    if (!prim || prim.IsMaster() || prim.GetPath() == _rootPath)
+    if (!prim || prim.IsPrototype() || prim.GetPath() == _rootPath)
         return &default_;
 
     _Entry* entry = _GetCacheEntryForPrim(prim);
@@ -971,6 +971,15 @@ struct UsdImaging_CoordSysBindingStrategy
                 }
                 for (auto const& binding:
                      query->coordSysAPI.GetLocalBindings()) {
+                    if (!prim.GetStage()->GetPrimAtPath(
+                        binding.coordSysPrimPath).IsValid()) {
+                        // The target xform prim does not exist, so ignore
+                        // this coord sys binding.
+                        TF_WARN("UsdImaging: Ignoring coordinate system "
+                                "binding to non-existent prim <%s>\n",
+                                binding.coordSysPrimPath.GetText());
+                        continue;
+                    }
                     bool found = false;
                     for (size_t i=0, n=hdIds.size(); i<n; ++i) {
                         if (usdBindings[i].name == binding.name) {

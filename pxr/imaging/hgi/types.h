@@ -42,7 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// For reference, see:
 ///   https://www.khronos.org/registry/vulkan/specs/1.1/html/vkspec.html#VkFormat
-enum HgiFormat
+enum HgiFormat : int
 {
     HgiFormatInvalid = -1,
 
@@ -72,6 +72,12 @@ enum HgiFormat
     HgiFormatFloat32Vec3,
     HgiFormatFloat32Vec4,
 
+    // UInt16 - a 2-byte unsigned integer
+    HgiFormatUInt16,
+    HgiFormatUInt16Vec2,
+    HgiFormatUInt16Vec3,
+    HgiFormatUInt16Vec4,
+
     // Int32 - a 4-byte signed integer
     HgiFormatInt32,
     HgiFormatInt32Vec2,
@@ -99,6 +105,14 @@ enum HgiFormat
     // BPTC compressed. 4-component, 4x4 blocks, unsigned byte, sRGB.
     // Representing a float between 0 and 1.
     HgiFormatBC7UNorm8Vec4srgb,
+
+    // S3TC/DXT compressed. 4-component, 4x4 blocks, unsigned byte
+    // Representing a float between 0 and 1.
+    HgiFormatBC1UNorm8Vec4,
+
+    // S3TC/DXT compressed. 4-component, 4x4 blocks, unsigned byte
+    // Representing a float between 0 and 1.
+    HgiFormatBC3UNorm8Vec4,
 
     // Depth stencil format (Float32 can be used for just depth)
     HgiFormatFloat32UInt8,
@@ -141,6 +155,14 @@ size_t HgiGetDataSizeOfFormat(
 HGI_API
 bool HgiIsCompressed(HgiFormat f);
 
+/// Returns the size necessary to allocate a buffer of given dimensions
+/// and format, rounding dimensions up to suitable multiple when
+/// using a compressed format.
+HGI_API
+size_t HgiGetDataSize(
+    HgiFormat f,
+    const GfVec3i &dimensions);
+
 /// Returns mip infos.
 ///
 /// If dataByteSize is specified, the levels stops when the total memory
@@ -159,6 +181,7 @@ std::vector<HgiMipInfo>
 HgiGetMipInfos(
     HgiFormat format,
     const GfVec3i& dimensions,
+    size_t layerCount,
     size_t dataByteSize = std::numeric_limits<size_t>::max());
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -57,6 +57,17 @@ _Get(const UsdShadeInput &self, UsdTimeCode time) {
 }
 
 static object
+_GetConnectedSources(const UsdShadeInput &self)
+{
+    SdfPathVector invalidSourcePaths;
+    UsdShadeInput::SourceInfoVector sources =
+        self.GetConnectedSources(&invalidSourcePaths);
+    return boost::python::make_tuple(
+        std::vector<UsdShadeConnectionSourceInfo>(sources.begin(), sources.end()),
+        invalidSourcePaths);
+}
+
+static object
 _GetConnectedSource(const UsdShadeInput &self)
 {
     UsdShadeConnectableAPI source;
@@ -107,11 +118,17 @@ void wrapUsdShadeInput()
     bool (Input::*ConnectToSource_4)(
         UsdShadeOutput const &) const = &Input::ConnectToSource;
 
+    bool (Input::*ConnectToSource_5)(
+        UsdShadeConnectionSourceInfo const &,
+        Input::ConnectionModification const mod) const = &Input::ConnectToSource;
+
     bool (Input::*CanConnect_1)(
         UsdAttribute const &) const = &Input::CanConnect;
 
     class_<Input>("Input")
         .def(init<UsdAttribute>(arg("attr")))
+        .def(self==self)
+        .def(self!=self)
         .def(!self)
 
         .def("GetFullName", &Input::GetFullName,
@@ -152,6 +169,7 @@ void wrapUsdShadeInput()
         .def("GetConnectability", &Input::GetConnectability)
         .def("ClearConnectability", &Input::ClearConnectability)
 
+        .def("GetValueProducingAttributes", &Input::GetValueProducingAttributes)
         .def("GetValueProducingAttribute", _GetValueProducingAttribute)
 
         .def("GetAttr", &Input::GetAttr,
@@ -160,7 +178,10 @@ void wrapUsdShadeInput()
         .def("CanConnect", CanConnect_1,
             (arg("source")))
 
-        .def("ConnectToSource", ConnectToSource_1, 
+        .def("ConnectToSource", ConnectToSource_5,
+            (arg("source"),
+             arg("mod")=UsdShadeConnectionModification::Replace))
+        .def("ConnectToSource", ConnectToSource_1,
             (arg("source"), arg("sourceName"), 
              arg("sourceType")=UsdShadeAttributeType::Output,
              arg("typeName")=SdfValueTypeName()))
@@ -171,13 +192,18 @@ void wrapUsdShadeInput()
         .def("ConnectToSource", ConnectToSource_4,
             (arg("output")))
 
+        .def("SetConnectedSources", &Input::SetConnectedSources)
+
+        .def("GetConnectedSources", _GetConnectedSources)
         .def("GetConnectedSource", _GetConnectedSource)
         .def("GetRawConnectedSourcePaths", _GetRawConnectedSourcePaths,
             return_value_policy<TfPySequenceToList>())
         .def("HasConnectedSource", &Input::HasConnectedSource)
         .def("IsSourceConnectionFromBaseMaterial",
              &Input::IsSourceConnectionFromBaseMaterial)
-        .def("DisconnectSource", &Input::DisconnectSource)
+        .def("DisconnectSource", &Input::DisconnectSource,
+             (arg("sourceAttr")=UsdAttribute()))
+        .def("ClearSources", &Input::ClearSources)
         .def("ClearSource", &Input::ClearSource)
 
         .def("IsInput", &Input::IsInput)

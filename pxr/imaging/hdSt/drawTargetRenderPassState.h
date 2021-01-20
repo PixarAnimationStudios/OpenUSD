@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class VtValue;
 using HdRenderPassAovBindingVector =
-    std::vector<class HdRenderPassAovBinding>;
+    std::vector<struct HdRenderPassAovBinding>;
 
 /// \class HdStDrawTargetRenderPassState
 ///
@@ -46,7 +46,8 @@ using HdRenderPassAovBindingVector =
 /// to major changes.  It is likely this functionality will be absorbed into
 /// the base class.
 ///
-class HdStDrawTargetRenderPassState final {
+class HdStDrawTargetRenderPassState final
+{
 public:
     HDST_API
     HdStDrawTargetRenderPassState();

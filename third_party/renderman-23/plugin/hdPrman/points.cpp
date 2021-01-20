@@ -39,9 +39,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdPrman_Points::HdPrman_Points(SdfPath const& id,
-                               SdfPath const& instancerId)
-    : BASE(id, instancerId)
+HdPrman_Points::HdPrman_Points(SdfPath const& id)
+    : BASE(id)
 {
 }
 

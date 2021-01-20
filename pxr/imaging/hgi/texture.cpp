@@ -38,6 +38,26 @@ HgiTexture::GetDescriptor() const
     return _descriptor;
 }
 
+size_t
+HgiTexture::_GetByteSizeOfResource(const HgiTextureDesc &descriptor)
+{
+    // Compute all mip levels down to 1x1(x1)
+    const std::vector<HgiMipInfo> mipInfos = HgiGetMipInfos(
+        descriptor.format, descriptor.dimensions, descriptor.layerCount);
+
+    // Number of mip levels actually used.
+    const size_t mipLevels = std::min(
+        mipInfos.size(), size_t(descriptor.mipLevels));
+
+    // Get the last mip level actually used.
+    const HgiMipInfo &mipInfo = mipInfos[mipLevels - 1];
+
+    // mipInfo.byteOffset is the sum of all mip levels prior
+    // to the last mip level actually used.
+    return mipInfo.byteOffset + mipInfo.byteSize;
+
+}
+
 bool operator==(const HgiComponentMapping& lhs,
     const HgiComponentMapping& rhs)
 {

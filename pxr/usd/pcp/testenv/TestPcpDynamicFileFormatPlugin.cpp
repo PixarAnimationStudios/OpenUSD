@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/fileFormat.h"
@@ -210,12 +211,17 @@ _GetFileFormatArg(SdfFileFormat::FileFormatArguments args,
 bool
 Test_PcpDynamicFileFormatPlugin_FileFormat::Read(
     SdfLayer *layer,
-    const string& resolvedPath,
+    const string& resolvedPathIn,
     bool metadataOnly) const
 {
     if (!TF_VERIFY(layer)) {
         return false;
     }
+
+    // We use the resolved path to author references and payloads below,
+    // so normalize the path to ensure it has a consistent format across
+    // platforms for baseline comparisons.
+    const string resolvedPath = TfNormPath(resolvedPathIn);
 
     // We extract the parameters from the layers file format arguments
     FileFormatArguments args = layer->GetFileFormatArguments();

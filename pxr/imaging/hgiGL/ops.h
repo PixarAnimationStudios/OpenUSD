@@ -92,6 +92,12 @@ public:
     static HgiGLOpsFn CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp);
 
     HGIGL_API
+    static HgiGLOpsFn CopyTextureToBuffer(HgiTextureToBufferOp const& copyOp);
+
+    HGIGL_API
+    static HgiGLOpsFn CopyBufferToTexture(HgiBufferToTextureOp const& copyOp);
+
+    HGIGL_API
     static HgiGLOpsFn ResolveFramebuffer(
         HgiGLDevice* device,
         HgiGraphicsCmdsDesc const &graphicsCmds);
@@ -175,6 +181,9 @@ public:
 
     HGIGL_API
     static HgiGLOpsFn GenerateMipMaps(HgiTextureHandle const& texture);
+
+    HGIGL_API
+    static HgiGLOpsFn MemoryBarrier(HgiMemoryBarrier barrier);
 
 };
 

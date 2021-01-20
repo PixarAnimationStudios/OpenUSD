@@ -29,6 +29,7 @@
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/usd/sdf/layer.h"
@@ -120,7 +121,8 @@ bool UsdDracoFileFormat::Read(
         SdfLayer *layer, const std::string &resolvedPath,
         bool metadataOnly) const {
     // Open an asset with Draco data.
-    std::shared_ptr <ArAsset> asset = ArGetResolver().OpenAsset(resolvedPath);
+    std::shared_ptr <ArAsset> asset = ArGetResolver().OpenAsset(
+        ArResolvedPath(resolvedPath));
     if (!asset) {
         TF_RUNTIME_ERROR("Failed to open file \"%s\"", resolvedPath.c_str());
         return false;

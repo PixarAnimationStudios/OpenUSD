@@ -23,7 +23,7 @@
 //
 
 // Must be included before GL headers.
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdAppUtils/frameRecorder.h"
@@ -32,6 +32,7 @@
 
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/metrics.h"
@@ -54,7 +55,7 @@ UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder() :
     _colorCorrectionMode("disabled"),
     _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy})
 {
-    GlfGlewInit();
+    GarchGLApiLoad();
 }
 
 static bool
@@ -174,10 +175,10 @@ _WriteTextureToFile(HgiTextureDesc const& textureDesc,
         return false;
     }
     
-    GlfImage::StorageSpec storage;
+    HioImage::StorageSpec storage;
     storage.width = width;
     storage.height = height;
-    storage.hioFormat = GetHioFormat(textureDesc.format);
+    storage.format = GetHioFormat(textureDesc.format);
     storage.flipped = flipped;
     storage.data = (void*)buffer.data();
 
@@ -185,7 +186,7 @@ _WriteTextureToFile(HgiTextureDesc const& textureDesc,
         TRACE_FUNCTION_SCOPE("writing image");
         VtDictionary metadata;
         
-        GlfImageSharedPtr const image = GlfImage::OpenForWriting(filename);
+        HioImageSharedPtr const image = HioImage::OpenForWriting(filename);
         const bool writeSuccess = image && image->Write(storage, metadata);
         
         if (!writeSuccess) {

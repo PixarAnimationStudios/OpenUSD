@@ -75,7 +75,12 @@ UsdGeomSubset::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdGeomSubset::_GetSchemaType() const {
+UsdSchemaKind UsdGeomSubset::_GetSchemaKind() const {
+    return UsdGeomSubset::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdGeomSubset::_GetSchemaType() const {
     return UsdGeomSubset::schemaType;
 }
 

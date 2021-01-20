@@ -51,9 +51,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdPrman_Mesh::HdPrman_Mesh(SdfPath const& id,
-                           SdfPath const& instancerId)
-    : BASE(id, instancerId)
+HdPrman_Mesh::HdPrman_Mesh(SdfPath const& id)
+    : BASE(id)
 {
 }
 

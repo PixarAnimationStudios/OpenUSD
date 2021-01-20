@@ -71,8 +71,6 @@ HDST_API
 HdPrimvarDescriptorVector
 HdStGetInstancerPrimvarDescriptors(
     HdStInstancer const * instancer,
-    HdRprim const * prim,
-    HdStDrawItem const * drawItem,
     HdSceneDelegate * delegate);
 
 // -----------------------------------------------------------------------------
@@ -140,6 +138,15 @@ void HdStUpdateDrawItemBAR(
     HdRprimSharedData *sharedData,
     HdRenderIndex &renderIndex);
 
+// Returns true if primvar with primvarName exists within primvar descriptor 
+// vector primvars and primvar has a valid value
+HDST_API
+bool HdStIsPrimvarExistentAndValid(
+    HdRprim *prim,
+    HdSceneDelegate *delegate,
+    HdPrimvarDescriptorVector const& primvars,
+    TfToken const& primvarName);
+
 // -----------------------------------------------------------------------------
 // Constant primvar processing utilities
 // -----------------------------------------------------------------------------
@@ -152,6 +159,7 @@ bool HdStShouldPopulateConstantPrimvars(
 
 // Given prim information it will create sources representing
 // constant primvars and hand it to the resource registry.
+// If transforms are dirty, updates the optional bool.
 HDST_API
 void HdStPopulateConstantPrimvars(
     HdRprim *prim,
@@ -159,7 +167,29 @@ void HdStPopulateConstantPrimvars(
     HdSceneDelegate *delegate,
     HdDrawItem *drawItem,
     HdDirtyBits *dirtyBits,
-    HdPrimvarDescriptorVector const& constantPrimvars);
+    HdPrimvarDescriptorVector const& constantPrimvars,
+    bool *hasMirroredTransform = nullptr);
+
+// -----------------------------------------------------------------------------
+// Instancer processing utilities
+// -----------------------------------------------------------------------------
+
+// Updates drawItem bindings for changes to instance topology/primvars.
+HDST_API
+void HdStUpdateInstancerData(
+    HdRenderIndex &renderIndex,
+    HdRprim *prim,
+    HdStDrawItem *drawItem,
+    HdRprimSharedData *sharedData,
+    HdDirtyBits rprimDirtyBits);
+
+// Returns true if primvar with primvarName exists among instance primvar
+// descriptors.
+HDST_API
+bool HdStIsInstancePrimvarExistentAndValid(
+    HdRenderIndex &renderIndex,
+    HdRprim *prim,
+    TfToken const& primvarName);
 
 // -----------------------------------------------------------------------------
 // Topological visibility processing utility

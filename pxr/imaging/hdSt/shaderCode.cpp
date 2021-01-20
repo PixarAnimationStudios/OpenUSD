@@ -91,13 +91,6 @@ HdStShaderCode::GetShaderData() const
     return EMPTY;
 }
 
-/*virtual*/
-HdStShaderCode::TextureDescriptorVector
-HdStShaderCode::GetTextures() const
-{
-    return HdStShaderCode::TextureDescriptorVector();
-}
-
 /* virtual */
 HdStShaderCode::NamedTextureHandleVector const &
 HdStShaderCode::GetNamedTextureHandles() const

@@ -62,7 +62,12 @@ UsdGeomXformCommonAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaType UsdGeomXformCommonAPI::_GetSchemaType() const {
+UsdSchemaKind UsdGeomXformCommonAPI::_GetSchemaKind() const {
+    return UsdGeomXformCommonAPI::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdGeomXformCommonAPI::_GetSchemaType() const {
     return UsdGeomXformCommonAPI::schemaType;
 }
 

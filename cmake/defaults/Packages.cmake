@@ -71,6 +71,12 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         find_package(PythonLibs 2.7 REQUIRED)
     endif()
 
+    # This option indicates that we don't want to explicitly link to the python
+    # libraries. See BUILDING.md for details.
+    if(PXR_PY_UNDEFINED_DYNAMIC_LOOKUP AND NOT WIN32 )
+        set(PYTHON_LIBRARIES "")
+    endif()
+
     find_package(Boost
         COMPONENTS
             program_options
@@ -198,11 +204,45 @@ if (PXR_BUILD_IMAGING)
             cmake_policy(SET CMP0072 OLD)
         endif()
         find_package(OpenGL REQUIRED)
-        find_package(GLEW REQUIRED)
     endif()
     # --Metal
     if (PXR_ENABLE_METAL_SUPPORT)
         add_definitions(-DPXR_METAL_SUPPORT_ENABLED)
+    endif()
+    if (PXR_ENABLE_VULKAN_SUPPORT)
+        if (EXISTS $ENV{VULKAN_SDK})
+            # Prioritize the VULKAN_SDK includes and packages before any system
+            # installed headers. This is to prevent linking against older SDKs 
+            # that may be installed by the OS.
+            # XXX This is fixed in cmake 3.18+
+            include_directories(BEFORE SYSTEM $ENV{VULKAN_SDK} $ENV{VULKAN_SDK}/include $ENV{VULKAN_SDK}/lib)
+            set(ENV{PATH} "$ENV{VULKAN_SDK}:$ENV{VULKAN_SDK}/include:$ENV{VULKAN_SDK}/lib:$ENV{PATH}")
+            find_package(Vulkan REQUIRED)
+            list(APPEND VULKAN_LIBS Vulkan::Vulkan)
+
+            # Find the extra vulkan libraries we need
+            # XXX In cmake 3.18+ we can instead use: Vulkan::glslc
+            set(EXTRA_VULKAN_LIBS glslang OGLCompiler OSDependent MachineIndependent GenericCodeGen SPIRV SPIRV-Tools SPIRV-Tools-opt SPIRV-Tools-shared)
+            foreach(EXTRA_LIBRARY ${EXTRA_VULKAN_LIBS})
+                find_library("${EXTRA_LIBRARY}_PATH" NAMES "${EXTRA_LIBRARY}" PATHS $ENV{VULKAN_SDK}/lib)
+                list(APPEND VULKAN_LIBS "${${EXTRA_LIBRARY}_PATH}")
+            endforeach()
+
+            # Find the OS specific libs we need
+            if (APPLE)
+                find_library(MVK_LIBRARIES NAMES MoltenVK PATHS $ENV{VULKAN_SDK}/lib)
+                list(APPEND VULKAN_LIBS ${MVK_LIBRARIES})
+            elseif (UNIX AND NOT APPLE)
+                find_package(X11 REQUIRED)
+                list(APPEND VULKAN_LIBS ${X11_LIBRARIES})
+            elseif (WIN32)
+                # No extra libs required
+            endif()
+
+            add_definitions(-DPXR_VULKAN_SUPPORT_ENABLED)
+        else()
+            message(FATAL_ERROR "VULKAN_SDK not valid")
+        endif()
     endif()
     # --Opensubdiv
     set(OPENSUBDIV_USE_GPU ${PXR_ENABLE_GL_SUPPORT})
@@ -259,6 +299,9 @@ endif()
 
 if (PXR_BUILD_MATERIALX_PLUGIN)
     find_package(MaterialX REQUIRED)
+    if (PXR_ENABLE_MATERIALX_IMAGING_SUPPORT)
+        add_definitions(-DPXR_MATERIALX_IMAGING_SUPPORT_ENABLED)
+    endif()
 endif()
 
 if(PXR_ENABLE_OSL_SUPPORT)

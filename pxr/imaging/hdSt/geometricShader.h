@@ -31,7 +31,7 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/usd/sdf/path.h"
-#include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/garch/glApi.h"
 #include "pxr/imaging/hio/glslfx.h"
 
 #include <memory>
@@ -40,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using HdSt_GeometricShaderSharedPtr =
     std::shared_ptr<class HdSt_GeometricShader>;
-class HdSt_ShaderKey;
+struct HdSt_ShaderKey;
 
 /// \class HdSt_GeometricShader
 ///
@@ -116,30 +116,33 @@ public:
     HdSt_GeometricShader(std::string const &glslfxString,
                        PrimitiveType primType,
                        HdCullStyle cullStyle,
+                       bool useHardwareFaceCulling,
+                       bool hasMirroredTransform,
+                       bool doubleSided,
                        HdPolygonMode polygonMode,
                        bool cullingPass,
                        SdfPath const &debugId = SdfPath(),
                        float lineWidth = 0);
 
     HDST_API
-    virtual ~HdSt_GeometricShader();
+    ~HdSt_GeometricShader() override;
 
     // HdShader overrides
     HDST_API
-    virtual ID ComputeHash() const;
+    ID ComputeHash() const override;
     HDST_API
-    virtual std::string GetSource(TfToken const &shaderStageKey) const;
+    std::string GetSource(TfToken const &shaderStageKey) const override;
     HDST_API
-    virtual void BindResources(int program,
+    void BindResources(int program,
                                HdSt_ResourceBinder const &binder,
                                HdRenderPassState const &state) override;
     
     HDST_API
-    virtual void UnbindResources(int program,
+    void UnbindResources(int program,
                                  HdSt_ResourceBinder const &binder,
                                  HdRenderPassState const &state) override;
     HDST_API
-    virtual void AddBindings(HdBindingRequestVector *customBindings);
+    void AddBindings(HdBindingRequestVector *customBindings) override;
 
     /// Returns true if this geometric shader is used for GPU frustum culling.
     bool IsFrustumCullingPass() const {
@@ -197,6 +200,9 @@ public:
 private:
     PrimitiveType _primType;
     HdCullStyle _cullStyle;
+    bool _useHardwareFaceCulling;
+    bool _hasMirroredTransform;
+    bool _doubleSided;
     HdPolygonMode _polygonMode;
     float _lineWidth;
 

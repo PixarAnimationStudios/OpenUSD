@@ -264,11 +264,26 @@ ArchMallocHook::Initialize(
     free(realloc(malloc(1), 2));
     free(memalign(sizeof(void*), sizeof(void*)));
 
-    if (__malloc_hook || __realloc_hook || __memalign_hook || __free_hook) {
-        *errMsg = "One or more malloc/realloc/free hook variables are already set.\n"
-              "This probably means another entity in the program is trying to\n"
-              "do its own profiling, pre-empting yours.";
-    return false;
+    // We check here that either the hooks are unset, or they're set to malloc,
+    // free, etc.  We do this because at least one allocator (jemalloc)
+    // explicitly sets the hooks to point to its malloc functions to work around
+    // bugs related to shared libraries opened with the DEEPBIND flag picking up
+    // the system (glibc) malloc symbols instead of the custom allocator's
+    // (jemalloc's).  Pixar's pxmalloc wrapper does the same, for the same
+    // reason.
+    if ((__malloc_hook &&
+         __malloc_hook != reinterpret_cast<void *>(malloc)) ||
+        (__realloc_hook &&
+         __realloc_hook != reinterpret_cast<void *>(realloc)) ||
+        (__memalign_hook &&
+         __memalign_hook != reinterpret_cast<void *>(memalign)) ||
+        (__free_hook &&
+         __free_hook != reinterpret_cast<void *>(free))) {
+        *errMsg =
+            "One or more malloc/realloc/free hook variables are already set.\n"
+            "This probably means another entity in the program is trying to\n"
+            "do its own profiling, pre-empting yours.";
+        return false;
     }
 
     /*

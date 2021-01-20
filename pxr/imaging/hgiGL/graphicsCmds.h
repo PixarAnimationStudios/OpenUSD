@@ -115,6 +115,9 @@ public:
         uint32_t drawCount,
         uint32_t stride) override;
 
+    HGIGL_API
+    void MemoryBarrier(HgiMemoryBarrier barrier) override;
+
 protected:
     friend class HgiGL;
 

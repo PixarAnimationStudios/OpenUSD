@@ -51,11 +51,11 @@ GlfTexture::GlfTexture( )
     : _memoryUsed(0)
     , _memoryRequested(INT_MAX)
     , _contentsID(_GetNewContentsID())
-    , _originLocation(GlfImage::OriginUpperLeft)
+    , _originLocation(HioImage::OriginUpperLeft)
 {
 }
 
-GlfTexture::GlfTexture(GlfImage::ImageOriginLocation originLocation)
+GlfTexture::GlfTexture(HioImage::ImageOriginLocation originLocation)
     : _memoryUsed(0)
     , _memoryRequested(INT_MAX)
     , _contentsID(_GetNewContentsID())
@@ -133,7 +133,7 @@ GlfTexture::_UpdateContentsID()
     _contentsID = _GetNewContentsID();
 }
 
-GlfImage::ImageOriginLocation 
+HioImage::ImageOriginLocation 
 GlfTexture::GetOriginLocation() const
 {
     return _originLocation;
@@ -142,7 +142,7 @@ GlfTexture::GetOriginLocation() const
 bool
 GlfTexture::IsOriginLowerLeft() const
 {
-    return _originLocation == GlfImage::OriginLowerLeft;
+    return _originLocation == HioImage::OriginLowerLeft;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

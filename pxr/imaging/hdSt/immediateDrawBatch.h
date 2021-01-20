@@ -48,7 +48,8 @@ public:
 
     // HdSt_DrawBatch overrides
     HDST_API
-    bool Validate(bool deepValidation) override;
+    ValidationResult
+    Validate(bool deepValidation) override;
 
     /// Prepare draw commands and apply view frustum culling for this batch.
     HDST_API

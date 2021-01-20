@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hdSt/codeGen.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
+#include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/drawBatch.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/glslfxShader.h"
@@ -139,6 +140,8 @@ HdSt_DrawBatch::_IsAggregated(HdStDrawItem const *drawItem0,
                          drawItem1->GetTopologyVisibilityRange())
         && isAggregated(drawItem0->GetVertexPrimvarRange(),
                          drawItem1->GetVertexPrimvarRange())
+        && isAggregated(drawItem0->GetVaryingPrimvarRange(),
+                         drawItem1->GetVaryingPrimvarRange())
         && isAggregated(drawItem0->GetElementPrimvarRange(),
                          drawItem1->GetElementPrimvarRange())
         && isAggregated(drawItem0->GetFaceVaryingPrimvarRange(),
@@ -186,9 +189,14 @@ HdSt_DrawBatch::Rebuild()
             return false;
         }
         if (!Append(item)) {
+            TF_DEBUG(HDST_DRAW_BATCH).Msg("   Rebuild failed for batch %p\n",
+            (void*)(this));
             return false;
         }
     }
+
+    TF_DEBUG(HDST_DRAW_BATCH).Msg("   Rebuild success for batch %p\n",
+        (void*)(this));
 
     return true;
 }
@@ -296,7 +304,7 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
         (*it)->AddBindings(&customBindings);
     }
 
-    HdSt_CodeGen codeGen(_geometricShader, shaders);
+    HdSt_CodeGen codeGen(_geometricShader, shaders, drawItem->GetMaterialTag());
 
     // let resourcebinder resolve bindings and populate metadata
     // which is owned by codegen.

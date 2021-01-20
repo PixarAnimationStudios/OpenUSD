@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
+#include "pxr/usd/usd/common.h"
 
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -119,31 +120,47 @@ public:
     USD_API
     static bool IsTyped(const TfType& primType);
 
-    /// Returns true if the prim type \p primType is instantiable
-    /// in scene description.
-    USD_API
-    bool IsConcrete(const TfType& primType) const;
+    /// Returns the kind of the schema the given \p schemaType represents.
+    ///
+    /// This returns UsdSchemaKind::Invalid if \p schemaType is not a valid 
+    /// schema type or if the kind cannot be determined from type's plugin 
+    /// information.
+    USD_API 
+    static UsdSchemaKind GetSchemaKind(const TfType &schemaType);
+
+    /// Returns the kind of the schema the given \p typeName represents.
+    ///
+    /// This returns UsdSchemaKind::Invalid if \p typeName is not a valid 
+    /// schema type name or if the kind cannot be determined from type's plugin 
+    /// information.
+    USD_API 
+    static UsdSchemaKind GetSchemaKind(const TfToken &typeName);
 
     /// Returns true if the prim type \p primType is instantiable
     /// in scene description.
     USD_API
-    bool IsConcrete(const TfToken& primType) const;
+    static bool IsConcrete(const TfType& primType);
+
+    /// Returns true if the prim type \p primType is instantiable
+    /// in scene description.
+    USD_API
+    static bool IsConcrete(const TfToken& primType);
 
     /// Returns true if \p apiSchemaType is an applied API schema type.
     USD_API
-    bool IsAppliedAPISchema(const TfType& apiSchemaType) const;
+    static bool IsAppliedAPISchema(const TfType& apiSchemaType);
 
     /// Returns true if \p apiSchemaType is an applied API schema type.
     USD_API
-    bool IsAppliedAPISchema(const TfToken& apiSchemaType) const;
+    static bool IsAppliedAPISchema(const TfToken& apiSchemaType);
 
     /// Returns true if \p apiSchemaType is a multiple-apply API schema type.
     USD_API
-    bool IsMultipleApplyAPISchema(const TfType& apiSchemaType) const;
+    static bool IsMultipleApplyAPISchema(const TfType& apiSchemaType);
     
     /// Returns true if \p apiSchemaType is a multiple-apply API schema type.
     USD_API
-    bool IsMultipleApplyAPISchema(const TfToken& apiSchemaType) const;
+    static bool IsMultipleApplyAPISchema(const TfToken& apiSchemaType);
         
     /// Finds the TfType of a schema with \p typeName
     ///
@@ -189,6 +206,23 @@ public:
     USD_API
     static std::pair<TfToken, TfToken> GetTypeAndInstance(
             const TfToken &apiSchemaName);
+
+    /// Returns a map of the names of all registered auto apply API schemas
+    /// to the list of type names each is registered to be auto applied to.
+    ///
+    /// The list of type names to apply to will directly match what is specified
+    /// in the plugin metadata for each schema type. While auto apply schemas do
+    /// account for the existence and validity of the type names and expand to 
+    /// include derived types of the listed types, the type lists returned by 
+    /// this function do not. 
+    USD_API
+    static std::map<TfToken, TfTokenVector> GetAutoApplyAPISchemas();
+
+    /// Returns the namespace prefix that is prepended to all properties of
+    /// the given \p multiApplyAPISchemaName.
+    USD_API
+    TfToken GetPropertyNamespacePrefix(
+        const TfToken &multiApplyAPISchemaName) const;
 
     /// Finds the prim definition for the given \p typeName token if 
     /// \p typeName is a registered concrete typed schema type. Returns null if
@@ -241,6 +275,14 @@ private:
     friend class TfSingleton<UsdSchemaRegistry>;
 
     UsdSchemaRegistry();
+
+    // Functions for backwards compatibility which old generated schemas. If
+    // usdGenSchema has not been run to regenerate schemas so that the schema
+    // kind is designated in the plugInfo, these functions are used to inquire
+    // about kind through the registered prim definitions.
+    bool _HasConcretePrimDefinition(const TfToken& primType) const;
+    bool _HasAppliedAPIPrimDefinition(const TfToken& apiSchemaType) const;
+    bool _HasMultipleApplyAPIPrimDefinition(const TfToken& apiSchemaType) const;
 
     void _FindAndAddPluginSchema();
 

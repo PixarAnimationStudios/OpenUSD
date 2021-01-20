@@ -58,21 +58,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Use UsdLuxTokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(UsdLuxTokens->angle);
+///     gprim.GetMyTokenValuedAttr().Set(UsdLuxTokens->angular);
 /// \endcode
 struct UsdLuxTokensType {
     USDLUX_API UsdLuxTokensType();
-    /// \brief "angle"
-    /// 
-    /// UsdLuxDistantLight
-    const TfToken angle;
     /// \brief "angular"
     /// 
-    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
+    /// Possible value for UsdLuxDomeLight::GetInputsTextureFormatAttr()
     const TfToken angular;
     /// \brief "automatic"
     /// 
-    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr(), Default value for UsdLuxDomeLight::GetTextureFormatAttr()
+    /// Possible value for UsdLuxDomeLight::GetInputsTextureFormatAttr(), Default value for UsdLuxDomeLight::GetInputsTextureFormatAttr()
     const TfToken automatic;
     /// \brief "collection:filterLink:includeRoot"
     /// 
@@ -86,14 +82,6 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxLight
     const TfToken collectionShadowLinkIncludeRoot;
-    /// \brief "color"
-    /// 
-    /// UsdLuxLight
-    const TfToken color;
-    /// \brief "colorTemperature"
-    /// 
-    /// UsdLuxLight
-    const TfToken colorTemperature;
     /// \brief "consumeAndContinue"
     /// 
     /// Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
@@ -104,20 +92,8 @@ struct UsdLuxTokensType {
     const TfToken consumeAndHalt;
     /// \brief "cubeMapVerticalCross"
     /// 
-    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
+    /// Possible value for UsdLuxDomeLight::GetInputsTextureFormatAttr()
     const TfToken cubeMapVerticalCross;
-    /// \brief "diffuse"
-    /// 
-    /// UsdLuxLight
-    const TfToken diffuse;
-    /// \brief "enableColorTemperature"
-    /// 
-    /// UsdLuxLight
-    const TfToken enableColorTemperature;
-    /// \brief "exposure"
-    /// 
-    /// UsdLuxLight
-    const TfToken exposure;
     /// \brief "filterLink"
     /// 
     ///  This token represents the collection name to use with UsdCollectionAPI to represent filter-linking of a UsdLuxLightFilter prim. 
@@ -130,26 +106,74 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxGeometryLight
     const TfToken geometry;
-    /// \brief "height"
-    /// 
-    /// UsdLuxRectLight
-    const TfToken height;
     /// \brief "ignore"
     /// 
     /// Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
     const TfToken ignore;
-    /// \brief "intensity"
+    /// \brief "inputs:angle"
+    /// 
+    /// UsdLuxDistantLight
+    const TfToken inputsAngle;
+    /// \brief "inputs:color"
+    /// 
+    /// UsdLuxLight
+    const TfToken inputsColor;
+    /// \brief "inputs:colorTemperature"
+    /// 
+    /// UsdLuxLight
+    const TfToken inputsColorTemperature;
+    /// \brief "inputs:diffuse"
+    /// 
+    /// UsdLuxLight
+    const TfToken inputsDiffuse;
+    /// \brief "inputs:enableColorTemperature"
+    /// 
+    /// UsdLuxLight
+    const TfToken inputsEnableColorTemperature;
+    /// \brief "inputs:exposure"
+    /// 
+    /// UsdLuxLight
+    const TfToken inputsExposure;
+    /// \brief "inputs:height"
+    /// 
+    /// UsdLuxRectLight
+    const TfToken inputsHeight;
+    /// \brief "inputs:intensity"
     /// 
     /// UsdLuxDistantLight, UsdLuxLight
-    const TfToken intensity;
-    /// \brief "latlong"
-    /// 
-    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
-    const TfToken latlong;
-    /// \brief "length"
+    const TfToken inputsIntensity;
+    /// \brief "inputs:length"
     /// 
     /// UsdLuxCylinderLight
-    const TfToken length;
+    const TfToken inputsLength;
+    /// \brief "inputs:normalize"
+    /// 
+    /// UsdLuxLight
+    const TfToken inputsNormalize;
+    /// \brief "inputs:radius"
+    /// 
+    /// UsdLuxCylinderLight, UsdLuxSphereLight, UsdLuxDiskLight
+    const TfToken inputsRadius;
+    /// \brief "inputs:specular"
+    /// 
+    /// UsdLuxLight
+    const TfToken inputsSpecular;
+    /// \brief "inputs:texture:file"
+    /// 
+    /// UsdLuxDomeLight, UsdLuxRectLight
+    const TfToken inputsTextureFile;
+    /// \brief "inputs:texture:format"
+    /// 
+    /// UsdLuxDomeLight
+    const TfToken inputsTextureFormat;
+    /// \brief "inputs:width"
+    /// 
+    /// UsdLuxRectLight
+    const TfToken inputsWidth;
+    /// \brief "latlong"
+    /// 
+    /// Possible value for UsdLuxDomeLight::GetInputsTextureFormatAttr()
+    const TfToken latlong;
     /// \brief "lightLink"
     /// 
     ///  This token represents the collection name to use with UsdCollectionAPI to represent light-linking of a UsdLuxLight prim. 
@@ -164,12 +188,8 @@ struct UsdLuxTokensType {
     const TfToken lightListCacheBehavior;
     /// \brief "mirroredBall"
     /// 
-    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
+    /// Possible value for UsdLuxDomeLight::GetInputsTextureFormatAttr()
     const TfToken mirroredBall;
-    /// \brief "normalize"
-    /// 
-    /// UsdLuxLight
-    const TfToken normalize;
     /// \brief "orientToStageUpAxis"
     /// 
     ///  This token represents the suffix for a UsdGeomXformOp used to orient a light with the stage's up axis. 
@@ -178,10 +198,6 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxDomeLight
     const TfToken portals;
-    /// \brief "radius"
-    /// 
-    /// UsdLuxCylinderLight, UsdLuxSphereLight, UsdLuxDiskLight
-    const TfToken radius;
     /// \brief "shadow:color"
     /// 
     /// UsdLuxShadowAPI
@@ -234,18 +250,6 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxShapingAPI
     const TfToken shapingIesNormalize;
-    /// \brief "specular"
-    /// 
-    /// UsdLuxLight
-    const TfToken specular;
-    /// \brief "texture:file"
-    /// 
-    /// UsdLuxDomeLight, UsdLuxRectLight
-    const TfToken textureFile;
-    /// \brief "texture:format"
-    /// 
-    /// UsdLuxDomeLight
-    const TfToken textureFormat;
     /// \brief "treatAsLine"
     /// 
     /// UsdLuxCylinderLight
@@ -254,10 +258,6 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxSphereLight
     const TfToken treatAsPoint;
-    /// \brief "width"
-    /// 
-    /// UsdLuxRectLight
-    const TfToken width;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

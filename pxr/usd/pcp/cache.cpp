@@ -111,7 +111,7 @@ PcpCache::PcpCache(
     bool usd) :
     _rootLayer(layerStackIdentifier.rootLayer),
     _sessionLayer(layerStackIdentifier.sessionLayer),
-    _pathResolverContext(layerStackIdentifier.pathResolverContext),
+    _layerStackIdentifier(layerStackIdentifier),
     _usd(usd),
     _fileFormatTarget(fileFormatTarget),
     _layerStackCache(Pcp_LayerStackRegistry::New(_fileFormatTarget, _usd)),
@@ -159,11 +159,10 @@ PcpCache::~PcpCache()
 ////////////////////////////////////////////////////////////////////////
 // Cache parameters.
 
-PcpLayerStackIdentifier
+const PcpLayerStackIdentifier&
 PcpCache::GetLayerStackIdentifier() const
 {
-    return PcpLayerStackIdentifier(_rootLayer, _sessionLayer,
-                                   _pathResolverContext);
+    return _layerStackIdentifier;
 }
 
 PcpLayerStackPtr
@@ -268,7 +267,7 @@ PcpCache::RequestLayerMuting(const std::vector<std::string>& layersToMute,
                              std::vector<std::string>* newLayersMuted,
                              std::vector<std::string>* newLayersUnmuted)
 {
-    ArResolverContextBinder binder(_pathResolverContext);
+    ArResolverContextBinder binder(_layerStackIdentifier.pathResolverContext);
 
     std::vector<std::string> finalLayersToMute;
     for (const auto& layerToMute : layersToMute) {
@@ -1022,7 +1021,7 @@ PcpCache::Reload(PcpChanges* changes)
         return;
     }
 
-    ArResolverContextBinder binder(_pathResolverContext);
+    ArResolverContextBinder binder(_layerStackIdentifier.pathResolverContext);
 
     // Reload every invalid sublayer and asset we know about,
     // in any layer stack or prim index.
@@ -1071,7 +1070,7 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
 {
     TRACE_FUNCTION();
 
-    ArResolverContextBinder binder(_pathResolverContext);
+    ArResolverContextBinder binder(_layerStackIdentifier.pathResolverContext);
 
     // Traverse every PrimIndex at or under primPath to find
     // InvalidAssetPath errors, and collect the unique layer stacks used.

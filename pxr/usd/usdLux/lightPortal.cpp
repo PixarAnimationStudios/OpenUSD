@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdLuxLightPortal,
-        TfType::Bases< UsdGeomXformable > >();
+        TfType::Bases< UsdLuxPortalLight > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
@@ -75,7 +75,12 @@ UsdLuxLightPortal::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdLuxLightPortal::_GetSchemaType() const {
+UsdSchemaKind UsdLuxLightPortal::_GetSchemaKind() const {
+    return UsdLuxLightPortal::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdLuxLightPortal::_GetSchemaType() const {
     return UsdLuxLightPortal::schemaType;
 }
 
@@ -108,7 +113,7 @@ UsdLuxLightPortal::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
     static TfTokenVector allNames =
-        UsdGeomXformable::GetSchemaAttributeNames(true);
+        UsdLuxPortalLight::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;

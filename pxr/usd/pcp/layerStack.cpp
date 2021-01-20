@@ -871,16 +871,19 @@ PcpLayerStack::_BuildLayerStack(
         }
 
         // Resolve and open sublayer.
-        string sublayerPath(sublayers[i]);
         TfErrorMark m;
 
         SdfLayer::FileFormatArguments localArgs;
         const SdfLayer::FileFormatArguments& layerArgs = 
             Pcp_GetArgumentsForFileFormatTarget(
-                sublayerPath, &defaultLayerArgs, &localArgs);
+                sublayers[i], &defaultLayerArgs, &localArgs);
 
-        SdfLayerRefPtr sublayer = SdfFindOrOpenRelativeToLayer(
-            layer, &sublayerPath, layerArgs);
+        // This is equivalent to SdfLayer::FindOrOpenRelativeToLayer, but we
+        // want to keep track of the final sublayer path after anchoring it
+        // to the layer.
+        string sublayerPath = SdfComputeAssetPathRelativeToLayer(
+            layer, sublayers[i]);
+        SdfLayerRefPtr sublayer = SdfLayer::FindOrOpen(sublayerPath, layerArgs);
 
         _sublayerSourceInfo.emplace_back(layer, sublayers[i], sublayerPath);
 
@@ -888,8 +891,8 @@ PcpLayerStack::_BuildLayerStack(
             PcpErrorInvalidSublayerPathPtr err = 
                 PcpErrorInvalidSublayerPath::New();
             err->rootSite = PcpSite(_identifier, SdfPath::AbsoluteRootPath());
-            err->layer           = layer;
-            err->sublayerPath    = sublayerPath;
+            err->layer = layer;
+            err->sublayerPath = sublayerPath;
             if (!m.IsClean()) {
                 vector<string> commentary;
                 for (auto const &err: m) {

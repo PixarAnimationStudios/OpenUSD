@@ -26,15 +26,17 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdShade/api.h"
+#include "pxr/usd/usdShade/types.h"
+#include "pxr/usd/usdShade/utils.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/ndr/declare.h"
-#include "pxr/usd/usdShade/utils.h"
 
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdShadeConnectableAPI;
+struct UsdShadeConnectionSourceInfo;
 class UsdShadeInput;
 
 /// \class UsdShadeOutput
@@ -247,18 +249,38 @@ public:
     USDSHADE_API
     bool CanConnect(const UsdShadeOutput &sourceOutput) const;
 
-    /// Authors a connection for this Output to the source described by the 
-    /// following three elements: 
-    /// \p source, the connectable owning the source,
-    /// \p sourceName, the name of the source and 
-    /// \p sourceType, the value type of the source shading attribute.
-    ///
-    /// \p typeName if specified, is the typename of the attribute to create 
-    /// on the source if it doesn't exist. It is also used to validate whether 
-    /// the types of the source and consumer of the connection are compatible.
-    ///
+    using ConnectionModification = UsdShadeConnectionModification;
+
+    /// Authors a connection for this Output
+    /// 
+    /// \p source is a struct that describes the upstream source attribute
+    /// with all the information necessary to make a connection. See the
+    /// documentation for UsdShadeConnectionSourceInfo.
+    /// \p mod describes the operation that should be applied to the list of
+    /// connections. By default the new connection will replace any existing
+    /// connections, but it can add to the list of connections to represent
+    /// multiple input connections.
+    /// 
+    /// \return
+    /// \c true if a connection was created successfully.
+    /// \c false if \p shadingAttr or \p source is invalid.
+    /// 
+    /// \note This method does not verify the connectability of the shading
+    /// attribute to the source. Clients must invoke CanConnect() themselves
+    /// to ensure compatibility.
+    /// \note The source shading attribute is created if it doesn't exist
+    /// already.
+    /// 
     /// \sa UsdShadeConnectableAPI::ConnectToSource
     ///
+    USDSHADE_API
+    bool ConnectToSource(
+        UsdShadeConnectionSourceInfo const &source,
+        ConnectionModification const mod =
+            ConnectionModification::Replace) const;
+
+    /// \deprecated
+    /// \overload
     USDSHADE_API
     bool ConnectToSource(
         UsdShadeConnectableAPI const &source, 
@@ -287,32 +309,45 @@ public:
     USDSHADE_API
     bool ConnectToSource(UsdShadeOutput const &sourceOutput) const;
 
-    /// Finds the source of a connection for this Output.
+    /// Connects this Output to the given sources, \p sourceInfos
     /// 
-    /// \p source is an output parameter which will be set to the source 
-    /// connectable prim.
-    /// \p sourceName will be set to the name of the source shading attribute, 
-    /// which may be an input or an output, as specified by \p sourceType
-    /// \p sourceType will have the type of the source shading attribute, i.e.
-    /// whether it is an \c Input or \c Output
+    /// \sa UsdShadeConnectableAPI::SetConnectedSources
     ///
-    /// \return 
-    /// \c true if the shading attribute is connected to a valid, defined source
-    /// attribute.
-    /// \c false if the shading attribute is not connected to a single, defined 
-    /// source attribute. 
+    USDSHADE_API
+    bool SetConnectedSources(
+        std::vector<UsdShadeConnectionSourceInfo> const &sourceInfos) const;
+
+    // XXX move to new header
+    using SourceInfoVector = TfSmallVector<UsdShadeConnectionSourceInfo, 1>;
+
+    /// Finds the valid sources of connections for the Output.
     /// 
-    /// \note The python wrapping for this method returns a 
-    /// (source, sourceName, sourceType) tuple if the parameter is connected, 
-    /// else \c None
+    /// \p invalidSourcePaths is an optional output parameter to collect the
+    /// invalid source paths that have not been reported in the returned vector.
+    /// 
+    /// Returns a vector of \p UsdShadeConnectionSourceInfo structs with
+    /// information about each upsteam attribute. If the vector is empty, there
+    /// have been no valid connections.
+    /// 
+    /// \note A valid connection requires the existence of the source attribute
+    /// and also requires that the source prim is UsdShadeConnectableAPI
+    /// compatible.
+    /// \note The python wrapping returns a tuple with the valid connections
+    /// first, followed by the invalid source paths.
+    /// 
+    /// \sa UsdShadeConnectableAPI::GetConnectedSources
     ///
-    /// \sa UsdShadeConnectableAPI::GetConnectedSource
-    ///
+    USDSHADE_API
+    SourceInfoVector GetConnectedSources(
+        SdfPathVector *invalidSourcePaths = nullptr) const;
+
+    /// \deprecated Please use GetConnectedSources instead
     USDSHADE_API
     bool GetConnectedSource(UsdShadeConnectableAPI *source, 
                             TfToken *sourceName,
                             UsdShadeAttributeType *sourceType) const;
 
+    /// \deprecated
     /// Returns the "raw" (authored) connected source paths for this Output.
     /// 
     /// \sa UsdShadeConnectableAPI::GetRawConnectedSourcePaths
@@ -337,22 +372,41 @@ public:
     USDSHADE_API
     bool IsSourceConnectionFromBaseMaterial() const;
 
-    /// Disconnect source for this Output.
+    /// Disconnect source for this Output. If \p sourceAttr is valid, only a
+    /// connection to the specified attribute is disconnected, otherwise all
+    /// connections are removed.
     /// 
     /// \sa UsdShadeConnectableAPI::DisconnectSource
     ///
     USDSHADE_API
-    bool DisconnectSource() const;
+    bool DisconnectSource(UsdAttribute const &sourceAttr = UsdAttribute()) const;
 
-    /// Clears source for this shading attribute in the current UsdEditTarget.
+    /// Clears sources for this Output in the current UsdEditTarget.
     ///
     /// Most of the time, what you probably want is DisconnectSource()
     /// rather than this function.
     ///
-    /// \sa UsdShadeConnectableAPI::ClearSource
+    /// \sa UsdShadeConnectableAPI::ClearSources
     ///
     USDSHADE_API
+    bool ClearSources() const;
+
+    /// \deprecated
+    USDSHADE_API
     bool ClearSource() const;
+
+    /// @}
+
+    // -------------------------------------------------------------------------
+    /// \name Connected Value API
+    // -------------------------------------------------------------------------
+    /// @{
+
+    /// \brief Find what is connected to this Output recursively
+    ///
+    /// \sa UsdShadeUtils::GetValueProducingAttributes
+    USDSHADE_API
+    UsdShadeAttributeVector GetValueProducingAttributes() const;
 
     /// @}
 
@@ -366,6 +420,12 @@ public:
     /// same UsdShadeOutput, false otherwise.
     friend bool operator==(const UsdShadeOutput &lhs, const UsdShadeOutput &rhs) {
         return lhs.GetAttr() == rhs.GetAttr();
+    }
+
+    /// Inequality comparison. Return false if \a lhs and \a rhs represent the
+    /// same UsdShadeOutput, true otherwise.
+    friend bool operator!=(const UsdShadeOutput &lhs, const UsdShadeOutput &rhs) {
+        return !(lhs == rhs);
     }
 
 private:

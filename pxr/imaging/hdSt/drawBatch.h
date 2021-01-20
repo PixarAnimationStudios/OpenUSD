@@ -78,9 +78,15 @@ public:
     HDST_API
     bool Rebuild();
 
-    /// Validates that all batches are referring up to date bufferarrays.
-    /// If not, returns false
-    virtual bool Validate(bool deepValidation) = 0;
+    enum class ValidationResult {
+        ValidBatch = 0,
+        RebuildBatch,
+        RebuildAllBatches
+    };
+
+    /// Validates whether the  batch can be reused (i.e., submitted) as-is, or
+    /// if it needs to be rebuilt, or if all batches need to be rebuilt.
+    virtual ValidationResult Validate(bool deepValidation) = 0;
 
     /// Prepare draw commands and apply view frustum culling for this batch.
     virtual void PrepareDraw(

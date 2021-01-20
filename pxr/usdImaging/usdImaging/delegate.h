@@ -30,7 +30,7 @@
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/version.h"
 #include "pxr/usdImaging/usdImaging/collectionCache.h"
-#include "pxr/usdImaging/usdImaging/valueCache.h"
+#include "pxr/usdImaging/usdImaging/primvarDescCache.h"
 #include "pxr/usdImaging/usdImaging/resolvedAttributeCache.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 
@@ -347,6 +347,9 @@ public:
     USDIMAGING_API
     virtual GfMatrix4d GetInstancerTransform(SdfPath const &instancerId) 
         override;
+
+    USDIMAGING_API
+    virtual SdfPath GetInstancerId(SdfPath const &primId) override;
 
     // Motion samples
     USDIMAGING_API
@@ -671,8 +674,8 @@ private:
     /// Map from USD prim path to refine level.
     _RefineLevelMap _refineLevelMap;
 
-    /// Cached/pre-fetched rprim data.
-    UsdImagingValueCache _valueCache;
+    /// Cached/pre-fetched primvar descriptors.
+    UsdImagingPrimvarDescCache _primvarDescCache;
 
     /// Usd binding.
     UsdStageRefPtr _stage;

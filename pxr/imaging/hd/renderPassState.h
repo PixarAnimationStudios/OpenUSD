@@ -30,6 +30,8 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 
+#include "pxr/imaging/cameraUtil/framing.h"
+
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/tf/token.h"
@@ -55,7 +57,8 @@ class HdCamera;
 ///
 /// Parameters are expressed as GL states, uniforms or shaders.
 ///
-class HdRenderPassState {
+class HdRenderPassState
+{
 public:
     HD_API
     HdRenderPassState();
@@ -81,36 +84,88 @@ public:
     /// \name Camera and framing state
     // ---------------------------------------------------------------------- //
 
-    typedef std::vector<GfVec4d> ClipPlanesVector;
+    using ClipPlanesVector = std::vector<GfVec4d>;
+
     /// Camera setter API
-    /// Option 1: Specify matrices, viewport and clipping planes (defined in
-    /// camera space) directly.
+    ///
+    /// Sets the camera transform (aka view inverse matrix) and physical
+    /// parameters, the framing information and a possible overide value
+    /// for the window policy used to conform the camera frustum if its
+    /// aspect ratio is not matching the display window.
+    ///
+    /// Note: using std::pair<bool, ...> here instead of std::optional<...>
+    /// since the latter is only available in C++17 or later.
     HD_API
-    void SetCameraFramingState(GfMatrix4d const &worldToViewMatrix,
-                               GfMatrix4d const &projectionMatrix,
-                               GfVec4d const &viewport,
-                               ClipPlanesVector const & clipPlanes);
-    
-    /// Option 2:  Set camera handle and viewport to use.
+    void SetCameraAndFraming(
+        HdCamera const *camera,
+        CameraUtilFraming const &framing,
+        const std::pair<bool, CameraUtilConformWindowPolicy> &
+                                            overrideWindowPolicy);
+
+    /// Get camera
+    HdCamera const *
+    GetCamera() const { return _camera; }
+
+    /// Get framing information determining how the filmback plane maps
+    /// to pixels.
+    const CameraUtilFraming &
+    GetFraming() const { return _framing; }
+
+    /// The override value for the window policy to conform the camera 
+    /// frustum that can be specified by the application.
+    const std::pair<bool, CameraUtilConformWindowPolicy> &
+    GetOverrideWindowPolicy() const { return _overrideWindowPolicy; }
+
+    /// The resolved window policy to conform the camera frustum.
+    /// This is either the override value specified by the application or
+    /// the value from the scene delegate's camera.
+    HD_API
+    CameraUtilConformWindowPolicy
+    GetWindowPolicy() const;
+
+    /// Camera setter API
     /// The view, projection and clipping plane info of the camera will be used.
+    ///
+    /// \deprecated Use the more expressive SetCameraAndFraming instead.
     HD_API
     void SetCameraAndViewport(HdCamera const *camera,
                               GfVec4d const& viewport);
     /// Camera getter API
+    ///
+    /// For backwards compatibility, use the worldToView matrix of the HdCamera
+    /// if given. Otherwise, use the HdCamera's transform.
+    ///
+    /// The HdRenderPassState also has a fallback value for the view
+    /// matrix that is used if no HdCamera was specified, that can be set with,
+    /// e.g.g, HdStRenderPassState::SetCameraFramingState.
+    ///
     HD_API
-    GfMatrix4d const & GetWorldToViewMatrix() const;
+    GfMatrix4d GetWorldToViewMatrix() const;
 
+    /// It is expected that an HdCamera was specified that has physically based
+    /// attributes. The projection matrix is computed from those attributes and
+    /// the conform window policy is applied.
+    ///
+    /// For backwards compatibility with scene and render delegates:
+    /// if the HdCamera has no physically based attributes (more precisely,
+    /// the scene delegate provided a VtValue for focalLength that is either
+    /// empty or 1.0f), the HdCamera's projection matrix is used.
+    /// The HdRenderPassState also has a fallback value for the projection
+    /// matrix that is used if no HdCamera was specified, that can be set with,
+    /// e.g.g, HdStRenderPassState::SetCameraFramingState.
+    ///
     HD_API
     GfMatrix4d GetProjectionMatrix() const;
 
+    /// Only use when clients did not specify a camera framing.
+    ///
+    /// \deprecated
     GfVec4f const & GetViewport() const { return _viewport; }
 
     HD_API
     ClipPlanesVector const & GetClipPlanes() const;
 
     GfMatrix4d GetCullMatrix() const { return _cullMatrix; }
-
-    HdCamera const *GetCamera() const { return _camera; }
 
     // ---------------------------------------------------------------------- //
     /// \name Application rendering state
@@ -177,7 +232,7 @@ public:
     HD_API
     void SetCullStyle(HdCullStyle cullStyle);
     HD_API
-    HdCullStyle GetCullStyle() { return _cullStyle; }
+    HdCullStyle GetCullStyle() const { return _cullStyle; }
 
     HD_API
     void SetAlphaThreshold(float alphaThreshold);
@@ -252,10 +307,6 @@ public:
     void SetBlendEnabled(bool enabled);
 
     HD_API
-    void SetAlphaToCoverageUseDefault(bool useDefault);
-    bool GetAlphaToCoverageUseDefault() const { return _alphaToCoverageUseDefault; }
-
-    HD_API
     void SetAlphaToCoverageEnabled(bool enabled);
     bool GetAlphaToCoverageEnabled() const { return _alphaToCoverageEnabled; }
 
@@ -279,11 +330,19 @@ protected:
     // ---------------------------------------------------------------------- //
     HdCamera const *_camera;
     GfVec4f _viewport;
+    CameraUtilFraming _framing;
+    std::pair<bool, CameraUtilConformWindowPolicy> _overrideWindowPolicy;
     // TODO: This is only used for CPU culling, should compute it on the fly.
     GfMatrix4d _cullMatrix; 
 
+    // Used by applications setting the view matrix directly instead of
+    // using an HdCamera. Will be removed eventually.
     GfMatrix4d _worldToViewMatrix;
+    // Used by applications setting the projection matrix directly instead
+    // of using an HdCamera. Will be removed eventually.
     GfMatrix4d _projectionMatrix;
+    // Used by applications setting the clip planes directly instead
+    // of using an HdCamera. Will be removed eventually.
     ClipPlanesVector _clipPlanes;
 
     // ---------------------------------------------------------------------- //
@@ -341,7 +400,6 @@ protected:
     bool _blendEnabled;
 
     // alpha to coverage
-    bool _alphaToCoverageUseDefault;
     bool _alphaToCoverageEnabled;
 
     bool _colorMaskUseDefault;

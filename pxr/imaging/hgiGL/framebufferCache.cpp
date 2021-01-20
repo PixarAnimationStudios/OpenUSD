@@ -21,8 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include <GL/glew.h>
-#include <memory>
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/framebufferCache.h"
@@ -31,45 +30,98 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/trace/trace.h"
 
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HgiGLDescriptorCacheItem {
-    HgiGraphicsCmdsDesc descriptor;
+namespace {
+
+struct _FramebufferDesc
+{
+    _FramebufferDesc() = default;
+
+    _FramebufferDesc(HgiGraphicsCmdsDesc const& desc, bool resolved)
+        : depthFormat(desc.depthAttachmentDesc.format)
+        , colorTextures(
+            resolved && !desc.colorResolveTextures.empty()
+                ? desc.colorResolveTextures : desc.colorTextures)
+        , depthTexture(
+            resolved && desc.depthResolveTexture
+                ? desc.depthResolveTexture : desc.depthTexture)
+    {
+        TF_VERIFY(
+            colorTextures.size() == desc.colorAttachmentDescs.size(),
+            "Number of attachment descriptors and textures don't match");
+    }
+
+    HgiFormat depthFormat;
+    HgiTextureHandleVector colorTextures;
+    HgiTextureHandle depthTexture;
+};
+
+bool operator==(
+    const _FramebufferDesc& lhs,
+    const _FramebufferDesc& rhs)
+{
+    return lhs.depthFormat == rhs.depthFormat &&
+           lhs.colorTextures == rhs.colorTextures &&
+           lhs.depthTexture == rhs.depthTexture;
+}
+
+std::ostream& operator<<(
+    std::ostream& out,
+    const _FramebufferDesc& desc)
+{
+    out << "_FramebufferDesc: {";
+
+    for (size_t i=0; i<desc.colorTextures.size(); i++) {
+        out << "colorTexture" << i << " ";
+        out << "dimensions:" << 
+            desc.colorTextures[i]->GetDescriptor().dimensions << ", ";
+    }
+
+    if (desc.depthTexture) {
+        out << "depthFormat " << desc.depthFormat;
+        out << "depthTexture ";
+        out << "dimensions:" << desc.depthTexture->GetDescriptor().dimensions;
+    }
+
+    out << "}";
+    return out;
+}
+
+}
+
+struct HgiGLDescriptorCacheItem
+{
+    _FramebufferDesc descriptor;
     uint32_t framebuffer = 0;
-    uint32_t resolvedFramebuffer = 0;
 };
 
 static void
 _CreateFramebuffer(
-    const HgiAttachmentDescVector &colorAttachmentDescs,
-    const HgiAttachmentDesc &depthAttachmentDesc,
-    const HgiTextureHandleVector &colorTextures,
-    const HgiTextureHandle &depthTexture,
+    const _FramebufferDesc &desc,
     uint32_t * const framebuffer)
 {
     // Create framebuffer
     glCreateFramebuffers(1, framebuffer);
   
     // Bind color attachments
-    const size_t numColorAttachments = colorAttachmentDescs.size();
+    const size_t numColorAttachments = desc.colorTextures.size();
     std::vector<GLenum> drawBuffers(numColorAttachments);
-
-    TF_VERIFY(colorTextures.size() == numColorAttachments,
-        "Number of attachment descriptors and textures don't match");
 
     //
     // Color attachments
     //
     for (size_t i=0; i<numColorAttachments; i++) {
-        HgiGLTexture* glTexture = static_cast<HgiGLTexture*>(
-            colorTextures[i].Get());
+        HgiGLTexture *const glTexture = static_cast<HgiGLTexture*>(
+            desc.colorTextures[i].Get());
 
         if (!TF_VERIFY(glTexture, "Invalid attachment texture")) {
             continue;
         }
 
-        uint32_t textureName = glTexture->GetTextureId();
+        const uint32_t textureName = glTexture->GetTextureId();
         if (!TF_VERIFY(glIsTexture(textureName), "Attachment not a texture")) {
             continue;
         }
@@ -91,15 +143,15 @@ _CreateFramebuffer(
     //
     // Depth attachment
     //
-    if (depthTexture) {
-        HgiGLTexture* glTexture =
-            static_cast<HgiGLTexture*>(depthTexture.Get());
+    if (desc.depthTexture) {
+        HgiGLTexture *const glTexture =
+            static_cast<HgiGLTexture*>(desc.depthTexture.Get());
 
-        uint32_t textureName = glTexture->GetTextureId();
+        const uint32_t textureName = glTexture->GetTextureId();
 
         if (TF_VERIFY(glIsTexture(textureName), "Attachment not a texture")) {
-            GLenum attachment =
-                (depthAttachmentDesc.format == HgiFormatFloat32UInt8)?
+            const GLenum attachment =
+                (desc.depthFormat == HgiFormatFloat32UInt8)?
                     GL_DEPTH_STENCIL_ATTACHMENT : GL_DEPTH_ATTACHMENT;
 
             glNamedFramebufferTexture(
@@ -111,7 +163,7 @@ _CreateFramebuffer(
     }
 
     // Note that if color or depth is multi-sample, they both have to be for GL.
-    GLenum status = glCheckNamedFramebufferStatus(
+    const GLenum status = glCheckNamedFramebufferStatus(
         *framebuffer,
         GL_FRAMEBUFFER);
     TF_VERIFY(status == GL_FRAMEBUFFER_COMPLETE);
@@ -121,30 +173,15 @@ _CreateFramebuffer(
     
 
 static HgiGLDescriptorCacheItem*
-_CreateDescriptorCacheItem(const HgiGraphicsCmdsDesc& desc)
+_CreateDescriptorCacheItem(const _FramebufferDesc& desc)
 {
     TRACE_FUNCTION();
 
-    HgiGLDescriptorCacheItem* dci = new HgiGLDescriptorCacheItem();
+    HgiGLDescriptorCacheItem* const dci = new HgiGLDescriptorCacheItem();
     dci->descriptor = desc;
 
     // Create framebuffer
-    _CreateFramebuffer(
-        desc.colorAttachmentDescs,
-        desc.depthAttachmentDesc,
-        desc.colorTextures,
-        desc.depthTexture,
-        &dci->framebuffer);
-
-    // Create framebuffer for resolved textures
-    if ( (!desc.colorResolveTextures.empty()) || desc.depthResolveTexture) {
-        _CreateFramebuffer(
-            desc.colorAttachmentDescs,
-            desc.depthAttachmentDesc,
-            desc.colorResolveTextures,
-            desc.depthResolveTexture,
-            &dci->resolvedFramebuffer);
-    }        
+    _CreateFramebuffer(desc, &dci->framebuffer);
 
     // Bind color attachments
     return dci;
@@ -161,12 +198,6 @@ _DestroyDescriptorCacheItem(HgiGLDescriptorCacheItem* dci)
             dci->framebuffer = 0;
         }
     }
-    if (dci->resolvedFramebuffer) {
-        if (glIsFramebuffer(dci->resolvedFramebuffer)) {
-            glDeleteFramebuffers(1, &dci->resolvedFramebuffer);
-            dci->resolvedFramebuffer = 0;
-        }
-    }
 
     delete dci;
     HGIGL_POST_PENDING_GL_ERRORS();
@@ -181,22 +212,25 @@ HgiGLFramebufferCache::~HgiGLFramebufferCache()
 
 uint32_t
 HgiGLFramebufferCache::AcquireFramebuffer(
-    HgiGraphicsCmdsDesc const& desc,
-    bool resolved)
+    HgiGraphicsCmdsDesc const& graphicsCmdsDesc,
+    const bool resolved)
 {
+    TRACE_FUNCTION();
+
     // We keep a small cache of descriptor / framebuffer combos since it is
     // potentially an expensive state change to attach textures to GL FBs.
 
     HgiGLDescriptorCacheItem* dci = nullptr;
 
+    _FramebufferDesc desc(graphicsCmdsDesc, resolved);
+
     // Look for our framebuffer in cache
     for (size_t i=0; i<_descriptorCache.size(); i++) {
-        HgiGLDescriptorCacheItem* item = _descriptorCache[i];
+        HgiGLDescriptorCacheItem* const item = _descriptorCache[i];
         if (desc == item->descriptor) {
             // If the GL context is changed we cannot re-use the framebuffer as
             // framebuffers cannot be shared between contexts.
-            if (glIsFramebuffer(
-                    resolved ? item->resolvedFramebuffer : item->framebuffer)) {
+            if (glIsFramebuffer(item->framebuffer)) {
                 dci = item;
 
                 // Move descriptor to end of 'LRU cache' as it is still used.
@@ -217,14 +251,14 @@ HgiGLFramebufferCache::AcquireFramebuffer(
         // Destroy oldest descriptor / FB in LRU cache vector.
         // The size of the cache is small enough and we only store ptrs so we
         // use a vector instead of a linked list LRU.
-        const size_t descriptorLRUsize = 32;
+        const size_t descriptorLRUsize = 64;
         if (_descriptorCache.size() == descriptorLRUsize) {
             _DestroyDescriptorCacheItem(_descriptorCache.front());
             _descriptorCache.erase(_descriptorCache.begin());
         }
     }
 
-    return resolved ? dci->resolvedFramebuffer : dci->framebuffer;
+    return dci->framebuffer;
 }
 
 void

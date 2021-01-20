@@ -266,8 +266,14 @@ bool operator!=(
 ///   The actual VBOs are bound via GraphicsCmds.</li>
 /// <li>colorAttachmentDescs:
 ///   Describes each of the color attachments.</li>
+/// <li>colorResolveAttachmentDescs:
+///   Describes each of the color resolve attachments (optional).</li>
 /// <li>depthAttachmentDesc:
-///   Describes the depth attachment (optional)</li>
+///   Describes the depth attachment (optional)
+///   Use HgiFormatInvalid to indicate no depth attachment.</li>
+/// <li>depthResolveAttachmentDesc:
+///   Describes the depth resolve attachment (optional).
+///   Use HgiFormatInvalid to indicate no depth resolve attachment.</li>
 /// <li>shaderConstantsDesc:
 ///   Describes the shader uniforms.</li>
 /// </ul>
@@ -285,7 +291,9 @@ struct HgiGraphicsPipelineDesc
     HgiRasterizationState rasterizationState;
     HgiVertexBufferDescVector vertexBuffers;
     HgiAttachmentDescVector colorAttachmentDescs;
+    HgiAttachmentDescVector colorResolveAttachmentDescs;
     HgiAttachmentDesc depthAttachmentDesc;
+    HgiAttachmentDesc depthResolveAttachmentDesc;
     HgiGraphicsShaderConstantsDesc shaderConstantsDesc;
 };
 
@@ -332,9 +340,7 @@ private:
     HgiGraphicsPipeline(const HgiGraphicsPipeline&) = delete;
 };
 
-/// Explicitly instantiate and define pipeline handle
-template class HgiHandle<class HgiGraphicsPipeline>;
-using HgiGraphicsPipelineHandle = HgiHandle<class HgiGraphicsPipeline>;
+using HgiGraphicsPipelineHandle = HgiHandle<HgiGraphicsPipeline>;
 using HgiGraphicsPipelineHandleVector = std::vector<HgiGraphicsPipelineHandle>;
 
 

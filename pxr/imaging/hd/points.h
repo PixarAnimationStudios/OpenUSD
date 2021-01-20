@@ -67,8 +67,7 @@ protected:
     /// Constructor. instancerId, if specified, is the instancer which uses
     /// this point cloud as a prototype.
     HD_API
-    HdPoints(SdfPath const& id,
-             SdfPath const& instancerId = SdfPath());
+    HdPoints(SdfPath const& id);
 
     typedef _ReprDescConfigs<HdPointsReprDesc> _PointsReprConfig;
 

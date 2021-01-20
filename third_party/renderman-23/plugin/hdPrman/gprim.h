@@ -50,9 +50,8 @@ class HdPrman_Gprim : public BASE {
 public:
     typedef BASE BaseType;
 
-    HdPrman_Gprim(SdfPath const& id,
-                  SdfPath const& instancerId = SdfPath())
-        : BaseType(id, instancerId)
+    HdPrman_Gprim(SdfPath const& id)
+        : BaseType(id)
     {
     }
 
@@ -151,6 +150,9 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
 
     HdPrman_Context *context =
         static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+
+    // Update instance bindings.
+    BASE::_UpdateInstancer(sceneDelegate, dirtyBits);
 
     // Prim id
     SdfPath const& id = BASE::GetId();
@@ -326,11 +328,15 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     } else {
         // Hydra Instancer case.
         HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+
+        // Sync the hydra instancer (note: this is transitional code, it should
+        // be done by the render index...)
+        HdInstancer::_SyncInstancerAndParents(renderIndex, instancerId);
+
         HdPrmanInstancer *instancer = static_cast<HdPrmanInstancer*>(
             renderIndex.GetInstancer(instancerId));
         VtIntArray instanceIndices =
             sceneDelegate->GetInstanceIndices(instancerId, id);
-        instancer->SyncPrimvars();
 
         // Sample per-instance transforms.
         HdTimeSampleArray<VtMatrix4dArray, HDPRMAN_MAX_TIME_SAMPLES> ixf;

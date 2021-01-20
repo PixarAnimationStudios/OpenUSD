@@ -32,7 +32,6 @@
 #include "pxr/imaging/hd/primTypeIndex.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sortedIds.h"
-#include "pxr/imaging/hd/textureResource.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -206,8 +205,7 @@ public:
     HD_API
     void InsertRprim(TfToken const& typeId,
                      HdSceneDelegate* sceneDelegate,
-                     SdfPath const& rprimId,
-                     SdfPath const& instancerId = SdfPath());
+                     SdfPath const& rprimId);
 
     /// Remove a rprim from index
     HD_API
@@ -259,8 +257,7 @@ public:
     /// Insert an instancer into index
     HD_API
     void InsertInstancer(HdSceneDelegate* delegate,
-                         SdfPath const &id,
-                         SdfPath const &parentId = SdfPath());
+                         SdfPath const &id);
 
     /// Remove an instancer from index
     HD_API
@@ -356,13 +353,6 @@ public:
     /// Returns the fallback prim for the Bprim of the given type.
     HD_API
     HdBprim *GetFallbackBprim(TfToken const& typeId) const;
-
-    /// Helper utility to convert texture resource id's which are unique
-    /// to this render index, into a globally unique texture key
-    HD_API
-    HdResourceRegistry::TextureKey
-        GetTextureKey(HdTextureResource::ID id) const;
-
 
     // ---------------------------------------------------------------------- //
     /// \name Render Delegate

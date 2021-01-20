@@ -27,7 +27,14 @@ from __future__ import print_function
 import unittest
 from pxr import Usd, UsdShade, Sdf
 
+Input = UsdShade.AttributeType.Input
+Output = UsdShade.AttributeType.Output
+Invalid = UsdShade.AttributeType.Invalid
+
 class TestUsdShadeGetValueProducingAttribute(unittest.TestCase):
+
+    def _getType(self, attr):
+        return UsdShade.Utils.GetType(attr.GetName())
 
     def _check(self, attr, expectedPath, expectedValue=None):
         print("CHECK:", attr, "vs", expectedPath)
@@ -38,6 +45,27 @@ class TestUsdShadeGetValueProducingAttribute(unittest.TestCase):
             self.assertTrue(UsdShade.Output.IsOutput(attr))
         self.assertEqual(attr.GetPath(), Sdf.Path(expectedPath))
         self.assertEqual(attr.Get(), expectedValue)
+
+    def _test(self, prim, inputName,
+              expectedType, expectedPath, expectedValue=None):
+        attrs = prim.GetInput(inputName).GetValueProducingAttributes()
+        self.assertEqual(len(attrs), 1)
+        self.assertEqual(self._getType(attrs[0]), expectedType)
+        self._check(attrs[0], expectedPath, expectedValue)
+
+    def _testInvalid(self, prim, inputName):
+        attrs = prim.GetInput(inputName).GetValueProducingAttributes()
+        self.assertEqual(len(attrs), 0)
+        self.assertFalse(attrs)
+
+    def _testMulti(self, prim, inputName,
+                   expectedTypes, expectedPaths, expectedValues=None):
+        attrs = prim.GetInput(inputName).GetValueProducingAttributes()
+        self.assertEqual(len(attrs), len(expectedPaths))
+        for i in range(len(attrs)):
+            self.assertEqual(self._getType(attrs[i]), expectedTypes[i])
+            expectedValue = expectedValues[i] if expectedValues else None
+            self._check(attrs[i], expectedPaths[i], expectedValue)
 
     def test_GetValueProducingAttribute(self):
         stage = Usd.Stage.Open('test.usda')
@@ -62,92 +90,60 @@ class TestUsdShadeGetValueProducingAttribute(unittest.TestCase):
         # ----------------------------------------------------------------------
         # resolve top level inputs
         # ----------------------------------------------------------------------
-        attr, attrType = \
-            material.GetInput('topLevelValue').GetValueProducingAttribute()
-        self.assertEqual(attrType, UsdShade.AttributeType.Input)
-        self._check(attr, '/Material.inputs:topLevelValue', 'TopLevelValue')
+        self._test(material, 'topLevelValue', Input,
+                   '/Material.inputs:topLevelValue', 'TopLevelValue')
 
         # ----------------------------------------------------------------------
         # resolve inputs on terminal node
         # ----------------------------------------------------------------------
-        attr, attrType = \
-            terminal.GetInput('terminalInput1').GetValueProducingAttribute()
-        self.assertEqual(attrType, UsdShade.AttributeType.Output)
-        self._check(attr, '/Material/NodeGraph/NestedNode1.outputs:nestedOut1')
+        self._test(terminal, 'terminalInput1', Output,
+                   '/Material/NodeGraph/NestedNode1.outputs:nestedOut1')
 
-        attr, attrType = \
-            terminal.GetInput('terminalInput2').GetValueProducingAttribute()
-        self.assertEqual(attrType, UsdShade.AttributeType.Input)
-        self._check(attr, '/Material/NodeGraph.inputs:nodeGraphVal', 'NodeGraphValue')
+        self._test(terminal, 'terminalInput2', Input,
+                   '/Material/NodeGraph.inputs:nodeGraphVal', 'NodeGraphValue')
 
-        attr, attrType = \
-            terminal.GetInput('terminalInput3').GetValueProducingAttribute()
-        self.assertEqual(attrType, UsdShade.AttributeType.Output)
-        self._check(attr, '/Material/RegularNode.outputs:nodeOutput')
+        self._test(terminal, 'terminalInput3', Output,
+                   '/Material/RegularNode.outputs:nodeOutput')
 
-        attr, attrType = \
-            terminal.GetInput('terminalInput4').GetValueProducingAttribute()
-        self.assertEqual(attrType, UsdShade.AttributeType.Input)
-        self._check(attr, '/Material.inputs:topLevelValue', 'TopLevelValue')
+        self._test(terminal, 'terminalInput4', Input,
+                   '/Material.inputs:topLevelValue', 'TopLevelValue')
 
-        attr, attrType = \
-            terminal.GetInput('terminalInput5').GetValueProducingAttribute()
-        self.assertEqual(attrType, UsdShade.AttributeType.Output)
-        self._check(attr, '/Material/NodeGraph/NestedNodeGraph/NestedNodeGraph2'
-                          '/SuperNestedNode.outputs:superNestedOut')
+        self._test(terminal, 'terminalInput5', Output,
+                   '/Material/NodeGraph/NestedNodeGraph/NestedNodeGraph2'
+                   '/SuperNestedNode.outputs:superNestedOut')
 
-        attr, attrType = \
-            terminal.GetInput('terminalInput6').GetValueProducingAttribute()
-        self.assertEqual(attrType, UsdShade.AttributeType.Input)
-        self._check(attr, '/Material.inputs:topLevelValue', 'TopLevelValue')
+        self._test(terminal, 'terminalInput6', Input,
+                   '/Material.inputs:topLevelValue', 'TopLevelValue')
 
         # ----------------------------------------------------------------------
         # resolve inputs on node graph node
         # ----------------------------------------------------------------------
-        attr, attrType = \
-            nodeGraph.GetInput('nodeGraphVal').GetValueProducingAttribute()
-        self.assertEqual(attrType, UsdShade.AttributeType.Input)
-        self._check(attr, '/Material/NodeGraph.inputs:nodeGraphVal', 'NodeGraphValue')
+        self._test(nodeGraph, 'nodeGraphVal', Input,
+                   '/Material/NodeGraph.inputs:nodeGraphVal', 'NodeGraphValue')
 
-        attr, attrType = \
-            nodeGraph.GetInput('nodeGraphIn1').GetValueProducingAttribute()
-        self.assertEqual(attrType, UsdShade.AttributeType.Output)
-        self._check(attr, '/Material/RegularNode.outputs:nodeOutput')
+        self._test(nodeGraph, 'nodeGraphIn1', Output,
+                   '/Material/RegularNode.outputs:nodeOutput')
 
-        attr, attrType = \
-            nodeGraph.GetInput('nodeGraphIn2').GetValueProducingAttribute()
-        self.assertEqual(attrType, UsdShade.AttributeType.Input)
-        self._check(attr, '/Material.inputs:topLevelValue', 'TopLevelValue')
+        self._test(nodeGraph, 'nodeGraphIn2', Input,
+                   '/Material.inputs:topLevelValue', 'TopLevelValue')
 
         # ----------------------------------------------------------------------
         # resolve inputs on nested nodes
         # ----------------------------------------------------------------------
-        attr, attrType = \
-            nested1.GetInput('nestedIn1').GetValueProducingAttribute()
-        self.assertEqual(attrType, UsdShade.AttributeType.Input)
-        self._check(attr, '/Material/NodeGraph.inputs:nodeGraphVal', 'NodeGraphValue')
+        self._test(nested1, 'nestedIn1', Input,
+                   '/Material/NodeGraph.inputs:nodeGraphVal', 'NodeGraphValue')
 
-        attr, attrType = \
-            nested2.GetInput('nestedIn2').GetValueProducingAttribute()
-        self.assertEqual(attrType, UsdShade.AttributeType.Output)
-        self._check(attr, '/Material/RegularNode.outputs:nodeOutput')
+        self._test(nested2, 'nestedIn2', Output,
+                   '/Material/RegularNode.outputs:nodeOutput')
 
-        attr, attrType = \
-            superNested.GetInput('superNestedIn').GetValueProducingAttribute()
-        self.assertEqual(attrType, UsdShade.AttributeType.Input)
-        self._check(attr, '/Material/NodeGraph.inputs:nodeGraphVal', 'NodeGraphValue')
+        self._test(superNested, 'superNestedIn', Input,
+                   '/Material/NodeGraph.inputs:nodeGraphVal', 'NodeGraphValue')
 
         # ----------------------------------------------------------------------
         # resolve invalid inputs
         # ----------------------------------------------------------------------
-        attr, attrType = \
-            terminal.GetInput('terminalInput7').GetValueProducingAttribute()
-        self.assertFalse(attr)
-        self.assertEqual(attrType, UsdShade.AttributeType.Invalid)
-        attr, attrType = \
-            terminal.GetInput('terminalInput8').GetValueProducingAttribute()
-        self.assertFalse(attr)
-        self.assertEqual(attrType, UsdShade.AttributeType.Invalid)
+        self._testInvalid(terminal, 'terminalInput7')
+        self._testInvalid(terminal, 'terminalInput8')
 
         # ----------------------------------------------------------------------
         # resolve inputs with a cycle
@@ -155,24 +151,34 @@ class TestUsdShadeGetValueProducingAttribute(unittest.TestCase):
         # This will issue a warning (TF_WARN):
         # GetValueProducingAttribute:
         #    Found cycle with attribute /Material/NodeGraph.inputs:cycleA
-        attr, attrType = \
-            nodeGraph.GetInput('cycleA').GetValueProducingAttribute()
-        self.assertFalse(attr)
-        self.assertEqual(attrType, UsdShade.AttributeType.Invalid)
+        self._testInvalid(nodeGraph, 'cycleA')
         # This will issue a warning (TF_WARN):
         # GetValueProducingAttribute:
         #    Found cycle with attribute /Material/NodeGraph.inputs:deepCycleA
-        attr, attrType = \
-            nodeGraph.GetInput('deepCycleA').GetValueProducingAttribute()
-        self.assertFalse(attr)
-        self.assertEqual(attrType, UsdShade.AttributeType.Invalid)
+        self._testInvalid(nodeGraph, 'deepCycleA')
         # This will issue a warning (TF_WARN):
         # GetValueProducingAttribute:
         #    Found cycle with attribute /Material/NodeGraph.inputs:selfLoop
-        attr, attrType = \
-            nodeGraph.GetInput('selfLoop').GetValueProducingAttribute()
-        self.assertFalse(attr)
-        self.assertEqual(attrType, UsdShade.AttributeType.Invalid)
+        self._testInvalid(nodeGraph, 'selfLoop')
+
+        # ----------------------------------------------------------------------
+        # resolve multi-connection inputs
+        # ----------------------------------------------------------------------
+        self._testMulti(terminal, 'multiInput1',
+                        [Output, Output],
+                        ['/Material/NodeGraph/NestedNode1.outputs:nestedOut1',
+                         '/Material/RegularNode.outputs:nodeOutput'])
+        self._testMulti(terminal, 'multiInput2',
+                        [Output, Output],
+                        ['/Material/NodeGraph/NestedNode1.outputs:nestedOut1',
+                         '/Material/NodeGraph/NestedNode2.outputs:nestedOut2'])
+        self._testMulti(terminal, 'multiInput3',
+                        [Input, Output, Output, Output],
+                        ['/Material/NodeGraph.inputs:nodeGraphVal',
+                         '/Material/NodeGraph/NestedNode1.outputs:nestedOut1',
+                         '/Material/NodeGraph/NestedNode2.outputs:nestedOut2',
+                         '/Material/RegularNode.outputs:nodeOutput'],
+                         ['NodeGraphValue', None, None, None])
 
 
 if __name__ == '__main__':

@@ -21,7 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include <GL/glew.h>
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/hgiGL/buffer.h"
 #include "pxr/imaging/hgiGL/computeCmds.h"
 #include "pxr/imaging/hgiGL/conversions.h"
@@ -93,6 +94,12 @@ HgiGLComputeCmds::PopDebugGroup()
         _pushStack--;
         _ops.push_back( HgiGLOps::PopDebugGroup() );
     }
+}
+
+void
+HgiGLComputeCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+{
+    _ops.push_back( HgiGLOps::MemoryBarrier(barrier) );
 }
 
 bool

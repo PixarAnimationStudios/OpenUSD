@@ -32,6 +32,11 @@ import shutil
 class TestArDefaultResolver(unittest.TestCase):
 
     def assertPathsEqual(self, path1, path2):
+        # XXX: Explicit conversion to str to accommodate change in
+        # return type to Ar.ResolvedPath in Ar 2.0.
+        path1 = str(path1)
+        path2 = str(path2)
+
         # Flip backslashes to forward slashes and make sure path case doesn't
         # cause test failures to accommodate platform differences. We don't use
         # os.path.normpath since that might fix up other differences we'd want
@@ -73,13 +78,126 @@ class TestArDefaultResolver(unittest.TestCase):
             r.AnchorRelativePath('/AbsoluteAnchor/ParentDir/ParentFile.txt',
                 '../Subdir/FileRel.txt'))
 
+    @unittest.skipIf(not hasattr(Ar.Resolver, "CreateIdentifier"),
+                     "No CreateIdentifier API")
+    def test_CreateIdentifier(self):
+        r = Ar.GetResolver()
+
+        def _RP(path = None):
+            return Ar.ResolvedPath(os.path.abspath(path or ""))
+
+        self.assertEqual('', r.CreateIdentifier(''))
+        self.assertEqual('', r.CreateIdentifier('', _RP()))
+        self.assertEqual('', r.CreateIdentifier('', _RP('AnchorAsset.txt')))
+
+        # The identifier for an absolute path will always be that absolute
+        # path normalized.
+        self.assertPathsEqual(
+            '/dir/AbsolutePath.txt',
+            r.CreateIdentifier('/dir/AbsolutePath.txt'))
+
+        self.assertPathsEqual(
+            '/dir/AbsolutePath.txt',
+            r.CreateIdentifier('/dir/AbsolutePath.txt', _RP('subdir/A.txt')))
+
+        self.assertPathsEqual(
+            '/dir/AbsolutePath.txt',
+            r.CreateIdentifier('/dir/.//AbsolutePath.txt', _RP('subdir/A.txt')))
+
+        # The identifier for a file-relative path (i.e. a relative path
+        # starting with "./" or "../" is obtained by anchoring that path
+        # to the given anchor, or the normalized file-relative path if no
+        # anchor is given.
+        self.assertPathsEqual(
+            'subdir/FileRelative.txt',
+            r.CreateIdentifier('./subdir/FileRelative.txt'))
+
+        self.assertPathsEqual(
+            os.path.abspath('dir/subdir/FileRelative.txt'),
+            r.CreateIdentifier('./subdir/FileRelative.txt', _RP('dir/A.txt')))
+
+        # Test look-here-first behavior for search-relative paths (i.e., 
+        # relative paths that do not start with "./" or "../")
+        #
+        # If an asset exists at the location obtained by anchoring the 
+        # relative path to the given anchor, the anchored path is used as
+        # the identifier.
+        if not os.path.isdir('dir/subdir'):
+            os.makedirs('dir/subdir')
+        with open('dir/subdir/Exists.txt', 'w') as f:
+            pass
+        
+        self.assertPathsEqual(
+            os.path.abspath('dir/subdir/Exists.txt'),
+            r.CreateIdentifier('subdir/Exists.txt', _RP('dir/Anchor.txt')))
+
+        # Otherwise, the search path is used as the identifier.
+        self.assertPathsEqual(
+            'subdir/Bogus.txt',
+            r.CreateIdentifier('subdir/Bogus.txt', _RP('dir/Anchor.txt')))
+
+    @unittest.skipIf(not hasattr(Ar.Resolver, "CreateIdentifierForNewAsset"),
+                     "No CreateIdentifierForNewAsset API")
+    def test_CreateIdentifierForNewAsset(self):
+        r = Ar.GetResolver()
+
+        def _RP(path = None):
+            return Ar.ResolvedPath(os.path.abspath(path or ""))
+
+        self.assertEqual(
+            '', r.CreateIdentifierForNewAsset(''))
+        self.assertEqual(
+            '', r.CreateIdentifierForNewAsset('', _RP()))
+        self.assertEqual(
+            '', r.CreateIdentifierForNewAsset('', _RP('AnchorAsset.txt')))
+
+        # The identifier for an absolute path will always be that absolute
+        # path normalized.
+        self.assertPathsEqual(
+            '/dir/AbsolutePath.txt',
+            r.CreateIdentifierForNewAsset('/dir/AbsolutePath.txt'))
+
+        self.assertPathsEqual(
+            '/dir/AbsolutePath.txt',
+            r.CreateIdentifierForNewAsset(
+                '/dir/AbsolutePath.txt', _RP('subdir/A.txt')))
+
+        self.assertPathsEqual(
+            '/dir/AbsolutePath.txt',
+            r.CreateIdentifierForNewAsset(
+                '/dir/.//AbsolutePath.txt', _RP('subdir/A.txt')))
+
+        # The identifier for a relative path (file-relative or search-relative)
+        # will always be the anchored abolute path.
+        self.assertPathsEqual(
+            os.path.abspath('subdir/FileRelative.txt'),
+            r.CreateIdentifierForNewAsset(
+                './subdir/FileRelative.txt'))
+
+        self.assertPathsEqual(
+            os.path.abspath('dir/subdir/FileRelative.txt'),
+            r.CreateIdentifierForNewAsset(
+                './subdir/FileRelative.txt', _RP('dir/Anchor.txt')))
+
+        self.assertPathsEqual(
+            os.path.abspath('subdir/SearchRel.txt'),
+            r.CreateIdentifierForNewAsset(
+                'subdir/SearchRel.txt'))
+
+        self.assertPathsEqual(
+            os.path.abspath('dir/subdir/SearchRel.txt'),
+            r.CreateIdentifierForNewAsset(
+                'subdir/SearchRel.txt', _RP('dir/Anchor.txt')))
+
     def test_Resolve(self):
         testFileName = 'test_Resolve.txt'
         testFilePath = os.path.abspath(testFileName)
         with open(testFilePath, 'w') as ofp:
             print('Garbage', file=ofp)
         
-        resolvedPath = Ar.GetResolver().Resolve(testFileName)
+        # XXX: Explicit conversion to str to accommodate change in
+        # return type to Ar.ResolvedPath in Ar 2.0.
+        resolvedPath = str(Ar.GetResolver().Resolve(testFileName))
 
         # The resolved path should be absolute.
         self.assertTrue(os.path.isabs(resolvedPath))
@@ -181,6 +299,62 @@ class TestArDefaultResolver(unittest.TestCase):
         self.assertEqual(eval(repr(context)), context)
 
         self.assertNotEqual(emptyContext, context)
+
+    @unittest.skipIf(not hasattr(Ar.Resolver, "ResolveForNewAsset"),
+                     "No ResolveForNewAsset API")
+    def test_ResolveForNewAsset(self):
+        resolver  = Ar.GetResolver()
+
+        # ResolveForNewAsset returns the path a new asset would be written
+        # to for a given asset path. ArDefaultResolver assumes all asset paths
+        # are filesystem paths, so this is just the absolute path of the
+        # input.
+        self.assertPathsEqual(
+            resolver.ResolveForNewAsset('/test/path/1/newfile'),
+            os.path.abspath('/test/path/1/newfile'))
+
+        self.assertPathsEqual(
+            resolver.ResolveForNewAsset('test/path/1/newfile'),
+            os.path.abspath('test/path/1/newfile'))
+
+        # This should work even if a file happens to already exist at the
+        # computed path.
+        testDir = os.path.abspath('ResolveForNewAsset')
+        if os.path.isdir(testDir):
+            shutil.rmtree(testDir)
+        os.makedirs(testDir)
+
+        testFileName = 'test_ResolveForNewAsset.txt'
+        testFileAbsPath = os.path.join(testDir, testFileName)
+        with open(testFileAbsPath, 'w') as ofp:
+            print('Garbage', file=ofp)
+
+        self.assertPathsEqual(
+            resolver.ResolveForNewAsset(testFileAbsPath),
+            testFileAbsPath)
+
+        self.assertPathsEqual(
+            resolver.ResolveForNewAsset(
+                'ResolveForNewAsset/test_ResolveForNewAsset.txt'),
+            testFileAbsPath)
+
+    @unittest.skipIf(not hasattr(Ar.Resolver, "CreateContextFromString"),
+                     "No CreateContextFromString(s) API")
+    def test_CreateContextFromString(self):
+        resolver = Ar.GetResolver()
+
+        def _TestWithPaths(searchPaths):
+            self.assertEqual(
+                resolver.CreateContextFromString(os.pathsep.join(searchPaths)),
+                Ar.ResolverContext(Ar.DefaultResolverContext(searchPaths)))
+            self.assertEqual(
+                resolver.CreateContextFromStrings(
+                    [("", os.pathsep.join(searchPaths))]),
+                Ar.ResolverContext(Ar.DefaultResolverContext(searchPaths)))
+
+        _TestWithPaths([])
+        _TestWithPaths(["/a"])
+        _TestWithPaths(["/a", "/b"])
 
 if __name__ == '__main__':
     unittest.main()

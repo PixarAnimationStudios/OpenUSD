@@ -75,7 +75,12 @@ UsdLuxDistantLight::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdLuxDistantLight::_GetSchemaType() const {
+UsdSchemaKind UsdLuxDistantLight::_GetSchemaKind() const {
+    return UsdLuxDistantLight::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdLuxDistantLight::_GetSchemaType() const {
     return UsdLuxDistantLight::schemaType;
 }
 
@@ -105,13 +110,13 @@ UsdLuxDistantLight::_GetTfType() const
 UsdAttribute
 UsdLuxDistantLight::GetAngleAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->angle);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsAngle);
 }
 
 UsdAttribute
 UsdLuxDistantLight::CreateAngleAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->angle,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsAngle,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -122,13 +127,13 @@ UsdLuxDistantLight::CreateAngleAttr(VtValue const &defaultValue, bool writeSpars
 UsdAttribute
 UsdLuxDistantLight::GetIntensityAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->intensity);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsIntensity);
 }
 
 UsdAttribute
 UsdLuxDistantLight::CreateIntensityAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->intensity,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsIntensity,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -153,8 +158,8 @@ const TfTokenVector&
 UsdLuxDistantLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLuxTokens->angle,
-        UsdLuxTokens->intensity,
+        UsdLuxTokens->inputsAngle,
+        UsdLuxTokens->inputsIntensity,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

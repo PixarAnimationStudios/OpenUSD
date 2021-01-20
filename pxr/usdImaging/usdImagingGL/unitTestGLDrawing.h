@@ -55,7 +55,6 @@ public:
     bool IsEnabledTestLighting() const { return _testLighting; }
     bool IsEnabledSceneLights() const { return _sceneLights; }
     bool IsEnabledCameraLight() const { return _cameraLight; }
-    bool IsEnabledCullBackfaces() const { return _cullBackfaces; }
     bool IsEnabledIdRender() const { return _testIdRender; }
     
     bool IsShowGuides() const { return _showGuides; }
@@ -77,6 +76,10 @@ public:
     VtDictionary const &GetRenderSettings() const { return _renderSettings; }
     TfToken const & GetRendererAov() const { return _rendererAov; }
     std::string const &GetPerfStatsFile() const { return _perfStatsFile; }
+    float GetPixelAspectRatio() const { return _pixelAspectRatio; }
+    GfRange2f const & GetDisplayWindow() const { return _displayWindow; }
+    GfRect2i const & GetDataWindow() const { return _dataWindow; }
+    UsdImagingGLCullStyle GetCullStyle() const { return _cullStyle; }
 
     void RunTest(int argc, char *argv[]);
 
@@ -130,9 +133,12 @@ private:
 
     UsdImagingGLDrawMode _drawMode;
     bool _shouldFrameAll;
-    bool _cullBackfaces;
+    UsdImagingGLCullStyle _cullStyle;
     GfVec4f _clearColor;
     GfVec3f _translate;
+    float _pixelAspectRatio;
+    GfRange2f _displayWindow;
+    GfRect2i _dataWindow;
     VtDictionary _renderSettings;
     TfToken _rendererAov;
     std::string _perfStatsFile;

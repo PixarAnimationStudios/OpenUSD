@@ -62,7 +62,12 @@ UsdShadeNodeDefAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaType UsdShadeNodeDefAPI::_GetSchemaType() const {
+UsdSchemaKind UsdShadeNodeDefAPI::_GetSchemaKind() const {
+    return UsdShadeNodeDefAPI::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdShadeNodeDefAPI::_GetSchemaType() const {
     return UsdShadeNodeDefAPI::schemaType;
 }
 

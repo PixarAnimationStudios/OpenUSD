@@ -35,22 +35,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-extern boost::variant<int, bool, std::string>
+extern boost::variant<int, bool, std::string> const *
 Tf_GetEnvSettingByName(std::string const&);
 
 static boost::python::object
 _GetEnvSettingByName(std::string const& name) {
-    auto variantValue = Tf_GetEnvSettingByName(name);
+    boost::variant<int, bool, std::string> const *
+        variantValue = Tf_GetEnvSettingByName(name);
 
-    if (variantValue.empty()) {
+    if (!variantValue) {
         return boost::python::object();
     } 
 
-    if (std::string* value = boost::get<std::string>(&variantValue)) {
+    if (std::string const *value = boost::get<std::string>(variantValue)) {
         return boost::python::object(*value);
-    } else if (bool* value = boost::get<bool>(&variantValue)) {
+    } else if (bool const *value = boost::get<bool>(variantValue)) {
         return boost::python::object(*value);
-    } else if (int* value = boost::get<int>(&variantValue)) {
+    } else if (int const *value = boost::get<int>(variantValue)) {
         return boost::python::object(*value); 
     } 
             

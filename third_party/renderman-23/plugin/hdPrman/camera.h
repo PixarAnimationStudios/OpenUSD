@@ -47,17 +47,14 @@ class HdPrmanCamera final : public HdCamera
 {
 public:
     HdPrmanCamera(SdfPath const& id);
-    virtual ~HdPrmanCamera();
+    ~HdPrmanCamera() override;
 
     /// Synchronizes state from the delegate to this object.
-    virtual void Sync(HdSceneDelegate *sceneDelegate,
-                      HdRenderParam   *renderParam,
-                      HdDirtyBits     *dirtyBits) override;
+    HDPRMAN_API
+    void Sync(HdSceneDelegate *sceneDelegate,
+              HdRenderParam   *renderParam,
+              HdDirtyBits     *dirtyBits) override;
     
-    /// Returns the minimal set of dirty bits to place in the
-    /// change tracker for use in the first sync of this prim.
-    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
-
     /// Returns true if any physical camera parameter was updated during Sync,
     /// and reset the internal tracking state.
     /// This is meant to be called post Sync, and exists only because we don't
@@ -78,13 +75,9 @@ public:
     void SetRileyCameraParams(RtParamList& camParams,
                               RtParamList& projParams) const;
 
-    HDPRMAN_API
-    VtDictionary GetParams() const { return _params; }
-
 private:
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> _sampleXforms;
     
-    VtDictionary _params;
     bool _dirtyParams;
 };
 

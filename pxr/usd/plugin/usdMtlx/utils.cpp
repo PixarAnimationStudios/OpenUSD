@@ -212,14 +212,6 @@ UsdMtlxStandardFileExtensions()
     return extensions;
 }
 
-bool
-UsdMtlxOutputNodesRequireMultiOutputStringType() 
-{
-    static const bool versionCheck = 
-        (mx::getVersionIntegers() < std::make_tuple(1, 37, 0));
-    return versionCheck;
-}
-
 mx::ConstDocumentPtr 
 UsdMtlxGetDocumentFromString(const std::string &mtlxXml)
 {

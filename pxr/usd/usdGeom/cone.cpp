@@ -75,7 +75,12 @@ UsdGeomCone::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdGeomCone::_GetSchemaType() const {
+UsdSchemaKind UsdGeomCone::_GetSchemaKind() const {
+    return UsdGeomCone::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdGeomCone::_GetSchemaType() const {
     return UsdGeomCone::schemaType;
 }
 

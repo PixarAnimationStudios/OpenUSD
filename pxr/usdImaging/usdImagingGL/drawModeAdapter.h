@@ -189,15 +189,18 @@ private:
     // Check whether the given cachePath is a path to a draw mode texture.
     bool _IsTexturePath(SdfPath const& path) const;
 
+    // Return true if prim has a time varying extent or extentsHint attribute.
+    bool _HasVaryingExtent(UsdPrim const& prim) const;
+
     // Check if any of the cards texture attributes are marked as time-varying.
     void _CheckForTextureVariability(UsdPrim const& prim,
                                      HdDirtyBits dirtyBits,
                                      HdDirtyBits *timeVaryingBits) const;
 
     // Computes the extents of the given prim, using UsdGeomBBoxCache.
-    // The extents are computed at UsdTimeCode::EarliestTime() (and are not
-    // animated), and they are computed for purposes default/proxy/render.
-    GfRange3d _ComputeExtent(UsdPrim const& prim) const;
+    // The extents are computed for purposes default/proxy/render.
+    GfRange3d _ComputeExtent(UsdPrim const& prim,
+                             const UsdTimeCode& timecode) const;
 
     // Generate geometry for "origin" draw mode.
     void _GenerateOriginGeometry(VtValue* topo, VtValue* points,

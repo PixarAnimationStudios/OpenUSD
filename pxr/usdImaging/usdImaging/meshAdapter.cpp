@@ -233,8 +233,9 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
         prim, cachePath, time, requestedBits, instancerContext);
 
     if (requestedBits & HdChangeTracker::DirtyNormals) {
-        UsdImagingValueCache* valueCache = _GetValueCache();
-        HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
+        UsdImagingPrimvarDescCache* primvarDescCache = _GetPrimvarDescCache();
+        HdPrimvarDescriptorVector& primvars = 
+            primvarDescCache->GetPrimvars(cachePath);
 
         TfToken schemeToken;
         _GetPtr(prim, UsdGeomTokens->subdivisionScheme, time, &schemeToken);

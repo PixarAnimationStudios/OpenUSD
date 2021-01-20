@@ -172,8 +172,9 @@ _ComputeResolvedPath(
         return _ResolveResourcePath(filename, errorStr);
     }
 
-    // Pass absolute and repository paths to the resolver.
     ArResolver& resolver = ArGetResolver();
+
+#if AR_VERSION == 1
     if (filename[0] == '/') {
         return resolver.Resolve(filename);
     }
@@ -199,6 +200,14 @@ _ComputeResolvedPath(
 
     // Search for the file along the resolver search path.
     return resolver.Resolve(filename);
+#else
+    // Create an identifier for the specified .glslfx file by combining
+    // the containing file and the new file to accommodate relative paths,
+    // then resolve it.
+    const std::string assetPath =
+        resolver.CreateIdentifier(filename, ArResolvedPath(containingFile));
+    return assetPath.empty() ? string() : resolver.Resolve(assetPath);
+#endif
 }
 
 HioGlslfx::HioGlslfx() :
@@ -212,12 +221,17 @@ HioGlslfx::HioGlslfx(string const & filePath, TfToken const & technique)
     , _valid(true)
     , _hash(0)
 {
+    string errorStr;
+#if AR_VERSION == 1
     // Resolve with the containingFile set to the current working directory
     // with a trailing slash. This ensures that relative paths supplied to the
     // constructor are properly anchored to the containing file's directory.
-    string errorStr;
     const string resolvedPath =
         _ComputeResolvedPath(ArchGetCwd() + "/", filePath, &errorStr);
+#else
+    const string resolvedPath =
+        _ComputeResolvedPath(string(), filePath, &errorStr);
+#endif
     if (resolvedPath.empty()) {
         if (!errorStr.empty()) {
             TF_RUNTIME_ERROR(errorStr);

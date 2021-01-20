@@ -86,10 +86,16 @@ struct HdSt_ShaderKey {
     virtual HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const = 0; 
     
     // Implementation details of the geometric shader that sets hardware
-    // pipeline state (polygon mode, line width) or queues upload of data
-    // (cullstyle) to the GPU.
+    // pipeline state (cull face, polygon mode, line width) or queues upload of
+    // data (cullstyle) to the GPU.
     HDST_API
     virtual HdCullStyle GetCullStyle() const;
+    HDST_API
+    virtual bool UseHardwareFaceCulling() const;
+    HDST_API
+    virtual bool HasMirroredTransform() const;
+    HDST_API
+    virtual bool IsDoubleSided() const;
     HDST_API
     virtual HdPolygonMode GetPolygonMode() const;
     HDST_API

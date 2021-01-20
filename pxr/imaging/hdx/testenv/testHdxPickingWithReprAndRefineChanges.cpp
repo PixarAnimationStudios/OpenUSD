@@ -23,7 +23,8 @@
 //
 #include "pxr/pxr.h"
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/garch/glDebugWindow.h"
 #include "pxr/imaging/glf/drawTarget.h"
 

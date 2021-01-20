@@ -153,6 +153,14 @@ public:
             _drawingCoord.GetVertexPrimvarIndex());
     }
 
+    /// Returns a BufferArrayRange of varying primvars.
+    HD_API
+    HdBufferArrayRangeSharedPtr const &GetVaryingPrimvarRange() const {
+        return _sharedData->barContainer.Get(
+            _drawingCoord.GetVaryingPrimvarIndex());
+    }
+
+
     /// Returns a BufferArrayRange of face-varying primvars.
     HD_API
     HdBufferArrayRangeSharedPtr const &GetFaceVaryingPrimvarRange() const {
@@ -169,6 +177,11 @@ public:
     HD_API
     bool GetVisible() const { return _sharedData->visible; }
 
+    HD_API
+    TfToken const& GetMaterialTag() const {
+        return _sharedData->materialTag;
+    }
+
     /// Returns true if the drawItem has instancer.
     HD_API
     bool HasInstancer() const {
@@ -183,6 +196,13 @@ public:
     /// Note that this value is a hash, not sequential.
     HD_API
     size_t GetBufferArraysHash() const;
+
+    /// Returns the hash of the element offsets of the underlying BARs.
+    /// When the hash changes, it means that any drawing coord caching
+    /// buffer (e.g. the indirect dispatch buffer) has to be rebuilt.
+    /// Note that this value is a hash, not sequential.
+    HD_API
+    size_t GetElementOffsetsHash() const;
 
     /// Tests the intersection with the view projection matrix.
     /// Returns true if this drawItem is in the frustum.
@@ -211,6 +231,12 @@ protected:
     /// Called by GetBufferArraysHash.
     HD_API
     virtual size_t _GetBufferArraysHash() const;
+
+    /// Allows derived classes to return a hash of the element offsets of 
+    /// the underlying BARs they manage.
+    /// Called by GetBufferArraysHash.
+    HD_API
+    virtual size_t _GetElementOffsetsHash() const;
 
 private:
     // configuration of how to bundle the drawing coordinate for this draw item

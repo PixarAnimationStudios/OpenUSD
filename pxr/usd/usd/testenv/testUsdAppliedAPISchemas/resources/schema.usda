@@ -43,6 +43,11 @@ class "TestSingleApplyAPI"
     inherits = </APISchemaBase>
     customData = {
         string className = "SingleApplyAPI"
+        token[] apiSchemaAutoApplyTo = [
+            "TestTypedSchemaForAutoApply", 
+            "TestTypedSchemaForAutoApplyConcreteBase", 
+            "TestTypedSchemaForAutoApplyAbstractBase"
+        ] 
     }
     doc = """Test single apply API schema"""
 )
@@ -79,7 +84,7 @@ class TestTypedSchema "TestTypedSchema" (
 class TestWithFallbackAppliedSchema "TestWithFallbackAppliedSchema" (
     inherits = </Typed>
     doc = """Test with fallback API schemas"""
-    apiSchemas = ["TestMultiApplyAPI:fallback", "TestSingleApplyAPI"]
+    apiSchemas = ["TestSingleApplyAPI", "TestMultiApplyAPI:fallback"]
     hidden = false
 )
 {
@@ -95,4 +100,72 @@ class TestWithFallbackAppliedSchema "TestWithFallbackAppliedSchema" (
         displayGroup = "Display Group"
         doc = "Testing documentation metadata"
     )
+}
+
+class TestTypedSchemaForAutoApply "TestTypedSchemaForAutoApply" (
+    inherits = </Typed>
+    doc = "Testing typed schema"
+    hidden = true
+    apiSchemas = ["TestMultiApplyAPI:fallback"]
+)
+{
+    string testAttr = "foo" (
+        allowedTokens = ["bar", "baz"]
+        doc = "Testing documentation metadata"
+    )
+
+    rel testRel (
+        displayGroup = "Display Group"
+        doc = "Testing documentation metadata"
+    )
+}
+
+class TestTypedSchemaForAutoApplyConcreteBase "TestTypedSchemaForAutoApplyConcreteBase" (
+    inherits = </Typed>
+    doc = "Testing typed schema"
+    hidden = true
+)
+{
+    string testAttr = "foo" (
+        allowedTokens = ["bar", "baz"]
+        doc = "Testing documentation metadata"
+    )
+
+    rel testRel (
+        displayGroup = "Display Group"
+        doc = "Testing documentation metadata"
+    )
+}
+
+class TestDerivedTypedSchemaForAutoApplyConcreteBase "TestDerivedTypedSchemaForAutoApplyConcreteBase" (
+    inherits = </TestTypedSchemaForAutoApplyConcreteBase>
+    doc = "Testing typed schema"
+    hidden = true
+)
+{
+}
+
+class "TestTypedSchemaForAutoApplyAbstractBase" (
+    inherits = </Typed>
+    doc = "Testing typed schema"
+    hidden = true
+)
+{
+    string testAttr = "foo" (
+        allowedTokens = ["bar", "baz"]
+        doc = "Testing documentation metadata"
+    )
+
+    rel testRel (
+        displayGroup = "Display Group"
+        doc = "Testing documentation metadata"
+    )
+}
+
+class TestDerivedTypedSchemaForAutoApplyAbstractBase "TestDerivedTypedSchemaForAutoApplyAbstractBase" (
+    inherits = </TestTypedSchemaForAutoApplyAbstractBase>
+    doc = "Testing typed schema"
+    hidden = true
+)
+{
 }

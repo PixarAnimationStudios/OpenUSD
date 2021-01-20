@@ -148,9 +148,7 @@ private:
     HgiBuffer(const HgiBuffer&) = delete;
 };
 
-/// Explicitly instantiate and define buffer handle
-template class HgiHandle<class HgiBuffer>;
-using HgiBufferHandle = HgiHandle<class HgiBuffer>;
+using HgiBufferHandle = HgiHandle<HgiBuffer>;
 using HgiBufferHandleVector = std::vector<HgiBufferHandle>;
 
 

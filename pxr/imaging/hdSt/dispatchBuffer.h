@@ -88,7 +88,8 @@ using HdStDispatchBufferSharedPtr = std::shared_ptr<class HdStDispatchBuffer>;
 /// XXX: it would be better to generalize this class not only for dispatch
 /// buffer, if we see other similar use-cases.
 ///
-class HdStDispatchBuffer : public HdBufferArray {
+class HdStDispatchBuffer : public HdBufferArray
+{
 public:
     /// Constructor. commandNumUints is given in how many integers.
     HDST_API
@@ -99,7 +100,7 @@ public:
 
     /// Destructor.
     HDST_API
-    ~HdStDispatchBuffer();
+    ~HdStDispatchBuffer() override;
 
     /// Update entire buffer data
     HDST_API
@@ -129,14 +130,14 @@ public:
 
     // HdBufferArray overrides. they are not supported in this class.
     HDST_API
-    virtual bool GarbageCollect();
+    bool GarbageCollect() override;
     HDST_API
-    virtual void Reallocate(
+    void Reallocate(
         std::vector<HdBufferArrayRangeSharedPtr> const &,
-        HdBufferArraySharedPtr const &);
+        HdBufferArraySharedPtr const &) override;
 
     HDST_API
-    virtual void DebugDump(std::ostream &out) const;
+    void DebugDump(std::ostream &out) const override;
 
     /// Returns the GPU resource. If the buffer array contains more than one
     /// resource, this method raises a coding error.

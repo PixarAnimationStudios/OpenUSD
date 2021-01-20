@@ -28,10 +28,8 @@
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/task.h"
 
-#include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/tf/declarePtrs.h"
@@ -52,13 +50,14 @@ using HdStShaderCodeSharedPtr =
 
 using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
 using HdRenderPassSharedPtrVector = std::vector<HdRenderPassSharedPtr>;
-using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
-using HdRenderPassStateSharedPtrVector = 
-    std::vector<HdRenderPassStateSharedPtr>;
+using HdStRenderPassStateSharedPtr = std::shared_ptr<class HdStRenderPassState>;
+using HdStRenderPassStateSharedPtrVector = 
+    std::vector<HdStRenderPassStateSharedPtr>;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleShadowArray);
 
-struct HdxShadowTaskParams {
+struct HdxShadowTaskParams
+{
     HdxShadowTaskParams()
         : overrideColor(0.0)
         , wireframeColor(0.0)
@@ -103,46 +102,47 @@ struct HdxShadowTaskParams {
 ///
 /// A task for generating shadow maps.
 ///
-class HdxShadowTask : public HdTask {
+class HdxShadowTask : public HdTask
+{
 public:
     HDX_API
     HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id);
 
     HDX_API
-    virtual ~HdxShadowTask();
+    ~HdxShadowTask() override;
 
     /// Sync the render pass resources
     HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
-
+    void Sync(HdSceneDelegate* delegate,
+              HdTaskContext* ctx,
+              HdDirtyBits* dirtyBits) override;
+    
     /// Prepare the tasks resources
     HDX_API
-    virtual void Prepare(HdTaskContext* ctx,
-                         HdRenderIndex* renderIndex) override;
+    void Prepare(HdTaskContext* ctx,
+                 HdRenderIndex* renderIndex) override;
 
     /// Execute render pass task
     HDX_API
-    virtual void Execute(HdTaskContext* ctx) override;
+    void Execute(HdTaskContext* ctx) override;
 
     /// Collect Render Tags used by the task.
     HDX_API
-    virtual const TfTokenVector &GetRenderTags() const override;
+    const TfTokenVector &GetRenderTags() const override;
 
 
 private:
     void _SetHdStRenderPassState(HdxShadowTaskParams const &params,
         HdStRenderPassState *renderPassState);
 
-    void _UpdateDirtyParams(HdRenderPassStateSharedPtr &renderPassState, 
+    void _UpdateDirtyParams(HdStRenderPassStateSharedPtr &renderPassState, 
         HdxShadowTaskParams const &params);
 
     static HdStShaderCodeSharedPtr _overrideShader;
     static void _CreateOverrideShader();
 
     HdRenderPassSharedPtrVector _passes;
-    HdRenderPassStateSharedPtrVector _renderPassStates;
+    HdStRenderPassStateSharedPtrVector _renderPassStates;
     HdxShadowTaskParams _params;
     TfTokenVector       _renderTags;
 

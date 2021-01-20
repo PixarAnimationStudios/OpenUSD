@@ -32,8 +32,6 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/tf/hashmap.h"
 
-#include <mutex>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRprim;
@@ -71,47 +69,44 @@ class HdStInstancer : public HdInstancer {
 public:
     /// Constructor.
     HDST_API
-    HdStInstancer(HdSceneDelegate* delegate, SdfPath const &id,
-                  SdfPath const &parentInstancerId);
+    HdStInstancer(HdSceneDelegate* delegate, SdfPath const &id);
 
-    /// Updates _instancePrimvarRange with the instance rate primvars.
+    // Updates the instance primvar buffers.
+    // XXX: Note, this is currently called from rprimUtils instead of the
+    // render index sync phase, so it needs to take a mutex.
     HDST_API
-    void UpdateInstancePrimvarRange(HdRprim *prim,
-                                    HdStDrawItem *drawItem,
-                                    int drawCoordIndex);
+    void Sync(HdSceneDelegate *sceneDelegate,
+              HdRenderParam   *renderParam,
+              HdDirtyBits     *dirtyBits) override;
 
     HdBufferArrayRangeSharedPtr GetInstancePrimvarRange() const {
         return _instancePrimvarRange;
     }
 
     /// Populates the instance index indirection buffer for \p prototypeId and
-    /// returns the buffer range.
+    /// returns a flat array of instance index tuples.
     HDST_API
-    HdBufferArrayRangeSharedPtr GetInstanceIndices(SdfPath const &prototypeId);
-
-    /// Populates the rprim's draw item with the appropriate instancer
-    /// buffer range data.
-    HDST_API
-    void PopulateDrawItem(HdRprim *prim,
-                          HdStDrawItem *drawItem,
-                          HdRprimSharedData *sharedData,
-                          HdDirtyBits dirtyBits);
+    VtIntArray GetInstanceIndices(SdfPath const &prototypeId);
 
 protected:
     HDST_API
     void _GetInstanceIndices(SdfPath const &prototypeId,
                              std::vector<VtIntArray> *instanceIndicesArray);
 
-private:
-    std::mutex _instanceLock;
-    size_t _numInstancePrimvars;
+    HDST_API
+    void _SyncPrimvars(HdSceneDelegate *sceneDelegate,
+                       HdDirtyBits *dirtyBits);
 
-    // Cache the BARs since multiple prototype Rprims will generally refer to
-    // the same instancer.
+private:
+    // # of entries in an instance primvar.  This should be consistent between
+    // all primvars, and also consistent with the instance indices (meaning
+    // no instance index is out-of-range).
+    size_t _instancePrimvarNumElements;
+
+    // The BAR of the instance primvars for this instancer.
+    // (Note: instance indices are computed per prototype and the rprim owns
+    // the bar).
     HdBufferArrayRangeSharedPtr _instancePrimvarRange;
-    TfHashMap<SdfPath,
-              HdBufferArrayRangeSharedPtr,
-              SdfPath::Hash> _instanceIndexRangeMap;
 };
 
 

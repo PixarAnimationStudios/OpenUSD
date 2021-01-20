@@ -22,7 +22,19 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-import sys, unittest
+import os, platform, itertools, sys, unittest
+
+# Initialize Ar to use ArDefaultResolver unless a different implementation
+# is specified via the TEST_SDF_LAYER_RESOLVER to allow testing with other
+# filesystem-based resolvers.
+preferredResolver = os.environ.get(
+    "TEST_SDF_LAYER_RESOLVER", "ArDefaultResolver")
+
+from pxr import Ar
+Ar.SetPreferredResolver(preferredResolver)
+
+# Import other modules from pxr after Ar to ensure we don't pull on Ar
+# before the preferred resolver has been specified.
 from pxr import Sdf, Tf
 
 class TestSdfLayer(unittest.TestCase):
@@ -120,6 +132,34 @@ class TestSdfLayer(unittest.TestCase):
 
         l = Sdf.Layer.CreateAnonymous()
         self.assertEqual(l.GetDisplayName(), '')
+
+    @unittest.skipIf(platform.system() == "Windows" and
+                     not hasattr(Ar.Resolver, "CreateIdentifier"),
+                     "This test case currently fails on Windows due to "
+                     "path canonicalization issues except with Ar 2.0.")
+    def test_UpdateAssetInfo(self):
+        # Test that calling UpdateAssetInfo on a layer whose resolved
+        # path hasn't changed doesn't cause notification to be sent.
+        layer = Sdf.Layer.CreateNew('TestUpdateAssetInfo.sdf')
+        self.assertTrue(layer)
+
+        class _Listener:
+            def __init__(self):
+                self._listener = Tf.Notice.RegisterGlobally(
+                    Sdf.Notice.LayersDidChange, self._HandleNotice)
+                self.receivedNotice = False
+
+            def _HandleNotice(self, notice, sender):
+                self.receivedNotice = True
+
+        listener = _Listener()
+
+        oldResolvedPath = layer.resolvedPath
+        layer.UpdateAssetInfo()
+        newResolvedPath = layer.resolvedPath
+
+        self.assertEqual(oldResolvedPath, newResolvedPath)
+        self.assertFalse(listener.receivedNotice)
 
     def test_UpdateExternalReference(self):
         srcLayer = Sdf.Layer.CreateAnonymous()
@@ -313,6 +353,207 @@ def "Root"
         self.assertFalse(l)
         self.assertTrue(l.expired)
         self.assertTrue(len(repr(l)))
+
+    def test_Import(self):
+        # Create a test layer on disk to import and then verify that
+        # we can import its contents into another layer.
+        newLayer = Sdf.Layer.CreateNew('TestLayerImport.sdf')
+        Sdf.PrimSpec(newLayer, 'Root', Sdf.SpecifierDef)
+        self.assertTrue(newLayer.Save())
+
+        anonLayer = Sdf.Layer.CreateAnonymous('TestLayerImport')
+        self.assertTrue(anonLayer)
+        self.assertTrue(anonLayer.Import(newLayer.identifier))
+
+        self.assertEqual(newLayer.ExportToString(), anonLayer.ExportToString())
+
+        # Test error cases. These should not affect the contents of the
+        # destination layer.
+        self.assertFalse(anonLayer.Import(''))
+        self.assertEqual(newLayer.ExportToString(), anonLayer.ExportToString())
+
+        self.assertFalse(anonLayer.Import('bogus.sdf'))
+        self.assertEqual(newLayer.ExportToString(), anonLayer.ExportToString())
+
+    @unittest.skipIf(platform.system() == "Windows" and
+                     not hasattr(Ar.Resolver, "CreateIdentifier"),
+                     "This test case currently fails on Windows due to "
+                     "path canonicalization issues except with Ar 2.0.")
+    def test_LayersWithEquivalentPaths(self):
+        # Test that FindOrOpen and Find return the same layer when
+        # given different paths that should point to the same location.
+        if not os.path.isdir("eqPaths"):
+            os.makedirs("eqPaths")
+
+        # These paths should all be equivalent.
+        testPaths = [
+            "",
+            os.getcwd(),
+            "eqPaths/../.",
+            os.path.join(os.getcwd(), "eqPaths/../.")
+        ]
+
+        # Iterate over all permutations of these paths calling FindOrOpen
+        # or Find on each one and verifying that they all return the same
+        # layer.
+        i = 0
+        for paths in itertools.permutations(testPaths):
+            i += 1
+            testLayerName = "FindOrOpenEqPaths_{}.sdf".format(i)
+            testLayer = Sdf.Layer.CreateAnonymous()
+            Sdf.CreatePrimInLayer(testLayer, "/TestLayer_{}".format(i))
+            self.assertTrue(testLayer.Export(testLayerName))
+
+            paths = [os.path.join(p, testLayerName) for p in paths]
+            firstLayer = Sdf.Layer.FindOrOpen(paths[0])
+            self.assertTrue(
+                firstLayer,
+                "Unable to open {} (from {})".format(paths[0], paths))
+
+            for p in paths:
+                testLayer = Sdf.Layer.FindOrOpen(p)
+                self.assertTrue(
+                    testLayer, "Unable to open {} (from {})".format(p, paths))
+                self.assertEqual(
+                    firstLayer, testLayer,
+                    "Layer opened with {} not the same as layer opened "
+                    "with {}".format(p, paths[0]))
+
+                testLayer = Sdf.Layer.Find(p)
+                self.assertTrue(
+                    testLayer, "Unable to find {} (from {})".format(p, paths))
+                self.assertEqual(
+                    firstLayer, testLayer,
+                    "Layer found with {} not the same as layer opened "
+                    "with {}".format(p, paths[0]))
+
+    def test_FindRelativeToLayer(self):
+        with self.assertRaises(Tf.ErrorException):
+            Sdf.Layer.FindRelativeToLayer(None, 'foo.sdf')
+
+        anchorLayer = Sdf.Layer.CreateNew('TestFindRelativeToLayer.sdf')
+        self.assertFalse(Sdf.Layer.FindRelativeToLayer(anchorLayer, ''))
+
+        def _TestWithRelativePath(relLayerPath):
+            absLayerPath = os.path.abspath(relLayerPath)
+            if os.path.isfile(absLayerPath):
+                os.remove(absLayerPath)
+
+            # FindRelativeToLayer and FindOrOpenRelativeToLayer should
+            # return an invalid layer since this layer hasn't been opened yet.
+            self.assertFalse(Sdf.Layer.FindRelativeToLayer(
+                anchorLayer, relLayerPath))
+            self.assertFalse(Sdf.Layer.FindOrOpenRelativeToLayer(
+                anchorLayer, relLayerPath))
+
+            # Create new layer at the given path. This will also open the
+            # layer in the layer registry.
+            relLayer = Sdf.Layer.CreateNew(absLayerPath)
+
+            # FindRelativeToLayer and FindOrOpenRelativeToLayer should
+            # now find the new layer.
+            self.assertTrue(Sdf.Layer.FindRelativeToLayer(
+                anchorLayer, relLayerPath))
+            self.assertTrue(Sdf.Layer.FindOrOpenRelativeToLayer(
+                anchorLayer, relLayerPath))
+
+        _TestWithRelativePath('FindRelativeLayer.sdf')
+        _TestWithRelativePath('subdir/FindRelativeLayer.sdf')
+
+    def test_FindOrOpenRelativeToLayer(self):
+        with self.assertRaises(Tf.ErrorException):
+            Sdf.Layer.FindOrOpenRelativeToLayer(None, 'foo.sdf')
+
+        anchorLayer = Sdf.Layer.CreateNew('TestFindOrOpenRelativeToLayer.sdf')
+        self.assertFalse(Sdf.Layer.FindOrOpenRelativeToLayer(anchorLayer, ''))
+
+        def _TestWithRelativePath(relLayerPath):
+            absLayerPath = os.path.abspath(relLayerPath)
+            if os.path.isfile(absLayerPath):
+                os.remove(absLayerPath)
+
+            # FindRelativeToLayer and FindOrOpenRelativeToLayer should
+            # return an invalid layer since this layer hasn't been opened yet.
+            self.assertFalse(Sdf.Layer.FindRelativeToLayer(
+                anchorLayer, relLayerPath))
+            self.assertFalse(Sdf.Layer.FindOrOpenRelativeToLayer(
+                anchorLayer, relLayerPath))
+
+            # Create new layer at the given path. We use Export to create a
+            # new layer here as it does not open the new layer immediately.
+            self.assertTrue(anchorLayer.Export(absLayerPath))
+
+            # FindRelativeToLayer should fail to find the new layer since it
+            # hasn't been opened, but FindOrOpenRelativeToLayer should succeed.
+            self.assertFalse(Sdf.Layer.FindRelativeToLayer(
+                anchorLayer, relLayerPath))
+            self.assertTrue(Sdf.Layer.FindOrOpenRelativeToLayer(
+                anchorLayer, relLayerPath))
+
+        _TestWithRelativePath('FindOrOpenRelativeLayer.sdf')
+        _TestWithRelativePath('subdir/FindOrOpenRelativeLayer.sdf')
+
+    @unittest.skipIf(preferredResolver != "ArDefaultResolver",
+                     "Test uses search-path functionality specific to "
+                     "ArDefaultResolver")
+    def test_FindOrOpenDefaultResolverSearchPaths(self):
+        # Set up test directory structure by exporting layers. We
+        # don't use Sdf.Layer.CreateNew here to avoid populating the
+        # layer registry.
+        layerA_Orig = Sdf.Layer.CreateAnonymous()
+        Sdf.CreatePrimInLayer(layerA_Orig, "/LayerA")
+        layerA_Orig.Export("dir1/sub/searchPath.sdf")
+
+        layerB_Orig = Sdf.Layer.CreateAnonymous()
+        Sdf.CreatePrimInLayer(layerB_Orig, "/LayerB")
+        layerB_Orig.Export("dir2/sub/searchPath.sdf")
+
+        # This should fail since there is no searchPath.sdf layer in the
+        # current directory and no context is bound.
+        self.assertFalse(Sdf.Layer.FindOrOpen("sub/searchPath.sdf"))
+
+        # Bind an Ar.DefaultResolverContext with dir1 as a search path.
+        # Now sub/searchPath.sdf should be discovered in dir1/.
+        ctx1 = Ar.DefaultResolverContext([os.path.abspath("dir1/")])
+        with Ar.ResolverContextBinder(ctx1):
+            layerA = Sdf.Layer.FindOrOpen("sub/searchPath.sdf")
+            self.assertTrue(layerA)
+            self.assertTrue(layerA.GetPrimAtPath("/LayerA"))
+            self.assertEqual(layerA.identifier, "sub/searchPath.sdf")
+
+        # Do the same as above, but with dir2 as the search path.
+        # Now sub/searchPath.sdf should be discovered in dir2/.
+        ctx2 = Ar.DefaultResolverContext([os.path.abspath("dir2/")])
+        with Ar.ResolverContextBinder(ctx2):
+            layerB = Sdf.Layer.FindOrOpen("sub/searchPath.sdf")
+            self.assertTrue(layerB)
+            self.assertTrue(layerB.GetPrimAtPath("/LayerB"))
+            self.assertEqual(layerB.identifier, "sub/searchPath.sdf")
+
+        # Note that layerB has the same identifier as layerA, but
+        # different resolved paths.
+        self.assertEqual(layerA.identifier, layerB.identifier)
+        self.assertNotEqual(layerA.realPath, layerB.realPath)
+
+        # Sdf.Layer.Find should fail since no context is bound.
+        self.assertFalse(Sdf.Layer.Find("sub/searchPath.sdf"))
+
+        # Binding the contexts from above will allow Sdf.Layer.Find
+        # to find the right layers.
+        with Ar.ResolverContextBinder(ctx1):
+            self.assertEqual(Sdf.Layer.Find("sub/searchPath.sdf"), layerA)
+
+        with Ar.ResolverContextBinder(ctx2):
+            self.assertEqual(Sdf.Layer.Find("sub/searchPath.sdf"), layerB)
+
+        # Anonymous layers should be discoverable regardless of context.
+        anonLayerA = Sdf.Layer.CreateAnonymous()
+        with Ar.ResolverContextBinder(ctx1):
+            self.assertEqual(Sdf.Layer.Find(anonLayerA.identifier), anonLayerA)
+
+        with Ar.ResolverContextBinder(ctx2):
+            anonLayerB = Sdf.Layer.CreateAnonymous()
+        self.assertEqual(Sdf.Layer.Find(anonLayerB.identifier), anonLayerB)
 
 if __name__ == "__main__":
     unittest.main()

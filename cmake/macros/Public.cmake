@@ -24,28 +24,38 @@
 include(Private)
 
 function(pxr_build_documentation)
-    configure_file(${CMAKE_SOURCE_DIR}/pxr/usd/usd/Doxyfile.in
+    configure_file(${CMAKE_SOURCE_DIR}/docs/doxygen/Doxyfile.in
                    ${CMAKE_BINARY_DIR}/Doxyfile)
-    set(DOCS_DIR "${CMAKE_BINARY_DIR}")
-    set(GEN_SCRIPT "${PROJECT_SOURCE_DIR}/cmake/macros/generateDocs.py")
-    set(PXR_SOURCE_DIR "${CMAKE_SOURCE_DIR}/pxr")
-    set(THIRD_PARTY_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party")
 
     add_custom_target(
         documentation
         ALL
-        COMMAND ${PYTHON_EXECUTABLE} ${GEN_SCRIPT} ${PXR_SOURCE_DIR} ${THIRD_PARTY_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${DOCS_DIR} ${DOXYGEN_EXECUTABLE} ${DOT_EXECUTABLE}
-        DEPENDS ${CMAKE_BINARY_DIR}/include/pxr/pxr.h
+        # We need to manually copy pxr.h into the docs/include directory
+        # since it's generated outside of the libraries.
+        COMMAND
+            ${CMAKE_COMMAND} -E copy
+            "${CMAKE_BINARY_DIR}/include/pxr/pxr.h"
+            "${CMAKE_BINARY_DIR}/docs/include/pxr/pxr.h"
+        COMMAND 
+            ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/docs"
+            "${CMAKE_BINARY_DIR}/docs"
     )
 
-    set(BUILT_HTML_DOCS "${DOCS_DIR}/docs/doxy_html")
+    # Execute doxygen during the install step. All of the files we want
+    # doxygen to process should already have been copied to the docs
+    # directory during the build step
+    install(CODE "execute_process(COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile)")
+
     set(INST_DOCS_ROOT  "${CMAKE_INSTALL_PREFIX}/docs")
+
+    set(BUILT_HTML_DOCS "${CMAKE_BINARY_DIR}/docs/doxy_html")
     install(
         DIRECTORY ${BUILT_HTML_DOCS}
         DESTINATION ${INST_DOCS_ROOT}
     )
 
-    set(BUILT_XML_DOCS "${DOCS_DIR}/docs/doxy_xml")
+    set(BUILT_XML_DOCS "${CMAKE_BINARY_DIR}/docs/doxy_xml")
     install(
         DIRECTORY ${BUILT_XML_DOCS}
         DESTINATION ${INST_DOCS_ROOT}
@@ -210,6 +220,7 @@ function(pxr_library NAME)
         CPPFILES
         LIBRARIES
         INCLUDE_DIRS
+        DOXYGEN_FILES
         RESOURCE_FILES
         PYTHON_PUBLIC_CLASSES
         PYTHON_PRIVATE_CLASSES
@@ -318,6 +329,7 @@ function(pxr_library NAME)
         LIBRARIES "${args_LIBRARIES}"
         INCLUDE_DIRS "${args_INCLUDE_DIRS}"
         RESOURCE_FILES "${args_RESOURCE_FILES}"
+        DOXYGEN_FILES "${args_DOXYGEN_FILES}"
         PRECOMPILED_HEADERS "${pch}"
         PRECOMPILED_HEADER_NAME "${args_PRECOMPILED_HEADER_NAME}"
         LIB_INSTALL_PREFIX_RESULT libInstallPrefix

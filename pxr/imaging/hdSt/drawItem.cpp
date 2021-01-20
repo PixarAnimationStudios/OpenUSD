@@ -51,5 +51,19 @@ HdStDrawItem::_GetBufferArraysHash() const
     return 0;
 }
 
+/*virtual*/
+size_t
+HdStDrawItem::_GetElementOffsetsHash() const
+{
+    if (const HdStShaderCodeSharedPtr& shader = GetMaterialShader()) {
+        if (const HdBufferArrayRangeSharedPtr& shaderBAR =
+                shader->GetShaderData()) {
+            return shaderBAR->GetElementOffset();
+        }
+    }
+    
+    return 0;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

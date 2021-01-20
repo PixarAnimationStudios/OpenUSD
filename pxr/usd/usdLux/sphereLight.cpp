@@ -75,7 +75,12 @@ UsdLuxSphereLight::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdLuxSphereLight::_GetSchemaType() const {
+UsdSchemaKind UsdLuxSphereLight::_GetSchemaKind() const {
+    return UsdLuxSphereLight::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdLuxSphereLight::_GetSchemaType() const {
     return UsdLuxSphereLight::schemaType;
 }
 
@@ -105,13 +110,13 @@ UsdLuxSphereLight::_GetTfType() const
 UsdAttribute
 UsdLuxSphereLight::GetRadiusAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->radius);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsRadius);
 }
 
 UsdAttribute
 UsdLuxSphereLight::CreateRadiusAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->radius,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsRadius,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -153,7 +158,7 @@ const TfTokenVector&
 UsdLuxSphereLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLuxTokens->radius,
+        UsdLuxTokens->inputsRadius,
         UsdLuxTokens->treatAsPoint,
     };
     static TfTokenVector allNames =

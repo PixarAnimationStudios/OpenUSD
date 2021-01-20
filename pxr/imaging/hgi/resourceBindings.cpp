@@ -63,7 +63,7 @@ bool operator!=(
 }
 
 HgiTextureBindDesc::HgiTextureBindDesc()
-    : resourceType(HgiBindResourceTypeSamplerImage)
+    : resourceType(HgiBindResourceTypeCombinedSamplerImage)
     , bindingIndex(0)
     , stageUsage(HgiShaderStageFragment)
 {

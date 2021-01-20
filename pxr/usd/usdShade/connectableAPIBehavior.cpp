@@ -118,6 +118,12 @@ UsdShadeConnectableAPIBehavior::CanConnectOutputToSource(
     return false;
 }
 
+bool
+UsdShadeConnectableAPIBehavior::IsContainer() const
+{
+    return false;
+}
+
 ////////////////////////////////////////////////////////////////////////
 //
 // UsdShadeConnectableAPIBehavior registry
@@ -171,6 +177,13 @@ public:
                 "UsdShade Connectable behavior already registered for "
                 "prim type '%s'", connectablePrimType.GetTypeName().c_str());
         }
+    }
+
+    bool
+    HasBehaviorForType(const TfType& type) {
+        _WaitUntilInitialized();
+        _RWMutex::scoped_lock lock(_mutex, /* write = */ false);
+        return TfMapLookupPtr(_registry, type);
     }
 
     UsdShadeConnectableAPIBehavior*
@@ -345,6 +358,23 @@ UsdShadeConnectableAPI::CanConnect(
     if (UsdShadeConnectableAPIBehavior *behavior =
         _BehaviorRegistry::GetInstance().GetBehavior(output.GetPrim())) {
         return behavior->CanConnectOutputToSource(output, source, &reason);
+    }
+    return false;
+}
+
+/* static */
+bool
+UsdShadeConnectableAPI::HasConnectableAPI(const TfType& schemaType)
+{
+    return _BehaviorRegistry::GetInstance().HasBehaviorForType(schemaType);
+}
+
+bool
+UsdShadeConnectableAPI::IsContainer() const
+{
+    if (UsdShadeConnectableAPIBehavior *behavior =
+        _BehaviorRegistry::GetInstance().GetBehavior(GetPrim())) {
+        return behavior->IsContainer();
     }
     return false;
 }

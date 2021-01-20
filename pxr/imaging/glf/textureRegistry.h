@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/singleton.h"
@@ -45,7 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfTextureHandle);
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfTexture);
 
-class GlfRankedTypeMap;
+class HioRankedTypeMap;
 class GlfTextureFactoryBase;
 
 /// \class GlfTextureRegistry
@@ -58,18 +58,18 @@ public:
 
     GLF_API
     GlfTextureHandleRefPtr GetTextureHandle(const TfToken &texture,
-                                  GlfImage::ImageOriginLocation originLocation = 
-                                                     GlfImage::OriginUpperLeft);
+                                  HioImage::ImageOriginLocation originLocation = 
+                                                     HioImage::OriginUpperLeft);
     GLF_API
     GlfTextureHandleRefPtr GetTextureHandle(const TfTokenVector &textures,
-                                  GlfImage::ImageOriginLocation originLocation = 
-                                                     GlfImage::OriginUpperLeft);
+                                  HioImage::ImageOriginLocation originLocation = 
+                                                     HioImage::OriginUpperLeft);
     GLF_API
     GlfTextureHandleRefPtr GetTextureHandle(GlfTextureRefPtr texture);
     GLF_API
     GlfTextureHandleRefPtr GetTextureHandle(
         const TfToken& texture,
-        GlfImage::ImageOriginLocation originLocation,
+        HioImage::ImageOriginLocation originLocation,
         const GlfTextureFactoryBase* textureFactory);
 
     // garbage collection methods
@@ -81,8 +81,8 @@ public:
     // Returns true if the registry contains a texture sampler for \a texture;
     GLF_API
     bool HasTexture(const TfToken &texture,
-                    GlfImage::ImageOriginLocation originLocation = 
-                                               GlfImage::OriginUpperLeft) const;
+                    HioImage::ImageOriginLocation originLocation = 
+                                               HioImage::OriginUpperLeft) const;
 
     // diagnostics
     GLF_API
@@ -102,12 +102,12 @@ private:
     GlfTextureRegistry& operator=(const GlfTextureRegistry&) = delete;
 
     GlfTextureHandleRefPtr _CreateTexture(const TfToken &texture,
-                                  GlfImage::ImageOriginLocation originLocation);
+                                  HioImage::ImageOriginLocation originLocation);
     GlfTextureHandleRefPtr _CreateTexture(const TfTokenVector &textures,
                                           const size_t numTextures,
-                                  GlfImage::ImageOriginLocation originLocation);
+                                  HioImage::ImageOriginLocation originLocation);
     GlfTextureHandleRefPtr _CreateTexture(const TfToken &texture,
-                                  GlfImage::ImageOriginLocation originLocation,
+                                  HioImage::ImageOriginLocation originLocation,
                                   const GlfTextureFactoryBase *textureFactory);
 
     GlfTextureFactoryBase* _GetTextureFactory(const TfToken &filename);
@@ -144,7 +144,7 @@ private:
     };
 
 public:
-    typedef std::map<std::pair<TfToken, GlfImage::ImageOriginLocation>, 
+    typedef std::map<std::pair<TfToken, HioImage::ImageOriginLocation>, 
                      _TextureMetadata> TextureRegistryMap;
     typedef std::map<GlfTexturePtr, GlfTextureHandlePtr> 
         TextureRegistryNonSharedMap;
@@ -152,7 +152,7 @@ public:
 private:
 
     // Map of file extensions to texture types.
-    std::unique_ptr<GlfRankedTypeMap> _typeMap;
+    std::unique_ptr<HioRankedTypeMap> _typeMap;
 
     // registry for shared textures
     TextureRegistryMap _textureRegistry;

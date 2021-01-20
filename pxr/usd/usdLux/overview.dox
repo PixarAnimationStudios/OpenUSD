@@ -37,6 +37,9 @@ The UsdLux core includes:
 - associated components for adjusting behavior
     - UsdLuxLightFilter: a filter to modulate the effect of lights
     - UsdLuxLightPortal: a portal to guide sampling of a dome light
+- \ref usdLux_PluginSchemas "plugin types":
+    - UsdLuxPluginLight
+    - UsdLuxPluginLightFilter
 
 This core can be extended to add more types of lights, filters, or other features.
 
@@ -147,5 +150,28 @@ pipeline-specific capabilities that could be addded as extensions include:
     - importance multipliers
     - integrator path-depth limits
 - constraint rigging to attach a light to an object
+
+\subsection usdLux_PluginSchemas Plugin Lights and Light Filters
+
+We expect "published, pipeline citizen" render delegates to provide typed 
+and applied dynamic schemas that derive from the UsdLux base types (even if 
+only UsdLuxLight) for all of the renderer's core light types. But some 
+render delegates may be developed as part of a proprietary application 
+package that is only using USD as a mechanism to communicate to that render 
+delegate... in other words, the application doesn't really want to 
+participate in the open USD ecosystem, but needs to use it for rendering 
+scenes imported from USD and augmented using application/renderer-specific 
+lighting features, or finds it useful to use USD as an archiving format to 
+send jobs to a render-farm so that the full application need not be run 
+there.
+
+In order to lower the barrier somewhat for such applications, we provide 
+UsdLuxPluginLight and UsdLuxPluginLightFilter, concrete schema types that
+specify a "node identification" encoding, just like UsdShadeShader, so that the
+application need only plug its extensions into Sdr (by providing node 
+definitions that will be consumed by render delegates), and not be required to
+take the extra step of generating dynamic USD schema definitions. Because they
+provide less easily accessible information to users, we do not advocate using 
+these types in pipeline-persistent "user-level" USD files.
 
 */

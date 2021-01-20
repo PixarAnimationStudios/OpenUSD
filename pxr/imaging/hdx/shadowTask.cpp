@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hdx/shadowTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
@@ -32,7 +32,6 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
 
@@ -63,9 +62,7 @@ HdxShadowTask::HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id)
 {
 }
 
-HdxShadowTask::~HdxShadowTask()
-{
-}
+HdxShadowTask::~HdxShadowTask() = default;
 
 void
 HdxShadowTask::Sync(HdSceneDelegate* delegate,
@@ -195,10 +192,12 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
     if (_renderPassStates.size() < _passes.size()) {
         for (size_t passId = _renderPassStates.size();
              passId < _passes.size(); passId++) {
-            HdStRenderPassShaderSharedPtr renderPassShadowShader
-                (new HdStRenderPassShader(HdxPackageRenderPassShadowShader()));
-            HdRenderPassStateSharedPtr renderPassState
-                (new HdStRenderPassState(renderPassShadowShader));
+            HdStRenderPassShaderSharedPtr renderPassShadowShader = 
+                std::make_shared<HdStRenderPassShader>(
+                    HdxPackageRenderPassShadowShader());
+            HdStRenderPassStateSharedPtr renderPassState =
+                std::make_shared<HdStRenderPassState>(
+                    renderPassShadowShader);
 
             // This state is invariant of parameter changes so set it
             // once.
@@ -213,7 +212,7 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
             // A new state is treated as dirty and needs the params set.
             _UpdateDirtyParams(renderPassState, _params);
 
-            _renderPassStates.push_back(renderPassState);
+            _renderPassStates.push_back(std::move(renderPassState));
         }
     }
 
@@ -285,6 +284,10 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
     // Generate the actual shadow maps
     GlfSimpleShadowArrayRefPtr const shadows = lightingContext->GetShadows();
     size_t numShadowMaps = shadows->GetNumShadowMapPasses();
+    // Should be sufficient to bind the renderPassState once
+    if (!_renderPassStates.empty()) {
+        _renderPassStates[0]->Bind();
+    }
     for (size_t shadowId = 0; shadowId < numShadowMaps; shadowId++) {
 
         // Make sure each pass got created. Light shadow indices are supposed
@@ -305,10 +308,13 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
         // Render the actual geometry in the "masked" materialTag collection
         _passes[shadowId + numShadowMaps]->Execute(
             _renderPassStates[shadowId + numShadowMaps],
-            GetRenderTags());    
-
+            GetRenderTags());
+   
         // Unbind the buffer and move on to the next shadow map
         shadows->EndCapture(shadowId);
+    }
+    if (!_renderPassStates.empty()) {
+        _renderPassStates[0]->Unbind();
     }
 
     // restore GL states to default
@@ -352,7 +358,7 @@ HdxShadowTask::_SetHdStRenderPassState(HdxShadowTaskParams const &params,
 }
 
 void
-HdxShadowTask::_UpdateDirtyParams(HdRenderPassStateSharedPtr &renderPassState,
+HdxShadowTask::_UpdateDirtyParams(HdStRenderPassStateSharedPtr &renderPassState,
     HdxShadowTaskParams const &params)
 {
     renderPassState->SetOverrideColor(params.overrideColor);

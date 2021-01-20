@@ -22,100 +22,36 @@
 // language governing permissions and limitations under the Apache License.
 //
 ///
-/// \file Sdf/fileIO.cpp
+/// \file sdf/fileIO.cpp
 
 #include "pxr/pxr.h"
+
+#include "pxr/usd/sdf/fileIO.h"
+
 #include "pxr/usd/sdf/attributeSpec.h"
-#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/fileIO_Common.h"
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/layerOffset.h"
-#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
-#include "pxr/base/vt/array.h"
-#include "pxr/base/vt/value.h"
 
-#include "pxr/base/tf/atomicOfstreamWrapper.h"
-#include "pxr/base/tf/scopeDescription.h"
-#include "pxr/base/trace/trace.h"
-
-#include "pxr/base/arch/fileSystem.h"
-#include "pxr/base/tf/enum.h"
-#include "pxr/base/tf/fileUtils.h"
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <fstream>
-#include <sstream>
-
-using std::map;
-using std::ostream;
-using std::string;
-using std::vector;
+#include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-////////////////////////////////////////////////////////////////////////
-// Local shorthand
+#if AR_VERSION != 1
 
-#define _Write             Sdf_FileIOUtility::Write
-#define _WriteQuotedString Sdf_FileIOUtility::WriteQuotedString
-#define _WriteAssetPath    Sdf_FileIOUtility::WriteAssetPath
-#define _WriteSdfPath      Sdf_FileIOUtility::WriteSdfPath
+Sdf_StreamWritableAsset::~Sdf_StreamWritableAsset() = default;
 
-////////////////////////////////////////////////////////////////////////
-// Layer Content Support
+#endif
 
 bool
-Sdf_WriteVariant(const SdfVariantSpec &variantSpec,
-    std::ostream &out, size_t indent)
+Sdf_WriteToStream(const SdfSpec &baseSpec, std::ostream& o, size_t indent)
 {
-    SdfPrimSpec primSpec = variantSpec.GetPrimSpec().GetSpec();
-    _WriteQuotedString(out, indent, variantSpec.GetName());
+    Sdf_TextOutput out(o);
 
-    Sdf_WritePrimMetadata( primSpec, out, indent );
-
-    _Write(out, 0, " {\n");
-
-    Sdf_WritePrimBody( primSpec, out, indent );
-
-    _Write(out, 0, "\n");
-    _Write(out, indent, "}\n");
-
-    return true;
-}
-
-static
-bool
-_VariantNameLess(const SdfVariantSpecHandle& a, const SdfVariantSpecHandle& b)
-{
-    return a->GetName() < b->GetName();
-}
-
-bool
-Sdf_WriteVariantSet(const SdfVariantSetSpec &spec, ostream &out, size_t indent)
-{
-    SdfVariantSpecHandleVector variants = spec.GetVariantList();
-    std::sort(variants.begin(), variants.end(), &_VariantNameLess);
-
-    if (!variants.empty()) {
-        _Write(out, indent, "variantSet ");
-        _WriteQuotedString(out, 0, spec.GetName());
-        _Write(out, 0, " = {\n");
-        TF_FOR_ALL(it, variants) {
-            (*it)->WriteToStream(out, indent+1);
-        }
-        _Write(out, indent, "}\n");
-    }
-    return true;
-}
-
-bool
-Sdf_WriteToStream(const SdfSpec &baseSpec, std::ostream& out, size_t indent)
-{
     const SdfSpecType type = baseSpec.GetSpecType();
 
     switch (type) {

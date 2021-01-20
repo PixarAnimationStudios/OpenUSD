@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/oitRenderTask.h"
@@ -105,6 +105,7 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
 
     HdxOitBufferAccessor oitBufferAccessor(ctx);
 
+    oitBufferAccessor.RequestOitBuffers();
     oitBufferAccessor.InitializeOitBuffersIfNecessary();
 
     HdRenderPassStateSharedPtr renderPassState = _GetRenderPassState(ctx);
@@ -153,6 +154,10 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
     extendedState->SetRenderPassShader(_oitOpaqueRenderPassShader);
     renderPassState->SetEnableDepthMask(true);
     renderPassState->SetColorMask(HdRenderPassState::ColorMaskRGBA);
+
+    // We resolve the AOVs just before rendering any OIT geometry, so
+    // avoid using the multisampled AOVs.
+    renderPassState->SetUseAovMultiSample(false);
     HdxRenderTask::Execute(ctx);
 
     //

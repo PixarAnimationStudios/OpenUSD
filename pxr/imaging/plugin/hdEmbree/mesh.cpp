@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/plugin/hdEmbree/mesh.h"
 
 #include "pxr/imaging/plugin/hdEmbree/context.h"
@@ -39,9 +38,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdEmbreeMesh::HdEmbreeMesh(SdfPath const& id,
-                           SdfPath const& instancerId)
-    : HdMesh(id, instancerId)
+HdEmbreeMesh::HdEmbreeMesh(SdfPath const& id)
+    : HdMesh(id)
     , _rtcMeshId(RTC_INVALID_GEOMETRY_ID)
     , _rtcMeshScene(nullptr)
     , _adjacencyValid(false)
@@ -856,19 +854,36 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
     ////////////////////////////////////////////////////////////////////////
     // 4. Populate embree instance objects.
 
-    // If the mesh is instanced, create one new instance per transform.
-    // XXX: The current instancer invalidation tracking makes it hard for
-    // HdEmbree to tell whether transforms will be dirty, so this code
-    // pulls them every frame.
-    if (!GetInstancerId().IsEmpty()) {
+    // First, update our own instancer data.
+    _UpdateInstancer(sceneDelegate, dirtyBits);
 
-        // // Retrieve instance transforms from the instancer.
-        HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
-        HdInstancer *instancer =
-            renderIndex.GetInstancer(GetInstancerId());
-        VtMatrix4dArray transforms =
-            static_cast<HdEmbreeInstancer*>(instancer)->
+    // Make sure we call sync on parent instancers.
+    // XXX: In theory, this should be done automatically by the render index.
+    // At the moment, it's done by rprim-reference.  The helper function on
+    // HdInstancer needs to use a mutex to guard access, if there are actually
+    // updates pending, so this might be a contention point.
+    HdInstancer::_SyncInstancerAndParents(
+        sceneDelegate->GetRenderIndex(), GetInstancerId());
+
+    // If the instance topology changes, we need to update the instance
+    // geometries. Un-instanced prims are treated here as a special case.
+    // Instance geometries read from the instancer (for per-instance transform)
+    // and the rprim transform, which gets added to the per instance transform.
+    if (HdChangeTracker::IsInstancerDirty(*dirtyBits, id) ||
+        HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
+
+        VtMatrix4dArray transforms;
+        if (!GetInstancerId().IsEmpty()) {
+            // Retrieve instance transforms from the instancer.
+            HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+            HdInstancer *instancer =
+                renderIndex.GetInstancer(GetInstancerId());
+            transforms = static_cast<HdEmbreeInstancer*>(instancer)->
                 ComputeInstanceTransforms(GetId());
+        } else {
+            // If there's no instancer, add a single instance with transform I.
+            transforms.push_back(GfMatrix4d(1.0));
+        }
 
         size_t oldSize = _rtcInstanceIds.size();
         size_t newSize = transforms.size();
@@ -895,6 +910,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
             // Create the instance context.
             HdEmbreeInstanceContext *ctx = new HdEmbreeInstanceContext;
             ctx->rootScene = _rtcMeshScene;
+            ctx->instanceId = i;
             rtcSetGeometryUserData(geom,ctx);
             _rtcInstanceGeometries[i] = geom;
         }
@@ -908,50 +924,8 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
             rtcSetGeometryTransform(rtcGetGeometry(scene,_rtcInstanceIds[i]),0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,matf.GetArray());
             // // Update the transform in the instance context.
             _GetInstanceContext(scene, i)->objectToWorldMatrix = matf;
-            _GetInstanceContext(scene, i)->instanceId = i;
             // // Mark the instance as updated in the BVH.
             rtcCommitGeometry(_rtcInstanceGeometries[i]);
-        }
-    }
-    // Otherwise, create our single instance (if necessary) and update
-    // the transform (if necessary).
-    else {
-        bool newInstance = false;
-        if (_rtcInstanceIds.size() == 0) {
-            // Create our single instance.
-            RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
-            rtcSetGeometryInstancedScene(geom,_rtcMeshScene);
-            rtcSetGeometryTimeStepCount(geom,1);
-            _rtcInstanceIds.push_back(rtcAttachGeometry(scene,geom));
-
-            // Create the instance context.
-            HdEmbreeInstanceContext *ctx = new HdEmbreeInstanceContext;
-            ctx->rootScene = _rtcMeshScene;
-            rtcSetGeometryUserData(geom,ctx);
-
-            rtcSetGeometryTransform(geom,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,_transform.GetArray());
-
-            // Update the transform in the render context.
-            _rtcInstanceGeometries.push_back(geom);
-
-            ctx->objectToWorldMatrix = _transform;
-            ctx->instanceId = 0;
-
-            newInstance = true;
-        }else if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
-            // Update the transform in the BVH.
-            rtcSetGeometryTransform(_rtcInstanceGeometries[0],0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,_transform.GetArray());
-            // Update the transform in the render context.
-            _GetInstanceContext(scene, 0)->objectToWorldMatrix = _transform;
-            _GetInstanceContext(scene, 0)->instanceId = 0;
-        }
-
-        if (newInstance || newMesh ||
-            HdChangeTracker::IsTransformDirty(*dirtyBits, id) ||
-            HdChangeTracker::IsPrimvarDirty(*dirtyBits, id,
-                                            HdTokens->points)) {
-            // Mark the instance as updated in the top-level BVH.
-            rtcCommitGeometry(_rtcInstanceGeometries[0]);
         }
     }
 

@@ -39,8 +39,7 @@ class HdPrman_Points final : public HdPrman_Gprim<HdPoints> {
 public:
     typedef HdPrman_Gprim<HdPoints> BASE;
     HF_MALLOC_TAG_NEW("new HdPrman_Points");
-    HdPrman_Points(SdfPath const& id,
-                   SdfPath const& instancerId = SdfPath());
+    HdPrman_Points(SdfPath const& id);
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 protected:
     virtual RtParamList

@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/textureRegistry.h"
-
 #include "pxr/base/work/loops.h"
 
 #include "pxr/imaging/hd/tokens.h"
@@ -31,7 +29,6 @@
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hdSt/textureResource.h"
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
@@ -112,7 +109,13 @@ HdStResourceRegistry::HdStResourceRegistry(Hgi * const hgi)
 {
 }
 
-HdStResourceRegistry::~HdStResourceRegistry() = default;
+HdStResourceRegistry::~HdStResourceRegistry()
+{
+    // XXX Ideally all the HdInstanceRegistry would get destroy here and
+    // they cleanup all GPU resources. Since that mechanism isn't in place
+    // yet, we call GarbageCollect to emulate this behavior.
+    GarbageCollect();
+}
 
 void HdStResourceRegistry::InvalidateShaderRegistry()
 {
@@ -135,6 +138,10 @@ void HdStResourceRegistry::ReloadResource(TfToken const& resourceType,
         HioGlslfxSharedPtr glslfxSharedPtr = glslfxInstance.GetValue();
         glslfxSharedPtr.reset(new HioGlslfx(path));
         glslfxInstance.SetValue(glslfxSharedPtr);
+    } else if (resourceType == HdResourceTypeTokens->texture) {
+        HdSt_TextureObjectRegistry *const reg = 
+            _textureHandleRegistry->GetTextureObjectRegistry();
+        reg->MarkTextureFilePathDirty(TfToken(path));
     }
 }
 
@@ -388,7 +395,7 @@ HdStResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
     // Check for no-valid buffer case
     if (!sources.empty()) {
         _numBufferSourcesToResolve += sources.size();
-        const _PendingSourceList::iterator it = _pendingSources.emplace_back(
+        _pendingSources.emplace_back(
             range, std::move(sources));
 
         TF_VERIFY(range.use_count() >=2);
@@ -397,7 +404,7 @@ HdStResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
 
 void
 HdStResourceRegistry::AddSource(HdBufferArrayRangeSharedPtr const &range,
-                              HdBufferSourceSharedPtr const &source)
+                                HdBufferSourceSharedPtr const &source)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -596,19 +603,6 @@ HdStResourceRegistry::RegisterExtComputationDataRange(
                      HdPerfTokens->instExtComputationDataRange);
 }
 
-HdInstance<HdStTextureResourceSharedPtr>
-HdStResourceRegistry::RegisterTextureResource(TextureKey id)
-{
-    return _textureResourceRegistry.GetInstance(id);
-}
-
-HdInstance<HdStTextureResourceSharedPtr>
-HdStResourceRegistry::FindTextureResource(TextureKey id, bool *found)
-{
-    return _textureResourceRegistry.FindInstance(id, found);
-}
-
-
 HdInstance<HdSt_GeometricShaderSharedPtr>
 HdStResourceRegistry::RegisterGeometricShader(
         HdInstance<HdSt_GeometricShaderSharedPtr>::ID id)
@@ -628,20 +622,6 @@ HdStResourceRegistry::RegisterGLSLFXFile(
         HdInstance<HioGlslfxSharedPtr>::ID id)
 {
     return _glslfxFileRegistry.GetInstance(id);
-}
-
-HdInstance<HdStTextureResourceHandleSharedPtr>
-HdStResourceRegistry::RegisterTextureResourceHandle(
-        HdInstance<HdStTextureResourceHandleSharedPtr>::ID id)
-{
-    return _textureResourceHandleRegistry.GetInstance(id);
-}
-
-HdInstance<HdStTextureResourceHandleSharedPtr>
-HdStResourceRegistry::FindTextureResourceHandle(
-        HdInstance<HdStTextureResourceHandleSharedPtr>::ID id, bool *found)
-{
-    return _textureResourceHandleRegistry.FindInstance(id, found);
 }
 
 HdInstance<HgiResourceBindingsSharedPtr>
@@ -887,6 +867,10 @@ HdStResourceRegistry::_Commit()
         _uniformSsboAggregationStrategy->Flush();
         _singleAggregationStrategy->Flush();
 
+        // Make sure the writes are visible to computations that follow
+        if (_blitCmds) {
+            _blitCmds->MemoryBarrier(HgiMemoryBarrierAll);
+        }
         SubmitBlitWork();
     }
 
@@ -906,12 +890,19 @@ HdStResourceRegistry::_Commit()
                 HD_PERF_COUNTER_INCR(HdPerfTokens->computationsCommited);
             }
 
-            // Submit Hgi work between each computation queue to ensure
-            // synchronization (barriers) happens.
+            // Submit Hgi work between each computation queue to feed GPU.
             // Some computations may use BlitCmds (CopyComputation) so we must
             // submit blit and compute work.
-            SubmitBlitWork();
-            SubmitComputeWork();
+            // We must ensure that shader writes are visible to computations
+            // in the next queue by setting a memory barrier.
+            if (_blitCmds) {
+                _blitCmds->MemoryBarrier(HgiMemoryBarrierAll);
+                SubmitBlitWork();
+            }
+            if (_computeCmds) {
+                _computeCmds->MemoryBarrier(HgiMemoryBarrierAll);
+                SubmitComputeWork();
+            }
         }
     }
 
@@ -984,7 +975,6 @@ HdStResourceRegistry::_GarbageCollect()
     _geometricShaderRegistry.GarbageCollect();
     _glslProgramRegistry.GarbageCollect();
     _glslfxFileRegistry.GarbageCollect();
-    _textureResourceHandleRegistry.GarbageCollect();
 
     // Cleanup Hgi resources bindings and pipelines
     _resourceBindingsRegistry.GarbageCollect();
@@ -1002,13 +992,6 @@ HdStResourceRegistry::_GarbageCollect()
 
     // Garbage collection may reallocate buffers, so we must submit blit work.
     SubmitBlitWork();
-}
-
-void
-HdStResourceRegistry::_GarbageCollectBprims()
-{
-    // Cleanup texture registries
-    _textureResourceRegistry.GarbageCollect();
 }
 
 HdBufferArrayRangeSharedPtr
@@ -1160,35 +1143,16 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
         gpuMemoryUsed += size;
     }
 
-    // Texture Resources
+    // Texture Memory
     {
-        size_t textureResourceMemory = 0;
+        HdSt_TextureObjectRegistry *const textureObjectRegistry =
+            _textureHandleRegistry->GetTextureObjectRegistry();
 
-        for (auto const & it: _textureResourceRegistry) {
-            HdStTextureResourceSharedPtr const & texResource = it.second.value;
-            // In the event of an asset error, texture resources can be null
-            if (!texResource) {
-                continue;
-            }
+        const size_t textureMemory =
+            textureObjectRegistry->GetTotalTextureMemory();
 
-            textureResourceMemory += texResource->GetMemoryUsed();
-        }
-        (*result)[HdPerfTokens->textureResourceMemory] = VtValue(
-                                                textureResourceMemory);
-        gpuMemoryUsed += textureResourceMemory;
-    }
-
-    // Texture registry
-    {
-        GlfTextureRegistry &textureReg = GlfTextureRegistry::GetInstance();
-        std::vector<VtDictionary> textureInfos = textureReg.GetTextureInfos();
-        size_t textureMemory = 0;
-        for (VtDictionary const &info :  textureInfos) {
-            if (VtDictionaryIsHolding<size_t>(info, "memoryUsed")) {
-                textureMemory += VtDictionaryGet<size_t>(info, "memoryUsed");
-            }
-        }
         (*result)[HdPerfTokens->textureMemory] = VtValue(textureMemory);
+        gpuMemoryUsed += textureMemory;
     }
 
     (*result)[HdPerfTokens->gpuMemoryUsed.GetString()] = gpuMemoryUsed;
@@ -1222,5 +1186,13 @@ HdStResourceRegistry::AllocateTextureObject(
             
 }    
 
+void
+HdStResourceRegistry::SetMemoryRequestForTextureType(
+    const HdTextureType textureType,
+    const size_t memoryRequest)
+{
+    _textureHandleRegistry->SetMemoryRequestForTextureType(
+        textureType, memoryRequest);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

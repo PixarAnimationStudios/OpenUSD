@@ -68,6 +68,9 @@ public:
     HGIMETAL_API
     void PopDebugGroup() override;
 
+    HGIMETAL_API
+    void MemoryBarrier(HgiMemoryBarrier barrier) override;
+
 protected:
     friend class HgiMetal;
 
@@ -88,6 +91,7 @@ private:
     HgiMetalComputePipeline* _pipelineState;
     id<MTLCommandBuffer> _commandBuffer;
     id<MTLComputeCommandEncoder> _encoder;
+    bool _secondaryCommandBuffer;
     bool _hasWork;
 };
 

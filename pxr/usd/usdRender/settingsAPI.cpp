@@ -62,7 +62,12 @@ UsdRenderSettingsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaType UsdRenderSettingsAPI::_GetSchemaType() const {
+UsdSchemaKind UsdRenderSettingsAPI::_GetSchemaKind() const {
+    return UsdRenderSettingsAPI::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdRenderSettingsAPI::_GetSchemaType() const {
     return UsdRenderSettingsAPI::schemaType;
 }
 

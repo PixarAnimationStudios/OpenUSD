@@ -114,6 +114,7 @@
 #include "hdPrman/matfiltResolveVstructs.h"
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 #include "pxr/usd/sdr/registry.h"
@@ -128,7 +129,7 @@ struct _VSCGConditionalBase
     
     typedef std::shared_ptr<_VSCGConditionalBase> Ptr;
 
-    virtual bool Eval(const MatfiltNode & node,
+    virtual bool Eval(const HdMaterialNode2 & node,
             const NdrTokenVec & shaderTypePriority) = 0;
 };
 
@@ -151,7 +152,7 @@ struct ConditionalParamIsConnected : public ConditionalParamBase
     ConditionalParamIsConnected(const TfToken & name)
     : ConditionalParamBase(name) {}
 
-    bool Eval(const MatfiltNode & node, const NdrTokenVec & shaderTypePriority)
+    bool Eval(const HdMaterialNode2 & node, const NdrTokenVec & shaderTypePriority)
             override {
         
         auto I = node.inputConnections.find(paramName);
@@ -168,7 +169,7 @@ struct ConditionalParamIsNotConnected : public ConditionalParamBase
     ConditionalParamIsNotConnected(const TfToken & name)
     : ConditionalParamBase(name) {}
 
-    bool Eval(const MatfiltNode & node,
+    bool Eval(const HdMaterialNode2 & node,
             const NdrTokenVec & shaderTypePriority) override {
         auto I = node.inputConnections.find(paramName);
         if (I == node.inputConnections.end()) {
@@ -184,7 +185,7 @@ struct ConditionalParamIsSet : public ConditionalParamBase
     ConditionalParamIsSet(const TfToken & name)
     : ConditionalParamBase(name) {}
 
-    bool Eval(const MatfiltNode & node, const NdrTokenVec & shaderTypePriority)
+    bool Eval(const HdMaterialNode2 & node, const NdrTokenVec & shaderTypePriority)
             override {
         return (node.parameters.find(paramName)
                 != node.parameters.end());
@@ -196,7 +197,7 @@ struct ConditionalParamIsNotSet : public ConditionalParamBase
     ConditionalParamIsNotSet(const TfToken & name)
     : ConditionalParamBase(name) {}
 
-    bool Eval(const MatfiltNode & node, const NdrTokenVec & shaderTypePriority)
+    bool Eval(const HdMaterialNode2 & node, const NdrTokenVec & shaderTypePriority)
             override {
         return (node.parameters.find(paramName)
                 == node.parameters.end());
@@ -237,7 +238,7 @@ struct ConditionalParamCmpBase : public ConditionalParamBase
     }
 
     static bool GetParameterValue(
-            const MatfiltNode & node,
+            const HdMaterialNode2 & node,
             const TfToken & paramName,
             const NdrTokenVec & shaderTypePriority,
             VtValue * result) {
@@ -266,7 +267,7 @@ struct ConditionalParamCmpBase : public ConditionalParamBase
     virtual bool CompareString(
             const std::string & v1, const std::string & v2) = 0;
 
-    bool Eval(const MatfiltNode & node,
+    bool Eval(const HdMaterialNode2 & node,
             const NdrTokenVec & shaderTypePriority) override {
         VtValue paramValue;
         if (!GetParameterValue(
@@ -397,7 +398,7 @@ struct ConditionalAnd : _VSCGConditionalBase
     ConditionalAnd(_VSCGConditionalBase * left, _VSCGConditionalBase * right)
     : _VSCGConditionalBase(), left(left), right(right) {}
 
-    bool Eval(const MatfiltNode & node,
+    bool Eval(const HdMaterialNode2 & node,
             const NdrTokenVec & shaderTypePriority) override {
 
         return (left && left->Eval(node, shaderTypePriority))
@@ -423,7 +424,7 @@ struct ConditionalOr : _VSCGConditionalBase
         delete left;
         delete right;
     }
-    bool Eval(const MatfiltNode & node, const NdrTokenVec & shaderTypePriority)
+    bool Eval(const HdMaterialNode2 & node, const NdrTokenVec & shaderTypePriority)
             override {
         return (left && left->Eval(node, shaderTypePriority))
                 || (right && right->Eval(node, shaderTypePriority)); 
@@ -527,7 +528,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 
 /* Line 189 of yacc.c  */
-#line 508 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
+#line 509 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -587,7 +588,7 @@ typedef union YYSTYPE
 {
 
 /* Line 214 of yacc.c  */
-#line 456 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 457 "hdPrman/virtualStructConditionalGrammar.yy"
 
   double number;
   char * string;
@@ -598,7 +599,7 @@ typedef union YYSTYPE
 
 
 /* Line 214 of yacc.c  */
-#line 579 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
+#line 580 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -622,7 +623,7 @@ typedef struct YYLTYPE
 /* Copy the second part of user declarations.  */
 
 /* Line 264 of yacc.c  */
-#line 489 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 490 "hdPrman/virtualStructConditionalGrammar.yy"
 
 int virtualStructConditionalGrammarYylex(
         YYSTYPE * lvalp, YYLTYPE *llocp, void * yyscanner);
@@ -638,7 +639,7 @@ Really ends up passing in yyscanner in the YYLEX macro
 
 
 /* Line 264 of yacc.c  */
-#line 619 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
+#line 620 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
 
 #ifdef short
 # undef short
@@ -985,19 +986,19 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   525,   525,   529,   542,   550,   556,   562,   569,   575,
-     581,   587,   593,   599,   605,   613,   621,   627,   633,   640,
-     646,   652,   659,   665,   671,   677,   686,   694,   700,   706,
-     713,   719,   725,   732,   738,   744,   750,   759,   767,   773,
-     779,   786,   792,   798,   804,   810,   816,   822,   830,   839,
-     846,   853,   861,   868,   875,   882,   889,   896,   903,   913,
-     922,   929,   936,   944,   951,   958,   965,   972,   979,   986,
-     997,  1002,  1006,  1010,  1015,  1019,  1023,  1028,  1033,  1038,
-    1042,  1049,  1054,  1059,  1064,  1070,  1075,  1080,  1085,  1090,
-    1095,  1100,  1109,  1114,  1118,  1122,  1127,  1131,  1135,  1139,
-    1143,  1147,  1151,  1158,  1163,  1167,  1171,  1176,  1180,  1184,
-    1189,  1193,  1197,  1201,  1208,  1211,  1216,  1222,  1230,  1234,
-    1237,  1243,  1253,  1258,  1269,  1279,  1282
+       0,   526,   526,   530,   543,   551,   557,   563,   570,   576,
+     582,   588,   594,   600,   606,   614,   622,   628,   634,   641,
+     647,   653,   660,   666,   672,   678,   687,   695,   701,   707,
+     714,   720,   726,   733,   739,   745,   751,   760,   768,   774,
+     780,   787,   793,   799,   805,   811,   817,   823,   831,   840,
+     847,   854,   862,   869,   876,   883,   890,   897,   904,   914,
+     923,   930,   937,   945,   952,   959,   966,   973,   980,   987,
+     998,  1003,  1007,  1011,  1016,  1020,  1024,  1029,  1034,  1039,
+    1043,  1050,  1055,  1060,  1065,  1071,  1076,  1081,  1086,  1091,
+    1096,  1101,  1110,  1115,  1119,  1123,  1128,  1132,  1136,  1140,
+    1144,  1148,  1152,  1159,  1164,  1168,  1172,  1177,  1181,  1185,
+    1190,  1194,  1198,  1202,  1209,  1212,  1217,  1223,  1231,  1235,
+    1238,  1244,  1254,  1259,  1270,  1280,  1283
 };
 #endif
 
@@ -1772,7 +1773,7 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, data)
       case 3: /* "NUMBER" */
 
 /* Line 1000 of yacc.c  */
-#line 464 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 465 "hdPrman/virtualStructConditionalGrammar.yy"
 	{
   if ((yyvaluep->string))
   {
@@ -1782,12 +1783,12 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, data)
 };
 
 /* Line 1000 of yacc.c  */
-#line 1763 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
+#line 1764 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
 	break;
       case 4: /* "STRING" */
 
 /* Line 1000 of yacc.c  */
-#line 464 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 465 "hdPrman/virtualStructConditionalGrammar.yy"
 	{
   if ((yyvaluep->string))
   {
@@ -1797,12 +1798,12 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, data)
 };
 
 /* Line 1000 of yacc.c  */
-#line 1778 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
+#line 1779 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
 	break;
       case 5: /* "PARAM" */
 
 /* Line 1000 of yacc.c  */
-#line 464 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 465 "hdPrman/virtualStructConditionalGrammar.yy"
 	{
   if ((yyvaluep->string))
   {
@@ -1812,12 +1813,12 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, data)
 };
 
 /* Line 1000 of yacc.c  */
-#line 1793 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
+#line 1794 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
 	break;
       case 27: /* "value" */
 
 /* Line 1000 of yacc.c  */
-#line 480 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 481 "hdPrman/virtualStructConditionalGrammar.yy"
 	{
   if ((yyvaluep->value))
   {
@@ -1827,12 +1828,12 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, data)
 };
 
 /* Line 1000 of yacc.c  */
-#line 1808 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
+#line 1809 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
 	break;
       case 29: /* "action" */
 
 /* Line 1000 of yacc.c  */
-#line 472 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 473 "hdPrman/virtualStructConditionalGrammar.yy"
 	{
   if ((yyvaluep->action))
   {
@@ -1842,7 +1843,7 @@ yydestruct (yymsg, yytype, yyvaluep, yylocationp, data)
 };
 
 /* Line 1000 of yacc.c  */
-#line 1823 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
+#line 1824 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
 	break;
 
       default:
@@ -2173,7 +2174,7 @@ yyreduce:
         case 2:
 
 /* Line 1455 of yacc.c  */
-#line 525 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 526 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     (yyval.value) = new _VSCGValueContainer(VtValue((yyvsp[(1) - (1)].string)));
     free((yyvsp[(1) - (1)].string));
@@ -2183,7 +2184,7 @@ yyreduce:
   case 3:
 
 /* Line 1455 of yacc.c  */
-#line 529 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 530 "hdPrman/virtualStructConditionalGrammar.yy"
     {    
     (yyval.value) = new _VSCGValueContainer(VtValue(atof((yyvsp[(1) - (1)].string))));
     free((yyvsp[(1) - (1)].string));
@@ -2193,7 +2194,7 @@ yyreduce:
   case 4:
 
 /* Line 1455 of yacc.c  */
-#line 542 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 543 "hdPrman/virtualStructConditionalGrammar.yy"
     {
 
     (yyval.condition) = data->NewCondition(
@@ -2207,7 +2208,7 @@ yyreduce:
   case 5:
 
 /* Line 1455 of yacc.c  */
-#line 550 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 551 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'and', special case */
     (yyval.condition) = data->NewCondition(
@@ -2219,7 +2220,7 @@ yyreduce:
   case 6:
 
 /* Line 1455 of yacc.c  */
-#line 556 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 557 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'or', special case */
     (yyval.condition) = data->NewCondition(
@@ -2231,7 +2232,7 @@ yyreduce:
   case 7:
 
 /* Line 1455 of yacc.c  */
-#line 562 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 563 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'is', special case */
     (yyval.condition) = data->NewCondition(
@@ -2243,7 +2244,7 @@ yyreduce:
   case 8:
 
 /* Line 1455 of yacc.c  */
-#line 569 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 570 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'if', special case */
     (yyval.condition) = data->NewCondition(
@@ -2255,7 +2256,7 @@ yyreduce:
   case 9:
 
 /* Line 1455 of yacc.c  */
-#line 575 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 576 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'else', special case */
     (yyval.condition) = data->NewCondition(
@@ -2267,7 +2268,7 @@ yyreduce:
   case 10:
 
 /* Line 1455 of yacc.c  */
-#line 581 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 582 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connected', special case */
     (yyval.condition) = data->NewCondition(
@@ -2279,7 +2280,7 @@ yyreduce:
   case 11:
 
 /* Line 1455 of yacc.c  */
-#line 587 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 588 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connect', special case */
     (yyval.condition) = data->NewCondition(
@@ -2291,7 +2292,7 @@ yyreduce:
   case 12:
 
 /* Line 1455 of yacc.c  */
-#line 593 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 594 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'ignore', special case */
     (yyval.condition) = data->NewCondition(
@@ -2303,7 +2304,7 @@ yyreduce:
   case 13:
 
 /* Line 1455 of yacc.c  */
-#line 599 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 600 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'copy', special case */
     (yyval.condition) = data->NewCondition(
@@ -2315,7 +2316,7 @@ yyreduce:
   case 14:
 
 /* Line 1455 of yacc.c  */
-#line 605 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 606 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'set', special case */
     (yyval.condition) = data->NewCondition(
@@ -2327,7 +2328,7 @@ yyreduce:
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 613 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 614 "hdPrman/virtualStructConditionalGrammar.yy"
     {
 
     (yyval.condition) = data->NewCondition(
@@ -2341,7 +2342,7 @@ yyreduce:
   case 16:
 
 /* Line 1455 of yacc.c  */
-#line 621 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 622 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'and', special case */
     (yyval.condition) = data->NewCondition(
@@ -2353,7 +2354,7 @@ yyreduce:
   case 17:
 
 /* Line 1455 of yacc.c  */
-#line 627 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 628 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'or', special case */
     (yyval.condition) = data->NewCondition(
@@ -2365,7 +2366,7 @@ yyreduce:
   case 18:
 
 /* Line 1455 of yacc.c  */
-#line 633 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 634 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'is', special case */
     (yyval.condition) = data->NewCondition(
@@ -2377,7 +2378,7 @@ yyreduce:
   case 19:
 
 /* Line 1455 of yacc.c  */
-#line 640 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 641 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'if', special case */
     (yyval.condition) = data->NewCondition(
@@ -2389,7 +2390,7 @@ yyreduce:
   case 20:
 
 /* Line 1455 of yacc.c  */
-#line 646 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 647 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'else', special case */
     (yyval.condition) = data->NewCondition(
@@ -2401,7 +2402,7 @@ yyreduce:
   case 21:
 
 /* Line 1455 of yacc.c  */
-#line 652 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 653 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connected', special case */
     (yyval.condition) = data->NewCondition(
@@ -2414,7 +2415,7 @@ yyreduce:
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 659 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 660 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connect', special case */
     (yyval.condition) = data->NewCondition(
@@ -2426,7 +2427,7 @@ yyreduce:
   case 23:
 
 /* Line 1455 of yacc.c  */
-#line 665 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 666 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'ignore', special case */
     (yyval.condition) = data->NewCondition(
@@ -2438,7 +2439,7 @@ yyreduce:
   case 24:
 
 /* Line 1455 of yacc.c  */
-#line 671 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 672 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'copy', special case */
     (yyval.condition) = data->NewCondition(
@@ -2450,7 +2451,7 @@ yyreduce:
   case 25:
 
 /* Line 1455 of yacc.c  */
-#line 677 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 678 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'set', special case */
     (yyval.condition) = data->NewCondition(
@@ -2462,7 +2463,7 @@ yyreduce:
   case 26:
 
 /* Line 1455 of yacc.c  */
-#line 686 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 687 "hdPrman/virtualStructConditionalGrammar.yy"
     {
 
     (yyval.condition) = data->NewCondition(
@@ -2476,7 +2477,7 @@ yyreduce:
   case 27:
 
 /* Line 1455 of yacc.c  */
-#line 694 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 695 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'and', special case */
     (yyval.condition) = data->NewCondition(
@@ -2488,7 +2489,7 @@ yyreduce:
   case 28:
 
 /* Line 1455 of yacc.c  */
-#line 700 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 701 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'or', special case */
     (yyval.condition) = data->NewCondition(
@@ -2500,7 +2501,7 @@ yyreduce:
   case 29:
 
 /* Line 1455 of yacc.c  */
-#line 706 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 707 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'is', special case */
     (yyval.condition) = data->NewCondition(
@@ -2512,7 +2513,7 @@ yyreduce:
   case 30:
 
 /* Line 1455 of yacc.c  */
-#line 713 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 714 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'if', special case */
     (yyval.condition) = data->NewCondition(
@@ -2524,7 +2525,7 @@ yyreduce:
   case 31:
 
 /* Line 1455 of yacc.c  */
-#line 719 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 720 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'else', special case */
     (yyval.condition) = data->NewCondition(
@@ -2536,7 +2537,7 @@ yyreduce:
   case 32:
 
 /* Line 1455 of yacc.c  */
-#line 725 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 726 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connected', special case */
     (yyval.condition) = data->NewCondition(
@@ -2549,7 +2550,7 @@ yyreduce:
   case 33:
 
 /* Line 1455 of yacc.c  */
-#line 732 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 733 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connect', special case */
     (yyval.condition) = data->NewCondition(
@@ -2561,7 +2562,7 @@ yyreduce:
   case 34:
 
 /* Line 1455 of yacc.c  */
-#line 738 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 739 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'ignore', special case */
     (yyval.condition) = data->NewCondition(
@@ -2573,7 +2574,7 @@ yyreduce:
   case 35:
 
 /* Line 1455 of yacc.c  */
-#line 744 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 745 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'copy', special case */
     (yyval.condition) = data->NewCondition(
@@ -2585,7 +2586,7 @@ yyreduce:
   case 36:
 
 /* Line 1455 of yacc.c  */
-#line 750 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 751 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'set', special case */
     (yyval.condition) = data->NewCondition(
@@ -2597,7 +2598,7 @@ yyreduce:
   case 37:
 
 /* Line 1455 of yacc.c  */
-#line 759 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 760 "hdPrman/virtualStructConditionalGrammar.yy"
     {
 
     (yyval.condition) = data->NewCondition(
@@ -2611,7 +2612,7 @@ yyreduce:
   case 38:
 
 /* Line 1455 of yacc.c  */
-#line 767 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 768 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'and', special case */
     (yyval.condition) = data->NewCondition(
@@ -2623,7 +2624,7 @@ yyreduce:
   case 39:
 
 /* Line 1455 of yacc.c  */
-#line 773 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 774 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'or', special case */
     (yyval.condition) = data->NewCondition(
@@ -2635,7 +2636,7 @@ yyreduce:
   case 40:
 
 /* Line 1455 of yacc.c  */
-#line 779 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 780 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'is', special case */
     (yyval.condition) = data->NewCondition(
@@ -2647,7 +2648,7 @@ yyreduce:
   case 41:
 
 /* Line 1455 of yacc.c  */
-#line 786 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 787 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'if', special case */
     (yyval.condition) = data->NewCondition(
@@ -2659,7 +2660,7 @@ yyreduce:
   case 42:
 
 /* Line 1455 of yacc.c  */
-#line 792 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 793 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'else', special case */
     (yyval.condition) = data->NewCondition(
@@ -2671,7 +2672,7 @@ yyreduce:
   case 43:
 
 /* Line 1455 of yacc.c  */
-#line 798 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 799 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connected', special case */
     (yyval.condition) = data->NewCondition(
@@ -2683,7 +2684,7 @@ yyreduce:
   case 44:
 
 /* Line 1455 of yacc.c  */
-#line 804 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 805 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connect', special case */
     (yyval.condition) = data->NewCondition(
@@ -2695,7 +2696,7 @@ yyreduce:
   case 45:
 
 /* Line 1455 of yacc.c  */
-#line 810 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 811 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'ignore', special case */
     (yyval.condition) = data->NewCondition(
@@ -2707,7 +2708,7 @@ yyreduce:
   case 46:
 
 /* Line 1455 of yacc.c  */
-#line 816 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 817 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'copy', special case */
     (yyval.condition) = data->NewCondition(
@@ -2719,7 +2720,7 @@ yyreduce:
   case 47:
 
 /* Line 1455 of yacc.c  */
-#line 822 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 823 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'set', special case */
     (yyval.condition) = data->NewCondition(
@@ -2731,7 +2732,7 @@ yyreduce:
   case 48:
 
 /* Line 1455 of yacc.c  */
-#line 830 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 831 "hdPrman/virtualStructConditionalGrammar.yy"
     {
 
     (yyval.condition) = data->NewCondition(
@@ -2746,7 +2747,7 @@ yyreduce:
   case 49:
 
 /* Line 1455 of yacc.c  */
-#line 839 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 840 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'and', special case */
     (yyval.condition) = data->NewCondition(
@@ -2759,7 +2760,7 @@ yyreduce:
   case 50:
 
 /* Line 1455 of yacc.c  */
-#line 846 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 847 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'or', special case */
     (yyval.condition) = data->NewCondition(
@@ -2772,7 +2773,7 @@ yyreduce:
   case 51:
 
 /* Line 1455 of yacc.c  */
-#line 853 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 854 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'is', special case */
     (yyval.condition) = data->NewCondition(
@@ -2785,7 +2786,7 @@ yyreduce:
   case 52:
 
 /* Line 1455 of yacc.c  */
-#line 861 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 862 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'if', special case */
     (yyval.condition) = data->NewCondition(
@@ -2798,7 +2799,7 @@ yyreduce:
   case 53:
 
 /* Line 1455 of yacc.c  */
-#line 868 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 869 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'else', special case */
     (yyval.condition) = data->NewCondition(
@@ -2811,7 +2812,7 @@ yyreduce:
   case 54:
 
 /* Line 1455 of yacc.c  */
-#line 875 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 876 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connected', special case */
     (yyval.condition) = data->NewCondition(
@@ -2824,7 +2825,7 @@ yyreduce:
   case 55:
 
 /* Line 1455 of yacc.c  */
-#line 882 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 883 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connect', special case */
     (yyval.condition) = data->NewCondition(
@@ -2837,7 +2838,7 @@ yyreduce:
   case 56:
 
 /* Line 1455 of yacc.c  */
-#line 889 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 890 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'ignore', special case */
     (yyval.condition) = data->NewCondition(
@@ -2850,7 +2851,7 @@ yyreduce:
   case 57:
 
 /* Line 1455 of yacc.c  */
-#line 896 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 897 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'copy', special case */
     (yyval.condition) = data->NewCondition(
@@ -2863,7 +2864,7 @@ yyreduce:
   case 58:
 
 /* Line 1455 of yacc.c  */
-#line 903 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 904 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'set', special case */
     (yyval.condition) = data->NewCondition(
@@ -2876,7 +2877,7 @@ yyreduce:
   case 59:
 
 /* Line 1455 of yacc.c  */
-#line 913 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 914 "hdPrman/virtualStructConditionalGrammar.yy"
     {
 
     (yyval.condition) = data->NewCondition(
@@ -2891,7 +2892,7 @@ yyreduce:
   case 60:
 
 /* Line 1455 of yacc.c  */
-#line 922 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 923 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'and', special case */
     (yyval.condition) = data->NewCondition(
@@ -2904,7 +2905,7 @@ yyreduce:
   case 61:
 
 /* Line 1455 of yacc.c  */
-#line 929 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 930 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'or', special case */
     (yyval.condition) = data->NewCondition(
@@ -2917,7 +2918,7 @@ yyreduce:
   case 62:
 
 /* Line 1455 of yacc.c  */
-#line 936 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 937 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'is', special case */
     (yyval.condition) = data->NewCondition(
@@ -2930,7 +2931,7 @@ yyreduce:
   case 63:
 
 /* Line 1455 of yacc.c  */
-#line 944 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 945 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'if', special case */
     (yyval.condition) = data->NewCondition(
@@ -2943,7 +2944,7 @@ yyreduce:
   case 64:
 
 /* Line 1455 of yacc.c  */
-#line 951 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 952 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'else', special case */
     (yyval.condition) = data->NewCondition(
@@ -2956,7 +2957,7 @@ yyreduce:
   case 65:
 
 /* Line 1455 of yacc.c  */
-#line 958 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 959 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connected', special case */
     (yyval.condition) = data->NewCondition(
@@ -2969,7 +2970,7 @@ yyreduce:
   case 66:
 
 /* Line 1455 of yacc.c  */
-#line 965 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 966 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connect', special case */
     (yyval.condition) = data->NewCondition(
@@ -2982,7 +2983,7 @@ yyreduce:
   case 67:
 
 /* Line 1455 of yacc.c  */
-#line 972 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 973 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'ignore', special case */
     (yyval.condition) = data->NewCondition(
@@ -2995,7 +2996,7 @@ yyreduce:
   case 68:
 
 /* Line 1455 of yacc.c  */
-#line 979 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 980 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'copy', special case */
     (yyval.condition) = data->NewCondition(
@@ -3008,7 +3009,7 @@ yyreduce:
   case 69:
 
 /* Line 1455 of yacc.c  */
-#line 986 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 987 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'set', special case */
     (yyval.condition) = data->NewCondition(
@@ -3021,7 +3022,7 @@ yyreduce:
   case 70:
 
 /* Line 1455 of yacc.c  */
-#line 997 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 998 "hdPrman/virtualStructConditionalGrammar.yy"
     {
 
     (yyval.condition) = data->NewCondition(new ConditionalParamIsConnected(TfToken((yyvsp[(1) - (3)].string))));
@@ -3032,7 +3033,7 @@ yyreduce:
   case 71:
 
 /* Line 1455 of yacc.c  */
-#line 1002 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1003 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'and', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsConnected(TfToken("and")));
@@ -3042,7 +3043,7 @@ yyreduce:
   case 72:
 
 /* Line 1455 of yacc.c  */
-#line 1006 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1007 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'or', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsConnected(TfToken("or")));
@@ -3052,7 +3053,7 @@ yyreduce:
   case 73:
 
 /* Line 1455 of yacc.c  */
-#line 1010 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1011 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'is', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsConnected(TfToken("is")));
@@ -3062,7 +3063,7 @@ yyreduce:
   case 74:
 
 /* Line 1455 of yacc.c  */
-#line 1015 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1016 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'if', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsConnected(TfToken("if")));
@@ -3072,7 +3073,7 @@ yyreduce:
   case 75:
 
 /* Line 1455 of yacc.c  */
-#line 1019 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1020 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'else', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsConnected(TfToken("else")));
@@ -3082,7 +3083,7 @@ yyreduce:
   case 76:
 
 /* Line 1455 of yacc.c  */
-#line 1023 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1024 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connected', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsConnected(
@@ -3093,7 +3094,7 @@ yyreduce:
   case 77:
 
 /* Line 1455 of yacc.c  */
-#line 1028 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1029 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connect', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsConnected(
@@ -3104,7 +3105,7 @@ yyreduce:
   case 78:
 
 /* Line 1455 of yacc.c  */
-#line 1033 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1034 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'ignore', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsConnected(
@@ -3115,7 +3116,7 @@ yyreduce:
   case 79:
 
 /* Line 1455 of yacc.c  */
-#line 1038 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1039 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'copy', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsConnected(TfToken("copy")));
@@ -3125,7 +3126,7 @@ yyreduce:
   case 80:
 
 /* Line 1455 of yacc.c  */
-#line 1042 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1043 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'set', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsConnected(TfToken("set")));
@@ -3135,7 +3136,7 @@ yyreduce:
   case 81:
 
 /* Line 1455 of yacc.c  */
-#line 1049 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1050 "hdPrman/virtualStructConditionalGrammar.yy"
     {
 
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotConnected(TfToken((yyvsp[(1) - (3)].string))));
@@ -3146,7 +3147,7 @@ yyreduce:
   case 82:
 
 /* Line 1455 of yacc.c  */
-#line 1054 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1055 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'and', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotConnected(
@@ -3157,7 +3158,7 @@ yyreduce:
   case 83:
 
 /* Line 1455 of yacc.c  */
-#line 1059 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1060 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'or', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotConnected(
@@ -3168,7 +3169,7 @@ yyreduce:
   case 84:
 
 /* Line 1455 of yacc.c  */
-#line 1064 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1065 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'is', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotConnected(
@@ -3179,7 +3180,7 @@ yyreduce:
   case 85:
 
 /* Line 1455 of yacc.c  */
-#line 1070 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1071 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'if', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotConnected(
@@ -3190,7 +3191,7 @@ yyreduce:
   case 86:
 
 /* Line 1455 of yacc.c  */
-#line 1075 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1076 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'else', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotConnected(
@@ -3201,7 +3202,7 @@ yyreduce:
   case 87:
 
 /* Line 1455 of yacc.c  */
-#line 1080 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1081 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connected', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotConnected(
@@ -3212,7 +3213,7 @@ yyreduce:
   case 88:
 
 /* Line 1455 of yacc.c  */
-#line 1085 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1086 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connect', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotConnected(
@@ -3223,7 +3224,7 @@ yyreduce:
   case 89:
 
 /* Line 1455 of yacc.c  */
-#line 1090 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1091 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'ignore', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotConnected(
@@ -3234,7 +3235,7 @@ yyreduce:
   case 90:
 
 /* Line 1455 of yacc.c  */
-#line 1095 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1096 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'copy', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotConnected(
@@ -3245,7 +3246,7 @@ yyreduce:
   case 91:
 
 /* Line 1455 of yacc.c  */
-#line 1100 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1101 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'set', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotConnected(
@@ -3256,7 +3257,7 @@ yyreduce:
   case 92:
 
 /* Line 1455 of yacc.c  */
-#line 1109 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1110 "hdPrman/virtualStructConditionalGrammar.yy"
     {
 
     (yyval.condition) = data->NewCondition(new ConditionalParamIsSet(TfToken((yyvsp[(1) - (3)].string))));
@@ -3267,7 +3268,7 @@ yyreduce:
   case 93:
 
 /* Line 1455 of yacc.c  */
-#line 1114 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1115 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'and', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsSet(TfToken("and")));
@@ -3277,7 +3278,7 @@ yyreduce:
   case 94:
 
 /* Line 1455 of yacc.c  */
-#line 1118 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1119 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'or', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsSet(TfToken("or")));
@@ -3287,7 +3288,7 @@ yyreduce:
   case 95:
 
 /* Line 1455 of yacc.c  */
-#line 1122 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1123 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'is', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsSet(TfToken("is")));
@@ -3297,7 +3298,7 @@ yyreduce:
   case 96:
 
 /* Line 1455 of yacc.c  */
-#line 1127 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1128 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'if', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsSet(TfToken("if")));
@@ -3307,7 +3308,7 @@ yyreduce:
   case 97:
 
 /* Line 1455 of yacc.c  */
-#line 1131 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1132 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'else', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsSet(TfToken("else")));
@@ -3317,7 +3318,7 @@ yyreduce:
   case 98:
 
 /* Line 1455 of yacc.c  */
-#line 1135 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1136 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connected', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsSet(TfToken("connected")));
@@ -3327,7 +3328,7 @@ yyreduce:
   case 99:
 
 /* Line 1455 of yacc.c  */
-#line 1139 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1140 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connect', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsSet(TfToken("connect")));
@@ -3337,7 +3338,7 @@ yyreduce:
   case 100:
 
 /* Line 1455 of yacc.c  */
-#line 1143 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1144 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'ignore', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsSet(TfToken("ignore")));
@@ -3347,7 +3348,7 @@ yyreduce:
   case 101:
 
 /* Line 1455 of yacc.c  */
-#line 1147 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1148 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'copy', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsSet(TfToken("copy")));
@@ -3357,7 +3358,7 @@ yyreduce:
   case 102:
 
 /* Line 1455 of yacc.c  */
-#line 1151 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1152 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'set', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsSet(TfToken("set")));
@@ -3367,7 +3368,7 @@ yyreduce:
   case 103:
 
 /* Line 1455 of yacc.c  */
-#line 1158 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1159 "hdPrman/virtualStructConditionalGrammar.yy"
     {
 
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotSet(TfToken((yyvsp[(1) - (3)].string))));
@@ -3378,7 +3379,7 @@ yyreduce:
   case 104:
 
 /* Line 1455 of yacc.c  */
-#line 1163 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1164 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'and', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotSet(TfToken("and")));
@@ -3388,7 +3389,7 @@ yyreduce:
   case 105:
 
 /* Line 1455 of yacc.c  */
-#line 1167 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1168 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'or', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotSet(TfToken("or")));
@@ -3398,7 +3399,7 @@ yyreduce:
   case 106:
 
 /* Line 1455 of yacc.c  */
-#line 1171 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1172 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'is', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotSet(TfToken("is")));
@@ -3408,7 +3409,7 @@ yyreduce:
   case 107:
 
 /* Line 1455 of yacc.c  */
-#line 1176 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1177 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'if', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotSet(TfToken("if")));
@@ -3418,7 +3419,7 @@ yyreduce:
   case 108:
 
 /* Line 1455 of yacc.c  */
-#line 1180 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1181 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'else', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotSet(TfToken("else")));
@@ -3428,7 +3429,7 @@ yyreduce:
   case 109:
 
 /* Line 1455 of yacc.c  */
-#line 1184 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1185 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connected', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotSet(
@@ -3439,7 +3440,7 @@ yyreduce:
   case 110:
 
 /* Line 1455 of yacc.c  */
-#line 1189 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1190 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     /* PARAM named 'connect', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotSet(TfToken("connect")));
@@ -3449,7 +3450,7 @@ yyreduce:
   case 111:
 
 /* Line 1455 of yacc.c  */
-#line 1193 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1194 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'ignore', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotSet(TfToken("ignore")));
@@ -3459,7 +3460,7 @@ yyreduce:
   case 112:
 
 /* Line 1455 of yacc.c  */
-#line 1197 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1198 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'copy', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotSet(TfToken("copy")));
@@ -3469,7 +3470,7 @@ yyreduce:
   case 113:
 
 /* Line 1455 of yacc.c  */
-#line 1201 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1202 "hdPrman/virtualStructConditionalGrammar.yy"
     {
         /* PARAM named 'set', special case */
     (yyval.condition) = data->NewCondition(new ConditionalParamIsNotSet(TfToken("set")));
@@ -3479,7 +3480,7 @@ yyreduce:
   case 114:
 
 /* Line 1455 of yacc.c  */
-#line 1208 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1209 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     (yyval.condition) = (yyvsp[(2) - (3)].condition);
  ;}
@@ -3488,7 +3489,7 @@ yyreduce:
   case 115:
 
 /* Line 1455 of yacc.c  */
-#line 1211 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1212 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     (yyval.condition) = data->NewCondition(new ConditionalAnd(
             data->ClaimCondition((yyvsp[(1) - (3)].condition)),
@@ -3499,7 +3500,7 @@ yyreduce:
   case 116:
 
 /* Line 1455 of yacc.c  */
-#line 1216 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1217 "hdPrman/virtualStructConditionalGrammar.yy"
     {
 
     (yyval.condition) = data->NewCondition(new ConditionalOr(
@@ -3511,7 +3512,7 @@ yyreduce:
   case 117:
 
 /* Line 1455 of yacc.c  */
-#line 1222 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1223 "hdPrman/virtualStructConditionalGrammar.yy"
     {
 
     TfToken paramName((yyvsp[(2) - (2)].string));
@@ -3525,7 +3526,7 @@ yyreduce:
   case 118:
 
 /* Line 1455 of yacc.c  */
-#line 1230 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1231 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     (yyval.action) = new _VSCGAction(_VSCGAction::Connect);
    
@@ -3535,7 +3536,7 @@ yyreduce:
   case 119:
 
 /* Line 1455 of yacc.c  */
-#line 1234 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1235 "hdPrman/virtualStructConditionalGrammar.yy"
     {
    (yyval.action) = new _VSCGAction(_VSCGAction::Ignore);
 ;}
@@ -3544,7 +3545,7 @@ yyreduce:
   case 120:
 
 /* Line 1455 of yacc.c  */
-#line 1237 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1238 "hdPrman/virtualStructConditionalGrammar.yy"
     {
 
     std::string value((yyvsp[(2) - (2)].string));
@@ -3556,7 +3557,7 @@ yyreduce:
   case 121:
 
 /* Line 1455 of yacc.c  */
-#line 1243 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1244 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     (yyval.action) = new _VSCGAction(_VSCGAction::SetConstant, VtValue(atof((yyvsp[(2) - (2)].string))));
    free((yyvsp[(2) - (2)].string));
@@ -3566,7 +3567,7 @@ yyreduce:
   case 122:
 
 /* Line 1455 of yacc.c  */
-#line 1253 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1254 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     data->action = (yyvsp[(1) - (5)].action);
     data->rootCondition = data->ClaimCondition((yyvsp[(3) - (5)].condition));
@@ -3577,7 +3578,7 @@ yyreduce:
   case 123:
 
 /* Line 1455 of yacc.c  */
-#line 1258 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1259 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     data->action = (yyvsp[(1) - (3)].action);
     data->rootCondition = data->ClaimCondition((yyvsp[(3) - (3)].condition));
@@ -3594,7 +3595,7 @@ yyreduce:
   case 124:
 
 /* Line 1455 of yacc.c  */
-#line 1269 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1270 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     
     data->action = new _VSCGAction(_VSCGAction::Connect);
@@ -3610,7 +3611,7 @@ yyreduce:
   case 125:
 
 /* Line 1455 of yacc.c  */
-#line 1279 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1280 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     data->action = (yyvsp[(1) - (1)].action);
  ;}
@@ -3619,7 +3620,7 @@ yyreduce:
   case 126:
 
 /* Line 1455 of yacc.c  */
-#line 1282 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1283 "hdPrman/virtualStructConditionalGrammar.yy"
     {
     data->action = new _VSCGAction(_VSCGAction::Connect);
     data->rootCondition = data->ClaimCondition((yyvsp[(1) - (1)].condition));
@@ -3630,7 +3631,7 @@ yyreduce:
 
 
 /* Line 1455 of yacc.c  */
-#line 3611 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
+#line 3612 "hdPrman/virtualStructConditionalGrammar.tab.cpp"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -3849,7 +3850,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 1289 "hdPrman/virtualStructConditionalGrammar.yy"
+#line 1290 "hdPrman/virtualStructConditionalGrammar.yy"
 
 
 
@@ -3922,7 +3923,7 @@ void MatfiltVstructConditionalEvaluator::Evaluate(
         const SdfPath & upstreamNodeId,
         const TfToken & upstreamNodeOutput,
         const NdrTokenVec & shaderTypePriority,
-        MatfiltNetwork & network) const
+        HdMaterialNetwork2 & network) const
 {
     if (!_impl) {
         TF_CODING_ERROR("MatfiltVstructConditionalEvaluator: No impl");
@@ -3937,7 +3938,7 @@ void MatfiltVstructConditionalEvaluator::Evaluate(
                 nodeId.GetText());
         return;
     }
-    MatfiltNode & node = (*I).second;
+    HdMaterialNode2 & node = (*I).second;
 
     // if it's already connected explicitly, don't do anything
     if (node.inputConnections.find(nodeInput) != node.inputConnections.end()) {
@@ -3952,7 +3953,7 @@ void MatfiltVstructConditionalEvaluator::Evaluate(
         // No upstream node; silently ignore
         return;
     }
-    const MatfiltNode & upstreamNode = (*I2).second;
+    const HdMaterialNode2 & upstreamNode = (*I2).second;
 
     // Decide action to perform.
     if (_impl->condition) {

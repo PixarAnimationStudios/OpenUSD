@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/instancer.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -29,13 +30,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdInstancer::HdInstancer(HdSceneDelegate* delegate,
-                         SdfPath const& id,
-                         SdfPath const &parentId)
+                         SdfPath const& id)
     : _delegate(delegate)
     , _id(id)
-    , _parentId(parentId)
+    , _parentId()
 {
 }
+
+HdInstancer::~HdInstancer() = default;
 
 /* static */
 int
@@ -68,6 +70,79 @@ HdInstancer::GetBuiltinPrimvarNames() const
         HdInstancerTokens->translate
     };
     return primvarNames;
+}
+
+void
+HdInstancer::Sync(HdSceneDelegate *sceneDelegate,
+                  HdRenderParam   *renderParam,
+                  HdDirtyBits     *dirtyBits)
+{
+}
+
+void
+HdInstancer::Finalize(HdRenderParam *renderParam)
+{
+}
+
+void
+HdInstancer::_SyncInstancerAndParents(HdRenderIndex &renderIndex,
+                                      SdfPath const& instancerId)
+{
+    HdRenderParam *renderParam =
+        renderIndex.GetRenderDelegate()->GetRenderParam();
+    SdfPath id = instancerId;
+    while (!id.IsEmpty()) {
+        HdInstancer *instancer = renderIndex.GetInstancer(id);
+        if (!TF_VERIFY(instancer)) {
+            return;
+        }
+
+        HdDirtyBits dirtyBits =
+            renderIndex.GetChangeTracker().GetInstancerDirtyBits(id);
+
+        if (dirtyBits != HdChangeTracker::Clean) {
+            std::lock_guard<std::mutex> lock(instancer->_instanceLock);
+            dirtyBits =
+                renderIndex.GetChangeTracker().GetInstancerDirtyBits(id);
+            instancer->Sync(instancer->GetDelegate(), renderParam, &dirtyBits);
+            renderIndex.GetChangeTracker().MarkInstancerClean(id);
+        }
+
+        id = instancer->GetParentId();
+    }
+}
+
+void
+HdInstancer::_UpdateInstancer(HdSceneDelegate *delegate,
+                              HdDirtyBits *dirtyBits)
+{
+    if (HdChangeTracker::IsInstancerDirty(*dirtyBits, GetId())) {
+        SdfPath const& parentId = delegate->GetInstancerId(GetId());
+        if (parentId == _parentId) {
+            return;
+        }
+
+        // If we have a new instancer ID, we need to update the dependency
+        // map and also update the stored instancer ID.
+        HdChangeTracker &tracker =
+            delegate->GetRenderIndex().GetChangeTracker();
+        if (!_parentId.IsEmpty()) {
+            tracker.RemoveInstancerInstancerDependency(_parentId, GetId());
+        }
+        if (!parentId.IsEmpty()) {
+            tracker.AddInstancerInstancerDependency(parentId, GetId());
+        }
+        _parentId = parentId;
+    }
+}
+
+HdDirtyBits
+HdInstancer::GetInitialDirtyBitsMask() const
+{
+    return HdChangeTracker::DirtyTransform |
+           HdChangeTracker::DirtyPrimvar |
+           HdChangeTracker::DirtyInstanceIndex |
+           HdChangeTracker::DirtyInstancer;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

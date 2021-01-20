@@ -66,8 +66,13 @@ class "Light" (
     to best express the intent of the light setup.
     """
     customData = {
+        dictionary extraPlugInfo = {
+            bool implementsUsdShadeConnectableAPIBehavior = 1
+        }
         string extraIncludes = """
-#include "pxr/usd/usd/collectionAPI.h" """
+#include "pxr/usd/usd/collectionAPI.h"
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/output.h" """
     }
     prepend apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
 ) {
@@ -81,39 +86,60 @@ class "Light" (
             token apiName = ""
         }
     )
-    float intensity = 1 (
+    float inputs:intensity = 1 (
         doc = """Scales the power of the light linearly."""
+        customData = {
+            token apiName = "intensity"
+        }
     )
-    float exposure = 0 (
+    float inputs:exposure = 0 (
         doc = """Scales the power of the light exponentially as a power
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
+        customData = {
+            token apiName = "exposure"
+        }
     )
-    float diffuse = 1.0 (
+    float inputs:diffuse = 1.0 (
         displayName = "Diffuse Multiplier"
         doc = """A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control."""
+        customData = {
+            token apiName = "diffuse"
+        }
     )
-    float specular = 1.0 (
+    float inputs:specular = 1.0 (
         displayName = "Specular Multiplier"
         doc = """A multiplier for the effect of this light on the specular
         response of materials.  This is a non-physical control."""
+        customData = {
+            token apiName = "specular"
+        }
     )
-    bool normalize = false (
+    bool inputs:normalize = false (
         displayName = "Normalize Power"
         doc = """Normalizes power by the surface area of the light.
         This makes it easier to independently adjust the power and shape
         of the light, by causing the power to not vary with the area or
         angular size of the light."""
+        customData = {
+            token apiName = "normalize"
+        }
     )
-    color3f color = (1, 1, 1) (
-       doc = """The color of emitted light, in energy-linear terms."""
+    color3f inputs:color = (1, 1, 1) (
+        doc = """The color of emitted light, in energy-linear terms."""
+        customData = {
+            token apiName = "color"
+        }
     )
-    bool enableColorTemperature = false (
+    bool inputs:enableColorTemperature = false (
         displayName = "Enable Color Temperature"
         doc = """Enables using colorTemperature."""
+        customData = {
+            token apiName = "enableColorTemperature"
+        }
     )
-    float colorTemperature = 6500 (
+    float inputs:colorTemperature = 6500 (
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
@@ -122,6 +148,9 @@ class "Light" (
         enableColorTemperature is set to true.  When active, the
         computed result multiplies against the color attribute.
         See UsdLuxBlackbodyTemperatureAsRgb()."""
+        customData = {
+            token apiName = "colorTemperature"
+        }
     )
     rel filters (
         doc = """Relationship to the light filters that apply to this light."""
@@ -370,8 +399,13 @@ class LightFilter "LightFilter" (
     of this filter-specific interpretation.
     """
     customData = {
+        dictionary extraPlugInfo = {
+            bool implementsUsdShadeConnectableAPIBehavior = 1
+        }
         string extraIncludes = """
-#include "pxr/usd/usd/collectionAPI.h" """
+#include "pxr/usd/usd/collectionAPI.h"
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/output.h" """
     }
     prepend apiSchemas = ["CollectionAPI:filterLink"]
 ) {
@@ -387,15 +421,21 @@ class DistantLight "DistantLight" (
     doc = """Light emitted from a distant source along the -Z axis.
     Also known as a directional light."""
 ) {
-    float angle = 0.53 (
+    float inputs:angle = 0.53 (
         doc = """Angular size of the light in degrees.
         As an example, the Sun is approximately 0.53 degrees as seen from Earth.
         Higher values broaden the light and therefore soften shadow edges.
         """
+        customData = {
+            token apiName = "angle"
+        }
     )
-    float intensity = 50000 (
+    float inputs:intensity = 50000 (
         doc = """Scales the emission of the light linearly.
         The DistantLight has a high default intensity to approximate the Sun."""
+        customData = {
+            token apiName = "intensity"
+        }
     )
 }
 
@@ -404,8 +444,11 @@ class DiskLight "DiskLight" (
     doc = """Light emitted from one side of a circular disk.
     The disk is centered in the XY plane and emits light along the -Z axis."""
 ) {
-    float radius = 0.5 (
+    float inputs:radius = 0.5 (
         doc = "Radius of the disk."
+        customData = {
+            token apiName = "radius"
+        }
     )
 }
 
@@ -417,14 +460,24 @@ class RectLight "RectLight" (
     position, a texture file's min coordinates should be at (+X, +Y) and 
     max coordinates at (-X, -Y)."""
 ) {
-    float width = 1 (
+    float inputs:width = 1 (
         doc = "Width of the rectangle, in the local X axis."
+        customData = {
+            token apiName = "width"
+        }
+
     )
-    float height = 1 (
+    float inputs:height = 1 (
         doc = "Height of the rectangle, in the local Y axis."
+        customData = {
+            token apiName = "height"
+        }
     )
-    asset texture:file (
+    asset inputs:texture:file (
         doc = """A color texture to use on the rectangle."""
+        customData = {
+            token apiName = "textureFile"
+        }
     )
 }
 
@@ -432,8 +485,11 @@ class SphereLight "SphereLight" (
     inherits = </Light>
     doc = """Light emitted outward from a sphere."""
 ) {
-    float radius = 0.5 (
+    float inputs:radius = 0.5 (
         doc = "Radius of the sphere."
+        customData = {
+            token apiName = "radius"
+        }
     )
     bool treatAsPoint = false (
         doc = """A hint that this light can be treated as a 'point'
@@ -450,11 +506,17 @@ class CylinderLight "CylinderLight" (
     The cylinder does not emit light from the flat end-caps.
     """
 ) {
-    float length = 1 (
+    float inputs:length = 1 (
         doc = "Width of the rectangle, in the local X axis."
+        customData = {
+            token apiName = "length"
+        }
     )
-    float radius = 0.5 (
+    float inputs:radius = 0.5 (
         doc = "Radius of the cylinder."
+        customData = {
+            token apiName = "radius"
+        }
     )
     bool treatAsLine = false (
         doc = """A hint that this light can be treated as a 'line'
@@ -501,11 +563,14 @@ class DomeLight "DomeLight" (
     -------------------------------------------------------------------------
 """
 ) {
-    asset texture:file (
+    asset inputs:texture:file (
         doc = """A color texture to use on the dome, such as an HDR (high
         dynamic range) texture intended for IBL (image based lighting)."""
+        customData = {
+            token apiName = "textureFile"
+        }
     )
-    token texture:format = "automatic" (
+    token inputs:texture:format = "automatic" (
         allowedTokens = ["automatic", "latlong", "mirroredBall", "angular", "cubeMapVerticalCross"]
         doc = """Specifies the parameterization of the color map file.
         Valid values are:
@@ -521,16 +586,65 @@ class DomeLight "DomeLight" (
         - cubeMapVerticalCross: A cube map with faces laid out as a
           vertical cross.
         """
+        customData = {
+            token apiName = "textureFormat"
+        }
     )
     rel portals (
         doc = """Optional portals to guide light sampling."""
     )
 }
 
-class LightPortal "LightPortal" (
-    inherits = </Xformable>
+class PortalLight "PortalLight" (
+    inherits = </Light>
     doc = """A rectangular portal in the local XY plane that guides sampling
     of a dome light.  Transmits light in the -Z direction.
     The rectangle is 1 unit in length."""
+) {
+}
+
+class LightPortal "LightPortal" (
+    inherits = </PortalLight>
+    doc = """
+    \\deprecated This remains for backward compatability for now but is 
+    identical to PortalLight which should be used instead.
+
+    A rectangular portal in the local XY plane that guides sampling
+    of a dome light.  Transmits light in the -Z direction.
+    The rectangle is 1 unit in length."""
+) {
+}
+
+class PluginLight "PluginLight" (
+    inherits = </Light>
+    doc = """Light that provides properties that allow it to identify an 
+    external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
+    provided to render delegates without the need to provide a dynamic schema 
+    definition for the light's type.
+
+    \\see \\ref usdLux_PluginSchemas
+"""
+    prepend apiSchemas = ["NodeDefAPI"]
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdShade/nodeDefAPI.h" """
+    }
+) {
+}
+
+class PluginLightFilter "PluginLightFilter" (
+    inherits = </LightFilter>
+    doc = """Light filter that provides properties that allow it to identify an 
+    external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
+    provided to render delegates without the need to provide a dynamic schema 
+    definition for the light filter's type.
+
+    \\see \\ref usdLux_PluginSchemas
+"""
+    prepend apiSchemas = ["NodeDefAPI"]
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdShade/nodeDefAPI.h" """
+    }
 ) {
 }

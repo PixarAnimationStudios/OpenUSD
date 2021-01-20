@@ -47,12 +47,17 @@ class TestUsdShadeConnectability(unittest.TestCase):
 
         material = UsdShade.Material.Define(usdStage, MaterialPath)
         self.assertTrue(material)
+        self.assertTrue(UsdShade.ConnectableAPI(material).IsContainer())
 
         nodeGraph = UsdShade.NodeGraph.Define(usdStage, NodeGraphPath)
         self.assertTrue(nodeGraph)
+        self.assertTrue(UsdShade.ConnectableAPI(nodeGraph).IsContainer())
+        self.assertTrue(UsdShade.ConnectableAPI(nodeGraph).IsNodeGraph())
 
         shader = UsdShade.Shader.Define(usdStage, ShaderPath)
         self.assertTrue(shader)
+        self.assertFalse(UsdShade.ConnectableAPI(shader).IsContainer())
+        self.assertTrue(UsdShade.ConnectableAPI(shader).IsShader())
 
         nestedShader = UsdShade.Shader.Define(usdStage, NestedShaderPath)
         self.assertTrue(nestedShader)
@@ -67,7 +72,9 @@ class TestUsdShadeConnectability(unittest.TestCase):
         self.assertEqual(floatInterfaceInput.GetConnectability(), 
                     UsdShade.Tokens.full)
         # inputs on a material are not connectable
-        xAttr = material.GetPrim().CreateAttribute("x", Sdf.ValueTypeNames.Double, True)
+        xAttr = material.GetPrim().CreateAttribute("x",
+                                                   Sdf.ValueTypeNames.Double,
+                                                   True)
         self._CanConnect(floatInterfaceInput, xAttr)
 
         self.assertTrue(floatInterfaceInput.SetConnectability(
@@ -107,17 +114,17 @@ class TestUsdShadeConnectability(unittest.TestCase):
         self._CanConnect(shaderInputColor, colorInterfaceInput)
         # Make the connection.
         self.assertTrue(shaderInputColor.ConnectToSource(
-            material, colorInterfaceInput.GetBaseName(),
-            UsdShade.AttributeType.Input))
+            UsdShade.ConnectionSourceInfo(material,
+                                          colorInterfaceInput.GetBaseName(),
+                                          UsdShade.AttributeType.Input)))
 
-        self.assertEqual(
-            shaderInputColor.GetRawConnectedSourcePaths(),
-            [colorInterfaceInput.GetAttr().GetPath()])
-    
+        self.assertEqual(shaderInputColor.GetAttr().GetConnections(),
+                         [colorInterfaceInput.GetAttr().GetPath()])
+
         self._CanConnect(shaderInputFloat, floatInterfaceInput)
         self.assertTrue(shaderInputFloat.ConnectToSource(floatInterfaceInput))
 
-        self.assertEqual(shaderInputFloat.GetRawConnectedSourcePaths(),
+        self.assertEqual(shaderInputFloat.GetAttr().GetConnections(),
                          [floatInterfaceInput.GetAttr().GetPath()])
 
         shaderOutputColor = shader.CreateOutput("color", Sdf.ValueTypeNames.Color3f)
@@ -138,8 +145,7 @@ class TestUsdShadeConnectability(unittest.TestCase):
         self.assertTrue(nodeGraphInputFloat.SetConnectability(UsdShade.Tokens.full))
         self._CanConnect(nodeGraphInputFloat, shaderOutputFloat)
         self.assertTrue(nodeGraphInputFloat.ConnectToSource(
-            shader, shaderOutputFloat.GetBaseName(), 
-                UsdShade.AttributeType.Input))
+            UsdShade.ConnectionSourceInfo(shaderOutputFloat)))
 
         nodeGraphInputColor = nodeGraph.CreateInput("nodeGraphColor", 
                                                     Sdf.ValueTypeNames.Color3f)
@@ -156,7 +162,8 @@ class TestUsdShadeConnectability(unittest.TestCase):
         # previously attempted connection.
         self.assertTrue(shaderInputColor.SetConnectability(UsdShade.Tokens.interfaceOnly))
         self._CanConnect(nodeGraphInputColor, shaderInputColor)
-        self.assertTrue(nodeGraphInputColor.ConnectToSource(shaderInputColor))
+        self.assertTrue(nodeGraphInputColor.SetConnectedSources(
+            [UsdShade.ConnectionSourceInfo(shaderInputColor)]))
 
         # Change connectability of an interface input to full, to test connection 
         # from an "interfaceOnly" to a "full" input on a nodegraph. 
@@ -169,13 +176,61 @@ class TestUsdShadeConnectability(unittest.TestCase):
         self.assertTrue(nestedShaderInputFloat.SetConnectability(
                             UsdShade.Tokens.interfaceOnly))
         self._CannotConnect(nestedShaderInputFloat, floatInterfaceInput)
-    
+
         # Change connectability of interface input to "interfaceOnly". This will 
         # allow the previously attempted connection.
         self.assertTrue(floatInterfaceInput.SetConnectability(
                             UsdShade.Tokens.interfaceOnly))
         self._CanConnect(nestedShaderInputFloat, floatInterfaceInput)
         self.assertTrue(nestedShaderInputFloat.ConnectToSource(floatInterfaceInput))
-   
+
+        # Test the ability to connect to multiple sources
+        floatInterfaceInput2 = matConnectable.CreateInput("floatInput2",
+                                                   Sdf.ValueTypeNames.Float)
+        self.assertTrue(shaderInputFloat.ConnectToSource(
+            UsdShade.ConnectionSourceInfo(floatInterfaceInput2),
+            UsdShade.ConnectionModification.Append))
+        self.assertEqual(shaderInputFloat.GetAttr().GetConnections(),
+                         [floatInterfaceInput.GetAttr().GetPath(),
+                          floatInterfaceInput2.GetAttr().GetPath()])
+
+        floatInterfaceInput3 = matConnectable.CreateInput("floatInput3",
+                                                   Sdf.ValueTypeNames.Float)
+        self.assertTrue(shaderInputFloat.ConnectToSource(
+            UsdShade.ConnectionSourceInfo(floatInterfaceInput3),
+            UsdShade.ConnectionModification.Prepend))
+        self.assertEqual(shaderInputFloat.GetAttr().GetConnections(),
+                         [floatInterfaceInput3.GetAttr().GetPath(),
+                          floatInterfaceInput.GetAttr().GetPath(),
+                          floatInterfaceInput2.GetAttr().GetPath()])
+
+        sourceInfos, invalidPaths = shaderInputFloat.GetConnectedSources()
+        self.assertEqual(sourceInfos,
+                         [UsdShade.ConnectionSourceInfo(floatInterfaceInput3),
+                          UsdShade.ConnectionSourceInfo(floatInterfaceInput),
+                          UsdShade.ConnectionSourceInfo(floatInterfaceInput2)])
+        self.assertEqual(invalidPaths, [])
+
+        # Test the targeted disconnection of a single source
+        shaderInputFloat.DisconnectSource(floatInterfaceInput.GetAttr())
+        sourceInfos, invalidPaths = shaderInputFloat.GetConnectedSources()
+        self.assertEqual(sourceInfos,
+                         [UsdShade.ConnectionSourceInfo(floatInterfaceInput3),
+                          UsdShade.ConnectionSourceInfo(floatInterfaceInput2)])
+        self.assertEqual(invalidPaths, [])
+
+        # Calling DisconnectSource without a specific source attribute will
+        # remove all remaining connections
+        shaderInputFloat.DisconnectSource()
+        sourceInfos, invalidPaths = shaderInputFloat.GetConnectedSources()
+        self.assertEqual(sourceInfos, [])
+        self.assertEqual(invalidPaths, [])
+
+        # Clear sources is another way to remove all connections
+        shaderInputColor.ClearSources()
+        sourceInfos, invalidPaths = shaderInputColor.GetConnectedSources()
+        self.assertEqual(sourceInfos, [])
+        self.assertEqual(invalidPaths, [])
+
 if __name__ == "__main__":
     unittest.main()

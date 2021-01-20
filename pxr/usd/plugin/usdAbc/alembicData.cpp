@@ -94,9 +94,9 @@ using namespace UsdAbc_AlembicUtil;
 TF_DEFINE_ENV_SETTING(USD_ABC_EXPAND_INSTANCES, false,
                       "Force Alembic instances to be expanded.");
 TF_DEFINE_ENV_SETTING(USD_ABC_DISABLE_INSTANCING, false,
-                      "Disable instancing on masters created from Alembic.");
+                      "Disable instancing on prototypes created from Alembic.");
 TF_DEFINE_ENV_SETTING(USD_ABC_PARENT_INSTANCES, true,
-                      "Make parent of instance source into master where possible.");
+                      "Make parent of instance source into prototype where possible.");
 
 // The SdfAbstractData time samples type.
 // XXX: SdfAbstractData should typedef this.
@@ -136,11 +136,11 @@ UsdAbc_AlembicData::Open(const std::string& filePath)
     if (TfGetEnvSetting(USD_ABC_EXPAND_INSTANCES)) {
         _reader->SetFlag(UsdAbc_AlembicContextFlagNames->expandInstances);
     }
-    // Create instances but disallow instancing on the master.
+    // Create instances but disallow instancing on the prototype.
     if (TfGetEnvSetting(USD_ABC_DISABLE_INSTANCING)) {
         _reader->SetFlag(UsdAbc_AlembicContextFlagNames->disableInstancing);
     }
-    // Use the parent of instance sources as the Usd master prim, where
+    // Use the parent of instance sources as the Usd prototype prim, where
     // possible.
     if (TfGetEnvSetting(USD_ABC_PARENT_INSTANCES)) {
         _reader->SetFlag(UsdAbc_AlembicContextFlagNames->promoteInstances);

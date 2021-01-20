@@ -46,6 +46,9 @@ pxr_plugin(hdEmbree
 
     RESOURCE_FILES
         plugInfo.json
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 if (X11_FOUND OR APPLE)
@@ -54,6 +57,7 @@ pxr_build_test(testHdEmbree
         hdEmbree
         garch
         arch
+        hio
     CPPFILES
         testenv/testHdEmbree.cpp
 )

@@ -160,10 +160,8 @@ UsdSkelImagingSkeletonAdapter::Populate(
         // Note: This uses the "rest" pose of the skeleton.
         // Also, since the bone mesh isn't backed by the UsdStage, we register 
         // the skeleton prim on its behalf.
-        SdfPath instancer = instancerContext ?
-            instancerContext->instancerCachePath : SdfPath();
         index->InsertRprim(HdPrimTypeTokens->mesh, prim.GetPath(),
-                           instancer, prim, shared_from_this());
+                           prim, shared_from_this());
     }
 
     // Insert a computation for each skinned prim targeted by this
@@ -786,23 +784,31 @@ UsdSkelImagingSkeletonAdapter::GetDoubleSided(UsdPrim const& prim,
 {
     if (_IsCallbackForSkeleton(prim)) {
         return true;
-    } else {
-        return BaseAdapter::GetDoubleSided(prim, cachePath, time);
+    } else if (_IsSkinnedPrimPath(cachePath)) {
+        if (UsdImagingPrimAdapterSharedPtr adapter =
+                _GetPrimAdapter(prim)) {
+            return adapter->GetDoubleSided(prim, cachePath, time);
+        }
     }
+    return BaseAdapter::GetDoubleSided(prim, cachePath, time);
 }
 
 /*virtual*/
 SdfPath
 UsdSkelImagingSkeletonAdapter::GetMaterialId(UsdPrim const& prim, 
                                              SdfPath const& cachePath, 
-                                            UsdTimeCode time) const
+                                             UsdTimeCode time) const
 {
     if (_IsCallbackForSkeleton(prim)) {
         // skeleton has no material
         return SdfPath();
-    } else {
-        return BaseAdapter::GetMaterialId(prim, cachePath, time);
+    } else if (_IsSkinnedPrimPath(cachePath)) {
+        if (UsdImagingPrimAdapterSharedPtr adapter =
+                _GetPrimAdapter(prim)) {
+            return adapter->GetMaterialId(prim, cachePath, time);
+        }
     }
+    return BaseAdapter::GetMaterialId(prim, cachePath, time);
 }
 
 
@@ -984,8 +990,7 @@ UsdSkelImagingSkeletonAdapter::_RemovePrim(const SdfPath& cachePath,
     
     // Alternative way of finding whether this is a callback for the skeleton/
     // bone mesh.
-    bool isSkelPath = _skelBindingMap.find(cachePath) != _skelBindingMap.end();
-    if (isSkelPath) {
+    if (_GetSkelData(cachePath)) {
 
         TF_DEBUG(USDIMAGING_CHANGES).Msg(
                 "[SkeletonAdapter::_RemovePrim] Remove skeleton"
@@ -1632,13 +1637,19 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForSkinningComputation(
         if (name == _tokens->skelLocalToWorld) {
             // PERFORMANCE:
             // Would be better if we could access a shared xformCache here?
-
             UsdGeomXformCache xformCache(time);
-            UsdPrim const& skelPrim = skelData->skelQuery.GetPrim();
+
+            UsdPrim skelPrim(skelData->skelQuery.GetPrim());
+            if (skelPrim.IsInPrototype()) {
+                const auto bindingIt = 
+                    _skelBindingMap.find(skinnedPrimData->skelPath);
+                if (bindingIt != _skelBindingMap.end()) {
+                    skelPrim = bindingIt->second.GetSkeleton().GetPrim();
+                }
+            }
             GfMatrix4d skelLocalToWorld =
                 xformCache.GetLocalToWorldTransform(skelPrim);
             return VtValue(skelLocalToWorld);
-
         }
     }
 
@@ -1814,18 +1825,18 @@ UsdSkelImagingSkeletonAdapter::_UpdateBoneMeshForTime(
                                      cachePath.GetText());
 
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {
-        UsdImagingValueCache* valueCache = _GetValueCache();
+        UsdImagingPrimvarDescCache* primvarDescCache = _GetPrimvarDescCache();
 
         // Expose points as a primvar.
-        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
+        _MergePrimvar(&primvarDescCache->GetPrimvars(cachePath),
                       HdTokens->points,
                       HdInterpolationVertex,
                       HdPrimvarRoleTokens->point);
-        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
+        _MergePrimvar(&primvarDescCache->GetPrimvars(cachePath),
                       HdTokens->displayColor,
                       HdInterpolationConstant,
                       HdPrimvarRoleTokens->color);
-        _MergePrimvar(&valueCache->GetPrimvars(cachePath),
+        _MergePrimvar(&primvarDescCache->GetPrimvars(cachePath),
                       HdTokens->displayOpacity,
                       HdInterpolationConstant);
     }
@@ -2076,9 +2087,9 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinnedPrimForTime(
     // XXX: The usage of elementSize for jointWeights/Indices primvars to have
     // multiple values per-vertex is not supported yet in Hydra.
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {
-        UsdImagingValueCache* valueCache = _GetValueCache();
+        UsdImagingPrimvarDescCache* primvarDescCache = _GetPrimvarDescCache();
         HdPrimvarDescriptorVector& primvars =
-            valueCache->GetPrimvars(skinnedPrimPath);
+            primvarDescCache->GetPrimvars(skinnedPrimPath);
         for (auto it = primvars.begin(); it != primvars.end(); ) {
             if (it->name == _tokens->skelJointIndices ||
                 it->name == _tokens->skelJointWeights  ||

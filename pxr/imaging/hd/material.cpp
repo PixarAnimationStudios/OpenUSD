@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -34,6 +35,67 @@ HdMaterial::HdMaterial(SdfPath const& id)
 HdMaterial::~HdMaterial()
 {
     // NOTHING
+}
+
+
+void
+HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
+    const HdMaterialNetworkMap & hdNetworkMap,
+    HdMaterialNetwork2 *result,
+    bool *isVolume)
+{
+    HD_TRACE_FUNCTION();
+
+    for (auto const& iter: hdNetworkMap.map) {
+        const TfToken & terminalName = iter.first;
+        const HdMaterialNetwork & hdNetwork = iter.second;
+
+        // Check if there are nodes associated with the volume terminal
+        // This value is used in Storm to get the proper glslfx fragment shader
+        if (terminalName == HdMaterialTerminalTokens->volume && isVolume) {
+            *isVolume = !hdNetwork.nodes.empty();
+        }
+
+        // Transfer over individual nodes.
+        // Note that the same nodes may be shared by multiple terminals.
+        // We simply overwrite them here.
+        if (hdNetwork.nodes.empty()) {
+            continue;
+        }
+        for (const HdMaterialNode & node : hdNetwork.nodes) {
+            HdMaterialNode2 & materialNode2 = result->nodes[node.path];
+            materialNode2.nodeTypeId = node.identifier;
+            materialNode2.parameters = node.parameters;
+        }
+        // Assume that the last entry is the terminal 
+        result->terminals[terminalName].upstreamNode = 
+                hdNetwork.nodes.back().path;
+
+        // Transfer relationships to inputConnections on receiving/downstream nodes.
+        for (const HdMaterialRelationship & rel : hdNetwork.relationships) {
+            
+            // outputId (in hdMaterial terms) is the input of the receiving node
+            auto iter = result->nodes.find(rel.outputId);
+
+            // skip connection if the destination node doesn't exist
+            if (iter == result->nodes.end()) {
+                continue;
+            }
+
+            std::vector<HdMaterialConnection2> &conns =
+                iter->second.inputConnections[rel.outputName];
+            HdMaterialConnection2 conn {rel.inputId, rel.inputName};
+            
+            // skip connection if it already exists (it may be shared
+            // between surface and displacement)
+            if (std::find(conns.begin(), conns.end(), conn) == conns.end()) {
+                conns.push_back(std::move(conn));
+            }
+        }
+
+        // Transfer primvars:
+        result->primvars = hdNetwork.primvars;
+    }
 }
 
 

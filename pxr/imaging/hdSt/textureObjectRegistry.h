@@ -30,6 +30,8 @@
 #include "pxr/imaging/hd/instanceRegistry.h"
 
 #include <tbb/concurrent_vector.h>
+#include <vector>
+#include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -37,6 +39,8 @@ using HdStTextureObjectSharedPtr =
     std::shared_ptr<class HdStTextureObject>;
 using HdStTextureObjectPtr =
     std::weak_ptr<class HdStTextureObject>;
+using HdStTextureObjectPtrVector =
+    std::vector<HdStTextureObjectPtr>;
 class HdStResourceRegistry;
 class HdStTextureIdentifier;
 
@@ -72,6 +76,12 @@ public:
     HDST_API
     void GarbageCollect();
 
+    /// Mark texture file path as dirty. All textures whose identifier
+    /// contains the file path will be reloaded during the next Commit.
+    ///
+    HDST_API
+    void MarkTextureFilePathDirty(const TfToken &filePath);
+
     /// Mark that the GPU resource for a texture needs to be
     /// (re-)loaded, e.g., because the memory request changed.
     ///
@@ -82,16 +92,41 @@ public:
     /// Get resource registry
     ///
     HDST_API
-    HdStResourceRegistry * GetResourceRegistry() const;
+    HdStResourceRegistry * GetResourceRegistry() const {
+        return _resourceRegistry;
+    }
+
+    /// The total GPU memory consumed by all textures managed by this registry.
+    ///
+    int64_t GetTotalTextureMemory() const {
+        return _totalTextureMemory;
+    }
+
+    /// Add signed number to total texture memory amount. Called from
+    /// texture objects when (de-)allocated GPU resources.
+    ///
+    HDST_API
+    void AdjustTotalTextureMemory(int64_t memDiff);
 
 private:
     HdStTextureObjectSharedPtr _MakeTextureObject(
         const HdStTextureIdentifier &textureId,
         HdTextureType textureType);
 
+    std::atomic<int64_t> _totalTextureMemory;
+
     // Registry for texture and sampler objects.
     HdInstanceRegistry<HdStTextureObjectSharedPtr>
         _textureObjectRegistry;
+
+    // Map file paths to texture objects for quick invalidation
+    // by file path.
+    std::unordered_map<TfToken, HdStTextureObjectPtrVector,
+                       TfToken::HashFunctor>
+        _filePathToTextureObjects;
+
+    // File paths for which GPU resources need to be (re-)loaded
+    tbb::concurrent_vector<TfToken> _dirtyFilePaths;
 
     // Texture for which GPU resources need to be (re-)loaded
     tbb::concurrent_vector<HdStTextureObjectPtr> _dirtyTextures;

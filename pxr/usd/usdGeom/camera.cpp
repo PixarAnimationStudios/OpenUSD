@@ -75,7 +75,12 @@ UsdGeomCamera::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdGeomCamera::_GetSchemaType() const {
+UsdSchemaKind UsdGeomCamera::_GetSchemaKind() const {
+    return UsdGeomCamera::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdGeomCamera::_GetSchemaType() const {
     return UsdGeomCamera::schemaType;
 }
 

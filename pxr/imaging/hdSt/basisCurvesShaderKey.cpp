@@ -76,6 +76,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((curveCubicWidthsLinear,          "Curves.Cubic.Widths.Linear"))
     ((curveCubicNormalsBasis,          "Curves.Cubic.Normals.Basis"))
     ((curveCubicNormalsLinear,         "Curves.Cubic.Normals.Linear"))
+    ((curvesLinearVaryingInterp,       "Curves.Linear.VaryingInterpolation"))
+    ((curvesCubicVaryingInterp,        "Curves.Cubic.VaryingInterpolation"))
 
     ((curvesTessControlShared,         "Curves.TessControl.Shared"))
     ((curvesTessControlLinearRibbon,   "Curves.TessControl.Linear.Ribbon"))
@@ -201,7 +203,8 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
             TES[3] = _tokens->curvesTessEvalLinearPatch;
             TES[4] = oriented ? _tokens->curvesTessEvalRibbonOriented
                             : _tokens->curvesTessEvalRibbonImplicit;
-            TES[5] = TfToken();
+            TES[5] = _tokens->curvesLinearVaryingInterp;
+            TES[6] = TfToken();
             break;
         }
         case HdSt_BasisCurvesShaderKey::HALFTUBE:
@@ -216,7 +219,8 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
             TES[2] = _tokens->curvesFallback;
             TES[3] = _tokens->curvesTessEvalLinearPatch;
             TES[4] = _tokens->curvesTessEvalHalfTube;
-            TES[5] = TfToken();
+            TES[5] = _tokens->curvesLinearVaryingInterp;
+            TES[6] = TfToken();
             break;
         }
         default:
@@ -239,7 +243,8 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
             TES[0] = _tokens->instancing;
             TES[1] = _tokens->curvesTessEvalCubicWire;
             TES[2] = HdSt_BasisToShaderKey(basis);
-            TES[3] = TfToken();
+            TES[3] = _tokens->curvesCubicVaryingInterp;
+            TES[4] = TfToken();
             break;
         }
         case HdSt_BasisCurvesShaderKey::RIBBON:
@@ -262,7 +267,8 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
             TES[6] = basisNormalInterpolation ?
                         _tokens->curveCubicNormalsBasis :
                         _tokens->curveCubicNormalsLinear;
-            TES[7] = TfToken();
+            TES[7] = _tokens->curvesCubicVaryingInterp;
+            TES[8] = TfToken();
             break;
         }
         case HdSt_BasisCurvesShaderKey::HALFTUBE:
@@ -283,7 +289,8 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
             TES[6] = basisNormalInterpolation ?
                         _tokens->curveCubicNormalsBasis :
                         _tokens->curveCubicNormalsLinear;
-            TES[7] = TfToken();
+            TES[7] = _tokens->curvesCubicVaryingInterp;
+            TES[8] = TfToken();
             break;
         }
         default:

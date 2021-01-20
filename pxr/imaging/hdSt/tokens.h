@@ -65,7 +65,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDST_RENDER_SETTINGS_TOKENS             \
     (enableTinyPrimCulling)                     \
     (volumeRaymarchingStepSize)                 \
-    (volumeRaymarchingStepSizeLighting)
+    (volumeRaymarchingStepSizeLighting)         \
+    (volumeMaxTextureMemoryPerField)
 
 #define HDST_MATERIAL_TAG_TOKENS                \
     (defaultMaterialTag)                        \

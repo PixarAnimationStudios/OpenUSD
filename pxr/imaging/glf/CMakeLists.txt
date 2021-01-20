@@ -14,11 +14,6 @@ endif()
 
 set(optionalLibs "")
 set(optionalIncludeDirs "")
-if (PXR_ENABLE_PTEX_SUPPORT)
-    list(APPEND optionalPublicClasses ptexMipmapTextureLoader)
-    list(APPEND optionalLibs ${PTEX_LIBRARY})
-    list(APPEND optionalIncludeDirs ${PTEX_INCLUDE_DIR})
-endif()
 
 if (PXR_ENABLE_OPENVDB_SUPPORT)
     list(APPEND optionalPublicClasses vdbTextureData)
@@ -41,14 +36,11 @@ pxr_library(glf
         sdf
         ${Boost_PYTHON_LIBRARY}
         ${OPENGL_gl_LIBRARY}
-        ${OPENGL_glu_LIBRARY}
-        ${GLEW_LIBRARY}
         ${X11_LIBRARIES}
         ${optionalLibs}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
-        ${GLEW_INCLUDE_DIR}
         ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
@@ -60,13 +52,9 @@ pxr_library(glf
         diagnostic
         drawTarget
         field3DTextureDataBase
-        glew
         glContext
         glRawContext
-        image
-        imageRegistry
         info
-        ptexTexture
         simpleLight
         simpleLightingContext
         simpleMaterial
@@ -74,7 +62,6 @@ pxr_library(glf
         texture
         textureHandle
         textureRegistry
-        udimTexture
         uniformBlock
         utils
         uvTexture
@@ -90,16 +77,9 @@ pxr_library(glf
     PUBLIC_HEADERS
         api.h
         fieldTextureData.h
-        
-    PRIVATE_HEADERS
-        rankedTypeMap.h
-        stb/stb_image.h
-        stb/stb_image_resize.h
-        stb/stb_image_write.h
 
     CPPFILES
         ${optionalCppFiles}
-        stbImage.cpp
 
     PYTHON_CPPFILES
         moduleDeps.cpp
@@ -109,7 +89,6 @@ pxr_library(glf
         wrapBaseTexture.cpp
         wrapDiagnostic.cpp
         wrapDrawTarget.cpp
-        wrapGlew.cpp
         wrapSimpleLight.cpp
         wrapSimpleMaterial.cpp
         wrapTexture.cpp
@@ -122,7 +101,9 @@ pxr_library(glf
 
     RESOURCE_FILES
         plugInfo.json
-        shaders/ptexTexture.glslfx
         shaders/pcfShader.glslfx
         shaders/simpleLighting.glslfx
+
+    DOXYGEN_FILES
+        overview.dox
 )

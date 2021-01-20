@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 #include "pxr/imaging/hd/camera.h"
@@ -363,6 +363,7 @@ HdxDrawTargetTask::_UpdateRenderPassState(
     state->SetWireframeColor(_wireframeColor);
     state->SetLightingEnabled(_enableLighting);
     state->SetAlphaThreshold(_alphaThreshold);
+    state->SetAlphaToCoverageEnabled(_enableSampleAlphaToCoverage);
     state->SetCullStyle(_cullStyle);
 
     state->SetDepthFunc(
@@ -435,11 +436,13 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
 
         // Raster State
         // XXX: Update master raster state that is used by all passes?
-        _wireframeColor          = params.wireframeColor;
-        _enableLighting          = params.enableLighting;
-        _overrideColor           = params.overrideColor;
-        _alphaThreshold          = params.alphaThreshold;
-        _cullStyle               = params.cullStyle;
+        _wireframeColor              = params.wireframeColor;
+        _enableLighting              = params.enableLighting;
+        _overrideColor               = params.overrideColor;
+        _alphaThreshold              = params.alphaThreshold;
+        _enableSampleAlphaToCoverage = params.enableAlphaToCoverage &&
+            !TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE);
+        _cullStyle                   = params.cullStyle;
 
         // Depth
         // XXX: Should be in raster state?
@@ -493,20 +496,6 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
             &renderPassInfo);
     }
 
-    // XXX: Long-term Alpha to Coverage will be a render style on the
-    // task.  However, as there isn't a fallback we current force it
-    // enabled, unless a client chooses to manage the setting itself
-    // (aka usdImaging).
-
-    // XXX: When rendering draw targets we need alpha to coverage
-    // at least until we support a transparency pass
-    _enableSampleAlphaToCoverage = true;
-    if (delegate->IsEnabled(HdxOptionTokens->taskSetAlphaToCoverage)) {
-        if (TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE)) {
-            _enableSampleAlphaToCoverage = false;
-        }
-    }
-
     *dirtyBits = HdChangeTracker::Clean;
 }
 
@@ -533,20 +522,6 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
         } else {
             glDisable(GL_POLYGON_OFFSET_FILL);
         }
-    }
-
-    // XXX: Long-term Alpha to Coverage will be a render style on the
-    // task.  However, as there isn't a fallback we current force it
-    // enabled, unless a client chooses to manage the setting itself
-    // (aka usdImaging).
-
-    // XXX: When rendering draw targets we need alpha to coverage
-    // at least until we support a transparency pass
-
-    if (_enableSampleAlphaToCoverage) {
-        glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-    } else {
-        glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     }
 
     glEnable(GL_PROGRAM_POINT_SIZE);

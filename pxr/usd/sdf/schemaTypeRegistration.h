@@ -63,6 +63,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ((SdfFieldKeys->Default,                 VtValue))                       \
 ((SdfFieldKeys->DefaultPrim,             TfToken))                       \
 ((SdfFieldKeys->DisplayGroup,            std::string))                   \
+((SdfFieldKeys->DisplayGroupOrder,       VtStringArray))                 \
 ((SdfFieldKeys->DisplayName,             std::string))                   \
 ((SdfFieldKeys->DisplayUnit,             TfEnum))                        \
 ((SdfFieldKeys->Documentation,           std::string))                   \

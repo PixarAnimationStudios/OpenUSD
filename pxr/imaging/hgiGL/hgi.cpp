@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include <mutex>
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hgi/handle.h"
 #include "pxr/imaging/hgiGL/hgi.h"
@@ -44,6 +44,7 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
 
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -65,6 +66,7 @@ HgiGL::HgiGL()
     static std::once_flag versionOnce;
     std::call_once(versionOnce, [](){
         const bool validate=TfGetEnvSetting(HGIGL_ENABLE_GL_VERSION_VALIDATION);
+        GarchGLApiLoad();
         if (validate && !HgiGLMeetsMinimumRequirements()) {
             TF_WARN(
                 "HgiGL minimum OpenGL requirements not met. Please ensure "
@@ -248,7 +250,7 @@ HgiGL::StartFrame()
     if (_frameDepth++ == 0) {
         // Start Full Frame debug label
         #if defined(GL_KHR_debug)
-        if (GLEW_KHR_debug) {
+        if (GARCH_GLAPI_HAS(KHR_debug)) {
             glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, 
                 "Full Hydra Frame");
         }
@@ -264,7 +266,7 @@ HgiGL::EndFrame()
 
         // End Full Frame debug label
         #if defined(GL_KHR_debug)
-        if (GLEW_KHR_debug) {
+        if (GARCH_GLAPI_HAS(KHR_debug)) {
             glPopDebugGroup();
         }
         #endif
@@ -277,12 +279,7 @@ HgiGL::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
     bool result = Hgi::_SubmitCmds(cmds, wait);
 
     if (wait == HgiSubmitWaitTypeWaitUntilCompleted) {
-        //
-        // CPU - GPU synchronization
-        //
-        // This only happens by request of the client since it stalls the CPU.
-        // This is only used when the CPU needs wait to read by the GPU results.
-        //
+        // CPU - GPU synchronization (stall) by client request only.
         static const uint64_t timeOut = 100000000000;
 
         GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
@@ -295,18 +292,6 @@ HgiGL::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
         }
 
         glDeleteSync(fence);
-    } else {
-        //
-        // GPU - GPU synchronization
-        //
-        // We assume the client has grouped together all async work into
-        // one Hgi*Cmds and that we must set barriers between Hgi*Cmds to
-        // ensure that memory writes are fully visible to SubmitCmds coming
-        // after this submission.
-        //
-        if (glMemoryBarrier) {
-            glMemoryBarrier(GL_ALL_BARRIER_BITS);
-        }
     }
 
     // If the Hgi client does not call Hgi::EndFrame we garbage collect here.

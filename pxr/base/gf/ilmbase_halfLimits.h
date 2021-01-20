@@ -63,22 +63,22 @@ class numeric_limits <PXR_NS::pxr_half::half>
 
     static const bool is_specialized = true;
 
-    static half min () throw () {return HALF_NRM_MIN;}
-    static half max () throw () {return HALF_MAX;}
+    static half min () throw () {return PXR_HALF_NRM_MIN;}
+    static half max () throw () {return PXR_HALF_MAX;}
 
-    static const int digits = HALF_MANT_DIG;
-    static const int digits10 = HALF_DIG;
+    static const int digits = PXR_HALF_MANT_DIG;
+    static const int digits10 = PXR_HALF_DIG;
     static const bool is_signed = true;
     static const bool is_integer = false;
     static const bool is_exact = false;
-    static const int radix = HALF_RADIX;
-    static half epsilon () throw () {return HALF_EPSILON;}
-    static half round_error () throw () {return HALF_EPSILON / 2;}
+    static const int radix = PXR_HALF_RADIX;
+    static half epsilon () throw () {return PXR_HALF_EPSILON;}
+    static half round_error () throw () {return PXR_HALF_EPSILON / 2;}
 
-    static const int min_exponent = HALF_MIN_EXP;
-    static const int min_exponent10 = HALF_MIN_10_EXP;
-    static const int max_exponent = HALF_MAX_EXP;
-    static const int max_exponent10 = HALF_MAX_10_EXP;
+    static const int min_exponent = PXR_HALF_MIN_EXP;
+    static const int min_exponent10 = PXR_HALF_MIN_10_EXP;
+    static const int max_exponent = PXR_HALF_MAX_EXP;
+    static const int max_exponent10 = PXR_HALF_MAX_10_EXP;
 
     static const bool has_infinity = true;
     static const bool has_quiet_NaN = true;
@@ -88,7 +88,7 @@ class numeric_limits <PXR_NS::pxr_half::half>
     static half infinity () throw () {return half::posInf();}
     static half quiet_NaN () throw () {return half::qNan();}
     static half signaling_NaN () throw () {return half::sNan();}
-    static half denorm_min () throw () {return HALF_MIN;}
+    static half denorm_min () throw () {return PXR_HALF_MIN;}
 
     static const bool is_iec559 = false;
     static const bool is_bounded = false;
@@ -101,8 +101,8 @@ class numeric_limits <PXR_NS::pxr_half::half>
 #if __cplusplus >= 201103L
 
     // C++11 additions.
-    static constexpr int max_digits10 = HALF_DECIMAL_DIG;
-    static half lowest () {return -HALF_MAX;}
+    static constexpr int max_digits10 = PXR_HALF_DECIMAL_DIG;
+    static half lowest () {return -PXR_HALF_MAX;}
 
 #endif
 

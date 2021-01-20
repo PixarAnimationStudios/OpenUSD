@@ -91,32 +91,37 @@ void wrapUsdSchemaRegistry()
              (arg("primType")))
         .staticmethod("IsTyped")
 
+        .def("GetSchemaKind",
+             (UsdSchemaKind (*)(const TfType &)) &This::GetSchemaKind,
+             (arg("primType")))
+        .def("GetSchemaKind",
+             (UsdSchemaKind (*)(const TfToken &)) &This::GetSchemaKind,
+             (arg("primType")))
+        .staticmethod("GetSchemaKind")
+
         .def("IsConcrete",
-             (bool (This::*)(const TfType &) const)
-             &This::IsConcrete,
+             (bool (*)(const TfType &)) &This::IsConcrete,
              (arg("primType")))
         .def("IsConcrete",
-             (bool (This::*)(const TfToken &) const)
-             &This::IsConcrete,
+             (bool (*)(const TfToken &)) &This::IsConcrete,
              (arg("primType")))
+        .staticmethod("IsConcrete")
 
         .def("IsAppliedAPISchema", 
-             (bool (This::*)(const TfType &) const)
-             &This::IsAppliedAPISchema,
+             (bool (*)(const TfType &)) &This::IsAppliedAPISchema,
              (arg("apiSchemaType")))
         .def("IsAppliedAPISchema", 
-             (bool (This::*)(const TfToken &) const)
-             &This::IsAppliedAPISchema,
+             (bool (*)(const TfToken &)) &This::IsAppliedAPISchema,
              (arg("apiSchemaType")))
+        .staticmethod("IsAppliedAPISchema")
 
         .def("IsMultipleApplyAPISchema", 
-             (bool (This::*)(const TfType &) const)
-             &This::IsMultipleApplyAPISchema,
+             (bool (*)(const TfType &)) &This::IsMultipleApplyAPISchema,
              (arg("apiSchemaType")))
         .def("IsMultipleApplyAPISchema", 
-             (bool (This::*)(const TfToken &) const)
-             &This::IsMultipleApplyAPISchema,
+             (bool (*)(const TfToken &)) &This::IsMultipleApplyAPISchema,
              (arg("apiSchemaType")))
+        .staticmethod("IsMultipleApplyAPISchema")
 
         .def("GetTypeFromName", &This::GetTypeFromName, 
             (arg("typeName")))
@@ -125,6 +130,13 @@ void wrapUsdSchemaRegistry()
         .def("GetTypeAndInstance", &This::GetTypeAndInstance,
             (arg("typeName")), return_value_policy<TfPyPairToTuple>())
         .staticmethod("GetTypeAndInstance")
+
+        .def("GetAutoApplyAPISchemas", &This::GetAutoApplyAPISchemas,
+             return_value_policy<TfPyMapToDictionary>())
+        .staticmethod("GetAutoApplyAPISchemas")
+
+        .def("GetPropertyNamespacePrefix", &This::GetPropertyNamespacePrefix, 
+            (arg("multiApplyAPISchemaName")))
 
         .def("FindConcretePrimDefinition", 
              &This::FindConcretePrimDefinition,

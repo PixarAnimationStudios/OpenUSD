@@ -75,7 +75,12 @@ UsdRiPxrRodLightFilter::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdRiPxrRodLightFilter::_GetSchemaType() const {
+UsdSchemaKind UsdRiPxrRodLightFilter::_GetSchemaKind() const {
+    return UsdRiPxrRodLightFilter::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdRiPxrRodLightFilter::_GetSchemaType() const {
     return UsdRiPxrRodLightFilter::schemaType;
 }
 

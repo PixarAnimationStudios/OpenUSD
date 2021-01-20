@@ -39,4 +39,7 @@ pxr_library(usdRender
         plugInfo.json
         generatedSchema.usda
         schema.usda:usdRender/schema.usda
+
+    DOXYGEN_FILES
+        overview.dox
 )

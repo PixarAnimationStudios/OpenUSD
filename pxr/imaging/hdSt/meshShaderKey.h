@@ -57,6 +57,8 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
                        HdCullStyle cullStyle,
                        HdMeshGeomStyle geomStyle,
                        float lineWidth,
+                       bool hasMirroredTransform,
+                       bool hasInstancer,
                        bool enableScalarOverride);
 
     // Note: it looks like gcc 4.8 has a problem issuing
@@ -67,6 +69,16 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     ~HdSt_MeshShaderKey();
 
     HdCullStyle GetCullStyle() const override { return cullStyle; }
+    bool UseHardwareFaceCulling() const override {
+        return useHardwareFaceCulling;
+    }
+    bool HasMirroredTransform() const override {
+        return hasMirroredTransform;
+    }
+    bool IsDoubleSided() const override {
+        return doubleSided;
+    }
+
     HdPolygonMode GetPolygonMode() const override { return polygonMode; }
     float GetLineWidth() const override { return lineWidth; }
     HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const override {
@@ -75,6 +87,9 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
 
     HdSt_GeometricShader::PrimitiveType primType;
     HdCullStyle cullStyle;
+    bool useHardwareFaceCulling;
+    bool hasMirroredTransform;
+    bool doubleSided;
     HdPolygonMode polygonMode;
     float lineWidth;
 
@@ -88,9 +103,9 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     TfToken glslfx;
     TfToken VS[7];
     TfToken TCS[3];
-    TfToken TES[3];
+    TfToken TES[4];
     TfToken GS[11];
-    TfToken FS[14];
+    TfToken FS[15];
 };
 
 

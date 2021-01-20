@@ -38,15 +38,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Delegate support for UsdGeomNurbsPatch.
 ///
-class UsdImagingNurbsPatchAdapter : public UsdImagingGprimAdapter {
+class UsdImagingNurbsPatchAdapter : public UsdImagingGprimAdapter
+{
 public:
-    typedef UsdImagingGprimAdapter BaseAdapter;
+    using BaseAdapter = UsdImagingGprimAdapter;
 
     UsdImagingNurbsPatchAdapter()
         : UsdImagingGprimAdapter()
     {}
     USDIMAGING_API
-    virtual ~UsdImagingNurbsPatchAdapter();
+    ~UsdImagingNurbsPatchAdapter() override;
 
     USDIMAGING_API
     SdfPath Populate(
@@ -73,7 +74,7 @@ public:
     USDIMAGING_API
     HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      TfToken const& propertyName);
+                                      TfToken const& propertyName) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Data access

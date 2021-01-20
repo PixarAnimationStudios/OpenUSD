@@ -52,8 +52,12 @@
 // source (point lights only).
 // The extinction function is supposed to return the sum of the
 // absorption and out-scattering cross section.
-// Note that the interpretation of emission here follows [1] rather than [2],
-// so the emission is added without being "pre-multiplied" by absorption.
+// Note that the interpretation of emission here follows [1] (rather than [2]),
+// so the emission is added by the ray-marcher without being multiplied by
+// extinction.
+// Note that one cannot use the fallback volume shader for assets containing
+// "glow" rather "emission" where the convention is
+// emission = glow * extinction.
 //
 // [1] Matt Pharr, Wenzel Jakob, Greg Humphreys, "Physically Based Rendering",
 // Third Edition).

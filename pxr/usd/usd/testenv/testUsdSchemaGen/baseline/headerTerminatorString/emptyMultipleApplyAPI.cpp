@@ -68,7 +68,12 @@ UsdContrivedEmptyMultipleApplyAPI::Get(const UsdPrim &prim, const TfToken &name)
 
 
 /* virtual */
-UsdSchemaType UsdContrivedEmptyMultipleApplyAPI::_GetSchemaType() const {
+UsdSchemaKind UsdContrivedEmptyMultipleApplyAPI::_GetSchemaKind() const {
+    return UsdContrivedEmptyMultipleApplyAPI::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdContrivedEmptyMultipleApplyAPI::_GetSchemaType() const {
     return UsdContrivedEmptyMultipleApplyAPI::schemaType;
 }
 

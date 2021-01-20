@@ -78,7 +78,7 @@ UsdSkel_CacheImpl::ReadScope::FindOrCreateAnimQuery(const UsdPrim& prim)
         return UsdSkelAnimQuery();
 
     if (prim.IsInstanceProxy())
-        return FindOrCreateAnimQuery(prim.GetPrimInMaster());
+        return FindOrCreateAnimQuery(prim.GetPrimInPrototype());
 
     {
         _PrimToAnimMap::const_accessor a;
@@ -106,7 +106,7 @@ UsdSkel_CacheImpl::ReadScope::FindOrCreateSkelDefinition(const UsdPrim& prim)
         return nullptr;
 
     if (prim.IsInstanceProxy())
-        return FindOrCreateSkelDefinition(prim.GetPrimInMaster());
+        return FindOrCreateSkelDefinition(prim.GetPrimInPrototype());
 
     {
         _PrimToSkelDefinitionMap::const_accessor a;
@@ -202,23 +202,25 @@ _DeprecatedBindingCheck(bool hasBindingAPI, const UsdProperty& prop)
 }
 
 /// If \p attr is an attribute on an instance proxy, return the attr on the
-/// instance master. Otherwise return the original attr.
+/// instance prototype. Otherwise return the original attr.
 UsdAttribute
-_GetAttrInMaster(const UsdAttribute& attr)
+_GetAttrInPrototype(const UsdAttribute& attr)
 {
     if (attr && attr.GetPrim().IsInstanceProxy()) {
-        return attr.GetPrim().GetPrimInMaster().GetAttribute(attr.GetName());
+        return attr.GetPrim().GetPrimInPrototype().GetAttribute(
+            attr.GetName());
     }
     return attr;
 }
 
 /// If \p rel is an attribute on an instance proxy, return the rel on the
-/// instance master. Otherwise return the original rel.
+/// instance prototype. Otherwise return the original rel.
 UsdRelationship
-_GetRelInMaster(const UsdRelationship& rel)
+_GetRelInPrototype(const UsdRelationship& rel)
 {
     if (rel && rel.GetPrim().IsInstanceProxy()) {
-        return rel.GetPrim().GetPrimInMaster().GetRelationship(rel.GetName());
+        return rel.GetPrim().GetPrimInPrototype().GetRelationship(
+            rel.GetName());
     }
     return rel;
 }
@@ -283,7 +285,7 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root,
         // properties that have an authored value. Properties with
         // no authored value are treated as if they do not exist.
 
-        if (UsdAttribute attr = _GetAttrInMaster(
+        if (UsdAttribute attr = _GetAttrInPrototype(
                 binding.GetJointIndicesAttr())) {
             if (attr.HasAuthoredValue()) {
                 _DeprecatedBindingCheck(hasBindingAPI, attr);
@@ -291,7 +293,7 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root,
             }
         }
 
-        if (UsdAttribute attr = _GetAttrInMaster(
+        if (UsdAttribute attr = _GetAttrInPrototype(
                 binding.GetJointWeightsAttr())) {
             if (attr.HasAuthoredValue()) {
                 _DeprecatedBindingCheck(hasBindingAPI, attr);
@@ -299,7 +301,7 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root,
             }
         }
         
-        if (UsdAttribute attr = _GetAttrInMaster(
+        if (UsdAttribute attr = _GetAttrInPrototype(
                 binding.GetGeomBindTransformAttr())) {
             if (attr.HasAuthoredValue()) {
                 _DeprecatedBindingCheck(hasBindingAPI, attr);
@@ -307,7 +309,7 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root,
             }
         }
 
-        if (UsdAttribute attr = _GetAttrInMaster(
+        if (UsdAttribute attr = _GetAttrInPrototype(
                 binding.GetJointsAttr())) {
             if (attr.HasAuthoredValue()) {
                 _DeprecatedBindingCheck(hasBindingAPI, attr);
@@ -321,7 +323,7 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root,
         // skel:blendShapeTargets are *not* inherited, so we only check
         // for them on skinnable prims.
         if (isSkinnable) {
-            if (UsdAttribute attr = _GetAttrInMaster(
+            if (UsdAttribute attr = _GetAttrInPrototype(
                     binding.GetBlendShapesAttr())) {
                 if (attr.HasAuthoredValue()) {
                     _DeprecatedBindingCheck(hasBindingAPI, attr);
@@ -329,7 +331,7 @@ UsdSkel_CacheImpl::ReadScope::Populate(const UsdSkelRoot& root,
                 }
             }
 
-            if (UsdRelationship rel = _GetRelInMaster(
+            if (UsdRelationship rel = _GetRelInPrototype(
                     binding.GetBlendShapeTargetsRel())) {
                 if (rel.HasAuthoredTargets()) {
                     _DeprecatedBindingCheck(hasBindingAPI, rel);

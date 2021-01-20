@@ -32,6 +32,7 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -839,8 +840,21 @@ TfType::Declare(const string &typeName,
                 DefinitionCallback definitionCallback)
 {
     TfAutoMallocTag2 tag("Tf", "TfType::Declare");
+    TF_DESCRIBE_SCOPE(typeName);
 
     TfType const& t = Declare(typeName);
+
+    // Check that t does not appear in newBases.  This is not comprehensive: t
+    // could be a base of one of the types in newBases, but doing an exhaustive
+    // search is not cheap, and getting it wrong will cause deadlock at
+    // registration time (so it will get noticed and fixed).  But this limited
+    // check helps debugging & fixing the most common case of getting this
+    // wrong.
+    auto iter = std::find(newBases.begin(), newBases.end(), t);
+    if (iter != newBases.end()) {
+        TF_FATAL_ERROR("TfType '%s' declares itself as a base.",
+                       typeName.c_str());
+    }
 
     bool sendNotice = false;
     vector<string> errorsToEmit;

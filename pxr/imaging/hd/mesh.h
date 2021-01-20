@@ -146,8 +146,7 @@ protected:
     /// Constructor. instancerId, if specified, is the instancer which uses
     /// this mesh as a prototype.
     HD_API
-    HdMesh(SdfPath const& id,
-           SdfPath const& instancerId = SdfPath());
+    HdMesh(SdfPath const& id);
 
     // We allow up to 2 repr descs per repr for meshes (see ConfigureRepr above)
     typedef _ReprDescConfigs<HdMeshReprDesc, 2> _MeshReprConfig;

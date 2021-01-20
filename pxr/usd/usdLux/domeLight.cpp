@@ -75,7 +75,12 @@ UsdLuxDomeLight::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdLuxDomeLight::_GetSchemaType() const {
+UsdSchemaKind UsdLuxDomeLight::_GetSchemaKind() const {
+    return UsdLuxDomeLight::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdLuxDomeLight::_GetSchemaType() const {
     return UsdLuxDomeLight::schemaType;
 }
 
@@ -105,13 +110,13 @@ UsdLuxDomeLight::_GetTfType() const
 UsdAttribute
 UsdLuxDomeLight::GetTextureFileAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->textureFile);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsTextureFile);
 }
 
 UsdAttribute
 UsdLuxDomeLight::CreateTextureFileAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->textureFile,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsTextureFile,
                        SdfValueTypeNames->Asset,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -122,13 +127,13 @@ UsdLuxDomeLight::CreateTextureFileAttr(VtValue const &defaultValue, bool writeSp
 UsdAttribute
 UsdLuxDomeLight::GetTextureFormatAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->textureFormat);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsTextureFormat);
 }
 
 UsdAttribute
 UsdLuxDomeLight::CreateTextureFormatAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->textureFormat,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsTextureFormat,
                        SdfValueTypeNames->Token,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -166,8 +171,8 @@ const TfTokenVector&
 UsdLuxDomeLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLuxTokens->textureFile,
-        UsdLuxTokens->textureFormat,
+        UsdLuxTokens->inputsTextureFile,
+        UsdLuxTokens->inputsTextureFormat,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

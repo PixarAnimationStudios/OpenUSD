@@ -80,6 +80,9 @@ pxr_library(usdRi
         plugInfo.json
         generatedSchema.usda
         schema.usda:usdRi/schema.usda
+
+    DOXYGEN_FILES
+        overview.dox
 )
 
 pxr_test_scripts(

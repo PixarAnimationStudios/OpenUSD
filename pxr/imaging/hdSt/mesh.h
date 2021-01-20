@@ -59,8 +59,7 @@ public:
     /// Constructor. instancerId, if specified, is the instancer which uses
     /// this mesh as a prototype.
     HDST_API
-    HdStMesh(SdfPath const& id,
-             SdfPath const& instancerId = SdfPath());
+    HdStMesh(SdfPath const& id);
 
     HDST_API
     virtual ~HdStMesh();
@@ -178,7 +177,7 @@ private:
     HdType _pointsDataType;
     HdInterpolation _sceneNormalsInterpolation;
     HdCullStyle _cullStyle;
-
+    bool _hasMirroredTransform : 1;
     bool _doubleSided : 1;
     bool _flatShadingEnabled : 1;
     bool _displacementEnabled : 1;
@@ -186,6 +185,7 @@ private:
     bool _sceneNormals : 1;
     bool _hasVaryingTopology : 1;  // The prim's topology has changed since
                                    // the prim was created
+    bool _displayOpacity : 1;
 };
 
 

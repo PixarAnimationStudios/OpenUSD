@@ -63,6 +63,8 @@ UsdImagingCoordSysAdapter::Populate(UsdPrim const& usdPrim,
             *(bindings.usdBindingVecPtr);
         TF_VERIFY(idVec.size() == bindingVec.size());
         for (size_t i=0, n=idVec.size(); i<n; ++i) {
+            // Verify that target path exists
+            TF_VERIFY(_GetPrim(bindingVec[i].coordSysPrimPath));
             if (!index->IsPopulated(idVec[i])) {
                 index->InsertSprim(HdPrimTypeTokens->coordSys, idVec[i],
                                    _GetPrim(bindingVec[i].coordSysPrimPath),

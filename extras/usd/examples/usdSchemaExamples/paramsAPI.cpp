@@ -62,7 +62,12 @@ UsdSchemaExamplesParamsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaType UsdSchemaExamplesParamsAPI::_GetSchemaType() const {
+UsdSchemaKind UsdSchemaExamplesParamsAPI::_GetSchemaKind() const {
+    return UsdSchemaExamplesParamsAPI::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdSchemaExamplesParamsAPI::_GetSchemaType() const {
     return UsdSchemaExamplesParamsAPI::schemaType;
 }
 

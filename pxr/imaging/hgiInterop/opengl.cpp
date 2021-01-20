@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include <GL/glew.h>
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgiGL/hgi.h"
@@ -156,7 +156,7 @@ HgiInteropOpenGL::CompositeToInterop(
     }
 
 #if defined(GL_KHR_debug)
-    if (GLEW_KHR_debug) {
+    if (GARCH_GLAPI_HAS(KHR_debug)) {
         glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, "Interop");
     }
 #endif
@@ -280,7 +280,7 @@ HgiInteropOpenGL::CompositeToInterop(
     glBindTexture(GL_TEXTURE_2D, 0);
 
 #if defined(GL_KHR_debug)
-    if (GLEW_KHR_debug) {
+    if (GARCH_GLAPI_HAS(KHR_debug)) {
         glPopDebugGroup();
     }
 #endif

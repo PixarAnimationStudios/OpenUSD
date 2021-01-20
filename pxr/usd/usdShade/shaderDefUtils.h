@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdShade/api.h"
+#include "pxr/usd/usdShade/connectableAPI.h"
 
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
 
@@ -76,6 +77,21 @@ public:
     static NdrNodeDiscoveryResultVec GetNodeDiscoveryResults(
         const UsdShadeShader &shaderDef,
         const std::string &sourceUri);
+
+    /// Gets all input and output properties of the given \p shaderDef and 
+    /// translates them into NdrProperties that can be used as the properties
+    /// for an SdrShaderNode.
+    USDSHADE_API
+    static NdrPropertyUniquePtrVec GetShaderProperties(
+        const UsdShadeConnectableAPI &shaderDef);
+
+    /// Collects all the names of valid primvar inputs of the given \p metadata
+    /// and the given \p shaderDef and returns the string used to represent
+    /// them in SdrShaderNode metadata.
+    USDSHADE_API
+    static std::string GetPrimvarNamesMetadataString(
+        const NdrTokenMap metadata,
+        const UsdShadeConnectableAPI &shaderDef);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

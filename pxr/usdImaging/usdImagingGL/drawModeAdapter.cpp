@@ -32,7 +32,7 @@
 #include "pxr/imaging/hd/material.h"
 
 #include "pxr/imaging/hio/glslfx.h"
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/usd/usdGeom/modelAPI.h"
@@ -157,8 +157,6 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
 {
     SdfPath cachePath = UsdImagingGprimAdapter::_ResolveCachePath(
         prim.GetPath(), instancerContext);
-    SdfPath instancer = instancerContext ?
-        instancerContext->instancerCachePath : SdfPath();
 
     // The draw mode adapter only supports models or unloaded prims.
     // This is enforced in UsdImagingDelegate::_IsDrawModeApplied.
@@ -201,7 +199,7 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
             return SdfPath();
         }
         index->InsertRprim(HdPrimTypeTokens->basisCurves,
-            cachePath, instancer, cachePrim, rprimAdapter);
+            cachePath, cachePrim, rprimAdapter);
         HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
     } else if (drawMode == UsdGeomTokens->cards) {
         // Cards draw as a mesh
@@ -211,7 +209,7 @@ UsdImagingGLDrawModeAdapter::Populate(UsdPrim const& prim,
             return SdfPath();
         }
         index->InsertRprim(HdPrimTypeTokens->mesh,
-            cachePath, instancer, cachePrim, rprimAdapter);
+            cachePath, cachePrim, rprimAdapter);
         HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
     } else {
         TF_CODING_ERROR("Model <%s> has unsupported drawMode '%s'",
@@ -309,6 +307,22 @@ UsdImagingGLDrawModeAdapter::MarkMaterialDirty(UsdPrim const& prim,
     }
 }
 
+bool
+UsdImagingGLDrawModeAdapter::_HasVaryingExtent(UsdPrim const& prim) const
+{
+    UsdAttribute attr;
+
+    attr = prim.GetAttribute(UsdGeomTokens->extent);
+    if (attr && attr.ValueMightBeTimeVarying())
+        return true;
+
+    attr = prim.GetAttribute(UsdGeomTokens->extentsHint);
+    if (attr && attr.ValueMightBeTimeVarying())
+        return true;
+
+    return false;
+}
+
 void
 UsdImagingGLDrawModeAdapter::_ComputeGeometryData(
     UsdPrim const& prim,
@@ -322,11 +336,13 @@ UsdImagingGLDrawModeAdapter::_ComputeGeometryData(
     VtValue* assign) const
 {
     if (drawMode == UsdGeomTokens->origin) {
-        *extent = _ComputeExtent(prim);
+        *extent = _ComputeExtent(prim,
+            _HasVaryingExtent(prim) ? time : UsdTimeCode::EarliestTime());
         _GenerateOriginGeometry(topology, points, *extent);
 
     } else if (drawMode == UsdGeomTokens->bounds) {
-        *extent = _ComputeExtent(prim);
+        *extent = _ComputeExtent(prim,
+            _HasVaryingExtent(prim) ? time : UsdTimeCode::EarliestTime());
         _GenerateBoundsGeometry(topology, points, *extent);
 
     } else if (drawMode == UsdGeomTokens->cards) {
@@ -348,7 +364,8 @@ UsdImagingGLDrawModeAdapter::_ComputeGeometryData(
 
         } else {
             // First compute the extents.
-            *extent = _ComputeExtent(prim);
+            *extent = _ComputeExtent(prim,
+                _HasVaryingExtent(prim) ? time : UsdTimeCode::EarliestTime());
 
             // Generate mask for suppressing axes with no textures
             uint8_t axes_mask = 0;
@@ -763,6 +780,21 @@ UsdImagingGLDrawModeAdapter::TrackVariability(UsdPrim const& prim,
             timeVaryingBits,
             true);
 
+    // Discover time-varying extents. Look for time samples on either the
+    // extent or extentsHint attribute.
+    if (!_IsVarying(prim,
+            UsdGeomTokens->extent,
+            HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent,
+            UsdImagingTokens->usdVaryingExtent,
+            timeVaryingBits,
+            false)) {
+        _IsVarying(prim,
+            UsdGeomTokens->extentsHint,
+            HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent,
+            UsdImagingTokens->usdVaryingExtent,
+            timeVaryingBits,
+            false);
+    }
 }
 
 void
@@ -773,11 +805,12 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                                          UsdImagingInstancerContext const*
                                             instancerContext) const
 {
-    UsdImagingValueCache* valueCache = _GetValueCache();
+    UsdImagingPrimvarDescCache* primvarDescCache = _GetPrimvarDescCache();
     UsdGeomModelAPI model(prim);
 
     // Geometry aspect
-    HdPrimvarDescriptorVector& primvars = valueCache->GetPrimvars(cachePath);
+    HdPrimvarDescriptorVector& primvars = 
+        primvarDescCache->GetPrimvars(cachePath);
 
     if (requestedBits & HdChangeTracker::DirtyWidths) {
         _MergePrimvar(&primvars, UsdGeomTokens->widths,
@@ -1262,7 +1295,7 @@ UsdImagingGLDrawModeAdapter::_GetMatrixFromImageMetadata(
         file = asset.GetAssetPath();
     }
 
-    GlfImageSharedPtr img = GlfImage::OpenForReading(file);
+    HioImageSharedPtr img = HioImage::OpenForReading(file);
     if (!img) {
         return false;
     }
@@ -1374,7 +1407,8 @@ UsdImagingGLDrawModeAdapter::_GenerateTextureCoordinates(
 }
 
 GfRange3d
-UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
+UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim,
+        const UsdTimeCode& timecode) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1382,12 +1416,8 @@ UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
     TfTokenVector purposes = { UsdGeomTokens->default_, UsdGeomTokens->proxy,
                                UsdGeomTokens->render };
 
-    // XXX: The use of UsdTimeCode::EarliestTime() in the code below is
-    // problematic, as it may produce unexpected results for animated models.
-
     if (prim.IsLoaded()) {
-        UsdGeomBBoxCache bboxCache(
-            UsdTimeCode::EarliestTime(), purposes, true);
+        UsdGeomBBoxCache bboxCache(timecode, purposes, true);
         return bboxCache.ComputeUntransformedBound(prim).ComputeAlignedBox();
     } else {
         GfRange3d extent;
@@ -1398,12 +1428,12 @@ UsdImagingGLDrawModeAdapter::_ComputeExtent(UsdPrim const& prim) const
         // prim.
         if (prim.IsA<UsdGeomBoundable>() &&
             (attr = UsdGeomBoundable(prim).GetExtentAttr()) &&
-            attr.Get(&extentsHint, UsdTimeCode::EarliestTime()) &&
+            attr.Get(&extentsHint, timecode) &&
             extentsHint.size() == 2) {
             extent = GfRange3d(extentsHint[0], extentsHint[1]);
         }
         else if ((attr = UsdGeomModelAPI(prim).GetExtentsHintAttr()) &&
-            attr.Get(&extentsHint, UsdTimeCode::EarliestTime()) &&
+            attr.Get(&extentsHint, timecode) &&
             extentsHint.size() >= 2) {
             // XXX: This code to merge the extentsHint values over a set of
             // purposes probably belongs in UsdGeomBBoxCache.

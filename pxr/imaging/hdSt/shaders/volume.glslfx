@@ -115,6 +115,10 @@ inBoundingBox(vec3 p)
 // and accumulatedTransmittance, so computed only once in main.
 //
 MAT4 instanceModelViewInverse;
+float resolvedStepSizeEye;
+float resolvedStepSizeEyeLighting;
+float resolvedStepSizeWorld;
+float resolvedStepSizeWorldLighting;
 
 vec3
 eyeToLocal(vec3 p)
@@ -140,13 +144,13 @@ lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
 float
 accumulatedTransmittance(vec3 rayStartEye, vec3 rayDirectionEye)
 {
-    const float stepSize = HdGet_stepSizeLighting();
     int i = 1;
     
     float totalExtinction = 0.0;
     
     while(i < maxNumSteps) {
-        const vec3 rayPointEye = rayStartEye + stepSize * i * rayDirectionEye;
+        const vec3 rayPointEye =
+            rayStartEye + resolvedStepSizeEyeLighting * i * rayDirectionEye;
         const vec3 rayPoint = eyeToLocal(rayPointEye);
 
         if (!inBoundingBox(rayPoint)) {
@@ -158,7 +162,7 @@ accumulatedTransmittance(vec3 rayStartEye, vec3 rayDirectionEye)
         i+=1;
     }
 
-    return exp(-totalExtinction * stepSize);
+    return exp(-totalExtinction * resolvedStepSizeWorldLighting);
 }
 
 // Computes amount of light arriving at point Peye
@@ -223,7 +227,6 @@ struct VolumeContribution
 VolumeContribution
 volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayLength)
 {
-    const float stepSize = HdGet_stepSize();
     int i = 1;
 
     VolumeContribution result;
@@ -231,11 +234,13 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayLength)
     result.color = vec3(0.0);
     result.transmittance = 1.0;
 
-    const int numSteps = int(floor(min(maxNumSteps, rayLength / stepSize)));
+    const int numSteps =
+        int(floor(min(maxNumSteps, rayLength / resolvedStepSizeEye)));
 
     // integrate transmittance and light along ray for bounding box
     while(i < numSteps) {
-        const vec3 rayPointEye = rayStartEye + stepSize * i * rayDirectionEye;
+        const vec3 rayPointEye =
+            rayStartEye + resolvedStepSizeEye * i * rayDirectionEye;
         const vec3 rayPoint = eyeToLocal(rayPointEye);
 
         // Evaluate volume shader functions to determine extinction,
@@ -257,18 +262,18 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayLength)
         // In scattering contribution, lighting only computed if scattering
         // is non-trivial.
         const vec3 inScattering =
-            (scatteringValue >= minScattering) ?
+            (resolvedStepSizeWorld * scatteringValue >= minScattering) ?
                 (scatteringValue *
                  lightingComputation(rayPointEye, rayDirectionEye))
             : vec3(0.0);
 
         // In scattering and emission contribution
         result.color += 
-            (stepSize * result.transmittance) *
+            (resolvedStepSizeWorld * result.transmittance) *
             (inScattering + emissionValue);
 
         // Update transmittance
-        result.transmittance *= exp(-extinctionValue * stepSize);
+        result.transmittance *= exp(-extinctionValue * resolvedStepSizeWorld);
 
         // Stop when the volume has become close to opaque.
         if (result.transmittance < minTransmittance) {
@@ -522,11 +527,50 @@ computeRayLength(vec3 rayStartEye, vec3 rayDirectionEye, vec3 rayEndEye,
     return (rayEndZ - rayStartEye.z) / rayDirectionEye.z;
 }
 
+float max3(float a, float b, float c)
+{
+    return max(a, max(b, c));
+}
+
+// Computes the inverse of the scaling of an affine transform.
+// Approximately - since most transforms have uniform scaling
+// and no shear, this is fine.
+float
+scaleOfMatrix(MAT4 m)
+{
+    // Take the maximum of the lengths of the images of the x, y
+    // and z vector.
+    //
+    // A more general, coordinate independent implementation would take
+    // the minimum singular value from the singular value decomposition.
+    //
+    const mat3 affinePart = mat3(m);
+    return max3(length(affinePart[0]),
+                length(affinePart[1]),
+                length(affinePart[2]));
+}
+
+
 void main(void)
 {
     instanceModelViewInverse =
         ApplyInstanceTransformInverse(HdGet_transformInverse()) *
         GetWorldToViewInverseMatrix();
+
+    const float halfWorldSampleDistance =
+        0.5 * float(HdGet_sampleDistance())
+            / scaleOfMatrix(instanceModelViewInverse);
+
+    const float viewScale = scaleOfMatrix(GetWorldToViewInverseMatrix());
+
+    resolvedStepSizeEye =
+        HdGet_stepSize() * halfWorldSampleDistance;
+    resolvedStepSizeWorld =
+        viewScale * resolvedStepSizeEye;
+    resolvedStepSizeEyeLighting =
+        HdGet_stepSizeLighting() * halfWorldSampleDistance;
+    resolvedStepSizeWorldLighting =
+        viewScale * resolvedStepSizeEyeLighting;
 
     // Discard front faces - ray marching stops at fragment eye position
     // and starts at the intersection of ray with volume bounding box or

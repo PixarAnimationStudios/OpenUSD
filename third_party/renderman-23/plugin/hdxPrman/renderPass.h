@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/imaging/cameraUtil/framing.h"
 #include "Riley.h"
 
 #include <chrono>
@@ -36,18 +37,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HdPrman_Context;
 struct HdxPrman_InteractiveContext;
 
-class HdxPrman_RenderPass final : public HdRenderPass {
+class HdxPrman_RenderPass final : public HdRenderPass
+{
 public:
     HdxPrman_RenderPass(HdRenderIndex *index,
                       HdRprimCollection const &collection,
                       std::shared_ptr<HdPrman_Context> context);
-    virtual ~HdxPrman_RenderPass();
+    ~HdxPrman_RenderPass() override;
 
-    virtual bool IsConverged() const override;
+    bool IsConverged() const override;
 
 protected:
-    virtual void _Execute(HdRenderPassStateSharedPtr const& renderPassState,
-                          TfTokenVector const &renderTags) override;
+    void _Execute(HdRenderPassStateSharedPtr const& renderPassState,
+                  TfTokenVector const &renderTags) override;
 
 private:
     bool _converged;
@@ -58,6 +60,8 @@ private:
     int _lastSettingsVersion;
 
     GfMatrix4d _lastProj, _lastViewToWorldMatrix;
+    CameraUtilFraming _lastFraming;
+    GfVec4f _lastCropWindow;
 
     std::chrono::steady_clock::time_point _frameStart;
     std::string _integrator;

@@ -421,6 +421,7 @@ def "MaterialX"
     def "Looks"
     {
         def "lookA" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
             doc = "Look A"
             prepend references = </MaterialX/Collections>
         )
@@ -470,6 +471,7 @@ def "MaterialX"
         }
 
         def "lookB" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
             doc = "Look B"
             prepend references = </MaterialX/Collections>
         )
@@ -507,6 +509,7 @@ def "MaterialX"
         }
 
         def "lookC" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
             doc = "Look C"
             prepend references = [
                 </MaterialX/Looks/lookA>,
@@ -535,6 +538,7 @@ def "MaterialX"
         }
 
         def "lookD" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
             prepend references = </MaterialX/Collections>
         )
         {

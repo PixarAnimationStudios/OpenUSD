@@ -37,7 +37,6 @@
 
 -- glsl ColorChannel.Fragment
 
-#version 450
 
 // Display channel values. These should match the the indices of the entries in
 // HdxDisplayChannelTokens
@@ -48,18 +47,10 @@
 #define CHANNEL_ALPHA     4
 #define CHANNEL_LUMINANCE 5
 
-layout (std430, binding = 0) buffer ParameterBuffer
-{
-    int channel;
-};
-
-layout(binding = 0) uniform sampler2D colorIn;
-
-layout(location = 0) out vec4 outputColor;
-
 void main(void)
 {
-    vec4 color = texelFetch(colorIn, ivec2(gl_FragCoord.xy), 0);
+    vec2 fragCoord = uvOut * screenSize;
+    vec4 color = HdTexelFetch_colorIn(ivec2(fragCoord));
 
     // Display Channel
     if (channel == CHANNEL_RED) {
@@ -75,5 +66,5 @@ void main(void)
         color.r = color.g = color.b = dot(color.rgb, W);
     } // Do nothing if channel == CHANNEL_COLOR
 
-    outputColor = color;
+    hd_FragColor = color;
 }

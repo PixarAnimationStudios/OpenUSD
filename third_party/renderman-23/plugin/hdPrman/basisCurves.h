@@ -37,8 +37,7 @@ class HdPrman_BasisCurves final : public HdPrman_Gprim<HdBasisCurves> {
 public:
     typedef HdPrman_Gprim<HdBasisCurves> BASE;
     HF_MALLOC_TAG_NEW("new HdPrman_BasisCurves");
-    HdPrman_BasisCurves(SdfPath const& id,
-                SdfPath const& instancerId = SdfPath());
+    HdPrman_BasisCurves(SdfPath const& id);
     virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
 protected:
     virtual RtParamList

@@ -24,12 +24,12 @@
 // glf/drawTarget.cpp
 //
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/diagnostic.h"
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/glf/utils.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -71,7 +71,7 @@ GlfDrawTarget::GlfDrawTarget( GfVec2i const & size, bool requestMSAA /* =false *
     _size(size),
     _numSamples(1)
 {
-    GlfGlewInit();
+    GarchGLApiLoad();
 
     // If MSAA has been requested and it is enabled then we will create
     // msaa buffers
@@ -102,7 +102,7 @@ GlfDrawTarget::GlfDrawTarget( GlfDrawTargetPtr const & drawtarget ) :
     _numSamples(drawtarget->_numSamples),
     _owningContext()
 {
-    GlfGlewInit();
+    GarchGLApiLoad();
 
     _GenFrameBuffer();
 
@@ -608,19 +608,19 @@ GlfDrawTarget::WriteToFile(std::string const & name,
     GLenum glInternalFormat = a->GetInternalFormat();
     bool isSRGB = (glInternalFormat == GL_SRGB8 ||
                    glInternalFormat == GL_SRGB8_ALPHA8);
-    GlfImage::StorageSpec storage;
+    HioImage::StorageSpec storage;
     storage.width = _size[0];
     storage.height = _size[1];
-    storage.hioFormat = GlfGetHioFormat(a->GetFormat(), 
-                                        a->GetType(), 
-                                        /* isSRGB */ isSRGB);
+    storage.format = GlfGetHioFormat(a->GetFormat(),
+                                     a->GetType(),
+                                     /* isSRGB */ isSRGB);
     storage.flipped = true;
     storage.data = buf.get();
 
     {
         TRACE_FUNCTION_SCOPE("writing image");
 
-        GlfImageSharedPtr const image = GlfImage::OpenForWriting(filename);
+        HioImageSharedPtr const image = HioImage::OpenForWriting(filename);
         const bool writeSuccess = image && image->Write(storage, metadata);
         
         if (!writeSuccess) {

@@ -156,25 +156,6 @@ UsdRelationship::RemoveTarget(const SdfPath& target) const
 }
 
 bool
-UsdRelationship::BlockTargets() const
-{
-    // NOTE! Do not insert any code that modifies scene description between the
-    // changeblock and the call to _CreateSpec!  Explanation: _CreateSpec calls
-    // code that inspects the composition graph and then does some authoring.
-    // We want that authoring to be inside the change block, but if any scene
-    // description changes are made after the block is created but before we
-    // call _CreateSpec, the composition structure may be invalidated.
-    SdfChangeBlock block;
-    SdfRelationshipSpecHandle relSpec = _CreateSpec();
-
-    if (!relSpec)
-        return false;
-
-    relSpec->GetTargetPathList().ClearEditsAndMakeExplicit();
-    return true;
-}
-
-bool
 UsdRelationship::SetTargets(const SdfPathVector& targets) const
 {
     SdfPathVector mappedPaths;

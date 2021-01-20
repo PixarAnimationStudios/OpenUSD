@@ -171,14 +171,12 @@ void
 UsdImagingIndexProxy::InsertRprim(
                              TfToken const& primType,
                              SdfPath const& cachePath,
-                             SdfPath const& parentPath,
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
     if (_AddHdPrimInfo(cachePath, usdPrim, adapter)) {
         _delegate->GetRenderIndex().InsertRprim(primType, _delegate,
-            _delegate->ConvertCachePathToIndexPath(cachePath),
-            _delegate->ConvertCachePathToIndexPath(parentPath));
+            _delegate->ConvertCachePathToIndexPath(cachePath));
 
         _AddTask(cachePath);
     }
@@ -217,20 +215,18 @@ UsdImagingIndexProxy::InsertBprim(
 void
 UsdImagingIndexProxy::InsertInstancer(
                              SdfPath const& cachePath,
-                             SdfPath const& parentPath,
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
     if (_AddHdPrimInfo(cachePath, usdPrim, adapter)) {
         _delegate->GetRenderIndex().InsertInstancer(_delegate,
-            _delegate->ConvertCachePathToIndexPath(cachePath),
-            _delegate->ConvertCachePathToIndexPath(parentPath));
+            _delegate->ConvertCachePathToIndexPath(cachePath));
 
         _delegate->_instancerPrimCachePaths.insert(cachePath);
 
         TF_DEBUG(USDIMAGING_INSTANCER).Msg(
-            "[Instancer Inserted] %s, parent = %s, adapter = %s\n",
-            cachePath.GetText(), parentPath.GetText(),
+            "[Instancer Inserted] %s, adapter = %s\n",
+            cachePath.GetText(),
             adapter ? TfType::GetCanonicalTypeName(typeid(*adapter)).c_str()
                     : "none");
 
@@ -425,7 +421,7 @@ UsdImagingIndexProxy::_ProcessRemovals()
                                              cachePath.GetText());
 
 
-            _delegate->_valueCache.Clear(cachePath);
+            _delegate->_primvarDescCache.Clear(cachePath);
             _delegate->_refineLevelMap.erase(cachePath);
             _delegate->_pickablesMap.erase(cachePath);
 

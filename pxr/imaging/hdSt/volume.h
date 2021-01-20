@@ -38,7 +38,7 @@ class HdStDrawItem;
 class HdStVolume final : public HdVolume {
 public:
     HDST_API
-    HdStVolume(SdfPath const& id, SdfPath const& instancerId = SdfPath());
+    HdStVolume(SdfPath const& id);
     HDST_API
     ~HdStVolume() override;
 
@@ -56,6 +56,10 @@ public:
 
     /// Default step size used for raymarching for lighting computation
     static const float defaultStepSizeLighting;
+
+    /// Default memory limit for a field texture (in Mb) if not
+    /// overridden by field prim with textureMemory.
+    static const float defaultMaxTextureMemoryPerField;
 
 protected:
     void _InitRepr(TfToken const &reprToken,

@@ -24,7 +24,8 @@
 // utils.cpp
 //
 
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/glf/utils.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
@@ -100,7 +101,10 @@ static const _FormatDesc FORMAT_DESC[] =
               GL_COMPRESSED_RGBA_BPTC_UNORM         }, // BC7UNorm8Vec4
     {GL_RGBA, GL_UNSIGNED_BYTE,
               GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM   }, // BC7UNorm8Vec4srgb
-
+    {GL_RGBA, GL_UNSIGNED_BYTE,
+              GL_COMPRESSED_RGBA_S3TC_DXT1_EXT       }, // BC1UNorm8Vec4
+    {GL_RGBA, GL_UNSIGNED_BYTE,
+              GL_COMPRESSED_RGBA_S3TC_DXT5_EXT      }, // BC3UNorm8Vec3
 };
 
 // A few random format validations to make sure the GL table stays
@@ -110,7 +114,8 @@ constexpr bool _CompileTimeValidateHioFormatTable() {
             HioFormatUNorm8 == 0 &&
             HioFormatFloat32 == 12 &&
             HioFormatUInt32 == 28 &&
-            HioFormatBC6FloatVec3 == 40) ? true : false;
+            HioFormatBC6FloatVec3 == 40 &&
+            HioFormatBC1UNorm8Vec4 == 44) ? true : false;
 }
 
 static_assert(_CompileTimeValidateHioFormatTable(), 
@@ -326,6 +331,10 @@ GlfGetHioFormat(GLenum glFormat, GLenum glType, bool isSRGB)
             return HioFormatBC7UNorm8Vec4;
         case GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM:
             return HioFormatBC7UNorm8Vec4srgb;
+        case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+            return HioFormatBC1UNorm8Vec4;
+        case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+            return HioFormatBC3UNorm8Vec4;
         default:
             TF_CODING_ERROR("Unsupported type");
             return HioFormatUNorm8Vec3;

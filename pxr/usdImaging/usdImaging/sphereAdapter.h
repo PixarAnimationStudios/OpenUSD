@@ -40,15 +40,16 @@ class UsdGeomSphere;
 ///
 /// Delegate support for UsdGeomSphere.
 ///
-class UsdImagingSphereAdapter : public UsdImagingGprimAdapter {
+class UsdImagingSphereAdapter : public UsdImagingGprimAdapter
+{
 public:
-    typedef UsdImagingGprimAdapter BaseAdapter;
+    using BaseAdapter = UsdImagingGprimAdapter;
 
     UsdImagingSphereAdapter()
         : UsdImagingGprimAdapter()
     {}
     USDIMAGING_API
-    virtual ~UsdImagingSphereAdapter();
+    ~UsdImagingSphereAdapter() override;
 
     USDIMAGING_API
     SdfPath Populate(
@@ -63,7 +64,7 @@ public:
     USDIMAGING_API
     HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath,
-                                      TfToken const& propertyName);
+                                      TfToken const& propertyName) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve

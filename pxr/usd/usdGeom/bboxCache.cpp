@@ -80,114 +80,124 @@ public:
 };
 
 // -------------------------------------------------------------------------- //
-// _MasterBBoxResolver
+// _PrototypeBBoxResolver
 //
-// If a master prim has instances nested within it, resolving its bbox
-// will depend on the masters for those instances being resolved first.
-// These dependencies form an acyclic graph where a given master may depend
-// on and be a dependency for one or more masters.
+// If a prototype prim has instances nested within it, resolving its bbox
+// will depend on the prototypes for those instances being resolved first.
+// These dependencies form an acyclic graph where a given prototype may depend
+// on and be a dependency for one or more prototypes.
 //
 // This helper object tracks those dependencies as tasks are dispatched
 // and completed.
 // -------------------------------------------------------------------------- //
-class UsdGeomBBoxCache::_MasterBBoxResolver
+class UsdGeomBBoxCache::_PrototypeBBoxResolver
 {
 private:
     UsdGeomBBoxCache* _owner;
 
-    struct _MasterTask
+    struct _PrototypeTask
     {
-        _MasterTask() : numDependencies(0) { }
+        _PrototypeTask() : numDependencies(0) { }
 
-        // Number of dependencies -- master prims that must be resolved
-        // before this master can be resolved.
+        // Number of dependencies -- prototype prims that must be resolved
+        // before this prototype can be resolved.
         tbb::atomic<size_t> numDependencies;
 
-        // List of master prims that depend on this master.
-        std::vector<_PrimContext> dependentMasters;
+        // List of prototype prims that depend on this prototype.
+        std::vector<_PrimContext> dependentPrototypes;
     };
 
-    typedef TfHashMap<_PrimContext, _MasterTask, _PrimContextHash>
-        _MasterTaskMap;
+    typedef TfHashMap<_PrimContext, _PrototypeTask, _PrimContextHash>
+        _PrototypeTaskMap;
 
 public:
-    _MasterBBoxResolver(UsdGeomBBoxCache* bboxCache)
+    _PrototypeBBoxResolver(UsdGeomBBoxCache* bboxCache)
         : _owner(bboxCache)
     {
     }
 
-    void Resolve(const std::vector<_PrimContext> &masterPrimContexts)
+    void Resolve(const std::vector<_PrimContext> &prototypePrimContexts)
     {
         TRACE_FUNCTION();
 
-        _MasterTaskMap masterTasks;
-        for (const auto& masterPrim : masterPrimContexts) {
-            _PopulateTasksForMaster(masterPrim, &masterTasks);
+        _PrototypeTaskMap prototypeTasks;
+        for (const auto& prototypePrim : prototypePrimContexts) {
+            _PopulateTasksForPrototype(prototypePrim, &prototypeTasks);
         }
 
         // Using the owner's xform cache won't provide a benefit
-        // because the masters are separate parts of the scenegraph
+        // because the prototypes are separate parts of the scenegraph
         // that won't be traversed when resolving other bounding boxes.
         _ThreadXformCache xfCache;
 
-        for (const auto& t : masterTasks) {
+        for (const auto& t : prototypeTasks) {
             if (t.second.numDependencies == 0) {
                 _owner->_dispatcher.Run(
-                    &_MasterBBoxResolver::_ExecuteTaskForMaster,
-                    this, t.first, &masterTasks, &xfCache, &_owner->_dispatcher);
+                    &_PrototypeBBoxResolver::_ExecuteTaskForPrototype,
+                    this, t.first, &prototypeTasks, &xfCache,
+                    &_owner->_dispatcher);
             }
         }
         _owner->_dispatcher.Wait();
     }
 
 private:
-    void _PopulateTasksForMaster(const _PrimContext& masterPrim,
-                                 _MasterTaskMap* masterTasks)
+    void _PopulateTasksForPrototype(const _PrimContext& prototypePrim,
+                                 _PrototypeTaskMap* prototypeTasks)
     {
-        std::pair<_MasterTaskMap::iterator, bool> masterTaskStatus =
-            masterTasks->insert(std::make_pair(masterPrim, _MasterTask()));
-        if (!masterTaskStatus.second) {
+        std::pair<_PrototypeTaskMap::iterator, bool> prototypeTaskStatus =
+            prototypeTasks->insert(std::make_pair(
+                    prototypePrim, _PrototypeTask()));
+        if (!prototypeTaskStatus.second) {
             return;
         }
 
-        std::vector<_PrimContext> requiredMasters;
-        _owner->_FindOrCreateEntriesForPrim(masterPrim, &requiredMasters);
+        std::vector<_PrimContext> requiredPrototypes;
+        _owner->_FindOrCreateEntriesForPrim(prototypePrim, &requiredPrototypes);
 
         {
-            // In order to resolve the bounding box for masterPrim, we need to
-            // compute the bounding boxes for all masters for nested instances.
-            _MasterTask& masterTaskData = masterTaskStatus.first->second;
-            masterTaskData.numDependencies = requiredMasters.size();
+            // In order to resolve the bounding box for prototypePrim, we need
+            // to compute the bounding boxes for all prototypes for nested
+            // instances.
+            _PrototypeTask& prototypeTaskData = 
+                prototypeTaskStatus.first->second;
+            prototypeTaskData.numDependencies = requiredPrototypes.size();
         }
 
-        // Recursively populate the task map for the masters needed for
+        // Recursively populate the task map for the prototypes needed for
         // nested instances.
-        for (const auto& reqMaster : requiredMasters) {
-            _PopulateTasksForMaster(reqMaster, masterTasks);
-            (*masterTasks)[reqMaster].dependentMasters.push_back(masterPrim);
+        for (const auto& reqPrototype : requiredPrototypes) {
+            _PopulateTasksForPrototype(reqPrototype, prototypeTasks);
+            (*prototypeTasks)[reqPrototype].dependentPrototypes.push_back(
+                prototypePrim);
         }
     }
 
-    void _ExecuteTaskForMaster(const _PrimContext& master,
-                               _MasterTaskMap* masterTasks,
+    void _ExecuteTaskForPrototype(const _PrimContext& prototype,
+                               _PrototypeTaskMap* prototypeTasks,
                                _ThreadXformCache* xfCaches,
                                WorkArenaDispatcher* dispatcher)
     {
         UsdGeomBBoxCache::_BBoxTask(
-            master, GfMatrix4d(1.0), _owner, xfCaches)();
+            prototype, GfMatrix4d(1.0), _owner, xfCaches)();
         
-        // Update all of the master prims that depended on the completed master
-        // and dispatch new tasks for those whose dependencies have been
-        // resolved.  We're guaranteed that all the entries were populated by
-        // _PopulateTasksForMaster, so we don't check the result of 'find()'.
-        const _MasterTask& masterData = masterTasks->find(master)->second;
-        for (const auto& dependentMaster : masterData.dependentMasters) {
-            _MasterTask& dependentMasterData =
-                masterTasks->find(dependentMaster)->second;
-            if (dependentMasterData.numDependencies.fetch_and_decrement() == 1){
+        // Update all of the prototype prims that depended on the completed
+        // prototype and dispatch new tasks for those whose dependencies have
+        // been resolved.  We're guaranteed that all the entries were populated
+        // by _PopulateTasksForPrototype, so we don't check the result of
+        // 'find()'.
+        const _PrototypeTask& prototypeData =
+            prototypeTasks->find(prototype)->second;
+        for (const auto& dependentPrototype : 
+                 prototypeData.dependentPrototypes) {
+            _PrototypeTask& dependentPrototypeData =
+                prototypeTasks->find(dependentPrototype)->second;
+            if (dependentPrototypeData.numDependencies
+                .fetch_and_decrement() == 1){
                 dispatcher->Run(
-                    &_MasterBBoxResolver::_ExecuteTaskForMaster,
-                    this, dependentMaster, masterTasks, xfCaches, dispatcher);
+                    &_PrototypeBBoxResolver::_ExecuteTaskForPrototype,
+                    this, dependentPrototype, prototypeTasks, xfCaches,
+                    dispatcher);
             }
         }
     }
@@ -821,21 +831,22 @@ UsdGeomBBoxCache::_ComputePurposeInfo(
 
     const UsdPrim &prim = primContext.prim;
 
-    // Special case for master prims. Masters don't actually have their own
-    // purpose attribute. The prims that instance the master will provide its
-    // purpose. It's important that we apply the instancing prim's purpose to
-    // this master prim context so that the master's children can properly
-    // inherit the instancing prim's purpose if needed. Note that this only 
-    // applies if the instancing prim provides a purpose that is inheritable.
-    if (prim.IsMaster()) {
+    // Special case for prototype prims. Prototypes don't actually have their
+    // own purpose attribute. The prims that instance the prototype will provide
+    // its purpose. It's important that we apply the instancing prim's purpose
+    // to this prototype prim context so that the prototype's children can
+    // properly inherit the instancing prim's purpose if needed. Note that this
+    // only applies if the instancing prim provides a purpose that is
+    // inheritable.
+    if (prim.IsPrototype()) {
         if (primContext.instanceInheritablePurpose.IsEmpty()) {
             // If the instancing prim's purpose is not inheritable, this 
-            // master prim context won't provide an inheritable purpose to
+            // prototype prim context won't provide an inheritable purpose to
             // its children either.
             entry->purposeInfo = UsdGeomImageable::PurposeInfo(
                 UsdGeomTokens->default_, false);
         } else {
-            // Otherwise this master can provide the instancing prim's 
+            // Otherwise this prototype can provide the instancing prim's 
             // inheritable pupose to its children.
             entry->purposeInfo = UsdGeomImageable::PurposeInfo(
                 primContext.instanceInheritablePurpose, true);
@@ -849,7 +860,7 @@ UsdGeomBBoxCache::_ComputePurposeInfo(
             // the n^2 recursion which results from using the 
             // UsdGeomImageable::ComputePurpose() API directly.
             
-            // If this prim is in a master then its parent prim will be too. 
+            // If this prim is in a prototype then its parent prim will be too. 
             // The parent prim's context will have the same inheritable purpose
             // from the instance as this prim context does.
             _PrimContext parentPrimContext(
@@ -918,7 +929,7 @@ UsdGeomBBoxCache::_ShouldPruneChildren(const UsdPrim &prim,
 UsdGeomBBoxCache::_Entry*
 UsdGeomBBoxCache::_FindOrCreateEntriesForPrim(
     const _PrimContext& primContext,
-    std::vector<_PrimContext> *masterPrimContexts)
+    std::vector<_PrimContext> *prototypePrimContexts)
 {
     // Add an entry for the prim to the cache and if the bound is already in 
     // the cache, return it.
@@ -948,7 +959,7 @@ UsdGeomBBoxCache::_FindOrCreateEntriesForPrim(
     // may have authored extentsHints we can use; thus we can have bboxes in
     // model-hierarchy-only.
 
-    TfHashSet<_PrimContext, _PrimContextHash> seenMasterPrimContexts;
+    TfHashSet<_PrimContext, _PrimContextHash> seenPrototypePrimContexts;
 
     UsdPrimRange range(primContext.prim, 
         (UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract));
@@ -964,12 +975,12 @@ UsdGeomBBoxCache::_FindOrCreateEntriesForPrim(
 
         if (it->IsInstance()) {
             // This prim is an instance, so we need to compute
-            // bounding boxes for the master prims.
-            const UsdPrim master = it->GetMaster();
+            // bounding boxes for the prototype prims.
+            const UsdPrim prototype = it->GetPrototype();
             // We typically compute the purpose for prims later in _ResolvePrim,
             // but for an instance prim, we need to compute the purpose for this 
             // prim context now so that we can associate this instance's 
-            // inheritable purpose with the master. 
+            // inheritable purpose with the prototype. 
             // 
             // Note that we recursively cache the computed purposes of all 
             // cached ancestors of the prim here as we won't have necessarily
@@ -977,10 +988,10 @@ UsdGeomBBoxCache::_FindOrCreateEntriesForPrim(
             // cache ancestors recursively as this code is not used in a 
             // multithreaded context.
             _ComputePurposeInfo<true>(cacheEntry, cachePrimContext);
-            _PrimContext masterPrimContext(
-                master, cacheEntry->purposeInfo.GetInheritablePurpose());
-            if (seenMasterPrimContexts.insert(masterPrimContext).second) {
-                masterPrimContexts->push_back(masterPrimContext);
+            _PrimContext prototypePrimContext(
+                prototype, cacheEntry->purposeInfo.GetInheritablePurpose());
+            if (seenPrototypePrimContexts.insert(prototypePrimContext).second) {
+                prototypePrimContexts->push_back(prototypePrimContext);
             }
             it.PruneChildren();
         }
@@ -1003,20 +1014,20 @@ UsdGeomBBoxCache::_Resolve(
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
     // If the bound is in the cache, return it.
-    std::vector<_PrimContext> masterPrimContexts;
+    std::vector<_PrimContext> prototypePrimContexts;
     _PrimContext primContext(prim);
     _Entry *entry = _FindOrCreateEntriesForPrim(primContext, 
-                                                &masterPrimContexts);
+                                                &prototypePrimContexts);
     if (entry && entry->isComplete) {
         *bboxes = entry->bboxes;
         return (!bboxes->empty());
     }
 
-    // Resolve all master prims first to avoid having to synchronize
-    // tasks that depend on the same master.
-    if (!masterPrimContexts.empty()) {
-        _MasterBBoxResolver bboxesForMasters(this);
-        bboxesForMasters.Resolve(masterPrimContexts);
+    // Resolve all prototype prims first to avoid having to synchronize
+    // tasks that depend on the same prototype.
+    if (!prototypePrimContexts.empty()) {
+        _PrototypeBBoxResolver bboxesForPrototypes(this);
+        bboxesForPrototypes.Resolve(prototypePrimContexts);
     }
 
     // XXX: This swapping out is dubious... see XXX below.
@@ -1313,13 +1324,13 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
 
         const bool primIsInstance = prim.IsInstance();
         if (primIsInstance) {
-            const UsdPrim master = prim.GetMaster();
-            children = master.GetFilteredChildren(
+            const UsdPrim prototype = prim.GetPrototype();
+            children = prototype.GetFilteredChildren(
                 UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract);
-            // Since we're using the master's children, we need to make sure we
-            // propagate this instance's inheritable purpose to the master's 
-            // children so they inherit the correct purpose for this instance
-            // if needed.
+            // Since we're using the prototype's children, we need to make sure
+            // we propagate this instance's inheritable purpose to the
+            // prototype's children so they inherit the correct purpose for this
+            // instance if needed.
             childInheritableInstancePurpose = 
                 entry->purposeInfo.GetInheritablePurpose();
         }
@@ -1328,17 +1339,18 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
                 UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract);
             // Otherwise for standard children that are not across an instance
             // boundary, pass this prim's inheritable purpose along to its
-            // children.
-            // XXX: It's worth noting that if a child of a master has a purpose
-            // opinion, then that child (and its descendants) will have the same
-            // computed purpose regardless of the inheritable instance purpose
-            // of the master. Thus it's technically redundant to store multiple
-            // entries for these children per instance purpose. But the trade 
-            // off for this redundancy means that we don't have to worry about 
-            // different masters or siblings sharing child entries in the cache
-            // which would complicate the multithreaded way we resolve bboxes 
-            // for master and sibling prims. This may be something to 
-            // re-evaluate in the future. 
+            // children.  
+            // XXX: It's worth noting that if a child of a prototype
+            // has a purpose opinion, then that child (and its descendants) will
+            // have the same computed purpose regardless of the inheritable
+            // instance purpose of the prototype. Thus it's technically
+            // redundant to store multiple entries for these children per
+            // instance purpose. But the trade off for this redundancy means
+            // that we don't have to worry about different prototypes or
+            // siblings sharing child entries in the cache which would
+            // complicate the multithreaded way we resolve bboxes for prototype
+            // and sibling prims. This may be something to re-evaluate in the
+            // future.
             childInheritableInstancePurpose = 
                 primContext.instanceInheritablePurpose;
         }
@@ -1380,7 +1392,7 @@ UsdGeomBBoxCache::_ResolvePrim(_BBoxTask* task,
             // Queue up the child to be processed.
             if (primIsInstance) {
                 // If the prim we're processing is an instance, all of its
-                // child prims will come from its master prim. The bboxes
+                // child prims will come from its prototype prim. The bboxes
                 // for these prims should already have been computed in
                 // _Resolve, so we don't need to schedule an additional task.
                 included.push_back(std::make_pair(childPrimContext, 

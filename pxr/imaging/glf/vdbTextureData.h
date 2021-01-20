@@ -30,7 +30,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3i.h"
 #include "pxr/imaging/glf/api.h"
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/glf/fieldTextureData.h"
 
 #include "pxr/base/gf/bbox3d.h"
@@ -71,8 +71,8 @@ public:
     GLF_API
     int ResizedDepth(int mipLevel = 0) const override;
 
-    HioFormat GetHioFormat() const override;
-
+    HioFormat GetFormat() const override;
+    
     size_t TargetMemory() const override;
 
     WrapInfo GetWrapInfo() const override;
@@ -83,8 +83,8 @@ public:
 
     bool Read(int degradeLevel, 
               bool generateMipmap,
-              GlfImage::ImageOriginLocation
-                  originLocation = GlfImage::OriginUpperLeft) override;
+              HioImage::ImageOriginLocation
+                  originLocation = HioImage::OriginUpperLeft) override;
     
     bool HasRawBuffer(int mipLevel = 0) const override;
 
@@ -107,7 +107,7 @@ private:
     int _resizedWidth, _resizedHeight, _resizedDepth;
     int _bytesPerPixel;
 
-    HioFormat _hioFormat;
+    HioFormat _format;
 
     WrapInfo _wrapInfo;
 

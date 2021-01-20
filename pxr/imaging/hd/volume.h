@@ -43,7 +43,7 @@ typedef std::vector<class HdVolume const *> HdVolumePtrConstVector;
 class HdVolume : public HdRprim {
 public:
     HD_API
-    HdVolume(SdfPath const& id, SdfPath const& instancerId = SdfPath());
+    HdVolume(SdfPath const& id);
 
     HD_API
     virtual ~HdVolume();

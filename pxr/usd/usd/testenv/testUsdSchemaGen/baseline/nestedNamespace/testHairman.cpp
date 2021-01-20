@@ -75,7 +75,12 @@ UsdContrivedTestHairman::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdContrivedTestHairman::_GetSchemaType() const {
+UsdSchemaKind UsdContrivedTestHairman::_GetSchemaKind() const {
+    return UsdContrivedTestHairman::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdContrivedTestHairman::_GetSchemaType() const {
     return UsdContrivedTestHairman::schemaType;
 }
 

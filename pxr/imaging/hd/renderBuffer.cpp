@@ -49,8 +49,16 @@ HdRenderBuffer::Sync(HdSceneDelegate *sceneDelegate,
                      HdDirtyBits *dirtyBits)
 {
     if (*dirtyBits & DirtyDescription) {
-        HdRenderBufferDescriptor desc =
+        const HdRenderBufferDescriptor desc =
             sceneDelegate->GetRenderBufferDescriptor(GetId());
+
+        if (!(desc.dimensions[0] >= 0 &&
+              desc.dimensions[1] >= 0 &&
+              desc.dimensions[2] >= 0)) {
+            TF_CODING_ERROR("Bad dimensions for render buffer %s",
+                            GetId().GetText());
+            return;
+        }
 
         Allocate(desc.dimensions, desc.format, desc.multiSampled);
     }

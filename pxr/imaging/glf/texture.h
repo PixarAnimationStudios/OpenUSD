@@ -28,14 +28,14 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/vt/dictionary.h"
 
-#include "pxr/imaging/garch/gl.h"
+#include "pxr/imaging/garch/glApi.h"
 
 #include <map>
 #include <string>
@@ -137,7 +137,7 @@ public:
     size_t GetContentsID() const;
 
     GLF_API
-    GlfImage::ImageOriginLocation GetOriginLocation() const;
+    HioImage::ImageOriginLocation GetOriginLocation() const;
 
     GLF_API
     bool IsOriginLowerLeft() const;
@@ -147,7 +147,7 @@ protected:
     GlfTexture();
 
     GLF_API
-    GlfTexture(GlfImage::ImageOriginLocation originLocation);
+    GlfTexture(HioImage::ImageOriginLocation originLocation);
 
     GLF_API
     void _SetMemoryUsed(size_t size);
@@ -162,30 +162,30 @@ private:
     size_t _memoryUsed;
     size_t _memoryRequested;
     size_t _contentsID;
-    GlfImage::ImageOriginLocation _originLocation;
+    HioImage::ImageOriginLocation _originLocation;
 };
 
 class GlfTextureFactoryBase : public TfType::FactoryBase {
 public:
     virtual GlfTextureRefPtr New(const TfToken& texturePath,
-                        GlfImage::ImageOriginLocation originLocation) const = 0;
+                        HioImage::ImageOriginLocation originLocation) const = 0;
     virtual GlfTextureRefPtr New(const TfTokenVector& texturePaths,
-                        GlfImage::ImageOriginLocation originLocation) const = 0;
+                        HioImage::ImageOriginLocation originLocation) const = 0;
 };
 
 template <class T>
 class GlfTextureFactory : public GlfTextureFactoryBase {
 public:
     virtual GlfTextureRefPtr New(const TfToken& texturePath, 
-                                 GlfImage::ImageOriginLocation originLocation = 
-                                                GlfImage::OriginUpperLeft) const
+                                 HioImage::ImageOriginLocation originLocation = 
+                                                HioImage::OriginUpperLeft) const
     {
         return T::New(texturePath);
     }
 
     virtual GlfTextureRefPtr New(const TfTokenVector& texturePaths,
-                                 GlfImage::ImageOriginLocation originLocation = 
-                                                GlfImage::OriginUpperLeft) const
+                                 HioImage::ImageOriginLocation originLocation = 
+                                                HioImage::OriginUpperLeft) const
     {
         return TfNullPtr;
     }

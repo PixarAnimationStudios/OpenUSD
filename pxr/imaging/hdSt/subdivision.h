@@ -44,7 +44,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// This single struct can be used for cpu and gpu subdivision at the same time.
 ///
-class HdSt_Subdivision {
+class HdSt_Subdivision
+{
 public:
     virtual ~HdSt_Subdivision();
 
@@ -96,15 +97,15 @@ public:
 /// OpenSubdiv Topology Analysis.
 /// Create Hd_Subdivision struct and sets it into HdSt_MeshTopology.
 ///
-class HdSt_OsdTopologyComputation : public HdComputedBufferSource {
+class HdSt_OsdTopologyComputation : public HdComputedBufferSource
+{
 public:
     HdSt_OsdTopologyComputation(HdSt_MeshTopology *topology,
                                 int level,
                                 SdfPath const &id);
 
     /// overrides
-    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
-    virtual bool Resolve() = 0;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
 
 protected:
     HdSt_MeshTopology *_topology;
@@ -129,19 +130,19 @@ protected:
 /// ... |           |           | ...    primitive param[2] (patch param 1)
 /// ----+-----------+-----------+------
 ///
-class HdSt_OsdIndexComputation : public HdComputedBufferSource {
+class HdSt_OsdIndexComputation : public HdComputedBufferSource
+{
 public:
     /// overrides
-    virtual bool HasChainedBuffer() const override;
-    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
-    virtual HdBufferSourceSharedPtrVector GetChainedBuffers() const override;
-    virtual bool Resolve() = 0;
+    bool HasChainedBuffer() const override;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    HdBufferSourceSharedPtrVector GetChainedBuffers() const override;
 
 protected:
     HdSt_OsdIndexComputation(HdSt_MeshTopology *topology,
                            HdBufferSourceSharedPtr const &osdTopology);
 
-    virtual bool _CheckValid() const override;
+    bool _CheckValid() const override;
 
     HdSt_MeshTopology *_topology;
     HdBufferSourceSharedPtr _osdTopology;
@@ -158,25 +159,26 @@ protected:
 /// so that reducing data copy between osd buffer and HdBufferSource.
 ///
 template <typename VERTEX_BUFFER>
-class HdSt_OsdRefineComputation final : public HdBufferSource {
+class HdSt_OsdRefineComputation final : public HdBufferSource
+{
 public:
     HdSt_OsdRefineComputation(HdSt_MeshTopology *topology,
                             HdBufferSourceSharedPtr const &source,
                             bool varying,
                             HdBufferSourceSharedPtr const &osdTopology);
-    virtual ~HdSt_OsdRefineComputation();
-    virtual TfToken const &GetName() const override;
-    virtual size_t ComputeHash() const override;
-    virtual void const* GetData() const override;
-    virtual HdTupleType GetTupleType() const override;
-    virtual size_t GetNumElements() const override;
-    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
-    virtual bool Resolve() override;
-    virtual bool HasPreChainedBuffer() const override;
-    virtual HdBufferSourceSharedPtr GetPreChainedBuffer() const override;
+    ~HdSt_OsdRefineComputation() override;
+    TfToken const &GetName() const override;
+    size_t ComputeHash() const override;
+    void const* GetData() const override;
+    HdTupleType GetTupleType() const override;
+    size_t GetNumElements() const override;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    bool Resolve() override;
+    bool HasPreChainedBuffer() const override;
+    HdBufferSourceSharedPtr GetPreChainedBuffer() const override;
 
 protected:
-    virtual bool _CheckValid() const override;
+    bool _CheckValid() const override;
 
 private:
     HdSt_MeshTopology *_topology;
@@ -191,21 +193,23 @@ private:
 ///
 /// OpenSubdiv GPU Refinement.
 ///
-class HdSt_OsdRefineComputationGPU : public HdComputation {
+class HdSt_OsdRefineComputationGPU : public HdComputation
+{
 public:
     HdSt_OsdRefineComputationGPU(HdSt_MeshTopology *topology,
                                TfToken const &name,
                                HdType type);
 
-    virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
+    void Execute(HdBufferArrayRangeSharedPtr const &range,
                          HdResourceRegistry *resourceRegistry) override;
-    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
-    virtual int GetNumOutputElements() const override;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    int GetNumOutputElements() const override;
 
     // A wrapper class to bridge between HdBufferResource and OpenSubdiv
     // vertex buffer API.
     //
-    class VertexBuffer {
+    class VertexBuffer
+    {
     public:
         VertexBuffer(HdBufferResourceSharedPtr const &resource) { 
             _resource =
@@ -237,7 +241,7 @@ HdSt_OsdRefineComputation<VERTEX_BUFFER>::HdSt_OsdRefineComputation(
     bool varying,
     HdBufferSourceSharedPtr const &osdTopology)
     : _topology(topology), _source(source), _osdTopology(osdTopology),
-      _cpuVertexBuffer(NULL), _varying(varying)
+      _cpuVertexBuffer(nullptr), _varying(varying)
 {
 }
 

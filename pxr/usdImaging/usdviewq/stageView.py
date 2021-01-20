@@ -84,7 +84,16 @@ def ViewportMakeCenteredIntegral(viewport):
 class GLSLProgram():
     def __init__(self, VS3, FS3, VS2, FS2, uniformDict):
         from OpenGL import GL
-        self._glMajorVersion = int(GL.glGetString(GL.GL_VERSION)[0])
+        # versionString = <version_number><space><vendor_specific_information>
+        versionString = GL.glGetString(GL.GL_VERSION).decode()
+        # <version_number> = <major_number>.<minor_number>[.<release_number>]
+        versionNumberString = versionString.split()[0]
+        self._glMajorVersion = int(versionNumberString.split('.')[0])
+
+        # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
+        self.useVAO = (self._glMajorVersion >= 3 and
+                        hasattr(GL, 'glGenVertexArrays'))
+        self.useSampleAlphaToCoverage = (self._glMajorVersion >= 4)
 
         self.program   = GL.glCreateProgram()
         vertexShader   = GL.glCreateShader(GL.GL_VERTEX_SHADER)
@@ -247,16 +256,15 @@ class OutlineRect(Rect):
         cls = self.__class__
 
         program = cls.compileProgram()
-        if (program.program == 0):
+        if program.program == 0:
             return
 
         GL.glUseProgram(program.program)
 
-        if (program._glMajorVersion >= 4):
+        if program.useSampleAlphaToCoverage:
             GL.glDisable(GL.GL_SAMPLE_ALPHA_TO_COVERAGE)
 
-        # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
-        if (program._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
+        if program.useVAO:
             if (cls._vao == 0):
                 cls._vao = GL.glGenVertexArrays(1)
             GL.glBindVertexArray(cls._vao)
@@ -269,6 +277,13 @@ class OutlineRect(Rect):
         program.uniform4f("color", *color)
         program.uniform4f("rect", *self.xywh)
         GL.glDrawArrays(GL.GL_LINE_LOOP, 0, 4)
+
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+        GL.glDisableVertexAttribArray(0)
+        if program.useVAO:
+            GL.glBindVertexArray(0)
+
+        GL.glUseProgram(0)
 
 class FilledRect(Rect):
     _glslProgram = None
@@ -328,16 +343,15 @@ class FilledRect(Rect):
         cls = self.__class__
 
         program = cls.compileProgram()
-        if (program.program == 0):
+        if program.program == 0:
             return
 
         GL.glUseProgram(program.program)
 
-        if (program._glMajorVersion >= 4):
+        if program.useSampleAlphaToCoverage:
             GL.glDisable(GL.GL_SAMPLE_ALPHA_TO_COVERAGE)
 
-        # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
-        if (program._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
+        if program.useVAO:
             if (cls._vao == 0):
                 cls._vao = GL.glGenVertexArrays(1)
             GL.glBindVertexArray(cls._vao)
@@ -350,6 +364,13 @@ class FilledRect(Rect):
         program.uniform4f("color", *color)
         program.uniform4f("rect", *self.xywh)
         GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4)
+
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+        GL.glDisableVertexAttribArray(0)
+        if program.useVAO:
+            GL.glBindVertexArray(0)
+
+        GL.glUseProgram(0)
 
 class Prim2DSetupTask():
     def __init__(self, viewport):
@@ -377,15 +398,8 @@ class Prim2DDrawTask():
             prim.__class__.compileProgram()
 
     def Execute(self, ctx):
-        from OpenGL import GL
         for prim, color in zip(self._prims, self._colors):
             prim.glDraw(color)
-
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-        GL.glDisableVertexAttribArray(0)
-        if (int(GL.glGetString(GL.GL_VERSION)[0]) >= 3 and hasattr(GL, 'glGenVertexArrays')):
-            GL.glBindVertexArray(0)
-        GL.glUseProgram(0)
 
 class Outline(Prim2DDrawTask):
     def __init__(self):
@@ -479,7 +493,6 @@ class HUD():
                 9*self._pixelRatio)
         self._groups = {}
         self._glslProgram = None
-        self._glMajorVersion = 0
         self._vao = 0
 
     def compileProgram(self):
@@ -584,11 +597,10 @@ class HUD():
         width = float(qglwidget.width())
         height = float(qglwidget.height())
 
-        if (self._glslProgram._glMajorVersion >= 4):
+        if self._glslProgram.useSampleAlphaToCoverage:
             GL.glDisable(GL.GL_SAMPLE_ALPHA_TO_COVERAGE)
 
-        # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
-        if (self._glslProgram._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
+        if self._glslProgram.useVAO:
             if (self._vao == 0):
                 self._vao = GL.glGenVertexArrays(1)
             GL.glBindVertexArray(self._vao)
@@ -622,10 +634,33 @@ class HUD():
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         GL.glDisableVertexAttribArray(0)
 
-        if (self._vao != 0):
+        if self._glslProgram.useVAO:
             GL.glBindVertexArray(0)
 
         GL.glUseProgram(0)
+
+def _ComputeCameraFraming(viewport, renderBufferSize):
+    x, y, w, h = viewport
+    renderBufferWidth  = renderBufferSize[0]
+    renderBufferHeight = renderBufferSize[1]
+
+    # Set display window equal to viewport - but flipped
+    # since viewport is in y-Up coordinate system but
+    # display window is y-Down.
+    displayWindow = Gf.Range2f(
+        Gf.Vec2f(x,     renderBufferHeight - y - h),
+        Gf.Vec2f(x + w, renderBufferHeight - y))
+
+    # Intersect the display window with render buffer rect for
+    # data window.
+    renderBufferRect = Gf.Rect2i(
+        Gf.Vec2i(0, 0), renderBufferWidth, renderBufferHeight)
+    dataWindow = renderBufferRect.GetIntersection(
+        Gf.Rect2i(
+            Gf.Vec2i(x, renderBufferHeight - y - h),
+            w, h))
+
+    return CameraUtil.Framing(displayWindow, dataWindow)
 
 class StageView(QtOpenGL.QGLWidget):
     '''
@@ -1094,11 +1129,11 @@ class StageView(QtOpenGL.QGLWidget):
 
         # grab the simple shader
         glslProgram = self.GetSimpleGLSLProgram()
-        if (glslProgram.program == 0):
+        if glslProgram.program == 0:
             return
 
         # vao
-        if (glslProgram._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
+        if glslProgram.useVAO:
             if (self._vao == 0):
                 self._vao = GL.glGenVertexArrays(1)
             GL.glBindVertexArray(self._vao)
@@ -1136,7 +1171,7 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         GL.glUseProgram(0)
 
-        if (self._vao != 0):
+        if glslProgram.useVAO:
             GL.glBindVertexArray(0)
 
     def DrawBBox(self, viewProjectionMatrix):
@@ -1429,8 +1464,6 @@ class StageView(QtOpenGL.QGLWidget):
         if not self.isValid():
             return
         from pxr import Glf
-        if not Glf.GlewInit():
-            return
         Glf.RegisterDefaultDebugOutputMessageCallback()
 
     def updateGL(self):
@@ -1574,7 +1607,7 @@ class StageView(QtOpenGL.QGLWidget):
         if (glslProgram.program == 0):
             return
         # vao
-        if (glslProgram._glMajorVersion >= 3 and hasattr(GL, 'glGenVertexArrays')):
+        if glslProgram.useVAO:
             if (self._vao == 0):
                 self._vao = GL.glGenVertexArrays(1)
             GL.glBindVertexArray(self._vao)
@@ -1617,7 +1650,7 @@ class StageView(QtOpenGL.QGLWidget):
         GL.glUseProgram(0)
 
         GL.glDisable(GL.GL_LINE_STIPPLE)
-        if (self._vao != 0):
+        if glslProgram.useVAO:
             GL.glBindVertexArray(0)
 
     def paintGL(self):
@@ -1667,8 +1700,19 @@ class StageView(QtOpenGL.QGLWidget):
             if self._cropImageToCameraViewport:
                 viewport = cameraViewport
 
-            renderer.SetRenderViewport(viewport)
-            renderer.SetWindowPolicy(self.computeWindowPolicy(cameraAspect))
+            # For legacy implementation (--renderer HydraDisabled)
+            if not renderer.IsHydraEnabled():
+                renderer.SetRenderViewport(viewport)
+                renderer.SetWindowPolicy(self.computeWindowPolicy(cameraAspect))
+
+            renderBufferSize = Gf.Vec2i(self.computeWindowSize())
+
+            renderer.SetRenderBufferSize(
+                renderBufferSize)
+            renderer.SetFraming(
+                _ComputeCameraFraming(viewport, renderBufferSize))
+            renderer.SetOverrideWindowPolicy(
+                self.computeWindowPolicy(cameraAspect))
 
             sceneCam = self.getActiveSceneCamera()
             if sceneCam:
@@ -1826,7 +1870,7 @@ class StageView(QtOpenGL.QGLWidget):
             if (not self._dataModel.playing) & (not renderer.IsConverged()):
                 QtCore.QTimer.singleShot(5, self.update)
         
-        except Tf.ErrorException as e:
+        except Exception as e:
             # If we encounter an error during a render, we want to continue 
             # running. Just log the error and continue.
             sys.stderr.write(
@@ -2201,11 +2245,13 @@ class StageView(QtOpenGL.QGLWidget):
                 # camera guides are on), treat that as a de-select.
                 selectedPoint, selectedNormal, selectedPrimPath, \
                 selectedInstanceIndex, selectedTLPath, selectedTLIndex = \
-                    None, None, Sdf.Path.emptyPath, -1, Sdf.Path.emptyPath, -1
+                    [-1,-1], None, Sdf.Path.emptyPath, -1, Sdf.Path.emptyPath, -1
         
             # Correct for high DPI displays
-            coord = self._scaleMouseCoords( \
-                QtCore.QPoint(selectedPoint[0], selectedPoint[1]))
+            # Cast to int explicitly as some versions of PySide/Shiboken throw
+            # when converting extremely small doubles held in selectedPoint
+            coord = self._scaleMouseCoords(QtCore.QPoint(
+                int(selectedPoint[0]), int(selectedPoint[1])))
             selectedPoint[0] = coord.x()
             selectedPoint[1] = coord.y()
 

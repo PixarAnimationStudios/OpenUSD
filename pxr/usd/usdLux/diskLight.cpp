@@ -75,7 +75,12 @@ UsdLuxDiskLight::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdLuxDiskLight::_GetSchemaType() const {
+UsdSchemaKind UsdLuxDiskLight::_GetSchemaKind() const {
+    return UsdLuxDiskLight::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdLuxDiskLight::_GetSchemaType() const {
     return UsdLuxDiskLight::schemaType;
 }
 
@@ -105,13 +110,13 @@ UsdLuxDiskLight::_GetTfType() const
 UsdAttribute
 UsdLuxDiskLight::GetRadiusAttr() const
 {
-    return GetPrim().GetAttribute(UsdLuxTokens->radius);
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsRadius);
 }
 
 UsdAttribute
 UsdLuxDiskLight::CreateRadiusAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->radius,
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsRadius,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -136,7 +141,7 @@ const TfTokenVector&
 UsdLuxDiskLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLuxTokens->radius,
+        UsdLuxTokens->inputsRadius,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

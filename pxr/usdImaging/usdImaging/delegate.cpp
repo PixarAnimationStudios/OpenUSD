@@ -99,7 +99,7 @@ UsdImagingDelegate::UsdImagingDelegate(
         HdRenderIndex *parentIndex,
         SdfPath const& delegateID)
     : HdSceneDelegate(parentIndex, delegateID)
-    , _valueCache()
+    , _primvarDescCache()
     , _rootXf(1.0)
     , _rootIsVisible(true)
     , _time(std::numeric_limits<double>::infinity())
@@ -314,14 +314,14 @@ public:
 
     // Disables value cache mutations for all imaging delegates that have
     // added tasks to this worker.
-    void DisableValueCacheMutations() {
-        _delegate->_valueCache.DisableMutation();
+    void DisablePrimvarDescCacheMutations() {
+        _delegate->_primvarDescCache.DisableMutation();
     }
 
     // Enables value cache mutations for all imaging delegates that have
     // added tasks to this worker.
-    void EnableValueCacheMutations() {
-        _delegate->_valueCache.EnableMutation();
+    void EnablePrimvarDescCacheMutations() {
+        _delegate->_primvarDescCache.EnableMutation();
     }
 
     // Invalidate the time varying prim cache.
@@ -491,7 +491,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
 void
 UsdImagingDelegate::PostSyncCleanup()
 {
-    _valueCache.GarbageCollect();
+    _primvarDescCache.GarbageCollect();
 }
 
 void
@@ -622,9 +622,10 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
 
     for (SdfPath const& usdPath: usdPathsToRepopulate) {
 
-        // _Populate should never be called on master prims or prims in master.
+        // _Populate should never be called on prototype prims or prims in
+        // prototypes.
         UsdPrim prim = _GetUsdPrim(usdPath);
-        if (prim && (prim.IsMaster() || prim.IsInMaster())) {
+        if (prim && (prim.IsPrototype() || prim.IsInPrototype())) {
             continue;
         }
 
@@ -792,7 +793,7 @@ UsdImagingDelegate::_ExecuteWorkForVariabilityUpdate(_Worker* worker)
         worker->InvalidateTimeVaryingPrimCache();
     }
 
-    worker->DisableValueCacheMutations();
+    worker->DisablePrimvarDescCacheMutations();
     {
         // Release the GIL to ensure that threaded work won't deadlock if
         // they also need the GIL.
@@ -802,7 +803,7 @@ UsdImagingDelegate::_ExecuteWorkForVariabilityUpdate(_Worker* worker)
             std::bind(&UsdImagingDelegate::_Worker::UpdateVariability, 
                       worker, std::placeholders::_1, std::placeholders::_2));
     }
-    worker->EnableValueCacheMutations();
+    worker->EnablePrimvarDescCacheMutations();
 }
 
 void
@@ -811,7 +812,7 @@ UsdImagingDelegate::_ExecuteWorkForTimeUpdate(_Worker* worker)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    worker->DisableValueCacheMutations();
+    worker->DisablePrimvarDescCacheMutations();
     {
         // Release the GIL to ensure that threaded work won't deadlock if
         // they also need the GIL.
@@ -821,7 +822,7 @@ UsdImagingDelegate::_ExecuteWorkForTimeUpdate(_Worker* worker)
             std::bind(&UsdImagingDelegate::_Worker::UpdateForTime, 
                       worker, std::placeholders::_1, std::placeholders::_2));
     }
-    worker->EnableValueCacheMutations();
+    worker->EnablePrimvarDescCacheMutations();
 }
 
 void
@@ -2376,10 +2377,6 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
     }
     value = primInfo->adapter->Get(prim, cachePath, key, _time);
 
-    if (value.IsEmpty()) {
-        TF_WARN("Empty VtValue: <%s> %s\n", id.GetText(), key.GetText());
-    }
-
     // We generally don't want Vec2d arrays, convert to vec2f.
     if (value.IsHolding<VtVec2dArray>()) {
         value = VtValue::Cast<VtVec2fArray>(value);
@@ -2464,7 +2461,7 @@ UsdImagingDelegate::GetPrimvarDescriptors(SdfPath const& id,
     HdPrimvarDescriptorVector allPrimvars;
     // We expect to populate an entry always (i.e., we don't use a slow path
     // fetch)
-    if (!TF_VERIFY(_valueCache.FindPrimvars(cachePath, &allPrimvars), 
+    if (!TF_VERIFY(_primvarDescCache.FindPrimvars(cachePath, &allPrimvars), 
                    "<%s> interpolation: %s", cachePath.GetText(),
                    TfEnum::GetName(interpolation).c_str())) {
         return primvars;
@@ -2486,47 +2483,15 @@ UsdImagingDelegate::GetInstanceIndices(SdfPath const &instancerId,
 {
     HD_TRACE_FUNCTION();
 
-    // If prototypeId is also a point instancer (nested case),
-    // this function may be called multiple times with the same arguments:
-    //
-    //  instancer1
-    //    |
-    //    +-- instancer2
-    //          |
-    //          +-- protoMesh1
-    //          +-- protoMesh2
-    //
-    //  a) (instancer2, protoMesh1) then (instancer1, instancer2)
-    //  b) (instancer2, protoMesh2) then (instancer1, instancer2)
-    //
-    //  The scene delegate will also call this function separately for
-    //  a) (instancer2, protoMesh1)
-    //  b) (instancer2, protoMesh2)
-    //
-    //  ... so we can't use ExtractInstanceIndices here, only Find().
-    //
-    //  XXX: It would be nice to change the API to be extract-friendly;
-    //  that would require changes to the signature of this function.
-
-    // XXX: Since instancers can have many prototypes, but prototypes can
-    // only have one instancer, we treat indices as instancer data (meaning,
-    // the dirty bit is set on the instancer), but store it in the prototype's
-    // value cache.
-
     SdfPath prototypeCachePath = ConvertIndexPathToCachePath(prototypeId);
     VtValue indices;
 
-    if (!_valueCache.FindInstanceIndices(prototypeCachePath, &indices)) {
-        // Slow path, we should not hit this.
-        TF_DEBUG(HD_SAFE_MODE).Msg(
-            "WARNING: Slow instance indices fetch for (%s, %s)\n", 
-            instancerId.GetText(), prototypeId.GetText());
+    SdfPath cachePath = ConvertIndexPathToCachePath(instancerId);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
 
-        SdfPath instancerCachePath = ConvertIndexPathToCachePath(instancerId);
-        _UpdateSingleValue(instancerCachePath,
-                HdChangeTracker::DirtyInstanceIndex);
-        TF_VERIFY(
-            _valueCache.FindInstanceIndices(prototypeCachePath, &indices));
+    if (TF_VERIFY(primInfo)) {
+        indices = primInfo->adapter->GetInstanceIndices(
+            primInfo->usdPrim, cachePath, prototypeCachePath, _time);
     }
 
     if (indices.IsEmpty()) {
@@ -2572,6 +2537,22 @@ UsdImagingDelegate::SampleInstancerTransform(SdfPath const &instancerId,
                                        sampleTimes, sampleValues);
     }
     return 0;
+}
+
+/*virtual*/
+SdfPath
+UsdImagingDelegate::GetInstancerId(SdfPath const &primId)
+{
+    SdfPath cachePath = ConvertIndexPathToCachePath(primId);
+    SdfPath pathValue;
+
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        pathValue =
+            primInfo->adapter->GetInstancerId(primInfo->usdPrim, cachePath);
+    }
+
+    return ConvertCachePathToIndexPath(pathValue);
 }
 
 /*virtual*/ 
@@ -2673,7 +2654,28 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     }
 
     // Fallback to USD attributes.
-    return _GetUsdPrimAttribute(cachePath, paramName);
+    static const std::unordered_map<TfToken, TfToken, TfHash> paramToAttrName({
+        { HdLightTokens->angle, UsdLuxTokens->inputsAngle },
+        { HdLightTokens->color, UsdLuxTokens->inputsColor },
+        { HdLightTokens->colorTemperature, 
+            UsdLuxTokens->inputsColorTemperature },
+        { HdLightTokens->diffuse, UsdLuxTokens->inputsDiffuse },
+        { HdLightTokens->enableColorTemperature, 
+            UsdLuxTokens->inputsEnableColorTemperature },
+        { HdLightTokens->exposure, UsdLuxTokens->inputsExposure },
+        { HdLightTokens->height, UsdLuxTokens->inputsHeight },
+        { HdLightTokens->intensity, UsdLuxTokens->inputsIntensity },
+        { HdLightTokens->length, UsdLuxTokens->inputsLength },
+        { HdLightTokens->normalize, UsdLuxTokens->inputsNormalize },
+        { HdLightTokens->radius, UsdLuxTokens->inputsRadius },
+        { HdLightTokens->specular, UsdLuxTokens->inputsSpecular },
+        { HdLightTokens->textureFile, UsdLuxTokens->inputsTextureFile },
+        { HdLightTokens->textureFormat, UsdLuxTokens->inputsTextureFormat },
+        { HdLightTokens->width, UsdLuxTokens->inputsWidth }
+    });
+
+    const TfToken *attrName = TfMapLookupPtr(paramToAttrName, paramName);
+    return _GetUsdPrimAttribute(cachePath, attrName ? *attrName : paramName);
 }
 
 VtValue 

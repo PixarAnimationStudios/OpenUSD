@@ -25,6 +25,7 @@
 #define EXT_RMANPKG_23_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATFILT_FILTER_CHAIN_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/ndr/declare.h"
@@ -32,55 +33,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \struct MatfiltConnection
-///
-/// Describes a single connection to an upsream node and output port 
-struct MatfiltConnection {
-    SdfPath upstreamNode;
-    TfToken upstreamOutputName;
-
-    bool operator==(const MatfiltConnection & rhs) const {
-        return upstreamNode == rhs.upstreamNode
-                && upstreamOutputName == rhs.upstreamOutputName;
-    }
-};
-
-/// \struct MatfiltNode
-///
-/// Describes an instance of a node within a network
-/// A node contains a (shader) type identifier, parameter values, and 
-/// connections to upstream nodes. A single input (mapped by TfToken) may have
-/// multiple upstream connections to describe connected array elements.
-struct MatfiltNode {
-    TfToken nodeTypeId;
-    std::map<TfToken, VtValue> parameters;
-    std::map<TfToken, std::vector<MatfiltConnection>> inputConnections;
-
-    bool operator==(const MatfiltNode & rhs) const {
-        return nodeTypeId == rhs.nodeTypeId
-                && parameters == rhs.parameters
-                && inputConnections == rhs.inputConnections;
-    }
-};
-
-/// \struct MatfiltNetwork
-/// 
-/// Container of nodes and top-level terminal connections. This is the mutable
-/// representation of a shading network sent to filtering functions by a
-/// MatfiltFilterChain.
-struct MatfiltNetwork {
-    std::map<SdfPath, MatfiltNode> nodes;
-    std::map<TfToken, MatfiltConnection> terminals;
-
-    bool operator==(const MatfiltNetwork & rhs) const {
-        return nodes == rhs.nodes && terminals == rhs.terminals;
-    }
-};
-
 /// A function which manipulates a shading network for a given context.
 typedef void (*MatfiltFilterFnc)
     (const SdfPath & networkId,
-     MatfiltNetwork & network,
+     HdMaterialNetwork2 & network,
      const std::map<TfToken, VtValue> & contextValues,
      const NdrTokenVec & shaderTypePriority,
      std::vector<std::string> * outputErrorMessages);
@@ -111,7 +67,7 @@ typedef std::vector<MatfiltFilterFnc> MatfiltFilterChain;
 void MatfiltExecFilterChain(
     MatfiltFilterChain const& filterChain,
     const SdfPath & networkId,
-    MatfiltNetwork & network,
+    HdMaterialNetwork2 & network,
     const std::map<TfToken, VtValue> & contextValues,
     const NdrTokenVec & shaderTypePriority,
     std::vector<std::string> * outputErrorMessages = nullptr);

@@ -106,17 +106,23 @@ public:
     /// Inserts a new node with site \p site as a child of \p parentNode,
     /// connected via \p arc.
     /// Returns the newly-added child node.
+    /// If the new node would exceeed the graph capacity, an invalid
+    /// PcpNodeRef is returned.
     PcpNodeRef InsertChildNode(
         const PcpNodeRef& parentNode,
-        const PcpLayerStackSite& site, const PcpArc& arc);
+        const PcpLayerStackSite& site, const PcpArc& arc,
+        PcpErrorBasePtr *error);
 
     /// Inserts \p subgraph as a child of \p parentNode. The root node of 
     /// \p subgraph will be an immediate child of \p parentNode, connected via
     /// \p arc.
     /// Returns the root node of the newly-added subgraph.
+    /// If the new nodes would exceeed the graph capacity, an invalid
+    /// PcpNodeRef is returned.
     PcpNodeRef InsertChildSubgraph(
         const PcpNodeRef& parentNode,
-        const PcpPrimIndex_GraphPtr& subgraph, const PcpArc& arc);
+        const PcpPrimIndex_GraphPtr& subgraph, const PcpArc& arc,
+        PcpErrorBasePtr *error);
 
     /// Finalizes the graph. This optimizes internal data structures and
     /// should be called once the graph is fully generated.

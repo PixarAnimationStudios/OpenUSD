@@ -31,21 +31,17 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/camera.h"
 
-#include "pxr/base/gf/frustum.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    typedef UsdImagingCameraAdapter Adapter;
+    using Adapter = UsdImagingCameraAdapter;
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdImagingCameraAdapter::~UsdImagingCameraAdapter() 
-{
-}
+UsdImagingCameraAdapter::~UsdImagingCameraAdapter() = default;
 
 bool
 UsdImagingCameraAdapter::IsSupported(UsdImagingIndexProxy const* index) const
@@ -82,7 +78,7 @@ UsdImagingCameraAdapter::TrackVariability(UsdPrim const& prim,
 
     // Discover time-varying transforms.
     _IsTransformVarying(prim,
-        HdCamera::DirtyViewMatrix,
+        HdCamera::DirtyTransform,
         UsdImagingTokens->usdVaryingXform,
         timeVaryingBits);
 
@@ -90,12 +86,21 @@ UsdImagingCameraAdapter::TrackVariability(UsdPrim const& prim,
     // To get a small speed boost, if an attribute sets a dirty bit we skip
     // all subsequent checks for that dirty bit.
     _IsVarying(prim,
-        UsdGeomTokens->horizontalAperture,
+        UsdGeomTokens->projection,
         HdCamera::DirtyProjMatrix,
-        HdCameraTokens->projectionMatrix,
+        HdCameraTokens->projection,
         timeVaryingBits,
         false);
 
+    if ((*timeVaryingBits & HdCamera::DirtyProjMatrix) == 0) {
+        _IsVarying(prim,
+            UsdGeomTokens->horizontalAperture,
+            HdCamera::DirtyProjMatrix,
+            HdCameraTokens->projectionMatrix,
+            timeVaryingBits,
+            false);
+    }
+        
     if ((*timeVaryingBits & HdCamera::DirtyProjMatrix) == 0) {
         _IsVarying(prim,
             UsdGeomTokens->verticalAperture,
@@ -201,89 +206,94 @@ UsdImagingCameraAdapter::UpdateForTime(UsdPrim const& prim,
 {
 }
 
+static
+HdCamera::Projection
+_ToProjection(const TfToken &token)
+{
+    if (token == UsdGeomTokens->orthographic) {
+        return HdCamera::Orthographic;
+    }
+
+    if (token != UsdGeomTokens->perspective) {
+        TF_WARN("Unknown projection type %s", token.GetText());
+    }
+
+    return HdCamera::Perspective;
+}
+
+static
+std::vector<GfVec4d>
+_ToGfVec4dVector(const VtArray<GfVec4f> &vec)
+{
+    std::vector<GfVec4d> result;
+    result.reserve(vec.size());
+    result.assign(vec.cbegin(), vec.cend());
+    return result;
+}
+
 VtValue
 UsdImagingCameraAdapter::Get(UsdPrim const& prim,
                              SdfPath const& cachePath,
                              TfToken const& key,
                              UsdTimeCode time) const
 {
-    // Create a GfCamera object to help populate the value cache entries
-    // pulled on by HdCamera during Sync.
     UsdGeomCamera cam(prim);
     if (!TF_VERIFY(cam)) {
         return VtValue();
     }
 
-    GfCamera gfCam = cam.GetCamera(time);
-    
-    if (key == HdCameraTokens->worldToViewMatrix || 
-        key == HdCameraTokens->projectionMatrix || 
-        key == HdCameraTokens->clipPlanes ) {
-        
-        GfFrustum frustum = gfCam.GetFrustum();
-        if (key == HdCameraTokens->worldToViewMatrix) {
-            return VtValue(frustum.ComputeViewMatrix());
-            
-        } else if (key == HdCameraTokens->projectionMatrix) {
-            return VtValue(frustum.ComputeProjectionMatrix());
-
-        } else if (key == HdCameraTokens->clipPlanes) {
-            std::vector<GfVec4f> const& fClipPlanes = gfCam.GetClippingPlanes();
-            
-            // Convert to use double (HdCamera & HdRenderPassState use doubles)
-            std::vector<GfVec4d> dClipPlanes;
-            if (!fClipPlanes.empty()) {
-                dClipPlanes.reserve(fClipPlanes.size());
-                for (GfVec4d const& fPlane : fClipPlanes) {
-                    dClipPlanes.emplace_back(fPlane);
-                }
-            }
-            return VtValue(dClipPlanes);
-        }
-
+    if (key == HdCameraTokens->projection) {
+        TfToken v;
+        cam.GetProjectionAttr().Get(&v, time);
+        return VtValue(_ToProjection(v));
     } else if (key == HdCameraTokens->horizontalAperture) {
         // The USD schema specifies several camera parameters in tenths of a
         // world unit (e.g., focalLength = 50mm)
         // Hydra's camera expects these parameters to be expressed in world
         // units. (e.g., if cm is the world unit, focalLength = 5cm)
-        return VtValue(gfCam.GetHorizontalAperture() * 
-            (float)GfCamera::APERTURE_UNIT);
-    
-    } else if (key == HdCameraTokens->verticalAperture) {
-        return VtValue(gfCam.GetVerticalAperture() * 
-            (float)GfCamera::APERTURE_UNIT);
-
+        float v;
+        cam.GetHorizontalApertureAttr().Get(&v, time);
+        return VtValue(v * float(GfCamera::APERTURE_UNIT));
+    } else if (key == HdCameraTokens->verticalAperture) { 
+        float v;
+        cam.GetVerticalApertureAttr().Get(&v, time);
+        return VtValue(v * float(GfCamera::APERTURE_UNIT));
     } else if (key == HdCameraTokens->horizontalApertureOffset) {
-        return VtValue(gfCam.GetHorizontalApertureOffset() * 
-            (float)GfCamera::APERTURE_UNIT);
-        
+        float v;
+        cam.GetHorizontalApertureOffsetAttr().Get(&v, time);
+        return VtValue(v * float(GfCamera::APERTURE_UNIT));
     } else if (key == HdCameraTokens->verticalApertureOffset) {
-        return VtValue(gfCam.GetVerticalApertureOffset() * 
-            (float)GfCamera::APERTURE_UNIT);
-
+        float v;
+        cam.GetVerticalApertureOffsetAttr().Get(&v, time);
+        return VtValue(v * float(GfCamera::APERTURE_UNIT));
     } else if (key == HdCameraTokens->focalLength) {
-        return VtValue(gfCam.GetFocalLength() * 
-            (float)GfCamera::FOCAL_LENGTH_UNIT);
-
+        float v;
+        cam.GetFocalLengthAttr().Get(&v, time);
+        return VtValue(v * float(GfCamera::FOCAL_LENGTH_UNIT));
     } else if (key == HdCameraTokens->clippingRange) {
-        return VtValue(gfCam.GetClippingRange()); // in world units
-
+        GfVec2f v;
+        cam.GetClippingRangeAttr().Get(&v, time);
+        return VtValue(GfRange1f(v[0], v[1]));
+    } else if (key == HdCameraTokens->clipPlanes) {
+        VtArray<GfVec4f> v;
+        cam.GetClippingPlanesAttr().Get(&v, time);
+        return VtValue(_ToGfVec4dVector(v));
     } else if (key == HdCameraTokens->fStop) {
-        return VtValue(gfCam.GetFStop()); // lens aperture (conversion n/a)
-
+        VtValue v;
+        cam.GetFStopAttr().Get(&v, time);
+        return v;
     } else if (key == HdCameraTokens->focusDistance) {
-        return VtValue(gfCam.GetFocusDistance()); // in world units
-
+        VtValue v;
+        cam.GetFocusDistanceAttr().Get(&v, time);
+        return v;
     } else if (key == HdCameraTokens->shutterOpen) {
         VtValue vShutterOpen;
         cam.GetShutterOpenAttr().Get(&vShutterOpen, time); // conversion n/a
         return vShutterOpen;
-
     } else if (key == HdCameraTokens->shutterClose) {
         VtValue vShutterClose;
         cam.GetShutterCloseAttr().Get(&vShutterClose, time); // conversion n/a
         return vShutterClose;
-
     } else if (key == HdCameraTokens->exposure) {
         VtValue v;
         cam.GetExposureAttr().Get(&v, time); // conversion n/a
@@ -301,9 +311,10 @@ UsdImagingCameraAdapter::ProcessPropertyChange(UsdPrim const& prim,
                                       TfToken const& propertyName)
 {
     if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(propertyName))
-        return HdCamera::DirtyViewMatrix;
+        return HdCamera::DirtyTransform;
 
-    else if (propertyName == UsdGeomTokens->horizontalAperture ||
+    else if (propertyName == UsdGeomTokens->projection ||
+             propertyName == UsdGeomTokens->horizontalAperture ||
              propertyName == UsdGeomTokens->verticalAperture ||
              propertyName == UsdGeomTokens->horizontalApertureOffset ||
              propertyName == UsdGeomTokens->verticalApertureOffset ||

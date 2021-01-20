@@ -44,20 +44,20 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 static string _Repr(GfRect2i const &self) {
-    return TF_PY_REPR_PREFIX + "Rect2i(" + TfPyRepr(self.GetLower()) + ", " +
-        TfPyRepr(self.GetHigher()) + ")";
+    return TF_PY_REPR_PREFIX + "Rect2i(" + TfPyRepr(self.GetMin()) + ", " +
+        TfPyRepr(self.GetMax()) + ")";
 }
 
 } // anonymous namespace 
 
 void wrapRect2i()
 {    
-    typedef GfRect2i This;
+    using This = GfRect2i;
 
-    object getLower = make_function(&This::GetLower,
+    object getMin = make_function(&This::GetMin,
                                     return_value_policy<return_by_value>());
 
-    object getHigher = make_function(&This::GetHigher,
+    object getMax = make_function(&This::GetMax,
                                      return_value_policy<return_by_value>());
 
     class_<This>( "Rect2i", init<>() )
@@ -71,29 +71,29 @@ void wrapRect2i()
         .def("IsEmpty", &This::IsEmpty)
         .def("IsValid", &This::IsValid)
 
-        .add_property("lower", getLower, &This::SetLower)
-        .add_property("higher", getHigher, &This::SetHigher)
+        .add_property("min", getMin, &This::SetMin)
+        .add_property("max", getMax, &This::SetMax)
 
-        .add_property("bottom", &This::GetBottom, &This::SetBottom) 
-        .add_property("left", &This::GetLeft, &This::SetLeft) 
-        .add_property("right", &This::GetRight, &This::SetRight) 
-        .add_property("top", &This::GetTop, &This::SetTop) 
+        .add_property("minX", &This::GetMinX, &This::SetMinX) 
+        .add_property("maxX", &This::GetMaxX, &This::SetMaxX) 
+        .add_property("minY", &This::GetMinY, &This::SetMinY) 
+        .add_property("maxY", &This::GetMaxY, &This::SetMaxY) 
 
-        .def("GetLower", getLower)
-        .def("GetHigher", getHigher)
+        .def("GetMin", getMin)
+        .def("GetMax", getMax)
 
-        .def("GetBottom", &This::GetBottom)
-        .def("GetLeft", &This::GetLeft)
-        .def("GetRight", &This::GetRight)
-        .def("GetTop", &This::GetTop)
+        .def("GetMinX", &This::GetMinX)
+        .def("GetMaxX", &This::GetMaxX)
+        .def("GetMinY", &This::GetMinY)
+        .def("GetMaxY", &This::GetMaxY)
 
-        .def("SetLower", &This::SetLower)
-        .def("SetHigher", &This::SetHigher)
+        .def("SetMin", &This::SetMin)
+        .def("SetMax", &This::SetMax)
 
-        .def("SetBottom", &This::SetBottom)
-        .def("SetLeft", &This::SetLeft)
-        .def("SetRight", &This::SetRight)
-        .def("SetTop", &This::SetTop)
+        .def("SetMinX", &This::SetMinX)
+        .def("SetMaxX", &This::SetMaxX)
+        .def("SetMinY", &This::SetMinY)
+        .def("SetMaxY", &This::SetMaxY)
 
         .def("GetArea", &This::GetArea)
         .def("GetCenter", &This::GetCenter)

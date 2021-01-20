@@ -78,6 +78,13 @@ Tf_HasAttribute(
         SetLastError(ERROR_SUCCESS);
         return false;
     }
+
+    // On Linux, a trailing slash forces the resolution of symlinks
+    // (https://man7.org/linux/man-pages/man7/path_resolution.7.html).
+    // We need to provide the same behavior on Windows.
+    if (path.back() == '/' || path.back() == '\\')
+        resolveSymlinks = true;
+
     const DWORD attribs = GetFileAttributes(path.c_str());
     if (attribs == INVALID_FILE_ATTRIBUTES) {
         if (attribute == 0 && GetLastError() == ERROR_FILE_NOT_FOUND) {

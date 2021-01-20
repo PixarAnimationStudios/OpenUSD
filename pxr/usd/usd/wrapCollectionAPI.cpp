@@ -198,11 +198,6 @@ WRAP_CUSTOM {
     scope collectionAPI = _class 
         .def(init<UsdPrim, TfToken>())
 
-        .def("ApplyCollection", &This::ApplyCollection, 
-             (arg("prim"), arg("name"), 
-              arg("expansionRule")=UsdTokens->expandPrims))
-            .staticmethod("ApplyCollection")
-
         .def("GetCollection", 
              (UsdCollectionAPI(*)(const UsdPrim &prim, 
                                   const TfToken &name))

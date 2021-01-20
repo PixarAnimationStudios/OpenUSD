@@ -25,10 +25,10 @@
 
 #include "pxr/imaging/glf/textureRegistry.h"
 #include "pxr/imaging/glf/debugCodes.h"
-#include "pxr/imaging/glf/rankedTypeMap.h"
 #include "pxr/imaging/glf/texture.h"
 #include "pxr/imaging/glf/textureHandle.h"
-#include "pxr/imaging/glf/image.h"
+#include "pxr/imaging/hio/image.h"
+#include "pxr/imaging/hio/rankedTypeMap.h"
 
 #include "pxr/usd/ar/resolver.h"
 
@@ -51,7 +51,7 @@ GlfTextureRegistry::GetInstance() {
 }
 
 GlfTextureRegistry::GlfTextureRegistry() :
-    _typeMap(new GlfRankedTypeMap),
+    _typeMap(new HioRankedTypeMap),
     _requiresGarbageCollection(false)
 {
     TfSingleton<GlfTextureRegistry>::SetInstanceConstructed(*this);
@@ -63,14 +63,14 @@ GlfTextureRegistry::GlfTextureRegistry() :
 
 GlfTextureHandleRefPtr
 GlfTextureRegistry::GetTextureHandle(const TfToken &texture,
-                                   GlfImage::ImageOriginLocation originLocation)
+                                   HioImage::ImageOriginLocation originLocation)
 {
     GlfTextureHandleRefPtr textureHandle;
 
     _TextureMetadata md(texture);
 
     // look into exisiting textures
-    std::map<std::pair<TfToken, GlfImage::ImageOriginLocation>,
+    std::map<std::pair<TfToken, HioImage::ImageOriginLocation>,
              _TextureMetadata>::iterator it =
         _textureRegistry.find(std::make_pair(texture, originLocation));
 
@@ -90,7 +90,7 @@ GlfTextureRegistry::GetTextureHandle(const TfToken &texture,
 
 GlfTextureHandleRefPtr
 GlfTextureRegistry::GetTextureHandle(const TfTokenVector &textures,
-                                   GlfImage::ImageOriginLocation originLocation)
+                                   HioImage::ImageOriginLocation originLocation)
 {
     if (textures.empty()) {
         TF_WARN("Attempting to register arrayTexture with empty token vector.");
@@ -106,7 +106,7 @@ GlfTextureRegistry::GetTextureHandle(const TfTokenVector &textures,
     _TextureMetadata md(textures);
 
     // look into exisiting textures
-    std::map<std::pair<TfToken, GlfImage::ImageOriginLocation>,
+    std::map<std::pair<TfToken, HioImage::ImageOriginLocation>,
              _TextureMetadata>::iterator it =
         _textureRegistry.find(std::make_pair(texture, originLocation));
     
@@ -154,7 +154,7 @@ GlfTextureRegistry::GetTextureHandle(GlfTextureRefPtr texture)
 GlfTextureHandleRefPtr
 GlfTextureRegistry::GetTextureHandle(
     const TfToken& texture,
-    GlfImage::ImageOriginLocation originLocation,
+    HioImage::ImageOriginLocation originLocation,
     const GlfTextureFactoryBase* textureFactory)
 {
     if (!TF_VERIFY(textureFactory != nullptr)) {
@@ -163,7 +163,7 @@ GlfTextureRegistry::GetTextureHandle(
 
     _TextureMetadata md(texture);
 
-    std::map<std::pair<TfToken, GlfImage::ImageOriginLocation>,
+    std::map<std::pair<TfToken, HioImage::ImageOriginLocation>,
         _TextureMetadata>::iterator it =
         _textureRegistry.find(std::make_pair(texture, originLocation));
 
@@ -184,10 +184,10 @@ GlfTextureRegistry::GetTextureHandle(
 
 bool
 GlfTextureRegistry::HasTexture(const TfToken &texture,
-                             GlfImage::ImageOriginLocation originLocation) const
+                             HioImage::ImageOriginLocation originLocation) const
 {
     // look into exisiting textures
-    std::map<std::pair<TfToken, GlfImage::ImageOriginLocation>,
+    std::map<std::pair<TfToken, HioImage::ImageOriginLocation>,
              _TextureMetadata>::const_iterator it =
         _textureRegistry.find(std::make_pair(texture, originLocation));
     
@@ -196,7 +196,7 @@ GlfTextureRegistry::HasTexture(const TfToken &texture,
 
 GlfTextureHandleRefPtr
 GlfTextureRegistry::_CreateTexture(const TfToken &texture,
-                                   GlfImage::ImageOriginLocation originLocation)
+                                   HioImage::ImageOriginLocation originLocation)
 {
     GlfTextureRefPtr result;
     if (GlfTextureFactoryBase* factory = _GetTextureFactory(texture)) {
@@ -213,7 +213,7 @@ GlfTextureRegistry::_CreateTexture(const TfToken &texture,
 GlfTextureHandleRefPtr
 GlfTextureRegistry::_CreateTexture(const TfTokenVector &textures,
                                    const size_t numTextures,
-                                   GlfImage::ImageOriginLocation originLocation)
+                                   HioImage::ImageOriginLocation originLocation)
 {
     GlfTextureRefPtr result;
     TfToken filename = textures.empty() ? TfToken() : textures.front();
@@ -230,7 +230,7 @@ GlfTextureRegistry::_CreateTexture(const TfTokenVector &textures,
 
 GlfTextureHandleRefPtr
 GlfTextureRegistry::_CreateTexture(const TfToken &texture,
-                                   GlfImage::ImageOriginLocation originLocation,
+                                   HioImage::ImageOriginLocation originLocation,
                                    const GlfTextureFactoryBase *textureFactory)
 {
     GlfTextureRefPtr result;
@@ -313,7 +313,7 @@ GlfTextureRegistry::GarbageCollectIfNeeded()
     // least-recently-used queue or something?
     TRACE_FUNCTION();
 
-    std::map<std::pair<TfToken, GlfImage::ImageOriginLocation>,
+    std::map<std::pair<TfToken, HioImage::ImageOriginLocation>,
              _TextureMetadata>::iterator it =
         _textureRegistry.begin();
     while (it != _textureRegistry.end()){

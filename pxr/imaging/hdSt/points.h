@@ -46,7 +46,7 @@ public:
     HF_MALLOC_TAG_NEW("new HdStPoints");
 
     HDST_API
-    HdStPoints(SdfPath const& id, SdfPath const& instancerId = SdfPath());
+    HdStPoints(SdfPath const& id);
 
     HDST_API
     virtual ~HdStPoints();
@@ -77,6 +77,8 @@ protected:
 
 private:
     HdReprSharedPtr _smoothHullRepr;
+
+    bool _displayOpacity;
 
     enum DrawingCoord {
         InstancePrimvar = HdDrawingCoord::CustomSlotsBegin

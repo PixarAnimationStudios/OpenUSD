@@ -116,7 +116,12 @@ UsdContrivedDerivedMultipleApplyAPI::IsDerivedMultipleApplyAPIPath(
 }
 
 /* virtual */
-UsdSchemaType UsdContrivedDerivedMultipleApplyAPI::_GetSchemaType() const {
+UsdSchemaKind UsdContrivedDerivedMultipleApplyAPI::_GetSchemaKind() const {
+    return UsdContrivedDerivedMultipleApplyAPI::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdContrivedDerivedMultipleApplyAPI::_GetSchemaType() const {
     return UsdContrivedDerivedMultipleApplyAPI::schemaType;
 }
 

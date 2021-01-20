@@ -117,7 +117,7 @@ half::convert (int i)
 	{
 	    //
 	    // E is less than -10.  The absolute value of f is
-	    // less than HALF_MIN (f may be a small normalized
+	    // less than PXR_HALF_MIN (f may be a small normalized
 	    // float, a denormalized float or a zero).
 	    //
 	    // We convert f to a half zero with the same sign as f.
@@ -128,7 +128,7 @@ half::convert (int i)
 
 	//
 	// E is between -10 and 0.  F is a normalized float
-	// whose magnitude is less than HALF_NRM_MIN.
+	// whose magnitude is less than PXR_HALF_NRM_MIN.
 	//
 	// We convert f to a denormalized half.
 	//

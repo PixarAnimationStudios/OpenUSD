@@ -119,7 +119,12 @@ UsdCollectionAPI::IsCollectionAPIPath(
 }
 
 /* virtual */
-UsdSchemaType UsdCollectionAPI::_GetSchemaType() const {
+UsdSchemaKind UsdCollectionAPI::_GetSchemaKind() const {
+    return UsdCollectionAPI::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdCollectionAPI::_GetSchemaType() const {
     return UsdCollectionAPI::schemaType;
 }
 
@@ -330,20 +335,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 PXR_NAMESPACE_OPEN_SCOPE
 
 using PathExpansionRuleMap = UsdCollectionMembershipQuery::PathExpansionRuleMap;
-
-/* static */
-UsdCollectionAPI 
-UsdCollectionAPI::ApplyCollection(
-    const UsdPrim& prim, 
-    const TfToken &name, 
-    const TfToken &expansionRule /*=UsdTokens->expandPrims*/) 
-{
-    UsdCollectionAPI collection = UsdCollectionAPI::Apply(prim, name);
-    if (collection) {
-        collection.CreateExpansionRuleAttr(VtValue(expansionRule));
-    }
-    return collection;
-}
 
 /* static */
 UsdCollectionAPI 

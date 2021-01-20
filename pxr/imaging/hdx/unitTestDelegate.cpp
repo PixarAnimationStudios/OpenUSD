@@ -28,8 +28,6 @@
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/sprim.h"
-#include "pxr/imaging/hd/texture.h"
-#include "pxr/imaging/hd/textureResource.h"
 
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
@@ -420,11 +418,12 @@ Hdx_UnitTestDelegate::AddInstancer(SdfPath const &id,
 
     HdRenderIndex& index = GetRenderIndex();
     // add instancer
-    index.InsertInstancer(this, id, parentId);
+    index.InsertInstancer(this, id);
     _instancers[id] = _Instancer();
     _instancers[id].rootTransform = rootTransform;
 
     if (!parentId.IsEmpty()) {
+        _instancerBindings[id] = parentId;
         _instancers[parentId].prototypes.push_back(id);
     }
 }
@@ -466,7 +465,7 @@ Hdx_UnitTestDelegate::AddMesh(SdfPath const &id,
                              bool doubleSided)
 {
     HdRenderIndex& index = GetRenderIndex();
-    index.InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->mesh, this, id);
 
     _meshes[id] = _Mesh(scheme, orientation, transform,
                         points, numVerts, verts, PxOsdSubdivTags(),
@@ -476,6 +475,7 @@ Hdx_UnitTestDelegate::AddMesh(SdfPath const &id,
                         HdInterpolationConstant,
                         guide, doubleSided);
     if (!instancerId.IsEmpty()) {
+        _instancerBindings[id] = instancerId;
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -498,13 +498,14 @@ Hdx_UnitTestDelegate::AddMesh(SdfPath const &id,
                              bool doubleSided)
 {
     HdRenderIndex& index = GetRenderIndex();
-    index.InsertRprim(HdPrimTypeTokens->mesh, this, id, instancerId);
+    index.InsertRprim(HdPrimTypeTokens->mesh, this, id);
 
     _meshes[id] = _Mesh(scheme, orientation, transform,
                         points, numVerts, verts, subdivTags,
                         color, colorInterpolation, opacity,
                         opacityInterpolation, guide, doubleSided);
     if (!instancerId.IsEmpty()) {
+        _instancerBindings[id] = instancerId;
         _instancers[instancerId].prototypes.push_back(id);
     }
 }
@@ -880,6 +881,15 @@ Hdx_UnitTestDelegate::GetMaterialResource(SdfPath const &materialId)
 }
 
 /*virtual*/
+SdfPath
+Hdx_UnitTestDelegate::GetInstancerId(SdfPath const& primId)
+{
+    SdfPath instancerId;
+    TfMapLookup(_instancerBindings, primId, &instancerId);
+    return instancerId;
+}
+
+/*virtual*/
 VtValue
 Hdx_UnitTestDelegate::GetCameraParamValue(SdfPath const &cameraId,
                                           TfToken const &paramName)
@@ -911,18 +921,6 @@ Hdx_UnitTestDelegate::GetRenderBufferDescriptor(SdfPath const &id)
     }
 
     return ret.UncheckedGet<HdRenderBufferDescriptor>();
-}
-
-HdTextureResourceSharedPtr
-Hdx_UnitTestDelegate::GetTextureResource(SdfPath const& textureId)
-{
-    return HdTextureResourceSharedPtr();
-}
-
-HdTextureResource::ID
-Hdx_UnitTestDelegate::GetTextureResourceID(SdfPath const& textureId)
-{
-    return SdfPath::Hash()(textureId);
 }
 
 TfTokenVector

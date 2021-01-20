@@ -34,9 +34,8 @@ TF_DEFINE_PUBLIC_TOKENS(HdBasisCurvesReprDescTokens,
 TF_DEFINE_ENV_SETTING(HD_ENABLE_REFINED_CURVES, 0, 
                       "Force curves to always be refined.");
 
-HdBasisCurves::HdBasisCurves(SdfPath const& id,
-                 SdfPath const& instancerId)
-    : HdRprim(id, instancerId)
+HdBasisCurves::HdBasisCurves(SdfPath const& id)
+    : HdRprim(id)
 {
     /*NOTHING*/
 }

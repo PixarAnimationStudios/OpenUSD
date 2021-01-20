@@ -26,7 +26,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdShade/api.h"
+#include "pxr/usd/usdShade/types.h"
+#include "pxr/usd/usd/attribute.h"
 
+#include "pxr/base/tf/smallVector.h"
 #include "pxr/base/tf/token.h"
 
 #include <string>
@@ -34,16 +37,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-/// \enum UsdShadeAttributeType
-/// 
-/// Specifies the type of a shading attribute.
-/// 
-enum class UsdShadeAttributeType {
-    Invalid,
-    Input,
-    Output,
-};
+class UsdShadeInput;
+class UsdShadeOutput;
 
 /// \class UsdShadeUtils
 ///
@@ -52,23 +47,75 @@ enum class UsdShadeAttributeType {
 ///
 class UsdShadeUtils {
 public:
-    /// Returns the namespace prefix of the USD attribute associated with the given
-    /// shading attribute type.
+    /// Returns the namespace prefix of the USD attribute associated with the
+    /// given shading attribute type.
     USDSHADE_API
     static std::string GetPrefixForAttributeType(
         UsdShadeAttributeType sourceType);
 
-    /// Given the full name of a shading attribute, returns it's base name and type.
+    /// Given the full name of a shading attribute, returns it's base name and
+    /// shading attribute type.
     USDSHADE_API
     static std::pair<TfToken, UsdShadeAttributeType> 
         GetBaseNameAndType(const TfToken &fullName);
 
-    /// Returns the full shading attribute name given the basename and the type.
-    /// \p baseName is the name of the input or output on the shading node.
-    /// \p type is the \ref UsdShadeAttributeType of the shading attribute.
+    /// Given the full name of a shading attribute, returns its shading
+    /// attribute type.
+    USDSHADE_API
+    static UsdShadeAttributeType GetType(const TfToken &fullName);
+
+    /// Returns the full shading attribute name given the basename and the
+    /// shading attribute type. \p baseName is the name of the input or output
+    /// on the shading node. \p type is the \ref UsdShadeAttributeType of the
+    /// shading attribute.
     USDSHADE_API
     static TfToken GetFullName(const TfToken &baseName, 
                                const UsdShadeAttributeType type);
+
+    /// \brief Find what is connected to an Input or Output recursively
+    ///
+    /// GetValueProducingAttributes implements the UsdShade connectivity rules
+    /// described in \ref UsdShadeAttributeResolution .
+    ///
+    /// When tracing connections within networks that contain containers like
+    /// UsdShadeNodeGraph nodes, the actual output(s) or value(s) at the end of
+    /// an input or output might be multiple connections removed. The methods
+    /// below resolves this across multiple physical connections.
+    ///
+    /// An UsdShadeInput is getting its value from one of these sources:
+    /// - If the input is not connected the UsdAttribute for this input is
+    /// returned, but only if it has an authored value. The input attribute
+    /// itself carries the value for this input.
+    /// - If the input is connected we follow the connection(s) until we reach
+    /// a valid output of a UsdShadeShader node or if we reach a valid
+    /// UsdShadeInput attribute of a UsdShadeNodeGraph or UsdShadeMaterial that
+    /// has an authored value.
+    ///
+    /// An UsdShadeOutput on a container can get its value from the same
+    /// type of sources as a UsdShadeInput on either a UsdShadeShader or
+    /// UsdShadeNodeGraph. Outputs non-containers (UsdShadeShaders) cannot be
+    /// connected.
+    ///
+    /// This function returns a vector of UsdAttributes. The vector is empty if
+    /// no valid attribute was found. The type of each attribute can be
+    /// determined with the \p UsdShadeUtils::GetType function.
+    ///
+    /// \note This will return the last attribute along the connection chain
+    /// that has an authored value, which might not be the last attribute in the
+    /// chain itself.
+    /// \note When the network contains multi-connections, this function can
+    /// return multiple attributes for a single input or output. The list of
+    /// attributes is build by a depth-first search, following the underlying
+    /// connection paths in order. The list can contain both UsdShadeOutput and
+    /// UsdShadeInput attributes. It is up to the caller to decide how to
+    /// process such a mixture.
+    USDSHADE_API
+    static UsdShadeAttributeVector GetValueProducingAttributes(
+        UsdShadeInput const &input);
+    /// \overload
+    USDSHADE_API
+    static UsdShadeAttributeVector GetValueProducingAttributes(
+        UsdShadeOutput const &output);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -113,7 +113,7 @@ public:
 
 
 UsdImagingGLRenderParams::UsdImagingGLRenderParams() :
-    frame(UsdTimeCode::Default()),
+    frame(UsdTimeCode::EarliestTime()),
     complexity(1.0),
     drawMode(UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH),
     showGuides(false),

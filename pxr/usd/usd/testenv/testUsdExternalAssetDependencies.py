@@ -59,18 +59,6 @@ class TestUsdExternalAssetDependencies(unittest.TestCase):
         layer = Sdf.Layer.FindOrOpen(layerFile)
         self.assertTrue(layer)
 
-        # XXX: This is a workaround for a bug on Windows where when the 
-        # layer is first opened, its realPath (returned by GetRealPath) is not 
-        # normalized and will contain back slashes. Unfortunately, this will 
-        # break the sanity check below where we expect stage.Reload() to not 
-        # cause any changes. This is because layer reload calls 
-        # UpdateAssetInfo() and checks whether the new realPath matches the old
-        # realPath which it doesn't on Windows as UpdateAssetInfo will normalize
-        # the path to use forward slashes. The workaround here is to just call 
-        # UpdateAssetInfo right away so that realPath will already be normalized
-        # before our first reload.
-        layer.UpdateAssetInfo()
-
         # The layer file format generates its contents from the other valid 
         # layer files in the same directory. There should be two of these layer
         # files and their paths will be returned by 

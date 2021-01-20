@@ -1,4 +1,4 @@
-set(PXR_PREFIX pxr/usdRiImaging)
+set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdRiImaging)
 
 pxr_library(usdRiImaging

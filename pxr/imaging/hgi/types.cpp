@@ -25,6 +25,8 @@
 #include "pxr/imaging/hgi/types.h"
 #include "pxr/base/tf/diagnostic.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 size_t
@@ -35,6 +37,7 @@ HgiGetComponentCount(const HgiFormat f)
     case HgiFormatSNorm8:
     case HgiFormatFloat16:
     case HgiFormatFloat32:
+    case HgiFormatUInt16:
     case HgiFormatInt32:
     case HgiFormatFloat32UInt8: // treat as a single component
         return 1;
@@ -42,12 +45,14 @@ HgiGetComponentCount(const HgiFormat f)
     case HgiFormatSNorm8Vec2:
     case HgiFormatFloat16Vec2:
     case HgiFormatFloat32Vec2:
+    case HgiFormatUInt16Vec2:
     case HgiFormatInt32Vec2:
         return 2;
     // case HgiFormatUNorm8Vec3: // Unsupported Metal (MTLPixelFormat)
     // case HgiFormatSNorm8Vec3: // Unsupported Metal (MTLPixelFormat)
     case HgiFormatFloat16Vec3:
     case HgiFormatFloat32Vec3:
+    case HgiFormatUInt16Vec3:
     case HgiFormatInt32Vec3:
     case HgiFormatBC6FloatVec3:
     case HgiFormatBC6UFloatVec3:
@@ -56,10 +61,13 @@ HgiGetComponentCount(const HgiFormat f)
     case HgiFormatSNorm8Vec4:
     case HgiFormatFloat16Vec4:
     case HgiFormatFloat32Vec4:
+    case HgiFormatUInt16Vec4:
     case HgiFormatInt32Vec4:
     case HgiFormatBC7UNorm8Vec4:
     case HgiFormatBC7UNorm8Vec4srgb:
     case HgiFormatUNorm8Vec4srgb:
+    case HgiFormatBC1UNorm8Vec4:
+    case HgiFormatBC3UNorm8Vec4:
         return 4;
     case HgiFormatCount:
     case HgiFormatInvalid:
@@ -98,12 +106,16 @@ HgiGetDataSizeOfFormat(
     case HgiFormatUNorm8Vec4srgb:
         return 4;
     case HgiFormatFloat16:
+    case HgiFormatUInt16:
         return 2;
     case HgiFormatFloat16Vec2:
+    case HgiFormatUInt16Vec2:
         return 4;
     case HgiFormatFloat16Vec3:
+    case HgiFormatUInt16Vec3:
         return 6;
     case HgiFormatFloat16Vec4:
+    case HgiFormatUInt16Vec4:
         return 8;
     case HgiFormatFloat32:
     case HgiFormatInt32:
@@ -122,6 +134,8 @@ HgiGetDataSizeOfFormat(
     case HgiFormatBC6UFloatVec3:
     case HgiFormatBC7UNorm8Vec4:
     case HgiFormatBC7UNorm8Vec4srgb:
+    case HgiFormatBC1UNorm8Vec4:
+    case HgiFormatBC3UNorm8Vec4:
         if (blockWidth) {
             *blockWidth = 4;
         }
@@ -146,10 +160,27 @@ HgiIsCompressed(const HgiFormat f)
     case HgiFormatBC6UFloatVec3:
     case HgiFormatBC7UNorm8Vec4:
     case HgiFormatBC7UNorm8Vec4srgb:
+    case HgiFormatBC1UNorm8Vec4:
+    case HgiFormatBC3UNorm8Vec4:
         return true;
     default:
         return false;
     }
+}
+
+size_t
+HgiGetDataSize(
+    const HgiFormat format,
+    const GfVec3i &dimensions)
+{
+    size_t blockWidth, blockHeight;
+    const size_t bpt =
+        HgiGetDataSizeOfFormat(format, &blockWidth, &blockHeight);
+    return
+        ((dimensions[0] + blockWidth  - 1) / blockWidth ) *
+        ((dimensions[1] + blockHeight - 1) / blockHeight) *
+        std::max(1, dimensions[2]) *
+        bpt;
 }
 
 uint16_t
@@ -172,28 +203,28 @@ std::vector<HgiMipInfo>
 HgiGetMipInfos(
     const HgiFormat format,
     const GfVec3i& dimensions,
+    const size_t layerCount,
     const size_t dataByteSize)
 {
+    const bool is2DArray = layerCount > 1;
+    if (is2DArray && dimensions[2] != 1) {
+        TF_CODING_ERROR("An array of 3D textures is invalid");
+    }
+
     const uint16_t numMips = _ComputeNumMipLevels(dimensions);
 
     std::vector<HgiMipInfo> result;
     result.reserve(numMips);
-    
-    size_t blockWidth, blockHeight;
-    const size_t bpt =
-        HgiGetDataSizeOfFormat(format, &blockWidth, &blockHeight);
+
     size_t byteOffset = 0;
     GfVec3i size = dimensions;
 
     for (uint16_t mipLevel = 0; mipLevel < numMips; mipLevel++) {
-        const size_t byteSize = 
-            ((size[0] + blockWidth  - 1) / blockWidth ) *
-            ((size[1] + blockHeight - 1) / blockHeight) *
-            size[2] * bpt;
+        const size_t byteSize = HgiGetDataSize(format, size);
 
         result.push_back({ byteOffset, size, byteSize });
 
-        byteOffset += byteSize;
+        byteOffset += byteSize * layerCount;
         if (byteOffset >= dataByteSize) {
             break;
         }

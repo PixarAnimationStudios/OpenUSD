@@ -60,6 +60,10 @@ using HgiDeviceCapabilities = HgiBits;
 ///   A two-dimensional texture.</li>
 /// <li>HgiTextureType3D:
 ///   A three-dimensional texture.</li>
+/// <li>HgiTextureType1DArray:
+///   An array of one-dimensional textures.</li>
+/// <li>HgiTextureType2DArray:
+///   An array of two-dimensional textures.</li>
 /// </ul>
 ///
 enum HgiTextureType
@@ -67,6 +71,8 @@ enum HgiTextureType
     HgiTextureType1D = 0,
     HgiTextureType2D,
     HgiTextureType3D,
+    HgiTextureType1DArray,
+    HgiTextureType2DArray,
 
     HgiTextureTypeCount
 };
@@ -84,9 +90,11 @@ enum HgiTextureType
 /// <li>HgiTextureUsageBitsStencilTarget:
 ///   The texture is a stencil attachment rendered into via a render pass.</li>
 /// <li>HgiTextureUsageBitsShaderRead:
-///   The texture is sampled from in a shader (image load / sampling)</li>
+///   The texture is sampled from in a shader (sampling)</li>
 /// <li>HgiTextureUsageBitsShaderWrite:
-///   The texture is written into from in a shader (image store)</li>
+///   The texture is written into from in a shader (image store)
+///   When a texture is used as HgiBindResourceTypeStorageImage you must
+///   add this flag (even if you only read from the image).</li>
 ///
 /// <li>HgiTextureUsageCustomBitsBegin:
 ///   This bit (and any bit after) can be used to attached custom, backend
@@ -289,10 +297,14 @@ using HgiShaderStage = HgiBits;
 /// <li>HgiBindResourceTypeSampler:
 ///   Sampler.
 ///   Glsl example: uniform sampler samplerOnly</li>
-/// <li>HgiBindResourceTypeSamplerImage:
+/// <li>HgiBindResourceTypeSampledImage:
 ///   Image for use with sampling ops.
 ///   Glsl example: uniform texture2D textureOnly
-///   texture(sampler2D(textureOnly, samplerOnly))</li>
+///   texture(sampler2D(textureOnly, samplerOnly), ...)</li>
+/// <li>HgiBindResourceTypeCombinedSamplerImage:
+///   Image and sampler combined into one.
+///   Glsl example: uniform sampler2D texSmp;
+///   texture(texSmp, ...)</li>
 /// <li>HgiBindResourceTypeStorageImage:
 ///   Storage image used for image store/load ops (Unordered Access View).</li>
 /// <li>HgiBindResourceTypeUniformBuffer:
@@ -304,7 +316,8 @@ using HgiShaderStage = HgiBits;
 enum HgiBindResourceType
 {
     HgiBindResourceTypeSampler = 0,
-    HgiBindResourceTypeSamplerImage,
+    HgiBindResourceTypeSampledImage,
+    HgiBindResourceTypeCombinedSamplerImage,
     HgiBindResourceTypeStorageImage,
     HgiBindResourceTypeUniformBuffer,
     HgiBindResourceTypeStorageBuffer,
@@ -503,6 +516,24 @@ enum HgiSubmitWaitType
     HgiSubmitWaitTypeNoWait = 0,
     HgiSubmitWaitTypeWaitUntilCompleted,
 };
+
+/// \enum HgiMemoryBarrier
+///
+/// Describes what objects the memory barrier affects.
+///
+/// <ul>
+/// <li>HgiMemoryBarrierNone:
+///   No barrier (no-op).</li>
+/// <li>HgiMemoryBarrierAll:
+///   The barrier affects all memory writes and reads.</li>
+/// </ul>
+///
+enum HgiMemoryBarrierBits
+{
+    HgiMemoryBarrierNone = 0,
+    HgiMemoryBarrierAll  = 1 << 0
+};
+using HgiMemoryBarrier = HgiBits;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLux/api.h"
-#include "pxr/usd/usdGeom/xformable.h"
+#include "pxr/usd/usdLux/portalLight.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -51,24 +51,33 @@ class SdfAssetPath;
 
 /// \class UsdLuxLightPortal
 ///
+/// 
+/// \deprecated This remains for backward compatability for now but is 
+/// identical to PortalLight which should be used instead.
+/// 
 /// A rectangular portal in the local XY plane that guides sampling
 /// of a dome light.  Transmits light in the -Z direction.
 /// The rectangle is 1 unit in length.
 ///
-class UsdLuxLightPortal : public UsdGeomXformable
+class UsdLuxLightPortal : public UsdLuxPortalLight
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
     ///
-    /// \sa UsdSchemaType
-    static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
+    /// \sa UsdSchemaKind
+    static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
+
+    /// \deprecated
+    /// Same as schemaKind, provided to maintain temporary backward 
+    /// compatibility with older generated schemas.
+    static const UsdSchemaKind schemaType = UsdSchemaKind::ConcreteTyped;
 
     /// Construct a UsdLuxLightPortal on UsdPrim \p prim .
     /// Equivalent to UsdLuxLightPortal::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdLuxLightPortal(const UsdPrim& prim=UsdPrim())
-        : UsdGeomXformable(prim)
+        : UsdLuxPortalLight(prim)
     {
     }
 
@@ -76,7 +85,7 @@ public:
     /// Should be preferred over UsdLuxLightPortal(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdLuxLightPortal(const UsdSchemaBase& schemaObj)
-        : UsdGeomXformable(schemaObj)
+        : UsdLuxPortalLight(schemaObj)
     {
     }
 
@@ -131,11 +140,17 @@ public:
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 protected:
-    /// Returns the type of schema this class belongs to.
+    /// Returns the kind of schema this class belongs to.
     ///
-    /// \sa UsdSchemaType
+    /// \sa UsdSchemaKind
     USDLUX_API
-    UsdSchemaType _GetSchemaType() const override;
+    UsdSchemaKind _GetSchemaKind() const override;
+
+    /// \deprecated
+    /// Same as _GetSchemaKind, provided to maintain temporary backward 
+    /// compatibility with older generated schemas.
+    USDLUX_API
+    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.

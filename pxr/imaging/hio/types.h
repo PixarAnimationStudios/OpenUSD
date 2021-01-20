@@ -27,9 +27,11 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hio/api.h"
 #include <stdlib.h>
+#include <cinttypes>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class GfVec3i;
 
 /// \enum HioFormat
 ///
@@ -117,16 +119,97 @@ enum HioFormat
     // Representing a float between 0 and 1.
     HioFormatBC7UNorm8Vec4srgb,
 
+    // S3TC/DXT compressed. 4-component, 4x4 blocks, unsigned byte
+    // Representing a float between 0 and 1.
+    HioFormatBC1UNorm8Vec4,
+
+    // S3TC/DXT compressed. 4-component, 4x4 blocks, unsigned byte
+    // Representing a float between 0 and 1.
+    HioFormatBC3UNorm8Vec4,
+
     HioFormatCount
 };
+
+/// \enum HioAddressDimension
+///
+/// Available texture sampling dimensions.
+///
+enum HioAddressDimension
+{
+    HioAddressDimensionU,
+    HioAddressDimensionV,
+    HioAddressDimensionW
+};
+
+/// \enum HioAddressMode
+///
+/// Various modes used during sampling of a texture.
+///
+enum HioAddressMode
+{
+    HioAddressModeClampToEdge = 0,
+    HioAddressModeMirrorClampToEdge,
+    HioAddressModeRepeat,
+    HioAddressModeMirrorRepeat,
+    HioAddressModeClampToBorderColor
+};
+
+/// \enum HioColorChannelType
+///
+/// Various color channel representation formats.
+///
+enum HioType
+{
+    HioTypeUnsignedByte,
+    HioTypeUnsignedByteSRGB,
+    HioTypeSignedByte,
+    HioTypeUnsignedShort,
+    HioTypeSignedShort,
+    HioTypeUnsignedInt,
+    HioTypeInt,
+    HioTypeHalfFloat,
+    HioTypeFloat,
+    HioTypeDouble,
+    
+    HioTypeCount
+};
+
+/// Returns the HioFormat of containing nChannels of HioType type.
+HIO_API
+HioFormat HioGetFormat(uint32_t nchannels,
+                       HioType type,
+                       bool isSRGB);
+
+/// Return the HioType corresponding to the given HioFormat
+HIO_API
+HioType HioGetHioType(HioFormat);
+
+/// Return the count of components (channels) in the given HioFormat.
+HIO_API 
+int HioGetComponentCount(HioFormat format);
+
+/// Return the size in bytes for a component (channel) in the given HioFormat. 
+HIO_API
+size_t HioGetDataSizeOfType(HioFormat hioFormat);
+
+/// Return the size in bytes for a component (channel) in the given HioType.
+HIO_API
+size_t HioGetDataSizeOfType(HioType type);
+
+/// Returns the size of bytes per pixel for the given HioFormat
+HIO_API
+size_t HioGetDataSizeOfFormat(HioFormat format,
+                             size_t *blockWidth = nullptr,
+                             size_t *blockHeight = nullptr);
 
 /// Return if the given format is compressed.
 HIO_API
 bool HioIsCompressed(HioFormat format);
 
-/// Calculate the byte size of compressed textures.
+/// Calculate the byte size of texture. If compressed, takes block size
+/// into account.
 HIO_API
-size_t HioGetCompressedTextureSize(int width, int height, HioFormat hioFormat);
+size_t HioGetDataSize(const HioFormat hioFormat, const GfVec3i &dimensions);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

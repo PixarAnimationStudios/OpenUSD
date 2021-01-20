@@ -89,6 +89,257 @@ _DiffTimeToNow(std::chrono::steady_clock::time_point const& then)
     return(diff.count());
 }
 
+// The crop window for RenderMan.
+//
+// Computed from data window and render buffer size.
+//
+// Recall from the RenderMan API:
+// Only the pixels within the crop window are rendered. Has no
+// affect on how pixels in the image map into the filmback plane.
+// The crop window is relative to the render buffer size, e.g.,
+// the crop window of (0,0,1,1) corresponds to the entire render
+// buffer. The coordinates of the crop window are y-down.
+// Format is (xmin, xmax, ymin, ymax).
+//
+// The limits for the integer locations corresponding to the above crop
+// window are:
+//
+//   rxmin = clamp(ceil( renderbufferwidth*xmin    ), 0, renderbufferwidth - 1)
+//   rxmax = clamp(ceil( renderbufferwidth*xmax - 1), 0, renderbufferwidth - 1)
+//   similar for y
+//
+static
+float
+_DivRoundDown(const int a, const int b)
+{
+    // Note that if the division (performed here)
+    //    float(a) / b
+    // rounds up, then the result (by RenderMan) of
+    //    ceil(b * (float(a) / b))
+    // might be a+1 instead of a.
+    //
+    // We add a slight negative bias to a to avoid this (we could also
+    // set the floating point rounding mode but: how to do this in a
+    // portable way - and on x86 switching the rounding is slow).
+
+    return GfClamp((a - 0.0078125f) / b, 0.0f, 1.0f);
+}
+
+static
+GfVec4f
+_GetCropWindow(
+    HdRenderPassStateSharedPtr const& renderPassState,
+    const int32_t width, const int32_t height)
+{
+    const CameraUtilFraming &framing = renderPassState->GetFraming();
+    if (!framing.IsValid()) {
+        return GfVec4f(0,1,0,1);
+    }
+
+    const GfRect2i &w = framing.dataWindow;
+    return GfVec4f(
+        _DivRoundDown(w.GetMinX(), width),
+        _DivRoundDown(w.GetMaxX() + 1, width),
+        _DivRoundDown(w.GetMinY(), height),
+        _DivRoundDown(w.GetMaxY() + 1, height));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Screen window space: imagine a plane at unit distance (*) in front
+// of the camera (and parallel to the camera). Coordinates with
+// respect to screen window space are measured in this plane with the
+// y-Axis pointing up. Such coordinates parameterize rays from the
+// camera.
+// (*) This is a simplification achieved by fixing RenderMan's FOV to be
+// 90 degrees.
+//
+// Image space: coordinates of the pixels in the rendered image with the top
+// left pixel having coordinate (0,0), i.e., y-down.
+// The display window from the camera framing is in image space as well
+// as the width and height of the render buffer.
+//
+// We want to map the screen window space to the image space such that the
+// conformed camera frustum from the scene delegate maps to the display window
+// of the CameraUtilFraming. This is achieved by the following code.
+//
+//
+// Compute screen window for given camera.
+//
+static
+GfRange2d
+_GetScreenWindow(const HdCamera * const cam)
+{
+    const GfVec2d size(
+        cam->GetHorizontalAperture(),       cam->GetVerticalAperture());
+    const GfVec2d offset(
+        cam->GetHorizontalApertureOffset(), cam->GetVerticalApertureOffset());
+        
+    const GfRange2d filmbackPlane(-0.5 * size + offset, +0.5 * size + offset);
+
+    if (cam->GetProjection() == HdCamera::Orthographic) {
+        return filmbackPlane;
+    }
+
+    if (cam->GetFocalLength() == 0.0f) {
+        return filmbackPlane;
+    }
+
+    return filmbackPlane / double(cam->GetFocalLength());
+}
+
+static
+double
+_SafeDiv(const double a, const double b)
+{
+    if (b == 0) {
+        TF_CODING_ERROR(
+            "Invalid display window in render pass state for hdxPrman");
+        return 1.0;
+    }
+    return a / b;
+}
+
+// Compute the aspect ratio of the display window taking the
+// pixel aspect ratio into account.
+static
+double
+_GetDisplayWindowAspect(const CameraUtilFraming &framing)
+{
+    const GfVec2f &size = framing.displayWindow.GetSize();
+    return framing.pixelAspectRatio * _SafeDiv(size[0], size[1]);
+}
+
+static
+const HdRenderBuffer *
+_GetRenderBuffer(const HdRenderPassAovBinding& aov,
+                 const HdRenderIndex * const renderIndex)
+{
+    if (aov.renderBuffer) {
+        return aov.renderBuffer;
+    }
+    
+    return
+        dynamic_cast<HdRenderBuffer*>(
+            renderIndex->GetBprim(
+                HdPrimTypeTokens->renderBuffer,
+                aov.renderBufferId));
+}
+
+static
+bool
+_GetRenderBufferSize(const HdRenderPassAovBindingVector &aovBindings,
+                     const HdRenderIndex * const renderIndex,
+                     int32_t * const width,
+                     int32_t * const height)
+{
+    for (const HdRenderPassAovBinding &aovBinding : aovBindings) {
+        if (const HdRenderBuffer * const renderBuffer =
+                        _GetRenderBuffer(aovBinding, renderIndex)) {
+            *width  = renderBuffer->GetWidth();
+            *height = renderBuffer->GetHeight();
+            return true;
+        } else {
+            TF_CODING_ERROR("No render buffer available for AOV "
+                            "%s", aovBinding.aovName.GetText());
+        }
+    }
+
+    return false;
+}
+
+// Compute the screen window we need to give to RenderMan. This screen
+// window is mapped to the entire render buffer (in image space) by
+// RenderMan.
+//
+// The input is the screenWindowForDisplayWindow: the screen window
+// corresponding to the camera from the scene delegate conformed to match
+// the aspect ratio of the display window.
+//
+// Together with the displayWindow, this input establishes how screen
+// window space is mapped to image space. We know need to take the
+// render buffer rect in image space and convert it to screen window
+// space.
+// 
+static
+GfRange2d
+_ConvertScreenWindowForDisplayWindowToRenderBuffer(
+    const GfRange2d &screenWindowForDisplayWindow,
+    const GfRange2f &displayWindow,
+    const int32_t renderBufferWidth, const int32_t renderBufferHeight)
+{
+    // Scaling factors to go from image space to screen window space.
+    const double screenWindowWidthPerPixel =
+        screenWindowForDisplayWindow.GetSize()[0] /
+        displayWindow.GetSize()[0];
+        
+    const double screenWindowHeightPerPixel =
+        screenWindowForDisplayWindow.GetSize()[1] /
+        displayWindow.GetSize()[1];
+
+    // Assuming an affine mapping between screen window space
+    // and image space, compute what (0,0) corresponds to in
+    // screen window space.
+    const GfVec2d screenWindowMin(
+        screenWindowForDisplayWindow.GetMin()[0]
+        - screenWindowWidthPerPixel * displayWindow.GetMin()[0],
+        // Note that image space is y-Down and screen window
+        // space is y-Up, so this is a bit tricky...
+        screenWindowForDisplayWindow.GetMax()[1]
+        + screenWindowHeightPerPixel * (
+            displayWindow.GetMin()[1] - renderBufferHeight));
+        
+    const GfVec2d screenWindowSize(
+        screenWindowWidthPerPixel * renderBufferWidth,
+        screenWindowHeightPerPixel * renderBufferHeight);
+    
+    return GfRange2d(screenWindowMin, screenWindowMin + screenWindowSize);
+}
+
+// Convert a window into the format expected by RenderMan
+// (xmin, xmax, ymin, ymax).
+static
+GfVec4f
+_ToVec4f(const GfRange2d &window)
+{
+    return { float(window.GetMin()[0]), float(window.GetMax()[0]),
+             float(window.GetMin()[1]), float(window.GetMax()[1]) };
+}
+
+// Compute the screen window we need to give to RenderMan.
+// 
+// See above comments. This also conforms the camera frustum using
+// the window policy specified by the application or the HdCamera.
+//
+static
+GfVec4f
+_ComputeScreenWindow(
+    HdRenderPassStateSharedPtr const& renderPassState,
+    const int32_t renderBufferWidth, const int32_t renderBufferHeight)
+{
+    const CameraUtilFraming &framing = renderPassState->GetFraming();
+
+    // Screen window from camera.
+    const GfRange2d screenWindowForCamera =
+        _GetScreenWindow(renderPassState->GetCamera());
+
+    // Conform to match display window's aspect ratio.
+    const GfRange2d screenWindowForDisplayWindow =
+        CameraUtilConformedWindow(
+            screenWindowForCamera,
+            renderPassState->GetWindowPolicy(),
+            _GetDisplayWindowAspect(framing));
+    
+    // Compute screen window we need to send to RenderMan.
+    const GfRange2d screenWindowForRenderBuffer =
+        _ConvertScreenWindowForDisplayWindowToRenderBuffer(
+            screenWindowForDisplayWindow,
+            framing.displayWindow,
+            renderBufferWidth, renderBufferHeight);
+    
+    return _ToVec4f(screenWindowForRenderBuffer);
+}
+
 void
 HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
                               TfTokenVector const &/*renderTags*/)
@@ -114,14 +365,14 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     riley::Riley *riley = _interactiveContext->riley;
 
     bool needStartRender = false;
-    int currentSceneVersion = _interactiveContext->sceneVersion.load();
+    const int currentSceneVersion = _interactiveContext->sceneVersion.load();
     if (currentSceneVersion != _lastRenderedVersion) {
         needStartRender = true;
         _lastRenderedVersion = currentSceneVersion;
     }
 
     // Creates displays if needed
-    HdRenderPassAovBindingVector aovBindings =
+    HdRenderPassAovBindingVector const &aovBindings =
         renderPassState->GetAovBindings();
     if(_interactiveContext->CreateDisplays(aovBindings))
     {
@@ -132,44 +383,75 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
     _interactiveContext->SetFallbackLightsEnabled(
         _interactiveContext->sceneLightCount == 0);
 
-    // Account for resolution edits
-    GfVec4f vp = renderPassState->GetViewport();
-    if (_interactiveContext->resolution[0] != vp[2] ||
-        _interactiveContext->resolution[1] != vp[3]) {
+    int32_t renderBufferWidth = 0;
+    int32_t renderBufferHeight = 0;
 
-        _interactiveContext->resolution[0] = vp[2];
-        _interactiveContext->resolution[1] = vp[3];
-
-        _interactiveContext->StopRender();
-
-        _interactiveContext->_options.SetIntegerArray(
-            RixStr.k_Ri_FormatResolution, _interactiveContext->resolution, 2);
-        _interactiveContext->riley->SetOptions(_interactiveContext->_options);
-        needStartRender = true;
+    if (!_GetRenderBufferSize(aovBindings,
+                              GetRenderIndex(),
+                              &renderBufferWidth, &renderBufferHeight)) {
+        // For legacy clients not using AOVs, take size of viewport.
+        const GfVec4f vp = renderPassState->GetViewport();
+        renderBufferWidth  = vp[2];
+        renderBufferHeight = vp[3];
     }
+
+    // XXX: Need to cast away constness to process updated camera params since
+    // the Hydra camera doesn't update the Riley camera directly.
+    HdPrmanCamera * const hdCam =
+        const_cast<HdPrmanCamera *>(
+            dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera()));
+    const bool camParamsChanged =
+        hdCam && hdCam->GetAndResetHasParamsChanged();
 
     // Check if any camera update needed
     // TODO: This should be part of a Camera sprim; then we wouldn't
     // need to sync anything here.  Note that we'll need to solve
     // thread coordination for sprim sync/finalize first.
-    GfMatrix4d proj = renderPassState->GetProjectionMatrix();
-    GfMatrix4d viewToWorldMatrix =
-        renderPassState->GetWorldToViewMatrix().GetInverse();
+    const bool resolutionChanged =
+        _interactiveContext->resolution[0] != renderBufferWidth ||
+        _interactiveContext->resolution[1] != renderBufferHeight;
 
-    // XXX: Need to cast away constness to process updated camera params since
-    // the Hydra camera doesn't update the Riley camera directly.
-    HdPrmanCamera *hdCam =
-        const_cast<HdPrmanCamera *>(
-            dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera()));
-    bool camParamsChanged = hdCam? hdCam->GetAndResetHasParamsChanged() : false;
-    if (proj != _lastProj ||
-        viewToWorldMatrix != _lastViewToWorldMatrix ||
-        camParamsChanged) {
+    const GfMatrix4d proj =
+        renderPassState->GetProjectionMatrix();
+    const GfMatrix4d viewToWorldMatrix =
+        renderPassState->GetWorldToViewMatrix().GetInverse();
+    const CameraUtilFraming &framing =
+        renderPassState->GetFraming();
+
+    if ( camParamsChanged ||
+         resolutionChanged ||
+         proj != _lastProj ||
+         viewToWorldMatrix != _lastViewToWorldMatrix ||
+         framing != _lastFraming) {
 
         _lastProj = proj;
         _lastViewToWorldMatrix = viewToWorldMatrix;
+        _lastFraming = framing;
 
         _interactiveContext->StopRender();
+
+        const GfVec4f cropWindow =
+            _GetCropWindow(
+                renderPassState, renderBufferWidth, renderBufferHeight);
+        const bool cropWindowChanged = cropWindow != _lastCropWindow;
+
+        if (resolutionChanged || cropWindowChanged) {
+            if (resolutionChanged) {
+                _interactiveContext->resolution[0] = renderBufferWidth;
+                _interactiveContext->resolution[1] = renderBufferHeight;
+                _interactiveContext->_options.SetIntegerArray(
+                    RixStr.k_Ri_FormatResolution,
+                    _interactiveContext->resolution, 2);
+            }
+            if (cropWindowChanged) {
+                _lastCropWindow = cropWindow;
+                _interactiveContext->_options.SetFloatArray(
+                    RixStr.k_Ri_CropWindow,
+                    cropWindow.data(), 4);
+            }
+            _interactiveContext->riley->SetOptions(
+                _interactiveContext->_options);
+        }
 
         // Coordinate system notes.
         //
@@ -184,7 +466,8 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         // - World is Y-up
         // - Camera looks along +Z.
 
-        bool isPerspective = round(proj[3][3]) != 1 || proj == GfMatrix4d(1);
+        const bool isPerspective =
+            round(proj[3][3]) != 1 || proj == GfMatrix4d(1);
         riley::ShadingNode cameraNode = riley::ShadingNode {
             riley::ShadingNode::k_Projection,
             isPerspective ? us_PxrPerspective : us_PxrOrthographic,
@@ -206,22 +489,47 @@ HdxPrman_RenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
         // We apply the orthographic-width to the viewMatrix scale instead.
         // Inverse computation of GfFrustum::ComputeProjectionMatrix()
         GfMatrix4d viewToWorldCorrectionMatrix(1.0);
-        if (!isPerspective) {
-            double left   = -(1 + proj[3][0]) / proj[0][0];
-            double right  =  (1 - proj[3][0]) / proj[0][0];
-            double bottom = -(1 - proj[3][1]) / proj[1][1];
-            double top    =  (1 + proj[3][1]) / proj[1][1];
-            double w = (right-left) / 2;
-            double h = (top-bottom) / 2;
-            GfMatrix4d scaleMatrix;
-            scaleMatrix.SetScale(GfVec3d(w,h,1));
-            viewToWorldCorrectionMatrix = scaleMatrix;
+
+        if (hdCam && renderPassState->GetFraming().IsValid()) {
+            const GfVec4f screenWindow =
+                _ComputeScreenWindow(
+                    renderPassState,
+                    renderBufferWidth, renderBufferHeight);
+
+            if (hdCam->GetProjection() == HdCamera::Perspective) {
+                // TODO: For lens distortion to be correct, we might
+                // need to set a different FOV and adjust the screenwindow
+                // accordingly.
+                // For now, lens distortion parameters are not passed through
+                // hdPrman anyway.
+                //
+                cameraNode.params.SetFloat(
+                    RixStr.k_fov, 90.0f);
+            }
+            camParams.SetFloatArray(
+                RixStr.k_Ri_ScreenWindow, screenWindow.data(), 4);
         } else {
-            // Extract vertical FOV from hydra projection matrix after
-            // accounting for the crop window.
-            const float fov_rad = atan(1.0f / proj[1][1])*2;
-            const float fov_deg = fov_rad / M_PI * 180.0;
-            cameraNode.params.SetFloat(RixStr.k_fov, fov_deg);
+            if (!isPerspective) {
+                const double left   = -(1 + proj[3][0]) / proj[0][0];
+                const double right  =  (1 - proj[3][0]) / proj[0][0];
+                const double bottom = -(1 - proj[3][1]) / proj[1][1];
+                const double top    =  (1 + proj[3][1]) / proj[1][1];
+                const double w = (right-left) / 2;
+                const double h = (top-bottom) / 2;
+                viewToWorldCorrectionMatrix = GfMatrix4d(GfVec4d(w,h,1,1));
+            } else {
+                // Extract FOV from hydra projection matrix. More precisely,
+                // use the smaller value among the horizontal and vertical FOV.
+                //
+                // This seems to match the resolution API which uses the smaller
+                // value among width and height to match to the FOV.
+                // 
+                const float fov_rad =
+                    atan(1.0f / std::max(proj[0][0], proj[1][1])) * 2;
+                const float fov_deg =
+                    fov_rad / M_PI * 180.0;
+                cameraNode.params.SetFloat(RixStr.k_fov, fov_deg);
+            }
         }
 
         // Riley camera xform is "move the camera", aka viewToWorld.

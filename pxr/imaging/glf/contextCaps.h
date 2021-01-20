@@ -62,7 +62,7 @@ public:
     /// InitInstance queries the GL context for its capabilities.
     /// It should be called by the application before using systems
     /// that depend on the caps, such as Hydra.  A good example would be
-    /// to pair the call to initialize after a call to GlfGlewInit().
+    /// to pair the call to initialize after a call to initialize GL
     GLF_API
     static void InitInstance();
 

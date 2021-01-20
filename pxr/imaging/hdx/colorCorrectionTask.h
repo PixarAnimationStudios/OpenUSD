@@ -122,6 +122,8 @@ private:
     std::string _looksOCIO;
     int _lut3dSizeOCIO;
 
+    float _screenSize[2];
+
     TfToken _aovName;
 };
 

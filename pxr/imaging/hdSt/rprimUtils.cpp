@@ -37,11 +37,13 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/rprimSharedData.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/hf/diagnostic.h"
 
 #include "pxr/imaging/hio/glslfx.h"
@@ -121,20 +123,13 @@ HdStGetPrimvarDescriptors(
 HdPrimvarDescriptorVector
 HdStGetInstancerPrimvarDescriptors(
     HdStInstancer const * instancer,
-    HdRprim const * prim,
-    HdStDrawItem const * drawItem,
     HdSceneDelegate * delegate)
 {
     HdPrimvarDescriptorVector primvars =
         delegate->GetPrimvarDescriptors(instancer->GetId(),
                                         HdInterpolationInstance);
 
-    if (_IsEnabledPrimvarFiltering(drawItem)) {
-        TfTokenVector filterNames = _GetFilterNames(prim, drawItem, instancer);
-
-        return _FilterPrimvarDescriptors(primvars, filterNames);
-    }
-
+    // XXX: Can we do filtering?
     return primvars;
 }
 
@@ -297,50 +292,93 @@ HdStUpdateDrawItemBAR(
 
     HdBufferArrayRangeSharedPtr const& curRange =
         sharedData->barContainer.Get(drawCoordIndex);
+    SdfPath const& id = sharedData->rprimID;
 
     if (curRange == newRange) {
         // Nothing to do. The draw item's BAR hasn't been changed.
+        TF_DEBUG(HD_RPRIM_UPDATED).Msg(
+            "%s: BAR at draw coord %d is still (%p)\n",
+            id.GetText(), drawCoordIndex, curRange.get());
+
         return;
     }
 
-    SdfPath const& id = sharedData->rprimID;
+    bool const curRangeValid = HdStIsValidBAR(curRange);
+    bool const newRangeValid = HdStIsValidBAR(newRange);
 
-    if (HdStIsValidBAR(curRange)) {
+    if (curRangeValid) {
+        renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
+
         TF_DEBUG(HD_RPRIM_UPDATED).Msg(
             "%s: Marking garbage collection needed to possibly reclaim BAR %p"
             " at draw coord index %d\n",
             id.GetText(), (void*)curRange.get(), drawCoordIndex);
 
-        renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
-        
-        // If the new BAR is associated with a buffer array that fails the
-        // aggregation test (used during batching), we need to use the big
-        // hammer, and rebuild all draw batches.
-        if (!newRange->IsAggregatedWith(curRange)) {
-            TF_DEBUG(HD_RPRIM_UPDATED).Msg(
-                "%s: Marking all batches dirty since the new BAR (%p) doesn't"
-                " aggregate with the existing BAR (%p)\n",
-                id.GetText(), (void*)newRange.get(), (void*)curRange.get());
+    }
 
-            renderIndex.GetChangeTracker().MarkBatchesDirty();
+    // Flag deep batch invalidation for the following scenarios:
+    // 1. Invalid <-> Valid transitions.
+    // 2. When the new range is associated with a buffer array that
+    // fails the aggregation test (used during batching).
+    // 3. When the dispatch buffer needs to be updated for MDI batches.
+    //    Note: This is needed only for indirect draw batches to update the
+    //    dispatch buffer, but we prefer to not hardcode a check for
+    //    the same.
+    bool const rebuildDispatchBuffer = curRangeValid && newRangeValid &&
+               curRange->GetElementOffset() != newRange->GetElementOffset();
+
+    if (curRangeValid != newRangeValid ||
+        !newRange->IsAggregatedWith(curRange) ||
+        rebuildDispatchBuffer) {
+
+        renderIndex.GetChangeTracker().MarkBatchesDirty();
+
+        if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
+            if (curRangeValid != newRangeValid) {
+                TfDebug::Helper().Msg(
+                    "%s: Marking all batches dirty due to an invalid <-> valid"
+                    " transition (new BAR %p, existing BAR %p)\n",
+                    id.GetText(), newRange.get(), curRange.get());
+
+            } else if (!newRange->IsAggregatedWith(curRange)) {
+                TfDebug::Helper().Msg(
+                    "%s: Marking all batches dirty since the new BAR (%p) "
+                    "doesn't aggregate with the existing BAR (%p)\n",
+                    id.GetText(), newRange.get(), curRange.get());
+            
+            } else {
+                TfDebug::Helper().Msg(
+                    "%s: Marking all batches dirty since the new BAR (%p) "
+                    "doesn't aggregate with the existing BAR (%p)\n",
+                    id.GetText(), newRange.get(), curRange.get());
+            }
         }
     }
 
     if (TfDebug::IsEnabled(HD_RPRIM_UPDATED)) {
         TfDebug::Helper().Msg(
             "%s: Updating BAR at draw coord index %d from %p to %p\n",
-            id.GetText(), drawCoordIndex, (void*)curRange.get(),
-            (void*)newRange.get());
+            id.GetText(), drawCoordIndex, curRange.get(), newRange.get());
+        
+        if (newRangeValid) {
+            TfDebug::Helper().Msg(
+                "Buffer array version for the new range is %lu\n",
+                newRange->GetVersion());
+        }
 
-        if (HdStIsValidBAR(curRange)) {
-            TfDebug::Helper().Msg("Old buffer specs:\n");
-            HdBufferSpecVector oldSpecs;
+        HdBufferSpecVector oldSpecs;
+        if (curRangeValid) {
             curRange->GetBufferSpecs(&oldSpecs);
+        }
+        HdBufferSpecVector newSpecs;
+        if (newRangeValid) {
+            newRange->GetBufferSpecs(&newSpecs);
+        }
+        if (oldSpecs != newSpecs) {
+            TfDebug::Helper().Msg("Old buffer specs:\n");
             HdBufferSpec::Dump(oldSpecs);
 
             TfDebug::Helper().Msg("New buffer specs:\n");
-            HdBufferSpecVector newSpecs;
-            newRange->GetBufferSpecs(&newSpecs);
             HdBufferSpec::Dump(newSpecs);
         }
     }
@@ -348,6 +386,37 @@ HdStUpdateDrawItemBAR(
     // Note: This should happen at the end since curRange is a reference to
     // the BAR at the drawCoordIndex.
     sharedData->barContainer.Set(drawCoordIndex, newRange);
+}
+
+bool HdStIsPrimvarExistentAndValid(
+    HdRprim *prim,
+    HdSceneDelegate *delegate,
+    HdPrimvarDescriptorVector const& primvars,
+    TfToken const& primvarName)
+{
+    SdfPath const& id = prim->GetId();
+    
+    for (const HdPrimvarDescriptor& pv: primvars) {
+        // Note: the value check here should match
+        // HdStIsInstancePrimvarExistentAndValid.
+        if (pv.name == primvarName) {
+            VtValue value = delegate->Get(id, pv.name);
+
+            if (value.IsHolding<std::string>() ||
+                value.IsHolding<VtStringArray>()) {
+                return false;
+            }
+
+            if (value.IsArrayValued() && value.GetArraySize() == 0) {
+                // Catch empty arrays
+                return false;
+            }
+            
+            return (!value.IsEmpty());
+        }
+    }
+
+    return false;
 }
 
 // -----------------------------------------------------------------------------
@@ -371,7 +440,8 @@ HdStPopulateConstantPrimvars(
     HdSceneDelegate* delegate,
     HdDrawItem *drawItem,
     HdDirtyBits *dirtyBits,
-    HdPrimvarDescriptorVector const& constantPrimvars)
+    HdPrimvarDescriptorVector const& constantPrimvars,
+    bool *hasMirroredTransform)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -398,6 +468,8 @@ HdStPopulateConstantPrimvars(
                                           transform.GetInverse()));
         sources.push_back(source);
 
+        bool leftHanded = transform.IsLeftHanded();
+
         // If this is a prototype (has instancer),
         // also push the instancer transform separately.
         if (!instancerId.IsEmpty()) {
@@ -405,7 +477,6 @@ HdStPopulateConstantPrimvars(
             VtMatrix4dArray rootTransforms = 
                 prim->GetInstancerTransforms(delegate);
             VtMatrix4dArray rootInverseTransforms(rootTransforms.size());
-            bool leftHanded = transform.IsLeftHanded();
             for (size_t i = 0; i < rootTransforms.size(); ++i) {
                 rootInverseTransforms[i] = rootTransforms[i].GetInverse();
                 // Flip the handedness if necessary
@@ -432,6 +503,10 @@ HdStPopulateConstantPrimvars(
             source.reset(new HdVtBufferSource(
                              HdTokens->isFlipped, VtValue(int(leftHanded))));
             sources.push_back(source);
+        }
+
+        if (hasMirroredTransform) {
+            *hasMirroredTransform = leftHanded;
         }
     }
     if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
@@ -548,6 +623,188 @@ HdStPopulateConstantPrimvars(
         hdStResourceRegistry->AddSources(
             drawItem->GetConstantPrimvarRange(), std::move(sources));
     }
+}
+
+// -----------------------------------------------------------------------------
+// Instancer processing utilities
+// -----------------------------------------------------------------------------
+
+void
+HdStUpdateInstancerData(
+    HdRenderIndex &renderIndex,
+    HdRprim *prim,
+    HdStDrawItem *drawItem,
+    HdRprimSharedData *sharedData,
+    HdDirtyBits rprimDirtyBits)
+{
+    // If there's nothing to do, bail.
+    if (!(rprimDirtyBits & HdChangeTracker::DirtyInstancer)) {
+        return;
+    }
+
+    // XXX: This belongs in HdRenderIndex!!!
+    HdInstancer::_SyncInstancerAndParents(renderIndex, prim->GetInstancerId());
+
+    HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
+
+    // If the instance topology changes, we want to force an instance index
+    // rebuild even if the index dirty bit isn't set...
+    bool forceIndexRebuild = false;
+
+    if (rprimDirtyBits & HdChangeTracker::DirtyInstancer) {
+        // If the instancer topology has changed, we might need to change
+        // how many levels we allocate in the drawing coord.
+        int instancerLevels = HdInstancer::GetInstancerNumLevels(
+            renderIndex, *prim); 
+
+        if (instancerLevels != sharedData->instancerLevels) {
+            sharedData->barContainer.Resize(
+                drawingCoord->GetInstancePrimvarIndex(0) + instancerLevels);
+            sharedData->instancerLevels = instancerLevels;
+
+            renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
+            renderIndex.GetChangeTracker().MarkBatchesDirty();
+            forceIndexRebuild = true;
+        }
+    }
+
+    /* INSTANCE PRIMVARS */
+    // Populate all instance primvars by backtracing hierarachy.
+    int level = 0;
+    SdfPath parentId = prim->GetInstancerId();
+    while (!parentId.IsEmpty()) {
+        HdInstancer *instancer = renderIndex.GetInstancer(parentId);
+        if(!TF_VERIFY(instancer)) {
+            return;
+        }
+        int drawCoordIndex = drawingCoord->GetInstancePrimvarIndex(level);
+        HdBufferArrayRangeSharedPtr instancerRange =
+            static_cast<HdStInstancer*>(instancer)->GetInstancePrimvarRange();
+
+        // If we need to update the BAR, that indicates an instancing topology
+        // change and we want to force an index rebuild.
+        if (instancerRange != sharedData->barContainer.Get(drawCoordIndex)) {
+            forceIndexRebuild = true;
+        }
+
+        // update instance primvar slot in the drawing coordinate.
+        HdStUpdateDrawItemBAR(
+            static_cast<HdStInstancer*>(instancer)->GetInstancePrimvarRange(),
+            drawCoordIndex, sharedData, renderIndex);
+
+        parentId = instancer->GetParentId();
+        ++level;
+    }
+
+    /* INSTANCE INDICES */
+    // Note, GetInstanceIndices will check index sizes against primvar sizes.
+    // The instance indices are a cartesian product of each level, so they need
+    // to be recomputed per-rprim.
+    if (HdChangeTracker::IsInstanceIndexDirty(rprimDirtyBits, prim->GetId()) ||
+        forceIndexRebuild) {
+        parentId = prim->GetInstancerId();
+        if (!parentId.IsEmpty()) {
+            HdInstancer *instancer = renderIndex.GetInstancer(parentId);
+            if (!TF_VERIFY(instancer)) {
+                return;
+            }
+
+            // update instance indices
+            VtIntArray instanceIndices =
+                static_cast<HdStInstancer*>(instancer)->
+                GetInstanceIndices(prim->GetId());
+
+            HdStResourceRegistrySharedPtr const& resourceRegistry =
+                std::static_pointer_cast<HdStResourceRegistry>(
+                    renderIndex.GetResourceRegistry());
+
+            // Create the bar if needed.
+            if (!drawItem->GetInstanceIndexRange()) {
+
+                // Note: we add the instance indices twice, so that frustum
+                // culling can compute culledInstanceIndices as instanceIndices
+                // masked by visibility.
+                HdBufferSpecVector bufferSpecs;
+                bufferSpecs.emplace_back(HdInstancerTokens->instanceIndices,
+                    HdTupleType {HdTypeInt32, 1});
+                bufferSpecs.emplace_back(HdInstancerTokens->culledInstanceIndices,
+                    HdTupleType {HdTypeInt32, 1});
+
+                HdBufferArrayRangeSharedPtr range =
+                    resourceRegistry->AllocateNonUniformBufferArrayRange(
+                    HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
+
+                HdStUpdateDrawItemBAR(
+                    range,
+                    drawingCoord->GetInstanceIndexIndex(),
+                    sharedData, renderIndex);
+
+                TF_VERIFY(drawItem->GetInstanceIndexRange()->IsValid());
+            }
+
+            // If the instance index range is too big to upload, it's very
+            // dangerous since the shader could index into bad memory. If we're
+            // not failing on asserts, we need to zero out the index array so no
+            // instances draw.
+            if (!TF_VERIFY(instanceIndices.size() <=
+                    drawItem->GetInstanceIndexRange()->GetMaxNumElements())) {
+                instanceIndices = VtIntArray();
+            }
+
+            HdBufferSourceSharedPtrVector sources;
+            HdBufferSourceSharedPtr source(
+                new HdVtBufferSource(HdInstancerTokens->instanceIndices,
+                    VtValue(instanceIndices)));
+            sources.push_back(source);
+            source.reset(
+                new HdVtBufferSource(HdInstancerTokens->culledInstanceIndices,
+                    VtValue(instanceIndices)));
+            sources.push_back(source);
+
+            resourceRegistry->AddSources(
+                drawItem->GetInstanceIndexRange(), std::move(sources));
+        }
+    }
+}
+
+bool HdStIsInstancePrimvarExistentAndValid(
+    HdRenderIndex &renderIndex,
+    HdRprim *rprim,
+    TfToken const& primvarName)
+{
+    SdfPath parentId = rprim->GetInstancerId();
+    while (!parentId.IsEmpty()) {
+        HdInstancer *instancer = renderIndex.GetInstancer(parentId);
+        if (!TF_VERIFY(instancer)) {
+            return false;
+        }
+
+        HdPrimvarDescriptorVector primvars =
+            instancer->GetDelegate()->GetPrimvarDescriptors(instancer->GetId(),
+                HdInterpolationInstance);
+        
+        for (const HdPrimvarDescriptor& pv : primvars) {
+            // We're looking for a primvar with the given name at any level
+            // (since instance primvars aggregate).  Note: the value check here
+            // must match HdStIsPrimvarExistentAndValid.
+            if (pv.name == primvarName) {
+                VtValue value =
+                    instancer->GetDelegate()->Get(instancer->GetId(), pv.name);
+                if (value.IsHolding<std::string>() ||
+                    value.IsHolding<VtStringArray>()) {
+                    return false;
+                }
+                if (value.IsArrayValued() && value.GetArraySize() == 0) {
+                    return false;
+                }
+                return (!value.IsEmpty());
+            }
+        }
+
+        parentId = instancer->GetParentId();
+    }
+
+    return false;
 }
 
 // -----------------------------------------------------------------------------

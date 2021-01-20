@@ -21,7 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/usdImaging/usdImagingGL/legacyEngine.h"
@@ -38,6 +39,7 @@
 
 #include "pxr/imaging/hd/rendererPlugin.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
+#include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/taskController.h"
 #include "pxr/imaging/hdx/tokens.h"
 
@@ -85,8 +87,8 @@ void _InitGL()
 
     std::call_once(initFlag, []{
 
-        // Initialize Glew library for GL Extensions if needed
-        GlfGlewInit();
+        // Initialize GL library for GL Extensions if needed
+        GarchGLApiLoad();
 
         // Initialize if needed and switch to shared GL context.
         GlfSharedGLContextScopeHolder sharedContext;
@@ -364,6 +366,46 @@ UsdImagingGLEngine::SetRenderViewport(GfVec4d const& viewport)
 
     TF_VERIFY(_taskController);
     _taskController->SetRenderViewport(viewport);
+}
+
+void
+UsdImagingGLEngine::SetFraming(CameraUtilFraming const& framing)
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        // legacy implementation does not support camera framing.
+        return;
+    }
+
+    if (TF_VERIFY(_taskController)) {
+        _taskController->SetFraming(framing);
+    }
+}
+
+void
+UsdImagingGLEngine::SetOverrideWindowPolicy(
+    const std::pair<bool, CameraUtilConformWindowPolicy> &policy)
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        // legacy implementation does not support camera framing.
+        return;
+    }
+
+    if (TF_VERIFY(_taskController)) {
+        _taskController->SetOverrideWindowPolicy(policy);
+    }
+}
+
+void
+UsdImagingGLEngine::SetRenderBufferSize(GfVec2i const& size)
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        // legacy implementation does not support camera framing.
+        return;
+    }
+
+    if (TF_VERIFY(_taskController)) {
+        _taskController->SetRenderBufferSize(size);
+    }
 }
 
 void
@@ -1163,7 +1205,7 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
 
     TF_VERIFY(_sceneDelegate);
 
-    // User is responsible for initializing GL context and glew
+    // User is responsible for initializing GL context
     const bool isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
 
     GLF_GROUP_FUNCTION();
@@ -1182,25 +1224,15 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
     }
 
     // hydra orients all geometry during topological processing so that
-    // front faces have ccw winding. We disable culling because culling
-    // is handled by fragment shader discard.
+    // front faces have ccw winding.
     if (params.flipFrontFacing) {
         glFrontFace(GL_CW); // < State is pushed via GL_POLYGON_BIT
     } else {
         glFrontFace(GL_CCW); // < State is pushed via GL_POLYGON_BIT
     }
-    glDisable(GL_CULL_FACE);
 
     if (params.applyRenderState) {
         glDisable(GL_BLEND);
-    }
-
-    // note: to get benefit of alpha-to-coverage, the target framebuffer
-    // has to be a MSAA buffer.
-    if (params.enableIdRender) {
-        glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-    } else if (params.enableSampleAlphaToCoverage) {
-        glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     }
 
     // for points width

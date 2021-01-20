@@ -35,6 +35,13 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+// Wrap this with a function so that add_property does not
+// try to return an lvalue (and fail)
+static TfEnum _GetErrorType(PcpErrorBasePtr const& err)
+{
+    return err->errorType;
+}
+
 void 
 wrapErrors()
 {    
@@ -49,7 +56,7 @@ wrapErrors()
 
     class_<PcpErrorBase, boost::noncopyable, PcpErrorBasePtr>
         ("ErrorBase", "", no_init)
-        .add_property("errorType", &PcpErrorBase::errorType)
+        .add_property("errorType", _GetErrorType)
         .def("__str__", &PcpErrorBase::ToString)
         ;
 
@@ -65,6 +72,11 @@ wrapErrors()
     class_<PcpErrorArcPermissionDenied, bases<PcpErrorBase>,
         PcpErrorArcPermissionDeniedPtr>
         ("ErrorArcPermissionDenied", "", no_init)
+        ;
+
+    class_<PcpErrorCapacityExceeded, bases<PcpErrorBase>,
+        PcpErrorCapacityExceededPtr >
+        ("ErrorCapacityExceeded", "", no_init)
         ;
 
     class_<PcpErrorInconsistentPropertyType, bases<PcpErrorBase>,
@@ -191,6 +203,7 @@ TF_REFPTR_CONST_VOLATILE_GET(PcpErrorBase)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorTargetPathBase)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorArcCycle)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorArcPermissionDenied)
+TF_REFPTR_CONST_VOLATILE_GET(PcpErrorCapacityExceeded)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInconsistentPropertyType)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInconsistentAttributeType)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInconsistentAttributeVariability)

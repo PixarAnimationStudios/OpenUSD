@@ -82,8 +82,13 @@ class UsdShadeNodeGraph : public UsdTyped
 public:
     /// Compile time constant representing what kind of schema this class is.
     ///
-    /// \sa UsdSchemaType
-    static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
+    /// \sa UsdSchemaKind
+    static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
+
+    /// \deprecated
+    /// Same as schemaKind, provided to maintain temporary backward 
+    /// compatibility with older generated schemas.
+    static const UsdSchemaKind schemaType = UsdSchemaKind::ConcreteTyped;
 
     /// Construct a UsdShadeNodeGraph on UsdPrim \p prim .
     /// Equivalent to UsdShadeNodeGraph::Get(prim.GetStage(), prim.GetPath())
@@ -153,11 +158,17 @@ public:
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 protected:
-    /// Returns the type of schema this class belongs to.
+    /// Returns the kind of schema this class belongs to.
     ///
-    /// \sa UsdSchemaType
+    /// \sa UsdSchemaKind
     USDSHADE_API
-    UsdSchemaType _GetSchemaType() const override;
+    UsdSchemaKind _GetSchemaKind() const override;
+
+    /// \deprecated
+    /// Same as _GetSchemaKind, provided to maintain temporary backward 
+    /// compatibility with older generated schemas.
+    USDSHADE_API
+    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -226,6 +237,7 @@ public:
     USDSHADE_API
     std::vector<UsdShadeOutput> GetOutputs() const;
 
+    /// \deprecated in favor of GetValueProducingAttributes on UsdShadeOutput
     /// Resolves the connection source of the requested output, identified by
     /// \p outputName to a shader output.
     /// 
@@ -382,6 +394,9 @@ public:
         CanConnectOutputToSource(const UsdShadeOutput &output,
                                  const UsdAttribute &source,
                                  std::string *reason) override;
+
+        USDSHADE_API
+        bool IsContainer() const override;
     };
 
 };

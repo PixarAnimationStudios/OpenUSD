@@ -32,6 +32,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/hashmap.h"
 
+#include <tbb/concurrent_hash_map.h>
 #include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -297,46 +298,6 @@ public:
 
     // ---------------------------------------------------------------------- //
     /// @}
-    /// \name Instancer Object Tracking
-    /// @{
-    // ---------------------------------------------------------------------- //
-
-    /// Start tracking Instancer with the given \p id.
-    HD_API
-    void InstancerInserted(SdfPath const& id);
-
-    /// Stop tracking Instancer with the given \p id.
-    HD_API
-    void InstancerRemoved(SdfPath const& id);
-
-    /// Insert a dependency between \p rprimId and parent instancer
-    /// \p instancerId.  Changes to the latter mark the former with
-    /// DirtyInstancer.
-    HD_API
-    void AddInstancerRprimDependency(SdfPath const& instancerId,
-                                     SdfPath const& rprimId);
-
-    /// Remove a dependency between \p rprimId and parent instancer
-    /// \p instancerId.
-    HD_API
-    void RemoveInstancerRprimDependency(SdfPath const& instancerId,
-                                        SdfPath const& rprimId);
-
-    /// Insert a dependency between \p instancerId and parent instancer
-    /// \p parentInstancerId.  Changes to the latter mark the former with
-    /// DirtyInstancer.
-    HD_API
-    void AddInstancerInstancerDependency(SdfPath const& parentInstancerId,
-                                         SdfPath const& instancerId);
-
-    /// Remove a dependency between \p instancerId and parent instancer
-    /// \p parentInstancerId.
-    HD_API
-    void RemoveInstancerInstancerDependency(SdfPath const& parentInstancerId,
-                                            SdfPath const& instancerId);
-
-    // ---------------------------------------------------------------------- //
-    /// @}
     /// \name Task Object Tracking
     /// @{
     // ---------------------------------------------------------------------- //
@@ -380,6 +341,14 @@ public:
     /// @{
     // ---------------------------------------------------------------------- //
 
+    /// Start tracking Instancer with the given \p id.
+    HD_API
+    void InstancerInserted(SdfPath const& id, HdDirtyBits initialDirtyState);
+
+    /// Stop tracking Instancer with the given \p id.
+    HD_API
+    void InstancerRemoved(SdfPath const& id);
+
     /// Returns the dirty bits for the instancer with \p id.
     HD_API
     HdDirtyBits GetInstancerDirtyBits(SdfPath const& id);
@@ -392,6 +361,32 @@ public:
     /// Clean the specified dirty bits for the instancer with \p id.
     HD_API
     void MarkInstancerClean(SdfPath const& id, HdDirtyBits newBits=Clean);
+
+    /// Insert a dependency between \p rprimId and parent instancer
+    /// \p instancerId.  Changes to the latter mark the former with
+    /// DirtyInstancer.
+    HD_API
+    void AddInstancerRprimDependency(SdfPath const& instancerId,
+                                     SdfPath const& rprimId);
+
+    /// Remove a dependency between \p rprimId and parent instancer
+    /// \p instancerId.
+    HD_API
+    void RemoveInstancerRprimDependency(SdfPath const& instancerId,
+                                        SdfPath const& rprimId);
+
+    /// Insert a dependency between \p instancerId and parent instancer
+    /// \p parentInstancerId.  Changes to the latter mark the former with
+    /// DirtyInstancer.
+    HD_API
+    void AddInstancerInstancerDependency(SdfPath const& parentInstancerId,
+                                         SdfPath const& instancerId);
+
+    /// Remove a dependency between \p instancerId and parent instancer
+    /// \p parentInstancerId.
+    HD_API
+    void RemoveInstancerInstancerDependency(SdfPath const& parentInstancerId,
+                                            SdfPath const& instancerId);
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -610,8 +605,17 @@ private:
 
     typedef TfHashMap<SdfPath, HdDirtyBits, SdfPath::Hash> _IDStateMap;
     typedef TfHashMap<TfToken, int, TfToken::HashFunctor> _CollectionStateMap;
-    typedef TfHashMap<SdfPath, SdfPathSet, SdfPath::Hash> _DependencyMap;
     typedef TfHashMap<TfToken, unsigned, TfToken::HashFunctor> _GeneralStateMap;
+
+    struct _PathHashCompare {
+        static bool     equal(const SdfPath& a, const SdfPath& b)
+                        { return a == b; }
+
+        static size_t   hash(const SdfPath& path)
+                        { return hash_value(path); }
+    };
+    typedef tbb::concurrent_hash_map<SdfPath, SdfPathSet, _PathHashCompare>
+        _DependencyMap;
 
     // Core dirty state.
     _IDStateMap _rprimState;

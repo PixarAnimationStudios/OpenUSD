@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 void
 MatfiltConvertPreviewMaterial(
     const SdfPath & networkId,
-    MatfiltNetwork & network,
+    HdMaterialNetwork2 & network,
     const std::map<TfToken, VtValue> & contextValues,
     const NdrTokenVec & shaderTypePriority,
     std::vector<std::string> * outputErrorMessages);

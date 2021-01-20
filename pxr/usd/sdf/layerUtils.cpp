@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 ///
-/// \file Sdf/LayerUtils.cpp
+/// \file sdf/layerUtils.cpp
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/layerUtils.h"
@@ -96,6 +96,10 @@ SdfComputeAssetPathRelativeToLayer(
     TRACE_FUNCTION();
 
     ArResolver& resolver = ArGetResolver();
+
+    // XXX:
+    // This logic possibly wants to move into Ar so that other code
+    // that doesn't use Sdf can take advantage of it.
 
     // Relative asset paths have special behavior when anchoring to a
     // package or packaged layer: 
@@ -186,6 +190,7 @@ SdfComputeAssetPathRelativeToLayer(
         // the package, fall through to normal path resolution.
     }
 
+#if AR_VERSION == 1
     // Relative paths are resolved using the look-here-first scheme, in
     // which we first look relative to the layer, then fall back to search
     // path resolution.
@@ -197,33 +202,17 @@ SdfComputeAssetPathRelativeToLayer(
     }
     
     return finalLayerPath;
-}
-
-SdfLayerRefPtr
-SdfFindOrOpenRelativeToLayer(
-    const SdfLayerHandle& anchor,
-    string* layerPath,
-    const SdfLayer::FileFormatArguments& args)
-{
-    if (!anchor) {
-        TF_CODING_ERROR("Invalid anchor layer");
-        return TfNullPtr;
+#else
+    if (SdfLayer::IsAnonymousLayerIdentifier(assetPath)) {
+        return assetPath;
     }
 
-    if (!layerPath) {
-        TF_CODING_ERROR("Invalid layer path pointer");
-        return TfNullPtr;
+    if (anchor->IsAnonymous()) {
+        return resolver.CreateIdentifier(assetPath);
     }
 
-    if (layerPath->empty()) {
-        TF_CODING_ERROR("Layer path is empty");
-        return TfNullPtr;
-    }
-
-    TRACE_FUNCTION();
-
-    *layerPath = SdfComputeAssetPathRelativeToLayer(anchor, *layerPath);
-    return SdfLayer::FindOrOpen(*layerPath, args);
+    return resolver.CreateIdentifier(assetPath, anchor->GetResolvedPath());
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

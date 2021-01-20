@@ -75,7 +75,12 @@ UsdVolVolume::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdVolVolume::_GetSchemaType() const {
+UsdSchemaKind UsdVolVolume::_GetSchemaKind() const {
+    return UsdVolVolume::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdVolVolume::_GetSchemaType() const {
     return UsdVolVolume::schemaType;
 }
 

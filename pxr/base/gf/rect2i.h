@@ -41,45 +41,40 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \class GfRect2i
 /// \ingroup group_gf_LinearAlgebra
 ///
-/// A 2D rectangle with integer coordinates for windowing operations.
+/// A 2D rectangle with integer coordinates.
 ///
-/// A rectangle is internally represented as an upper left corner and a
-/// bottom right corner, but it is normally expressed as an upper left
-/// corner and a size.
-/// 
-/// Note that the size (width and height) of a rectangle might be
-/// different from what you are used to. If the top left corner and the
-/// bottom right corner are the same, then the height and the width of
-/// the rectangle will both be one.
+/// A rectangle is internally represented as two corners. We refer to these
+/// as the min and max corner where the min's x-coordinate and y-coordinate
+/// are assumed to be less than or equal to the max's corresponding coordinates.
+/// Normally, it is expressed as a min corner and a size.
 ///
-/// Specifically, <em> width = right - left + 1</em> and
-/// <em>height = bottom - top + 1.</em> The design corresponds to
-/// rectangular spaces used by drawing functions, where
-/// the width and height denote a number of pixels. For example,
-/// drawing a rectangle with width and height one draws a single pixel.
+/// Note that the max corner is included when computing the size (width and
+/// height) of a rectangle as the number of integral points in the x- and
+/// y-direction. In particular, if the min corner and max corner are the same,
+/// then the width and the height of the rectangle will both be one since we
+/// have exactly one integral point with coordinates greater or equal to the
+/// min corner and less or equal to the max corner.
 ///
-/// The default coordinate system has origin (0,0) in the top left
-/// corner, the positive direction of the y axis is downward and the
-/// positive x axis is to the right.
+/// Specifically, <em> width = maxX - minX + 1</em> and
+/// <em>height = maxY - minY + 1.</em> 
 ///
 class GfRect2i {
 public:
     /// Constructs an empty rectangle.
-    GfRect2i(): _lower(0,0), _higher(-1,-1)
+    GfRect2i(): _min(0,0), _max(-1,-1)
     {
     }
 
-    /// Constructs a rectangle with \p topLeft as the top left corner and \p
-    /// bottomRight as the bottom right corner.
-    GfRect2i(const GfVec2i& topLeft, const GfVec2i& bottomRight)
-        : _lower(topLeft), _higher(bottomRight)
+    /// Constructs a rectangle with \p min and \p max corners.
+    GfRect2i(const GfVec2i& min, const GfVec2i& max)
+        : _min(min), _max(max)
     {
     }
 
-    /// Constructs a rectangle with \p topLeft as the top left corner and with
-    /// the indicated width and height.
-    GfRect2i(const GfVec2i& topLeft, int width, int height)
-        : _lower(topLeft), _higher(topLeft + GfVec2i(width-1, height-1))
+    /// Constructs a rectangle with \p min corner and the indicated \p width
+    /// and \p height.
+    GfRect2i(const GfVec2i& min, int width, int height)
+        : _min(min), _max(min + GfVec2i(width-1, height-1))
     {
     }
 
@@ -87,13 +82,13 @@ public:
     ///
     /// A null rectangle has both the width and the height set to 0, that is
     /// \code
-    ///     GetRight() == GetLeft() - 1
+    ///     GetMaxX() == GetMinX() - 1
     /// \endcode
     /// and
     /// \code
-    ///     GetBottom() == GetTop() - 1
+    ///     GetMaxY() == GetMinY() - 1
     /// \endcode
-    /// Remember that if \c GetRight() and \c GetLeft() return the same value
+    /// Remember that if \c GetMinX() and \c GetMaxX() return the same value
     /// then the rectangle has width 1, and similarly for the height.
     ///
     /// A null rectangle is both empty, and not valid.
@@ -103,8 +98,8 @@ public:
 
     /// Returns true if the rectangle is empty.
     ///
-    /// An empty rectangle has its left side strictly greater than its right
-    /// side or its top strictly greater than its bottom.
+    /// An empty rectangle has one or both of its min coordinates strictly
+    /// greater than the corresponding max coordinate.
     ///
     /// An empty rectangle is not valid.
     bool IsEmpty() const {
@@ -119,80 +114,86 @@ public:
     /// Returns a normalized rectangle, i.e. one that has a non-negative width
     /// and height.
     ///
-    /// \c GetNormalized() swaps left and right to ensure a non-negative
-    /// width, and similarly for top and bottom.
+    /// \c GetNormalized() swaps the min and max x-coordinates to
+    /// ensure a non-negative width, and similarly for the
+    /// y-coordinates.
     GF_API
     GfRect2i GetNormalized() const;
 
-    /// Returns the lower corner of the rectangle.
-    const GfVec2i& GetLower() const {
-        return _lower;
+    /// Returns the min corner of the rectangle.
+    const GfVec2i& GetMin() const {
+        return _min;
     }
 
-    /// Returns the upper corner of the rectangle.
-    const GfVec2i& GetHigher() const {
-        return _higher;
+    /// Returns the max corner of the rectangle.
+    const GfVec2i& GetMax() const {
+        return _max;
     }
 
-    /// Return the X value of the left edge.
-    int GetLeft() const {
-        return _lower[0];
+    /// Return the X value of min corner.
+    ///
+    int GetMinX() const {
+        return _min[0];
     }
 
-    /// Set the X value of the left edge.
-    void SetLeft(int x) {
-        _lower[0] = x;
+    /// Set the X value of the min corner.
+    ///
+    void SetMinX(int x) {
+        _min[0] = x;
     }
 
-    /// Return the X value of the right edge.
-    int GetRight() const {
-        return _higher[0];
+    /// Return the X value of the max corner.
+    ///
+    int GetMaxX() const {
+        return _max[0];
     }
 
-    /// Set the X value of the right edge.
-    void SetRight(int x) {
-        _higher[0] = x;
+    /// Set the X value of the max corner
+    void SetMaxX(int x) {
+        _max[0] = x;
     }
 
-    /// Return the Y value of the top edge.
-    int GetTop() const {
-        return _lower[1];
+    /// Return the Y value of the min corner
+    ///
+    int GetMinY() const {
+        return _min[1];
     }
 
-    /// Set the Y value of the top edge.
-    void SetTop(int y) {
-        _lower[1] = y;
+    /// Set the Y value of the min corner.
+    ///
+    void SetMinY(int y) {
+        _min[1] = y;
     }
 
-    /// Return the Y value of the bottom edge.
-    int GetBottom() const {
-        return _higher[1];
+    /// Return the Y value of the max corner
+    int GetMaxY() const {
+        return _max[1];
     }
 
-    /// Set the Y value of the bottom edge.
-    void SetBottom(int y) {
-        _higher[1] = y;
+    /// Set the Y value of the max corner
+    void SetMaxY(int y) {
+        _max[1] = y;
     }
 
-    /// Sets the lower corner of the rectangle.
-    void SetLower(const GfVec2i& lower) {
-        _lower = lower;
+    /// Sets the min corner of the rectangle.
+    void SetMin(const GfVec2i& min) {
+        _min = min;
     }
 
-    /// Sets the upper corner of the rectangle.
-    void SetHigher(const GfVec2i& higher) {
-        _higher = higher;
+    /// Sets the max corner of the rectangle.
+    void SetMax(const GfVec2i& max) {
+        _max = max;
     }
 
     /// Returns the center point of the rectangle.
     GfVec2i GetCenter() const {
-        return (_lower + _higher) / 2;
+        return (_min + _max) / 2;
     }
 
     /// Move the rectangle by \p displ.
     void Translate(const GfVec2i& displacement) {
-        _lower += displacement;
-        _higher += displacement;
+        _min += displacement;
+        _max += displacement;
     }
 
     /// Return the area of the rectangle.
@@ -207,16 +208,18 @@ public:
 
     /// Returns the width of the rectangle.
     ///
-    /// \note If the left and right sides are coincident, the width is one.
+    /// \note If the min and max x-coordinates are coincident, the width is
+    /// one.
     int GetWidth() const {
-        return (_higher[0] - _lower[0]) + 1;
+        return (_max[0] - _min[0]) + 1;
     }
 
     /// Returns the height of the rectangle.
     ///
-    /// \note If the top and bottom sides are coincident, the height is one.
+    /// \note If the min and max y-coordinates are coincident, the height is
+    /// one.
     int GetHeight() const {
-        return (_higher[1] - _lower[1]) + 1;
+        return (_max[1] - _min[1]) + 1;
     }
 
     /// Computes the intersection of two rectangles.
@@ -226,10 +229,10 @@ public:
         else if(that.IsEmpty())
             return that;
         else
-            return GfRect2i(GfVec2i(GfMax(_lower[0], that._lower[0]),
-                                    GfMax(_lower[1], that._lower[1])),
-                            GfVec2i(GfMin(_higher[0], that._higher[0]),
-                                    GfMin(_higher[1], that._higher[1])));
+            return GfRect2i(GfVec2i(GfMax(_min[0], that._min[0]),
+                                    GfMax(_min[1], that._min[1])),
+                            GfVec2i(GfMin(_max[0], that._max[0]),
+                                    GfMin(_max[1], that._max[1])));
     }
 
     /// Computes the intersection of two rectangles.
@@ -245,10 +248,10 @@ public:
         else if(that.IsEmpty())
             return *this;
         else
-            return GfRect2i(GfVec2i(GfMin(_lower[0], that._lower[0]),
-                                    GfMin(_lower[1], that._lower[1])),
-                            GfVec2i(GfMax(_higher[0], that._higher[0]),
-                                    GfMax(_higher[1], that._higher[1])));
+            return GfRect2i(GfVec2i(GfMin(_min[0], that._min[0]),
+                                    GfMin(_min[1], that._min[1])),
+                            GfVec2i(GfMax(_max[0], that._max[0]),
+                                    GfMax(_max[1], that._max[1])));
     }
 
     /// Computes the union of two rectangles
@@ -259,20 +262,20 @@ public:
 
     /// Returns true if the specified point in the rectangle.
     bool Contains(const GfVec2i& p) const {
-        return ((p[0] >= _lower[0]) && (p[0] <= _higher[0]) &&
-                (p[1] >= _lower[1]) && (p[1] <= _higher[1]));
+        return ((p[0] >= _min[0]) && (p[0] <= _max[0]) &&
+                (p[1] >= _min[1]) && (p[1] <= _max[1]));
     }
 
     friend inline size_t hash_value(const GfRect2i &r) {
         size_t h = 0;
-        boost::hash_combine(h, r._lower);
-        boost::hash_combine(h, r._higher);
+        boost::hash_combine(h, r._min);
+        boost::hash_combine(h, r._max);
         return h;
     }        
 
     /// Returns true if \p r1 and \p r2 are equal.
     friend bool operator==(const GfRect2i& r1, const GfRect2i& r2) {
-	return r1._lower == r2._lower && r1._higher == r2._higher;
+	return r1._min == r2._min && r1._max == r2._max;
     }
 
     /// Returns true if \p r1 and \p r2 are different.
@@ -294,7 +297,7 @@ public:
     }
 
 private:
-    GfVec2i _lower, _higher;
+    GfVec2i _min, _max;
 };
 
 /// Output a GfRect2i using the format [(x y):(x y)].
