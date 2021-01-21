@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2021 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HIO_DEBUG_CODES_H
-#define PXR_IMAGING_HIO_DEBUG_CODES_H
+#ifndef PXR_IMAGING_HIO_OPENVDB_DEBUG_CODES_H
+#define PXR_IMAGING_HIO_OPENVDB_DEBUG_CODES_H
 
-/// \file hio/debugCodes.h
+/// \file hioOpenVDB/debugCodes.h
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/debug.h"
@@ -34,9 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEBUG_CODES(
 
-    HIO_DEBUG_GLSLFX,
-    HIO_DEBUG_TEXTURE_IMAGE_PLUGINS,
-    HIO_DEBUG_FIELD_TEXTURE_DATA_PLUGINS
+    HIOOPENVDB_DEBUG_TEXTURE
 
 );
 

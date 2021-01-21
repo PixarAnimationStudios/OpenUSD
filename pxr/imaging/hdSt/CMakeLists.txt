@@ -139,6 +139,7 @@ pxr_library(hdSt
         cullingShaderKey
         drawBatch
         extCompComputeShader
+        fieldTextureCpuData
         imageShaderShaderKey
         immediateDrawBatch
         indirectDrawBatch

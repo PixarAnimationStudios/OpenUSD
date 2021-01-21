@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Pixar
+// Copyright 2021 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,40 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_GLF_FIELD_TEXTURE_DATA_H
-#define PXR_IMAGING_GLF_FIELD_TEXTURE_DATA_H
+/// \file debugCodes.cpp
 
-/// \file glf/fieldTextureData.h
+#include "pxr/imaging/plugin/hioOpenVDB/debugCodes.h"
 
-#include "pxr/pxr.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/vec3i.h"
-#include "pxr/imaging/glf/api.h"
-#include "pxr/imaging/hio/image.h"
-#include "pxr/imaging/glf/baseTextureData.h"
-
-#include "pxr/base/gf/bbox3d.h"
+#include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/registryManager.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_WEAK_AND_REF_PTRS(GlfFieldTextureData);
 
-/// \class GlfFieldTextureData
-///
-/// An interface class for reading volume files having a
-/// transformation.
-///
-class GlfFieldTextureData : public GlfBaseTextureData
+TF_REGISTRY_FUNCTION(TfDebug)
 {
-public:
-    using Base = GlfBaseTextureData;
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HIOOPENVDB_DEBUG_TEXTURE,
+        "HioVDB texture loading");
 
-    /// Bounding box describing how 3d texture maps into
-    /// world space.
-    ///
-    virtual const GfBBox3d &GetBoundingBox() const = 0;
-};
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif
