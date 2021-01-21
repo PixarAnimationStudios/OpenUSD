@@ -79,7 +79,6 @@ pxr_library(hdSt
         flatNormals
         geometricShader
         glConversions
-        glfTextureCpuData
         glslfxShader
         glslProgram
         glUtils
@@ -118,6 +117,7 @@ pxr_library(hdSt
         textureIdentifier
         textureObject
         textureObjectRegistry
+        textureUtils
         tokens
         udimTextureObject
         unitTestGLDrawing
@@ -153,7 +153,6 @@ pxr_library(hdSt
         shaderKey
         subdivision
         subdivision3
-        textureUtils
         triangulate
         unitTestHelper
         volumeShader
