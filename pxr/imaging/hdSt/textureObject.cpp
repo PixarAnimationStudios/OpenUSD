@@ -513,9 +513,7 @@ HdStFieldTextureObject::_Load()
         return;
     }
 
-    texData->Read(
-        /* degradeLevel = */ 0,
-        /* generateMipmap = */ false);
+    texData->Read();
 
     _cpuData = std::make_unique<HdSt_FieldTextureCpuData>(
         texData,

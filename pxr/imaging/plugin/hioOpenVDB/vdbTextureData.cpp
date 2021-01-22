@@ -66,11 +66,8 @@ HioOpenVDB_TextureData::HioOpenVDB_TextureData(
     : _filePath(filePath),
       _gridName(gridName),
       _targetMemory(targetMemory),
-      _nativeWidth(0), _nativeHeight(0), _nativeDepth(1),
       _resizedWidth(0), _resizedHeight(0), _resizedDepth(1),
-      _bytesPerPixel(0),
-      _format(HioFormatUNorm8Vec3),
-      _size(0)
+      _format(HioFormatUNorm8Vec3)
 {
 }
 
@@ -83,55 +80,33 @@ HioOpenVDB_TextureData::GetBoundingBox() const
 }
 
 HioFormat
-HioOpenVDB_TextureData::GetFormat() const {
+HioOpenVDB_TextureData::GetFormat() const
+{
     return _format;
 }
 
-size_t
-HioOpenVDB_TextureData::TargetMemory() const
-{
-    return _targetMemory;
-}
-
 int
-HioOpenVDB_TextureData::GetNumMipLevels() const {
-    return 1;
-}
-
-size_t
-HioOpenVDB_TextureData::ComputeBytesUsed() const
-{
-    return _size;
-}
-
-size_t
-HioOpenVDB_TextureData::ComputeBytesUsedByMip(int mipLevel) const
-{
-    return _size;
-}
-
-int
-HioOpenVDB_TextureData::ResizedWidth(int mipLevel) const
+HioOpenVDB_TextureData::ResizedWidth() const
 {
     return _resizedWidth;
 }
 
 int
-HioOpenVDB_TextureData::ResizedHeight(int mipLevel) const
+HioOpenVDB_TextureData::ResizedHeight() const
 {
     return _resizedHeight;
 }
 
 int
-HioOpenVDB_TextureData::ResizedDepth(int mipLevel) const
+HioOpenVDB_TextureData::ResizedDepth() const
 {
     return _resizedDepth;
 }
 
 bool
-HioOpenVDB_TextureData::HasRawBuffer(int mipLevel) const
+HioOpenVDB_TextureData::HasRawBuffer() const
 {
-    return bool(GetRawBuffer(mipLevel));
+    return bool(GetRawBuffer());
 }
 
 // A base class for a template to hold on to a OpenVDB dense grid.
@@ -518,7 +493,7 @@ _ResamplingAdjustment(const int nativeLength, const double scale)
 } // end anonymous namespace
 
 bool
-HioOpenVDB_TextureData::Read(int degradeLevel, bool generateMipmap)
+HioOpenVDB_TextureData::Read()
 {   
     TRACE_FUNCTION();
 
@@ -540,24 +515,25 @@ HioOpenVDB_TextureData::Read(int degradeLevel, bool generateMipmap)
     GfMatrix4d gridTransform = gridHolder->GetGridTransform();
     
     // Get _bytesPerPixel & _format
-    gridHolder->GetMetadata(&_bytesPerPixel,
+    int bytesPerPixel;
+    gridHolder->GetMetadata(&bytesPerPixel,
                             &_format);
 
     // Get tree bounding box to compute native dimensions and size
     const openvdb::CoordBBox &nativeTreeBoundingBox =
         gridHolder->GetTreeBoundingBox();
     const openvdb::Coord nativeDim = nativeTreeBoundingBox.dim();
-    _nativeWidth  = nativeDim.x();
-    _nativeHeight = nativeDim.y();
+    const int nativeWidth  = nativeDim.x();
+    const int nativeHeight = nativeDim.y();
     // Following convention from GlfBaseTexture to set
     // depth to 1 for an empty texture.
-    _nativeDepth  = std::max(1, nativeDim.z());
+    const int nativeDepth  = std::max(1, nativeDim.z());
     
-    const size_t nativeSize = nativeTreeBoundingBox.volume() * _bytesPerPixel;
+    const size_t nativeSize = nativeTreeBoundingBox.volume() * bytesPerPixel;
 
     TF_DEBUG(HIOOPENVDB_DEBUG_TEXTURE).Msg(
         "[VdbTextureData] Native dimensions %d x %d x %d\n",
-        _nativeWidth, _nativeHeight, _nativeDepth);
+        nativeWidth, nativeHeight, nativeDepth);
 
     // Check whether native size is more than target memory if given
     if (nativeSize > _targetMemory && _targetMemory > 0) {
@@ -577,9 +553,9 @@ HioOpenVDB_TextureData::Read(int degradeLevel, bool generateMipmap)
         // There will be additional samples near the boundary
         // of the original voluem, so scale down a bit more.
         const double scale =
-            std::min({ _ResamplingAdjustment(_nativeWidth,  approxScale),
-                       _ResamplingAdjustment(_nativeHeight, approxScale),
-                       _ResamplingAdjustment(_nativeDepth,  approxScale) });
+            std::min({ _ResamplingAdjustment(nativeWidth,  approxScale),
+                       _ResamplingAdjustment(nativeHeight, approxScale),
+                       _ResamplingAdjustment(nativeDepth,  approxScale) });
 
         TF_DEBUG(HIOOPENVDB_DEBUG_TEXTURE).Msg(
             "[VdbTextureData] Scaling by factor %f\n", scale);
@@ -601,7 +577,6 @@ HioOpenVDB_TextureData::Read(int degradeLevel, bool generateMipmap)
         // Following convention from GlfBaseTexture to set
         // depth to 1 by default.
         _resizedDepth = 1;
-        _size = 0;
 
         // Not emitting warning as volume might be empty for
         // legitimate reason (for example during an animation).
@@ -622,17 +597,17 @@ HioOpenVDB_TextureData::Read(int degradeLevel, bool generateMipmap)
     _resizedHeight = dim.y();
     _resizedDepth = dim.z();
 
-    _size = treeBoundingBox.volume() * _bytesPerPixel;
+    const size_t size = treeBoundingBox.volume() * bytesPerPixel;
 
     TF_DEBUG(HIOOPENVDB_DEBUG_TEXTURE).Msg(
         "[VdbTextureData] Resized dimensions %d x %d x %d "
         "(size: %zd, target: %zd)\n",
         _resizedWidth, _resizedHeight, _resizedDepth,
-        _size, _targetMemory);
+        size, _targetMemory);
 
     TF_DEBUG(HIOOPENVDB_DEBUG_TEXTURE).Msg(
         "[VdbTextureData] %s",
-        (_size <= _targetMemory || _targetMemory == 0) ?
+        (size <= _targetMemory || _targetMemory == 0) ?
             "Target memory was met." :
             "WARNING: the target memory was EXCEEDED");
 
@@ -640,12 +615,8 @@ HioOpenVDB_TextureData::Read(int degradeLevel, bool generateMipmap)
 }
 
 unsigned char const *
-HioOpenVDB_TextureData::GetRawBuffer(int mipLevel) const
+HioOpenVDB_TextureData::GetRawBuffer() const
 {
-    if (mipLevel > 0) {
-        return nullptr;
-    }
-
     if (!_denseGrid) {
         return nullptr;
     }

@@ -41,8 +41,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using HioFieldTextureDataSharedPtr = std::shared_ptr<class HioFieldTextureData>;
 
-class HioFieldTextureDataRegistry;
-
 /// \class HioFieldTextureData
 ///
 /// An interface class for reading volume files having a
@@ -80,27 +78,19 @@ public:
     ///
     virtual const GfBBox3d &GetBoundingBox() const = 0;
 
-    virtual int ResizedWidth(int mipLevel = 0) const = 0;
+    virtual int ResizedWidth() const = 0;
 
-    virtual int ResizedHeight(int mipLevel = 0) const = 0;
+    virtual int ResizedHeight() const = 0;
 
-    virtual int ResizedDepth(int mipLevel = 0) const = 0;
+    virtual int ResizedDepth() const = 0;
 
     virtual HioFormat GetFormat() const = 0;
 
-    virtual size_t TargetMemory() const = 0;
-
-    virtual size_t ComputeBytesUsed() const = 0;
-
-    virtual size_t ComputeBytesUsedByMip(int mipLevel = 0) const = 0;
-
-    virtual bool Read(int degradeLevel, bool generateMipmap) = 0;
+    virtual bool Read() = 0;
     
-    virtual bool HasRawBuffer(int mipLevel = 0) const = 0;
+    virtual bool HasRawBuffer() const = 0;
 
-    virtual unsigned char const * GetRawBuffer(int mipLevel = 0) const = 0;   
-
-    virtual int GetNumMipLevels() const = 0;
+    virtual unsigned char const * GetRawBuffer() const = 0;   
 
 private:
     // Disallow copies

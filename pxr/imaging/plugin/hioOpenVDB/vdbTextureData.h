@@ -43,7 +43,8 @@ class HioOpenVDB_TextureData_DenseGridHolderBase;
 /// Implements HioFieldTextureData to read grid with given name from
 /// OpenVDB file at given path.
 ///
-class HioOpenVDB_TextureData final : public HioFieldTextureData {
+class HioOpenVDB_TextureData final : public HioFieldTextureData
+{
 public:
     using Base = HioFieldTextureData;
 
@@ -54,27 +55,19 @@ public:
 
     const GfBBox3d &GetBoundingBox() const override;
 
-    int ResizedWidth(int mipLevel = 0) const override;
+    int ResizedWidth() const override;
 
-    int ResizedHeight(int mipLevel = 0) const override;
+    int ResizedHeight() const override;
 
-    int ResizedDepth(int mipLevel = 0) const override;
+    int ResizedDepth() const override;
 
     HioFormat GetFormat() const override;
     
-    size_t TargetMemory() const override;
-
-    size_t ComputeBytesUsed() const override;
-
-    size_t ComputeBytesUsedByMip(int mipLevel = 0) const override;
-
-    bool Read(int degradeLevel, bool generateMipmap) override;
+    bool Read() override;
     
-    bool HasRawBuffer(int mipLevel = 0) const override;
+    bool HasRawBuffer() const override;
 
-    unsigned char const * GetRawBuffer(int mipLevel = 0) const override;
-
-    int GetNumMipLevels() const override;
+    unsigned char const * GetRawBuffer() const override;
 
 private:
     const std::string _filePath;
@@ -82,13 +75,9 @@ private:
 
     const size_t _targetMemory;
 
-    int _nativeWidth, _nativeHeight, _nativeDepth;
     int _resizedWidth, _resizedHeight, _resizedDepth;
-    int _bytesPerPixel;
 
     HioFormat _format;
-
-    size_t _size;
 
     GfBBox3d _boundingBox;
 
