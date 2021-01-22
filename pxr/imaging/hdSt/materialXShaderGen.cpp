@@ -378,14 +378,21 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
     emitLine("#endif", mxStage, false);
     emitLineBreak(mxStage);
 
-    // Initialize the transformation matrix for the environment map
-    // rotated 90 about X (y-up -> z-up) then rotated 180 about Z to match MX
-    // (MaterialX rotated 180 about Y, Y-up)
-    emitLine("u_envMatrix = mat4("
-                "-1.000000,  0.000000,  0.000000, 0.000000,"
-                " 0.000000,  0.000000,  1.000000, 0.000000,"
-                " 0.000000,  1.000000,  0.000000, 0.000000,"
-                " 0.000000,  0.000000,  0.000000, 1.000000)", mxStage);
+    // Apply the Hydra transformation matrix to the environment map matrix 
+    // (u_envMatrix) to account for the domeLight's transform. 
+    // Note: MaterialX initializes u_envMatrix as a 180 rotation about the 
+    // Y-axis (Y-up)
+    emitLine("mat4 hdTransformationMatrix = mat4(1.0)", mxStage);
+    emitString(
+        R"(#if NUM_LIGHTS > 0)" "\n"
+        R"(    for (int i = 0; i < NUM_LIGHTS; ++i) {)" "\n"
+        R"(        if (lightSource[i].isIndirectLight) {)" "\n"
+        R"(            hdTransformationMatrix = lightSource[i].worldToLightTransform;)" "\n"
+        R"(        })" "\n"
+        R"(    })" "\n"
+        R"(#endif)" "\n", mxStage);        
+    emitLine("u_envMatrix = u_envMatrix * hdTransformationMatrix", mxStage);
+
     emitScopeEnd(mxStage);
     emitLineBreak(mxStage);
 }
@@ -470,7 +477,6 @@ HdStMaterialXShaderGen::emitVariableDeclarations(
         mx::HW::T_VIEW_POSITION, 
         mx::HW::T_ENV_IRRADIANCE,   // Irradiance texture
         mx::HW::T_ENV_RADIANCE,     // Environment map OR prefilter texture
-        mx::HW::T_ENV_MATRIX,
         mx::HW::T_ENV_RADIANCE_MIPS,
         mx::HW::T_ENV_RADIANCE_SAMPLES,
         mx::HW::T_ALBEDO_TABLE      // BRDF texture
