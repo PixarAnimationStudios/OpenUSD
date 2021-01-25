@@ -44,7 +44,6 @@ HdChangeTracker::HdChangeTracker()
     , _generalState()
     , _collectionState()
     , _needsGarbageCollection(false)
-    , _needsBprimGarbageCollection(false)
     , _instancerRprimDependencies()
     , _instancerInstancerDependencies()
     // Note: Version numbers start at 1, with observers resetting theirs to 0.
@@ -519,7 +518,6 @@ HdChangeTracker::BprimRemoved(SdfPath const& id)
 {
     TF_DEBUG(HD_BPRIM_REMOVED).Msg("Bprim Removed: %s\n", id.GetText());
     _bprimState.erase(id);
-    _needsBprimGarbageCollection = true;
     ++_sceneStateVersion;
     ++_bprimIndexVersion;
 }

@@ -46,7 +46,9 @@
 //           HdSceneDelegate now has GetInstancerId
 // 36 -> 37: Renamed HdRprim::_SetMaterialId to SetMaterialId. It no longer
 //           takes changeTracker.
-#define HD_API_VERSION 37
+// 37 -> 38: Removed Bprim garbage collection API from HdChangeTracker and
+//           HdResourceRegistry.
+#define HD_API_VERSION 38
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2
