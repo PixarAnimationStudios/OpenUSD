@@ -511,6 +511,7 @@ HdStTextureUtils::ReadAndConvertImage(
     HioImage::StorageSpec spec;
     spec.width  = mipInfo.dimensions[0];
     spec.height = mipInfo.dimensions[1];
+    spec.format = image->GetFormat();
     spec.flipped = flipped;
     if (conversionFunction) {
         // This part is a bit tricky: the RGB to RGBA conversion
