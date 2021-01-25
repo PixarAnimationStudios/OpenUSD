@@ -38,7 +38,6 @@ pxr_library(glf
         ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
-        baseTexture
         baseTextureData
         bindingMap
         contextCaps
@@ -54,7 +53,6 @@ pxr_library(glf
         texture
         uniformBlock
         utils
-        uvTexture
         uvTextureData
         ${optionalPublicClasses}
 
@@ -73,13 +71,11 @@ pxr_library(glf
 
     PYMODULE_CPPFILES
         module.cpp
-        wrapBaseTexture.cpp
         wrapDiagnostic.cpp
         wrapDrawTarget.cpp
         wrapSimpleLight.cpp
         wrapSimpleMaterial.cpp
         wrapTexture.cpp
-        wrapUVTexture.cpp
 
     PYMODULE_FILES
         __init__.py

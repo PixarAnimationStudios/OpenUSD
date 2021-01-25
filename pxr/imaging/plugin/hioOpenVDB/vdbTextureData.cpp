@@ -117,7 +117,7 @@ HioOpenVDB_TextureData::HasRawBuffer() const
 //
 // We can avoid a copy by using the abstract GetData and call the
 // virtual destructor on the base class after the data have been
-// uploaded to the GPU by GlfBaseTexture::_CreateTexture.
+// uploaded to the GPU.
 //
 class HioOpenVDB_TextureData_DenseGridHolderBase
 {
@@ -525,8 +525,7 @@ HioOpenVDB_TextureData::Read()
     const openvdb::Coord nativeDim = nativeTreeBoundingBox.dim();
     const int nativeWidth  = nativeDim.x();
     const int nativeHeight = nativeDim.y();
-    // Following convention from GlfBaseTexture to set
-    // depth to 1 for an empty texture.
+    // Following convention to set depth to 1 for an empty texture.
     const int nativeDepth  = std::max(1, nativeDim.z());
     
     const size_t nativeSize = nativeTreeBoundingBox.volume() * bytesPerPixel;
@@ -574,8 +573,6 @@ HioOpenVDB_TextureData::Read()
     if (!_denseGrid) {
         _resizedWidth = 0;
         _resizedHeight = 0;
-        // Following convention from GlfBaseTexture to set
-        // depth to 1 by default.
         _resizedDepth = 1;
 
         // Not emitting warning as volume might be empty for
