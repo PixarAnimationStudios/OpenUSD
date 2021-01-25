@@ -2252,9 +2252,6 @@ class AppController(QtCore.QObject):
         """Reloads the UI and Sets up the initial settings for the
         _stageView object created in _reloadVaryingUI"""
 
-        # Seems like a good time to clear the texture registry
-        Glf.TextureRegistry.Reset()
-
         # RELOAD fixed and varying UI
         self._reloadFixedUI()
         self._reloadVaryingUI()

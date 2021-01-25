@@ -52,8 +52,6 @@ pxr_library(glf
         simpleMaterial
         simpleShadowArray
         texture
-        textureHandle
-        textureRegistry
         uniformBlock
         utils
         uvTexture
@@ -83,7 +81,6 @@ pxr_library(glf
         wrapSimpleLight.cpp
         wrapSimpleMaterial.cpp
         wrapTexture.cpp
-        wrapTextureRegistry.cpp
         wrapUVTexture.cpp
         wrapUVTextureStorage.cpp
 
