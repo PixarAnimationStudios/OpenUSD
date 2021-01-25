@@ -121,25 +121,6 @@ constexpr bool _CompileTimeValidateHioFormatTable() {
 static_assert(_CompileTimeValidateHioFormatTable(), 
               "_FormatDesc array in glfUtils out of sync with HioFormat enum");
 
-
-GLenum
-GlfGetBaseFormat(int numComponents)
-{
-    switch (numComponents) {
-        case 1:
-            return GL_RED;
-        case 2:
-            return GL_RG;
-        case 3:
-            return GL_RGB;
-        case 4:
-            return GL_RGBA;
-        default:
-            TF_CODING_ERROR("Unsupported numComponents");
-            return 1;
-    }
-}
-
 int
 GlfGetNumElements(GLenum format)
 {

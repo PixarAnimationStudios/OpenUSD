@@ -36,14 +36,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Base image format
-///
-/// Returns the base image format for the given number of components
-///
-/// Supported number of components: 1, 2, 3, 4
-GLF_API 
-GLenum GlfGetBaseFormat(int numComponents);
-
 /// Number of elements.
 ///
 /// Returns the number of elements (channels) in a given GL enum format.
