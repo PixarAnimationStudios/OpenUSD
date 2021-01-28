@@ -38,7 +38,6 @@ pxr_library(glf
         ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
-        baseTextureData
         bindingMap
         contextCaps
         diagnostic
@@ -53,7 +52,6 @@ pxr_library(glf
         texture
         uniformBlock
         utils
-        uvTextureData
         ${optionalPublicClasses}
 
     PRIVATE_CLASSES
