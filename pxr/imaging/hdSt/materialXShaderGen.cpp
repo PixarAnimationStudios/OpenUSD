@@ -32,6 +32,81 @@ namespace mx = MaterialX;
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+static const std::string GlslfxHeaderString = 
+R"(-- glslfx version 0.1
+
+// File Generated with HdStMaterialXShaderGen.
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "surfaceShader": { 
+                "source": [ "MaterialX.Surface" ]
+            }
+        }
+    }
+}
+
+-- glsl MaterialX.Surface
+
+
+)";
+
+static const std::string MxHdTangentString = 
+R"(
+    // Calculate a worldspace tangent vector
+    vec3 normalWorld = vec3(HdGet_worldToViewInverseMatrix() * vec4(Neye, 0.0));
+    vec3 tangentWorld = cross(normalWorld, vec3(0, 1, 0));
+    if (length(tangentWorld) < M_FLOAT_EPS) {
+        tangentWorld = cross(normalWorld, vec3(1, 0, 0));
+    }
+)";
+
+static const std::string MxHdLightString = 
+R"(#if NUM_LIGHTS > 0
+    for (int i = 0; i < NUM_LIGHTS; ++i) {
+
+        // Save the indirect light transformation
+        if (lightSource[i].isIndirectLight) {
+            hdTransformationMatrix = lightSource[i].worldToLightTransform;
+        }
+        // Save the direct light data
+        else {
+            // Type Only supporting Point Lights
+            $lightData[u_numActiveLightSources].type = 1; // point
+
+            // Position (Hydra position in ViewSpace)
+            $lightData[u_numActiveLightSources].position = 
+                (HdGet_worldToViewInverseMatrix() * lightSource[i].position).xyz;
+
+            // Color and Intensity 
+            // Note: Storm supports Simple, Sphere and Rect Direct Lights where
+            // diffuse = lightColor * intensity;
+            // specular = vec3(1) * intensity;
+            float intensity = lightSource[i].specular.r;
+            $lightData[u_numActiveLightSources].color = lightSource[i].diffuse.rgb/intensity;
+            $lightData[u_numActiveLightSources].intensity = intensity;
+            
+            // Attenuation 
+            // Hydra: vec3(const, linear, quadratic)
+            // MaterialX: const = 0.0, linear = 1.0, quadratic = 2.0
+            if (lightSource[i].attenuation.z > 0) {
+                $lightData[u_numActiveLightSources].decay_rate = 2.0;
+            }
+            else if (lightSource[i].attenuation.y > 0) {
+                $lightData[u_numActiveLightSources].decay_rate = 1.0;
+            }
+            else {
+                $lightData[u_numActiveLightSources].decay_rate = 0.0;
+            }
+
+            u_numActiveLightSources++;
+        }
+    }
+#endif
+)";
+
 HdStMaterialXShaderGen::HdStMaterialXShaderGen() : GlslShaderGenerator() 
 {
 }
@@ -65,36 +140,11 @@ HdStMaterialXShaderGen::_EmitGlslfxShader(
     mx::GenContext& mxContext,
     mx::ShaderStage& mxStage) const
 {
-    _EmitGlslfxHeader(mxGraph, mxStage);
+    emitString(GlslfxHeaderString, mxStage);
     _EmitMxFunctions(mxGraph, mxContext, mxStage);
     _EmitMxSurfaceShader(mxGraph, mxContext, mxStage);
 }
 
-void 
-HdStMaterialXShaderGen::_EmitGlslfxHeader(
-    const mx::ShaderGraph& mxGraph,
-    mx::ShaderStage& mxStage) const
-{
-    // Glslfx version and configuration
-    emitLine("-- glslfx version 0.1", mxStage, false);
-    emitLineBreak(mxStage);
-    emitComment("File Generated with HdStMaterialXShaderGen.", mxStage);
-    emitLineBreak(mxStage);
-    emitString(
-        R"(-- configuration)" "\n"
-        R"({)" "\n"
-        R"(    "techniques": {)" "\n"
-        R"(        "default": {)" "\n"
-        R"(            "surfaceShader": { )""\n"
-        R"(                "source": [ "MaterialX.Surface" ] )""\n"
-        R"(            } )""\n"
-        R"(        } )""\n"
-        R"(    } )""\n"
-        R"(})" "\n\n", mxStage);
-    emitLine("-- glsl MaterialX.Surface", mxStage, false);
-    emitLineBreak(mxStage);
-    emitLineBreak(mxStage);
-}
 
 // Similar to GlslShaderGenerator::emitPixelStage() with alterations and 
 // additions to match Pxr's codeGen
@@ -107,10 +157,7 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     // Add global constants and type definitions
     emitInclude("pbrlib/" + mx::GlslShaderGenerator::LANGUAGE 
                 + "/lib/mx_defines.glsl", mxContext, mxStage);
-    const unsigned int maxLights = std::max(1u,
-                                mxContext.getOptions().hwMaxActiveLightSources);
-    emitLine("#define MAX_LIGHT_SOURCES " +
-            std::to_string(maxLights), mxStage, false);
+    emitLine("#define MAX_LIGHT_SOURCES NUM_LIGHTS", mxStage, false);
     emitLine("#define DIRECTIONAL_ALBEDO_METHOD " +
             std::to_string(int(mxContext.getOptions().hwDirectionalAlbedoMethod)), 
             mxStage, false);
@@ -158,7 +205,7 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
                                  mxContext, mxStage, false);
         emitScopeEnd(mxStage, true);
         emitLineBreak(mxStage);
-        emitLine("uniform " + lightData.getName() + " " 
+        emitLine(lightData.getName() + " " 
                 + lightData.getInstance() + "[MAX_LIGHT_SOURCES]", mxStage);
         emitLineBreak(mxStage);
         emitLineBreak(mxStage);
@@ -183,6 +230,7 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
 
         // Add the vd declaration
         emitLine(mxVertexDataName + " " + vertexData.getInstance(), mxStage);
+        emitLineBreak(mxStage);
         emitLineBreak(mxStage);
 
         // add the mxInit function to convert Hd -> Mx data
@@ -360,6 +408,9 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
     emitLine("u_viewPosition = vec3(HdGet_worldToViewInverseMatrix()"
              " * vec4(0.0, 0.0, 0.0, 1.0))", mxStage);
     
+    // Calculate the worldspace tangent vector
+    emitString(MxHdTangentString, mxStage);
+
     // Add the vd declaration that translates HdVertexData -> MxVertexData
     std::string mxVertexDataName = "mx" + vertexData.getName();
     _EmitMxVertexDataDeclarations(vertexData, mxVertexDataName, 
@@ -370,27 +421,18 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
     // Initialize the Indirect Light Textures
     emitLine("#ifdef HD_HAS_domeLightIrradiance", mxStage, false);
     emitLine("u_envIrradiance = HdGetSampler_domeLightIrradiance()", mxStage);
-
     emitLine("u_envRadiance = HdGetSampler_domeLightPrefilter()", mxStage);
     emitLine("u_envRadianceMips = textureQueryLevels(u_envRadiance)", mxStage);
-
-    emitLine("u_albedoTable = HdGetSampler_domeLightBRDF()", mxStage);
     emitLine("#endif", mxStage, false);
     emitLineBreak(mxStage);
 
-    // Apply the Hydra transformation matrix to the environment map matrix 
-    // (u_envMatrix) to account for the domeLight's transform. 
+    // Gather Direct light data from Hydra and apply the Hydra transformation 
+    // matrix to the environment map matrix (u_envMatrix) to account for the
+    // domeLight's transform. 
     // Note: MaterialX initializes u_envMatrix as a 180 rotation about the 
     // Y-axis (Y-up)
     emitLine("mat4 hdTransformationMatrix = mat4(1.0)", mxStage);
-    emitString(
-        R"(#if NUM_LIGHTS > 0)" "\n"
-        R"(    for (int i = 0; i < NUM_LIGHTS; ++i) {)" "\n"
-        R"(        if (lightSource[i].isIndirectLight) {)" "\n"
-        R"(            hdTransformationMatrix = lightSource[i].worldToLightTransform;)" "\n"
-        R"(        })" "\n"
-        R"(    })" "\n"
-        R"(#endif)" "\n", mxStage);        
+    emitString(MxHdLightString, mxStage);
     emitLine("u_envMatrix = u_envMatrix * hdTransformationMatrix", mxStage);
 
     emitScopeEnd(mxStage);
@@ -434,13 +476,13 @@ HdStMaterialXShaderGen::_EmitMxVertexDataLine(
     }
     else if (mxVariableName.compare(mx::HW::T_NORMAL_WORLD) == 0) {
 
-        // Convert to WorldSpace normal
-        hdVariableDef = "vec3(HdGet_worldToViewInverseMatrix() * vec4(Neye, 0.0))";
+        // Convert to WorldSpace normal (calculated in MxHdTangentString)
+        hdVariableDef = "normalWorld";
     }
     else if (mxVariableName.compare(mx::HW::T_TANGENT_WORLD) == 0) {
 
-        // Set tangent to a non-zero vector since it is normalized in the mxShader.
-        hdVariableDef = "vec3(1,0,0)";
+        // Calculated in MxHdTangentString
+        hdVariableDef = "tangentWorld";
     }
     else if (mxVariableName.compare(mx::HW::T_POSITION_OBJECT) == 0) {
 

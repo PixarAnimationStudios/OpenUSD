@@ -34,13 +34,12 @@
 
 #include "pxr/base/tf/diagnostic.h"
 
-#include <MaterialXCore/Document.h>
 #include <MaterialXCore/Node.h>
 #include <MaterialXFormat/XmlIo.h>
-#include <MaterialXFormat/Util.h>
 #include <MaterialXGenShader/Util.h>
 #include <MaterialXGenShader/Shader.h>
 #include <MaterialXRender/Util.h>
+#include <MaterialXRender/LightHandler.h> 
 
 namespace mx = MaterialX;
 
@@ -62,7 +61,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Shader Gen Helper Functions
+// Shader Gen Functions
 
 // Generate the Glsl Pixel Shader based on the given mxContext and mxElement
 // Based on MaterialXViewer Material::generateShader()
@@ -81,9 +80,6 @@ _GenPixelShader(mx::GenContext & mxContext,
     // Use the domeLightPrefilter texture instead of sampling the Environment Map
     materialContext.getOptions().hwSpecularEnvironmentMethod =
         mx::HwSpecularEnvironmentMethod::SPECULAR_ENVIRONMENT_PREFILTER;
-    // Use of the domelightBRDF texture
-    materialContext.getOptions().hwDirectionalAlbedoMethod = 
-        mx::HwDirectionalAlbedoMethod::DIRECTIONAL_ALBEDO_TABLE;
 
     mx::ShaderPtr mxShader = mx::createShader("Shader", materialContext, mxElem);
     if (mxShader) {
@@ -92,15 +88,36 @@ _GenPixelShader(mx::GenContext & mxContext,
     return mx::EMPTY_STRING;
 }
 
+// Results in lightData.type = 1 for point lights in the Mx Shader
+static const std::string mxDirectLightString = 
+R"(
+<?xml version="1.0"?>
+<materialx version="1.37">
+  <point_light name="pt_light" type="lightshader">
+  </point_light>
+</materialx>
+)";
+
 // Use the given mxDocument to generate the corresponding glsl source code
 // Based on MaterialXViewer Viewer::loadDocument()
-static std::string
-_GenSourceCode(mx::DocumentPtr const& mxDoc,
-               mx::FileSearchPath const& searchPath)
+std::string
+HdSt_GenMaterialXShaderCode(mx::DocumentPtr const& mxDoc,
+                            mx::FileSearchPath const& searchPath)
 {
     // Initialize the Context for shaderGen. 
     mx::GenContext mxContext = HdStMaterialXShaderGen::create();
     mxContext.registerSourceCodeSearchPath(searchPath);
+    
+    // Add the Direct Light mtlx file to the mxDoc 
+    mx::DocumentPtr lightDoc = mx::createDocument();
+    mx::readFromXmlString(lightDoc, mxDirectLightString);
+    mxDoc->importLibrary(lightDoc);
+
+    // Make sure the Light data properties are added to the mxLightData struct
+    mx::LightHandler lightHandler;
+    std::vector<mx::NodePtr> lights;
+    lightHandler.findLights(mxDoc, lights);
+    lightHandler.registerLights(mxDoc, lights, mxContext);
 
     // Find renderable elements in the Mtlx Document.
     std::vector<mx::TypedElementPtr> renderableElements;
@@ -529,7 +546,8 @@ HdSt_ApplyMaterialXFilter(
                                         stdLibraries);
 
         // Load MaterialX Document and generate the glslfxSource
-        std::string glslfxSource = _GenSourceCode(mtlxDoc, searchPath);
+        std::string glslfxSource = HdSt_GenMaterialXShaderCode(mtlxDoc, 
+                                                               searchPath);
 
         // Create a new terminal node with the new glslfxSource
         SdrShaderNodeConstPtr sdrNode = 

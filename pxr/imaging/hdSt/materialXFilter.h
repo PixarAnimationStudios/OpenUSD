@@ -27,6 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/usd/sdf/path.h"
+#include <MaterialXCore/Document.h>
+#include <MaterialXFormat/Util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -37,6 +39,11 @@ void HdSt_ApplyMaterialXFilter(
     SdfPath const& materialPath,
     HdMaterialNode2 const& terminalNode,
     SdfPath const& terminalNodePath);
+
+// Generates the glsfx source code for the given MaterialX Document
+std::string HdSt_GenMaterialXShaderCode(
+    MaterialX::DocumentPtr const& mxDoc,
+    MaterialX::FileSearchPath const& searchPath);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

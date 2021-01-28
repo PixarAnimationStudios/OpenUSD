@@ -54,10 +54,7 @@ protected:
 
 private:
 
-    /// These three helper functions generate the Glslfx Shader
-    void _EmitGlslfxHeader(const MaterialX::ShaderGraph& mxGraph,
-                           MaterialX::ShaderStage& mxStage) const;
-
+    /// These two helper functions generate the Glslfx Shader
     void _EmitMxFunctions(const MaterialX::ShaderGraph& mxGraph,
                           MaterialX::GenContext& mxContext,
                           MaterialX::ShaderStage& mxStage) const;
