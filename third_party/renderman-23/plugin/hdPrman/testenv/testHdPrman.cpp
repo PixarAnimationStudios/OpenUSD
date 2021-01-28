@@ -64,6 +64,7 @@
 
 #include "hdPrman/rixStrings.h"
 
+#include <chrono>
 #include <fstream>
 #include <memory>
 #include <stdio.h>
@@ -132,6 +133,7 @@ PrintUsage(const char* cmd, const char *err=nullptr)
             "[--out OUTPUT] [--frame FRAME] [--freeCamProj CAM_PROJECTION] "
             "[--sceneCamPath CAM_PATH] [--settings RENDERSETTINGS_PATH] "
             "[--sceneCamAspect aspectRatio] "
+            "[--sleep SECONDS] "
             "[--visualize STYLE] [--perf PERF] [--trace TRACE]\n"
             "OUTPUT defaults to UsdRenderSettings if not specified.\n"
             "FRAME defaults to 0 if not specified.\n"
@@ -141,7 +143,8 @@ PrintUsage(const char* cmd, const char *err=nullptr)
             "STYLE indicates a PxrVisualizer style to use instead of "
             "      the default integrator\n"
             "PERF indicates a json file to record performance measurements\n"
-            "TRACE indicates a text file to record trace measurements\n",
+            "TRACE indicates a text file to record trace measurements\n"
+            "SECONDS gives a sleep time before exiting",
             cmd);
 }
 
@@ -207,6 +210,7 @@ int main(int argc, char *argv[])
     SdfPath sceneCamPath, renderSettingsPath;
     float sceneCamAspect = -1.0;
     std::string visualizerStyle;
+    float sleepTime = 0.0;
 
     for (int i=2; i<argc-1; ++i) {
         if (std::string(argv[i]) == "--frame") {
@@ -228,6 +232,8 @@ int main(int argc, char *argv[])
             perfOutput = argv[++i];
         } else if (std::string(argv[i]) == "--trace") {
             traceOutput = argv[++i];
+        } else if (std::string(argv[i]) == "--sleep") {
+            sleepTime = atof(argv[++i]);
         }
     }
 
@@ -850,6 +856,18 @@ int main(int argc, char *argv[])
             riley->Render(renderViews.size(), renderViews.data(),
                           rileyRenderSettings);
             timer_prmanRender.Stop();
+
+            // XXX Speculative workaround for intermittent test failure
+            // PRES-78824.  The image diff results suggest a bucket or two
+            // is not making it into the EXR; potentially this is a
+            // result of a race condition with the display driver?
+            // If this fixes the intermittent failure we will have
+            // narrowed down the problem at least.
+            if (sleepTime > 0) {
+                printf("Sleeping for requested %g sec\n", sleepTime);
+                std::this_thread::sleep_for(
+                    std::chrono::milliseconds(int(sleepTime*1000)));
+            }
         }
         riley->End();
         mgr->DestroyRiley(riley);
