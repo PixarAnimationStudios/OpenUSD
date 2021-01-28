@@ -83,6 +83,16 @@ HdStMarkMaterialTagsDirty(HdRenderParam *renderParam)
     }
 }
 
+void
+HdStMarkGarbageCollectionNeeded(HdRenderParam *renderParam)
+{
+    if (TF_VERIFY(renderParam)) {
+        HdStRenderParam *stRenderParam =
+            static_cast<HdStRenderParam*>(renderParam);
+        stRenderParam->SetGarbageCollectionNeeded();
+    }
+}
+
 // -----------------------------------------------------------------------------
 // Primvar descriptor filtering utilities
 // -----------------------------------------------------------------------------
@@ -384,7 +394,7 @@ HdStUpdateDrawItemBAR(
     bool const newRangeValid = HdStIsValidBAR(newRange);
 
     if (curRangeValid) {
-        changeTracker->SetGarbageCollectionNeeded();
+        HdStMarkGarbageCollectionNeeded(renderParam);
 
         TF_DEBUG(HD_RPRIM_UPDATED).Msg(
             "%s: Marking garbage collection needed to possibly reclaim BAR %p"
@@ -743,7 +753,7 @@ HdStUpdateInstancerData(
                 drawingCoord->GetInstancePrimvarIndex(0) + instancerLevels);
             sharedData->instancerLevels = instancerLevels;
 
-            changeTracker.SetGarbageCollectionNeeded();
+            HdStMarkGarbageCollectionNeeded(renderParam);
             HdStMarkDrawBatchesDirty(renderParam);
             forceIndexRebuild = true;
         }
@@ -992,7 +1002,7 @@ void HdStProcessTopologyVisibility(
         HdStMarkDrawBatchesDirty(renderParam);
 
         if (barNeedsReallocation) {
-            changeTracker->SetGarbageCollectionNeeded();
+            HdStMarkGarbageCollectionNeeded(renderParam);
         }
     }
 

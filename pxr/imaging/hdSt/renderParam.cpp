@@ -29,6 +29,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdStRenderParam::HdStRenderParam()
     : _drawBatchesVersion(1)
     , _materialTagsVersion(1)
+    , _needsGarbageCollection(false)
 {
 }
 

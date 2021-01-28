@@ -54,10 +54,7 @@ HdStPoints::HdStPoints(SdfPath const& id)
     /*NOTHING*/
 }
 
-HdStPoints::~HdStPoints()
-{
-    /*NOTHING*/
-}
+HdStPoints::~HdStPoints() = default;
 
 void
 HdStPoints::Sync(HdSceneDelegate *delegate,
@@ -87,6 +84,12 @@ HdStPoints::Sync(HdSceneDelegate *delegate,
     // XXX: GetInitialDirtyBitsMask sets certain dirty bits that aren't
     // reset (e.g. DirtyExtent, DirtyPrimID) that make this necessary.
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
+}
+
+void
+HdStPoints::Finalize(HdRenderParam *renderParam)
+{
+    HdStMarkGarbageCollectionNeeded(renderParam);
 }
 
 void

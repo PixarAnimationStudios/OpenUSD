@@ -68,7 +68,8 @@ using HdSt_BasisCurvesTopologySharedPtr =
 ///   * if complexity is 3 or above, the patch is displaced into a half tube
 /// We plan for future checkins will remove the need for the camera facing normal
 /// mode, using the fake "bumped" round normal instead.
-class HdStBasisCurves final: public HdBasisCurves {
+class HdStBasisCurves final: public HdBasisCurves
+{
 public:
     HF_MALLOC_TAG_NEW("new HdStBasisCurves");
 
@@ -76,24 +77,26 @@ public:
     HdStBasisCurves(SdfPath const& id);
 
     HDST_API
-    virtual ~HdStBasisCurves();
+    ~HdStBasisCurves() override;
 
     HDST_API
-    virtual void Sync(HdSceneDelegate *delegate,
-                      HdRenderParam   *renderParam,
-                      HdDirtyBits     *dirtyBits,
-                      TfToken const   &reprToken) override;
+    void Sync(HdSceneDelegate *delegate,
+              HdRenderParam   *renderParam,
+              HdDirtyBits     *dirtyBits,
+              TfToken const   &reprToken) override;
 
     HDST_API
-    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+    void Finalize(HdRenderParam   *renderParam) override;
+
+    HDST_API
+    HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 protected:
     HDST_API
-    virtual void _InitRepr(TfToken const &reprToken,
-                           HdDirtyBits *dirtyBits) override;
+    void _InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits) override;
 
     HDST_API
-    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
+    HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
 
     void _UpdateRepr(HdSceneDelegate *sceneDelegate,
                      HdRenderParam *renderParam,
@@ -120,7 +123,6 @@ protected:
                                   HdRenderParam *renderParam,
                                   HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits);
-
 
 private:
     enum DrawingCoord {

@@ -45,6 +45,9 @@ public:
     HdStRenderParam();
     ~HdStRenderParam() override;
 
+    // ---------------------------------------------------------------------- //
+    /// Draw items cache and batch invalidation
+    // ---------------------------------------------------------------------- //
     /// Marks all batches dirty, meaning they need to be validated and
     /// potentially rebuilt.
     HDST_API
@@ -61,9 +64,26 @@ public:
     HDST_API
     unsigned int GetMaterialTagsVersion() const;
 
+    // ---------------------------------------------------------------------- //
+    /// Garbage collection tracking
+    // ---------------------------------------------------------------------- //
+    void SetGarbageCollectionNeeded() {
+        _needsGarbageCollection = true;
+    }
+
+    void ClearGarbageCollectionNeeded() {
+        _needsGarbageCollection = false;
+    }
+
+    bool IsGarbageCollectionNeeded() const {
+        return _needsGarbageCollection;
+    }
+    
 private:
     std::atomic_uint _drawBatchesVersion;
     std::atomic_uint _materialTagsVersion;
+    bool _needsGarbageCollection; // Doesn't need to be atomic since parallel
+                                  // sync might only set it (and not clear).
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

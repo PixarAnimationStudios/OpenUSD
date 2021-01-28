@@ -43,7 +43,6 @@ HdChangeTracker::HdChangeTracker()
     , _bprimState()
     , _generalState()
     , _collectionState()
-    , _needsGarbageCollection(false)
     , _instancerRprimDependencies()
     , _instancerInstancerDependencies()
     // Note: Version numbers start at 1, with observers resetting theirs to 0.
@@ -93,9 +92,6 @@ HdChangeTracker::RprimRemoved(SdfPath const& id)
 {
     TF_DEBUG(HD_RPRIM_REMOVED).Msg("Rprim Removed: %s\n", id.GetText());
     _rprimState.erase(id);
-    // Make sure cached DrawItems get flushed out and their buffers are
-    // reclaimed.
-    _needsGarbageCollection = true;
 
     ++_sceneStateVersion;
     ++_rprimIndexVersion;
@@ -461,8 +457,6 @@ HdChangeTracker::SprimRemoved(SdfPath const& id)
 {
     TF_DEBUG(HD_SPRIM_REMOVED).Msg("Sprim Removed: %s\n", id.GetText());
     _sprimState.erase(id);
-    // Make sure sprim resources are reclaimed.
-    _needsGarbageCollection = true;
     ++_sceneStateVersion;
     ++_sprimIndexVersion;
 }

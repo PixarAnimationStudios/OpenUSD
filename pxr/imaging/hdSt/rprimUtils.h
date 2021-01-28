@@ -56,13 +56,16 @@ using HdStResourceRegistrySharedPtr =
     std::shared_ptr<HdStResourceRegistry>;
 
 // -----------------------------------------------------------------------------
-// Draw invalidation utilities
+// Draw invalidation and garbage collection utilities
 // -----------------------------------------------------------------------------
 HDST_API
 void HdStMarkDrawBatchesDirty(HdRenderParam *renderParam);
 
 HDST_API
 void HdStMarkMaterialTagsDirty(HdRenderParam *renderParam);
+
+HDST_API
+void HdStMarkGarbageCollectionNeeded(HdRenderParam *renderParam);
 
 // -----------------------------------------------------------------------------
 // Primvar descriptor filtering utilities

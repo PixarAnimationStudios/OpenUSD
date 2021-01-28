@@ -306,7 +306,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     _ProcessTextureDescriptors(
         sceneDelegate,
         resourceRegistry,
-                _surfaceShader,
+        _surfaceShader,
         textureDescriptors,
         &textures,
         &specs,
@@ -358,6 +358,18 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
     _isInitialized = true;
     *dirtyBits = Clean;
+}
+
+/*virtual*/
+void
+HdStMaterial::Finalize(HdRenderParam *renderParam)
+{
+    // Flag GC to reclaim resources owned by the surface shader.
+    if (TF_VERIFY(renderParam)) {
+        HdStRenderParam *stRenderParam =
+            static_cast<HdStRenderParam*>(renderParam);
+        stRenderParam->SetGarbageCollectionNeeded();
+    }
 }
 
 bool

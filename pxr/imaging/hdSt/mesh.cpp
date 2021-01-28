@@ -109,10 +109,7 @@ HdStMesh::HdStMesh(SdfPath const& id)
     /*NOTHING*/
 }
 
-HdStMesh::~HdStMesh()
-{
-    /*NOTHING*/
-}
+HdStMesh::~HdStMesh() = default;
 
 void
 HdStMesh::Sync(HdSceneDelegate *delegate,
@@ -176,6 +173,12 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
     // XXX: GetInitialDirtyBitsMask sets certain dirty bits that aren't
     // reset (e.g. DirtyExtent, DirtyPrimID) that make this necessary.
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
+}
+
+void
+HdStMesh::Finalize(HdRenderParam *renderParam)
+{
+    HdStMarkGarbageCollectionNeeded(renderParam);
 }
 
 HdMeshTopologySharedPtr

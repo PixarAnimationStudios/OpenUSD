@@ -29,16 +29,29 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+#include "pxr/imaging/hdSt/renderParam.h"
 
 #include "pxr/base/arch/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+static void
+_MarkGarbageCollectionNeeded(HdRenderParam *renderParam)
+{
+    if (TF_VERIFY(renderParam)) {
+        HdStRenderParam *stRenderParam =
+            static_cast<HdStRenderParam*>(renderParam);
+        stRenderParam->SetGarbageCollectionNeeded();
+    }
+}
 
 HdStExtComputation::HdStExtComputation(SdfPath const &id)
  : HdExtComputation(id)
  , _inputRange()
 {
 }
+
+HdStExtComputation::~HdStExtComputation() = default;
 
 //
 // De-duplicating and sharing of ExtComputation data.
@@ -208,11 +221,18 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
 
         if (prevRange && (prevRange != _inputRange)) {
             // Make sure that we also release any stale input range data
-            renderIndex.GetChangeTracker().SetGarbageCollectionNeeded();
+            _MarkGarbageCollectionNeeded(renderParam);
         }
     }
 
     *dirtyBits &= ~DirtySceneInput;
+}
+
+void
+HdStExtComputation::Finalize(HdRenderParam *renderParam)
+{
+    // Release input range data.
+    _MarkGarbageCollectionNeeded(renderParam);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

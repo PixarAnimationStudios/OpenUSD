@@ -51,6 +51,9 @@ public:
               HdDirtyBits*     dirtyBits,
               TfToken const  &reprToken) override;
 
+    HDST_API
+    void Finalize(HdRenderParam *renderParam) override;
+
     /// Default step size used for raymarching
     static const float defaultStepSize;
 

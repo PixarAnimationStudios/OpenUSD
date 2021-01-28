@@ -442,29 +442,6 @@ public:
 
     // ---------------------------------------------------------------------- //
     /// @}
-    /// \name GarbageCollection Tracking
-    /// @{
-    // ---------------------------------------------------------------------- //
-
-    /// Clears the garbageCollectionNeeded flag.
-    void ClearGarbageCollectionNeeded() {
-        _needsGarbageCollection = false;
-    }
-
-    /// Sets the garbageCollectionNeeded flag.
-    void SetGarbageCollectionNeeded() {
-        _needsGarbageCollection = true;
-    }
-
-    /// Returns true if garbage collection was flagged to be run.
-    /// Currently, this flag only gets set internally when Rprims are removed.
-    bool IsGarbageCollectionNeeded() const {
-        return _needsGarbageCollection;
-    }
-
-
-    // ---------------------------------------------------------------------- //
-    /// @}
     /// \name RprimCollection Tracking
     /// @{
     // ---------------------------------------------------------------------- //
@@ -603,7 +580,6 @@ private:
 
     // Collection versions / state.
     _CollectionStateMap _collectionState;
-    bool _needsGarbageCollection;
 
     // Provides reverse-association between instancers and the child
     // instancers/rprims that use them.

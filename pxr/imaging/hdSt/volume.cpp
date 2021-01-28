@@ -141,6 +141,12 @@ HdStVolume::Sync(HdSceneDelegate *delegate,
 }
 
 void
+HdStVolume::Finalize(HdRenderParam *renderParam)
+{
+    HdStMarkGarbageCollectionNeeded(renderParam);
+}
+
+void
 HdStVolume::_UpdateRepr(HdSceneDelegate *sceneDelegate,
                         HdRenderParam *renderParam,
                         TfToken const &reprToken,

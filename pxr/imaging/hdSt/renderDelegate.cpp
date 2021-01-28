@@ -462,6 +462,7 @@ HdStRenderDelegate::_CreateFallbackMaterialPrim()
 void
 HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
+    TF_UNUSED(tracker);
     GLF_GROUP_FUNCTION();
     
     _ApplyTextureSettings();
@@ -478,9 +479,10 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
     // Commit all pending source data.
     _resourceRegistry->Commit();
 
-    if (tracker->IsGarbageCollectionNeeded()) {
+    HdStRenderParam *stRenderParam = _renderParam.get();
+    if (stRenderParam->IsGarbageCollectionNeeded()) {
         _resourceRegistry->GarbageCollect();
-        tracker->ClearGarbageCollectionNeeded();
+        stRenderParam->ClearGarbageCollectionNeeded();
     }
 
     // see bug126621. currently dispatch buffers need to be released
