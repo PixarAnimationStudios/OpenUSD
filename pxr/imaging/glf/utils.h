@@ -29,7 +29,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/garch/glApi.h"
-#include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/hio/types.h"
 
 #include <string>
@@ -53,25 +52,6 @@ int GlfGetNumElements(GLenum format);
 /// GL_SHORT, GL_FLOAT, GL_DOUBLE
 GLF_API
 int GlfGetElementSize(GLenum type);
-
-
-/// GL type.
-///
-/// Returns the GL type for a given HioFormat.
-GLF_API
-GLenum GlfGetGLType(HioFormat format);
-
-/// GL format.
-///
-/// Returns the GL format for a given HioFormat.
-GLF_API
-GLenum GlfGetGLFormat(HioFormat format);
-
-/// GL Internal Format.
-///
-/// Returns the GL Internal Format for a given HioFormat.
-GLF_API
-GLenum GlfGetGLInternalFormat(HioFormat format);
 
 /// HioFormat
 ///
