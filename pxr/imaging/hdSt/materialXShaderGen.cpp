@@ -157,7 +157,11 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     // Add global constants and type definitions
     emitInclude("pbrlib/" + mx::GlslShaderGenerator::LANGUAGE 
                 + "/lib/mx_defines.glsl", mxContext, mxStage);
+    emitLine("#if NUM_LIGHTS > 0", mxStage, false);
     emitLine("#define MAX_LIGHT_SOURCES NUM_LIGHTS", mxStage, false);
+    emitLine("#else", mxStage, false);
+    emitLine("#define MAX_LIGHT_SOURCES 1", mxStage, false);
+    emitLine("#endif", mxStage, false);
     emitLine("#define DIRECTIONAL_ALBEDO_METHOD " +
             std::to_string(int(mxContext.getOptions().hwDirectionalAlbedoMethod)), 
             mxStage, false);
