@@ -84,7 +84,7 @@ HdxOitRenderTask::Prepare(HdTaskContext* ctx,
 
         // OIT buffers take up significant GPU resources. Skip if there are no
         // oit draw items (i.e. no translucent or volumetric draw items)
-        if (_GetDrawItemCount() > 0) {
+        if (HdxRenderTask::_HasDrawItems()) {
             HdxOitBufferAccessor(ctx).RequestOitBuffers();
         }
     }
@@ -97,7 +97,7 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
     HF_MALLOC_TAG_FUNCTION();
 
     if (!_isOitEnabled) return;
-    if (_GetDrawItemCount() == 0) return;
+    if (!HdxRenderTask::_HasDrawItems()) return;
 
     //
     // Pre Execute Setup

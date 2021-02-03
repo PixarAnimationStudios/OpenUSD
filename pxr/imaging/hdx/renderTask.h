@@ -96,10 +96,17 @@ protected:
     HDX_API
     HdRenderPassStateSharedPtr _GetRenderPassState(HdTaskContext *ctx) const;
 
-    // Returns the number of draw items used for rendering. This will only 
-    // return the correct result after HdxRenderTask::Prepare() has been called.
+    // XXX: Storm specific API
+    // While HdDrawItem is currently a core-Hydra concept, it'll be moved
+    // to Storm. Until then, allow querying the render pass to know if there's
+    // draw submission work.
+
+    // Returns whether the render pass has any draw items to submit.
+    // For non-Storm backends, this returns true.
+    // When using with Storm tasks, make sure to call it after
+    // HdxRenderTask::Prepare().
     HDX_API
-    size_t _GetDrawItemCount() const;
+    bool _HasDrawItems() const;
 
 private:
     HdRenderPassSharedPtr _pass;
@@ -108,10 +115,14 @@ private:
     // Optional internal render setup task, for params unpacking.
     HdxRenderSetupTaskSharedPtr _setupTask;
 
+    // XXX: Storm specific API
     // Setup additional state that HdStRenderPassState requires.
-    // XXX: This should be moved to hdSt!
     void _SetHdStRenderPassState(HdTaskContext *ctx,
                                  HdStRenderPassState *renderPassState);
+    
+    // Inspect the AOV bindings to determine if any of them need to be cleared.
+    bool _NeedToClearAovs(HdRenderPassStateSharedPtr const &renderPassState)
+        const;
 
     HdxRenderTask() = delete;
     HdxRenderTask(const HdxRenderTask &) = delete;
