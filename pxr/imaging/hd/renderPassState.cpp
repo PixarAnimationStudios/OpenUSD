@@ -62,6 +62,7 @@ HdRenderPassState::HdRenderPassState()
     , _depthBiasSlopeFactor(1.0f)
     , _depthFunc(HdCmpFuncLEqual)
     , _depthMaskEnabled(true)
+    , _depthTestEnabled(true)
     , _cullStyle(HdCullStyleNothing)
     , _stencilFunc(HdCmpFuncAlways)
     , _stencilRef(0)
@@ -328,6 +329,18 @@ HdRenderPassState::GetEnableDepthMask()
 }
 
 void
+HdRenderPassState::SetEnableDepthTest(bool enabled)
+{
+    _depthTestEnabled = enabled;
+}
+
+bool
+HdRenderPassState::GetEnableDepthTest() const
+{
+    return _depthTestEnabled;
+}
+
+void
 HdRenderPassState::SetStencil(HdCompareFunction func,
         int ref, int mask,
         HdStencilOp fail, HdStencilOp zfail, HdStencilOp zpass)
@@ -344,6 +357,12 @@ void
 HdRenderPassState::SetStencilEnabled(bool enabled)
 {
     _stencilEnabled = enabled;
+}
+
+bool
+HdRenderPassState::GetStencilEnabled() const
+{
+    return _stencilEnabled;
 }
 
 void

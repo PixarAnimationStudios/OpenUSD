@@ -240,6 +240,7 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
         // We do not use renderDelegate->CreateRenderPassState because
         // ImageShaders always use HdSt
         _renderPassState = std::make_shared<HdStRenderPassState>();
+        _renderPassState->SetEnableDepthTest(false);
         _renderPassState->SetEnableDepthMask(false);
         _renderPassState->SetColorMasks({HdRenderPassState::ColorMaskRGBA});
         _renderPassState->SetBlendEnabled(true);
@@ -326,13 +327,7 @@ HdxOitResolveTask::Execute(HdTaskContext* ctx)
     }
 
     _renderPassState->Bind(); 
-
-    glDisable(GL_DEPTH_TEST);
-
     _renderPass->Execute(_renderPassState, GetRenderTags());
-
-    glEnable(GL_DEPTH_TEST);
-
     _renderPassState->Unbind();
 }
 

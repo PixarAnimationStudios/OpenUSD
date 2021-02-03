@@ -318,8 +318,15 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         } else {
             state->SetStencilEnabled(false);
         }
+
+        state->SetEnableDepthTest(true);
+        state->SetEnableDepthMask(true);
+        state->SetDepthFunc(HdCmpFuncLEqual);
+
         // Make sure translucent pixels can be picked by not discarding them
         state->SetAlphaThreshold(0.0f);
+        state->SetAlphaToCoverageEnabled(false);
+        state->SetBlendEnabled(false);
         state->SetCullStyle(_params.cullStyle);
         state->SetLightingEnabled(false);
 
@@ -411,13 +418,6 @@ HdxPickTask::Execute(HdTaskContext* ctx)
                               GL_COLOR_ATTACHMENT4,
                               GL_COLOR_ATTACHMENT5};
     glDrawBuffers(6, drawBuffers);
-    
-    glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-    glDisable(GL_BLEND);
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-    glDepthFunc(GL_LEQUAL);
 
     // Clear all color channels to 1, so when cast as int, an unwritten pixel
     // is encoded as -1.

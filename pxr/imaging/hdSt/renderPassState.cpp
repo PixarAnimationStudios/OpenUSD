@@ -418,8 +418,8 @@ HdStRenderPassState::Bind()
     // which states to be altered at the comment in the header file
 
     // Apply polygon offset to whole pass.
-    if (!_depthBiasUseDefault) {
-        if (_depthBiasEnabled) {
+    if (!GetDepthBiasUseDefault()) {
+        if (GetDepthBiasEnabled()) {
             glEnable(GL_POLYGON_OFFSET_FILL);
             glPolygonOffset(_depthBiasSlopeFactor, _depthBiasConstantFactor);
         } else {
@@ -427,11 +427,17 @@ HdStRenderPassState::Bind()
         }
     }
 
-    glDepthFunc(HdStGLConversions::GetGlDepthFunc(_depthFunc));
-    glDepthMask(_depthMaskEnabled);
+    if (GetEnableDepthTest()) {
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(HdStGLConversions::GetGlDepthFunc(_depthFunc));
+        glDepthMask(GetEnableDepthMask()); // depth writes are enabled only
+                                           // when the test is enabled.
+    } else {
+        glDisable(GL_DEPTH_TEST);
+    }
 
     // Stencil
-    if (_stencilEnabled) {
+    if (GetStencilEnabled()) {
         glEnable(GL_STENCIL_TEST);
         glStencilFunc(HdStGLConversions::GetGlStencilFunc(_stencilFunc),
                 _stencilRef, _stencilMask);
@@ -516,6 +522,7 @@ HdStRenderPassState::Unbind()
     glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     glDisable(GL_SAMPLE_ALPHA_TO_ONE);
     glDisable(GL_PROGRAM_POINT_SIZE);
+    glEnable(GL_DEPTH_TEST);
     glDisable(GL_STENCIL_TEST);
     glDepthFunc(GL_LESS);
     glPolygonOffset(0, 0);
