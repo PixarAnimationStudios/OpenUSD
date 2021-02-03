@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HD_ST_RPRIM_UTILS_H
-#define PXR_IMAGING_HD_ST_RPRIM_UTILS_H
+#ifndef PXR_IMAGING_HD_ST_PRIM_UTILS_H
+#define PXR_IMAGING_HD_ST_PRIM_UTILS_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
@@ -289,4 +289,4 @@ void HdStGetBufferSpecsFromCompuations(
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_IMAGING_HD_ST_RPRIM_UTILS_H
+#endif // PXR_IMAGING_HD_ST_PRIM_UTILS_H

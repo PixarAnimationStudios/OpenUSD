@@ -95,6 +95,7 @@ pxr_library(hdSt
         mixinShader
         package
         points
+        primUtils
         ptexTextureObject
         renderBuffer
         renderDelegate
@@ -102,7 +103,6 @@ pxr_library(hdSt
         renderPassShader
         renderPassState
         resourceRegistry
-        rprimUtils
         samplerObject
         samplerObjectRegistry
         shaderCode

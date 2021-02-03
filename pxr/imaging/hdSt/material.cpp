@@ -24,6 +24,7 @@
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/package.h"
+#include "pxr/imaging/hdSt/primUtils.h"
 #include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
@@ -338,11 +339,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     if (markBatchesDirty && _isInitialized) {
         // Only invalidate batches if this isn't our first round through sync.
         // If this is the initial sync, we haven't formed batches yet.
-        if (TF_VERIFY(renderParam)) {
-            HdStRenderParam *stRenderParam =
-                static_cast<HdStRenderParam*>(renderParam);
-            stRenderParam->MarkDrawBatchesDirty();
-        }
+        HdStMarkDrawBatchesDirty(renderParam);
     }
 
     if (needsRprimMaterialStateUpdate && _isInitialized) {
@@ -365,11 +362,7 @@ void
 HdStMaterial::Finalize(HdRenderParam *renderParam)
 {
     // Flag GC to reclaim resources owned by the surface shader.
-    if (TF_VERIFY(renderParam)) {
-        HdStRenderParam *stRenderParam =
-            static_cast<HdStRenderParam*>(renderParam);
-        stRenderParam->SetGarbageCollectionNeeded();
-    }
+    HdStMarkGarbageCollectionNeeded(renderParam);
 }
 
 bool
