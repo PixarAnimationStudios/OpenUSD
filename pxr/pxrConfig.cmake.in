@@ -1,11 +1,20 @@
 # - Configuration file for the pxr project
 # Defines the following variables:
+# PXR_MAJOR_VERSION - Major version number.
+# PXR_MINOR_VERSION - Minor version number.
+# PXR_PATCH_VERSION - Patch version number.
+# PXR_VERSION       - Complete pxr version string.
 # PXR_INCLUDE_DIRS  - Root include directory for the installed project.
 # PXR_LIBRARIES     - List of all libraries, by target name.
 # PXR_foo_LIBRARY   - Absolute path to individual libraries.
 # The preprocessor definition PXR_STATIC will be defined if appropriate
 
 get_filename_component(PXR_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+
+set(PXR_MAJOR_VERSION "@PXR_MAJOR_VERSION@")
+set(PXR_MINOR_VERSION "@PXR_MINOR_VERSION@")
+set(PXR_PATCH_VERSION "@PXR_PATCH_VERSION@")
+set(PXR_VERSION "@PXR_VERSION@")
 
 include("${PXR_CMAKE_DIR}/cmake/pxrTargets.cmake")
 set(libs "@PXR_ALL_LIBS@")
