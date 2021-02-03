@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<materialx version="1.37">
+  <material name="USD_Gold">
+    <shaderref name="SR_gold" node="UsdPreviewSurface">
+      <bindinput name="diffuseColor" type="color3" value="0.944, 0.776, 0.373" />
+      <bindinput name="useSpecularWorkflow" type="integer" value="0" />
+      <bindinput name="specularColor" type="color3" value="0, 0, 0" />
+      <bindinput name="metalness" type="float" value="1" />
+      <bindinput name="roughness" type="float" value="0.02" />
+      <bindinput name="ior" type="float" value="50" />
+    </shaderref>
+  </material>
+</materialx>
