@@ -247,6 +247,19 @@ public:
         return _dataType;
     }
 
+    // ---------------------------------------------------------------------- //
+    /// \name Comparison
+    // ---------------------------------------------------------------------- //
+    HD_API
+    bool operator==(HdBindingRequest const &other) const;
+
+    HD_API
+    bool operator!=(HdBindingRequest const &other) const;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Hash
+    // ---------------------------------------------------------------------- //
+
     /// Returns the hash corresponding to this buffer request.
     ///
     /// Note that this hash captures the structural state of the request, not
