@@ -46,7 +46,7 @@
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/glContext.h"
-#include "pxr/imaging/glf/info.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -95,9 +95,25 @@ HdxPickTask::HdxPickTask(HdSceneDelegate* delegate, SdfPath const& id)
 
 HdxPickTask::~HdxPickTask() = default;
 
+// Assumes that there is a valid OpenGL 2.0 or later context.
+//
+// Uses _drawTarget and _drawTarget->GetSize() to determine whether
+// initialization is necessary.
+//
 void
-HdxPickTask::_Init(GfVec2i const& size)
+HdxPickTask::_InitIfNeeded(GfVec2i const& size)
 {
+    if (_drawTarget) {
+        if (size != _drawTarget->GetSize()) {
+            GlfSharedGLContextScopeHolder sharedContextHolder;
+
+            _drawTarget->Bind();
+            _drawTarget->SetSize(size);
+            _drawTarget->Unbind();
+        }
+        return;
+    }
+
     // The collection created below is purely for satisfying the HdRenderPass
     // constructor. The collections for the render passes are set in Query(..)
     HdRprimCollection col(HdTokens->geometry, 
@@ -119,8 +135,9 @@ HdxPickTask::_Init(GfVec2i const& size)
 
     // Make sure master draw target is always modified on the shared context,
     // so we access it consistently.
-    GlfSharedGLContextScopeHolder sharedContextHolder;
     {
+        GlfSharedGLContextScopeHolder sharedContextHolder;
+
         // TODO: determine this size from the incoming projection, we need two
         // different sizes, one for ray picking and one for marquee picking. we
         // could perhaps just use the large size for both.
@@ -169,38 +186,6 @@ HdxPickTask::_ConfigureSceneMaterials(bool enableSceneMaterials,
                     HdStPackageFallbackSurfaceShader()))));
         }
         renderPassState->SetOverrideShader(_overrideShader);
-    }
-}
-
-void
-HdxPickTask::_SetResolution(GfVec2i const& widthHeight)
-{
-    TRACE_FUNCTION();
-
-    // Make sure we're in a sane GL state before attempting anything.
-    if (GlfHasLegacyGraphics()) {
-        TF_RUNTIME_ERROR("framebuffer object not supported");
-        return;
-    }
-
-    if (!_drawTarget) {
-        // Initialize the shared draw target late to ensure there is a valid GL
-        // context, which may not be the case at constructon time.
-        _Init(widthHeight);
-        return;
-    }
-
-    if (widthHeight == _drawTarget->GetSize()){
-        return;
-    }
-
-    // Make sure master draw target is always modified on the shared context,
-    // so we access it consistently.
-    GlfSharedGLContextScopeHolder sharedContextHolder;
-    {
-        _drawTarget->Bind();
-        _drawTarget->SetSize(widthHeight);
-        _drawTarget->Unbind();
     }
 }
 
@@ -271,23 +256,21 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     _index = &(delegate->GetRenderIndex());
 
     // Make sure we're in a sane GL state before attempting anything.
-    if (GlfHasLegacyGraphics()) {
-        TF_RUNTIME_ERROR("framebuffer object not supported");
-        return;
-    }
     GlfGLContextSharedPtr context = GlfGLContext::GetCurrentGLContext();
     if (!TF_VERIFY(context)) {
         TF_RUNTIME_ERROR("Invalid GL context");
         return;
     }
 
-    if (!_drawTarget) {
-        // Initialize the shared draw target late to ensure there is a valid GL
-        // context, which may not be the case at constructon time.
-        _Init(_contextParams.resolution);
-    } else {
-        _SetResolution(_contextParams.resolution);
+    // Make sure the GL context is at least OpenGL 2.0.
+    if (GlfContextCaps::GetInstance().glVersion < 200) {
+        TF_RUNTIME_ERROR("framebuffer object not supported");
+        return;
     }
+
+    // Uses _drawTarget and _drawTarget->GetSize() to determine whether
+    // initialization is necessary.
+    _InitIfNeeded(_contextParams.resolution);
 
     if (!TF_VERIFY(_pickableRenderPass) || 
         !TF_VERIFY(_occluderRenderPass)) {

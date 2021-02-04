@@ -220,8 +220,7 @@ private:
     // map prim ID to paths.
     HdRenderIndex *_index;
 
-    void _Init(GfVec2i const& widthHeight);
-    void _SetResolution(GfVec2i const& widthHeight);
+    void _InitIfNeeded(GfVec2i const& widthHeight);
     void _ConditionStencilWithGLCallback(
             HdxPickTaskContextParams::DepthMaskCallback maskCallback);
     void _ConfigureSceneMaterials(
