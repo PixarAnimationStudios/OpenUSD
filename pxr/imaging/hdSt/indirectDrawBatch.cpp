@@ -119,6 +119,7 @@ HdSt_IndirectDrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
     HdStDrawItem const* drawItem = drawItemInstance->GetDrawItem();
     _bufferArraysHash = drawItem->GetBufferArraysHash();
     // _barElementOffsetsHash is updated during _CompileBatch
+    _barElementOffsetsHash = 0;
 
     // determine gpu culling program by the first drawitem
     _useDrawArrays  = !drawItem->GetTopologyRange();
@@ -361,6 +362,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
     std::vector<uint32_t>::iterator cmdIt = _drawCommandBuffer.begin();
 
     TF_DEBUG(HD_MDI).Msg(" - Processing Items:\n");
+    _barElementOffsetsHash = 0;
     for (size_t item = 0; item < numDrawItemInstances; ++item) {
         HdStDrawItemInstance const * instance = _drawItemInstances[item];
         HdStDrawItem const * drawItem = _drawItemInstances[item]->GetDrawItem();
