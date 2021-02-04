@@ -219,7 +219,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                                    ? _tokens->mainBezierQuadTES
                                    : _tokens->mainBezierTriangleTES
                                : TfToken();
-    TES[2] = _tokens->mainVaryingInterpTES;
+    TES[2] = isPrimTypePatches ? _tokens->mainVaryingInterpTES : TfToken();
     TES[3] = TfToken();
 
     // geometry shader
