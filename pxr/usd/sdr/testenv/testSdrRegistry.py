@@ -153,6 +153,7 @@ class TestShaderNode(unittest.TestCase):
             {},                                         # metadata
             "mySubIdentifier")                          # subIdentifier
         assert node.GetIdentifier().endswith("<mySubIdentifier><>")
+        assert node.GetName() == "TestNodeSourceAsset.oso"
 
         # Test GetShaderNodeFromAsset to check that a sourceType is part of
         # the node's identifier if one is specified
