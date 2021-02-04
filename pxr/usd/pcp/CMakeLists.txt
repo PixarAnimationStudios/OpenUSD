@@ -106,6 +106,7 @@ pxr_test_scripts(
     testenv/testPcpRegressionBugs_bug90706.py
     testenv/testPcpRegressionBugs_bug92955.py
     testenv/testPcpRegressionBugs_bug101300.py
+    testenv/testPcpStreamingLayerReload.py
     testenv/testPcpCompositionResults.py
 )
 
@@ -119,6 +120,18 @@ pxr_build_test_shared_lib(TestPcpDynamicFileFormatPlugin
         
     CPPFILES
         testenv/TestPcpDynamicFileFormatPlugin.cpp
+)
+
+pxr_build_test_shared_lib(TestPcpStreamingLayerReload
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX PcpPlugins
+    LIBRARIES
+        tf
+        pcp
+        sdf
+        
+    CPPFILES
+        testenv/TestPcpStreamingLayerReload.cpp
 )
 
 pxr_build_test(testPcpHardToReach
@@ -229,6 +242,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpDynamicFileFormatPlugin.testenv
     DEST testPcpDynamicFileFormatPlugin
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpStreamingLayerReload.testenv
+    DEST testPcpStreamingLayerReload
 )
 
 pxr_install_test_dir(
@@ -1707,6 +1725,12 @@ pxr_register_test(testPcpPathTranslation
 pxr_register_test(testPcpDynamicFileFormatPlugin
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpDynamicFileFormatPlugin"
+    EXPECTED_RETURN_CODE 0  
+)
+
+pxr_register_test(testPcpStreamingLayerReload
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpStreamingLayerReload"
     EXPECTED_RETURN_CODE 0  
 )
 
