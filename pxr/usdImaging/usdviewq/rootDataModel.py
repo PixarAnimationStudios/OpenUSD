@@ -103,7 +103,7 @@ class RootDataModel(QtCore.QObject):
         propertyChange = ChangeNotice.NONE
 
         for p in notice.GetResyncedPaths():
-            if p.IsPrimPath():
+            if p.IsAbsoluteRootOrPrimPath():
                 primChange = ChangeNotice.RESYNC
             if p.IsPropertyPath():
                 propertyChange = ChangeNotice.RESYNC
