@@ -61,6 +61,7 @@
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/glContext.h"
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/info.h"
 
 // Mesh Topology
@@ -1329,17 +1330,16 @@ UsdImagingGLLegacyEngine::TestIntersection(
     const int width = 128;
     const int height = width;
 
-    if (GlfHasLegacyGraphics()) {
-        TF_RUNTIME_ERROR("framebuffer object not supported");
-        return false;
-    }
-
     // Use a separate drawTarget (framebuffer object) for each GL context
     // that uses this renderer, but the drawTargets can share attachments.
-    
     GlfGLContextSharedPtr context = GlfGLContext::GetCurrentGLContext();
     if (!TF_VERIFY(context)) {
         TF_RUNTIME_ERROR("Invalid GL context");
+        return false;
+    }
+
+    if (GlfContextCaps::GetInstance().glVersion < 200) {
+        TF_RUNTIME_ERROR("framebuffer object not supported");
         return false;
     }
 
