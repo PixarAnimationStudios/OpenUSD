@@ -522,8 +522,15 @@ UsdShadeMaterial::_ComputeNamedOutputSources(
             return {};
         }
 
+        // See if this material output is connected to an upstream output of a
+        // shader.
+        // Note, by setting shaderOutputsOnly=true we do not accept upstream
+        // constant values, which can't be used by a renderer as a terminal
+        // node of the network. This also makes this call quite a bit cheaper.
         UsdShadeAttributeVector valueAttrs =
-            UsdShadeUtils::GetValueProducingAttributes(output);
+            UsdShadeUtils::GetValueProducingAttributes(
+                output, /*shaderOutputsOnly*/true);
+
         // If we didn't find any connected attributes we will check the
         // universal context below
         if (!valueAttrs.empty()) {
@@ -536,7 +543,8 @@ UsdShadeMaterial::_ComputeNamedOutputSources(
                 baseName, UsdShadeTokens->universalRenderContext);
         UsdShadeOutput universalOutput = GetOutput(universalOutputName);
         if (TF_VERIFY(universalOutput)) {
-            return UsdShadeUtils::GetValueProducingAttributes(universalOutput);
+            return UsdShadeUtils::GetValueProducingAttributes(
+                universalOutput, /*shaderOutputsOnly*/true);
         }
     }
 

@@ -51,10 +51,10 @@ _GetBaseNameAndType(const TfToken &fullName)
 void wrapUsdShadeUtils()
 {
     UsdShadeAttributeVector (*GetValueProducingAttributes_Input)(
-        const UsdShadeInput &input) = 
+        const UsdShadeInput &input, bool includeAuthoredValues) = 
             &UsdShadeUtils::GetValueProducingAttributes;
     UsdShadeAttributeVector (*GetValueProducingAttributes_Output)(
-        const UsdShadeOutput &output) = 
+        const UsdShadeOutput &output, bool includeAuthoredValues) = 
             &UsdShadeUtils::GetValueProducingAttributes;
 
     scope thisScope = class_<UsdShadeUtils>("Utils", no_init)
@@ -71,8 +71,10 @@ void wrapUsdShadeUtils()
         .def("GetFullName", UsdShadeUtils::GetFullName)
         .staticmethod("GetFullName")
 
-        .def("GetValueProducingAttributes", GetValueProducingAttributes_Input)
-        .def("GetValueProducingAttributes", GetValueProducingAttributes_Output)
+        .def("GetValueProducingAttributes", GetValueProducingAttributes_Input,
+            (arg("input"), arg("shaderOutputsOnly")=false))
+        .def("GetValueProducingAttributes", GetValueProducingAttributes_Output,
+            (arg("output"), arg("shaderOutputsOnly")=false))
         .staticmethod("GetValueProducingAttributes")
         ;
 

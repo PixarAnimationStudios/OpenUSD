@@ -178,7 +178,9 @@ void wrapUsdShadeOutput()
         .def("ClearSources", &Output::ClearSources)
         .def("ClearSource", &Output::ClearSource)
 
-        .def("GetValueProducingAttributes", &Output::GetValueProducingAttributes)
+        .def("GetValueProducingAttributes",
+             &Output::GetValueProducingAttributes,
+             (arg("shaderOutputsOnly")=false))
 
         .def("IsOutput", &Output::IsOutput)
         .staticmethod("IsOutput")

@@ -302,9 +302,11 @@ UsdShadeOutput::ClearSource() const
 }
 
 UsdShadeAttributeVector
-UsdShadeOutput::GetValueProducingAttributes() const
+UsdShadeOutput::GetValueProducingAttributes(
+    bool shaderOutputsOnly) const
 {
-    return UsdShadeUtils::GetValueProducingAttributes(*this);
+    return UsdShadeUtils::GetValueProducingAttributes(*this,
+                                                      shaderOutputsOnly);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

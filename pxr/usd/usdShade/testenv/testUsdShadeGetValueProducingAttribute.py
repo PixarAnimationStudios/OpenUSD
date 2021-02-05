@@ -180,6 +180,41 @@ class TestUsdShadeGetValueProducingAttribute(unittest.TestCase):
                          '/Material/RegularNode.outputs:nodeOutput'],
                          ['NodeGraphValue', None, None, None])
 
+        # ----------------------------------------------------------------------
+        # test resolution with the shaderOutputsOnly=True mode
+        # ----------------------------------------------------------------------
+        # Test Outputs
+        # Finding the upstream attribute that is an output on a shader
+        surfaceGood = material.GetOutput('surfaceGood')
+        attrs = UsdShade.Utils.GetValueProducingAttributes(surfaceGood,
+                                                    shaderOutputsOnly=True)
+        self.assertEqual(len(attrs), 1)
+        self.assertEqual(attrs[0].GetPath(),
+                         Sdf.Path('/Material/Terminal.outputs:bxdfOut'))
+
+        # Make sure it does not find upstream attributes that are not shader
+        # outputs and carry values
+        surfaceBad = material.GetOutput('surfaceBad')
+        attrs = UsdShade.Utils.GetValueProducingAttributes(surfaceBad,
+                                                    shaderOutputsOnly=True)
+        self.assertEqual(attrs, [])
+
+        # Test Inputs
+        # Finding the upstream attribute that is an output of a shader
+        inputGood = terminal.GetInput('terminalInput1')
+        attrs = UsdShade.Utils.GetValueProducingAttributes(inputGood,
+                                                    shaderOutputsOnly=True)
+        self.assertEqual(len(attrs), 1)
+        self.assertEqual(attrs[0].GetPath(),
+                Sdf.Path('/Material/NodeGraph/NestedNode1.outputs:nestedOut1'))
+
+        # Make sure it does not find upstream attributes that are not shader
+        # outputs and carry values
+        inputBad = terminal.GetInput('terminalInput2')
+        attrs = UsdShade.Utils.GetValueProducingAttributes(inputBad,
+                                                    shaderOutputsOnly=True)
+        self.assertEqual(attrs, [])
+
 
 if __name__ == '__main__':
     unittest.main()

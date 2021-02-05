@@ -91,9 +91,29 @@ more efficiently when referenced from multiple locations.
 If the network of shading nodes is directly consumable as a "shader" of a
 type known to some client renderer (e.g. a __surface shader__), then the
 encapsulating parent/ancestor should be declared as a UsdShadeMaterial, which
-is a container that can also be bound to geometries or collections. Materials
-can also be reused and instanced, retaining the same network but allowing
-top-level "Material Interface" parameters to be authored uniquely.
+is a __container__ that can also be bound to geometries or collections.
+Materials can also be reused and instanced, retaining the same network but
+allowing top-level "Material Interface" parameters to be authored uniquely.
+
+## Containers vs Primitive Shading Nodes ## {#UsdShadeContainers}
+
+Containers are prims that are designed to have child prims, like
+UsdShadeMaterial and UsdShadeNodeGraph, and that encapsulate parts or a whole
+network. These containers are differentiated against non-containers, which are
+are shader nodes like UsdShadeShader prims.
+
+Container types are identified by their UsdShadeConnectableAPI::IsContainer()
+implementation, which is an extensible API, such that other types can work as
+containers with the other UsdShade APIs, by implementing the
+UsdShadeConnectableAPIBehavior plugin interface.
+
+Containers usually define an interface that establishes input and output
+attributes, which allows exposing functionality of the encapsulated part of the
+network. With such an interface definition they can be treated in many ways like
+a primitive shading node, but have an implementation that can be inspected in
+Usd.
+
+## Exposing parameters on containers ## {#UsdShadePublicUI}
 
 To expose a parameter to the container, we use the same mechanism that
 connects nodes.
@@ -357,7 +377,7 @@ following values to be passed to the renderer for each shader input:
 NodeGraphs also define outputs to declare the signals that are provided for the
 rest of the network. From the outside, which is where the NodeGraph is connected
 to other shading nodes or NodeGraphs, the outputs behave conceptually like those
-on shadering nodes. On the inside of the NodeGraph the outputs are connected to
+on shading nodes. On the inside of the NodeGraph the outputs are connected to
 outputs of nested shading nodes or nested NodeGraphs _or_ they can be connected
 to input attributes on the same NodeGraph as a pass through mechanism.
 
@@ -438,9 +458,14 @@ because generally the logical connections are their only concern. This
 conversion "flattens" the network into a simple network that only contains
 Shaders with their respective input values and connections.
 
+There are situations where only valid output attributes of shading nodes are
+desired and hence we have a mode, where it will not report input or output
+attributes on containers that carry default values. This mode can be activated
+by the optional _shaderOutputsOnly_ flag.
+
 Attributes in Usd can have not just a single connection target, but potentially
 multiple attributes they target. UsdShade supports having multiple connections
-for Inputs and Output (of containers, only), which means that
+for Inputs and Outputs (of containers, only), which means that
 \ref UsdShadeUtils::GetValueProducingAttributes also handles these scenarios.
 The function is essentially performing a depth first connection tracing, which
 means that when a multi-connection is encountered along the path the tracing
