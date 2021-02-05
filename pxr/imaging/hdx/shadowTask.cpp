@@ -24,13 +24,10 @@
 #include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hdx/shadowTask.h"
-#include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/package.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
@@ -38,7 +35,6 @@
 #include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/light.h"
-#include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
@@ -46,7 +42,6 @@
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/glf/simpleLightingContext.h"
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -331,9 +326,10 @@ HdxShadowTask::_CreateOverrideShader()
     if (!_overrideShader) {
         std::lock_guard<std::mutex> lock(shaderCreateLock);
         if (!_overrideShader) {
-            _overrideShader = HdStShaderCodeSharedPtr(new HdStGLSLFXShader(
-                HioGlslfxSharedPtr(new HioGlslfx(
-                    HdStPackageFallbackSurfaceShader()))));
+            _overrideShader =
+                std::make_shared<HdStGLSLFXShader>(
+                    std::make_shared<HioGlslfx>(
+                        HdStPackageFallbackSurfaceShader()));
         }
     }
 }

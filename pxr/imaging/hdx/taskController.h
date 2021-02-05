@@ -31,7 +31,6 @@
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
 #include "pxr/imaging/hdx/colorCorrectionTask.h"
-#include "pxr/imaging/hdx/colorChannelTask.h"
 
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -41,7 +40,6 @@
 #include "pxr/imaging/cameraUtil/framing.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/usd/sdf/path.h"
-#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/gf/matrix4d.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -315,7 +313,7 @@ private:
                   SdfPath const& delegateID)
             : HdSceneDelegate(parentIndex, delegateID)
             {}
-        virtual ~_Delegate() = default;
+        ~_Delegate() override = default;
 
         // HdxTaskController set/get interface
         template <typename T>
@@ -343,21 +341,21 @@ private:
         }
 
         // HdSceneDelegate interface
-        virtual VtValue Get(SdfPath const& id, TfToken const& key);
-        virtual GfMatrix4d GetTransform(SdfPath const& id);
-        virtual VtValue GetCameraParamValue(SdfPath const& id, 
-                                            TfToken const& key);
-        virtual VtValue GetLightParamValue(SdfPath const& id, 
-                                            TfToken const& paramName);
-        virtual bool IsEnabled(TfToken const& option) const;
-        virtual HdRenderBufferDescriptor
-            GetRenderBufferDescriptor(SdfPath const& id);
-        virtual TfTokenVector GetTaskRenderTags(SdfPath const& taskId);
+        VtValue Get(SdfPath const& id, TfToken const& key) override;
+        GfMatrix4d GetTransform(SdfPath const& id) override;
+        VtValue GetCameraParamValue(SdfPath const& id, 
+                                    TfToken const& key) override;
+        VtValue GetLightParamValue(SdfPath const& id, 
+                                   TfToken const& paramName) override;
+        bool IsEnabled(TfToken const& option) const override;
+        HdRenderBufferDescriptor
+            GetRenderBufferDescriptor(SdfPath const& id) override;
+        TfTokenVector GetTaskRenderTags(SdfPath const& taskId) override;
 
 
     private:
-        typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
-        typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;
+        using _ValueCache = TfHashMap<TfToken, VtValue, TfToken::HashFunctor>;
+        using _ValueCacheMap = TfHashMap<SdfPath, _ValueCache, SdfPath::Hash>;
         _ValueCacheMap _valueCacheMap;
     };
     _Delegate _delegate;

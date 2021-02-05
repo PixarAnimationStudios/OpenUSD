@@ -35,7 +35,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // Interface class for computing the shadow matrix
 // for a given viewport.
-class HdxShadowMatrixComputation {
+class HdxShadowMatrixComputation
+{
 public:
     virtual std::vector<GfMatrix4d> Compute(const GfVec4f &viewport, CameraUtilConformWindowPolicy policy) = 0;
 

@@ -24,9 +24,8 @@
 #include "pxr/imaging/hdx/taskController.h"
 
 #include "pxr/imaging/hd/camera.h"
+#include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/renderBuffer.h"
-#include "pxr/imaging/hd/renderDelegate.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hdx/aovInputTask.h"
 #include "pxr/imaging/hdx/colorizeSelectionTask.h"
 #include "pxr/imaging/hdx/colorChannelTask.h"
@@ -42,9 +41,7 @@
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
-#include "pxr/imaging/hdx/tokens.h"
 
-#include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
