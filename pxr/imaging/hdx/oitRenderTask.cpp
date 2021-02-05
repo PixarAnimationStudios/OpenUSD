@@ -23,21 +23,15 @@
 //
 #include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/oitRenderTask.h"
+#include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/oitBufferAccessor.h"
-#include "pxr/imaging/hdx/tokens.h"
-#include "pxr/imaging/hdx/debugCodes.h"
 
-#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/renderPass.h"
-#include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
-#include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -54,9 +48,7 @@ HdxOitRenderTask::HdxOitRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
 {
 }
 
-HdxOitRenderTask::~HdxOitRenderTask()
-{
-}
+HdxOitRenderTask::~HdxOitRenderTask() = default;
 
 void
 HdxOitRenderTask::_Sync(
