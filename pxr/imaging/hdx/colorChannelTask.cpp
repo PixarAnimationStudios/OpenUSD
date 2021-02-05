@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdx/colorChannelTask.h"
+#include "pxr/imaging/hdx/fullscreenShader.h"
 #include "pxr/imaging/hdx/package.h"
 
 #include "pxr/imaging/hd/perfLog.h"
@@ -51,9 +52,7 @@ HdxColorChannelTask::HdxColorChannelTask(
 {
 }
 
-HdxColorChannelTask::~HdxColorChannelTask()
-{
-}
+HdxColorChannelTask::~HdxColorChannelTask() = default;
 
 void
 HdxColorChannelTask::_Sync(HdSceneDelegate* delegate,
