@@ -26,9 +26,13 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/token.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct HdMaterialNetworkMap;
 class UsdAttribute;
+class UsdShadeShader;
 class UsdTimeCode;
 class VtValue;
 
@@ -44,6 +48,16 @@ class VtValue;
 VtValue
 UsdImaging_ResolveMaterialParamValue(
     const UsdAttribute& attr, const UsdTimeCode& time);
+
+void
+UsdImaging_BuildHdMaterialNetworkFromTerminal(
+    UsdShadeShader const& usdTerminal,
+    TfToken const& terminalIdentifier,
+    TfToken const& networkSelector,
+    TfTokenVector const& shaderSourceTypes,
+    HdMaterialNetworkMap *materialNetworkMap,
+    UsdTimeCode time,
+    bool* timeVarying);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
