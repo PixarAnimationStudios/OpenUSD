@@ -30,7 +30,6 @@
 #include "pxr/base/trace/reporterDataSourceCollector.h"
 #include "pxr/base/trace/threads.h"
 
-#include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/timing.h"
@@ -400,31 +399,16 @@ TraceReporter::_ProcessCollection(
     }
 }
 
-namespace {
-class _GlobalReporterHolder {
-public:
-    /// Returns the singleton instance.
-    static _GlobalReporterHolder &GetInstance() {
-        return TfSingleton<_GlobalReporterHolder>::GetInstance();
-    }
-
-    _GlobalReporterHolder() {
-        _globalReporter =
-            TraceReporter::New("Trace global reporter",
-                TraceReporterDataSourceCollector::New());
-
-    }
-
-    TraceReporterRefPtr _globalReporter;
-};
-}
-
-TF_INSTANTIATE_SINGLETON(_GlobalReporterHolder);
-
 TraceReporterPtr 
 TraceReporter::GetGlobalReporter()
 {
-    return _GlobalReporterHolder::GetInstance()._globalReporter;
+    // Note that, like TfSingleton, the global reporter instance is not freed
+    // at shutdown.
+    static const TraceReporterPtr globalReporter(
+        new TraceReporter(
+            "Trace global reporter",
+            TraceReporterDataSourceCollector::New()));
+    return globalReporter;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
