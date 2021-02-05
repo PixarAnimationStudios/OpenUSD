@@ -326,9 +326,7 @@ HdxOitResolveTask::Execute(HdTaskContext* ctx)
         return;
     }
 
-    _renderPassState->Bind(); 
     _renderPass->Execute(_renderPassState, GetRenderTags());
-    _renderPassState->Unbind();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

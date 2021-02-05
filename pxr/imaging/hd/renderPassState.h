@@ -72,14 +72,6 @@ public:
     HD_API
     virtual void Prepare(HdResourceRegistrySharedPtr const &resourceRegistry);
 
-    // Bind, called once per frame before drawing.
-    HD_API
-    virtual void Bind();
-
-    // Unbind, called once per frame after drawing.
-    HD_API
-    virtual void Unbind();
-
     // ---------------------------------------------------------------------- //
     /// \name Camera and framing state
     // ---------------------------------------------------------------------- //

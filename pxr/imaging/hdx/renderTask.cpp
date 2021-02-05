@@ -170,11 +170,9 @@ HdxRenderTask::Execute(HdTaskContext* ctx)
         _SetHdStRenderPassState(ctx, extendedState);
     }
 
-    // Bind the render state and render geometry with the rendertags (if any)
+    // Render geometry with the rendertags (if any)
     if (_pass) {
-        renderPassState->Bind();
         _pass->Execute(renderPassState, GetRenderTags());
-        renderPassState->Unbind();
     }
 }
 

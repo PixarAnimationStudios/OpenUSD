@@ -432,15 +432,11 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     }
 
     if (_UseOcclusionPass()) {
-        _occluderRenderPassState->Bind();
         _occluderRenderPass->Execute(_occluderRenderPassState,
                                      GetRenderTags());
-        _occluderRenderPassState->Unbind();
     }
-    _pickableRenderPassState->Bind();
     _pickableRenderPass->Execute(_pickableRenderPassState,
                                  GetRenderTags());
-    _pickableRenderPassState->Unbind();
 
     glDisable(GL_STENCIL_TEST);
 

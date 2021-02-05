@@ -203,10 +203,11 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
         renderPassState);
     TF_VERIFY(stRenderPassState);
 
+    // Validate and update draw batches.
     _PrepareCommandBuffer(renderTags);
 
     // CPU frustum culling (if chosen)
-    _Cull(stRenderPassState);
+    _FrustumCullCPU(stRenderPassState);
 
     // Downcast the resource registry
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
@@ -238,6 +239,10 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
     HgiGLGraphicsCmds* glGfxCmds = 
         dynamic_cast<HgiGLGraphicsCmds*>(gfxCmds.get());
 
+    // XXX: The Bind/Unbind calls below set/restore GL state.
+    // This will be reworked to use Hgi.
+    stRenderPassState->Bind();
+
     if (glGfxCmds) {
         // XXX Tmp code path to allow non-hgi code to insert functions into
         // HgiGL ops-stack. Will be removed once Storms uses Hgi everywhere
@@ -253,6 +258,8 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
         gfxCmds->PopDebugGroup();
         _hgi->SubmitCmds(gfxCmds.get());
     }
+
+    stRenderPassState->Unbind();
 }
 
 void
@@ -373,7 +380,7 @@ HdSt_RenderPass::_PrepareCommandBuffer(TfTokenVector const& renderTags)
 }
 
 void
-HdSt_RenderPass::_Cull(
+HdSt_RenderPass::_FrustumCullCPU(
     HdStRenderPassStateSharedPtr const &renderPassState)
 {
     // This process should be moved to HdSt_DrawBatch::PrepareDraw

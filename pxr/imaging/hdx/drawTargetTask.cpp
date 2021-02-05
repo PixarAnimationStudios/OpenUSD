@@ -534,7 +534,6 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
     for (const _RenderPassInfo &renderPassInfo : _renderPassesInfo) {
         HdStRenderPassStateSharedPtr const renderPassState =
             renderPassInfo.renderPassState;
-        renderPassState->Bind();
         
         // XXX: Should the Raster State or Renderpass set and restore this?
         // save the current viewport
@@ -548,8 +547,6 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
                    originalViewport[1],
                    originalViewport[2],
                    originalViewport[3]);
-
-        renderPassState->Unbind();
 
     }
 

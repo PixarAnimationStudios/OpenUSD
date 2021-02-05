@@ -50,7 +50,8 @@
 //           HdResourceRegistry.
 // 38 -> 39: Removed garbage collection API from HdChangeTracker and
 //           HdResourceRegistry.
-#define HD_API_VERSION 39
+// 39 -> 40: Removed Bind and Unbind API from HdRenderPassState.
+#define HD_API_VERSION 40
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

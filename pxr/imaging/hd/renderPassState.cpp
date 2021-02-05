@@ -98,18 +98,6 @@ HdRenderPassState::Prepare(HdResourceRegistrySharedPtr const &resourceRegistry)
     }
 }
 
-/* virtual */
-void
-HdRenderPassState::Bind()
-{
-}
-
-/* virtual */
-void
-HdRenderPassState::Unbind()
-{
-}
-
 void
 HdRenderPassState::SetCameraAndViewport(HdCamera const *camera,
                                         GfVec4d const &viewport)

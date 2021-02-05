@@ -53,6 +53,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdStShaderCodeSharedPtr HdxShadowTask::_overrideShader;
 
+bool
+_HasDrawItems(HdRenderPassSharedPtr pass)
+{
+    HdSt_RenderPass *hdStRenderPass = static_cast<HdSt_RenderPass*>(pass.get());
+    return hdStRenderPass && hdStRenderPass->GetDrawItemCount() > 0;
+}
+
 HdxShadowTask::HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdTask(id)
     , _passes()
@@ -199,6 +206,12 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
                 std::make_shared<HdStRenderPassState>(
                     renderPassShadowShader);
 
+            renderPassState->SetDepthFunc(_params.depthFunc);
+            renderPassState->SetDepthBiasUseDefault(!_params.depthBiasEnable);
+            renderPassState->SetDepthBiasEnabled(_params.depthBiasEnable);
+            renderPassState->SetDepthBias(_params.depthBiasConstantFactor,
+                                          _params.depthBiasSlopeFactor);
+
             // This state is invariant of parameter changes so set it
             // once.
             renderPassState->SetLightingEnabled(false);
@@ -252,6 +265,7 @@ HdxShadowTask::Prepare(HdTaskContext* ctx,
 
     for(size_t passId = 0; passId < _passes.size(); passId++) {
         _renderPassStates[passId]->Prepare(resourceRegistry);
+        _passes[passId]->Prepare(GetRenderTags());
     }
 }
 
@@ -269,25 +283,9 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
         return;
     }
 
-    if (_params.depthBiasEnable) {
-        glEnable(GL_POLYGON_OFFSET_FILL);
-        glPolygonOffset(_params.depthBiasSlopeFactor,
-            _params.depthBiasConstantFactor);
-    } else {
-        glDisable(GL_POLYGON_OFFSET_FILL);
-    }
-
-    // XXX: Move conversion to sync time once Task header becomes private.
-    glDepthFunc(HdStGLConversions::GetGlDepthFunc(_params.depthFunc));
-    glEnable(GL_PROGRAM_POINT_SIZE);
-
     // Generate the actual shadow maps
     GlfSimpleShadowArrayRefPtr const shadows = lightingContext->GetShadows();
     size_t numShadowMaps = shadows->GetNumShadowMapPasses();
-    // Should be sufficient to bind the renderPassState once
-    if (!_renderPassStates.empty()) {
-        _renderPassStates[0]->Bind();
-    }
     for (size_t shadowId = 0; shadowId < numShadowMaps; shadowId++) {
 
         // Make sure each pass got created. Light shadow indices are supposed
@@ -300,26 +298,23 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
         // Bind the framebuffer that will store shadowId shadow map
         shadows->BeginCapture(shadowId, true);
 
-        // Render the actual geometry in the "defaultMaterialTag" collection
-        _passes[shadowId]->Execute(
-            _renderPassStates[shadowId],
-            GetRenderTags());
+        if (_HasDrawItems(_passes[shadowId])) {
+            // Render the actual geometry in the "defaultMaterialTag" collection
+            _passes[shadowId]->Execute(
+                _renderPassStates[shadowId],
+                GetRenderTags());
+        }
 
-        // Render the actual geometry in the "masked" materialTag collection
-        _passes[shadowId + numShadowMaps]->Execute(
-            _renderPassStates[shadowId + numShadowMaps],
-            GetRenderTags());
+        if (_HasDrawItems(_passes[shadowId + numShadowMaps])) {
+            // Render the actual geometry in the "masked" materialTag collection
+            _passes[shadowId + numShadowMaps]->Execute(
+                _renderPassStates[shadowId + numShadowMaps],
+                GetRenderTags());
+        }
    
         // Unbind the buffer and move on to the next shadow map
         shadows->EndCapture(shadowId);
     }
-    if (!_renderPassStates.empty()) {
-        _renderPassStates[0]->Unbind();
-    }
-
-    // restore GL states to default
-    glDisable(GL_PROGRAM_POINT_SIZE);
-    glDisable(GL_POLYGON_OFFSET_FILL);
 }
 
 const TfTokenVector &
