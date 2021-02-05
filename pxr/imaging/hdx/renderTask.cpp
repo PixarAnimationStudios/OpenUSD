@@ -24,7 +24,6 @@
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/tokens.h"
-#include "pxr/imaging/hdx/debugCodes.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderDelegate.h"
@@ -50,9 +49,7 @@ HdxRenderTask::HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
 {
 }
 
-HdxRenderTask::~HdxRenderTask()
-{
-}
+HdxRenderTask::~HdxRenderTask() = default;
 
 bool
 HdxRenderTask::IsConverged() const
@@ -112,8 +109,8 @@ HdxRenderTask::_Sync(HdSceneDelegate* delegate,
                 // use that id to look up params in the scene delegate.
                 // this setup task isn't indexed, so there's no concern
                 // about name conflicts.
-                _setupTask.reset(
-                    new HdxRenderSetupTask(delegate, GetId()));
+                _setupTask = std::make_shared<HdxRenderSetupTask>(
+                    delegate, GetId());
             }
 
             _setupTask->SyncParams(delegate, params);

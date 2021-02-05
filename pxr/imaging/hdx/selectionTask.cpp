@@ -21,16 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/hdx/selectionTask.h"
 
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/tokens.h"
 
-#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -41,7 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // -------------------------------------------------------------------------- //
 
-typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
+using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
 
 HdxSelectionTask::HdxSelectionTask(HdSceneDelegate* delegate,
                                    SdfPath const& id)
@@ -55,9 +51,7 @@ HdxSelectionTask::HdxSelectionTask(HdSceneDelegate* delegate,
 {
 }
 
-HdxSelectionTask::~HdxSelectionTask()
-{
-}
+HdxSelectionTask::~HdxSelectionTask() = default;
 
 void
 HdxSelectionTask::Sync(HdSceneDelegate* delegate,

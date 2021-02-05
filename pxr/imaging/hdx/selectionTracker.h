@@ -29,7 +29,6 @@
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/selection.h"
 #include "pxr/base/vt/array.h"
-#include "pxr/usd/sdf/path.h"
 #include <vector>
 #include <memory>
 
@@ -98,11 +97,12 @@ using HdxSelectionTrackerSharedPtr =
 /// HdxSelectionTask takes HdxSelectionTracker as a task parameter, and uploads
 /// the selection buffer encoding to the GPU.
 ///
-class HdxSelectionTracker {
+class HdxSelectionTracker
+{
 public:
     HDX_API
     HdxSelectionTracker();
-    virtual ~HdxSelectionTracker() = default;
+    virtual ~HdxSelectionTracker();
 
     /// Optional override to update the HdSelection during
     /// HdxSelectionTask::Sync.

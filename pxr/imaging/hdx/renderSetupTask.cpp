@@ -48,18 +48,18 @@ HdStShaderCodeSharedPtr HdxRenderSetupTask::_overrideShader;
 
 HdxRenderSetupTask::HdxRenderSetupTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdTask(id)
+    , _colorRenderPassShader(
+        std::make_shared<HdStRenderPassShader>(
+            HdxPackageRenderPassColorShader()))
+    , _idRenderPassShader(
+        std::make_shared<HdStRenderPassShader>(
+            HdxPackageRenderPassIdShader()))
     , _overrideWindowPolicy{false, CameraUtilFit}
     , _viewport(0)
 {
-    _colorRenderPassShader.reset(
-        new HdStRenderPassShader(HdxPackageRenderPassColorShader()));
-    _idRenderPassShader.reset(
-        new HdStRenderPassShader(HdxPackageRenderPassIdShader()));
 }
 
-HdxRenderSetupTask::~HdxRenderSetupTask()
-{
-}
+HdxRenderSetupTask::~HdxRenderSetupTask() = default;
 
 void
 HdxRenderSetupTask::Sync(HdSceneDelegate* delegate,
@@ -250,9 +250,10 @@ HdxRenderSetupTask::_CreateOverrideShader()
     if (!_overrideShader) {
         std::lock_guard<std::mutex> lock(shaderCreateLock);
         if (!_overrideShader) {
-            _overrideShader = HdStShaderCodeSharedPtr(new HdStGLSLFXShader(
-                HioGlslfxSharedPtr(new HioGlslfx(
-                    HdStPackageFallbackSurfaceShader()))));
+            _overrideShader =
+                std::make_shared<HdStGLSLFXShader>(
+                    std::make_shared<HioGlslfx>(
+                        HdStPackageFallbackSurfaceShader()));
         }
     }
 }
