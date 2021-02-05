@@ -38,9 +38,7 @@ HdxPresentTask::HdxPresentTask(HdSceneDelegate* delegate, SdfPath const& id)
 {
 }
 
-HdxPresentTask::~HdxPresentTask()
-{
-}
+HdxPresentTask::~HdxPresentTask() = default;
 
 void
 HdxPresentTask::_Sync(

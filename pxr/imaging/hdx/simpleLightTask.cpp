@@ -38,11 +38,8 @@
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
-
-#include "pxr/base/gf/frustum.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

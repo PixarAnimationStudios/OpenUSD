@@ -28,13 +28,11 @@
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 
-#include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/task.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 
-#include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/declarePtrs.h"
 

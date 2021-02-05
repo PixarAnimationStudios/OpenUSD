@@ -935,7 +935,7 @@ bool
 operator==(HdxPickTaskContextParams const& lhs,
            HdxPickTaskContextParams const& rhs)
 {
-    typedef void (*RawDepthMaskCallback)(void);
+    using RawDepthMaskCallback = void (*) ();
     const RawDepthMaskCallback *lhsDepthMaskPtr =
         lhs.depthMaskCallback.target<RawDepthMaskCallback>();
     const RawDepthMaskCallback *rhsDepthMaskPtr =
@@ -967,7 +967,7 @@ operator!=(HdxPickTaskContextParams const& lhs,
 std::ostream&
 operator<<(std::ostream& out, HdxPickTaskContextParams const& p)
 {
-    typedef void (*RawDepthMaskCallback)(void);
+    using RawDepthMaskCallback = void (*) ();
     const RawDepthMaskCallback *depthMaskPtr =
         p.depthMaskCallback.target<RawDepthMaskCallback>();
     const RawDepthMaskCallback depthMask =

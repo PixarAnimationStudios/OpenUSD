@@ -70,20 +70,20 @@ public:
     HdxPresentTask(HdSceneDelegate* delegate, SdfPath const& id);
 
     HDX_API
-    virtual ~HdxPresentTask();
+    ~HdxPresentTask() override;
 
     HDX_API
-    virtual void Prepare(HdTaskContext* ctx,
-                         HdRenderIndex* renderIndex) override;
+    void Prepare(HdTaskContext* ctx,
+                 HdRenderIndex* renderIndex) override;
 
     HDX_API
-    virtual void Execute(HdTaskContext* ctx) override;
+    void Execute(HdTaskContext* ctx) override;
 
 protected:
     HDX_API
-    virtual void _Sync(HdSceneDelegate* delegate,
-                       HdTaskContext* ctx,
-                       HdDirtyBits* dirtyBits) override;
+    void _Sync(HdSceneDelegate* delegate,
+               HdTaskContext* ctx,
+               HdDirtyBits* dirtyBits) override;
 
 private:
     HdxPresentTaskParams _params;
