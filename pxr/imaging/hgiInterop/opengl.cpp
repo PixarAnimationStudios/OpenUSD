@@ -146,12 +146,9 @@ HgiInteropOpenGL::CompositeToInterop(
     // Verify there were no gl errors coming in.
     TF_VERIFY(glGetError() == GL_NO_ERROR);
 
-    // Bind textures
-    HgiGLTexture *glColor = static_cast<HgiGLTexture*>(color.Get());
-    HgiGLTexture *glDepth = static_cast<HgiGLTexture*>(depth.Get());
-
-    if (!ARCH_UNLIKELY(glColor)) {
-        TF_CODING_ERROR("A valid HgiGL color texture handle is required.\n");
+    if (!ARCH_UNLIKELY(dynamic_cast<HgiGLTexture*>(color.Get()))) {
+        TF_CODING_ERROR(
+            "A valid OpenGL HgiGL color texture handle is required.\n");
         return;
     }
 
@@ -165,19 +162,23 @@ HgiInteropOpenGL::CompositeToInterop(
     glGetIntegerv(GL_ACTIVE_TEXTURE, &restoreActiveTexture);
 
     // Setup shader program
-    uint32_t prg = color && depth ? _prgDepth : _prgNoDepth;
+    const uint32_t prg = color && depth ? _prgDepth : _prgNoDepth;
     glUseProgram(prg);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, glColor->GetTextureId());
-    GLint loc = glGetUniformLocation(prg, "colorIn");
-    glUniform1i(loc, 0);
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D,
+                      static_cast<GLuint>(color->GetRawResource()));
+        const GLint loc = glGetUniformLocation(prg, "colorIn");
+        glUniform1i(loc, 0);
+    }
 
     // Depth is optional
-    if (glDepth) {
+    if (depth) {
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, glDepth->GetTextureId());
-        GLint loc = glGetUniformLocation(prg, "depthIn");
+        glBindTexture(GL_TEXTURE_2D,
+                      static_cast<GLuint>(depth->GetRawResource()));
+        const GLint loc = glGetUniformLocation(prg, "depthIn");
         glUniform1i(loc, 1);
     }
 
@@ -186,25 +187,25 @@ HgiInteropOpenGL::CompositeToInterop(
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &restoreArrayBuffer);
 
     // Vertex attributes
-    GLint locPosition = glGetAttribLocation(prg, "position");
+    const GLint locPosition = glGetAttribLocation(prg, "position");
     glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
     glVertexAttribPointer(locPosition, 4, GL_FLOAT, GL_FALSE,
             sizeof(float)*6, 0);
     glEnableVertexAttribArray(locPosition);
 
-    GLint locUv = glGetAttribLocation(prg, "uvIn");
+    const GLint locUv = glGetAttribLocation(prg, "uvIn");
     glVertexAttribPointer(locUv, 2, GL_FLOAT, GL_FALSE,
             sizeof(float)*6, reinterpret_cast<void*>(sizeof(float)*4));
     glEnableVertexAttribArray(locUv);
 
     // Since we want to composite over the application's framebuffer contents,
     // we need to honor depth testing if we have a valid depth texture.
-    GLboolean restoreDepthEnabled = glIsEnabled(GL_DEPTH_TEST);
+    const GLboolean restoreDepthEnabled = glIsEnabled(GL_DEPTH_TEST);
     GLboolean restoreDepthMask;
     glGetBooleanv(GL_DEPTH_WRITEMASK, &restoreDepthMask);
     GLint restoreDepthFunc;
     glGetIntegerv(GL_DEPTH_FUNC, &restoreDepthFunc);
-    if (glDepth) {
+    if (depth) {
         glEnable(GL_DEPTH_TEST);
         glDepthMask(GL_TRUE);
         // Note: Use LEQUAL and not LESS to ensure that fragments with only
