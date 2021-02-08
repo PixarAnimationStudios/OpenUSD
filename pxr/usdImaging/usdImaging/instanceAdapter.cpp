@@ -232,6 +232,9 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         // Allocate hydra prototype prims for the prims in the USD prototype.
         // -------------------------------------------------------------- //
 
+        // We do not need _GetDisplayPredicateForPrototypes here because
+        // Usd_PrimData::_ComposeAndCacheFlags special-cases
+        // native instancing prototypes with Usd_PrimDefinedFlag
         UsdPrimRange range(prototypePrim, _GetDisplayPredicate());
         int protoID = 0;
         int primCount = 0;

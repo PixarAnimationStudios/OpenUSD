@@ -660,6 +660,7 @@ private:
     _HdPrimInfo *_GetHdPrimInfo(const SdfPath &cachePath);
 
     Usd_PrimFlagsConjunction _GetDisplayPredicate() const;
+    Usd_PrimFlagsConjunction _GetDisplayPredicateForPrototypes() const;
 
     // Mark render tags dirty for all prims.
     // This is done in response to toggling the purpose-based display settings.
