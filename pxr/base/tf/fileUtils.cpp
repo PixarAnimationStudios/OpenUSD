@@ -308,7 +308,7 @@ Tf_MakeDirsRec(string const& path, int mode, bool existOk)
     const string head = TfStringTrimRight(TfGetPathName(path), pathsep.c_str());
     const string tail = TfGetBaseName(path);
 
-    if (!head.empty() && !tail.empty() && !TfPathExists(head)) {
+    if (!head.empty() && !tail.empty() && !TfPathExists(head) && head != path) {
         if (!Tf_MakeDirsRec(head, mode, existOk)) {
 #if defined(ARCH_OS_WINDOWS)
             if (GetLastError() != ERROR_ALREADY_EXISTS)
