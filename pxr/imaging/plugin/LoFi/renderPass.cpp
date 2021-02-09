@@ -366,7 +366,6 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
   }
 
   glUseProgram(0);
-  glDisable(GL_POINT_SMOOTH);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

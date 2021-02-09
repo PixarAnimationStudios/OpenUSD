@@ -57,7 +57,7 @@ void main()
   float dc = dot(delta, LOFI_GET_normal())  ;
   //if(dc< 0.5) color *= 0.0;
   float dl = dot(lightDir, LOFI_GET_normal())  ;
-  if(dl<0.5)color *=0.2;  
+  color *= dl;
   
-  LOFI_SET_result(vec4(color,1.0));
+  LOFI_SET_result(vec4(color, 1.0));
 }
