@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
 
@@ -33,27 +34,42 @@ namespace bp = boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+
 namespace {
+
 
 static
 std::string
 _Repr(const NdrNodeDiscoveryResult& x)
 {
+    std::vector<std::string> args = {
+        TfPyRepr(x.identifier),
+        TfPyRepr(x.version),
+        TfPyRepr(x.name),
+        TfPyRepr(x.family),
+        TfPyRepr(x.discoveryType),
+        TfPyRepr(x.sourceType),
+        TfPyRepr(x.uri),
+        TfPyRepr(x.resolvedUri)
+    };
+
+    #define ADD_KW_ARG(kwArgs, propName) \
+        kwArgs.push_back(TfStringPrintf(#propName "=%s", \
+                                        TfPyRepr(x.propName).c_str()));
+
+    if (!x.sourceCode.empty()) { ADD_KW_ARG(args, sourceCode); };
+    if (!x.metadata.empty()) { ADD_KW_ARG(args, metadata); };
+    if (!x.blindData.empty()) { ADD_KW_ARG(args, blindData); };
+    if (!x.subIdentifier.IsEmpty()) { ADD_KW_ARG(args, subIdentifier); };
+    if (!x.aliases.empty()) { ADD_KW_ARG(args, aliases); };
+
+    #undef ADD_KW_ARG
+
     return TF_PY_REPR_PREFIX +
-        TfStringPrintf("NodeDiscoveryResult(%s, %s, %s, %s, %s, %s, %s, %s%s%s, "
-                       "%s)",
-                       TfPyRepr(x.identifier).c_str(),
-                       TfPyRepr(x.version).c_str(),
-                       TfPyRepr(x.name).c_str(),
-                       TfPyRepr(x.family).c_str(),
-                       TfPyRepr(x.discoveryType).c_str(),
-                       TfPyRepr(x.sourceType).c_str(),
-                       TfPyRepr(x.uri).c_str(),
-                       TfPyRepr(x.resolvedUri).c_str(),
-                       x.blindData.empty() ? "" :", ",
-                       x.blindData.empty() ? "" :TfPyRepr(x.blindData).c_str(),
-                       TfPyRepr(x.subIdentifier).c_str());
+        TfStringPrintf("NodeDiscoveryResult(%s)", 
+                       TfStringJoin(args, ", ").c_str());
 }
+
 
 // XXX: WBN if Tf provided this sort of converter for stl maps.
 template <typename MAP>
@@ -146,7 +162,7 @@ void wrapNodeDiscoveryResult()
     class_<This>("NodeDiscoveryResult", no_init)
         .def(init<NdrIdentifier, NdrVersion, std::string, TfToken, TfToken, 
                   TfToken, std::string, std::string, std::string,
-                  NdrTokenMap, std::string, TfToken>(
+                  NdrTokenMap, std::string, TfToken, NdrTokenVec>(
                   (arg("identifier"),
                    arg("version"),
                    arg("name"),
@@ -158,19 +174,28 @@ void wrapNodeDiscoveryResult()
                    arg("sourceCode")=std::string(), 
                    arg("metadata")=NdrTokenMap(),
                    arg("blindData")=std::string(),
-                   arg("subIdentifier")=TfToken())))
-        .add_property("identifier", &This::identifier)
+                   arg("subIdentifier")=TfToken(),
+                   arg("aliases")=NdrTokenVec())))
+        .add_property("identifier", make_getter(&This::identifier,
+                          return_value_policy<return_by_value>()))
         .add_property("version", &This::version)
         .add_property("name", &This::name)
-        .add_property("family", &This::family)
-        .add_property("discoveryType", &This::discoveryType)
-        .add_property("sourceType", &This::sourceType)
+        .add_property("family", make_getter(&This::family, 
+                          return_value_policy<return_by_value>()))
+        .add_property("discoveryType", make_getter(&This::discoveryType, 
+                          return_value_policy<return_by_value>()))
+        .add_property("sourceType", make_getter(&This::sourceType, 
+                          return_value_policy<return_by_value>()))
         .add_property("uri", &This::uri)
         .add_property("resolvedUri", &This::resolvedUri)
         .add_property("sourceCode", &This::sourceCode)
-        .add_property("metadata", &This::metadata)
+        .add_property("metadata", make_getter(&This::metadata,  
+                          return_value_policy<TfPyMapToDictionary>()))
         .add_property("blindData", &This::blindData)
-        .add_property("subIdentifier", &This::subIdentifier)
+        .add_property("subIdentifier", make_getter(&This::subIdentifier, 
+                          return_value_policy<return_by_value>()))
+        .add_property("aliases", make_getter(&This::aliases,  
+                          return_value_policy<TfPySequenceToList>()))
         .def("__repr__", _Repr)
         ;
 

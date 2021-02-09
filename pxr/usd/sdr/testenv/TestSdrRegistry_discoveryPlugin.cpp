@@ -75,6 +75,7 @@ public:
                 "TestNodeOSL.oso",
                 "TestNodeOSL.oso"
             ),
+            // Provide an alias for this node's identifier.
             NdrNodeDiscoveryResult(
                 TfToken("TestNodeSameName"),
                 NdrVersion().GetAsDefault(),
@@ -83,7 +84,12 @@ public:
                 TfToken("args"),
                 TfToken("RmanCpp"),
                 "TestNodeSameName.args",
-                "TestNodeSameName.args"
+                "TestNodeSameName.args",
+                std::string(),
+                NdrTokenMap(),
+                std::string(),
+                TfToken(),
+                NdrTokenVec({TfToken("Alias_TestNodeSameName")})
             ),
             NdrNodeDiscoveryResult(
                 TfToken("TestNodeSameName"),
