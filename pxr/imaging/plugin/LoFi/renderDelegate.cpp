@@ -156,8 +156,6 @@ LoFiRenderDelegate::_Initialize()
 
   // Create the RenderPassState object
   _renderPassState = CreateRenderPassState();
-  std::cout << "LOFI DELEGATE INITIALIZED !" << std::endl;
-
 }
 
 LoFiRenderDelegate::~LoFiRenderDelegate()
@@ -189,12 +187,10 @@ LoFiRenderDelegate::SetDrivers(HdDriverVector const& drivers)
 void 
 LoFiRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
-  std::cout << "LOFI DELEGATE RESOURCE COMMIT STARTED !" << std::endl;
   _resourceRegistry->Commit();
 
   //if (tracker->IsGarbageCollectionNeeded()) {
   _resourceRegistry->GarbageCollect();
-  std::cout << "LOFI DELEGATE RESOURCE COMMITED !" << std::endl;
   //  tracker->ClearGarbageCollectionNeeded();
   //}  
 }
@@ -241,7 +237,6 @@ HdRprim *
 LoFiRenderDelegate::CreateRprim(TfToken const& typeId,
                                     SdfPath const& rprimId)
 {
-  std::cout << "LOFI DELEGATE CREATE RPRIM !" << std::endl;
   if (typeId == HdPrimTypeTokens->mesh) {
     return new LoFiMesh(rprimId);
   } else if(typeId == HdPrimTypeTokens->points) {
