@@ -24,8 +24,8 @@
 #include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgiGL/hgi.h"
-#include "pxr/imaging/hgiGL/texture.h"
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/hgiInterop/opengl.h"
 
 
@@ -146,9 +146,16 @@ HgiInteropOpenGL::CompositeToInterop(
     // Verify there were no gl errors coming in.
     TF_VERIFY(glGetError() == GL_NO_ERROR);
 
-    if (!ARCH_UNLIKELY(dynamic_cast<HgiGLTexture*>(color.Get()))) {
+    if (!ARCH_UNLIKELY(color)) {
+        TF_CODING_ERROR("A valid color texture handle is required.\n");
+        return;
+    }
+
+    const GLuint colorName = static_cast<GLuint>(color->GetRawResource());
+    if (!glIsTexture(colorName)) {
         TF_CODING_ERROR(
-            "A valid OpenGL HgiGL color texture handle is required.\n");
+            "Hgi color texture handle is not holding a valid OpenGL "
+            "texture.");
         return;
     }
 
@@ -167,8 +174,7 @@ HgiInteropOpenGL::CompositeToInterop(
 
     {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D,
-                      static_cast<GLuint>(color->GetRawResource()));
+        glBindTexture(GL_TEXTURE_2D, colorName);
         const GLint loc = glGetUniformLocation(prg, "colorIn");
         glUniform1i(loc, 0);
     }
