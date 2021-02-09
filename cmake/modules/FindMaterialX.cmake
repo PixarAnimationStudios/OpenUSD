@@ -87,16 +87,15 @@ find_path(MATERIALX_LIB_DIRS
         "MaterialX Library Path"
 )
 
-find_path(MATERIALX_STDLIB_DIR 
-    stdlib_defs.mtlx
+find_path(MATERIALX_STDLIB_DIR
+    stdlib/stdlib_defs.mtlx
     HINTS
         "${MATERIALX_ROOT}"
-        "$ENV{MATERIALX_ROOT}"        
+        "$ENV{MATERIALX_ROOT}"
         "${MATERIALX_BASE_DIR}"
         "${MATERIALX_DATA_ROOT}"
     PATH_SUFFIXES
-        documents/Libraries
-        libraries/stdlib
+        libraries
     DOC
         "MaterialX Standard Libraries Path"
 )
