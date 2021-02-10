@@ -1893,14 +1893,13 @@ UsdImagingPointInstancerAdapter::Get(UsdPrim const& usdPrim,
             }
 
         } else {
-            UsdGeomPointInstancer instancer(usdPrim);
-            UsdGeomPrimvarsAPI primvars(instancer);
-            UsdGeomPrimvar pv = primvars.GetPrimvar(key);
-            VtValue value;
-            if (pv) {
-                pv.ComputeFlattened(&value, time);
+            UsdGeomPrimvarsAPI primvars(usdPrim);
+            if (UsdGeomPrimvar pv = primvars.GetPrimvar(key)) {
+                VtValue value;
+                if (pv.ComputeFlattened(&value, time)) {
+                    return value;
+                }
             }
-            return value;
         }
     }
 
