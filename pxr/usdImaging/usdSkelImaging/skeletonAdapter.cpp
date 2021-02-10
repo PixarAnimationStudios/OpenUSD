@@ -1757,6 +1757,363 @@ UsdSkelImagingSkeletonAdapter::_GetExtComputationInputForInputAggregator(
             instancerContext);
 }
 
+/// Unions the provided list of samples with the boundary of the shutter
+/// interval, and clamps to the maximum number of samples.
+static size_t
+_UnionTimeSamples(
+    GfInterval const& interval,
+    size_t maxNumSamples,
+    std::vector<double>* timeSamples)
+{
+    // Add time samples at the boudary conditions
+    timeSamples->push_back(interval.GetMin());
+    timeSamples->push_back(interval.GetMax());
+
+    // Sort and remove duplicates.
+    std::sort(timeSamples->begin(), timeSamples->end());
+    timeSamples->erase(std::unique(timeSamples->begin(), timeSamples->end()),
+                       timeSamples->end());
+
+    return std::min(maxNumSamples, timeSamples->size());
+}
+
+static void
+_InitIdentityXforms(
+    UsdSkelSkeletonQuery const& skelQuery,
+    UsdSkelSkinningQuery const& skinningQuery,
+    VtMatrix4fArray* skinningXforms)
+{
+    skinningXforms->assign(skinningQuery.GetJointMapper()
+                               ? skinningQuery.GetJointMapper()->size()
+                               : skelQuery.GetTopology().size(),
+                           GfMatrix4f(1));
+}
+
+size_t
+UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForSkinningComputation(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    TfToken const& name,
+    UsdTimeCode time,
+    const UsdImagingInstancerContext* instancerContext,
+    size_t maxSampleCount,
+    float *sampleTimes,
+    VtValue *sampleValues)
+{
+    TRACE_FUNCTION();
+
+    if (maxSampleCount == 0) {
+        return 0;
+    }
+
+    // XXX: We don't receive the "cachePath" for the skinned prim, and so
+    // the method below won't work when using multiple UsdImagingDelgate'.
+    SdfPath skinnedPrimCachePath = 
+        UsdImagingGprimAdapter::_ResolveCachePath(prim.GetPath(), 
+                                                  instancerContext);
+
+    // XXX: The only time varying input here is the skinning xforms.
+    // However, we don't have fine-grained tracking to tell which
+    // scene input is "dirty". Hence, fetch all these values and update
+    // the value cache.
+    // Note: With CPU computations, this is necessary. We don't use
+    //       persistent buffer sources to cache the inputs.
+    //       With GPU computations, we can use an "input aggregation"
+    //       computations to remove the non-varying inputs into its own
+    //       computation.
+    
+
+    // dispatchCount, elementCount, restPoints, geomBindXform
+    if (name == HdTokens->dispatchCount ||
+        name == HdTokens->elementCount) {
+
+        // For dispatchCount, elementCount, we need to know 
+        // the number of points on the skinned prim. Pull only when 
+        // required.
+        VtVec3fArray restPoints = _GetSkinnedPrimPoints(prim, 
+                                        skinnedPrimCachePath, time);
+        size_t numPoints = restPoints.size();
+        sampleValues[0] = VtValue(numPoints);
+        sampleTimes[0] = 0.f;
+        return 1;
+    }
+
+    // primWorldToLocal
+    if (name == _tokens->primWorldToLocal) {
+        static constexpr unsigned int CAPACITY = 4;
+        TfSmallVector<GfMatrix4d, CAPACITY> sampleXforms(maxSampleCount);
+
+        UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(prim);
+        const size_t numSamples = adapter->SampleTransform(
+            prim, skinnedPrimCachePath, time, maxSampleCount, sampleTimes,
+            sampleXforms.data());
+
+        const size_t numEvaluatedSamples = std::min(numSamples, maxSampleCount);
+        for (size_t i = 0; i < numEvaluatedSamples; ++i) {
+            sampleValues[i] = VtValue(sampleXforms[i].GetInverse());
+        }
+
+        return numSamples;
+    }
+    
+    // skinningXforms, skelLocalToWorld, blendShapeWeights
+    if (name == _tokens->skinningXforms ||
+        name == _tokens->skelLocalToWorld ||
+        name == _tokens->blendShapeWeights)
+    {
+        const _SkinnedPrimData* skinnedPrimData = 
+            _GetSkinnedPrimData(skinnedPrimCachePath);
+
+        if (!TF_VERIFY(skinnedPrimData)) {
+            return 0;
+        }
+
+        const _SkelData* skelData = _GetSkelData(skinnedPrimData->skelPath);
+        if (!TF_VERIFY(skelData)) {
+            return 0;
+        }
+
+        if (name == _tokens->skinningXforms) {
+            const UsdSkelAnimQuery &animQuery = skinnedPrimData->animQuery;
+
+            if (skinnedPrimData->hasJointInfluences && animQuery) {
+
+                GfInterval interval = _GetCurrentTimeSamplingInterval();
+                std::vector<double> times;
+                if (!animQuery.GetJointTransformTimeSamplesInInterval(interval,
+                                                                      &times)) {
+                    return 0;
+                }
+
+                size_t numSamplesToEvaluate =
+                    _UnionTimeSamples(interval, maxSampleCount, &times);
+
+                for (size_t i = 0; i < numSamplesToEvaluate; ++i) {
+                    sampleTimes[i] = times[i] - time.GetValue();
+
+                    VtMatrix4fArray skinningXforms;
+                    if (!_ComputeSkinningTransforms(
+                            skelData->skelQuery, skinnedPrimData->skinningQuery,
+                            times[i], &skinningXforms)) {
+                        _InitIdentityXforms(skelData->skelQuery,
+                                            skinnedPrimData->skinningQuery,
+                                            &skinningXforms);
+                    }
+                    sampleValues[i] = VtValue::Take(skinningXforms);
+                }
+
+                return times.size();
+            }
+            else {
+                VtMatrix4fArray skinningXforms;
+                _InitIdentityXforms(skelData->skelQuery,
+                                    skinnedPrimData->skinningQuery,
+                                    &skinningXforms);
+                sampleValues[0] = VtValue::Take(skinningXforms);
+                sampleTimes[0] = 0.f;
+                return 1;
+            }
+        }
+
+        if (name == _tokens->blendShapeWeights) {
+            const UsdSkelAnimQuery &animQuery = skinnedPrimData->animQuery;
+            if (skinnedPrimData->blendShapeQuery && animQuery) {
+
+                GfInterval interval = _GetCurrentTimeSamplingInterval();
+                std::vector<double> times;
+                if (!animQuery.GetBlendShapeWeightTimeSamplesInInterval(
+                        interval, &times)) {
+                    return 0;
+                }
+
+                size_t numSamplesToEvaluate =
+                    _UnionTimeSamples(interval, maxSampleCount, &times);
+
+                for (size_t i = 0; i < numSamplesToEvaluate; ++i) {
+                    sampleTimes[i] = times[i] - time.GetValue();
+
+                    VtFloatArray weights;
+                    if (!_ComputeSubShapeWeights(
+                            skelData->skelQuery,
+                            *skinnedPrimData->blendShapeQuery,
+                            skinnedPrimData->skinningQuery, times[i],
+                            &weights)) {
+                        weights.assign(
+                            skinnedPrimData->blendShapeQuery->GetNumSubShapes(),
+                            0.0f);
+                    }
+                    sampleValues[i] = VtValue::Take(weights);
+                }
+
+                return times.size();
+
+            } else {
+                sampleValues[0] = VtValue(VtFloatArray());
+                sampleTimes[0] = 0.f;
+                return 1;
+            }
+        }
+
+        if (name == _tokens->skelLocalToWorld) {
+            UsdPrim skelPrim(skelData->skelQuery.GetPrim());
+            if (skelPrim.IsInPrototype()) {
+                const auto bindingIt = 
+                    _skelBindingMap.find(skinnedPrimData->skelPath);
+                if (bindingIt != _skelBindingMap.end()) {
+                    skelPrim = bindingIt->second.GetSkeleton().GetPrim();
+                }
+            }
+
+            static constexpr unsigned int CAPACITY = 4;
+            TfSmallVector<GfMatrix4d, CAPACITY> sampleXforms(maxSampleCount);
+
+            SdfPath skelCachePath = UsdImagingGprimAdapter::_ResolveCachePath(
+                skelPrim.GetPath(), instancerContext);
+            UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(skelPrim);
+
+            const size_t numSamples = adapter->SampleTransform(
+                skelPrim, skelCachePath, time, maxSampleCount, sampleTimes,
+                sampleXforms.data());
+
+            const size_t numEvaluatedSamples =
+                std::min(numSamples, maxSampleCount);
+            for (size_t i = 0; i < numEvaluatedSamples; ++i) {
+                sampleValues[i] = VtValue(sampleXforms[i]);
+            }
+
+            return numSamples;
+        }
+    }
+
+    if (!_IsEnabledAggregatorComputation()) {
+        // If there isn't a separate aggregator computation, those inputs are
+        // part of this computation so we can just call into the same function.
+        return _SampleExtComputationInputForInputAggregator(
+            prim, cachePath, name, time, instancerContext, maxSampleCount,
+            sampleTimes, sampleValues);
+    }
+
+    return BaseAdapter::SampleExtComputationInput(
+        prim, cachePath, name, time, instancerContext, maxSampleCount,
+        sampleTimes, sampleValues);
+}
+
+size_t
+UsdSkelImagingSkeletonAdapter::_SampleExtComputationInputForInputAggregator(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    TfToken const& name,
+    UsdTimeCode time,
+    const UsdImagingInstancerContext* instancerContext,
+    size_t maxSampleCount,
+    float *sampleTimes,
+    VtValue *sampleValues)
+{
+    if (maxSampleCount == 0) {
+        return 0;
+    }
+
+    // DispatchCount, ElementCount aren't relevant for an input aggregator
+    // computation. 
+    if (name == HdTokens->dispatchCount || name == HdTokens->elementCount) {
+        return 0;
+    }
+
+    // XXX: We don't receive the "cachePath" for the skinned prim, and so
+    // the method below won't work when using multiple UsdImagingDelegate's.
+    SdfPath skinnedPrimCachePath = 
+        UsdImagingGprimAdapter::_ResolveCachePath(
+            prim.GetPath(), instancerContext);
+
+    const _SkinnedPrimData* skinnedPrimData =
+            _GetSkinnedPrimData(skinnedPrimCachePath);
+    if (!TF_VERIFY(skinnedPrimData)) {
+        return 0;
+    }
+
+    // restPoints
+    if (name == _tokens->restPoints) {
+        // Rest points aren't expected to be time-varying.
+        sampleValues[0] =
+            VtValue(_GetSkinnedPrimPoints(prim, skinnedPrimCachePath, time));
+        sampleTimes[0] = 0.f;
+        return 1;
+    }
+
+    // geomBindXform
+    if (name == _tokens->geomBindXform) {
+        // read (optional) geomBindTransform property.
+        // If unauthored, it is identity.
+        const GfMatrix4d geomBindXform =
+            skinnedPrimData->skinningQuery.GetGeomBindTransform();
+
+        // Skinning computations use float precision.
+        sampleValues[0] = GfMatrix4f(geomBindXform);
+        sampleTimes[0] = 0.f;
+        return 1;
+    }
+
+    // influences, numInfluencesPerComponent, hasConstantInfluences
+    if (name == _tokens->influences ||
+        name == _tokens->numInfluencesPerComponent ||
+        name == _tokens->hasConstantInfluences) {
+
+        VtVec2fArray influences;
+        int numInfluencesPerComponent = 0;
+        bool usesConstantJointPrimvar = false;
+
+        if (skinnedPrimData->hasJointInfluences) {
+            _GetInfluences(skinnedPrimData->skinningQuery, time, &influences,
+                           &numInfluencesPerComponent,
+                           &usesConstantJointPrimvar);
+        }
+
+        if (name == _tokens->influences) {
+            sampleValues[0] = VtValue(influences);
+        }
+        if (name == _tokens->numInfluencesPerComponent) {
+            sampleValues[0] = VtValue(numInfluencesPerComponent);
+        }
+        if (name == _tokens->hasConstantInfluences) {
+            sampleValues[0] = VtValue(usesConstantJointPrimvar);
+        }
+
+        sampleTimes[0] = 0.f;
+        return 1;
+    }
+
+    // blendShapeOffsets, blendShapeOffsetRanges, numBlendShapeOffsetRanges
+    if (name == _tokens->blendShapeOffsets ||
+        name == _tokens->blendShapeOffsetRanges ||
+        name == _tokens->numBlendShapeOffsetRanges) {
+
+        VtVec4fArray offsets;
+        VtVec2iArray ranges;
+        if (skinnedPrimData->blendShapeQuery) {
+            skinnedPrimData->blendShapeQuery->ComputePackedShapeTable(
+                &offsets, &ranges);
+        }
+
+        if (name == _tokens->blendShapeOffsets) {
+            sampleValues[0] = VtValue(offsets);
+        }
+        if (name == _tokens->blendShapeOffsetRanges) {
+            sampleValues[0] = VtValue(ranges);
+        }
+        if (name == _tokens->numBlendShapeOffsetRanges) {
+            // The size of the offset ranges needs to be available for GL
+            sampleValues[0] = VtValue(static_cast<int>(ranges.size()));
+        }
+
+        sampleTimes[0] = 0.f;
+        return 1;
+    }
+
+    return BaseAdapter::SampleExtComputationInput(
+        prim, cachePath, name, time, instancerContext, maxSampleCount,
+        sampleTimes, sampleValues);
+}
+
 VtValue 
 UsdSkelImagingSkeletonAdapter::GetExtComputationInput(
     UsdPrim const& prim,
@@ -1779,6 +2136,36 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationInput(
 
     return BaseAdapter::GetExtComputationInput(prim, cachePath, name, time,
             instancerContext);
+}
+
+size_t
+UsdSkelImagingSkeletonAdapter::SampleExtComputationInput(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    TfToken const& name,
+    UsdTimeCode time,
+    const UsdImagingInstancerContext* instancerContext,
+    size_t maxSampleCount,
+    float *sampleTimes,
+    VtValue *sampleValues)
+{
+    TRACE_FUNCTION();
+
+    if (_IsSkinningComputationPath(cachePath)) {
+        return _SampleExtComputationInputForSkinningComputation(
+            prim, cachePath, name, time, instancerContext, maxSampleCount,
+            sampleTimes, sampleValues);
+    }
+
+    if (_IsSkinningInputAggregatorComputationPath(cachePath)) {
+        return _SampleExtComputationInputForInputAggregator(
+            prim, cachePath, name, time, instancerContext, maxSampleCount,
+            sampleTimes, sampleValues);
+    }
+
+    return BaseAdapter::SampleExtComputationInput(
+        prim, cachePath, name, time, instancerContext, maxSampleCount,
+        sampleTimes, sampleValues);
 }
 
 std::string 
@@ -2232,6 +2619,7 @@ UsdSkelImagingSkeletonAdapter::_SkinnedPrimData::_SkinnedPrimData(
     const UsdSkelSkinningQuery& skinningQuery,
     const SdfPath& skelRootPath)
     : skinningQuery(skinningQuery),
+      animQuery(skelQuery.GetAnimQuery()),
       skelPath(skelPath),
       skelRootPath(skelRootPath),
       hasJointInfluences(skinningQuery.HasJointInfluences())
