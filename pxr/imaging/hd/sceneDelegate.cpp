@@ -406,6 +406,22 @@ HdSceneDelegate::GetExtComputationInput(SdfPath const& computationId,
 }
 
 /*virtual*/
+size_t
+HdSceneDelegate::SampleExtComputationInput(SdfPath const& computationId,
+                                           TfToken const& input,
+                                           size_t maxSampleCount,
+                                           float *sampleTimes,
+                                           VtValue *sampleValues)
+{
+    if (maxSampleCount > 0) {
+        sampleTimes[0] = 0.0;
+        sampleValues[0] = GetExtComputationInput(computationId, input);
+        return 1;
+    }
+    return 0;
+}
+
+/*virtual*/
 std::string
 HdSceneDelegate::GetExtComputationKernel(SdfPath const& id)
 {
