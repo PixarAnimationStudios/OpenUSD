@@ -107,13 +107,36 @@ UsdImagingMaterialAdapter::TrackVariability(
     UsdImagingInstancerContext const*
     instancerContext) const
 {
-    bool timeVarying = false;
-    HdMaterialNetworkMap map;
-    TfToken const& networkSelector = _GetMaterialNetworkSelector();
-    UsdTimeCode time = UsdTimeCode::Default();
-    _GetMaterialNetworkMap(prim, networkSelector, &map, time, &timeVarying);
-    if (timeVarying) {
-        *timeVaryingBits |= HdMaterial::DirtyResource;
+    UsdShadeMaterial material(prim);
+    if (!material) {
+        TF_RUNTIME_ERROR("Expected material prim at <%s> to be of type "
+                         "'UsdShadeMaterial', not type '%s'; ignoring",
+                         prim.GetPath().GetText(),
+                         prim.GetTypeName().GetText());
+        return;
+    }
+
+    const TfToken context = _GetMaterialNetworkSelector();
+
+    if (UsdShadeShader s = material.ComputeSurfaceSource(context)) {
+        if (UsdImaging_IsHdMaterialNetworkTimeVarying(s.GetPrim())) {
+            *timeVaryingBits |= HdMaterial::DirtyResource;
+            return;
+        }
+    }
+
+    if (UsdShadeShader d = material.ComputeDisplacementSource(context)) {
+        if (UsdImaging_IsHdMaterialNetworkTimeVarying(d.GetPrim())) {
+            *timeVaryingBits |= HdMaterial::DirtyResource;
+            return;
+        }
+    }
+
+    if (UsdShadeShader v = material.ComputeVolumeSource(context)) {
+        if (UsdImaging_IsHdMaterialNetworkTimeVarying(v.GetPrim())) {
+            *timeVaryingBits |= HdMaterial::DirtyResource;
+            return;
+        }
     }
 }
 
@@ -181,19 +204,6 @@ UsdImagingMaterialAdapter::MarkMaterialDirty(
 }
 
 /* virtual */
-VtValue
-UsdImagingMaterialAdapter::GetMaterialResource(UsdPrim const& prim, 
-                                               SdfPath const& cachePath, 
-                                               UsdTimeCode time) const
-{
-    bool timeVarying = false;
-    HdMaterialNetworkMap map;
-    TfToken const& networkSelector = _GetMaterialNetworkSelector();
-    _GetMaterialNetworkMap(prim, networkSelector, &map, time, &timeVarying);
-    return VtValue(map);
-}
-
-/* virtual */
 void
 UsdImagingMaterialAdapter::_RemovePrim(
     SdfPath const& cachePath,
@@ -202,62 +212,57 @@ UsdImagingMaterialAdapter::_RemovePrim(
     index->RemoveSprim(HdPrimTypeTokens->material, cachePath);
 }
 
-void 
-UsdImagingMaterialAdapter::_GetMaterialNetworkMap(
-    UsdPrim const &usdPrim, 
-    TfToken const& networkSelector,
-    HdMaterialNetworkMap *networkMap,
-    UsdTimeCode time,
-    bool* timeVarying) const
+VtValue 
+UsdImagingMaterialAdapter::GetMaterialResource(UsdPrim const &prim,
+                                               SdfPath const& cachePath, 
+                                               UsdTimeCode time) const
 {
-    UsdShadeMaterial material(usdPrim);
+    UsdShadeMaterial material(prim);
     if (!material) {
         TF_RUNTIME_ERROR("Expected material prim at <%s> to be of type "
                          "'UsdShadeMaterial', not type '%s'; ignoring",
-                         usdPrim.GetPath().GetText(),
-                         usdPrim.GetTypeName().GetText());
-        return;
+                         prim.GetPath().GetText(),
+                         prim.GetTypeName().GetText());
+        return VtValue();
     }
 
     // Bind the usd stage's resolver context for correct asset resolution.
-    ArResolverContextBinder binder(usdPrim.GetStage()->GetPathResolverContext());
+    ArResolverContextBinder binder(prim.GetStage()->GetPathResolverContext());
     ArResolverScopedCache resolverCache;
+
+    HdMaterialNetworkMap networkMap;
 
     const TfToken context = _GetMaterialNetworkSelector();
     TfTokenVector shaderSourceTypes = _GetShaderSourceTypes();
 
     if (UsdShadeShader s = material.ComputeSurfaceSource(context)) {
         UsdImaging_BuildHdMaterialNetworkFromTerminal(
-            s, 
+            s.GetPrim(), 
             HdMaterialTerminalTokens->surface,
-            networkSelector,
             shaderSourceTypes,
-            networkMap,
-            time,
-            timeVarying);
+            &networkMap,
+            time);
     }
 
     if (UsdShadeShader d = material.ComputeDisplacementSource(context)) {
         UsdImaging_BuildHdMaterialNetworkFromTerminal(
-            d,
+            d.GetPrim(),
             HdMaterialTerminalTokens->displacement,
-            networkSelector,
             shaderSourceTypes,
-            networkMap,
-            time,
-            timeVarying);
+            &networkMap,
+            time);
     }
 
     if (UsdShadeShader v = material.ComputeVolumeSource(context)) {
         UsdImaging_BuildHdMaterialNetworkFromTerminal(
-            v,
+            v.GetPrim(),
             HdMaterialTerminalTokens->volume,
-            networkSelector,
             shaderSourceTypes,
-            networkMap,
-            time,
-            timeVarying);
+            &networkMap,
+            time);
     }
+
+    return VtValue(networkMap);
 }
 
 

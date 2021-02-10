@@ -106,6 +106,15 @@ public:
     virtual void MarkLightParamsDirty(UsdPrim const& prim,
                                       SdfPath const& cachePath,
                                       UsdImagingIndexProxy* index);
+
+    // ---------------------------------------------------------------------- //
+    /// \name Utilities 
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    VtValue GetMaterialResource(UsdPrim const &prim,
+                                SdfPath const& cachePath, 
+                                UsdTimeCode time) const override;
 };
 
 

@@ -24,11 +24,13 @@
 #include "pxr/usdImaging/usdImaging/lightAdapter.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
+#include "pxr/usdImaging/usdImaging/materialParamUtils.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/imaging/hd/tokens.h"
-
 #include "pxr/imaging/hd/light.h"
+#include "pxr/imaging/hd/material.h"
+#include "pxr/usd/ar/resolverScopedCache.h"
+#include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/usd/usdLux/light.h"
 
 #include "pxr/base/tf/envSetting.h"
@@ -76,6 +78,11 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
         timeVaryingBits,
         true);
     
+    // Determine if the light material network is time varying.
+    if (UsdImaging_IsHdMaterialNetworkTimeVarying(prim)) {
+        *timeVaryingBits |= HdLight::DirtyBits::DirtyResource;
+    }
+
     // If any of the light attributes is time varying 
     // we will assume all light params are time-varying.
     const std::vector<UsdAttribute> &attrs = prim.GetAttributes();
@@ -183,6 +190,37 @@ UsdImagingLightAdapter::MarkLightParamsDirty(UsdPrim const& prim,
 {
     static const HdDirtyBits paramsDirty = HdLight::DirtyParams;
     index->MarkSprimDirty(cachePath, paramsDirty);
+}
+
+
+VtValue 
+UsdImagingLightAdapter::GetMaterialResource(UsdPrim const &prim,
+                                            SdfPath const& cachePath, 
+                                            UsdTimeCode time) const
+{
+    UsdLuxLight light(prim);
+    if (!light) {
+        TF_RUNTIME_ERROR("Expected light prim at <%s> to be a subclass of type "
+                         "'UsdLuxLight', not type '%s'; ignoring",
+                         prim.GetPath().GetText(),
+                         prim.GetTypeName().GetText());
+        return VtValue();
+    }
+
+    // Bind the usd stage's resolver context for correct asset resolution.
+    ArResolverContextBinder binder(prim.GetStage()->GetPathResolverContext());
+    ArResolverScopedCache resolverCache;
+
+    HdMaterialNetworkMap networkMap;
+
+    UsdImaging_BuildHdMaterialNetworkFromTerminal(
+        prim, 
+        HdMaterialTerminalTokens->light,
+        _GetShaderSourceTypes(),
+        &networkMap,
+        time);
+
+    return VtValue(networkMap);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
