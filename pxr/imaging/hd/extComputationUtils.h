@@ -46,6 +46,9 @@ using HdExtComputationConstPtrVector = std::vector<HdExtComputationConstPtr>;
 // use of computations shared by multiple Rprims, since the chain of
 // computations for a computation primvar is executed for each Rprim.
 class HdExtComputationUtils {   
+
+    static constexpr unsigned int SAMPLE_CAPACITY = 4;
+
 public:
     using ValueStore =
         std::unordered_map<TfToken, VtValue, TfToken::HashFunctor>;
@@ -59,6 +62,21 @@ public:
     GetComputedPrimvarValues(
         HdExtComputationPrimvarDescriptorVector const& compPrimvars,
         HdSceneDelegate* sceneDelegate);
+
+    using SampleValueArray = HdTimeSampleArray<VtValue, SAMPLE_CAPACITY>;
+    using SampledValueStore =
+        std::unordered_map<TfToken, SampleValueArray, TfToken::HashFunctor>;
+
+    /// Returns a map containing the (token, samples) pairs for each
+    /// computation primvar, with up to \a maxSampleCount samples.
+    /// The participating computations are ordered based on their dependency
+    /// and then, the CPU kernel is executed for each computation.
+    HD_API
+    static SampledValueStore
+    SampleComputedPrimvarValues(
+        HdExtComputationPrimvarDescriptorVector const& compPrimvars,
+        HdSceneDelegate* sceneDelegate,
+        size_t maxSampleCount);
 
     // Helper methods (these are public for testing purposes)
     using ComputationDependencyMap =

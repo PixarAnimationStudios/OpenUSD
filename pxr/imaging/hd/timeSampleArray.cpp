@@ -23,3 +23,50 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/timeSampleArray.h"
+
+#include "pxr/usd/usd/interpolation.h"
+#include "pxr/usd/sdf/types.h"
+
+#include <boost/preprocessor/seq/for_each.hpp>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+VtValue
+HdResampleNeighbors(float alpha, const VtValue &v0, const VtValue &v1)
+{
+    const TfType t0 = v0.GetType();
+    if (!t0) {
+        TF_RUNTIME_ERROR("Unknown sample value type '%s'",
+                         v0.GetTypeName().c_str());
+        return v0;
+    }
+
+    const TfType t1 = v1.GetType();
+    if (t0 != t1) {
+        TF_RUNTIME_ERROR("Mismatched sample value types '%s' and '%s'",
+                         v0.GetTypeName().c_str(), v1.GetTypeName().c_str());
+        return v0;
+    }
+
+    // After verifying that the values have matching types, return the result
+    // of HdResampleNeighbors() for the enclosed values.
+
+#define _HANDLE_TYPE(r, unused, type)                                   \
+    {                                                                   \
+        static const TfType valueType = TfType::Find<type>();           \
+        if (t0 == valueType) {                                          \
+            const type &val0 = v0.Get<type>();                          \
+            const type &val1 = v1.Get<type>();                          \
+            return VtValue(HdResampleNeighbors(alpha, val0, val1));     \
+        }                                                               \
+    }
+
+    BOOST_PP_SEQ_FOR_EACH(_HANDLE_TYPE, ~, USD_LINEAR_INTERPOLATION_TYPES)
+#undef _HANDLE_TYPE
+
+    TF_RUNTIME_ERROR("Unable to interpolate sample value type '%s'",
+                     v0.GetTypeName().c_str());
+    return v0;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -63,6 +63,9 @@ inline VtArray<T> HdResampleNeighbors(float alpha,
     return r;
 }
 
+/// Specialization for VtValue: interpolate the held values.
+VtValue HdResampleNeighbors(float alpha, const VtValue &v0, const VtValue &v1);
+
 /// Resample a function described by an ordered array of samples,
 /// using a linear reconstruction filter evaluated at the given
 /// parametric position u.  The function is considered constant

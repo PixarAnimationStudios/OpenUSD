@@ -162,6 +162,109 @@ _ExecuteComputations(HdExtComputationConstPtrVector computations,
     return valueStore;
 }
 
+static HdExtComputationUtils::SampledValueStore
+_ExecuteSampledComputations(
+    HdExtComputationConstPtrVector computations,
+    HdSceneDelegate* sceneDelegate,
+    size_t maxSampleCount)
+{
+    HD_TRACE_FUNCTION();
+
+    HdExtComputationUtils::SampledValueStore valueStore;
+    for (auto const& comp : computations) {
+        SdfPath const& compId = comp->GetId();
+
+        // Add all the scene inputs to the value store
+        std::vector<double> times;
+        for (TfToken const& input : comp->GetSceneInputNames()) {
+            auto &samples = valueStore[input];
+            samples.Resize(maxSampleCount);
+
+            size_t numSamples = sceneDelegate->SampleExtComputationInput(
+                compId, input, maxSampleCount, samples.times.data(),
+                samples.values.data());
+            samples.count = std::min(numSamples, maxSampleCount);
+
+            for (size_t i = 0; i < samples.count; ++i)
+                times.push_back(samples.times[i]);
+        }
+
+        if (comp->IsInputAggregation()) {
+            // An aggregator computation produces no output, and thus
+            // doesn't need to be executed.
+            continue;
+        }
+
+        // Also find all the time samples from the computed inputs.
+        for (auto const& computedInput : comp->GetComputationInputs()) {
+            auto const& samples =
+                valueStore.at(computedInput.sourceComputationOutputName);
+            for (size_t i = 0; i < samples.count; ++i) {
+                times.push_back(samples.times[i]);
+            }
+        }
+
+        // Determine the time samples to evaluate the computation at.
+        std::sort(times.begin(), times.end());
+        times.erase(std::unique(times.begin(), times.end()), times.end());
+        times.resize(std::min(times.size(), maxSampleCount));
+
+        // Allocate enough space for the evaluated outputs.
+        for (const TfToken &name : comp->GetOutputNames())
+        {
+            auto &output_samples = valueStore[name];
+            output_samples.Resize(times.size());
+            output_samples.count = 0;
+        }
+
+        // Evaluate the computation for each time sample.
+        for (double t : times) {
+            Hd_ExtComputationContextInternal context;
+
+            // Populate the context with all the inputs (scene, computed) from
+            // the value store, resampled to the required time.
+            for (auto const& sceneInput : comp->GetSceneInputNames()) {
+                auto const& samples = valueStore.at(sceneInput);
+                context.SetInputValue(sceneInput, samples.Resample(t));
+            }
+
+            for (auto const& computedInput : comp->GetComputationInputs()) {
+                auto const& samples =
+                    valueStore.at(computedInput.sourceComputationOutputName);
+                context.SetInputValue(computedInput.name, samples.Resample(t));
+            }
+
+            sceneDelegate->InvokeExtComputation(compId, &context);
+
+            if (context.HasComputationError()) {
+                // We could bail here, or choose to execute other computations.
+                // Choose the latter.
+                TF_WARN("Error invoking computation %s.\n", compId.GetText());
+            } else {
+                // Add outputs to the value store (subsequent computations may
+                // need them as computation inputs)
+                TfTokenVector const& outputNames = comp->GetOutputNames();
+                for (auto const& name : outputNames) {
+                    VtValue value;
+                    if (!context.GetOutputValue(name, &value)) {
+                        TF_WARN("Error getting out %s for computation %s.\n",
+                                name.GetText(), compId.GetText());
+                    } else {
+                        auto &output_samples = valueStore[name];
+                        output_samples.times[output_samples.count] = t;
+                        output_samples.values[output_samples.count] =
+                            std::move(value);
+                        ++output_samples.count;
+                    }
+                }
+            }
+        }
+
+    } // for each computation
+
+    return valueStore;
+}
+
 };
 
 /*static*/HdExtComputationUtils::ValueStore
@@ -193,6 +296,42 @@ HdExtComputationUtils::GetComputedPrimvarValues(
     for (auto const& pv : compPrimvars) {
         TfToken const& compOutputName = pv.sourceComputationOutputName;
 
+        computedPrimvarValueStore[pv.name] = valueStore[compOutputName];
+    }
+
+    return computedPrimvarValueStore;
+}
+
+/*static*/HdExtComputationUtils::SampledValueStore
+HdExtComputationUtils::SampleComputedPrimvarValues(
+    HdExtComputationPrimvarDescriptorVector const& compPrimvars,
+    HdSceneDelegate* sceneDelegate,
+    size_t maxSampleCount
+)
+{
+    HD_TRACE_FUNCTION();
+
+    // Directed graph representation of the participating computations
+    HdExtComputationUtils::ComputationDependencyMap cdm
+        = _GenerateDependencyMap(compPrimvars, sceneDelegate);
+
+    // Topological ordering of the computations
+    HdExtComputationConstPtrVector sortedComputations;
+    bool success = DependencySort(cdm, &sortedComputations);
+
+    if (!success) {
+        return HdExtComputationUtils::SampledValueStore();
+    }
+
+    // Execution
+    HdExtComputationUtils::SampledValueStore valueStore =
+        _ExecuteSampledComputations(sortedComputations, sceneDelegate,
+                                    maxSampleCount);
+
+    // Output extraction
+    HdExtComputationUtils::SampledValueStore computedPrimvarValueStore;
+    for (auto const& pv : compPrimvars) {
+        TfToken const& compOutputName = pv.sourceComputationOutputName;
         computedPrimvarValueStore[pv.name] = valueStore[compOutputName];
     }
 
