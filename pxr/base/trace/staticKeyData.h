@@ -26,6 +26,7 @@
 #define PXR_BASE_TRACE_STATIC_KEY_DATA_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/trace/api.h"
 
 #include <cstddef>
 #include <string>
@@ -75,6 +76,7 @@ public:
         , _name(name.str) {}
 
     /// Equality comparison.  Inequality is also defined.
+    TRACE_API
     bool operator == (const TraceStaticKeyData& other) const;
 
     bool operator != (const TraceStaticKeyData& other) const {
@@ -82,6 +84,7 @@ public:
     }
 
     /// Returns the string representation of the key data.
+    TRACE_API
     std::string GetString() const;
 
 private:
