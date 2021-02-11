@@ -72,6 +72,18 @@ Arch_ReadInvalidAddresses(bool spawnthread)
         t = std::thread([](){ while(true) ; });
     }
 
+#if defined(ARCH_OS_WINDOWS)
+    // On Windows we simply raise SIGSEGV.  Reading invalid addresses causes the
+    // program to terminate, but with a zero return code, which is not what we
+    // need for testing purposes here.  I spent a few minutes going down the
+    // Windows SEH rabbit hole, but there's no local "quick fix" that will let
+    // the pieces plug together. Frankly, if we wnat to support the kind of
+    // full-featured postmortem crash reporting we have on Linux, it's going to
+    // take a lot of work.  If we ever care to do that, we'll need to revisit
+    // this.
+    raise(SIGSEGV);
+#endif
+
     for (size_t i = 0; i != ~0ull; ++i) {
         // This will eventually give us NULL in a way that the compiler probably
         // cannot prove at compile-time.
