@@ -383,6 +383,11 @@ public:
     HDST_API
     void BindUniformf(TfToken const &name, int count, const float *value) const;
 
+    /// Returns whether a binding exists.
+    bool HasBinding(TfToken const &name, int level=-1) const {
+        return _bindingMap.find(NameAndLevel(name, level)) != _bindingMap.end();
+    }
+
     /// Returns binding point.
     /// XXX: exposed temporarily for drawIndirectResult
     /// see Hd_IndirectDrawBatch::_BeginGPUCountVisibleInstances()
