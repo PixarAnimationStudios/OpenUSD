@@ -29,7 +29,6 @@
 #include "pxr/imaging/hgiMetal/capabilities.h"
 #include "pxr/imaging/hgiMetal/diagnostic.h"
 #include "pxr/imaging/hgiMetal/hgi.h"
-#include "pxr/imaging/hgiMetal/texture.h"
 
 #include "pxr/base/tf/diagnostic.h"
 
@@ -869,30 +868,27 @@ HgiInteropMetal::CompositeToInterop(
     // XXX We need to flip all renderers (Embree, Prman, ...) for now as we
     // assume they all output gl coords. That may not always be the case if
     // Storm renders with Metal directly.
-    bool flipImage = true;
+    constexpr bool flipImage = true;
 
-    HgiMetalTexture *metalColor = static_cast<HgiMetalTexture*>(color.Get());
-    HgiMetalTexture *metalDepth = static_cast<HgiMetalTexture*>(depth.Get());
-
-    int width = 
-        metalColor ? metalColor->GetDescriptor().dimensions[0] :
-        metalDepth ? metalDepth->GetDescriptor().dimensions[0] :
+    const int width = 
+        color ? color->GetDescriptor().dimensions[0] :
+        depth ? depth->GetDescriptor().dimensions[0] :
         256;
 
-    int height = 
-        metalColor ? metalColor->GetDescriptor().dimensions[1] :
-        metalDepth ? metalDepth->GetDescriptor().dimensions[1] :
+    const int height = 
+        color ? color->GetDescriptor().dimensions[1] :
+        depth ? depth->GetDescriptor().dimensions[1] :
         256;
 
     _SetAttachmentSize(width, height);
 
     id<MTLTexture> colorTexture = nil;
     id<MTLTexture> depthTexture = nil;
-    if (metalColor) {
-        colorTexture = metalColor->GetTextureId();
+    if (color) {
+        colorTexture = id<MTLTexture>(color->GetRawResource());
     }
-    if (metalDepth) {
-        depthTexture = metalDepth->GetTextureId();
+    if (depth) {
+        depthTexture = id<MTLTexture>(depth->GetRawResource());
     }
 
     id<MTLCommandBuffer> commandBuffer = _hgiMetal->GetPrimaryCommandBuffer();
