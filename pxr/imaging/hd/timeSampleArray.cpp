@@ -64,9 +64,9 @@ HdResampleNeighbors(float alpha, const VtValue &v0, const VtValue &v1)
     BOOST_PP_SEQ_FOR_EACH(_HANDLE_TYPE, ~, USD_LINEAR_INTERPOLATION_TYPES)
 #undef _HANDLE_TYPE
 
-    TF_RUNTIME_ERROR("Unable to interpolate sample value type '%s'",
-                     v0.GetTypeName().c_str());
-    return v0;
+    // If the value can't be interpolated, just hold the preceding time
+    // sample's value.
+    return (alpha < 1.f) ? v0 : v1;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
