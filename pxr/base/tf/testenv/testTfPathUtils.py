@@ -40,6 +40,10 @@ class TestPathUtils(unittest.TestCase):
         self.log.info('no symlinks')
         self.assertEqual(os.path.abspath('subdir'), Tf.RealPath('subdir', True))
 
+        if platform.system() == 'Windows':
+            if not os.path.isdir(r'C:/symlink-test'):
+                os.makedirs(r'C:/symlink-test')
+
         if hasattr(os, 'symlink'):
             try:
                 if not os.path.islink('b'):
@@ -72,12 +76,28 @@ class TestPathUtils(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     Tf.RealPath('g', True, raiseOnError=True)
 
+            if platform.system() == 'Windows':
+                # Test repro from USD-6557
+                if not os.path.islink(r'C:/symlink-test-link'):
+                    os.symlink(r'C:/symlink-test', 'C:/symlink-test-link')
+                    os.chdir(r'C:/symlink-test-link')
+                    self.assertEqual(r'C:/symlink-test', 
+                            Tf.RealPath(r'C:/symlink-test-link'))
+
+
             except OSError:
                 # On windows this is expected if run by a non-administrator
                 if platform.system() == 'Windows':
                     pass
                 else:
                     raise
+
+    def tearDown(self):
+        if platform.system() == 'Windows':
+            if os.path.isdir(r'C:/symlink-test-link'):
+                os.rmdir(r'C:/symlink-test-link')
+            if os.path.isdir(r'C:/symlink-test'):
+                os.rmdir(r'C:/symlink-test')
 
 if __name__ == '__main__':
     unittest.main()
