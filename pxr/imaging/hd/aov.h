@@ -39,7 +39,7 @@ typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> HdAovSettingsMap;
 
 /// \class HdAovDescriptor
 ///
-/// A bundle of state describing an AOV ("Alternate Output Value") display
+/// A bundle of state describing an AOV ("Arbitrary Output Variable") display
 /// channel. Note that in hydra API, this data is split between
 /// HdRenderPassAovBinding and HdRenderBufferDescriptor. This class is
 /// provided for use in higher level application-facing API.
