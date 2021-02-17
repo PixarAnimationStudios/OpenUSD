@@ -60,10 +60,10 @@ class TestPathUtils(unittest.TestCase):
                     os.symlink('f', 'g')
 
                 self.log.info('leaf dir is symlink')
-                self.assertEqual(os.path.abspath('subdir'), 
+                self.assertEqual(os.path.abspath('subdir'),
                                  Tf.RealPath('d', True))
                 self.log.info('symlinks through to dir')
-                self.assertEqual(os.path.abspath('subdir/e'), 
+                self.assertEqual(os.path.abspath('subdir/e'),
                                  Tf.RealPath('d/e', True))
                 self.log.info('symlinks through to nonexistent dirs')
                 self.assertEqual(os.path.abspath('subdir/e/f/g/h'),
@@ -76,13 +76,13 @@ class TestPathUtils(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     Tf.RealPath('g', True, raiseOnError=True)
 
-            if platform.system() == 'Windows':
-                # Test repro from USD-6557
-                if not os.path.islink(r'C:/symlink-test-link'):
-                    os.symlink(r'C:/symlink-test', 'C:/symlink-test-link')
-                    os.chdir(r'C:/symlink-test-link')
-                    self.assertEqual(r'C:/symlink-test', 
-                            Tf.RealPath(r'C:/symlink-test-link'))
+                if platform.system() == 'Windows':
+                    # Test repro from USD-6557
+                    if not os.path.islink(r'C:/symlink-test-link'):
+                        os.symlink(r'C:/symlink-test', 'C:/symlink-test-link')
+                        os.chdir(r'C:/symlink-test-link')
+                        self.assertEqual(r'C:/symlink-test',
+                                Tf.RealPath(r'C:/symlink-test-link'))
 
 
             except OSError:
@@ -101,4 +101,3 @@ class TestPathUtils(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
