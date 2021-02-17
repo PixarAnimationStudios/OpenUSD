@@ -180,6 +180,20 @@
                         ],
                         "isInternal": true,
                         "primTypeName": "DistantLight"
+                    },
+                    "UsdImagingPluginLightAdapter": {
+                        "bases": [
+                            "UsdImagingLightAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PluginLight"
+                    },
+                    "UsdImagingPluginLightFilterAdapter": {
+                        "bases": [
+                            "UsdImagingLightFilterAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PluginLightFilter"
                     }
                 }
             },

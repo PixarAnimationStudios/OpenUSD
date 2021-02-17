@@ -243,6 +243,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (distantLight)                              \
     (domeLight)                                 \
     (lightFilter)                               \
+    (pluginLight)                               \
     (rectLight)                                 \
     (sphereLight)                               \
     /* Sprims ExtComputations */                \
