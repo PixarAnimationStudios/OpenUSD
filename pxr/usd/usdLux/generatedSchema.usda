@@ -273,40 +273,40 @@ class "ShapingAPI" (
     doc = "Controls for shaping a light's emission."
 )
 {
-    float shaping:cone:angle = 90 (
+    float inputs:shaping:cone:angle = 90 (
         displayGroup = "Shaping"
         doc = """Angular limit off the primary axis to restrict the
         light spread."""
     )
-    float shaping:cone:softness = 0 (
+    float inputs:shaping:cone:softness = 0 (
         displayGroup = "Shaping"
         doc = """Controls the cutoff softness for cone angle.
         TODO: clarify semantics"""
     )
-    float shaping:focus = 0 (
+    float inputs:shaping:focus = 0 (
         displayGroup = "Shaping"
         doc = """A control to shape the spread of light.  Higher focus
         values pull light towards the center and narrow the spread.
         Implemented as an off-axis cosine power exponent.
         TODO: clarify semantics"""
     )
-    color3f shaping:focusTint = (0, 0, 0) (
+    color3f inputs:shaping:focusTint = (0, 0, 0) (
         displayGroup = "Shaping"
         doc = """Off-axis color tint.  This tints the emission in the
         falloff region.  The default tint is black.
         TODO: clarify semantics"""
     )
-    float shaping:ies:angleScale = 0 (
+    float inputs:shaping:ies:angleScale = 0 (
         displayGroup = "Shaping"
         doc = """Rescales the angular distribution of the IES profile.
         TODO: clarify semantics"""
     )
-    asset shaping:ies:file (
+    asset inputs:shaping:ies:file (
         displayGroup = "Shaping"
         doc = """An IES (Illumination Engineering Society) light
         profile describing the angular distribution of light."""
     )
-    bool shaping:ies:normalize = 0 (
+    bool inputs:shaping:ies:normalize = 0 (
         displayGroup = "Shaping"
         doc = """Normalizes the IES profile so that it affects the shaping
         of the light while preserving the overall energy output."""
@@ -318,28 +318,28 @@ class "ShadowAPI" (
     non-physical controls that are valuable for visual lighting work."""
 )
 {
-    color3f shadow:color = (0, 0, 0) (
+    color3f inputs:shadow:color = (0, 0, 0) (
         displayGroup = "Shadows"
         doc = """The color of shadows cast by the light.  This is a
         non-physical control.  The default is to cast black shadows."""
     )
-    float shadow:distance = -1 (
+    float inputs:shadow:distance = -1 (
         displayGroup = "Shadows"
         doc = """The maximum distance shadows are cast.
         The default value (-1) indicates no limit.
         """
     )
-    bool shadow:enable = 1 (
+    bool inputs:shadow:enable = 1 (
         displayGroup = "Shadows"
         doc = "Enables shadows to be cast by this light."
     )
-    float shadow:falloff = -1 (
+    float inputs:shadow:falloff = -1 (
         displayGroup = "Shadows"
         doc = """The near distance at which shadow falloff begins.
         The default value (-1) indicates no falloff.
         """
     )
-    float shadow:falloffGamma = 1 (
+    float inputs:shadow:falloffGamma = 1 (
         displayGroup = "Shadows"
         doc = """A gamma (i.e., exponential) control over shadow strength
         with linear distance within the falloff zone.

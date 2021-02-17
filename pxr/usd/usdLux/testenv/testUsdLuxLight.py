@@ -78,6 +78,7 @@ class TestUsdLuxLight(unittest.TestCase):
         stage = Usd.Stage.CreateInMemory()
         light = UsdLux.RectLight.Define(stage, '/RectLight')
         self.assertTrue(light)
+        self.assertTrue(light.ConnectableAPI())
 
         # Rect light has the following built-in inputs attributes.
         inputNames = ['color', 
@@ -126,6 +127,7 @@ class TestUsdLuxLight(unittest.TestCase):
         # Do the same with a light filter
         lightFilter = UsdLux.LightFilter.Define(stage, '/LightFilter')
         self.assertTrue(lightFilter)
+        self.assertTrue(lightFilter.ConnectableAPI())
 
         # Light filter has no built-in inputs.
         self.assertEqual(lightFilter.GetInputs(), [])
@@ -186,6 +188,57 @@ class TestUsdLuxLight(unittest.TestCase):
         self.assertFalse(filterInput.CanConnect(filterOutput))
         self.assertTrue(filterInput.CanConnect(filterGraphOutput))
         self.assertFalse(filterInput.CanConnect(lightGraphOutput))
+
+        # The shaping API can add more connectable attributes to the light 
+        # and implements the same connectable interface functions. We test 
+        # those here.
+        shapingAPI = UsdLux.ShapingAPI.Apply(light.GetPrim())
+        self.assertTrue(shapingAPI)
+        self.assertTrue(shapingAPI.ConnectableAPI())
+        # Verify input attributes match the getter API attributes.
+        self.assertEqual(shapingAPI.GetInput('shaping:cone:angle').GetAttr(), 
+                         shapingAPI.GetShapingConeAngleAttr())
+        self.assertEqual(shapingAPI.GetInput('shaping:focus').GetAttr(), 
+                         shapingAPI.GetShapingFocusAttr())
+        # These inputs have the same connectable behaviors as all light inputs,
+        # i.e. they can only be connected to sources from immediate 
+        # descendant (encapsultated) prims of the light.
+        shapingInput = shapingAPI.GetInput('shaping:focus')
+        self.assertFalse(shapingInput.CanConnect(lightOutput))
+        self.assertTrue(shapingInput.CanConnect(lightGraphOutput))
+        self.assertFalse(shapingInput.CanConnect(filterGraphOutput))
+
+        # The shadow API can add more connectable attributes to the light 
+        # and implements the same connectable interface functions. We test 
+        # those here.
+        shadowAPI = UsdLux.ShadowAPI.Apply(light.GetPrim())
+        self.assertTrue(shadowAPI)
+        self.assertTrue(shadowAPI.ConnectableAPI())
+        # Verify input attributes match the getter API attributes.
+        self.assertEqual(shadowAPI.GetInput('shadow:color').GetAttr(), 
+                         shadowAPI.GetShadowColorAttr())
+        self.assertEqual(shadowAPI.GetInput('shadow:distance').GetAttr(), 
+                         shadowAPI.GetShadowDistanceAttr())
+        # These inputs have the same connectable behaviors as all light inputs,
+        # i.e. they can only be connected to sources from immediate 
+        # descendant (encapsultated) prims of the light.
+        shadowInput = shadowAPI.GetInput('shadow:color')
+        self.assertFalse(shadowInput.CanConnect(lightOutput))
+        self.assertTrue(shadowInput.CanConnect(lightGraphOutput))
+        self.assertFalse(shadowInput.CanConnect(filterGraphOutput))
+
+        # Even though the shadow and shaping API schemas provide connectable
+        # attributes and an interface for the ConnectableAPI, the typed schema
+        # of the prim is still what provides its connectable behavior. Here
+        # we verify that applying these APIs to a prim whose type is not 
+        # connectable does NOT cause the prim to conform to the Connectable API.
+        nonConnectablePrim = stage.DefinePrim("/Sphere", "Sphere")
+        shadowAPI = UsdLux.ShadowAPI.Apply(nonConnectablePrim)
+        self.assertTrue(shadowAPI)
+        self.assertFalse(shadowAPI.ConnectableAPI())
+        shapingAPI = UsdLux.ShapingAPI.Apply(nonConnectablePrim)
+        self.assertTrue(shapingAPI)
+        self.assertFalse(shapingAPI.ConnectableAPI())
 
     def test_DomeLight_OrientToStageUpAxis(self):
         from pxr import UsdGeom

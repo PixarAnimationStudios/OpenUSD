@@ -303,44 +303,71 @@ class "ListAPI" (
 class "ShapingAPI" (
     inherits = </APISchemaBase>
     doc = """Controls for shaping a light's emission."""
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/output.h" """
+    }
+
 ) {
-    float shaping:focus = 0 (
+    float inputs:shaping:focus = 0 (
         displayGroup = "Shaping"
         doc = """A control to shape the spread of light.  Higher focus
         values pull light towards the center and narrow the spread.
         Implemented as an off-axis cosine power exponent.
         TODO: clarify semantics"""
+        customData = {
+            token apiName = "shaping:focus"
+        }
     )
-    color3f shaping:focusTint = (0, 0, 0) (
+    color3f inputs:shaping:focusTint = (0, 0, 0) (
         displayGroup = "Shaping"
         doc = """Off-axis color tint.  This tints the emission in the
         falloff region.  The default tint is black.
         TODO: clarify semantics"""
+        customData = {
+            token apiName = "shaping:focusTint"
+        }
     )
-    float shaping:cone:angle = 90 (
+    float inputs:shaping:cone:angle = 90 (
         displayGroup = "Shaping"
         doc = """Angular limit off the primary axis to restrict the
         light spread."""
+        customData = {
+            token apiName = "shaping:cone:angle"
+        }
     )
-    float shaping:cone:softness = 0 (
+    float inputs:shaping:cone:softness = 0 (
         displayGroup = "Shaping"
         doc = """Controls the cutoff softness for cone angle.
         TODO: clarify semantics"""
+        customData = {
+            token apiName = "shaping:cone:softness"
+        }
     )
-    asset shaping:ies:file (
+    asset inputs:shaping:ies:file (
         displayGroup = "Shaping"
         doc = """An IES (Illumination Engineering Society) light
         profile describing the angular distribution of light."""
+        customData = {
+            token apiName = "shaping:ies:file"
+        }
     )
-    float shaping:ies:angleScale = 0 (
+    float inputs:shaping:ies:angleScale = 0 (
         displayGroup = "Shaping"
         doc = """Rescales the angular distribution of the IES profile.
         TODO: clarify semantics"""
+        customData = {
+            token apiName = "shaping:ies:angleScale"
+        }
     )
-    bool shaping:ies:normalize = false (
+    bool inputs:shaping:ies:normalize = false (
         displayGroup = "Shaping"
         doc = """Normalizes the IES profile so that it affects the shaping
         of the light while preserving the overall energy output."""
+        customData = {
+            token apiName = "shaping:ies:normalize"
+        }
     )
 }
 
@@ -348,33 +375,54 @@ class "ShadowAPI" (
     inherits = </APISchemaBase>
     doc = """Controls to refine a light's shadow behavior.  These are
     non-physical controls that are valuable for visual lighting work."""
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/output.h" """
+    }
+
 ) {
-    bool shadow:enable = true (
+    bool inputs:shadow:enable = true (
         displayGroup = "Shadows"
         doc = """Enables shadows to be cast by this light."""
+        customData = {
+            token apiName = "shadow:enable"
+        }
     )
-    color3f shadow:color = (0, 0, 0) (
+    color3f inputs:shadow:color = (0, 0, 0) (
         displayGroup = "Shadows"
         doc = """The color of shadows cast by the light.  This is a
         non-physical control.  The default is to cast black shadows."""
+        customData = {
+            token apiName = "shadow:color"
+        }
     )
-    float shadow:distance = -1.0 (
+    float inputs:shadow:distance = -1.0 (
         displayGroup = "Shadows"
         doc = """The maximum distance shadows are cast.
         The default value (-1) indicates no limit.
         """
+        customData = {
+            token apiName = "shadow:distance"
+        }
     )
-    float shadow:falloff = -1.0 (
+    float inputs:shadow:falloff = -1.0 (
         displayGroup = "Shadows"
         doc = """The near distance at which shadow falloff begins.
         The default value (-1) indicates no falloff.
         """
+        customData = {
+            token apiName = "shadow:falloff"
+        }
     )
-    float shadow:falloffGamma = 1.0 (
+    float inputs:shadow:falloffGamma = 1.0 (
         displayGroup = "Shadows"
         doc = """A gamma (i.e., exponential) control over shadow strength
         with linear distance within the falloff zone.
         This requires the use of shadowDistance and shadowFalloff."""
+        customData = {
+            token apiName = "shadow:falloffGamma"
+        }
     )
 }
 

@@ -2690,7 +2690,26 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
         { HdLightTokens->specular, UsdLuxTokens->inputsSpecular },
         { HdLightTokens->textureFile, UsdLuxTokens->inputsTextureFile },
         { HdLightTokens->textureFormat, UsdLuxTokens->inputsTextureFormat },
-        { HdLightTokens->width, UsdLuxTokens->inputsWidth }
+        { HdLightTokens->width, UsdLuxTokens->inputsWidth },
+
+        { HdLightTokens->shapingFocus, UsdLuxTokens->inputsShapingFocus },
+        { HdLightTokens->shapingFocusTint, 
+            UsdLuxTokens->inputsShapingFocusTint },
+        { HdLightTokens->shapingConeAngle, 
+            UsdLuxTokens->inputsShapingConeAngle },
+        { HdLightTokens->shapingConeSoftness, 
+            UsdLuxTokens->inputsShapingConeSoftness },
+        { HdLightTokens->shapingIesFile, UsdLuxTokens->inputsShapingIesFile },
+        { HdLightTokens->shapingIesAngleScale, 
+            UsdLuxTokens->inputsShapingIesAngleScale },
+        { HdLightTokens->shapingIesNormalize, 
+            UsdLuxTokens->inputsShapingIesNormalize },
+        { HdLightTokens->shadowEnable, UsdLuxTokens->inputsShadowEnable },
+        { HdLightTokens->shadowColor, UsdLuxTokens->inputsShadowColor },
+        { HdLightTokens->shadowDistance, UsdLuxTokens->inputsShadowDistance },
+        { HdLightTokens->shadowFalloff, UsdLuxTokens->inputsShadowFalloff },
+        { HdLightTokens->shadowFalloffGamma, 
+            UsdLuxTokens->inputsShadowFalloffGamma }
     });
 
     const TfToken *attrName = TfMapLookupPtr(paramToAttrName, paramName);
