@@ -79,6 +79,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (StageOrientation)
 );
 
+// XXX: WBN to expose this to the application.
+static const uint32_t MSAA_SAMPLE_COUNT = 4;
+
 // ---------------------------------------------------------------------------
 // Delegate implementation.
 
@@ -931,6 +934,9 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
         desc.format = outputDescs[i].format;
         desc.multiSampled = outputDescs[i].multiSampled;
         _delegate.SetParameter(aovId, _tokens->renderBufferDescriptor,desc);
+        _delegate.SetParameter(aovId,
+                               HdStRenderBufferTokens->stormMsaaSampleCount,
+                               MSAA_SAMPLE_COUNT);
         GetRenderIndex()->GetChangeTracker().MarkBprimDirty(aovId,
             HdRenderBuffer::DirtyDescription);
         _aovBufferIds.push_back(aovId);
