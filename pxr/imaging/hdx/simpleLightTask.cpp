@@ -58,6 +58,7 @@ HdxSimpleLightTask::HdxSimpleLightTask(
   , _lightingShader(std::make_shared<HdStSimpleLightingShader>())
   , _enableShadows(false)
   , _viewport(0.0f, 0.0f, 0.0f, 0.0f)
+  , _overrideWindowPolicy{false, CameraUtilFit}
   , _material()
   , _sceneAmbient()
   , _glfSimpleLights()
@@ -65,6 +66,24 @@ HdxSimpleLightTask::HdxSimpleLightTask(
 }
 
 HdxSimpleLightTask::~HdxSimpleLightTask() = default;
+
+std::vector<GfMatrix4d>
+HdxSimpleLightTask::_ComputeShadowMatrices(
+    const HdCamera * const camera,
+    HdxShadowMatrixComputationSharedPtr const &computation) const
+{
+    const CameraUtilConformWindowPolicy camPolicy = camera->GetWindowPolicy();
+
+    if (_framing.IsValid()) {
+        CameraUtilConformWindowPolicy const policy =
+            _overrideWindowPolicy.first
+                ? _overrideWindowPolicy.second
+                : camPolicy;
+        return computation->Compute(_framing, policy);
+    } else {
+        return computation->Compute(_viewport, camPolicy);
+    }
+}
 
 void
 HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
@@ -93,6 +112,8 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
         _cameraId = params.cameraPath;
         _enableShadows = params.enableShadows;
         _viewport = params.viewport;
+        _framing = params.framing;
+        _overrideWindowPolicy = params.overrideWindowPolicy;
         // XXX: compatibility hack for passing some unit tests until we have
         //      more formal material plumbing.
         _material = params.material;
@@ -127,8 +148,6 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     GfMatrix4d const& projectionMatrix = camera->GetProjectionMatrix();
     // Extract the camera window policy to adjust the frustum correctly for
     // lights that have shadows.
-    CameraUtilConformWindowPolicy const& windowPolicy =
-        camera->GetWindowPolicy();
 
     // Unique identifier for lights with shadows
     int shadowIndex = -1;
@@ -175,7 +194,7 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
 
             // Take a copy of the simple light into our temporary array and
             // update it with viewer-dependant values.
-            VtValue vtLightParams = light->Get(HdLightTokens->params);
+            const VtValue vtLightParams = light->Get(HdLightTokens->params);
             GlfSimpleLight glfl = 
                 vtLightParams.GetWithDefault<GlfSimpleLight>(GlfSimpleLight());
 
@@ -203,9 +222,9 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
                 glfl.SetIsCameraSpaceLight(false);
             }
 
-            VtValue vLightShadowParams = 
+            const VtValue vLightShadowParams = 
                 light->Get(HdLightTokens->shadowParams);
-            HdxShadowParams lightShadowParams = 
+            const HdxShadowParams lightShadowParams = 
                 vLightShadowParams.GetWithDefault<HdxShadowParams>
                     (HdxShadowParams());
 
@@ -225,11 +244,11 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
                     continue;
                 }
 
-                std::vector<GfMatrix4d> shadowMatrices =
-                    lightShadowParams.shadowMatrix->Compute(_viewport,
-                                                            windowPolicy);
+                const std::vector<GfMatrix4d> shadowMatrices =
+                    _ComputeShadowMatrices(
+                        camera, lightShadowParams.shadowMatrix);
 
-                if (shadowMatrices.size() == 0) {
+                if (shadowMatrices.empty()) {
                     glfl.SetHasShadow(false);
                     continue;
                 }

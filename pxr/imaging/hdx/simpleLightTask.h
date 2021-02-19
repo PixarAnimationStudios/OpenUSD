@@ -33,6 +33,8 @@
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 
+#include "pxr/imaging/cameraUtil/framing.h"
+
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/declarePtrs.h"
 
@@ -42,6 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRenderIndex;
 class HdSceneDelegate;
+class HdCamera;
 
 using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
 using HdStSimpleLightingShaderSharedPtr =
@@ -77,6 +80,10 @@ public:
     void Execute(HdTaskContext* ctx) override;
 
 private:
+    std::vector<GfMatrix4d> _ComputeShadowMatrices(
+        const HdCamera * camera,
+        HdxShadowMatrixComputationSharedPtr const &computation) const;
+
     SdfPath _cameraId;
     std::map<TfToken, SdfPathVector> _lightIds;
     SdfPathVector _lightIncludePaths;
@@ -87,6 +94,8 @@ private:
     HdStSimpleLightingShaderSharedPtr _lightingShader;
     bool _enableShadows;
     GfVec4f _viewport;
+    CameraUtilFraming _framing;
+    std::pair<bool, CameraUtilConformWindowPolicy> _overrideWindowPolicy;
 
     // XXX: compatibility hack for passing some unit tests until we have
     //      more formal material plumbing.
@@ -115,6 +124,7 @@ struct HdxSimpleLightTaskParams {
         , lightExcludePaths()
         , enableShadows(false)
         , viewport(0.0f)
+        , overrideWindowPolicy{false, CameraUtilFit}
         , material()
         , sceneAmbient(0) 
         {}
@@ -124,6 +134,8 @@ struct HdxSimpleLightTaskParams {
     SdfPathVector lightExcludePaths;
     bool enableShadows;
     GfVec4f viewport;
+    CameraUtilFraming framing;
+    std::pair<bool, CameraUtilConformWindowPolicy> overrideWindowPolicy;
     
     // XXX: compatibility hack for passing some unit tests until we have
     //      more formal material plumbing.
