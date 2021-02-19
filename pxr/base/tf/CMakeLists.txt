@@ -647,6 +647,7 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyInterpreter"
     )
     pxr_register_test(testTfPyInvoke
+        REQUIRES_PYTHON_MODULES
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyInvoke"
     )
     pxr_register_test(testTfPyLock
