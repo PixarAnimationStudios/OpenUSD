@@ -276,8 +276,6 @@ static void TestInvoke_TfError()
 
 int main(int argc, char *argv[])
 {
-    TfPyInitialize();
-
     // Don't print errors to stderr.  We'll print them to stdout instead.
     TfDiagnosticMgr::GetInstance().SetQuiet(true);
 

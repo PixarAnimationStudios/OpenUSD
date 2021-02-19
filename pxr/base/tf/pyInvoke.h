@@ -32,6 +32,7 @@
 
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/pyError.h"
+#include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 
@@ -235,8 +236,9 @@ bool TfPyInvokeAndReturn(
 /// should have been raised, describing the failure.  TfPyInvokeAndExtract never
 /// raises exceptions.
 ///
-/// TfPyInitialize must be called before TfPyInvokeAndExtract.  However, you
-/// don't have to lock the GIL; TfPyInvokeAndExtract does that for you.
+/// It should be safe to call this function without doing any other setup
+/// first.  It is not necessary to call TfPyInitialize or lock the GIL; this
+/// function does those things itself.
 ///
 /// If you don't need the function's return value, call TfPyInvoke instead.
 ///
@@ -257,7 +259,8 @@ bool TfPyInvokeAndExtract(
         return false;
     }
 
-    // Take the lock before doing anything with boost::python.
+    // Init Python and grab the GIL.
+    TfPyInitialize();
     TfPyLock lock;
 
     boost::python::object resultObj;
@@ -293,7 +296,8 @@ bool TfPyInvokeAndReturn(
         return false;
     }
 
-    // Take the lock before doing anything with boost::python.
+    // Init Python and grab the GIL.
+    TfPyInitialize();
     TfPyLock lock;
 
     try {
@@ -327,7 +331,8 @@ bool TfPyInvoke(
     const std::string &callableExpr,
     Args... args)
 {
-    // Take the lock before doing anything with boost::python.
+    // Init Python and grab the GIL.
+    TfPyInitialize();
     TfPyLock lock;
 
     boost::python::object ignoredResult;
