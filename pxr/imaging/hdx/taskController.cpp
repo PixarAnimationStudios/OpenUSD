@@ -1933,7 +1933,12 @@ HdxTaskController::_SetCameraFramingForTasks()
         HdxPickFromRenderBufferTaskParams params =
             _delegate.GetParameter<HdxPickFromRenderBufferTaskParams>(
                 _pickFromRenderBufferTaskId, HdTokens->params);
-        if (params.viewport != adjustedViewport) {
+        if (params.viewport != adjustedViewport ||
+            params.framing != _framing ||
+            params.overrideWindowPolicy != _overrideWindowPolicy) {
+
+            params.framing = _framing;
+            params.overrideWindowPolicy = _overrideWindowPolicy;
             params.viewport = adjustedViewport;
             _delegate.SetParameter(
                 _pickFromRenderBufferTaskId, HdTokens->params, params);
