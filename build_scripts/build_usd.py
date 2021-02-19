@@ -1982,29 +1982,20 @@ if (not find_executable("g++") and
     PrintError("C++ compiler not found -- please install a compiler")
     sys.exit(1)
 
-if find_executable("python"):
-    # Error out if a 64bit version of python interpreter is not found
-    # Note: Ideally we should be checking the python binary found above, but
-    # there is an assumption (for very valid reasons) at other places in the
-    # script that the python process used to run this script will be found.
-    isPython64Bit = (ctypes.sizeof(ctypes.c_voidp) == 8)
-    if not isPython64Bit:
-        PrintError("64bit python not found -- please install it and adjust your"
-                   "PATH")
-        sys.exit(1)
-
-    # Error out on Windows with Python 3.8+. USD currently does not support
-    # these versions due to:
-    # https://docs.python.org/3.8/whatsnew/3.8.html#bpo-36085-whatsnew
-    isPython38 = (sys.version_info.major >= 3 and
-                  sys.version_info.minor >= 8)
-    if Windows() and isPython38:
-        PrintError("Python 3.8+ is not supported on Windows")
-        sys.exit(1)
-
-else:
-    PrintError("python not found -- please ensure python is included in your "
+# Error out if a 64bit version of python interpreter is not being used
+isPython64Bit = (ctypes.sizeof(ctypes.c_voidp) == 8)
+if not isPython64Bit:
+    PrintError("64bit python not found -- please install it and adjust your"
                "PATH")
+    sys.exit(1)
+
+# Error out on Windows with Python 3.8+. USD currently does not support
+# these versions due to:
+# https://docs.python.org/3.8/whatsnew/3.8.html#bpo-36085-whatsnew
+isPython38 = (sys.version_info.major >= 3 and
+              sys.version_info.minor >= 8)
+if Windows() and isPython38:
+    PrintError("Python 3.8+ is not supported on Windows")
     sys.exit(1)
 
 if find_executable("cmake"):
