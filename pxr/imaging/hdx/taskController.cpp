@@ -517,14 +517,12 @@ HdxTaskController::_CreateShadowTask()
 {
     _shadowTaskId = GetControllerId().AppendChild(_tokens->shadowTask);
 
-    HdxShadowTaskParams shadowParams;
-    shadowParams.camera = _freeCamId;
-
     GetRenderIndex()->InsertTask<HdxShadowTask>(&_delegate, _shadowTaskId);
 
     TfTokenVector renderTags = { HdRenderTagTokens->geometry };
 
-    _delegate.SetParameter(_shadowTaskId, HdTokens->params, shadowParams);
+    _delegate.SetParameter(_shadowTaskId, HdTokens->params,
+                           HdxShadowTaskParams());
     _delegate.SetParameter(_shadowTaskId, _tokens->renderTags, renderTags);
 }
 
@@ -1358,8 +1356,6 @@ HdxTaskController::SetShadowParams(HdxShadowTaskParams const& params)
             _shadowTaskId, HdTokens->params);
 
     HdxShadowTaskParams mergedParams = params;
-    mergedParams.camera = oldParams.camera;
-    mergedParams.viewport = oldParams.viewport;
     mergedParams.enableSceneMaterials = oldParams.enableSceneMaterials;
 
     if (mergedParams != oldParams) {
@@ -1867,16 +1863,6 @@ HdxTaskController::_SetCameraParamForTasks(SdfPath const& id)
                 _simpleLightTaskId, HdChangeTracker::DirtyParams);
         }
 
-        if (!_shadowTaskId.IsEmpty()) {
-            HdxShadowTaskParams params =
-                _delegate.GetParameter<HdxShadowTaskParams>(
-                    _shadowTaskId, HdTokens->params);
-            params.camera = _activeCameraId;
-            _delegate.SetParameter(_shadowTaskId, HdTokens->params, params);
-            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-                _shadowTaskId, HdChangeTracker::DirtyParams);
-        }
-
         if (!_pickFromRenderBufferTaskId.IsEmpty()) {
             HdxPickFromRenderBufferTaskParams params =
                 _delegate.GetParameter<HdxPickFromRenderBufferTaskParams>(
@@ -1926,20 +1912,6 @@ HdxTaskController::_SetCameraFramingForTasks()
             _delegate.SetParameter(renderTaskId, HdTokens->params, params);
             changeTracker.MarkTaskDirty(
                 renderTaskId, HdChangeTracker::DirtyParams);
-        }
-    }
-
-    if (!_shadowTaskId.IsEmpty()) {
-        // The shadow and camera viewport should be the same
-        // so we don't have to double check what the shadow task has.
-        HdxShadowTaskParams params =
-            _delegate.GetParameter<HdxShadowTaskParams>(
-                _shadowTaskId, HdTokens->params);
-        if (params.viewport != adjustedViewport) {
-            params.viewport = adjustedViewport;
-            _delegate.SetParameter(_shadowTaskId, HdTokens->params, params);
-            changeTracker.MarkTaskDirty(
-                _shadowTaskId, HdChangeTracker::DirtyParams);
         }
     }
 

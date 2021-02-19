@@ -238,7 +238,8 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
 
         GfVec2i shadowMapRes = shadows->GetShadowMapSize(shadowMapId);
 
-        // Move the camera to the correct position to take the shadow map
+        // Set camera framing based on the shadow map's, which is computed in
+        // HdxSimpleLightTask.
         _renderPassStates[passId]->SetCameraFramingState( 
             shadows->GetViewMatrix(shadowMapId), 
             shadows->GetProjectionMatrix(shadowMapId),
@@ -380,15 +381,7 @@ std::ostream& operator<<(std::ostream& out, const HdxShadowTaskParams& pv)
         << pv.depthBiasSlopeFactor << " "
         << pv.depthFunc << " "
         << pv.cullStyle << " "
-        << pv.camera << " "
-        << pv.viewport << " "
         ;
-        TF_FOR_ALL(it, pv.lightIncludePaths) {
-            out << *it;
-        }
-        TF_FOR_ALL(it, pv.lightExcludePaths) {
-            out << *it;
-        }
     return out;
 }
 
@@ -404,11 +397,7 @@ bool operator==(const HdxShadowTaskParams& lhs, const HdxShadowTaskParams& rhs)
             lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor  && 
             lhs.depthBiasSlopeFactor == rhs.depthBiasSlopeFactor        && 
             lhs.depthFunc == rhs.depthFunc                              && 
-            lhs.cullStyle == rhs.cullStyle                              && 
-            lhs.camera == rhs.camera                                    && 
-            lhs.viewport == rhs.viewport                                && 
-            lhs.lightIncludePaths == rhs.lightIncludePaths              && 
-            lhs.lightExcludePaths == rhs.lightExcludePaths
+            lhs.cullStyle == rhs.cullStyle
             ;
 }
 

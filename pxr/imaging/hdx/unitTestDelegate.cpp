@@ -358,8 +358,6 @@ Hdx_UnitTestDelegate::AddShadowTask(SdfPath const &id)
     GetRenderIndex().InsertTask<HdxShadowTask>(this, id);
     _ValueCache &cache = _valueCacheMap[id];
     HdxShadowTaskParams params;
-    params.camera = _cameraId;
-    params.viewport = GfVec4f(0,0,512,512);
     cache[HdTokens->params] = VtValue(params);
 }
 
