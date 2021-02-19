@@ -147,9 +147,6 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
     renderPassState->SetEnableDepthMask(true);
     renderPassState->SetColorMasks({HdRenderPassState::ColorMaskRGBA});
 
-    // We resolve the AOVs just before rendering any OIT geometry, so
-    // avoid using the multisampled AOVs.
-    renderPassState->SetUseAovMultiSample(false);
     HdxRenderTask::Execute(ctx);
 
     //

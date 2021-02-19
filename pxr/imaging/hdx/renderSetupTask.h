@@ -175,6 +175,7 @@ struct HdxRenderTaskParams
         , blendConstantColor(0.0f, 0.0f, 0.0f, 0.0f)
         , blendEnable(false)
         , enableAlphaToCoverage(true)
+        , useAovMultiSample(true)
         , resolveAovMultiSample(true)
         // Camera framing and viewer state
         , viewport(0.0)
@@ -241,6 +242,10 @@ struct HdxRenderTaskParams
 
     // AlphaToCoverage
     bool enableAlphaToCoverage;
+
+    // If true (default), render into the multi-sampled AOVs (rather than
+    // the resolved AOVs).
+    bool useAovMultiSample;
 
     // If true (default), multi-sampled AOVs will be resolved at the end of a
     // render pass.

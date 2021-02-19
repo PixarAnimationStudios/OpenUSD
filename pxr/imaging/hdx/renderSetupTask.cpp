@@ -175,6 +175,8 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
 
         if (HdStRenderPassState * const hdStRenderPassState =
                     dynamic_cast<HdStRenderPassState*>(renderPassState.get())) {
+            hdStRenderPassState->SetUseAovMultiSample(
+                params.useAovMultiSample);
             hdStRenderPassState->SetResolveAovMultiSample(
                 params.resolveAovMultiSample);
             
@@ -313,6 +315,7 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
         << pv.blendConstantColor << " "
         << pv.blendEnable << " "
         << pv.enableAlphaToCoverage << ""
+        << pv.useAovMultiSample << ""
         << pv.resolveAovMultiSample << ""
 
         << pv.camera << " "
@@ -368,6 +371,8 @@ bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
            lhs.blendConstantColor       == rhs.blendConstantColor       &&
            lhs.blendEnable              == rhs.blendEnable              &&
            lhs.enableAlphaToCoverage    == rhs.enableAlphaToCoverage    &&
+           lhs.useAovMultiSample        == rhs.useAovMultiSample        &&
+           lhs.resolveAovMultiSample    == rhs.resolveAovMultiSample    &&
            
            lhs.camera                   == rhs.camera                   &&
            lhs.framing                  == rhs.framing                  &&

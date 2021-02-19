@@ -256,10 +256,6 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
             HdxPackageOitResolveImageShader());
         _renderPassState->SetRenderPassShader(_renderPassShader);
 
-        // We want OIT to resolve into the resolved aov, not the multi sample
-        // aov. See HdxTaskController::GetRenderingTasks().
-        _renderPassState->SetUseAovMultiSample(false);
-
         _renderPass->Prepare(GetRenderTags());
     }
 

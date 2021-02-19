@@ -380,8 +380,14 @@ HdxTaskController::_CreateRenderTask(TfToken const& materialTag)
         GetRenderIndex()->InsertTask<HdxRenderTask>(&_delegate, taskId);
     } else if (materialTag == HdxMaterialTagTokens->translucent) {
         GetRenderIndex()->InsertTask<HdxOitRenderTask>(&_delegate, taskId);
+        // OIT is using its own buffers which are only per pixel and not per
+        // sample. Thus, we resolve the AOVs before starting to render any
+        // OIT geometry and only use the resolved AOVs from then on.
+        renderParams.useAovMultiSample = false;
     } else if (materialTag == HdStMaterialTagTokens->volume) {
         GetRenderIndex()->InsertTask<HdxOitVolumeRenderTask>(&_delegate, taskId);
+        // See above comment about OIT.
+        renderParams.useAovMultiSample = false;
     }
 
     // Create an initial set of render tags in case the user doesn't set any
@@ -452,10 +458,18 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
 void
 HdxTaskController::_CreateOitResolveTask()
 {
+    HdxRenderTaskParams renderParams;
+    // OIT is using its own buffers which are only per pixel and not per
+    // sample. Thus, we resolve the AOVs before starting to render any
+    // OIT geometry and only use the resolved AOVs from then on.
+    renderParams.useAovMultiSample = false;
+
     _oitResolveTaskId = GetControllerId().AppendChild(_tokens->oitResolveTask);
 
     GetRenderIndex()->InsertTask<HdxOitResolveTask>(&_delegate,
         _oitResolveTaskId);
+
+    _delegate.SetParameter(_oitResolveTaskId, HdTokens->params, renderParams);
 }
 
 void
@@ -960,7 +974,7 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
 
     // Set AOV bindings on render tasks
     for (SdfPath const& renderTaskId : _renderTaskIds) {
-        bool isFirstRenderTask = renderTaskId == _renderTaskIds.front();
+        const bool isFirstRenderTask = renderTaskId == _renderTaskIds.front();
 
         const HdRenderPassAovBindingVector& aovBindings = 
             isFirstRenderTask ? 
@@ -1152,7 +1166,7 @@ HdxTaskController::SetRenderOutputSettings(TfToken const& name,
             _delegate.GetParameter<HdxRenderTaskParams>(
                 renderTaskId, HdTokens->params);
 
-        bool isFirstRenderTask = renderTaskId == _renderTaskIds.front();
+        const bool isFirstRenderTask = renderTaskId == _renderTaskIds.front();
 
         for (size_t i = 0; i < renderParams.aovBindings.size(); ++i) {
             if (renderParams.aovBindings[i].renderBufferId == renderBufferId) {
