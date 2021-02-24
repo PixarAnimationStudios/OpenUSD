@@ -68,19 +68,6 @@ HgiShaderSection::WriteParameter(std::ostream& ss) const
     WriteIdentifier(ss);
 }
 
-void
-HgiShaderSection::WriteAttributeWithIndex(std::ostream& ss) const
-{
-    if(!_attribute.empty()) {
-        WriteParameter(ss);
-        ss << "[[" << _attribute;
-        if(!_attributeIndex.empty()) {
-            ss << "(" << _attributeIndex << ")";
-        }
-        ss << "]]";
-    }
-}
-
 const std::string&
 HgiShaderSection::GetAttribute() const
 {

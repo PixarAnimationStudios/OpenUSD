@@ -65,11 +65,6 @@ public:
     HGI_API
     virtual void WriteParameter(std::ostream& ss) const;
 
-    /// Write out the attribute and also the attribute index in case
-    /// either exists
-    HGI_API
-    virtual void WriteAttributeWithIndex(std::ostream& ss) const;
-
     HGI_API
     const std::string& GetAttribute() const;
 

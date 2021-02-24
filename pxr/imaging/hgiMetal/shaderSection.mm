@@ -60,6 +60,19 @@ HgiMetalShaderSection::VisitEntryPointFunctionExecutions(
     return false;
 }
 
+void
+HgiMetalShaderSection::WriteAttributeWithIndex(std::ostream& ss) const
+{
+    if(!GetAttribute().empty()) {
+        WriteParameter(ss);
+        ss << "[[" << GetAttribute();
+        if(!GetAttributeIndex().empty()) {
+            ss << "(" << GetAttributeIndex() << ")";
+        }
+        ss << "]]";
+    }
+}
+
 HgiMetalMemberShaderSection::HgiMetalMemberShaderSection(
     const std::string &identifier,
     const std::string &type,
@@ -199,7 +212,7 @@ HgiMetalStructTypeDeclarationShaderSection::WriteDeclaration(
     ss << " ";
     WriteIdentifier(ss);
     ss << "{\n";
-    for (HgiShaderSection* member : _members) {
+    for (HgiMetalShaderSection* member : _members) {
         if(!member->GetAttribute().empty()) {
             member->WriteAttributeWithIndex(ss);
         }

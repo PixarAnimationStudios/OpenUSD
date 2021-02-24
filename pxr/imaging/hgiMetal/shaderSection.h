@@ -63,6 +63,11 @@ public:
         std::ostream& ss,
         const std::string &scopeInstanceName);
 
+    /// Write out the attribute and also the attribute index in case
+    /// either exists
+    HGIMETAL_API
+    void WriteAttributeWithIndex(std::ostream& ss) const;
+
     using HgiShaderSection::HgiShaderSection;
 };
 
