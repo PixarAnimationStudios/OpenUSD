@@ -233,9 +233,11 @@ public:
     UsdShadeOutput GetOutput(const TfToken &name) const;
 
     /// Outputs are represented by attributes in the "outputs:" namespace.
-    /// 
+    /// If \p onlyAuthored is true (the default), then only return authored
+    /// attributes; otherwise, this also returns un-authored builtins.
+    ///
     USDSHADE_API
-    std::vector<UsdShadeOutput> GetOutputs() const;
+    std::vector<UsdShadeOutput> GetOutputs(bool onlyAuthored=true) const;
 
     /// \deprecated in favor of GetValueProducingAttributes on UsdShadeOutput
     /// Resolves the connection source of the requested output, identified by
@@ -312,9 +314,11 @@ public:
 
     /// Returns all inputs present on the node-graph. These are represented by
     /// attributes in the "inputs:" namespace.
-    /// 
+    /// If \p onlyAuthored is true (the default), then only return authored
+    /// attributes; otherwise, this also returns un-authored builtins.
+    ///
     USDSHADE_API
-    std::vector<UsdShadeInput> GetInputs() const;
+    std::vector<UsdShadeInput> GetInputs(bool onlyAuthored=true) const;
     
     /// @}
 

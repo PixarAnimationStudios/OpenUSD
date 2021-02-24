@@ -708,9 +708,12 @@ public:
 
     /// Returns all outputs on the connectable prim (i.e. shader or node-graph). 
     /// Outputs are represented by attributes in the "outputs:" namespace.
-    /// 
+    /// If \p onlyAuthored is true (the default), then only return authored
+    /// attributes; otherwise, this also returns un-authored builtins.
+    ///
     USDSHADE_API
-    std::vector<UsdShadeOutput> GetOutputs() const;
+    std::vector<UsdShadeOutput> GetOutputs(
+          bool onlyAuthored=true) const;
 
     /// @}
 
@@ -734,9 +737,12 @@ public:
 
     /// Returns all inputs on the connectable prim (i.e. shader or node-graph). 
     /// Inputs are represented by attributes in the "inputs:" namespace.
-    /// 
+    /// If \p onlyAuthored is true (the default), then only return authored
+    /// attributes; otherwise, this also returns un-authored builtins.
+    ///
     USDSHADE_API
-    std::vector<UsdShadeInput> GetInputs() const;
+    std::vector<UsdShadeInput> GetInputs(
+          bool onlyAuthored=true) const;
 
     /// @}
 

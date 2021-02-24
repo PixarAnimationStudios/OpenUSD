@@ -199,12 +199,14 @@ WRAP_CUSTOM {
              (arg("name"), arg("type")))
         .def("GetOutput", &UsdLuxShadowAPI::GetOutput, arg("name"))
         .def("GetOutputs", &UsdLuxShadowAPI::GetOutputs,
+             (arg("onlyAuthored")=true),
              return_value_policy<TfPySequenceToList>())
 
         .def("CreateInput", &UsdLuxShadowAPI::CreateInput,
              (arg("name"), arg("type")))
         .def("GetInput", &UsdLuxShadowAPI::GetInput, arg("name"))
         .def("GetInputs", &UsdLuxShadowAPI::GetInputs,
+             (arg("onlyAuthored")=true),
              return_value_policy<TfPySequenceToList>())
         ;
 }

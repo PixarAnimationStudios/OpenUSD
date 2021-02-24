@@ -92,8 +92,10 @@ class TestUsdLuxLight(unittest.TestCase):
                       'specular', 
                       'texture:file', 
                       'width']
-        # GetInputs returns the inputs for all the built-ins.
-        self.assertEqual(light.GetInputs(), 
+        # GetInputs returns only authored inputs by default
+        self.assertEqual(light.GetInputs(), [])
+        # GetInputs(false) returns the inputs for all the built-ins.
+        self.assertEqual(light.GetInputs(onlyAuthored=False), 
                          [light.GetInput(name) for name in inputNames])
         # Verify each input's attribute is prefixed.
         for name in inputNames:
@@ -109,17 +111,27 @@ class TestUsdLuxLight(unittest.TestCase):
         # attribute is created.
         lightInput = light.CreateInput('newInput', Sdf.ValueTypeNames.Float)
         self.assertIn(lightInput, light.GetInputs())
+        # By default GetInputs() returns onlyAuthored inputs, of which
+        # there is now 1.
+        self.assertEqual(len(light.GetInputs()), 1)
+        # Passing onlyAuthored=False will return the authored input
+        # in addition to the builtins.
+        self.assertEqual(len(light.GetInputs(onlyAuthored=False)),
+            len(inputNames)+1)
         self.assertEqual(light.GetInput('newInput'), lightInput)
         self.assertEqual(lightInput.GetAttr(), 
                          light.GetPrim().GetAttribute("inputs:newInput"))
 
-        # Rect light has no built-in outputs.
+        # Rect light has no authored outputs.
         self.assertEqual(light.GetOutputs(), [])
+        # Rect light has no built-in outputs, either.
+        self.assertEqual(light.GetOutputs(onlyAuthored=False), [])
 
         # Create a new output, and verify that the output interface conforming
         # attribute is created.
         lightOutput = light.CreateOutput('newOutput', Sdf.ValueTypeNames.Float)
         self.assertEqual(light.GetOutputs(), [lightOutput])
+        self.assertEqual(light.GetOutputs(onlyAuthored=False), [lightOutput])
         self.assertEqual(light.GetOutput('newOutput'), lightOutput)
         self.assertEqual(lightOutput.GetAttr(), 
                          light.GetPrim().GetAttribute("outputs:newOutput"))
@@ -143,12 +155,15 @@ class TestUsdLuxLight(unittest.TestCase):
 
         # Light filter has no built-in outputs.
         self.assertEqual(lightFilter.GetOutputs(), [])
+        self.assertEqual(lightFilter.GetOutputs(onlyAuthored=False), [])
 
         # Create a new output, and verify that the output interface conforming
         # attribute is created.
         filterOutput = lightFilter.CreateOutput('newOutput', 
                                                 Sdf.ValueTypeNames.Float)
         self.assertEqual(lightFilter.GetOutputs(), [filterOutput])
+        self.assertEqual(lightFilter.GetOutputs(onlyAuthored=False),
+            [filterOutput])
         self.assertEqual(lightFilter.GetOutput('newOutput'), filterOutput)
         self.assertEqual(filterOutput.GetAttr(), 
                          lightFilter.GetPrim().GetAttribute("outputs:newOutput"))
@@ -362,7 +377,8 @@ class TestUsdLuxLight(unittest.TestCase):
             # There will be a one to one correspondence between node inputs
             # and light prim inputs.
             nodeInputs = [node.GetInput(i) for i in node.GetInputNames()]
-            lightInputs = light.GetInputs()
+            lightInputs = light.GetInputs(onlyAuthored=False)
+            self.assertEqual(len(nodeInputs), len(lightInputs))
             for nodeInput, lightInput in zip(nodeInputs, lightInputs):
                 self.assertFalse(nodeInput.IsOutput())
                 _CompareLightPropToNodeProp(nodeInput, lightInput)
@@ -370,7 +386,8 @@ class TestUsdLuxLight(unittest.TestCase):
             # There will also be a one to one correspondence between node 
             # outputs and light prim outputs.
             nodeOutputs = [node.GetOutput(i) for i in node.GetOutputNames()]
-            lightOutputs = light.GetOutputs()
+            lightOutputs = light.GetOutputs(onlyAuthored=False)
+            self.assertEqual(len(nodeOutputs), len(lightOutputs))
             for nodeOutput, lightOutput in zip(nodeOutputs, lightOutputs):
                 self.assertTrue(nodeOutput.IsOutput())
                 _CompareLightPropToNodeProp(nodeOutput, lightOutput)

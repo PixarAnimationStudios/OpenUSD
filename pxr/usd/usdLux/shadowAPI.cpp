@@ -263,9 +263,9 @@ UsdLuxShadowAPI::GetOutput(const TfToken &name) const
 }
 
 std::vector<UsdShadeOutput>
-UsdLuxShadowAPI::GetOutputs() const
+UsdLuxShadowAPI::GetOutputs(bool onlyAuthored) const
 {
-    return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
+    return UsdShadeConnectableAPI(GetPrim()).GetOutputs(onlyAuthored);
 }
 
 UsdShadeInput
@@ -282,9 +282,9 @@ UsdLuxShadowAPI::GetInput(const TfToken &name) const
 }
 
 std::vector<UsdShadeInput>
-UsdLuxShadowAPI::GetInputs() const
+UsdLuxShadowAPI::GetInputs(bool onlyAuthored) const
 {
-    return UsdShadeConnectableAPI(GetPrim()).GetInputs();
+    return UsdShadeConnectableAPI(GetPrim()).GetInputs(onlyAuthored);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

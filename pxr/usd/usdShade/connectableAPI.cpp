@@ -538,22 +538,25 @@ UsdShadeConnectableAPI::GetOutput(const TfToken &name) const
 }
 
 std::vector<UsdShadeOutput> 
-UsdShadeConnectableAPI::GetOutputs() const
+UsdShadeConnectableAPI::GetOutputs(bool onlyAuthored) const
 {
-    std::vector<UsdShadeOutput> ret;
-
-    std::vector<UsdAttribute> attrs = GetPrim().GetAttributes();
-    TF_FOR_ALL(attrIter, attrs) { 
-        const UsdAttribute& attr = *attrIter;
-        // If the attribute is in the "outputs:" namespace, then
-        // it must be a valid UsdShadeOutput.
-        if (TfStringStartsWith(attr.GetName().GetString(), 
-                               UsdShadeTokens->outputs)) {
-            ret.push_back(UsdShadeOutput(attr));
-        }
+    std::vector<UsdProperty> props;
+    if (onlyAuthored) {
+        props = GetPrim().GetAuthoredPropertiesInNamespace(
+            UsdShadeTokens->outputs);
+    } else {
+        props = GetPrim().GetPropertiesInNamespace(UsdShadeTokens->outputs);
     }
 
-    return ret;
+    // Filter for attributes and convert them to ouputs
+    std::vector<UsdShadeOutput> outputs;
+    outputs.reserve(props.size());
+    for (UsdProperty const& prop: props) {
+        if (UsdAttribute attr = prop.As<UsdAttribute>()) {
+            outputs.push_back(UsdShadeOutput(attr));
+        }
+    }
+    return outputs;
 }
 
 UsdShadeInput 
@@ -577,23 +580,25 @@ UsdShadeConnectableAPI::GetInput(const TfToken &name) const
 }
 
 std::vector<UsdShadeInput> 
-UsdShadeConnectableAPI::GetInputs() const
+UsdShadeConnectableAPI::GetInputs(bool onlyAuthored) const
 {
-    std::vector<UsdShadeInput> ret;
-
-    std::vector<UsdAttribute> attrs = GetPrim().GetAttributes();
-    TF_FOR_ALL(attrIter, attrs) { 
-        const UsdAttribute& attr = *attrIter;
-        // If the attribute is in the "inputs:" namespace, then
-        // it must be a valid UsdShadeInput.
-        if (TfStringStartsWith(attr.GetName().GetString(), 
-                               UsdShadeTokens->inputs)) {
-            ret.push_back(UsdShadeInput(attr));
-            continue;
-        }
+    std::vector<UsdProperty> props;
+    if (onlyAuthored) {
+        props = GetPrim().GetAuthoredPropertiesInNamespace(
+            UsdShadeTokens->inputs);
+    } else {
+        props = GetPrim().GetPropertiesInNamespace(UsdShadeTokens->inputs);
     }
 
-    return ret;
+    // Filter for attributes and convert them to inputs
+    std::vector<UsdShadeInput> inputs;
+    inputs.reserve(props.size());
+    for (UsdProperty const& prop: props) {
+        if (UsdAttribute attr = prop.As<UsdAttribute>()) {
+            inputs.push_back(UsdShadeInput(attr));
+        }
+    }
+    return inputs;
 }
 
 UsdShadeConnectionSourceInfo::UsdShadeConnectionSourceInfo(

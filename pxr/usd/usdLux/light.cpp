@@ -348,9 +348,9 @@ UsdLuxLight::GetOutput(const TfToken &name) const
 }
 
 std::vector<UsdShadeOutput>
-UsdLuxLight::GetOutputs() const
+UsdLuxLight::GetOutputs(bool onlyAuthored) const
 {
-    return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
+    return UsdShadeConnectableAPI(GetPrim()).GetOutputs(onlyAuthored);
 }
 
 UsdShadeInput
@@ -367,9 +367,9 @@ UsdLuxLight::GetInput(const TfToken &name) const
 }
 
 std::vector<UsdShadeInput>
-UsdLuxLight::GetInputs() const
+UsdLuxLight::GetInputs(bool onlyAuthored) const
 {
-    return UsdShadeConnectableAPI(GetPrim()).GetInputs();
+    return UsdShadeConnectableAPI(GetPrim()).GetInputs(onlyAuthored);
 }
 
 GfVec3f

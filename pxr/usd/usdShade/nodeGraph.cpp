@@ -163,9 +163,9 @@ UsdShadeNodeGraph::GetOutput(const TfToken &name) const
 }
 
 std::vector<UsdShadeOutput>
-UsdShadeNodeGraph::GetOutputs() const
+UsdShadeNodeGraph::GetOutputs(bool onlyAuthored) const
 {
-    return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
+    return UsdShadeConnectableAPI(GetPrim()).GetOutputs(onlyAuthored);
 }
 
 UsdShadeShader
@@ -221,9 +221,9 @@ UsdShadeNodeGraph::GetInput(const TfToken &name) const
 }
 
 std::vector<UsdShadeInput>
-UsdShadeNodeGraph::GetInputs() const
+UsdShadeNodeGraph::GetInputs(bool onlyAuthored) const
 {
-    return UsdShadeConnectableAPI(GetPrim()).GetInputs();
+    return UsdShadeConnectableAPI(GetPrim()).GetInputs(onlyAuthored);
 }
 
 std::vector<UsdShadeInput> 

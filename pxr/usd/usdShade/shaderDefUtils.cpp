@@ -404,7 +404,7 @@ UsdShadeShaderDefUtils::GetShaderProperties(
     const UsdShadeConnectableAPI &shaderDef)
 {
     NdrPropertyUniquePtrVec result;
-    for (auto &shaderInput : shaderDef.GetInputs()) {
+    for (auto &shaderInput : shaderDef.GetInputs(/* onlyAuthored */ false)) {
         // Only inputs will have default value provided
         VtValue defaultValue;
         shaderInput.Get(&defaultValue);
@@ -438,7 +438,7 @@ UsdShadeShaderDefUtils::GetShaderProperties(
                 /* shaderMetadata */ metadata));
     }
 
-    for (auto &shaderOutput : shaderDef.GetOutputs()) {
+    for (auto &shaderOutput : shaderDef.GetOutputs(/* onlyAuthored */ false)) {
         result.emplace_back(
             _CreateSdrShaderProperty(
                 /* shaderProperty */ shaderOutput,
@@ -462,7 +462,7 @@ UsdShadeShaderDefUtils::GetPrimvarNamesMetadataString(
         primvarNames.push_back(metadata.at(SdrNodeMetadata->Primvars));
     }
 
-    for (auto &shdInput : shaderDef.GetInputs()) {
+    for (auto &shdInput : shaderDef.GetInputs(/* onlyAuthored */ false)) {
         if (shdInput.HasSdrMetadataByKey(_tokens->primvarProperty)) {
             // Check if the input holds a string here and issue a warning if it 
             // doesn't.

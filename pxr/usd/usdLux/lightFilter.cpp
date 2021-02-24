@@ -210,9 +210,9 @@ UsdLuxLightFilter::GetOutput(const TfToken &name) const
 }
 
 std::vector<UsdShadeOutput>
-UsdLuxLightFilter::GetOutputs() const
+UsdLuxLightFilter::GetOutputs(bool onlyAuthored) const
 {
-    return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
+    return UsdShadeConnectableAPI(GetPrim()).GetOutputs(onlyAuthored);
 }
 
 UsdShadeInput
@@ -229,9 +229,9 @@ UsdLuxLightFilter::GetInput(const TfToken &name) const
 }
 
 std::vector<UsdShadeInput>
-UsdLuxLightFilter::GetInputs() const
+UsdLuxLightFilter::GetInputs(bool onlyAuthored) const
 {
-    return UsdShadeConnectableAPI(GetPrim()).GetInputs();
+    return UsdShadeConnectableAPI(GetPrim()).GetInputs(onlyAuthored);
 }
 
 UsdCollectionAPI
