@@ -43,7 +43,8 @@ void HdSt_ApplyMaterialXFilter(
 // Generates the glsfx source code for the given MaterialX Document
 std::string HdSt_GenMaterialXShaderCode(
     MaterialX::DocumentPtr const& mxDoc,
-    MaterialX::FileSearchPath const& searchPath);
+    MaterialX::FileSearchPath const& searchPath,
+    MaterialX::StringMap const& mxHdTextureMap); // Mx-Hd texture counterparts 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

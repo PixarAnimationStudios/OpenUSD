@@ -37,10 +37,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdStMaterialXShaderGen : public MaterialX::GlslShaderGenerator
 {
 public:
-    HdStMaterialXShaderGen();
+    HdStMaterialXShaderGen(MaterialX::StringMap const& mxHdTextureMap);
 
-    static MaterialX::ShaderGeneratorPtr create() { 
-        return std::make_shared<HdStMaterialXShaderGen>(); 
+    static MaterialX::ShaderGeneratorPtr create(
+            MaterialX::StringMap const& mxHdTextureMap=MaterialX::StringMap()) {
+        return std::make_shared<HdStMaterialXShaderGen>(mxHdTextureMap); 
     }
 
     MaterialX::ShaderPtr generate(const std::string& shaderName,
@@ -54,7 +55,9 @@ protected:
 
 private:
 
-    /// These two helper functions generate the Glslfx Shader
+    /// These three helper functions generate the Glslfx Shader
+    void _EmitGlslfxHeader(MaterialX::ShaderStage& mxStage) const;
+
     void _EmitMxFunctions(const MaterialX::ShaderGraph& mxGraph,
                           MaterialX::GenContext& mxContext,
                           MaterialX::ShaderStage& mxStage) const;
@@ -74,8 +77,8 @@ private:
                                        std::string const& separator,
                                        MaterialX::ShaderStage& mxStage) const;
 
-    std::string _EmitMxVertexDataLine(const MaterialX::ShaderPort* variable) const;
-
+    std::string _EmitMxVertexDataLine(const MaterialX::ShaderPort* variable,
+                                      std::string const& separator) const;
 
     // Overriding the MaterialX function to make sure we initialize some Mx
     // variables with the appropriate Hd Value. 
@@ -85,6 +88,10 @@ private:
                                   MaterialX::GenContext& context, 
                                   MaterialX::ShaderStage& stage,
                                   bool assignValue = true) const override;
+
+    // Store MaterialX texture node names and their Hydra counterparts to 
+    // initialize the texture sampler values 
+    MaterialX::StringMap _mxHdTextureMap;
 };
 
 

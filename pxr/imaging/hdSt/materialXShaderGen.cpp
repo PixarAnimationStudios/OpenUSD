@@ -32,27 +32,6 @@ namespace mx = MaterialX;
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-static const std::string GlslfxHeaderString = 
-R"(-- glslfx version 0.1
-
-// File Generated with HdStMaterialXShaderGen.
-
--- configuration
-{
-    "techniques": {
-        "default": {
-            "surfaceShader": { 
-                "source": [ "MaterialX.Surface" ]
-            }
-        }
-    }
-}
-
--- glsl MaterialX.Surface
-
-
-)";
-
 static const std::string MxHdTangentString = 
 R"(
     // Calculate a worldspace tangent vector
@@ -107,7 +86,9 @@ R"(#if NUM_LIGHTS > 0
 #endif
 )";
 
-HdStMaterialXShaderGen::HdStMaterialXShaderGen() : GlslShaderGenerator() 
+HdStMaterialXShaderGen::HdStMaterialXShaderGen(
+    MaterialX::StringMap const& mxHdTextureMap) 
+    : GlslShaderGenerator(), _mxHdTextureMap(mxHdTextureMap)
 {
 }
 
@@ -140,11 +121,48 @@ HdStMaterialXShaderGen::_EmitGlslfxShader(
     mx::GenContext& mxContext,
     mx::ShaderStage& mxStage) const
 {
-    emitString(GlslfxHeaderString, mxStage);
+    _EmitGlslfxHeader(mxStage);
     _EmitMxFunctions(mxGraph, mxContext, mxStage);
     _EmitMxSurfaceShader(mxGraph, mxContext, mxStage);
 }
 
+void 
+HdStMaterialXShaderGen::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
+{
+    // Glslfx version and configuration
+    emitLine("-- glslfx version 0.1", mxStage, false);
+    emitLineBreak(mxStage);
+    emitComment("File Generated with HdStMaterialXShaderGen.", mxStage);
+    emitLineBreak(mxStage);
+    emitString(
+        R"(-- configuration)" "\n"
+        R"({)" "\n", mxStage);
+
+    // insert texture information if needed
+    if (!_mxHdTextureMap.empty()) {
+        emitString(R"("textures": {)" "\n", mxStage);
+        std::string line; unsigned int i = 0;
+        for (auto texturePair : _mxHdTextureMap) {
+            line += "        \"" + texturePair.second + "\": {\n        }";
+            line += (i < _mxHdTextureMap.size() - 1) ? ",\n" : "\n";
+            i++;
+        }
+        emitString(line, mxStage);
+        emitString(R"(    }, )""\n", mxStage);
+    }
+    emitString(
+        R"(    "techniques": {)" "\n"
+        R"(        "default": {)" "\n"
+        R"(            "surfaceShader": { )""\n"
+        R"(                "source": [ "MaterialX.Surface" ])""\n"
+        R"(            })""\n"
+        R"(        })""\n"
+        R"(    })""\n"
+        R"(})" "\n\n", mxStage);
+    emitLine("-- glsl MaterialX.Surface", mxStage, false);
+    emitLineBreak(mxStage);
+    emitLineBreak(mxStage);
+}
 
 // Similar to GlslShaderGenerator::emitPixelStage() with alterations and 
 // additions to match Pxr's codeGen
@@ -430,6 +448,16 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
     emitLine("#endif", mxStage, false);
     emitLineBreak(mxStage);
 
+    // Initialize MaterialX Texture samplers with HdGetSampler equivalents
+    if (!_mxHdTextureMap.empty()) {
+        emitComment("Initialize Material Textures", mxStage);
+        for (auto texturePair : _mxHdTextureMap) {
+            emitLine(texturePair.first + "_file = "
+                    "HdGetSampler_" + texturePair.second + "()", mxStage);
+        }
+        emitLineBreak(mxStage);
+    }
+
     // Gather Direct light data from Hydra and apply the Hydra transformation 
     // matrix to the environment map matrix (u_envMatrix) to account for the
     // domeLight's transform. 
@@ -456,8 +484,11 @@ HdStMaterialXShaderGen::_EmitMxVertexDataDeclarations(
     std::string line = mxVertexDataVariable + " = " + mxVertexDataName + "(";
 
     for (size_t i = 0; i < block.size(); ++i) {
-        line += _EmitMxVertexDataLine(block[i]);
-        line += i < block.size() - 1 ? separator : "";
+        line += _EmitMxVertexDataLine(block[i], separator);
+        // remove the separator from the last data line
+        if (i == block.size() - 1) {
+            line = line.substr(0, line.size() - separator.size());
+        }
     }
     // add ending )
     line += ")";
@@ -467,7 +498,8 @@ HdStMaterialXShaderGen::_EmitMxVertexDataDeclarations(
 
 std::string
 HdStMaterialXShaderGen::_EmitMxVertexDataLine(
-    const mx::ShaderPort* variable) const
+    const mx::ShaderPort* variable,
+    std::string const& separator) const
 {
     // Connect the mxVertexData variable with the appropriate pxr variable
     // making sure to convert the Hd data (viewSpace) to Mx data (worldSpace)
@@ -476,28 +508,35 @@ HdStMaterialXShaderGen::_EmitMxVertexDataLine(
     if (mxVariableName.compare(mx::HW::T_POSITION_WORLD) == 0) {
 
         // Convert to WorldSpace position
-        hdVariableDef = "vec3(HdGet_worldToViewInverseMatrix() * Peye)";
+        hdVariableDef = "vec3(HdGet_worldToViewInverseMatrix() * Peye)"
+                        + separator;
     }
     else if (mxVariableName.compare(mx::HW::T_NORMAL_WORLD) == 0) {
 
         // Convert to WorldSpace normal (calculated in MxHdTangentString)
-        hdVariableDef = "normalWorld";
+        hdVariableDef = "normalWorld" + separator;
     }
     else if (mxVariableName.compare(mx::HW::T_TANGENT_WORLD) == 0) {
 
         // Calculated in MxHdTangentString
-        hdVariableDef = "tangentWorld";
+        hdVariableDef = "tangentWorld" + separator;
     }
     else if (mxVariableName.compare(mx::HW::T_POSITION_OBJECT) == 0) {
 
-        hdVariableDef  = "HdGet_points()";
+        hdVariableDef  = "HdGet_points()" + separator;
     }
-    // XXX textCoords - textures not yet supported
-    // else if (mxVariableName.compare(mx::HW::T_IN_TEXCOORD)) {
-    //
-    //     fprintf(stderr, "TextureCoords (%s)\n"), mxVariableName.c_str());
-    //     hdVariableDef ;
-    // }
+    else if (mxVariableName.compare(0, mx::HW::T_TEXCOORD.size(), 
+                                    mx::HW::T_TEXCOORD) == 0) {
+        
+        // Wrap initialization inside #ifdef in case the object does not have 
+        // the st primvar
+        hdVariableDef = "\n"
+                "    #ifdef HD_HAS_st\n"
+                "        HdGet_st(),\n"
+                "    #else\n"
+                "        vec2(0.0),\n"
+                "    #endif\n        ";
+    }
     else {
         const std::string valueStr = variable->getValue() 
             ? _syntax->getValue(variable->getType(), *variable->getValue(), true)
