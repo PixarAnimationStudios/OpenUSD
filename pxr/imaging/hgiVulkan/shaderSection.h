@@ -34,16 +34,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//struct to hold attribute definitions
-struct HgiVulkanShaderSectionAttribute
-{
-    std::string identifier;
-    std::string index;
-};
-
-using HgiVulkanShaderSectionAttributeVector =
-    std::vector<HgiVulkanShaderSectionAttribute>;
-
 /// \class HgiVulkanShaderSection
 ///
 /// Base class for Vulkan code sections. The generator holds these
@@ -54,7 +44,7 @@ public:
     HGIVULKAN_API
     explicit HgiVulkanShaderSection(
         const std::string &identifier,
-        const HgiVulkanShaderSectionAttributeVector &attributes = {},
+        const HgiShaderSectionAttributeVector &attributes = {},
         const std::string &storageQualifier = std::string(),
         const std::string &defaultValue = std::string());
 
@@ -84,8 +74,6 @@ private:
     HgiVulkanShaderSection() = delete;
     HgiVulkanShaderSection & operator=(const HgiVulkanShaderSection&) = delete;
     HgiVulkanShaderSection(const HgiVulkanShaderSection&) = delete;
-
-    const HgiVulkanShaderSectionAttributeVector _attributes;
 };
 
 /// \class HgiVulkanMacroShaderSection
@@ -128,7 +116,7 @@ public:
     explicit HgiVulkanMemberShaderSection(
         const std::string &identifier,
         const std::string &typeName,
-        const HgiVulkanShaderSectionAttributeVector &attributes,
+        const HgiShaderSectionAttributeVector &attributes,
         const std::string &storageQualifier,
         const std::string &defaultValue = std::string());
 
@@ -184,7 +172,7 @@ public:
         const std::string &identifier,
         const uint32_t layoutIndex,
         const uint32_t dimensions,
-        const HgiVulkanShaderSectionAttributeVector &attributes,
+        const HgiShaderSectionAttributeVector &attributes,
         const std::string &defaultValue = std::string());
 
     HGIVULKAN_API

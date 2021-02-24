@@ -28,12 +28,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGLShaderSection::HgiGLShaderSection(
     const std::string &identifier,
-    const HgiGLShaderSectionAttributeVector &attributes,
+    const HgiShaderSectionAttributeVector &attributes,
     const std::string &storageQualifier,
     const std::string &defaultValue)
-  : HgiShaderSection(identifier, std::string(), std::string(), defaultValue)
+  : HgiShaderSection(identifier, attributes, defaultValue)
   , _storageQualifier(storageQualifier)
-  , _attributes(attributes)
 {
 }
 
@@ -44,14 +43,16 @@ HgiGLShaderSection::WriteDeclaration(std::ostream &ss) const
 {
     //If it has attributes, write them with corresponding layout
     //identifiers and indicies
-    if(!_attributes.empty()) {
+    const HgiShaderSectionAttributeVector &attributes = GetAttributes();
+
+    if(!attributes.empty()) {
         ss << "layout(";
-        for (size_t i = 0; i < _attributes.size(); i++)
+        for (size_t i = 0; i < attributes.size(); i++)
         {
             if (i > 0) {
                 ss << ", ";
             }
-            const HgiGLShaderSectionAttribute &a = _attributes[i];
+            const HgiShaderSectionAttribute &a = attributes[i];
             ss << a.identifier;
             if(!a.index.empty()) {
                 ss << " = " << a.index;
@@ -127,7 +128,7 @@ HgiGLMacroShaderSection::VisitGlobalMacros(std::ostream &ss)
 HgiGLMemberShaderSection::HgiGLMemberShaderSection(
     const std::string &identifier,
     const std::string &typeName,
-    const HgiGLShaderSectionAttributeVector &attributes,
+    const HgiShaderSectionAttributeVector &attributes,
     const std::string &storageQualifier,
     const std::string &defaultValue)
   : HgiGLShaderSection(identifier,
@@ -186,7 +187,7 @@ HgiGLTextureShaderSection::HgiGLTextureShaderSection(
     const std::string &identifier,
     const unsigned int layoutIndex,
     const unsigned int dimensions,
-    const HgiGLShaderSectionAttributeVector &attributes,
+    const HgiShaderSectionAttributeVector &attributes,
     const std::string &defaultValue)
   : HgiGLShaderSection( identifier,
                         attributes,

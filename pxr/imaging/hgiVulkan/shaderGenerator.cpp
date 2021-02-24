@@ -74,8 +74,8 @@ HgiVulkanShaderGenerator::_WriteTextures(
     const HgiShaderFunctionTextureDescVector& textures)
 {
     for(const HgiShaderFunctionTextureDesc& desc : textures) {
-        const HgiVulkanShaderSectionAttributeVector attrs = {
-            HgiVulkanShaderSectionAttribute{
+        const HgiShaderSectionAttributeVector attrs = {
+            HgiShaderSectionAttribute{
                 "binding",
                 std::to_string(_bindIndex)}};
 
@@ -118,8 +118,8 @@ HgiVulkanShaderGenerator::_WriteInOuts(
             continue;
         }
 
-        const HgiVulkanShaderSectionAttributeVector attrs {
-            HgiVulkanShaderSectionAttribute{
+        const HgiShaderSectionAttributeVector attrs {
+            HgiShaderSectionAttribute{
                 "location", std::to_string(counter) }
         };
 

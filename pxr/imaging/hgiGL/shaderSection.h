@@ -34,16 +34,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//struct to hold attribute definitions
-struct HgiGLShaderSectionAttribute
-{
-    std::string identifier;
-    std::string index;
-};
-
-using HgiGLShaderSectionAttributeVector =
-    std::vector<HgiGLShaderSectionAttribute>;
-
 /// \class HgiGLShaderSection
 ///
 /// Base class for OpenGL code sections. The generator holds these
@@ -54,7 +44,7 @@ public:
     HGIGL_API
     explicit HgiGLShaderSection(
         const std::string &identifier,
-        const HgiGLShaderSectionAttributeVector &attributes = {},
+        const HgiShaderSectionAttributeVector &attributes = {},
         const std::string &storageQualifier = std::string(),
         const std::string &defaultValue = std::string());
 
@@ -83,7 +73,6 @@ private:
     HgiGLShaderSection(const HgiGLShaderSection&) = delete;
 
     const std::string _storageQualifier;
-    const HgiGLShaderSectionAttributeVector _attributes;
 };
 
 /// \class HgiGLMacroShaderSection
@@ -126,7 +115,7 @@ public:
     explicit HgiGLMemberShaderSection(
         const std::string &identifier,
         const std::string &typeName,
-        const HgiGLShaderSectionAttributeVector &attributes,
+        const HgiShaderSectionAttributeVector &attributes,
         const std::string &storageQualifier = std::string(),
         const std::string &defaultValue = std::string());
 
@@ -184,7 +173,7 @@ public:
         const std::string &identifier,
         const uint32_t layoutIndex,
         const uint32_t dimensions,
-        const HgiGLShaderSectionAttributeVector &attributes,
+        const HgiShaderSectionAttributeVector &attributes,
         const std::string &defaultValue = std::string());
 
     HGIGL_API
