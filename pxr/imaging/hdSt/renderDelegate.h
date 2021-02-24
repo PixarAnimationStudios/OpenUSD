@@ -119,9 +119,6 @@ public:
     virtual TfTokenVector GetShaderSourceTypes() const override;
 
     HDST_API
-    virtual bool IsPrimvarFilteringNeeded() const override;
-
-    HDST_API
     virtual HdRenderSettingDescriptorList
         GetRenderSettingDescriptors() const override;
 

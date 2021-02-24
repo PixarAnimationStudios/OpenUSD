@@ -606,14 +606,6 @@ UsdImagingPrimAdapter::_GetMaterialNetworkSelector() const
         GetMaterialNetworkSelector();
 }
 
-bool
-UsdImagingPrimAdapter::_IsPrimvarFilteringNeeded() const
-{
-    return _delegate->GetRenderIndex().GetRenderDelegate()->
-        IsPrimvarFilteringNeeded();
-}
-
-
 TfTokenVector 
 UsdImagingPrimAdapter::_GetShaderSourceTypes() const
 {
