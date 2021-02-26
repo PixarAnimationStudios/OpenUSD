@@ -33,6 +33,10 @@
 #include <string>
 #include <vector>
 
+#if defined(ARCH_OS_WINDOWS)
+#include <Windows.h>
+#endif
+
 using namespace std;
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -122,6 +126,38 @@ TestTfRealPath()
         TF_AXIOM(split == 0);
         TF_AXIOM(error == "encountered dangling symbolic link");
     }
+
+#if defined(ARCH_OS_WINDOWS)
+    string thisdir = TfNormPath(TfRealPath("."));
+    // This directory on Windows should start with a drive letter.
+    TF_AXIOM(thisdir.length() > 2 && thisdir[1] == ':');
+    // Strip off the drive letter, leaving a path that starts with a slash,
+    // but is still a valid absolute path equivalent to this directory
+    // (because of the "current drive" concept in Windows).
+    string testdir = thisdir;
+    testdir.erase(0, 2);
+    TF_AXIOM(TfNormPath(TfRealPath(testdir)) == thisdir);
+    if (testSymlinks) {
+        // Call Windows function to change the current working directory to
+        // put us inside a directory that is a symlink. Then validate that
+        // the symlink is resolved properly when getting the real path to
+        // the current directory.
+        ::SetCurrentDirectory("b");
+        string thissubdir = thisdir;
+        thissubdir += "/subdir";
+        TF_AXIOM(TfNormPath(TfRealPath(".")) == thissubdir);
+        ::SetCurrentDirectory("..");
+        // Then from outside the directory, validate that the more indirect
+        // symlink (d->c->b->subdir) also resolves properly. We can't actually
+        // "cd" to "d", because it isn't configured as a "directory" symlink.
+        string testsubdir = thisdir;
+        testsubdir += "/d";
+        TF_AXIOM(TfNormPath(TfRealPath(testsubdir)) == thissubdir);
+        // Test the more direct and indirect symlinks as relative paths.
+        TF_AXIOM(TfNormPath(TfRealPath("b")) == thissubdir);
+        TF_AXIOM(TfNormPath(TfRealPath("d")) == thissubdir);
+    }
+#endif
 
     return true;
 }
