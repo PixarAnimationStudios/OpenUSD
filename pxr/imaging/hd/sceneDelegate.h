@@ -718,6 +718,30 @@ public:
                                              float *sampleTimes,
                                              VtValue *sampleValues);
 
+    /// Convenience form of SampleExtComputationInput() that takes an
+    /// HdTimeSampleArray.
+    /// Returns the union of the authored samples and the boundaries
+    /// of the current camera shutter interval.
+    template <unsigned int CAPACITY>
+    void SampleExtComputationInput(SdfPath const& computationId,
+                                   TfToken const& input,
+                                   HdTimeSampleArray<VtValue, CAPACITY> *sa) {
+        size_t authoredSamples = SampleExtComputationInput(
+                computationId, input, CAPACITY,
+                sa->times.data(), sa->values.data());
+
+        if (authoredSamples > CAPACITY) {
+            sa->Resize(authoredSamples);
+            size_t authoredSamplesSecondAttempt = SampleExtComputationInput(
+                    computationId, input, authoredSamples,
+                    sa->times.data(), sa->values.data());
+            // Number of samples should be consisntent through multiple
+            // invokations of the sampling function.
+            TF_VERIFY(authoredSamples == authoredSamplesSecondAttempt);
+        }
+        sa->count = authoredSamples;
+    }
+
     /// Returns the kernel source assigned to the computation at the path id.
     /// If the string is empty the computation has no GPU kernel and the
     /// CPU callback should be used.
