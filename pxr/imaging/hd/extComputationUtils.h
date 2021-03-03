@@ -26,8 +26,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
+#include "pxr/base/tf/span.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
 
@@ -46,9 +48,6 @@ using HdExtComputationConstPtrVector = std::vector<HdExtComputationConstPtr>;
 // use of computations shared by multiple Rprims, since the chain of
 // computations for a computation primvar is executed for each Rprim.
 class HdExtComputationUtils {   
-
-    static constexpr unsigned int SAMPLE_CAPACITY = 4;
-
 public:
     using ValueStore =
         std::unordered_map<TfToken, VtValue, TfToken::HashFunctor>;
@@ -63,20 +62,22 @@ public:
         HdExtComputationPrimvarDescriptorVector const& compPrimvars,
         HdSceneDelegate* sceneDelegate);
 
-    using SampleValueArray = HdTimeSampleArray<VtValue, SAMPLE_CAPACITY>;
+    template <unsigned int CAPACITY>
     using SampledValueStore =
-        std::unordered_map<TfToken, SampleValueArray, TfToken::HashFunctor>;
+        std::unordered_map<TfToken, HdTimeSampleArray<VtValue, CAPACITY>,
+                           TfToken::HashFunctor>;
 
     /// Returns a map containing the (token, samples) pairs for each
     /// computation primvar, with up to \a maxSampleCount samples.
     /// The participating computations are ordered based on their dependency
     /// and then, the CPU kernel is executed for each computation.
-    HD_API
-    static SampledValueStore
+    template <unsigned int CAPACITY>
+    static void
     SampleComputedPrimvarValues(
         HdExtComputationPrimvarDescriptorVector const& compPrimvars,
         HdSceneDelegate* sceneDelegate,
-        size_t maxSampleCount);
+        size_t maxSampleCount,
+        SampledValueStore<CAPACITY> *computedPrimvarValueStore);
 
     // Helper methods (these are public for testing purposes)
     using ComputationDependencyMap =
@@ -96,7 +97,183 @@ public:
     HD_API
     static void
     PrintDependencyMap(ComputationDependencyMap const& cdm);
+
+private:
+    HD_API
+    static ComputationDependencyMap
+    _GenerateDependencyMap(
+        HdExtComputationPrimvarDescriptorVector const& compPrimvars,
+        HdSceneDelegate* sceneDelegate);
+
+    template <unsigned int CAPACITY>
+    static void
+    _ExecuteSampledComputations(
+        HdExtComputationConstPtrVector computations,
+        HdSceneDelegate* sceneDelegate,
+        size_t maxSampleCount,
+        SampledValueStore<CAPACITY>* valueStore);
+
+    // Limits the list of the computation input time samples to the specified
+    // maximum number of (unique) samples.
+    HD_API
+    static void
+    _LimitTimeSamples(size_t maxSampleCount, std::vector<double>* times);
+
+    // Internal method to invoke the computation with the specified input
+    // values, storing the output values in the provided buffer. The value
+    // arrays correspond to GetSceneInputNames(), GetComputationInputs(), and
+    // GetComputationOutputs() from the HdExtComputation, respectively, and are
+    // required to have the same lengths.
+    HD_API
+    static bool
+    _InvokeComputation(
+        HdSceneDelegate& sceneDelegate,
+        HdExtComputation const& computation,
+        TfSpan<const VtValue> sceneInputValues,
+        TfSpan<const VtValue> compInputValues,
+        TfSpan<VtValue> compOutputValues);
 };
+
+template <unsigned int CAPACITY>
+/*static*/ void
+HdExtComputationUtils::SampleComputedPrimvarValues(
+    HdExtComputationPrimvarDescriptorVector const& compPrimvars,
+    HdSceneDelegate* sceneDelegate,
+    size_t maxSampleCount,
+    SampledValueStore<CAPACITY> *computedPrimvarValueStore
+)
+{
+    HD_TRACE_FUNCTION();
+
+    // Directed graph representation of the participating computations
+    ComputationDependencyMap cdm =
+        _GenerateDependencyMap(compPrimvars, sceneDelegate);
+
+    // Topological ordering of the computations
+    HdExtComputationConstPtrVector sortedComputations;
+    bool success = DependencySort(cdm, &sortedComputations);
+    if (!success) {
+        return;
+    }
+
+    // Execution
+    SampledValueStore<CAPACITY> valueStore;
+    _ExecuteSampledComputations<CAPACITY>(sortedComputations, sceneDelegate,
+                                          maxSampleCount, &valueStore);
+
+    // Output extraction
+    for (auto const& pv : compPrimvars) {
+        TfToken const& compOutputName = pv.sourceComputationOutputName;
+        (*computedPrimvarValueStore)[pv.name] = valueStore[compOutputName];
+    }
+}
+
+template <unsigned int CAPACITY>
+/*static*/ void
+HdExtComputationUtils::_ExecuteSampledComputations(
+    HdExtComputationConstPtrVector computations,
+    HdSceneDelegate* sceneDelegate,
+    size_t maxSampleCount,
+    SampledValueStore<CAPACITY> *valueStore
+)
+{
+    HD_TRACE_FUNCTION();
+
+    for (auto const& comp : computations) {
+        SdfPath const& compId = comp->GetId();
+
+        TfTokenVector const& sceneInputNames = comp->GetSceneInputNames();
+        HdExtComputationInputDescriptorVector const& compInputs =
+            comp->GetComputationInputs();
+        HdExtComputationOutputDescriptorVector const& compOutputs =
+            comp->GetComputationOutputs();
+
+        // Add all the scene inputs to the value store
+        std::vector<double> times;
+        for (TfToken const& input : sceneInputNames) {
+            auto &samples = (*valueStore)[input];
+            sceneDelegate->SampleExtComputationInput(compId, input, &samples);
+
+            for (size_t i = 0; i < samples.count; ++i)
+                times.push_back(samples.times[i]);
+        }
+
+        if (comp->IsInputAggregation()) {
+            // An aggregator computation produces no output, and thus
+            // doesn't need to be executed.
+            continue;
+        }
+
+        // Also find all the time samples from the computed inputs.
+        for (auto const& computedInput : compInputs) {
+            auto const& samples =
+                valueStore->at(computedInput.sourceComputationOutputName);
+            for (size_t i = 0; i < samples.count; ++i) {
+                times.push_back(samples.times[i]);
+            }
+        }
+
+        // Determine the time samples to evaluate the computation at.
+        _LimitTimeSamples(maxSampleCount, &times);
+
+        // Allocate enough space for the evaluated outputs.
+        for (const TfToken &name : comp->GetOutputNames())
+        {
+            auto &output_samples = (*valueStore)[name];
+            output_samples.Resize(times.size());
+            output_samples.count = 0;
+        }
+
+        TfSmallVector<VtValue, CAPACITY> sceneInputValues;
+        sceneInputValues.reserve(sceneInputNames.size());
+
+        TfSmallVector<VtValue, CAPACITY> compInputValues;
+        compInputValues.reserve(compInputs.size());
+
+        TfSmallVector<VtValue, CAPACITY> compOutputValues;
+
+        // Evaluate the computation for each time sample.
+        for (double t : times) {
+
+            // Retrieve all the inputs (scene, computed) from the value store,
+            // resampled to the required time.
+            sceneInputValues.clear();
+            for (auto const& sceneInput : comp->GetSceneInputNames()) {
+                auto const& samples = valueStore->at(sceneInput);
+                sceneInputValues.push_back(samples.Resample(t));
+            }
+
+            compInputValues.clear();
+            for (auto const& computedInput : compInputs) {
+                auto const& samples =
+                    valueStore->at(computedInput.sourceComputationOutputName);
+                compInputValues.push_back(samples.Resample(t));
+            }
+
+            compOutputValues.resize(compOutputs.size());
+            if (!_InvokeComputation(*sceneDelegate, *comp,
+                                    TfMakeSpan(sceneInputValues),
+                                    TfMakeSpan(compInputValues),
+                                    TfMakeSpan(compOutputValues))) {
+                // We could bail here, or choose to execute other computations.
+                // Choose the latter.
+                continue;
+            }
+
+            // Add outputs to the value store (subsequent computations may need
+            // them as computation inputs)
+            for (size_t i = 0; i < compOutputValues.size(); ++i) {
+                auto &output_samples = (*valueStore)[compOutputs[i].name];
+
+                output_samples.times[output_samples.count] = t;
+                output_samples.values[output_samples.count] =
+                    std::move(compOutputValues[i]);
+                ++output_samples.count;
+            }
+        }
+
+    } // for each computation
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

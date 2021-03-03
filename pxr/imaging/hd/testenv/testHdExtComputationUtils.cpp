@@ -228,9 +228,10 @@ void RunTest()
         pathA, HdInterpolationConstant);
 
     // Evaluate the computation, and verify the output sample times and values.
+    HdExtComputationUtils::SampledValueStore<4> valueStore;
     const size_t maxSamples = 5;
-    auto valueStore = HdExtComputationUtils::SampleComputedPrimvarValues(
-            compPrimvars, &delegate, maxSamples);
+    HdExtComputationUtils::SampleComputedPrimvarValues(
+        compPrimvars, &delegate, maxSamples, &valueStore);
 
     if (valueStore.size() != 1) {
         TF_RUNTIME_ERROR("Incorrect number of computed primvars %d",
