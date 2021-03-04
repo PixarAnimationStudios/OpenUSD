@@ -75,6 +75,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (concreteTyped)
     (abstractTyped)
     (abstractBase)
+
+    ((PluginAutoApplyAPISchemasKey, "AutoApplyAPISchemas"))
 );
 
 using _TypeToTokenVecMap = 
@@ -604,10 +606,90 @@ _GetApiSchemaAutoApplyToNamesFromMetadata(const JsObject &dict)
     return TfToTokenVector(autoApplyToValue->GetArrayOf<std::string>());
 }
 
-static std::vector<std::pair<TfToken, TfTokenVector>>
+/*static*/
+void
+UsdSchemaRegistry::CollectAddtionalAutoApplyAPISchemasFromPlugins(
+    std::map<TfToken, TfTokenVector> *autoApplyAPISchemas)
+{
+    TRACE_FUNCTION();
+
+    // Check all registered plugins for metadata that may supply additional
+    // auto apply API schem mappings.
+    const PlugPluginPtrVector& plugins =
+        PlugRegistry::GetInstance().GetAllPlugins();
+    for (const PlugPluginPtr &plug : plugins) {
+
+        // The metadata will contain a dictionary with entries of the form:
+        // "AutoApplyAPISchemas": {
+        //     "<APISchemaName1>": {
+        //         "apiSchemaAutoApplyTo": [
+        //             "<TypedSchema1>", "<TypedSchema2>"
+        //         ]
+        //     },
+        //     "<APISchemaName2>": {
+        //         "apiSchemaAutoApplyTo": [
+        //             "<TypedSchema1>", "<TypedSchema2>"
+        //         ]
+        //     }
+        // }
+        const JsObject &metadata = plug->GetMetadata();
+        const JsValue *autoApplyMetadataValue = TfMapLookupPtr(
+            metadata, _tokens->PluginAutoApplyAPISchemasKey);
+        if (!autoApplyMetadataValue) {
+            continue;
+        }
+
+        TF_DEBUG(USD_AUTO_APPLY_API_SCHEMAS).Msg(
+            "Collecting additional auto apply API schemas from "
+            "'AutoApplyAPISchemas' metadata in plugin '%s' at path '%s'.",
+            plug->GetName().c_str(), plug->GetPath().c_str());
+
+        const JsObject &autoApplyMetadata =
+            autoApplyMetadataValue->GetJsObject();
+        for(const auto &entry : autoApplyMetadata) {
+            if (!entry.second.IsObject()) {
+                continue;
+            }
+
+            TfToken apiSchemaName(entry.first);
+
+            // The metadata for the apiSchemaAutoApplyTo list is the same as
+            // for the auto apply built in to the schema type info.
+            TfTokenVector apiSchemaAutoApplyToNames =
+                _GetApiSchemaAutoApplyToNamesFromMetadata(
+                    entry.second.GetJsObject());
+
+            if (!apiSchemaAutoApplyToNames.empty()) {
+
+                TF_DEBUG(USD_AUTO_APPLY_API_SCHEMAS).Msg(
+                    "Plugin '%s' is adding automatic application of API schema "
+                    "'%s' to the following schema types: [%s].\n",
+                    plug->GetName().c_str(), apiSchemaName.GetText(),
+                    TfStringJoin(apiSchemaAutoApplyToNames.begin(), 
+                                 apiSchemaAutoApplyToNames.end(), ", ").c_str());
+
+                // The API schema may already have an entry in the map, in which
+                // case we have to append to the existing entry.
+                auto it = autoApplyAPISchemas->find(apiSchemaName);
+                if (it == autoApplyAPISchemas->end()) {
+                    autoApplyAPISchemas->emplace(
+                        apiSchemaName, std::move(apiSchemaAutoApplyToNames));
+                } else {
+                    it->second.insert(it->second.end(),
+                                      apiSchemaAutoApplyToNames.begin(),
+                                      apiSchemaAutoApplyToNames.end());
+                }
+            }
+        }
+    }
+}
+
+static std::map<TfToken, TfTokenVector> 
 _GetAutoApplyAPISchemas()
 {
-    std::vector<std::pair<TfToken, TfTokenVector>> result;
+    TRACE_FUNCTION();
+
+    std::map<TfToken, TfTokenVector> result;
 
     // Get all types that derive UsdSchemaBase by getting the type map cache.
     const _TypeMapCache &typeCache = _GetTypeMapCache();
@@ -634,10 +716,24 @@ _GetAutoApplyAPISchemas()
             _GetApiSchemaAutoApplyToNamesFromMetadata(dict);
 
         if (!apiSchemaAutoApplyToNames.empty()) {
-            result.push_back(std::make_pair(
-                valuePair.second.name, std::move(apiSchemaAutoApplyToNames)));
+            TF_DEBUG(USD_AUTO_APPLY_API_SCHEMAS).Msg(
+                "API schema '%s' is defined to auto apply to the following "
+                "schema types: [%s].\n",
+                valuePair.second.name.GetText(),
+                TfStringJoin(apiSchemaAutoApplyToNames.begin(), 
+                             apiSchemaAutoApplyToNames.end(), ", ").c_str());
+
+            result.emplace(
+                valuePair.second.name, std::move(apiSchemaAutoApplyToNames));
         }
     }
+
+    // Collect any plugin auto apply API schema mappings. These can be defined 
+    // in any plugin to auto apply schemas in a particular application context 
+    // instead of the type itself being defined to always auto apply whenever 
+    // it is present.
+    UsdSchemaRegistry::CollectAddtionalAutoApplyAPISchemasFromPlugins(&result);
+
     return result;
 }
 
@@ -648,10 +744,7 @@ _GetTypeToAutoAppliedAPISchemaNames()
 
     const _TypeMapCache & typeMapCache = _GetTypeMapCache();
 
-    std::vector<std::pair<TfToken, TfTokenVector>> autoApplyAPISchemas =
-        _GetAutoApplyAPISchemas();
-
-    for (const auto &valuePair : autoApplyAPISchemas) {
+    for (const auto &valuePair : UsdSchemaRegistry::GetAutoApplyAPISchemas()) {
         const TfToken &apiSchemaName = valuePair.first;
         const TfTokenVector &autoApplyToSchemas = valuePair.second;
 
@@ -665,28 +758,26 @@ _GetTypeToAutoAppliedAPISchemaNames()
             const auto it = typeMapCache.nameToType.find(schemaName);
             if (it != typeMapCache.nameToType.end() && it->second.isTyped) {
                 const TfType &schemaType = it->second.type;
-                applyToTypes.insert(schemaType);
-                schemaType.GetAllDerivedTypes(&applyToTypes);
+                if (applyToTypes.insert(schemaType).second) {
+                    schemaType.GetAllDerivedTypes(&applyToTypes);
+                }
             }
         }
 
         // With all the apply to types collected we can add the API schema to
         // the list of applied schemas for each Typed schema type.
+        // 
+        // Note that the auto apply API schemas map is sorted alphabetically by 
+        // API schema name so this list for each prim type will also be sorted
+        // alphabetically which is intentional. This ordering is arbitrary but 
+        // necessary to ensure we get a consistent strength ordering for auto 
+        // applied schemas every time. In practice, schema writers should be 
+        // careful to make sure that auto applied API schemas have unique 
+        // property names so that application order doesn't matter, but this at 
+        // least gives us consistent behavior if property name collisions occur.
         for (const TfType &applyToType : applyToTypes) {
             result[applyToType].push_back(apiSchemaName);
         }
-    }
-
-    // Finally, with every type mapped to all of its auto applied API
-    // schemas, we sort the auto-applied API schemas in each list by name.
-    // This ordering is arbitrary but necessary to ensure we get a consistent 
-    // strength ordering for auto applied schemas every time. In practice, 
-    // schema writers should be careful to make sure that auto applied API 
-    // schemas have unique property names so that application order doesn't 
-    // matter, but this at least gives us consistent behavior if property name 
-    // collisions occur.
-    for (auto &valuePair : result) {
-        std::sort(valuePair.second.begin(), valuePair.second.end());
     }
 
     return result;
@@ -850,6 +941,14 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
                 if (const TfTokenVector *autoAppliedAPIs = 
                         TfMapLookupPtr(typeToAutoAppliedAPISchemaNames, 
                                        valuePair.second.type)) {
+                    TF_DEBUG(USD_AUTO_APPLY_API_SCHEMAS).Msg(
+                        "The prim definition for schema type '%s' has "
+                        "these additional built-in auto applied API "
+                        "schemas: [%s].\n",
+                        usdTypeNameToken.GetText(),
+                        TfStringJoin(autoAppliedAPIs->begin(), 
+                                     autoAppliedAPIs->end(), ", ").c_str());
+
                     apiSchemasToApply.insert(apiSchemasToApply.end(), 
                                              autoAppliedAPIs->begin(),
                                              autoAppliedAPIs->end());
@@ -1010,13 +1109,11 @@ UsdSchemaRegistry::GetTypeAndInstance(const TfToken &apiSchemaName)
 }
 
 /*static*/
-std::map<TfToken, TfTokenVector> 
+const std::map<TfToken, TfTokenVector> &
 UsdSchemaRegistry::GetAutoApplyAPISchemas()
 {
-    std::map<TfToken, TfTokenVector> result;
-    for (auto &autoApplyToPair : _GetAutoApplyAPISchemas()) {
-        result.emplace(std::move(autoApplyToPair));
-    }
+    static const std::map<TfToken, TfTokenVector> result = 
+        _GetAutoApplyAPISchemas();
     return result;
 }
 

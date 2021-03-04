@@ -216,7 +216,22 @@ public:
     /// include derived types of the listed types, the type lists returned by 
     /// this function do not. 
     USD_API
-    static std::map<TfToken, TfTokenVector> GetAutoApplyAPISchemas();
+    static const std::map<TfToken, TfTokenVector> &GetAutoApplyAPISchemas();
+
+    /// Collects all the additional auto apply schemas that can be defined in 
+    /// a plugin through "AutoApplyAPISchemas" metadata and adds the mappings
+    /// to \p autoApplyAPISchemas. 
+    /// 
+    /// These are separate from the auto-apply schemas that are built in to the 
+    /// applied API schema types themselves and can be defined in any plugin to 
+    /// map any applied API schema to any concrete prim type.
+    ///
+    /// Note that GetAutoApplyAPISchemas will already include API schemas 
+    /// collected from this method; this function is provided for clients that
+    /// may want to collect just these plugin API schema mappings.
+    USD_API
+    static void CollectAddtionalAutoApplyAPISchemasFromPlugins(
+        std::map<TfToken, TfTokenVector> *autoApplyAPISchemas);
 
     /// Returns the namespace prefix that is prepended to all properties of
     /// the given \p multiApplyAPISchemaName.

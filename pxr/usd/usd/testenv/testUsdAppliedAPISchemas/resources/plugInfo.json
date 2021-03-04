@@ -5,13 +5,24 @@
     "Plugins": [
         {
             "Info": {
+                "AutoApplyAPISchemas" : {
+                    "TestSingleApplyAPI": {
+                        "apiSchemaAutoApplyTo": [
+                            "TestTypedSchemaForAutoApply"
+                        ]
+                    },
+                    "TestMultiApplyAPI:autoFoo": {
+                        "apiSchemaAutoApplyTo": [
+                            "TestTypedSchemaForAutoApply"
+                        ]
+                    } 
+                },
                 "Types": {
                     "TestUsdAppliedAPISchemasSingleApplyAPI": {
                         "alias": {
                             "UsdSchemaBase": "TestSingleApplyAPI"
                         }, 
                         "apiSchemaAutoApplyTo": [
-                            "TestTypedSchemaForAutoApply", 
                             "TestTypedSchemaForAutoApplyConcreteBase", 
                             "TestTypedSchemaForAutoApplyAbstractBase"
                         ], 
