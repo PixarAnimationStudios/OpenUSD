@@ -43,9 +43,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_RESOURCE_INSTANCING, true,
                   "Enable instance registry deduplication of resource data");
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _perfTokens,
+
+    (numberOfTextureObjects)
+    (numberOfTextureHandles)
+);
 
 static void
 _CopyChainedBuffers(HdBufferSourceSharedPtr const&  src,
@@ -1143,7 +1149,7 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
         gpuMemoryUsed += size;
     }
 
-    // Texture Memory
+    // Texture Memory and other texture information
     {
         HdSt_TextureObjectRegistry *const textureObjectRegistry =
             _textureHandleRegistry->GetTextureObjectRegistry();
@@ -1153,6 +1159,15 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
 
         (*result)[HdPerfTokens->textureMemory] = VtValue(textureMemory);
         gpuMemoryUsed += textureMemory;
+
+        const size_t numTexObjects =
+            textureObjectRegistry->GetNumberOfTextureObjects();
+        (*result)[_perfTokens->numberOfTextureObjects] = VtValue(numTexObjects);
+
+        const size_t numTexHandles =
+            _textureHandleRegistry->GetNumberOfTextureHandles();
+        (*result)[_perfTokens->numberOfTextureHandles] = VtValue(numTexHandles);
+            
     }
 
     (*result)[HdPerfTokens->gpuMemoryUsed.GetString()] = gpuMemoryUsed;

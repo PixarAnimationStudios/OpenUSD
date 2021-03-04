@@ -147,6 +147,9 @@ public:
     HDST_API
     void SetMemoryRequestForTextureType(HdTextureType textureType, size_t memoryRequest);
 
+    HDST_API
+    size_t GetNumberOfTextureHandles() const;
+
 private:
     void _ComputeMemoryRequest(HdStTextureObjectSharedPtr const &);
     void _ComputeMemoryRequests(const std::set<HdStTextureObjectSharedPtr> &);
