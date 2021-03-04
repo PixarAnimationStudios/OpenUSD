@@ -23,9 +23,9 @@
 //
 #include "pxr/imaging/hdSt/materialXFilter.h"
 #include "pxr/imaging/hdSt/materialXShaderGen.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/usd/sdr/registry.h"
-#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/gf/vec2f.h"
@@ -50,20 +50,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (mtlx)
 
-    // Texture Tokens
+    // Texture Coordinate Token
     (st)
-
-    (wrapS)
-    (wrapT)
-    (repeat)
-    (mirror)
-    (clamp)
-
-    (minFilter)
-    (magFilter)
-    (linear)
-    (linearMipmapLinear)
-    (nearestMipmapNearest)
 
     // Hd MaterialX Node Types
     (ND_standard_surface_surfaceshader)
@@ -221,9 +209,9 @@ static VtValue
 _GetHdFilterValue(std::string const& mxParamValue)
 {
     if(mxParamValue == "closest") {
-        return VtValue(_tokens->nearestMipmapNearest);
+        return VtValue(HdStTextureTokens->nearestMipmapNearest);
     }
-    return VtValue(_tokens->linearMipmapLinear);
+    return VtValue(HdStTextureTokens->linearMipmapLinear);
 }
 
 // Get the Hydra VtValue for the given MaterialX parameter value
@@ -231,12 +219,12 @@ static VtValue
 _GetHdSamplerValue(std::string const& mxParamValue)
 {
     if (mxParamValue == "constant" || mxParamValue == "clamp") {
-        return VtValue(_tokens->clamp);
+        return VtValue(HdStTextureTokens->clamp);
     }
     if (mxParamValue == "mirror") {
-        return VtValue(_tokens->mirror);
+        return VtValue(HdStTextureTokens->mirror);
     }
-    return VtValue(_tokens->repeat);
+    return VtValue(HdStTextureTokens->repeat);
 }
 
 // Translate the MaterialX texture node parameters into the Hydra equivalents
@@ -255,24 +243,30 @@ _GetHdTextureParameters(
         (*hdTextureParams)[_tokens->st] = VtValue(_tokens->st);
     }
     else if (mxParamName == "filtertype") {
-        (*hdTextureParams)[_tokens->minFilter] = _GetHdFilterValue(mxParamValue);
-        (*hdTextureParams)[_tokens->magFilter] = VtValue(_tokens->linear);
+        (*hdTextureParams)[HdStTextureTokens->minFilter] = 
+            _GetHdFilterValue(mxParamValue);
+        (*hdTextureParams)[HdStTextureTokens->magFilter] = 
+            VtValue(HdStTextureTokens->linear);
     }
 
     // Properties specific to <image> nodes:
     else if (mxParamName == "uaddressmode") {
-        (*hdTextureParams)[_tokens->wrapS] = _GetHdSamplerValue(mxParamValue);
+        (*hdTextureParams)[HdStTextureTokens->wrapS] = 
+            _GetHdSamplerValue(mxParamValue);
     }
     else if (mxParamName == "vaddressmode") {
-        (*hdTextureParams)[_tokens->wrapT] = _GetHdSamplerValue(mxParamValue);
+        (*hdTextureParams)[HdStTextureTokens->wrapT] = 
+            _GetHdSamplerValue(mxParamValue);
     }
 
     // Properties specific to <tiledimage> nodes:
     else if (mxParamName == "uvtiling" || mxParamName == "uvoffset" ||
         mxParamName == "realworldimagesize" || 
         mxParamName == "realworldtilesize") {
-        (*hdTextureParams)[_tokens->wrapS] = VtValue(_tokens->repeat);
-        (*hdTextureParams)[_tokens->wrapT] = VtValue(_tokens->repeat);
+        (*hdTextureParams)[HdStTextureTokens->wrapS] = 
+            VtValue(HdStTextureTokens->repeat);
+        (*hdTextureParams)[HdStTextureTokens->wrapT] = 
+            VtValue(HdStTextureTokens->repeat);
     }
 }
 

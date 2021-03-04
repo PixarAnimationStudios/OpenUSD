@@ -62,6 +62,24 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDST_LIGHT_TOKENS                       \
     (color)
 
+#define HDST_TEXTURE_TOKENS                     \
+    (wrapS)                                     \
+    (wrapT)                                     \
+    (wrapR)                                     \
+    (black)                                     \
+    (clamp)                                     \
+    (mirror)                                    \
+    (repeat)                                    \
+    (useMetadata)                               \
+    (minFilter)                                 \
+    (magFilter)                                 \
+    (linear)                                    \
+    (nearest)                                   \
+    (linearMipmapLinear)                        \
+    (linearMipmapNearest)                       \
+    (nearestMipmapLinear)                       \
+    (nearestMipmapNearest)
+
 #define HDST_RENDER_BUFFER_TOKENS                       \
     ((stormMsaaSampleCount, "storm:msaaSampleCount"))
 
@@ -101,6 +119,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdStGLSLProgramTokens, HDST_API,
 TF_DECLARE_PUBLIC_TOKENS(HdStTokens, HDST_API, HDST_TOKENS);
 
 TF_DECLARE_PUBLIC_TOKENS(HdStLightTokens, HDST_API, HDST_LIGHT_TOKENS);
+
+TF_DECLARE_PUBLIC_TOKENS(HdStTextureTokens, HDST_API, HDST_TEXTURE_TOKENS);
 
 TF_DECLARE_PUBLIC_TOKENS(HdStRenderBufferTokens, HDST_API,
                          HDST_RENDER_BUFFER_TOKENS);
