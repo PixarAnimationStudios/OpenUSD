@@ -37,6 +37,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class UsdPrim;
+
 /// Class representing the builtin definition of a prim given the schemas 
 /// registered in the schema registry. It provides access to the the builtin 
 /// properties and metadata of a prim whose type is defined by this definition. 
@@ -204,6 +206,51 @@ public:
     /// the property named \p propName if it exists.
     USD_API
     std::string GetPropertyDocumentation(const TfToken &propName) const;
+
+    /// Copies the contents of this prim definition to a prim spec on the 
+    /// given \p layer at the given \p path. This includes the entire property
+    /// spec for each of this definition's built-in properties as well as all of
+    /// this definition's prim metadata. 
+    /// 
+    /// If the prim definition represents a concrete prim type, the type name 
+    /// of the prim spec is set to the the type name of this prim definition. 
+    /// Otherwise the type name is set to empty. The 'apiSchemas' metadata
+    /// on the prim spec will always be explicitly set to the combined list 
+    /// of all API schemas applied to this prim definition, i.e. the list 
+    /// returned by UsdPrimDefinition::GetAppliedAPISchemas. Note that if this 
+    /// prim definition is an API schema prim definition 
+    /// (see UsdSchemaRegistry::FindAppliedAPIPrimDefinition) then 'apiSchemas'
+    /// will be empty as this prim definition does not "have" an applied API 
+    /// because instead it "is" an applied API.
+    /// 
+    /// If there is no prim spec at the given \p path, a new prim spec is 
+    /// created at that path with the specifier \p newSpecSpecifier. Any 
+    /// necessary ancestor specs will be created as well but they will always 
+    /// be created as overs. If a spec does exist at \p path, then all of its 
+    /// properties and 
+    /// \ref UsdSchemaRegistry::IsDisallowedField "schema allowed metadata" are 
+    /// cleared before it is populated from the prim definition.
+    USD_API
+    bool FlattenTo(const SdfLayerHandle &layer, 
+                   const SdfPath &path,
+                   SdfSpecifier newSpecSpecifier = SdfSpecifierOver) const;
+
+    /// \overload
+    /// Copies the contents of this prim definition to a prim spec at the 
+    /// current edit target for a prim with the given \p name under the prim 
+    /// \p parent.
+    USD_API
+    UsdPrim FlattenTo(const UsdPrim &parent, 
+                      const TfToken &name,
+                      SdfSpecifier newSpecSpecifier = SdfSpecifierOver) const;
+
+    /// \overload
+    /// Copies the contents of this prim definition to a prim spec at the 
+    /// current edit target for the given \p prim.
+    USD_API
+    UsdPrim FlattenTo(const UsdPrim &prim, 
+                      SdfSpecifier newSpecSpecifier = SdfSpecifierOver) const;
+
 
 private:
     // Only the UsdSchemaRegistry can construct prim definitions.
