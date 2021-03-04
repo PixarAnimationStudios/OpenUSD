@@ -34,7 +34,8 @@
 
 shader UsdUVTexture
 [[ 
-    string category="generator"
+    string category = "generator",
+    string role = "texture",
 ]]
 (
     // Details : Image source
