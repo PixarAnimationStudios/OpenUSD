@@ -994,6 +994,24 @@ OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/v2.3
 
 def InstallOpenEXR(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OPENEXR_URL, context, force)):
+
+        # When building statically on Linux we need to add fPIC.
+        staticOpenEXR = 'OPENEXR_BUILD_STATIC' in " ".join(buildArgs)
+        if staticOpenEXR and Linux():
+            PatchFile(os.path.join('IlmBase', 'CMakeLists.txt'),
+                [('ADD_SUBDIRECTORY ( Half )\n',
+                  'IF (${CMAKE_SYSTEM_NAME} MATCHES "Linux")\n'
+                  '  ADD_DEFINITIONS(-fPIC)\n'
+                  'ENDIF()\n\n'
+                  'ADD_SUBDIRECTORY ( Half )\n')],
+                multiLineMatches=True)
+
+            PatchFile(os.path.join('OpenEXR', 'CMakeLists.txt'),
+                [('IF (NOT WIN32)\n',
+                  'IF (NOT WIN32)\n'
+                  '    ADD_DEFINITIONS(-fPIC)\n')],
+                multiLineMatches=True)
+
         RunCMake(context, force, 
                  ['-DOPENEXR_BUILD_PYTHON_LIBS=OFF',
                   '-DOPENEXR_PACKAGE_PREFIX="{}"'.format(context.instDir),
@@ -1104,11 +1122,58 @@ OPENVDB = Dependency("OpenVDB", InstallOpenVDB, "include/openvdb/openvdb.h")
 OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/Release-2.1.16.0.zip"
 
 def InstallOpenImageIO(context, force, buildArgs):
+    staticOpenEXR = 'OpenEXR_USE_STATIC_LIBS' in " ".join(buildArgs)
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
         extraArgs = ['-DOIIO_BUILD_TOOLS=OFF',
                      '-DOIIO_BUILD_TESTS=OFF',
                      '-DUSE_PYTHON=OFF',
                      '-DSTOP_ON_WARNING=OFF']
+
+        _externalpackages_patch = []
+        if staticOpenEXR:
+            # We want the OpenEXR library to be linked statically.
+            # Other libraries, should still be linked dynamically.
+            # OpenImageIO does not support this mix out of the box,
+            # it is all or nothing. So, we patch the OpenEXR setup
+            # to be a static library by removing -DOPENEXR_DLL.
+            _externalpackages_patch = [
+                ("if (MSVC AND NOT LINKSTATIC)\n"
+                 "    add_definitions (-DOPENEXR_DLL) # Is this needed for new versions?\n"
+                 "endif ()",
+                 "",
+                )]
+
+        if context.buildDebug and context.debugPython:
+            # Note: These defines are needed on Windows only.
+            #       This add_definitions exists within a "if (MSVC)" block.
+            _externalpackages_patch.append(
+                ("        add_definitions (-DBOOST_ALL_DYN_LINK=1)",
+                  "        add_definitions (-DBOOST_ALL_DYN_LINK=1 -DBOOST_DEBUG_PYTHON -DBOOST_LINKING_PYTHON)"))
+
+        PatchFile(os.path.join('src', 'cmake', 'externalpackages.cmake'), _externalpackages_patch,
+            multiLineMatches=True)
+
+        # When searching for OpenEXR, OpenImageIO searches for
+        # IlmBase >= 2.0.0 and OpenEXR >= 2.2.0.
+        #
+        # Unfortunately, it found IlmBase 2.2.0 and OpenEXR 2.4.1
+        # (even though OpenEXR 2.2.0 was also available) and would
+        # claim to not have found a suitable version of OpenEXR
+        # because these two version are not meant to be used together.
+        #
+        # The fix is to search for OpenEXR 2.3.0 exactly. When
+        # OpenEXR is upgraded, we will upgrade (or remove) this patch.
+        _findOpenEXR_patch = [
+            ("pkg_check_modules(_OPENEXR QUIET OpenEXR>=2.0.0)",
+             "pkg_check_modules(_OPENEXR OpenEXR=2.3.0)")]
+        if staticOpenEXR:
+            _findOpenEXR_patch.append((
+                "                  NAMES ${COMPONENT}-${OPENEXR_VERSION_MAJOR}_${OPENEXR_VERSION_MINOR}",
+                "                  NAMES ${COMPONENT}-${OPENEXR_VERSION_MAJOR}_${OPENEXR_VERSION_MINOR}_s"))
+            _findOpenEXR_patch.append((
+                "                        ${COMPONENT}-${OPENEXR_VERSION_MAJOR}_${OPENEXR_VERSION_MINOR}_d",
+                "                        ${COMPONENT}-${OPENEXR_VERSION_MAJOR}_${OPENEXR_VERSION_MINOR}_s_d"))
+        PatchFile(os.path.join('src', 'cmake', 'modules', 'FindOpenEXR.cmake'), _findOpenEXR_patch)
 
         # OIIO's FindOpenEXR module circumvents CMake's normal library 
         # search order, which causes versions of OpenEXR installed in
@@ -1130,6 +1195,9 @@ def InstallOpenImageIO(context, force, buildArgs):
         # system installed boost
         extraArgs.append('-DBoost_NO_BOOST_CMAKE=On')
         extraArgs.append('-DBoost_NO_SYSTEM_PATHS=True')
+
+        if context.buildDebug and context.debugPython:
+            extraArgs.append('-DBoost_USE_DEBUG_PYTHON=ON')
 
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
