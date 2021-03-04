@@ -223,7 +223,13 @@ ParseMetadata(
 {
     auto&& value = element->getAttribute(attribute);
     if (!value.empty()) {
-        builder->metadata[key] = value;
+        // Change the MaterialX Texture node role from 'texture2d' to 'texture' 
+        if (key == SdrNodeMetadata->Role && value == "texture2d") {
+            builder->metadata[key] = "texture";
+        }
+        else {
+            builder->metadata[key] = value;
+        }
     }
 }
 
@@ -273,6 +279,7 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
     ParseMetadata(builder, SdrNodeMetadata->Category, nodeDef, "nodecategory");
     ParseMetadata(builder, SdrNodeMetadata->Help, nodeDef, "doc");
     ParseMetadata(builder, SdrNodeMetadata->Target, nodeDef, "target");
+    ParseMetadata(builder, SdrNodeMetadata->Role, nodeDef, "nodegroup");
 
     // XXX -- version
 

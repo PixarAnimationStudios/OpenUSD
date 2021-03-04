@@ -51,7 +51,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (mtlx)
 
     // Texture Tokens
-    (UsdUVTexture)
     (st)
 
     (wrapS)
@@ -404,9 +403,6 @@ _AddHdTextureNodeParameters(
 {
     for (auto texturePath : hdTextureNodes) {
         auto & textureNode = hdNetwork->nodes[texturePath];
-
-        // Set the nodetype to Hydra's texture node type 
-        textureNode.nodeTypeId = _tokens->UsdUVTexture;
 
         // Gather the Hydra Texture Parameters
         std::map<TfToken, VtValue> hdParameters;
