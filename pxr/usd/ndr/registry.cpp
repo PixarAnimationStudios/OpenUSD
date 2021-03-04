@@ -23,7 +23,6 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
@@ -284,12 +283,6 @@ NdrRegistry::NdrRegistry()
 NdrRegistry::~NdrRegistry()
 {
     // nothing yet
-}
-
-NdrRegistry&
-NdrRegistry::GetInstance()
-{
-    return TfSingleton<NdrRegistry>::GetInstance();
 }
 
 void

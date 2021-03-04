@@ -28,6 +28,7 @@
 /// \file sdr/registry.h
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/singleton.h"
 #include "pxr/usd/sdr/api.h"
 #include "pxr/usd/ndr/registry.h"
 #include "pxr/usd/sdr/declare.h"

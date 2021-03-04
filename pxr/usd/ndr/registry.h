@@ -29,7 +29,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ndr/api.h"
-#include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/usd/ndr/declare.h"
 #include "pxr/usd/ndr/discoveryPlugin.h"
@@ -37,6 +36,7 @@
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
 #include "pxr/usd/ndr/parserPlugin.h"
 #include "pxr/usd/sdf/assetPath.h"
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -64,10 +64,6 @@ class NdrRegistry : public TfWeakBase
 {
 public:
     using DiscoveryPluginRefPtrVec = NdrDiscoveryPluginRefPtrVector;
-
-    /// Get the single `NdrRegistry` instance.
-    NDR_API
-    static NdrRegistry& GetInstance();
 
     /// Allows the client to set any additional discovery plugins that would
     /// otherwise NOT be found through the plugin system. Runs the discovery
@@ -290,14 +286,11 @@ protected:
     NdrRegistry(const NdrRegistry&) = delete;
     NdrRegistry& operator=(const NdrRegistry&) = delete;
 
-    // Allow TF to construct the class
-    friend class TfSingleton<NdrRegistry>;
-
     NDR_API
     NdrRegistry();
 
     NDR_API
-    virtual ~NdrRegistry();
+    ~NdrRegistry();
 
 private:
     class _DiscoveryContext;
