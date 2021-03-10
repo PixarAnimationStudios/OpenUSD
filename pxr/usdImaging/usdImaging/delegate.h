@@ -429,6 +429,13 @@ public:
                                    TfToken const& input) override;
 
     USDIMAGING_API
+    size_t SampleExtComputationInput(SdfPath const& computationId,
+                                     TfToken const& input,
+                                     size_t maxSampleCount,
+                                     float *sampleTimes,
+                                     VtValue *sampleValues) override;
+
+    USDIMAGING_API
     std::string GetExtComputationKernel(SdfPath const& computationId) override;
 
     USDIMAGING_API

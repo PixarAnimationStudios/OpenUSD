@@ -549,6 +549,18 @@ public:
             const UsdImagingInstancerContext* instancerContext) const;
 
     USDIMAGING_API
+    virtual size_t
+    SampleExtComputationInput(
+            UsdPrim const& prim,
+            SdfPath const& cachePath,
+            TfToken const& name,
+            UsdTimeCode time,
+            const UsdImagingInstancerContext* instancerContext,
+            size_t maxSampleCount,
+            float *sampleTimes,
+            VtValue *sampleValues);
+
+    USDIMAGING_API
     virtual std::string 
     GetExtComputationKernel(
             UsdPrim const& prim,

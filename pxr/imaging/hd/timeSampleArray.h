@@ -43,6 +43,7 @@ inline T HdResampleNeighbors(float alpha, const T& v0, const T& v1)
 }
 
 /// Specialization for HdQuatf: spherical linear interpolation.
+HD_API
 inline GfQuatf HdResampleNeighbors(float alpha,
                                    const GfQuatf &v0,
                                    const GfQuatf &v1)
@@ -62,6 +63,10 @@ inline VtArray<T> HdResampleNeighbors(float alpha,
     }
     return r;
 }
+
+/// Specialization for VtValue: interpolate the held values.
+HD_API
+VtValue HdResampleNeighbors(float alpha, const VtValue& v0, const VtValue& v1);
 
 /// Resample a function described by an ordered array of samples,
 /// using a linear reconstruction filter evaluated at the given

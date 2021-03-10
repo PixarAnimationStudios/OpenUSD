@@ -2840,6 +2840,28 @@ UsdImagingDelegate::GetExtComputationInput(SdfPath const& computationId,
     return VtValue();
 }
 
+size_t
+UsdImagingDelegate::SampleExtComputationInput(SdfPath const& computationId,
+                                              TfToken const& input,
+                                              size_t maxSampleCount,
+                                              float *sampleTimes,
+                                              VtValue *sampleValues)
+{
+    TRACE_FUNCTION();
+
+    SdfPath cachePath = ConvertIndexPathToCachePath(computationId);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter->SampleExtComputationInput(
+            primInfo->usdPrim, cachePath, input, GetTime(),
+            nullptr /* instancerContext */, maxSampleCount, sampleTimes,
+            sampleValues);
+    }
+
+    return 0;
+}
+
 std::string
 UsdImagingDelegate::GetExtComputationKernel(SdfPath const& computationId)
 {

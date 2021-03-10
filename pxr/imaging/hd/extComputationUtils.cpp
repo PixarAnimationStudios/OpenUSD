@@ -36,10 +36,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
-
-static HdExtComputationUtils::ComputationDependencyMap
-_GenerateDependencyMap(
+/*static*/ HdExtComputationUtils::ComputationDependencyMap
+HdExtComputationUtils::_GenerateDependencyMap(
     HdExtComputationPrimvarDescriptorVector const& compPrimvars,
     HdSceneDelegate* sceneDelegate)
 {
@@ -103,6 +101,69 @@ _GenerateDependencyMap(
     return cdm;
 }
 
+/* static */ void
+HdExtComputationUtils::_LimitTimeSamples(
+    size_t maxSampleCount,
+    std::vector<double>* times)
+{
+    std::sort(times->begin(), times->end());
+    times->erase(std::unique(times->begin(), times->end()), times->end());
+    times->resize(std::min(times->size(), maxSampleCount));
+}
+
+/* static */ bool
+HdExtComputationUtils::_InvokeComputation(
+    HdSceneDelegate& sceneDelegate,
+    HdExtComputation const& comp,
+    TfSpan<const VtValue> sceneInputValues,
+    TfSpan<const VtValue> compInputValues,
+    TfSpan<VtValue> compOutputValues)
+{
+    TfTokenVector const& sceneInputNames = comp.GetSceneInputNames();
+    HdExtComputationInputDescriptorVector const& compInputs =
+        comp.GetComputationInputs();
+    HdExtComputationOutputDescriptorVector const& compOutputs =
+        comp.GetComputationOutputs();
+
+    TF_DEV_AXIOM(sceneInputValues.size() == sceneInputNames.size());
+    TF_DEV_AXIOM(compInputValues.size() == compInputs.size());
+    TF_DEV_AXIOM(compOutputValues.size() == compOutputs.size());
+
+    // Populate the context with all the inputs (scene, computed).
+    Hd_ExtComputationContextInternal context;
+    for (size_t i = 0; i < sceneInputValues.size(); ++i) {
+        context.SetInputValue(sceneInputNames[i], sceneInputValues[i]);
+    }
+
+    for (size_t i = 0; i < compInputValues.size(); ++i) {
+        context.SetInputValue(compInputs[i].name, compInputValues[i]);
+    }
+
+    SdfPath const& compId = comp.GetId();
+    sceneDelegate.InvokeExtComputation(compId, &context);
+
+    if (context.HasComputationError()) {
+        TF_WARN("Error invoking computation %s.\n", compId.GetText());
+        return false;
+    }
+
+    // Retrieve the computed output values from the context.
+    for (size_t i = 0; i < compOutputValues.size(); ++i) {
+        TfToken const& name = compOutputs[i].name;
+
+        if (!context.GetOutputValue(name, &compOutputValues[i])) {
+            TF_WARN("Error getting out %s for computation %s.\n",
+                    name.GetText(), compId.GetText());
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+namespace {
+
 static HdExtComputationUtils::ValueStore
 _ExecuteComputations(HdExtComputationConstPtrVector computations,
                      HdSceneDelegate* sceneDelegate)
@@ -162,7 +223,7 @@ _ExecuteComputations(HdExtComputationConstPtrVector computations,
     return valueStore;
 }
 
-};
+}
 
 /*static*/HdExtComputationUtils::ValueStore
 HdExtComputationUtils::GetComputedPrimvarValues(
