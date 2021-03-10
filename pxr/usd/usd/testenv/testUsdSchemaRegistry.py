@@ -56,8 +56,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "MetadataTest")
 
         self.assertEqual(set(primDef.ListPropertyMetadataFields("testAttr")), 
-            set(["allowedTokens", "default", "displayGroup", "displayName", 
-                 "documentation", "hidden", "testCustomMetadata", "typeName"]))
+            set(["allowedTokens", "custom", "default", "displayGroup",
+                 "displayName", "documentation", "hidden",
+                 "testCustomMetadata", "typeName", "variability"]))
         self.assertEqual(primDef.GetPropertyMetadata("testAttr", "typeName"),
                          "string")
         self.assertEqual(primDef.GetPropertyMetadata("testAttr", "allowedTokens"),
@@ -96,8 +97,8 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "MetadataTest")
 
         self.assertEqual(set(primDef.ListPropertyMetadataFields("testRel")), 
-            set(["displayGroup", "displayName", "documentation", "hidden", 
-                 "testCustomMetadata", "variability"]))
+            set(["custom", "displayGroup", "displayName", "documentation",
+                 "hidden", "testCustomMetadata", "variability"]))
         self.assertEqual(primDef.GetPropertyMetadata("testRel", "displayGroup"), 
                          "Display Group")
         self.assertEqual(primDef.GetPropertyMetadata("testRel", "displayName"), 

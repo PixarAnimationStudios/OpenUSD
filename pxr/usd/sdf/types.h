@@ -183,6 +183,26 @@ enum SdfVariability {
     SdfNumVariabilities 
 };
 
+
+/// An enum for TfError codes related to authoring operations.
+///
+/// <b>SdfAuthoringError:</b>
+/// <ul>
+///     <li><b>SdfAuthoringErrorUnrecognizedFields.</b> This error is raised if
+///            SdfLayer::TransferContent, or SdfLayer::SetField API is called
+///            for layers of differing schema, and fields from the source layer
+///            are not recognized by the target layer's schema.
+///     <li><b>SdfAuthoringErrorUnrecognizedSpecType.</b> This error is raised
+///            in attempts to create specs on layers with spec types that are
+///            not recognized by the layer's schema.
+/// </ul>
+///
+enum SdfAuthoringError
+{
+    SdfAuthoringErrorUnrecognizedFields,
+    SdfAuthoringErrorUnrecognizedSpecType
+};
+
 // Each category of compatible units of measurement is defined by a
 // preprocessor sequence of tuples.  Each such sequence gives rise to an enum
 // representing the corresponding unit category.  All the unit categories are

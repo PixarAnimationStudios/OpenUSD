@@ -117,6 +117,10 @@ TF_REGISTRY_FUNCTION(TfEnum)
     // SdfVariability
     TF_ADD_ENUM_NAME(SdfVariabilityVarying, "Varying");
     TF_ADD_ENUM_NAME(SdfVariabilityUniform, "Uniform");
+
+    // SdfAuthoringError
+    TF_ADD_ENUM_NAME(SdfAuthoringErrorUnrecognizedFields);
+    TF_ADD_ENUM_NAME(SdfAuthoringErrorUnrecognizedSpecType);
 }
 
 // Register all units with the TfEnum registry.
