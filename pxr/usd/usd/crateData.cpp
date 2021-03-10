@@ -518,10 +518,13 @@ public:
                                         SdfAbstractDataValue *value) const {
         VtValue listOpVal = _GetTargetOrConnectionListOpValue(path);
         if (!listOpVal.IsEmpty()) {
-            SdfPathListOp const &plo = listOpVal.UncheckedGet<SdfPathListOp>();
-            SdfPathVector paths;
-            plo.ApplyOperations(&paths);
-            value->StoreValue(paths);
+            if (value) {
+                SdfPathListOp const &plo =
+                    listOpVal.UncheckedGet<SdfPathListOp>();
+                SdfPathVector paths;
+                plo.ApplyOperations(&paths);
+                value->StoreValue(paths);
+            }
             return true;
         }
         return false;
@@ -532,10 +535,13 @@ public:
                                         VtValue *value) const {
         VtValue listOpVal = _GetTargetOrConnectionListOpValue(path);
         if (!listOpVal.IsEmpty()) {
-            SdfPathListOp const &plo = listOpVal.UncheckedGet<SdfPathListOp>();
-            SdfPathVector paths;
-            plo.ApplyOperations(&paths);
-            *value = paths;
+            if (value) {
+                SdfPathListOp const &plo =
+                    listOpVal.UncheckedGet<SdfPathListOp>();
+                SdfPathVector paths;
+                plo.ApplyOperations(&paths);
+                *value = paths;
+            }
             return true;
         }
         return false;
