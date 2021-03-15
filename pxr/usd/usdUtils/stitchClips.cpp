@@ -456,13 +456,13 @@ namespace {
     // within the \p resultLayer.
     void
     _StitchClipManifest(const SdfLayerRefPtr& resultLayer,
-                        const SdfLayerRefPtr& topologyLayer,
+                        const SdfLayerRefPtr& manifestLayer,
                         const SdfPath& stitchPath,
                         const TfToken& clipSet)
     {
         const std::string manifestAssetPath = 
-            _GetRelativePathIfPossible(topologyLayer->GetIdentifier(),
-                                       topologyLayer->GetRealPath(),
+            _GetRelativePathIfPossible(manifestLayer->GetIdentifier(),
+                                       manifestLayer->GetRealPath(),
                                        resultLayer->GetRealPath());
 
         _SetValue(resultLayer, stitchPath, 
@@ -647,6 +647,46 @@ namespace {
         return result;
     }
 
+    void
+    _GenerateClipManifest(const SdfLayerRefPtr& manifestLayer,
+                          const SdfLayerRefPtr& topologyLayer,
+                          const SdfLayerRefPtrVector& clipLayers,
+                          const SdfPath& clipPath)
+    {
+        SdfLayerRefPtr generatedManifest =
+            UsdClipsAPI::GenerateClipManifestFromLayers(
+                SdfLayerHandleVector(clipLayers.begin(), clipLayers.end()),
+                clipPath);
+
+        generatedManifest->Traverse(clipPath,
+            [&generatedManifest, &manifestLayer, &topologyLayer](
+                const SdfPath& path)
+            {
+                if (!path.IsPropertyPath()) {
+                    return;
+                }
+
+                SdfAttributeSpecHandle generatedAttr =
+                    generatedManifest->GetAttributeAtPath(path);
+                if (!TF_VERIFY(generatedAttr)) {
+                    return;
+                }
+                    
+                SdfJustCreatePrimAttributeInLayer(
+                    manifestLayer, path, 
+                    generatedAttr->GetTypeName(),
+                    generatedAttr->GetVariability(),
+                    generatedAttr->IsCustom());
+                
+                VtValue defaultValue;
+                if (topologyLayer->HasField(
+                        path, SdfFieldKeys->Default, &defaultValue)) {
+                    manifestLayer->SetField(
+                        path, SdfFieldKeys->Default, defaultValue);
+                }
+            });
+    }
+
     // Stitches a manifest file, containing the clip meta data aggregated
     // from the input \p clipLayers. These include clipPrimPath, clipTimes, 
     // clipManifestAssetPath clipActive and clipAssetPaths as well as an 
@@ -656,6 +696,7 @@ namespace {
     void
     _StitchLayers(const SdfLayerHandle& resultLayer,
                   const SdfLayerRefPtr& topologyLayer,
+                  const SdfLayerRefPtr& manifestLayer,
                   const SdfLayerRefPtrVector& clipLayers,
                   const SdfPath& clipPath,
                   const TfToken& clipSet)
@@ -679,10 +720,10 @@ namespace {
         _RetimeClipActive(resultLayer, clipPath, clipSet);
         _NormalizeClipAssetPaths(resultLayer, clipLayers, clipPath, clipSet);
 
-        // set the topology reference and manifest path because we
-        // use anonymous layers during parallel reduction
-        _StitchClipManifest(resultLayer, topologyLayer, clipPath, clipSet);
-        
+        _GenerateClipManifest(
+            manifestLayer, topologyLayer, clipLayers, clipPath);
+        _StitchClipManifest(resultLayer, manifestLayer, clipPath, clipSet);
+
         // fetch the rootPrim from the topology layer
         if (topologyLayer->GetRootPrims().empty()) {
             TF_CODING_ERROR("Failed to generate topology.");
@@ -710,9 +751,22 @@ namespace {
         return errorMark.IsClean();
     }
 
+    bool
+    _UsdUtilsStitchClipsManifestImpl(const SdfLayerRefPtr& manifestLayer,
+                                     const SdfLayerRefPtr& topologyLayer,
+                                     const SdfLayerRefPtrVector& clipLayers,
+                                     const SdfPath& clipPath)
+    {
+        TfErrorMark errorMark;
+        _GenerateClipManifest(
+            manifestLayer, topologyLayer, clipLayers, clipPath);
+        return errorMark.IsClean();
+    }
+
     bool 
     _UsdUtilsStitchClipsImpl(const SdfLayerHandle& resultLayer, 
                              const SdfLayerRefPtr& topologyLayer,
+                             const SdfLayerRefPtr& manifestLayer,
                              const SdfLayerRefPtrVector& clipLayers,
                              const SdfPath& clipPath, 
                              const double startTimeCode,
@@ -722,7 +776,7 @@ namespace {
     {
         TfErrorMark errorMark;
 
-        _StitchLayers(resultLayer, topologyLayer, 
+        _StitchLayers(resultLayer, topologyLayer, manifestLayer,
                       clipLayers, clipPath, clipSet);
         _SetTimeCodeRange(resultLayer, clipPath, 
                           startTimeCode, endTimeCode, clipSet);
@@ -822,6 +876,40 @@ UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer,
     return true;
 }
 
+bool
+UsdUtilsStitchClipsManifest(const SdfLayerHandle& manifestLayer,
+                            const SdfLayerHandle& topologyLayer,
+                            const _ClipFileVector& clipLayerFiles,
+                            const SdfPath& clipPath)
+{
+    // XXX: This is necessary for any C++ API which may be called though
+    // python. Since this will spawn workers(in WorkParallelForN) which 
+    // will need to acquire the GIL, we need to explicitly release it.
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
+    // Prepare manifest layer for editing
+    if (!_LayerIsWritable(manifestLayer)) {
+        return false;
+    } else {
+        manifestLayer->Clear();
+    }
+
+    // Open all clip layers and validate clipPath
+    SdfLayerRefPtrVector clipLayers;
+    const bool clipLayersAreValid = _OpenClipLayers(&clipLayers, 
+        clipLayerFiles, SdfPath::AbsoluteRootPath());
+
+    if (!clipLayersAreValid
+        || !_UsdUtilsStitchClipsManifestImpl(
+            manifestLayer, topologyLayer, clipLayers, clipPath)) {
+        return false;
+    }
+
+    manifestLayer->Save();
+
+    return true;
+}
+
 bool 
 UsdUtilsStitchClips(const SdfLayerHandle& resultLayer, 
                     const _ClipFileVector& clipLayerFiles,
@@ -857,13 +945,29 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
         topologyLayer->Clear();
     }
 
+    // Prepare manifest layer for editing, create if necessary
+    bool manifestPreExisting = true;
+    std::string manifestLayerId 
+        = UsdUtilsGenerateClipManifestName(resultLayer->GetIdentifier());
+    SdfLayerRefPtr manifestLayer = SdfLayer::FindOrOpen(manifestLayerId);
+    if (!manifestLayer) {
+        manifestPreExisting = false;
+        manifestLayer = SdfLayer::CreateNew(manifestLayerId);
+    } 
+
+    if (!_LayerIsWritable(manifestLayer)) {
+        return false;
+    } else {
+        manifestLayer->Clear();
+    }
+
     // Open all clip layers and validate clipPath
     SdfLayerRefPtrVector clipLayers;
     const bool clipLayersAreValid 
         = _OpenClipLayers(&clipLayers, clipLayerFiles, clipPath);
 
     if (!clipLayersAreValid
-        || !_UsdUtilsStitchClipsImpl(resultLayer, topologyLayer, 
+        || !_UsdUtilsStitchClipsImpl(resultLayer, topologyLayer, manifestLayer,
                                      clipLayers, clipPath, 
                                      startTimeCode, endTimeCode,
                                      interpolateMissingClipValues,
@@ -871,13 +975,16 @@ UsdUtilsStitchClips(const SdfLayerHandle& resultLayer,
         if (!topologyPreExisting) {
             TfDeleteFile(topologyLayer->GetIdentifier());
         }
-
+        if (!manifestPreExisting) {
+            TfDeleteFile(manifestLayer->GetIdentifier());
+        }
         return false;
     }
 
     // Note that we don't apply edits until all other 
     // actions have completed. 
     topologyLayer->Save();
+    manifestLayer->Save();
     resultLayer->Save();
     return true;
 }
@@ -896,9 +1003,24 @@ UsdUtilsGenerateClipTopologyName(const std::string& baseFileName)
         delimiter+topologyFileBaseName);
 }
 
+std::string
+UsdUtilsGenerateClipManifestName(const std::string& baseFileName)
+{
+    const std::string delimiter = ".";
+    const std::size_t delimiterPos = baseFileName.rfind(".");
+    const std::string manifestFileBaseName = "manifest";
+    if (delimiterPos == std::string::npos) {
+        return std::string();
+    }
+
+    return std::string(baseFileName).insert(delimiterPos,
+        delimiter+manifestFileBaseName);
+}
+
 bool
 UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
                             const SdfLayerHandle& topologyLayer,
+                            const SdfLayerHandle& manifestLayer,
                             const SdfPath& clipPath,
                             const std::string& templatePath,
                             const double startTime,
@@ -921,11 +1043,19 @@ UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
         return false;
     }
 
+    if (!manifestLayer) {
+        return false;
+    }
+
     // set prim level metadata
     auto prim = SdfCreatePrimInLayer(resultLayer, clipPath);
     const std::string topologyId 
         = _GetRelativePathIfPossible(topologyLayer->GetIdentifier(),
                                      topologyLayer->GetRealPath(),
+                                     resultLayer->GetRealPath());
+    const std::string manifestId 
+        = _GetRelativePathIfPossible(manifestLayer->GetIdentifier(),
+                                     manifestLayer->GetRealPath(),
                                      resultLayer->GetRealPath());
 
     // set root layer metadata
@@ -936,7 +1066,7 @@ UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
     clipSetDict[UsdClipsAPIInfoKeys->templateStartTime] = startTime;
     clipSetDict[UsdClipsAPIInfoKeys->templateEndTime] = endTime;
     clipSetDict[UsdClipsAPIInfoKeys->templateStride] = stride;
-    clipSetDict[UsdClipsAPIInfoKeys->manifestAssetPath] = SdfAssetPath(topologyId);
+    clipSetDict[UsdClipsAPIInfoKeys->manifestAssetPath] = SdfAssetPath(manifestId);
     if (activeOffset != std::numeric_limits<double>::max()) {
         clipSetDict[UsdClipsAPIInfoKeys->templateActiveOffset] = activeOffset; 
     }

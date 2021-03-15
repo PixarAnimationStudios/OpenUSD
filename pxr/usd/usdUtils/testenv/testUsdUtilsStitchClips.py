@@ -174,8 +174,9 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
         
         resultLayer = Sdf.Layer.CreateNew('foo.usd')
         topLayer = Sdf.Layer.CreateNew('foo.topology.usd')
-        UsdUtils.StitchClipsTemplate(resultLayer, topLayer, self.clipPath,
-                                     'asset.#.usd', 101, 120, 1)
+        manifestLayer = Sdf.Layer.CreateNew('foo.manifest.usd')
+        UsdUtils.StitchClipsTemplate(resultLayer, topLayer, manifestLayer,
+                                     self.clipPath, 'asset.#.usd', 101, 120, 1)
         self.assertEqual(list(resultLayer.subLayerPaths), 
                          ['./foo.topology.usd'])
  
@@ -193,7 +194,9 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
         # template case
         resultLayer = Sdf.Layer.CreateNew('customSetName.usd')
         topLayer = Sdf.Layer.CreateNew('customSetName.topology.usd')
-        UsdUtils.StitchClipsTemplate(resultLayer, topLayer, self.clipPath,
+        manifestLayer = Sdf.Layer.CreateNew('customSetName.manifest.usd')
+        UsdUtils.StitchClipsTemplate(resultLayer, topLayer, manifestLayer,
+                                     self.clipPath,
                                      'asset.#.usd', 101, 120, 1, 0.3, 
                                      interpolateMissingClipValues=True,
                                      clipSet='bob')
@@ -248,7 +251,7 @@ class TestUsdUtilsStitchClips(unittest.TestCase):
                                      (105.0, 105.0), 
                                      (106.0, 106.0), 
                                      (107.0, 107.0)]), 
-                          'manifestAssetPath': Sdf.AssetPath('./customSetNameNonTemplate.topology.usd'), 
+                          'manifestAssetPath': Sdf.AssetPath('./customSetNameNonTemplate.manifest.usd'), 
                           'assetPaths': Sdf.AssetPathArray(
                                         [Sdf.AssetPath('./src/Particles_Splash.101.usd'), 
                                          Sdf.AssetPath('./src/Particles_Splash.102.usd'), 
