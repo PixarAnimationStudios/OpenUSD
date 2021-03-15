@@ -1292,14 +1292,14 @@ DRACO = Dependency("Draco", InstallDraco, "include/draco/compression/decode.h")
 ############################################################
 # MaterialX
 
-MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.37.3.zip"
+MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.0.zip"
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
-        # USD requires MaterialX to be built as a shared library on Linux
-        # Currently MaterialX does not support shared builds on Windows or MacOS
+        # USD requires MaterialX to be built as a shared library on Linux and MacOS
+        # Currently MaterialX does not support shared builds on Windows
         cmakeOptions = []
-        if Linux():
+        if Linux() or MacOS():
             cmakeOptions += ['-DMATERIALX_BUILD_SHARED_LIBS=ON']
 
         cmakeOptions += buildArgs;
