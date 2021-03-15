@@ -59,7 +59,7 @@ void HgiInterop::TransferToApp(
         }
         _metalToOpenGL->CompositeToInterop(color, depth, compRegion);
     } else {
-        TF_CODING_ERROR("Unsupported Hgi backed: %s", gfxApi.GetText());
+        TF_CODING_ERROR("Unsupported Hgi backend: %s", gfxApi.GetText());
     }
 #elif defined(PXR_VULKAN_SUPPORT_ENABLED)
     if (gfxApi==HgiTokens->Vulkan && interopDst==HgiTokens->OpenGL) {
@@ -69,7 +69,7 @@ void HgiInterop::TransferToApp(
         }
         _vulkanToOpenGL->CompositeToInterop(color, depth, compRegion);
     } else {
-        TF_CODING_ERROR("Unsupported Hgi backed: %s", gfxApi.GetText());
+        TF_CODING_ERROR("Unsupported Hgi backend: %s", gfxApi.GetText());
     }
 #else
     if (gfxApi==HgiTokens->OpenGL && interopDst==HgiTokens->OpenGL) {
@@ -78,11 +78,8 @@ void HgiInterop::TransferToApp(
             _openGLToOpenGL = std::make_unique<HgiInteropOpenGL>();
         }
         _openGLToOpenGL->CompositeToInterop(color, depth, compRegion);
-    } else if (gfxApi==HgiTokens->Vulkan && interopDst==HgiTokens->OpenGL) {
-        // Transfer Vulkan textures to OpenGL application
-        TF_CODING_ERROR("TODO Implement Vulkan/GL interop");
     } else {
-        TF_CODING_ERROR("Unsupported Hgi backed: %s", gfxApi.GetText());
+        TF_CODING_ERROR("Unsupported Hgi backend: %s", gfxApi.GetText());
     }
 #endif
 }
