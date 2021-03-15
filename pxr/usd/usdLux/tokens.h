@@ -64,11 +64,11 @@ struct UsdLuxTokensType {
     USDLUX_API UsdLuxTokensType();
     /// \brief "angular"
     /// 
-    /// Possible value for UsdLuxDomeLight::GetInputsTextureFormatAttr()
+    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
     const TfToken angular;
     /// \brief "automatic"
     /// 
-    /// Possible value for UsdLuxDomeLight::GetInputsTextureFormatAttr(), Default value for UsdLuxDomeLight::GetInputsTextureFormatAttr()
+    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr(), Default value for UsdLuxDomeLight::GetTextureFormatAttr()
     const TfToken automatic;
     /// \brief "collection:filterLink:includeRoot"
     /// 
@@ -92,7 +92,7 @@ struct UsdLuxTokensType {
     const TfToken consumeAndHalt;
     /// \brief "cubeMapVerticalCross"
     /// 
-    /// Possible value for UsdLuxDomeLight::GetInputsTextureFormatAttr()
+    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
     const TfToken cubeMapVerticalCross;
     /// \brief "filterLink"
     /// 
@@ -220,7 +220,7 @@ struct UsdLuxTokensType {
     const TfToken inputsWidth;
     /// \brief "latlong"
     /// 
-    /// Possible value for UsdLuxDomeLight::GetInputsTextureFormatAttr()
+    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
     const TfToken latlong;
     /// \brief "lightLink"
     /// 
@@ -236,7 +236,7 @@ struct UsdLuxTokensType {
     const TfToken lightListCacheBehavior;
     /// \brief "mirroredBall"
     /// 
-    /// Possible value for UsdLuxDomeLight::GetInputsTextureFormatAttr()
+    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
     const TfToken mirroredBall;
     /// \brief "orientToStageUpAxis"
     /// 
