@@ -97,8 +97,6 @@ HdxColorChannelTask::Execute(HdTaskContext* ctx)
     fragDesc.debugName = _tokens->colorChannelFrag.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
     HgiShaderFunctionAddStageInput(
-        &fragDesc, "hd_Position", "vec4", "position");
-    HgiShaderFunctionAddStageInput(
         &fragDesc, "uvOut", "vec2");
     HgiShaderFunctionAddTexture(
         &fragDesc, "colorIn");

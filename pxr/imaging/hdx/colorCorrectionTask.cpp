@@ -239,8 +239,6 @@ HdxColorCorrectionTask::_CreateShaderResources()
     std::string fsCode;
     HgiShaderFunctionDesc fragDesc;
     HgiShaderFunctionAddStageInput(
-        &fragDesc, "hd_Position", "vec4", "position");
-    HgiShaderFunctionAddStageInput(
         &fragDesc, "uvOut", "vec2");
     HgiShaderFunctionAddTexture(
         &fragDesc, "colorIn");

@@ -205,8 +205,6 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     fragDesc.debugName = _tokens->outlineFrag.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
     HgiShaderFunctionAddStageInput(
-        &fragDesc, "hd_Position", "vec4", "position");
-    HgiShaderFunctionAddStageInput(
         &fragDesc, "uvOut", "vec2");
     HgiShaderFunctionAddTexture(
         &fragDesc, "colorIn");
