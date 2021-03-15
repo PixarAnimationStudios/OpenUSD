@@ -11,7 +11,7 @@
     <shaderref name="sr_mp2" node="simple_vol"/>
   </material>
   <material name="Msimple2">
-    <shaderref name="sr_mp1" node="simple_srf"/>
+    <shaderref name="sr_mp3" node="simple_srf"/>
   </material>
 
   <variantset name="vs_simple_srf">
@@ -99,7 +99,7 @@
   </look>
   <look name="lookC" uicolor="0,0.5,1" doc="Look C" xpos="1" ypos="2" inherit="lookA">
     <materialassign name="ma1" material="Msimple2" geomprefix="/C/D" collection="c_plastic" doc="Plastic 2">
-      <variantassign name="ma1_va1" variantset="vs_simple_srf" variant="plastic2" shaderref="sr_mp1"/>
+      <variantassign name="ma1_va1" variantset="vs_simple_srf" variant="plastic2" shaderref="sr_mp3"/>
     </materialassign>
   </look>
   <look name="lookD">

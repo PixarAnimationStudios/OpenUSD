@@ -71,7 +71,11 @@ if (WIN32)
     set(MATERIALX_CORE_DYNAMIC_LIB_NAME MaterialXCore.dll)
 else()
     set(MATERIALX_CORE_STATIC_LIB_NAME libMaterialXCore.a)
-    set(MATERIALX_CORE_DYNAMIC_LIB_NAME libMaterialXCore.so)
+    if (APPLE)
+        set(MATERIALX_CORE_DYNAMIC_LIB_NAME libMaterialXCore.dylib)
+    else()
+        set(MATERIALX_CORE_DYNAMIC_LIB_NAME libMaterialXCore.so)
+    endif()
 endif()
 
 find_path(MATERIALX_LIB_DIRS 

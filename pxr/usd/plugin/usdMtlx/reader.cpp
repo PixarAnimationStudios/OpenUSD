@@ -48,10 +48,10 @@
 #include <algorithm>
 
 // If defined this macro causes default values on shader inputs
-// (parameters and inputs in MaterialX-speak) to get written to each
-// USD shader definition.  Note that this information is available in
-// the corresponding NdrProperty for each input on the NdrNode for the
-// shader.  There are pros and cons for including the defaults:
+// to get written to each USD shader definition. 
+// Note that this information is available in the corresponding
+// NdrProperty for each input on the NdrNode for the shader.
+// There are pros and cons for including the defaults:
 //   include:
 //     + Final value visible in naive clients
 //     - Redundant, could be out of sync
@@ -61,21 +61,6 @@
 //     + Default iff no opinion
 //     - Naive clients (e.g. usdview) don't know default
 #define ADD_NODE_INPUT_DEFAULTS_TO_USD
-
-// MaterialX 1.35 lacks these.
-namespace MaterialX {
-using ConstParameterPtr = std::shared_ptr<const class Parameter>;
-using ConstPortElementPtr = std::shared_ptr<const class PortElement>;
-using ConstInputPtr = std::shared_ptr<const class Input>;
-using ConstOutputPtr = std::shared_ptr<const class Output>;
-using ConstInterfaceElementPtr = std::shared_ptr<const class InterfaceElement>;
-using ConstShaderRefPtr = shared_ptr<const class ShaderRef>;
-using ConstBindInputPtr = shared_ptr<const class BindInput>;
-using ConstCollectionPtr = shared_ptr<const class Collection>;
-using ConstGeomElementPtr = shared_ptr<const class GeomElement>;
-using ConstLookPtr = shared_ptr<const class Look>;
-using ConstMaterialAssignPtr = shared_ptr<const class MaterialAssign>;
-}
 
 namespace mx = MaterialX;
 
@@ -89,7 +74,6 @@ struct _AttributeNames {
 
     _AttributeNames() { }
 
-    Name bindtoken        {"bindtoken"};
     Name channels         {"channels"};
     Name cms              {"cms"};
     Name cmsconfig        {"cmsconfig"};
@@ -349,24 +333,25 @@ _FindMatchingNodeDef(
     return result;
 }
 
-// Return the nodedef with node=family, that's type compatible with
-// mtlxInterface, and has a compatible version.  If target isn't empty
+// Return the shader nodedef with node=family that has a compatible version.
+// If target isn't empty
 // then it must also match.  Returns null if there's no such nodedef.
 // If the nodedef is not found in the document then the standard
 // library is also checked.
 static
 mx::ConstNodeDefPtr
 _FindMatchingNodeDef(
-    const mx::ConstInterfaceElementPtr& mtlxInterface,
+    const mx::ConstNodePtr& mtlxShaderNode,
     const std::string& family,
     const NdrVersion& version,
-    const std::string& target)
+    const std::string& target,
+    const mx::ConstInterfaceElementPtr& mtlxInterface = mx::NodeDefPtr())
 {
-    auto nodeDef = _FindMatchingNodeDef(mtlxInterface->getDocument(),
+    auto nodeDef = _FindMatchingNodeDef(mtlxShaderNode->getDocument(),
                                         mtlxInterface,
-                                        mtlxInterface->getCategory(),
-                                        UsdMtlxGetVersion(mtlxInterface),
-                                        mtlxInterface->getTarget());
+                                        mtlxShaderNode->getCategory(),
+                                        UsdMtlxGetVersion(mtlxShaderNode),
+                                        mtlxShaderNode->getTarget());
     if (nodeDef) {
         return nodeDef;
     }
@@ -375,40 +360,9 @@ _FindMatchingNodeDef(
     static auto standardLibraryDocument = UsdMtlxGetDocument("");
     return _FindMatchingNodeDef(standardLibraryDocument,
                                 mtlxInterface,
-                                mtlxInterface->getCategory(),
-                                UsdMtlxGetVersion(mtlxInterface),
-                                mtlxInterface->getTarget());
-}
-
-// Return the shader nodedef with node=family that  has a compatible version.
-// If target isn't empty
-// then it must also match.  Returns null if there's no such nodedef.
-// If the nodedef is not found in the document then the standard
-// library is also checked.
-static
-mx::ConstNodeDefPtr
-_FindMatchingNodeDef(
-    const mx::ConstShaderRefPtr& mtlxShaderRef,
-    const std::string& family,
-    const NdrVersion& version,
-    const std::string& target)
-{
-    auto nodeDef = _FindMatchingNodeDef(mtlxShaderRef->getDocument(),
-                                        mx::NodeDefPtr(),
-                                        mtlxShaderRef->getNodeString(),
-                                        UsdMtlxGetVersion(mtlxShaderRef),
-                                        mtlxShaderRef->getTarget());
-    if (nodeDef) {
-        return nodeDef;
-    }
-
-    // Get the standard library document and check that.
-    static auto standardLibraryDocument = UsdMtlxGetDocument("");
-    return _FindMatchingNodeDef(standardLibraryDocument,
-                                mx::NodeDefPtr(),
-                                mtlxShaderRef->getNodeString(),
-                                UsdMtlxGetVersion(mtlxShaderRef),
-                                mtlxShaderRef->getTarget());
+                                mtlxShaderNode->getCategory(),
+                                UsdMtlxGetVersion(mtlxShaderNode),
+                                mtlxShaderNode->getTarget());
 }
 
 // Get the nodeDef either from the mtlxNode itself or get it from the stdlib.
@@ -425,9 +379,20 @@ _GetNodeDef(const mx::ConstNodePtr& mtlxNode)
         return mtlxNodeDef;
     }
 
-    return _FindMatchingNodeDef(mtlxNode, mtlxNode->getCategory(), 
-                                UsdMtlxGetVersion(mtlxNode),
-                                mtlxNode->getTarget());
+    auto mtlxType = mtlxNode->getType();
+    if (mtlxType == mx::SURFACE_SHADER_TYPE_STRING ||
+        mtlxType == mx::DISPLACEMENT_SHADER_TYPE_STRING ||
+        mtlxType == mx::VOLUME_SHADER_TYPE_STRING ||
+        mtlxType == mx::LIGHT_SHADER_TYPE_STRING) {
+        return _FindMatchingNodeDef(mtlxNode, mtlxNode->getCategory(), 
+                                    UsdMtlxGetVersion(mtlxNode),
+                                    mtlxNode->getTarget());
+    }
+    else {
+        return _FindMatchingNodeDef(mtlxNode, mtlxNode->getCategory(), 
+                                    UsdMtlxGetVersion(mtlxNode),
+                                    mtlxNode->getTarget(), mtlxNode);
+    }
 }
 
 // Get the shader id for a MaterialX nodedef.
@@ -642,9 +607,6 @@ private:
     void _CreateInterface(const mx::ConstInterfaceElementPtr& iface,
                           const UsdShadeConnectableAPI& connectable);
     void _AddNode(const mx::ConstNodePtr& mtlxNode, const UsdPrim& usdParent);
-    UsdShadeInput _AddParameter(const mx::ConstParameterPtr& mtlxParameter,
-                                const UsdShadeConnectableAPI& connectable,
-                                bool isInterface = false);
     UsdShadeInput _AddInput(const mx::ConstInputPtr& mtlxInput,
                             const UsdShadeConnectableAPI& connectable,
                             bool isInterface = false);
@@ -767,9 +729,6 @@ _NodeGraphBuilder::_CreateInterface(
 {
     static constexpr bool isInterface = true;
 
-    for (auto mtlxInput: iface->getParameters()) {
-        _AddParameter(mtlxInput, connectable, isInterface);
-    }
     for (auto mtlxInput: iface->getInputs()) {
         _AddInput(mtlxInput, connectable, isInterface);
     }
@@ -798,11 +757,6 @@ _NodeGraphBuilder::_AddNode(
     auto connectable = usdShader.ConnectableAPI();
     _SetCoreUIAttributes(usdShader.GetPrim(), mtlxNode);
 
-    // Add the parameters.
-    for (auto mtlxInput: mtlxNode->getParameters()) {
-        _AddParameter(mtlxInput, connectable);
-    }
-
     // Add the inputs.
     for (auto mtlxInput: mtlxNode->getInputs()) {
         _AddInput(mtlxInput, connectable);
@@ -822,17 +776,6 @@ _NodeGraphBuilder::_AddNode(
         // Do not add any (default) output to the usd node if the mtlxNode
         // is missing a corresponding mtlxNodeDef.
     }
-}
-
-UsdShadeInput
-_NodeGraphBuilder::_AddParameter(
-    const mx::ConstParameterPtr& mtlxParameter,
-    const UsdShadeConnectableAPI& connectable,
-    bool isInterface)
-{
-    auto result = _AddInputCommon(mtlxParameter, connectable, isInterface);
-    result.SetConnectability(UsdShadeTokens->interfaceOnly);
-    return result;
 }
 
 UsdShadeInput
@@ -905,9 +848,9 @@ _NodeGraphBuilder::_AddOutput(
             context == "volume" ||
             context == "light" ||
             mtlxType == mx::SURFACE_SHADER_TYPE_STRING ||
-            mtlxType == "displacementshader" ||
+            mtlxType == mx::DISPLACEMENT_SHADER_TYPE_STRING ||
             mtlxType == mx::VOLUME_SHADER_TYPE_STRING ||
-            mtlxType == "lightshader") {
+            mtlxType == mx::LIGHT_SHADER_TYPE_STRING) {
         usdType = SdfValueTypeNames->Token;
     }
     else if (shaderOnly || !context.empty()) {
@@ -1130,9 +1073,9 @@ public:
     _NodeGraph AddNodeGraph(const mx::ConstNodeGraphPtr& mtlxNodeGraph);
     _NodeGraph AddImplicitNodeGraph(const mx::ConstDocumentPtr& mtlxDocument);
     _NodeGraph AddNodeGraphWithDef(const mx::ConstNodeGraphPtr& mtlxNodeGraph);
-    UsdShadeMaterial BeginMaterial(const mx::ConstMaterialPtr& mtlxMaterial);
+    UsdShadeMaterial BeginMaterial(const mx::ConstNodePtr& mtlxMaterial);
     void EndMaterial();
-    UsdShadeShader AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef);
+    UsdShadeShader AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode);
     void AddMaterialVariant(const std::string& mtlxMaterialName,
                             const VariantSetName& variantSetName,
                             const VariantName& variantName,
@@ -1161,13 +1104,10 @@ private:
 
     _NodeGraph _AddNodeGraph(const mx::ConstNodeGraphPtr& mtlxNodeGraph,
                              const mx::ConstDocumentPtr& mtlxDocument);
-    void _BindNodeGraph(const mx::ConstBindInputPtr& mtlxBindInput,
+    void _BindNodeGraph(const mx::ConstInputPtr& mtlxInput,
                         const SdfPath& referencingPathParent,
                         const UsdShadeConnectableAPI& connectable,
                         const _NodeGraph& usdNodeGraph);
-    bool _AddShaderVariant(const std::string& mtlxMaterialName,
-                           const std::string& mtlxShaderRefName,
-                           const Variant& variant);
     static
     UsdShadeInput _AddInput(const mx::ConstValueElementPtr& mtlxValue,
                             const UsdShadeConnectableAPI& connectable);
@@ -1203,15 +1143,15 @@ private:
     std::map<_CollectionKey, UsdCollectionAPI> _collections;
     std::map<_GeomKey, UsdCollectionAPI> _geomSets;
     std::map<mx::ConstGeomElementPtr, UsdCollectionAPI> _collectionMapping;
-    // Mapping of MaterialX material name to mapping of shaderref name to
-    // the corresponding UsdShadeShader.  If the shaderref name is empty
+    // Mapping of MaterialX material name to mapping of shaderNode name to
+    // the corresponding UsdShadeShader.  If the shaderNode name is empty
     // this maps to the UsdShadeMaterial.
     std::map<std::string,
              std::map<std::string, UsdShadeConnectableAPI>> _shaders;
     int _nextGeomIndex = 1;
 
     // Active state.
-    mx::ConstMaterialPtr _mtlxMaterial;
+    mx::ConstNodePtr _mtlxMaterial;
     UsdShadeMaterial _usdMaterial;
 };
 
@@ -1320,7 +1260,7 @@ _Context::AddNodeGraphWithDef(const mx::ConstNodeGraphPtr& mtlxNodeGraph)
 }
 
 UsdShadeMaterial
-_Context::BeginMaterial(const mx::ConstMaterialPtr& mtlxMaterial)
+_Context::BeginMaterial(const mx::ConstNodePtr& mtlxMaterial)
 {
     if (TF_VERIFY(!_usdMaterial)) {
         auto materialPath =
@@ -1353,22 +1293,22 @@ _Context::EndMaterial()
 }
 
 UsdShadeShader
-_Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
+_Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
 {
     if (!TF_VERIFY(_usdMaterial)) {
         return UsdShadeShader();
     }
 
-    // Get the nodeDef for this shaderRef.
-    mx::ConstNodeDefPtr mtlxNodeDef = mtlxShaderRef->getNodeDef();
-    if (mtlxShaderRef->getNodeDefString().empty()) {
-        // The shaderref specified a node instead of a nodeDef. Find
+    // Get the nodeDef for this shaderNode.
+    mx::ConstNodeDefPtr mtlxNodeDef = mtlxShaderNode->getNodeDef();
+    if (mtlxShaderNode->getNodeDefString().empty()) {
+        // The shaderNode specified a node instead of a nodeDef. Find
         // the best matching nodedef since the MaterialX API doesn't.
         mtlxNodeDef =
-            _FindMatchingNodeDef(mtlxShaderRef,
-                                 mtlxShaderRef->getNodeString(),
-                                 UsdMtlxGetVersion(mtlxShaderRef),
-                                 mtlxShaderRef->getTarget());
+            _FindMatchingNodeDef(mtlxShaderNode,
+                                 mtlxShaderNode->getCategory(),
+                                 UsdMtlxGetVersion(mtlxShaderNode),
+                                 mtlxShaderNode->getTarget());
     }
     auto shaderId = _GetShaderId(mtlxNodeDef);
     if (shaderId.IsEmpty()) {
@@ -1391,7 +1331,7 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
     //        that implements the nodedef here.
 
     // Choose the name of the shader.  In MaterialX this is just
-    // mtlxShaderRef->getName() and has no meaning other than to uniquely
+    // mtlxShaderNode->getName() and has no meaning other than to uniquely
     // identify the shader.  In USD to support materialinherit we must
     // ensure that shaders have the same name if one should compose over
     // the other.  MaterialX composes over if a shaderref refers to the
@@ -1414,14 +1354,11 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
                                      name.GetString().c_str());
         usdShaderImpl.CreateIdAttr(VtValue(TfToken(shaderId)));
         auto connectable = usdShaderImpl.ConnectableAPI();
-        _SetCoreUIAttributes(usdShaderImpl.GetPrim(), mtlxShaderRef);
+        _SetCoreUIAttributes(usdShaderImpl.GetPrim(), mtlxShaderNode);
 
         for (auto& i: _GetInheritanceStack(mtlxNodeDef)) {
 #ifdef ADD_NODE_INPUT_DEFAULTS_TO_USD
-            // Copy the nodedef parameters/inputs.
-            for (auto mtlxValue: i->getParameters()) {
-                _CopyValue(_MakeInput(usdShaderImpl, mtlxValue), mtlxValue);
-            }
+            // Copy the nodedef inputs.
             for (auto mtlxValue: i->getInputs()) {
                 _CopyValue(_MakeInput(usdShaderImpl, mtlxValue), mtlxValue);
             }
@@ -1443,18 +1380,11 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
     usdShader.GetPrim().GetReferences().AddInternalReference(shaderImplPath);
 
     // Record the referencing shader for later variants.
-    _shaders[_Name(_mtlxMaterial)][_Name(mtlxShaderRef)] =
+    _shaders[_Name(_mtlxMaterial)][_Name(mtlxShaderNode)] =
         UsdShadeConnectableAPI(usdShader);
 
     // Connect to material interface.
     for (auto& i: _GetInheritanceStack(mtlxNodeDef)) {
-        for (auto mtlxValue: i->getParameters()) {
-            auto shaderInput   = _MakeInput(usdShader, mtlxValue);
-            auto materialInput = _MakeInput(_usdMaterial, mtlxValue);
-            shaderInput.SetConnectability(UsdShadeTokens->interfaceOnly);
-            materialInput.SetConnectability(UsdShadeTokens->interfaceOnly);
-            shaderInput.ConnectToSource(materialInput);
-        }
         for (auto mtlxValue: i->getInputs()) {
             auto shaderInput   = _MakeInput(usdShader, mtlxValue);
             auto materialInput = _MakeInput(_usdMaterial, mtlxValue);
@@ -1464,13 +1394,7 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
     }
 
     // Translate bindings.
-    for (auto mtlxParam: mtlxShaderRef->getBindParams()) {
-        if (auto input = _AddInputWithValue(mtlxParam,
-                                            UsdShadeConnectableAPI(_usdMaterial))) {
-            input.SetConnectability(UsdShadeTokens->interfaceOnly);
-        }
-    }
-    for (auto mtlxInput: mtlxShaderRef->getBindInputs()) {
+    for (auto mtlxInput: mtlxShaderNode->getInputs()) {
         // Simple binding.
         _AddInputWithValue(mtlxInput, UsdShadeConnectableAPI(_usdMaterial));
 
@@ -1493,8 +1417,8 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
         }
     }
     if (auto primvars = UsdGeomPrimvarsAPI(_usdMaterial)) {
-        for (auto mtlxToken: mtlxShaderRef->getChildren()) {
-            if (mtlxToken->getCategory() == names.bindtoken) {
+        for (auto mtlxToken: mtlxShaderNode->getChildren()) {
+            if (mtlxToken->getCategory() == names.token) {
                 // Always use the string type for MaterialX tokens.
                 auto primvar =
                     UsdGeomPrimvarsAPI(_usdMaterial)
@@ -1582,9 +1506,9 @@ _Context::AddMaterialVariant(
     {
         UsdEditContext ctx(usdVariantSet.GetVariantEditContext());
         if (shaders) {
-            // Copy to given shaderrefs.
-            for (auto& mtlxShaderRefName: *shaders) {
-                auto j = i->second.find(mtlxShaderRefName);
+            // Copy to given shader.
+            for (auto& mtlxShaderName: *shaders) {
+                auto j = i->second.find(mtlxShaderName);
                 if (j != i->second.end()) {
                     _CopyVariant(j->second, *variant);
                 }
@@ -1805,7 +1729,7 @@ _Context::GetCollection(
 
 void
 _Context::_BindNodeGraph(
-    const mx::ConstBindInputPtr& mtlxBindInput,
+    const mx::ConstInputPtr& mtlxInput,
     const SdfPath& referencingPathParent,
     const UsdShadeConnectableAPI& connectable,
     const _NodeGraph& usdNodeGraph)
@@ -1815,7 +1739,7 @@ _Context::_BindNodeGraph(
         referencingPathParent.AppendChild(
             usdNodeGraph.GetOwnerPrim().GetPath().GetNameToken());
     TF_DEBUG(USDMTLX_READER).Msg("_BindNodeGraph %s %s\n",
-                                 mtlxBindInput->getName().c_str(),
+                                 mtlxInput->getName().c_str(),
                                  referencingPath.GetString().c_str());
     auto refNodeGraph = usdNodeGraph.AddReference(referencingPath);
     if (!refNodeGraph) {
@@ -1824,15 +1748,15 @@ _Context::_BindNodeGraph(
 
     // Connect the input to the nodegraph's output.
     if (auto output =
-            refNodeGraph.GetOutputByName(_Attr(mtlxBindInput, names.output))) {
+            refNodeGraph.GetOutputByName(_Attr(mtlxInput, names.output))) {
         UsdShadeConnectableAPI::ConnectToSource(
-            _AddInput(mtlxBindInput, connectable),
+            _AddInput(mtlxInput, connectable),
             output);
     }
     else {
         TF_WARN("No output \"%s\" for input \"%s\" on <%s>",
-                _Attr(mtlxBindInput, names.output).c_str(),
-                _Name(mtlxBindInput).c_str(),
+                _Attr(mtlxInput, names.output).c_str(),
+                _Name(mtlxInput).c_str(),
                 connectable.GetPath().GetText());
     }
 }
@@ -1882,7 +1806,7 @@ _Context::_AddShaderOutput(
         return connectable.CreateOutput(UsdShadeTokens->surface,
                                         SdfValueTypeNames->Token);
     }
-    else if (context == "displacement" || type == "displacementshader") {
+    else if (context == "displacement" || type == mx::DISPLACEMENT_SHADER_TYPE_STRING) {
         return connectable.CreateOutput(UsdShadeTokens->displacement,
                                         SdfValueTypeNames->Token);
     }
@@ -1890,7 +1814,7 @@ _Context::_AddShaderOutput(
         return connectable.CreateOutput(UsdShadeTokens->volume,
                                         SdfValueTypeNames->Token);
     }
-    else if (context == "light" || type == "lightshader") {
+    else if (context == "light" || type == mx::LIGHT_SHADER_TYPE_STRING) {
         // USD doesn't support this.
         return connectable.CreateOutput(tokens->light,
                                         SdfValueTypeNames->Token);
@@ -2342,7 +2266,7 @@ ReadNodeGraphsWithoutDefs(mx::ConstDocumentPtr mtlx, _Context& context)
 }
 
 // Convert MaterialX materials to USD materials.  Each USD material has
-// child shader prims for each shaderref in the MaterialX material.  In
+// child shader prims for each shaderNode in the MaterialX material.  In
 // addition, all of the child shader inputs and outputs are connected to
 // a synthesized material interface that's the union of all of those
 // inputs and outputs.  The child shader prims reference shader prims
@@ -2351,41 +2275,65 @@ ReadNodeGraphsWithoutDefs(mx::ConstDocumentPtr mtlx, _Context& context)
 // but it also makes for a clean separation and allows sharing nodedefs
 // across materials.  Material inherits are added at the end via
 // specializes arcs.
+// Get the associated Shader Nodes for a given MaterialX Material and translate
+// them into USD equvalents
+static
+void 
+_TranslateShaderNodes(
+    _Context& context,
+    const mx::NodePtr& mtlxMaterial,
+    const std::string & mtlxShaderType)
+{
+    for (auto mtlxShaderNode: mx::getShaderNodes(mtlxMaterial, mtlxShaderType)) {
+        // Translate shader node.
+        TF_DEBUG(USDMTLX_READER).Msg("Adding shaderNode '%s' type: '%s'\n",
+                                    _Name(mtlxShaderNode).c_str(), mtlxShaderType.c_str());
+        if (auto usdShader = context.AddShaderNode(mtlxShaderNode)) {
+            // Do nothing.
+        }
+        else {
+            if (auto nodedef = _Attr(mtlxShaderNode, names.nodedef)) {
+                TF_WARN("Failed to create shaderNode '%s' "
+                        "to nodedef '%s'",
+                        _Name(mtlxShaderNode).c_str(),
+                        nodedef.c_str());
+            }
+            else if (auto node = _Attr(mtlxShaderNode, names.node)) {
+                TF_WARN("Failed to create shaderNode '%s' "
+                        "to node '%s'",
+                        _Name(mtlxShaderNode).c_str(),
+                        node.c_str());
+            }
+            else {
+                // Ignore -- no node was specified.
+            }
+        }
+    }
+}
+
+static 
+void 
+_TranslateShaderNodes(
+    _Context& context,
+    const mx::NodePtr& mtlxMaterial)
+{
+    _TranslateShaderNodes(context, mtlxMaterial, mx::SURFACE_SHADER_TYPE_STRING);
+    _TranslateShaderNodes(context, mtlxMaterial, mx::VOLUME_SHADER_TYPE_STRING);
+    _TranslateShaderNodes(context, mtlxMaterial, mx::DISPLACEMENT_SHADER_TYPE_STRING);
+    _TranslateShaderNodes(context, mtlxMaterial, mx::LIGHT_SHADER_TYPE_STRING);
+}
+
 static
 void
 ReadMaterials(mx::ConstDocumentPtr mtlx, _Context& context)
 {
-    for (auto& mtlxMaterial: mtlx->getMaterials()) {
+    for (auto& mtlxMaterial: mtlx->getMaterialNodes()) {
         // Translate material.
         TF_DEBUG(USDMTLX_READER).Msg("Adding mtlxMaterial '%s'\n",
                                      _Name(mtlxMaterial).c_str());
         if (auto usdMaterial = context.BeginMaterial(mtlxMaterial)) {
-            // Translate all shader references.
-            for (auto mtlxShaderRef: mtlxMaterial->getShaderRefs()) {
-                // Translate shader reference.
-                TF_DEBUG(USDMTLX_READER).Msg("Adding shaderref '%s'\n",
-                                             _Name(mtlxShaderRef).c_str());
-                if (auto usdShader = context.AddShaderRef(mtlxShaderRef)) {
-                    // Do nothing.
-                }
-                else {
-                    if (auto nodedef = _Attr(mtlxShaderRef, names.nodedef)) {
-                        TF_WARN("Failed to create shaderref '%s' "
-                                "to nodedef '%s'",
-                                _Name(mtlxShaderRef).c_str(),
-                                nodedef.c_str());
-                    }
-                    else if (auto node = _Attr(mtlxShaderRef, names.node)) {
-                        TF_WARN("Failed to create shaderref '%s' "
-                                "to node '%s'",
-                                _Name(mtlxShaderRef).c_str(),
-                                node.c_str());
-                    }
-                    else {
-                        // Ignore -- no node was specified.
-                    }
-                }
-            }
+            // Translate all shader nodes.
+            _TranslateShaderNodes(context, mtlxMaterial);
             context.EndMaterial();
         }
         else {
@@ -2396,7 +2344,7 @@ ReadMaterials(mx::ConstDocumentPtr mtlx, _Context& context)
 
     // Add material inherits.  We wait until now so we can be sure all
     // the materials exist.
-    for (auto& mtlxMaterial: mtlx->getMaterials()) {
+    for (auto& mtlxMaterial: mtlx->getMaterialNodes()) {
         if (auto usdMaterial = context.GetMaterial(_Name(mtlxMaterial))) {
             if (auto name = _Attr(mtlxMaterial, names.inherit)) {
                 if (auto usdInherited = context.GetMaterial(name)) {

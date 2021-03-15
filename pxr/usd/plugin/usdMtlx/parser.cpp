@@ -161,22 +161,17 @@ ShaderBuilder::AddProperty(
     }
 
     // Record the targets on inputs.
+    static const std::string targetName("target");
     if (!isOutput) {
-        auto&& target = element->getTarget();
+        auto&& target = element->getAttribute(targetName);
         if (!target.empty()) {
             metadata.emplace(SdrPropertyMetadata->Target, target);
         }
     }
 
-    // Mark parameters as not connectable.
-    // NOTE -- Unlike other metadata Connectable is true if missing.
-    if (!isOutput || element->isA<mx::Parameter>()) {
-        metadata.emplace(SdrPropertyMetadata->Connectable, "false");
-    }
-
-    // Record the colorspace on parameters and outputs.
+    // Record the colorspace on inputs and outputs.
     static const std::string colorspaceName("colorspace");
-    if (isOutput || element->isA<mx::Parameter>()) {
+    if (isOutput || element->isA<mx::Input>()) {
         auto&& colorspace = element->getAttribute(colorspaceName);
         if (!colorspace.empty() &&
                 colorspace != element->getParent()->getActiveColorSpace()) {
@@ -284,9 +279,6 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
     // XXX -- version
 
     // Properties
-    for (auto&& mtlxParameter: nodeDef->getParameters()) {
-        builder->AddProperty(mtlxParameter, false);
-    }
     for (auto&& mtlxInput: nodeDef->getInputs()) {
         builder->AddProperty(mtlxInput, false);
     }
@@ -316,11 +308,6 @@ ParseElement(
     const NdrNodeDiscoveryResult& discoveryResult)
 {
     // Name remapping.
-    for (auto&& mtlxParameter: impl->getParameters()) {
-        builder->AddPropertyNameRemapping(
-            mtlxParameter->getName(),
-            mtlxParameter->getAttribute("implname"));
-    }
     for (auto&& mtlxInput: impl->getInputs()) {
         builder->AddPropertyNameRemapping(
             mtlxInput->getName(),

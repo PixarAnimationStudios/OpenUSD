@@ -26,6 +26,7 @@
 #include <MaterialXCore/Value.h>
 #include <MaterialXGenShader/Shader.h>
 #include <MaterialXGenShader/ShaderGenerator.h>
+#include <MaterialXGenShader/Syntax.h>
 
 namespace mx = MaterialX;
 
@@ -140,7 +141,7 @@ HdStMaterialXShaderGen::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
 
     // insert texture information if needed
     if (!_mxHdTextureMap.empty()) {
-        emitString(R"("textures": {)" "\n", mxStage);
+        emitString(R"(    "textures": {)" "\n", mxStage);
         std::string line; unsigned int i = 0;
         for (auto texturePair : _mxHdTextureMap) {
             line += "        \"" + texturePair.second + "\": {\n        }";
@@ -173,7 +174,7 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     mx::ShaderStage& mxStage) const
 {
     // Add global constants and type definitions
-    emitInclude("pbrlib/" + mx::GlslShaderGenerator::LANGUAGE 
+    emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
                 + "/lib/mx_defines.glsl", mxContext, mxStage);
     emitLine("#if NUM_LIGHTS > 0", mxStage, false);
     emitLine("#define MAX_LIGHT_SOURCES NUM_LIGHTS", mxStage, false);
@@ -190,7 +191,7 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     const mx::VariableBlock& constants = mxStage.getConstantBlock();
     if (!constants.empty()) {
         emitVariableDeclarations(constants, _syntax->getConstantQualifier(),
-                                 mx::ShaderGenerator::SEMICOLON, 
+                                 mx::Syntax::SEMICOLON, 
                                  mxContext, mxStage, false);
         emitLineBreak(mxStage);
     }
@@ -203,8 +204,7 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
         if (!uniforms.empty() && uniforms.getName() != mx::HW::LIGHT_DATA) {
             emitComment("Uniform block: " + uniforms.getName(), mxStage);
             emitVariableDeclarations(uniforms, mx::EMPTY_STRING, 
-                                     mx::ShaderGenerator::SEMICOLON,
-                                     mxContext, mxStage);
+                                     mx::Syntax::SEMICOLON, mxContext, mxStage);
             emitLineBreak(mxStage);
         }
     }
@@ -223,7 +223,7 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
         emitLine("struct " + lightData.getName(), mxStage, false);
         emitScopeBegin(mxStage);
         emitVariableDeclarations(lightData, mx::EMPTY_STRING, 
-                                 mx::ShaderGenerator::SEMICOLON, 
+                                 mx::Syntax::SEMICOLON, 
                                  mxContext, mxStage, false);
         emitScopeEnd(mxStage, true);
         emitLineBreak(mxStage);
@@ -244,10 +244,10 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
         emitLine("struct " + mxVertexDataName, mxStage, false);
         emitScopeBegin(mxStage);
         emitVariableDeclarations(vertexData, mx::EMPTY_STRING,
-                                 mx::ShaderGenerator::SEMICOLON, 
+                                 mx::Syntax::SEMICOLON, 
                                  mxContext, mxStage, false);
         emitScopeEnd(mxStage, false, false);
-        emitString(mx::ShaderGenerator::SEMICOLON, mxStage);
+        emitString(mx::Syntax::SEMICOLON, mxStage);
         emitLineBreak(mxStage);
 
         // Add the vd declaration
@@ -260,32 +260,16 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     }
 
     // Emit common math functions
-    emitInclude("pbrlib/" + mx::GlslShaderGenerator::LANGUAGE 
+    emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
                 + "/lib/mx_math.glsl", mxContext, mxStage);
     emitLineBreak(mxStage);
 
-    // Emit texture sampling code
-    if (mxGraph.hasClassification(mx::ShaderNode::Classification::CONVOLUTION2D)) {
-        emitInclude("stdlib/" + mx::GlslShaderGenerator::LANGUAGE 
-                    + "/lib/mx_sampling.glsl", mxContext, mxStage);
-        emitLineBreak(mxStage);
-    }
-
     // Emit lighting and shadowing code
     if (lighting) {
-
-        // XXX Emitting missing include for sampling the Prefilter Texture.
-        // Can remove this when using MaterialX v1.38
-        if (mxContext.getOptions().hwSpecularEnvironmentMethod == 
-            mx::HwSpecularEnvironmentMethod::SPECULAR_ENVIRONMENT_PREFILTER) {
-
-            emitInclude("pbrlib/" + mx::GlslShaderGenerator::LANGUAGE
-                + "/lib/mx_microfacet_specular.glsl", mxContext, mxStage);
-        }
         emitSpecularEnvironment(mxContext, mxStage);
     }
     if (shadowing) {
-        emitInclude("pbrlib/" + mx::GlslShaderGenerator::LANGUAGE 
+        emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
                     + "/lib/mx_shadow.glsl", mxContext, mxStage);
     }
 
@@ -293,7 +277,7 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     if (mxContext.getOptions().hwDirectionalAlbedoMethod == 
             mx::HwDirectionalAlbedoMethod::DIRECTIONAL_ALBEDO_TABLE ||
         mxContext.getOptions().hwWriteAlbedoTable) {
-        emitInclude("pbrlib/" + mx::GlslShaderGenerator::LANGUAGE 
+        emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
                     + "/lib/mx_table.glsl", mxContext, mxStage);
         emitLineBreak(mxStage);
     }
@@ -302,12 +286,12 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     // depending on the vertical flip flag.
     if (mxContext.getOptions().fileTextureVerticalFlip) {
         _tokenSubstitutions[mx::ShaderGenerator::T_FILE_TRANSFORM_UV] = 
-            "stdlib/" + mx::GlslShaderGenerator::LANGUAGE +
+            "stdlib/" + mx::GlslShaderGenerator::TARGET +
             "/lib/mx_transform_uv_vflip.glsl";
     }
     else {
         _tokenSubstitutions[mx::ShaderGenerator::T_FILE_TRANSFORM_UV] = 
-            "stdlib/" + mx::GlslShaderGenerator::LANGUAGE + 
+            "stdlib/" + mx::GlslShaderGenerator::TARGET + 
             "/lib/mx_transform_uv.glsl";
     }
 
@@ -436,8 +420,8 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
     // Add the vd declaration that translates HdVertexData -> MxVertexData
     std::string mxVertexDataName = "mx" + vertexData.getName();
     _EmitMxVertexDataDeclarations(vertexData, mxVertexDataName, 
-                                 vertexData.getInstance(),
-                                 mx::ShaderGenerator::COMMA, mxStage);
+                                  vertexData.getInstance(), 
+                                  mx::Syntax::COMMA, mxStage);
     emitLineBreak(mxStage);
 
     // Initialize the Indirect Light Textures
