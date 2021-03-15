@@ -266,9 +266,10 @@ For further information see the documentation on the Alembic plugin [here](http:
 
 ##### MaterialX Plugin
 
-Enable the [MaterialX](https://github.com/materialx/materialx) plugin in the 
-build by specifying the cmake flag ```PXR_BUILD_MATERIALX_PLUGIN=TRUE``` when 
-invoking cmake.
+Enable [MaterialX](https://github.com/materialx/materialx) support in the 
+build by specifying the cmake flag ```PXR_ENABLE_MATERIALX_SUPPORT=TRUE``` when 
+invoking cmake. Note that MaterialX with shared library support is required on 
+Linux and MacOS.
 
 The additional dependencies that must be supplied when invoking cmake are:
 

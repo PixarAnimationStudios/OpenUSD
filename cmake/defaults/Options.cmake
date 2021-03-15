@@ -37,8 +37,7 @@ option(PXR_BUILD_USDVIEW "Build usdview" ON)
 option(PXR_BUILD_ALEMBIC_PLUGIN "Build the Alembic plugin for USD" OFF)
 option(PXR_BUILD_DRACO_PLUGIN "Build the Draco plugin for USD" OFF)
 option(PXR_BUILD_PRMAN_PLUGIN "Build the PRMan imaging plugin" OFF)
-option(PXR_BUILD_MATERIALX_PLUGIN "Build the MaterialX plugin for USD" OFF)
-option(PXR_ENABLE_MATERIALX_IMAGING_SUPPORT "Enable MaterialX imaging support" OFF)
+option(PXR_ENABLE_MATERIALX_SUPPORT "Enable MaterialX support" OFF)
 option(PXR_BUILD_DOCUMENTATION "Generate doxygen documentation" OFF)
 option(PXR_ENABLE_PYTHON_SUPPORT "Enable Python based components for USD" ON)
 option(PXR_USE_PYTHON_3 "Build Python bindings for Python 3" OFF)
@@ -185,13 +184,4 @@ endif()
 if (${PXR_BUILD_DRACO_PLUGIN} AND ${PXR_BUILD_MONOLITHIC} AND WIN32)
     message(FATAL_ERROR 
         "Draco plugin can not be enabled for monolithic builds on Windows")
-endif()
-
-# Make sure the MaterialX Plugin is built when enabling MaterialX Imaging
-if (${PXR_ENABLE_MATERIALX_IMAGING_SUPPORT})
-    if (NOT ${PXR_BUILD_MATERIALX_PLUGIN})
-        message(STATUS 
-            "Setting PXR_BUILD_MATERIALX_PLUGIN=ON because PXR_ENABLE_MATERIALX_IMAGING_SUPPORT=ON")
-        set(PXR_BUILD_MATERIALX_PLUGIN "ON" CACHE BOOL "" FORCE)
-    endif()
 endif()

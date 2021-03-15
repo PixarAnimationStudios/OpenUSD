@@ -297,11 +297,9 @@ if (PXR_BUILD_DRACO_PLUGIN)
     find_package(Draco REQUIRED)
 endif()
 
-if (PXR_BUILD_MATERIALX_PLUGIN)
+if (PXR_ENABLE_MATERIALX_SUPPORT)
     find_package(MaterialX REQUIRED)
-    if (PXR_ENABLE_MATERIALX_IMAGING_SUPPORT)
-        add_definitions(-DPXR_MATERIALX_IMAGING_SUPPORT_ENABLED)
-    endif()
+    add_definitions(-DPXR_MATERIALX_SUPPORT_ENABLED)
 endif()
 
 if(PXR_ENABLE_OSL_SUPPORT)
