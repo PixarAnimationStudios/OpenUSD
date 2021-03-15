@@ -260,7 +260,6 @@ private:
     // to the tasks, _CreateCamera() should be called first.
     void _CreateRenderGraph();
 
-    void _CreateCamera();
     void _CreateLightingTask();
     void _CreateShadowTask();
     SdfPath _CreateRenderTask(TfToken const& materialTag);
@@ -287,7 +286,6 @@ private:
     bool _ColorCorrectionEnabled() const;
     bool _ColorizeQuantizationEnabled() const;
     bool _AovsSupported() const;
-    bool _CamerasSupported() const;
     bool _UsingAovs() const;
 
     // Helper function for renderbuffer management.
@@ -343,8 +341,6 @@ private:
         // HdSceneDelegate interface
         VtValue Get(SdfPath const& id, TfToken const& key) override;
         GfMatrix4d GetTransform(SdfPath const& id) override;
-        VtValue GetCameraParamValue(SdfPath const& id, 
-                                    TfToken const& key) override;
         VtValue GetLightParamValue(SdfPath const& id, 
                                    TfToken const& paramName) override;
         bool IsEnabled(TfToken const& option) const override;
@@ -359,6 +355,7 @@ private:
         _ValueCacheMap _valueCacheMap;
     };
     _Delegate _delegate;
+    std::unique_ptr<class HdxFreeCameraSceneDelegate> _freeCameraSceneDelegate;
 
     // Generated tasks.
     SdfPath _simpleLightTaskId;
@@ -373,8 +370,6 @@ private:
     SdfPath _pickFromRenderBufferTaskId;
     SdfPath _presentTaskId;
 
-    // Generated camera (for the default/free cam)
-    SdfPath _freeCamId;
     // Current active camera
     SdfPath _activeCameraId;
     

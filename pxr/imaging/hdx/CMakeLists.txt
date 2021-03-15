@@ -42,6 +42,7 @@ pxr_library(hdx
         colorChannelTask
         colorCorrectionTask
         drawTargetTask
+        freeCameraSceneDelegate
         fullscreenShader
         hgiConversions
         oitBufferAccessor
