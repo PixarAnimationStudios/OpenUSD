@@ -43,43 +43,47 @@ HgiInterop::HgiInterop() = default;
 HgiInterop::~HgiInterop() = default;
 
 void HgiInterop::TransferToApp(
-    Hgi *hgi,
-    TfToken const &interopDst,
-    GfVec4i const &compRegion,
-    HgiTextureHandle const &color,
-    HgiTextureHandle const &depth)
+    Hgi *srcHgi,
+    HgiTextureHandle const &srcColor,
+    HgiTextureHandle const &srcDepth,
+    TfToken const &dstApi,
+    VtValue const &dstFramebuffer,
+    GfVec4i const &dstRegion)
 {
-    TfToken const& gfxApi = hgi->GetAPIName();
+    TfToken const& srcApi = srcHgi->GetAPIName();
 
 #if defined(PXR_METAL_SUPPORT_ENABLED)
-    if (gfxApi==HgiTokens->Metal && interopDst==HgiTokens->OpenGL) {
+    if (srcApi==HgiTokens->Metal && dstApi==HgiTokens->OpenGL) {
         // Transfer Metal textures to OpenGL application
         if (!_metalToOpenGL) {
-            _metalToOpenGL = std::make_unique<HgiInteropMetal>(hgi);
+            _metalToOpenGL = std::make_unique<HgiInteropMetal>(srcHgi);
         }
-        _metalToOpenGL->CompositeToInterop(color, depth, compRegion);
+        _metalToOpenGL->CompositeToInterop(
+            srcColor, srcDepth, dstFramebuffer, dstRegion);
     } else {
-        TF_CODING_ERROR("Unsupported Hgi backend: %s", gfxApi.GetText());
+        TF_CODING_ERROR("Unsupported Hgi backend: %s", srcApi.GetText());
     }
 #elif defined(PXR_VULKAN_SUPPORT_ENABLED)
-    if (gfxApi==HgiTokens->Vulkan && interopDst==HgiTokens->OpenGL) {
+    if (srcApi==HgiTokens->Vulkan && dstApi==HgiTokens->OpenGL) {
         // Transfer Vulkan textures to OpenGL application
         if (!_vulkanToOpenGL) {
-            _vulkanToOpenGL = std::make_unique<HgiInteropVulkan>(hgi);
+            _vulkanToOpenGL = std::make_unique<HgiInteropVulkan>(srcHgi);
         }
-        _vulkanToOpenGL->CompositeToInterop(color, depth, compRegion);
+        _vulkanToOpenGL->CompositeToInterop(
+            srcColor, srcDepth, dstFramebuffer, dstRegion);
     } else {
-        TF_CODING_ERROR("Unsupported Hgi backend: %s", gfxApi.GetText());
+        TF_CODING_ERROR("Unsupported Hgi backend: %s", srcApi.GetText());
     }
 #else
-    if (gfxApi==HgiTokens->OpenGL && interopDst==HgiTokens->OpenGL) {
+    if (srcApi==HgiTokens->OpenGL && dstApi==HgiTokens->OpenGL) {
         // Transfer OpenGL textures to OpenGL application
         if (!_openGLToOpenGL) {
             _openGLToOpenGL = std::make_unique<HgiInteropOpenGL>();
         }
-        _openGLToOpenGL->CompositeToInterop(color, depth, compRegion);
+        _openGLToOpenGL->CompositeToInterop(
+            srcColor, srcDepth, dstFramebuffer, dstRegion);
     } else {
-        TF_CODING_ERROR("Unsupported Hgi backend: %s", gfxApi.GetText());
+        TF_CODING_ERROR("Unsupported Hgi backend: %s", srcApi.GetText());
     }
 #endif
 }

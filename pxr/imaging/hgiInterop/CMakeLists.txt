@@ -31,6 +31,7 @@ pxr_library(hgiInterop
         gf
         tf
         hgi
+        vt
         ${optionalLibraries}
 
     PUBLIC_HEADERS

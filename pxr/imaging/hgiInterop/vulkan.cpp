@@ -27,7 +27,7 @@
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgiVulkan/hgi.h"
 #include "pxr/imaging/hgiInterop/vulkan.h"
-
+#include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -205,6 +205,7 @@ void
 HgiInteropVulkan::CompositeToInterop(
     HgiTextureHandle const &color,
     HgiTextureHandle const &depth,
+    VtValue const &framebuffer,
     GfVec4i const &compRegion)
 {
     if (!ARCH_UNLIKELY(color)) {
@@ -214,6 +215,22 @@ HgiInteropVulkan::CompositeToInterop(
 
     // Verify there were no gl errors coming in.
     TF_VERIFY(glGetError() == GL_NO_ERROR);
+
+    GLint restoreDrawFramebuffer = 0;
+    bool doRestoreDrawFramebuffer = false;
+
+    if (!framebuffer.IsEmpty()) {
+        if (framebuffer.IsHolding<uint32_t>()) {
+            glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,
+                          &restoreDrawFramebuffer);
+            doRestoreDrawFramebuffer = true;
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER,
+                              framebuffer.UncheckedGet<uint32_t>());
+        } else {
+            TF_CODING_ERROR(
+                "dstFramebuffer must hold uint32_t when targeting OpenGL");
+        }
+    }
 
     // Convert textures from Vulkan to GL
     _ConvertVulkanTextureToOpenGL(_hgiVulkan, color, &_glColorTex);
@@ -357,6 +374,11 @@ HgiInteropVulkan::CompositeToInterop(
 #endif
 
     glActiveTexture(restoreActiveTexture);
+
+    if (doRestoreDrawFramebuffer) {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER,
+                          restoreDrawFramebuffer);
+    }
 
     TF_VERIFY(glGetError() == GL_NO_ERROR);
 }

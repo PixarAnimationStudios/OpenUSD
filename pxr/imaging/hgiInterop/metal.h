@@ -39,12 +39,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class Hgi;
 class HgiMetal;
+class VtValue;
 
 /// \class HgiInteropMetal
 ///
 /// Provides Metal/GL interop
 ///
-class HgiInteropMetal final {
+class HgiInteropMetal final
+{
 public:
 
     HGIINTEROP_API
@@ -58,6 +60,7 @@ public:
     void CompositeToInterop(
         HgiTextureHandle const &color,
         HgiTextureHandle const &depth,
+        VtValue const &framebuffer,
         GfVec4i const &compRegion);
 
 private:
@@ -91,7 +94,8 @@ private:
         void* pointer;
     };
 
-    void _BlitToOpenGL(GfVec4i const& compRegion, bool flipY, int shaderIndex);
+    void _BlitToOpenGL(VtValue const &framebuffer, GfVec4i const& compRegion,
+                       bool flipY, int shaderIndex);
     void _FreeTransientTextureCacheRefs();
     void _CaptureOpenGlState();
     void _RestoreOpenGlState();
@@ -132,6 +136,7 @@ private:
     
     NSOpenGLContext* _currentOpenGLContext;
 
+    int32_t _restoreDrawFbo;
     int32_t _restoreVao;
     int32_t _restoreVbo;
     bool _restoreDepthTest;

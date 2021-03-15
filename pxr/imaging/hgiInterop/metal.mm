@@ -31,6 +31,7 @@
 #include "pxr/imaging/hgiMetal/hgi.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -656,6 +657,7 @@ HgiInteropMetal::_SetAttachmentSize(int width, int height)
 void
 HgiInteropMetal::_CaptureOpenGlState()
 {
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &_restoreDrawFbo);
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &_restoreVao);
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &_restoreVbo);
     glGetBooleanv(GL_DEPTH_TEST, (GLboolean*)&_restoreDepthTest);
@@ -774,16 +776,29 @@ HgiInteropMetal::_RestoreOpenGlState()
     glActiveTexture(_restoreActiveTexture);
     
     glUseProgram(_restoreProgram);
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _restoreDrawFbo);
 }
 
 void
-HgiInteropMetal::_BlitToOpenGL(GfVec4i const &compRegion,
+HgiInteropMetal::_BlitToOpenGL(VtValue const &framebuffer,
+                               GfVec4i const &compRegion,
                                bool flipY, int shaderIndex)
 {
     // Clear GL error state
     _ProcessGLErrors(true);
 
     _CaptureOpenGlState();
+
+    if (!framebuffer.IsEmpty()) {
+        if (framebuffer.IsHolding<uint32_t>()) {
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER,
+                              framebuffer.UncheckedGet<uint32_t>());
+        } else {
+            TF_CODING_ERROR(
+                "dstFramebuffer must hold uint32_t when targeting OpenGL");
+        }
+    }
     
     // XXX: This doesn't support "optional" depth. Enabling depth writes without
     // a depth aov to xfer would mean that the bound depth buffer is overwritten
@@ -856,6 +871,7 @@ void
 HgiInteropMetal::CompositeToInterop(
     HgiTextureHandle const &color,
     HgiTextureHandle const &depth,
+    VtValue const &framebuffer,
     GfVec4i const &compRegion)
 {
     if (!ARCH_UNLIKELY(color)) {
@@ -970,7 +986,7 @@ HgiInteropMetal::CompositeToInterop(
         HgiMetal::CommitCommandBuffer_WaitUntilScheduled);
 
     if (glShaderIndex != -1) {
-        _BlitToOpenGL(compRegion, flipImage, glShaderIndex);
+        _BlitToOpenGL(framebuffer, compRegion, flipImage, glShaderIndex);
 
         _ProcessGLErrors();
     }
