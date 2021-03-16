@@ -126,9 +126,17 @@ public:
     void SetRenderOutputSettings(TfToken const& name,
                                  HdAovDescriptor const& desc);
 
-    // Get parameters for an AOV.
+    /// Get parameters for an AOV.
     HDX_API
     HdAovDescriptor GetRenderOutputSettings(TfToken const& name) const;
+
+    /// The destination API (e.g., OpenGL, see hgiInterop for details) and
+    /// framebuffer that the AOVs are presented into. The framebuffer
+    /// is a VtValue that encoding a framebuffer in a destination API
+    /// specific way.
+    /// E.g., a uint32_t (aka GLuint) for framebuffer object for OpenGL.
+    HDX_API
+    void SetPresentationOutput(TfToken const &api, VtValue const &framebuffer);
 
     /// -------------------------------------------------------
     /// Lighting API

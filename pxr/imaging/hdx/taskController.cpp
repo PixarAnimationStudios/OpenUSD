@@ -1677,6 +1677,25 @@ HdxTaskController::SetEnablePresentation(bool enabled)
     }
 }
 
+void 
+HdxTaskController::SetPresentationOutput(
+    TfToken const &api,
+    VtValue const &framebuffer)
+{
+    HdxPresentTaskParams params =
+        _delegate.GetParameter<HdxPresentTaskParams>(
+            _presentTaskId, HdTokens->params);
+
+    if ( params.dstApi != api ||
+         params.dstFramebuffer != framebuffer) {
+        params.dstApi = api;
+        params.dstFramebuffer = framebuffer;
+        _delegate.SetParameter(_presentTaskId, HdTokens->params, params);
+        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+            _presentTaskId, HdChangeTracker::DirtyParams);
+    }
+}
+
 void
 HdxTaskController::_SetCameraParamForTasks(SdfPath const& id)
 {
@@ -1782,13 +1801,13 @@ HdxTaskController::_SetCameraFramingForTasks()
                 _presentTaskId, HdTokens->params);
         // The composition step uses the viewport passed in by the application,
         // which may have a non-zero offset for things like camera masking.
-        const GfVec4i compRegion = 
+        const GfVec4i dstRegion = 
             _framing.IsValid()
                 ? GfVec4i(0, 0, _renderBufferSize[0], _renderBufferSize[1])
                 : _ToVec4i(_viewport);
 
-        if (params.compRegion != compRegion) {
-            params.compRegion = compRegion;
+        if (params.dstRegion != dstRegion) {
+            params.dstRegion = dstRegion;
             _delegate.SetParameter(_presentTaskId, HdTokens->params, params);
             changeTracker.MarkTaskDirty(
                 _presentTaskId, HdChangeTracker::DirtyParams);

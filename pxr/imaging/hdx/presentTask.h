@@ -39,17 +39,27 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HdxPresentTaskParams
 {
     HdxPresentTaskParams() 
-        : interopDst(HgiTokens->OpenGL)
-        , compRegion(0)
+        : dstApi(HgiTokens->OpenGL)
+        , dstRegion(0)
         , enabled(true)
     {}
 
     // The graphics lib that is used by the application / viewer.
     // (The 'interopSrc' is determined by checking Hgi->GetAPIName)
-    TfToken interopDst;
+    TfToken dstApi;
+
+    /// The framebuffer that the AOVs are presented into. This is a
+    /// VtValue that encoding a framebuffer in a dstApi specific
+    /// way.
+    ///
+    /// E.g., a uint32_t (aka GLuint) for framebuffer object for dstApi==OpenGL.
+    /// For backwards compatibility, the currently bound framebuffer is used
+    /// when the VtValue is empty.
+    VtValue dstFramebuffer;
+
     // Subrectangular region of the framebuffer over which to composite aov
     // contents. Coordinates are (left, BOTTOM, width, height).
-    GfVec4i compRegion;
+    GfVec4i dstRegion;
 
     // When not enabled, present task does not execute, but still calls
     // Hgi::EndFrame.

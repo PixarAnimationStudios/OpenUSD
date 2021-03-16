@@ -92,8 +92,10 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
         // Eg. This allows us to render with HgiMetal and present the images
         // into a opengl based application (such as usdview).
         _interop.TransferToApp(
-            _hgi, aovTexture, depthTexture,
-            _params.interopDst, VtValue(), _params.compRegion);
+            _hgi,
+            aovTexture, depthTexture,
+            _params.dstApi,
+            _params.dstFramebuffer, _params.dstRegion);
     }
 
     // Wrap one HdEngine::Execute frame with Hgi StartFrame and EndFrame.
@@ -110,15 +112,16 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
 std::ostream& operator<<(std::ostream& out, const HdxPresentTaskParams& pv)
 {
     out << "PresentTask Params: (...) "
-        << pv.interopDst;
+        << pv.dstApi;
     return out;
 }
 
 bool operator==(const HdxPresentTaskParams& lhs,
                 const HdxPresentTaskParams& rhs)
 {
-    return lhs.interopDst == rhs.interopDst &&
-           lhs.compRegion == rhs.compRegion &&
+    return lhs.dstApi == rhs.dstApi &&
+           lhs.dstFramebuffer == rhs.dstFramebuffer &&
+           lhs.dstRegion == rhs.dstRegion &&
            lhs.enabled == rhs.enabled;
 }
 
