@@ -1055,6 +1055,21 @@ UsdImagingGLEngine::SetEnablePresentation(bool enabled)
     }
 }
 
+void
+UsdImagingGLEngine::SetPresentationOutput(
+    TfToken const &api,
+    VtValue const &framebuffer)
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    if (TF_VERIFY(_taskController)) {
+        _userFramebuffer = framebuffer;
+        _taskController->SetPresentationOutput(api, framebuffer);
+    }
+}
+
 // ---------------------------------------------------------------------
 // Control of background rendering threads.
 // ---------------------------------------------------------------------
@@ -1210,6 +1225,16 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
 
     GLF_GROUP_FUNCTION();
 
+    GLint restoreDrawFbo = 0;
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &restoreDrawFbo);
+    if (_userFramebuffer.IsEmpty()) {
+        // If user supplied no framebuffer, use the currently bound
+        // framebuffer.
+        _taskController->SetPresentationOutput(
+            HgiTokens->OpenGL,
+            VtValue(static_cast<uint32_t>(restoreDrawFbo)));
+    }
+
     GLuint vao;
     if (isCoreProfileContext) {
         // We must bind a VAO (Vertex Array Object) because core profile 
@@ -1261,6 +1286,8 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
     } else {
         glPopAttrib(); // GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT
     }
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFbo);
 }
 
 bool 
