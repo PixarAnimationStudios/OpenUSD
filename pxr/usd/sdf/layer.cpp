@@ -3205,45 +3205,39 @@ SdfLayer::_ListFields(SdfSchemaBase const &schema,
 {
     // Invoke List() on the underlying data implementation but be sure to
     // include all required fields too.
-    vector<TfToken> ret;
-
-    // Collect required fields.
-    SdfSpecType specType = data.GetSpecType(path);
-    if (specType != SdfSpecTypeUnknown) {
-        ret = schema.GetRequiredFields(specType);
-    }
 
     // Collect the list from the data implemenation.
     vector<TfToken> dataList = data.List(path);
 
+    // Determine spec type.  If unknown, return early.
+    SdfSpecType specType = data.GetSpecType(path);
+    if (ARCH_UNLIKELY(specType == SdfSpecTypeUnknown)) {
+        return dataList;
+    }
+
+    // Collect required fields.
+    vector<TfToken> const &req = schema.GetRequiredFields(specType);
+
     // Union them together, but retain order of dataList, since it influences
     // the output ordering in some file writers.
-    if (ret.empty()) {
-        ret = std::move(dataList);
-    }
-    else if (!dataList.empty()) {
-        vector<TfToken> tmp;
-        tmp.reserve(ret.size() + dataList.size());
-        for (TfToken &dataName: dataList) {
-            for (TfToken &reqName: ret) {
-                // If the data lists a required field, strike it from the
-                // required list.
-                if (reqName == dataName) {
-                    reqName = TfToken();
-                    break;
-                }
+    auto dataListBegin = dataList.begin(), dataListEnd = dataList.end();
+    bool mightAlloc = (dataList.size() + req.size()) > dataList.capacity();
+    for (size_t reqIdx = 0, reqSz = req.size(); reqIdx != reqSz; ++reqIdx) {
+        TfToken const &reqName = req[reqIdx];
+        auto iter = std::find(dataListBegin, dataListEnd, reqName);
+        if (iter == dataListEnd) {
+            // If the required field name is not already present, append it.
+            // Make sure we have capacity for all required fields so we do no
+            // more than one additional allocation here.
+            if (mightAlloc && dataList.size() == dataList.capacity()) {
+                dataList.reserve(dataList.size() + (reqSz - reqIdx));
+                dataListBegin = dataList.begin(), dataListEnd = dataList.end();
+                mightAlloc = false;
             }
-            tmp.push_back(std::move(dataName));
+            dataList.push_back(reqName);
         }
-        // Add any remaining required fields.
-        for (TfToken &reqName: ret) {
-            if (!reqName.IsEmpty()) {
-                tmp.push_back(std::move(reqName));
-            }
-        }
-        ret = std::move(tmp);
     }
-    return ret;
+    return dataList;
 }
 
 SdfSchema::FieldDefinition const *
