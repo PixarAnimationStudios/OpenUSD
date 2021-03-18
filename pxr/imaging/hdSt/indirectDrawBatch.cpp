@@ -51,7 +51,6 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticTokens.h"
 
 #include <iostream>
@@ -219,7 +218,7 @@ HdSt_IndirectDrawBatch::IsEnabledGPUInstanceFrustumCulling()
 }
 
 static int
-_GetElementOffset(HdStBufferArrayRangeSharedPtr const& range)
+_GetElementOffset(HdBufferArrayRangeSharedPtr const& range)
 {
     return range? range->GetElementOffset() : 0;
 }
@@ -374,68 +373,53 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         // index buffer data
         //
         HdBufferArrayRangeSharedPtr const &
-            indexBar_ = drawItem->GetTopologyRange();
-        HdStBufferArrayRangeSharedPtr indexBar =
-            std::static_pointer_cast<HdStBufferArrayRange>(indexBar_);
+            indexBar = drawItem->GetTopologyRange();
 
         //
         // topology visibility buffer data
         //
         HdBufferArrayRangeSharedPtr const &
-            topVisBar_ = drawItem->GetTopologyVisibilityRange();
-        HdStBufferArrayRangeSharedPtr topVisBar =
-            std::static_pointer_cast<HdStBufferArrayRange>(topVisBar_);
+            topVisBar = drawItem->GetTopologyVisibilityRange();
 
         //
         // element (per-face) buffer data
         //
         HdBufferArrayRangeSharedPtr const &
-            elementBar_ = drawItem->GetElementPrimvarRange();
-        HdStBufferArrayRangeSharedPtr elementBar =
-            std::static_pointer_cast<HdStBufferArrayRange>(elementBar_);
+            elementBar = drawItem->GetElementPrimvarRange();
 
         //
         // vertex attrib buffer data
         //
         HdBufferArrayRangeSharedPtr const &
-            vertexBar_ = drawItem->GetVertexPrimvarRange();
-        HdStBufferArrayRangeSharedPtr vertexBar =
-            std::static_pointer_cast<HdStBufferArrayRange>(vertexBar_);
+            vertexBar = drawItem->GetVertexPrimvarRange();
 
         //
         // varying buffer data
         //
         HdBufferArrayRangeSharedPtr const &
-            varyingBar_ = drawItem->GetVaryingPrimvarRange();
-        HdStBufferArrayRangeSharedPtr varyingBar =
-            std::static_pointer_cast<HdStBufferArrayRange>(varyingBar_);
+            varyingBar = drawItem->GetVaryingPrimvarRange();
 
         //
         // constant buffer data
         //
         HdBufferArrayRangeSharedPtr const &
-            constantBar_ = drawItem->GetConstantPrimvarRange();
-        HdStBufferArrayRangeSharedPtr constantBar =
-            std::static_pointer_cast<HdStBufferArrayRange>(constantBar_);
+            constantBar = drawItem->GetConstantPrimvarRange();
 
         //
         // face varying buffer data
         //
         HdBufferArrayRangeSharedPtr const &
-            fvarBar_ = drawItem->GetFaceVaryingPrimvarRange();
-        HdStBufferArrayRangeSharedPtr fvarBar =
-            std::static_pointer_cast<HdStBufferArrayRange>(fvarBar_);
+            fvarBar = drawItem->GetFaceVaryingPrimvarRange();
 
         //
         // instance buffer data
         //
         int instanceIndexWidth = instancerNumLevels + 1;
-        std::vector<HdStBufferArrayRangeSharedPtr> instanceBars(instancerNumLevels);
+        std::vector<HdBufferArrayRangeSharedPtr>
+                instanceBars(instancerNumLevels);
         for (size_t i = 0; i < instancerNumLevels; ++i) {
             HdBufferArrayRangeSharedPtr const &
-                ins_ = drawItem->GetInstancePrimvarRange(i);
-            HdStBufferArrayRangeSharedPtr ins =
-                std::static_pointer_cast<HdStBufferArrayRange>(ins_);
+                ins = drawItem->GetInstancePrimvarRange(i);
 
             instanceBars[i] = ins;
         }
@@ -444,17 +428,13 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         // instance indices
         //
         HdBufferArrayRangeSharedPtr const &
-            instanceIndexBar_ = drawItem->GetInstanceIndexRange();
-        HdStBufferArrayRangeSharedPtr instanceIndexBar =
-            std::static_pointer_cast<HdStBufferArrayRange>(instanceIndexBar_);
+            instanceIndexBar = drawItem->GetInstanceIndexRange();
 
         //
         // shader parameter
         //
         HdBufferArrayRangeSharedPtr const &
-            shaderBar_ = drawItem->GetMaterialShader()->GetShaderData();
-        HdStBufferArrayRangeSharedPtr shaderBar =
-            std::static_pointer_cast<HdStBufferArrayRange>(shaderBar_);
+            shaderBar = drawItem->GetMaterialShader()->GetShaderData();
 
         // 3 for triangles, 4 for quads, n for patches
         uint32_t numIndicesPerPrimitive
@@ -1127,8 +1107,8 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
 
     // XXX: for surfaces shader, we need to iterate all drawItems to
     //      make textures resident, instead of just the first batchItem
-    TF_FOR_ALL(it, shaders) {
-        (*it)->BindResources(programId, binder, *renderPassState);
+    for (HdStShaderCodeSharedPtr const & shader : shaders) {
+        shader->BindResources(programId, binder, *renderPassState);
     }
 
     // constant buffer bind
@@ -1211,8 +1191,8 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
 
     // shader buffer bind
     HdStBufferArrayRangeSharedPtr shaderBar;
-    TF_FOR_ALL(shader, shaders) {
-        HdBufferArrayRangeSharedPtr shaderBar_ = (*shader)->GetShaderData();
+    for (HdStShaderCodeSharedPtr const & shader : shaders) {
+        HdBufferArrayRangeSharedPtr shaderBar_ = shader->GetShaderData();
         shaderBar = std::static_pointer_cast<HdStBufferArrayRange>(shaderBar_);
         if (shaderBar) {
             binder.BindBuffer(HdTokens->materialParams, 
@@ -1291,8 +1271,8 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
         binder.UnbindBufferArray(instanceIndexBar);
     }
 
-    TF_FOR_ALL(it, shaders) {
-        (*it)->UnbindResources(programId, binder, *renderPassState);
+    for (HdStShaderCodeSharedPtr const & shader : shaders) {
+        shader->UnbindResources(programId, binder, *renderPassState);
     }
     program.GetGeometricShader()->UnbindResources(programId, binder, *renderPassState);
 

@@ -43,7 +43,6 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/iterator.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -122,7 +121,7 @@ HdSt_ImmediateDrawBatch::PrepareDraw(
 }
 
 static int
-_GetElementOffset(HdStBufferArrayRangeSharedPtr const& range)
+_GetElementOffset(HdBufferArrayRangeSharedPtr const& range)
 {
     return range? range->GetElementOffset() : 0;
 }
@@ -169,8 +168,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
 
     bool hasOverrideShader = bool(renderPassState->GetOverrideShader());
 
-    TF_FOR_ALL(it, shaders) {
-        (*it)->BindResources(programId, binder, *renderPassState);
+    for (HdStShaderCodeSharedPtr const & shader : shaders) {
+        shader->BindResources(programId, binder, *renderPassState);
     }
 
     // Set up geometric shader states
@@ -180,12 +179,12 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
     geometricShader->BindResources(programId, binder, *renderPassState);
 
     size_t numItemsDrawn = 0;
-    TF_FOR_ALL(drawItemIt, _drawItemInstances) {
-        if(!(*drawItemIt)->IsVisible()) {
+    for (HdStDrawItemInstance const * drawItemInstance : _drawItemInstances) {
+        if(!drawItemInstance->IsVisible()) {
             continue;
         }
 
-        HdStDrawItem const * drawItem = (*drawItemIt)->GetDrawItem();
+        HdStDrawItem const * drawItem = drawItemInstance->GetDrawItem();
 
         ++numItemsDrawn;
 
@@ -488,8 +487,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
 
     HD_PERF_COUNTER_ADD(HdTokens->itemsDrawn, numItemsDrawn);
 
-    TF_FOR_ALL(it, shaders) {
-        (*it)->UnbindResources(programId, binder, *renderPassState);
+    for (HdStShaderCodeSharedPtr const & shader : shaders) {
+        shader->UnbindResources(programId, binder, *renderPassState);
     }
     geometricShader->UnbindResources(programId, binder, *renderPassState);
 
