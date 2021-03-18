@@ -1138,6 +1138,7 @@ typedef struct _REPARSE_DATA_BUFFER {
         } GenericReparseBuffer;
     };
 } REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
+#define SYMLINK_FLAG_RELATIVE 0x00000001
 
 std::string ArchReadLink(const char* path)
 {
@@ -1177,6 +1178,22 @@ std::string ArchReadLink(const char* path)
             std::wstring ws(reparsePath.get());
             string str(ws.begin(), ws.end());
 
+            // Symlinks can be absolute, or relative to the parent directory.
+            // Deal with the relative case here by prepending the parent path.
+            if ((reparse->SymbolicLinkReparseBuffer.Flags &
+                 SYMLINK_FLAG_RELATIVE) == SYMLINK_FLAG_RELATIVE)
+            {
+                string fullpath = ArchAbsPath(path);
+                string::size_type i = fullpath.find_last_of("/\\");
+                if (i != string::npos)
+                {
+                    // Grab the parent directory path, including the trailing
+                    // slash, and insert it ahead of the relative symlink path.
+                    string dirpath = fullpath.substr(0, i+1);
+                    str.insert(0, dirpath);
+                }
+            }
+
             return str;
         }
         else if (reparse->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT) {
@@ -1194,6 +1211,9 @@ std::string ArchReadLink(const char* path)
             // Convert wide-char to narrow char
             std::wstring ws(reparsePath.get());
             string str(ws.begin(), ws.end());
+
+            // Note that junctions do not support the relative path form
+            // like SYMLINKS do, so nothing more to do here.
 
             return str;
         }

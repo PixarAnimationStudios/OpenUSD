@@ -69,8 +69,9 @@ _ExpandSymlinks(const std::string& path)
         std::string prefix = path.substr(0, i);
         // If the prefix is "X:", this will access the "current" directory on
         // drive X, when what we really want is the root of drive X, so append
-        // a backslash.
-        if (prefix.at(i-1) == ':') {
+        // a backslash. Also check that i>0. An i==0 value can happen if the
+        // passed in path is a non-canonical Windows path such as "/tmp/foo".
+        if (i > 0 && prefix.at(i-1) == ':') {
             prefix.push_back('\\');
         }
         if (TfIsLink(prefix)) {
