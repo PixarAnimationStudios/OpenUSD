@@ -26,16 +26,16 @@
 import sys
 import unittest
 
-from pxr.Usdviewq.constantGroup import ConstantGroup
+from pxr.UsdUtils.constantsGroup import ConstantsGroup
 
-class TestConstantGroup(unittest.TestCase):
+class TestConstantsGroup(unittest.TestCase):
 
     def test_Basic(self):
-        """The simplest way to use a ConstantGroup is to add some constants and
+        """The simplest way to use a ConstantsGroup is to add some constants and
         use them directly as needed.
         """
 
-        class Test(ConstantGroup):
+        class Test(ConstantsGroup):
             A = 1
             B = 2
             C = 3
@@ -48,16 +48,16 @@ class TestConstantGroup(unittest.TestCase):
         self.assertEqual(Test.C, Test.D)
 
     def test_Contains(self):
-        """You can easily check if a value exists in a ConstantGroup using the
+        """You can easily check if a value exists in a ConstantsGroup using the
         `in` and `not in` keywords.
         """
 
-        class Test(ConstantGroup):
+        class Test(ConstantsGroup):
             A = 1
             B = 2
             C = 3
 
-        # You can use values pulled directly from the ConstantGroup.
+        # You can use values pulled directly from the ConstantsGroup.
         self.assertTrue(Test.A in Test)
         self.assertTrue(Test.B in Test)
         self.assertTrue(Test.C in Test)
@@ -71,9 +71,9 @@ class TestConstantGroup(unittest.TestCase):
         self.assertTrue(4 not in Test)
 
     def test_Iterate(self):
-        """You can easily iterate over all constants in a ConstantGroup."""
+        """You can easily iterate over all constants in a ConstantsGroup."""
 
-        class Test(ConstantGroup):
+        class Test(ConstantsGroup):
             A = 1
             B = 2
             C = 3
@@ -90,11 +90,11 @@ class TestConstantGroup(unittest.TestCase):
         self.assertListEqual(constants, [Test.A, Test.B, Test.C])
 
     def test_Unmodifiable(self):
-        """Nothing can be added, modified, or deleted in a ConstantGroup once it
+        """Nothing can be added, modified, or deleted in a ConstantsGroup once it
         has been created.
         """
 
-        class Test(ConstantGroup):
+        class Test(ConstantsGroup):
             A = 1
             B = 2
             C = 3
@@ -112,12 +112,12 @@ class TestConstantGroup(unittest.TestCase):
             del Test.A
 
     def test_CreateObject(self):
-        """ConstantGroup objects cannot be created."""
+        """ConstantsGroup objects cannot be created."""
 
         with self.assertRaises(TypeError):
-            obj = ConstantGroup()
+            obj = ConstantsGroup()
 
-        class Test(ConstantGroup):
+        class Test(ConstantsGroup):
             A = 1
             B = 2
             C = 3
@@ -127,11 +127,11 @@ class TestConstantGroup(unittest.TestCase):
 
     def test_Functions(self):
         """Functions and lambdas are ususally converted to methods (which expect
-        a `self` parameter) in classes. This doesn't happen with ConstantGroups
+        a `self` parameter) in classes. This doesn't happen with ConstantsGroups
         except with classmethods.
         """
 
-        class Test(ConstantGroup):
+        class Test(ConstantsGroup):
 
             def A():
                 return 1

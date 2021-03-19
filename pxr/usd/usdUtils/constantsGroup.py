@@ -28,17 +28,17 @@ module, but enum is not available in Python 2's standard library.
 import sys
 import types
 
-class _MetaConstantGroup(type):
-    """A meta-class which handles the creation and behavior of ConstantGroups.
+class _MetaConstantsGroup(type):
+    """A meta-class which handles the creation and behavior of ConstantsGroups.
     """
 
     def __new__(metacls, cls, bases, classdict):
-        """Discover constants and create a new ConstantGroup class."""
+        """Discover constants and create a new ConstantsGroup class."""
 
-        # If this is just the base ConstantGroup class, simply create it and do
+        # If this is just the base ConstantsGroup class, simply create it and do
         # not search for constants.
-        if cls == "ConstantGroup":
-            return super(_MetaConstantGroup, metacls).__new__(metacls, cls, bases, classdict)
+        if cls == "ConstantsGroup":
+            return super(_MetaConstantsGroup, metacls).__new__(metacls, cls, bases, classdict)
 
         # Search through the class-level properties and convert them into
         # constants.
@@ -61,8 +61,8 @@ class _MetaConstantGroup(type):
         # All constants discovered, now create the `_all` property.
         classdict["_all"] = tuple(allConstants)
 
-        # Finally, create the new ConstantGroup class.
-        return super(_MetaConstantGroup, metacls).__new__(metacls, cls, bases, classdict)
+        # Finally, create the new ConstantsGroup class.
+        return super(_MetaConstantsGroup, metacls).__new__(metacls, cls, bases, classdict)
 
     def __setattr__(cls, name, value):
         """Prevent modification of properties after a group is created."""
@@ -84,31 +84,31 @@ class _MetaConstantGroup(type):
         """Iterate over each constant in the group."""
         return iter(self._all)
 
-# We want to define a ConstantGroup class that uses _MetaConstantGroup
+# We want to define a ConstantsGroup class that uses _MetaConstantsGroup
 # as its metaclass. The syntax for doing so in Python 3 is not backwards
 # compatible for Python 2, so we cannot just conditionally define one
 # form or the other because that will cause syntax errors when compiling
 # this file. To avoid this we add a layer of indirection through exec().
 if sys.version_info.major >= 3:
-    defineConstantGroup = '''
-class ConstantGroup(object, metaclass=_MetaConstantGroup):
+    defineConstantsGroup = '''
+class ConstantsGroup(object, metaclass=_MetaConstantsGroup):
     """The base constant group class, intended to be inherited by actual groups
     of constants.
     """
 
     def __new__(cls, *args, **kwargs):
-        raise TypeError("ConstantGroup objects cannot be created.")
+        raise TypeError("ConstantsGroup objects cannot be created.")
 '''
 else:
-    defineConstantGroup = '''
-class ConstantGroup(object):
+    defineConstantsGroup = '''
+class ConstantsGroup(object):
     """The base constant group class, intended to be inherited by actual groups
     of constants.
     """
-    __metaclass__ = _MetaConstantGroup
+    __metaclass__ = _MetaConstantsGroup
 
     def __new__(cls, *args, **kwargs):
-        raise TypeError("ConstantGroup objects cannot be created.")
+        raise TypeError("ConstantsGroup objects cannot be created.")
 '''
 
-exec(defineConstantGroup)
+exec(defineConstantsGroup)

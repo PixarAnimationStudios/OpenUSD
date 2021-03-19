@@ -55,6 +55,7 @@ pxr_library(usdUtils
     PYMODULE_FILES
         __init__.py
         complianceChecker.py
+        constantsGroup.py
 
     DOXYGEN_FILES
         overview.dox
@@ -64,6 +65,7 @@ pxr_test_scripts(
     testenv/testUsdUtilsAuthoring.py
     testenv/testUsdUtilsCoalescingDiagnosticDelegate.py
     testenv/testUsdUtilsConditionalAbortDiagnosticDelegate.py
+    testenv/testUsdUtilsConstantsGroup.py
     testenv/testUsdUtilsCreateNewUsdzPackage.py
     testenv/testUsdUtilsDependencies.py
     testenv/testUsdUtilsDependencyExtractor.py
@@ -111,6 +113,12 @@ pxr_build_test(testUsdUtilsTimeCodeRangeCpp
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsAuthoring
     DEST testUsdUtilsAuthoring
+)
+
+pxr_register_test(testUsdUtilsConstantsGroup
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsConstantsGroup"
+    EXPECTED_RETURN_CODE 0
 )
 
 pxr_install_test_dir(
