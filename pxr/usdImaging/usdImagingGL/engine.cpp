@@ -1225,7 +1225,9 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
 
     GLF_GROUP_FUNCTION();
 
+    GLint restoreReadFbo = 0;
     GLint restoreDrawFbo = 0;
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &restoreReadFbo);
     glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &restoreDrawFbo);
     if (_userFramebuffer.IsEmpty()) {
         // If user supplied no framebuffer, use the currently bound
@@ -1287,6 +1289,7 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
         glPopAttrib(); // GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT
     }
 
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, restoreReadFbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFbo);
 }
 
