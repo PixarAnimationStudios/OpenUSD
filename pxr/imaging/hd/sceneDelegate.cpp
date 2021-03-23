@@ -177,6 +177,18 @@ HdSceneDelegate::Get(SdfPath const& id, TfToken const& key)
 }
 
 /*virtual*/
+VtValue
+HdSceneDelegate::GetIndexedPrimvarValue(SdfPath const& id, TfToken const& key, 
+                                        VtIntArray *outIndices) 
+{
+    // We return an empty value here rather than returning the result of 
+    // Get(id, key) since that would leave callers of this method with an 
+    // empty outIndices which is semantically different than a non-indexed 
+    // primvar.
+    return VtValue();
+}
+
+/*virtual*/
 size_t
 HdSceneDelegate::SamplePrimvar(SdfPath const& id, 
                                TfToken const& key,

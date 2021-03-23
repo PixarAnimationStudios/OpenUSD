@@ -407,7 +407,7 @@ UsdImagingPrimAdapter::SamplePrimvar(
     // instead synthesize them -- ex: Cube, Cylinder, Capsule.
     if (maxNumSamples > 0) {
         sampleTimes[0] = 0;
-        sampleValues[0] = Get(usdPrim, cachePath, key, time);
+        sampleValues[0] = Get(usdPrim, cachePath, key, time, nullptr);
         return sampleValues[0].IsEmpty() ? 0 : 1;
     }
 
@@ -624,9 +624,10 @@ UsdImagingPrimAdapter::_MergePrimvar(
     HdPrimvarDescriptorVector* vec,
     TfToken const& name,
     HdInterpolation interp,
-    TfToken const& role) const
+    TfToken const& role, 
+    bool indexed) const
 {
-    HdPrimvarDescriptor primvar(name, interp, role);
+    HdPrimvarDescriptor primvar(name, interp, role, indexed);
     HdPrimvarDescriptorVector::iterator it =
         std::find(vec->begin(), vec->end(), primvar);
     if (it == vec->end())
@@ -710,7 +711,8 @@ UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
                  gprim.GetPath().GetText(),
                  primvarName.GetText(),
                  TfEnum::GetName(interp).c_str());
-        _MergePrimvar(primvarDescs, primvarName, interp, role);
+        _MergePrimvar(primvarDescs, primvarName, interp, role, 
+                      primvar.IsIndexed());
 
     } else {
         TF_DEBUG(USDIMAGING_SHADERS)
@@ -1123,7 +1125,8 @@ UsdImagingPrimAdapter::Get(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     TfToken const &key,
-    UsdTimeCode time) const
+    UsdTimeCode time,
+    VtIntArray *outIndices) const
 {
     UsdAttribute const &attr = prim.GetAttribute(key);
     VtValue value;

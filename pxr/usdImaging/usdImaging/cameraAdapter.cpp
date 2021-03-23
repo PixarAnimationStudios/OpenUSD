@@ -235,7 +235,8 @@ VtValue
 UsdImagingCameraAdapter::Get(UsdPrim const& prim,
                              SdfPath const& cachePath,
                              TfToken const& key,
-                             UsdTimeCode time) const
+                             UsdTimeCode time,
+                             VtIntArray *outIndices) const
 {
     UsdGeomCamera cam(prim);
     if (!TF_VERIFY(cam)) {

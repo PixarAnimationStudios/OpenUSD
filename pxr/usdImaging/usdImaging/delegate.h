@@ -327,6 +327,10 @@ public:
     USDIMAGING_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key) override;
     USDIMAGING_API
+    virtual VtValue GetIndexedPrimvarValue(SdfPath const& id, 
+                                           TfToken const& key, 
+                                           VtIntArray *outIndices) override;
+    USDIMAGING_API
     HdIdVectorSharedPtr
     virtual GetCoordSysBindings(SdfPath const& id) override;
     USDIMAGING_API
@@ -510,6 +514,9 @@ public:
     bool IsInInvisedPaths(const SdfPath &usdPath) const;
 
 private:
+    // Internal Get 
+    VtValue _Get(SdfPath const& id, TfToken const& key, VtIntArray *outIndices);
+
     // Internal friend class.
     class _Worker;
     friend class UsdImagingIndexProxy;

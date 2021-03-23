@@ -137,23 +137,29 @@ public:
     virtual VtValue GetPoints(UsdPrim const& prim,
                               UsdTimeCode time) const;
 
-    /// Returns color and Usd interpolation token for a given
-    /// prim, taking into account surface shader colors and explicitly
-    /// authored color on the prim.
+    /// Returns color, Usd interpolation token, and optionally color indices for
+    /// a given prim, taking into account surface shader colors and explicitly 
+    /// authored color on the prim. If indices is not nullptr and the color 
+    /// value has indices, color will be set to the unflattened color value and 
+    /// indices set to the color value's indices.
     USDIMAGING_API
     static bool GetColor(UsdPrim const& prim, 
                          UsdTimeCode time,
                          TfToken *interpolation,
-                         VtValue *color);
+                         VtValue *color,
+                         VtIntArray *indices);
 
-    /// Returns opacity and Usd interpolation token for a given
-    /// prim, taking into account surface shader opacity and explicitly
-    /// authored opacity on the prim.
+    /// Returns opacity, Usd interpolation token, and optionally opacity indices
+    /// for a given prim, taking into account surface shader opacity and 
+    /// explicitly authored opacity on the prim. If indices is not nullptr and 
+    /// the opacity value has indices, opacity will be set to the unflattened 
+    /// opacity value and indices set to the opacity value's indices.
     USDIMAGING_API
     static bool GetOpacity(UsdPrim const& prim, 
                            UsdTimeCode time,
                            TfToken *interpolation,
-                           VtValue *opacity);
+                           VtValue *opacity,
+                           VtIntArray *indices);
 
     // Helper function: add a given type of rprim, potentially with instancer
     // name mangling, and add any bound shader.
@@ -188,12 +194,15 @@ public:
                           SdfPath const& cachePath, 
                           UsdTimeCode time) const override;
     /// Gets the value of the parameter named key for the given prim (which
-    /// has the given cache path) and given time.
+    /// has the given cache path) and given time. If outIndices is not nullptr 
+    /// and the value has indices, it will return the unflattened value and set 
+    /// outIndices to the value's associated indices.
     USDIMAGING_API
     VtValue Get(UsdPrim const& prim,
                 SdfPath const& cachePath,
                 TfToken const& key,
-                UsdTimeCode time) const override;
+                UsdTimeCode time,
+                VtIntArray *outIndices) const override;
 
 protected:
 

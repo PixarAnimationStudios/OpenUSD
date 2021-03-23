@@ -143,7 +143,8 @@ VtValue
 UsdImagingFieldAdapter::Get(UsdPrim const& prim,
                             SdfPath const& cachePath,
                             TfToken const& key,
-                            UsdTimeCode time) const
+                            UsdTimeCode time,
+                            VtIntArray *outIndices) const
 {
     if (key == _tokens->textureMemory) {
         UsdAttribute const &attr = prim.GetAttribute(key);

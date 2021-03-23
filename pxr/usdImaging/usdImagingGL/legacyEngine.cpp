@@ -815,7 +815,7 @@ UsdImagingGLLegacyEngine::_ProcessGprimColor(const UsdGeomGprim *gprimSchema,
     // Get interpolation and color using UsdShadeMaterial'
     VtValue colorAsVt;
     if (UsdImagingGprimAdapter::GetColor(prim, 
-                _params.frame, interpolation, &colorAsVt)) {
+                _params.frame, interpolation, &colorAsVt, nullptr)) {
         VtVec3fArray temp = colorAsVt.Get<VtVec3fArray>();
         color->push_back(temp[0]);
     } else {

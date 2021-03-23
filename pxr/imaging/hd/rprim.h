@@ -228,6 +228,10 @@ public:
     inline VtValue
     GetPrimvar(HdSceneDelegate* delegate, const TfToken &name) const;
 
+    inline VtValue
+    GetIndexedPrimvar(HdSceneDelegate* delegate, const TfToken &name, 
+                      VtIntArray *indices) const;
+
     HD_API
     VtMatrix4dArray GetInstancerTransforms(HdSceneDelegate* delegate);
 
@@ -378,6 +382,13 @@ inline VtValue
 HdRprim::GetPrimvar(HdSceneDelegate* delegate, const TfToken &name) const
 {
     return delegate->Get(GetId(), name);
+}
+
+inline VtValue
+HdRprim::GetIndexedPrimvar(HdSceneDelegate* delegate, const TfToken &name, 
+                           VtIntArray *indices) const
+{
+    return delegate->GetIndexedPrimvarValue(GetId(), name, indices);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

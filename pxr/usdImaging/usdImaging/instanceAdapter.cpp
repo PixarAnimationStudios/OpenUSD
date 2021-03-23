@@ -2000,7 +2000,8 @@ VtValue
 UsdImagingInstanceAdapter::Get(UsdPrim const& usdPrim, 
                                SdfPath const& cachePath,
                                TfToken const &key,
-                               UsdTimeCode time) const
+                               UsdTimeCode time,
+                               VtIntArray *outIndices) const
 {
     TRACE_FUNCTION();
 
@@ -2013,7 +2014,7 @@ UsdImagingInstanceAdapter::Get(UsdPrim const& usdPrim,
             return VtValue();
         }
         return proto.adapter->Get(
-                _GetPrim(proto.path), cachePath, key, time);
+                _GetPrim(proto.path), cachePath, key, time, outIndices);
     } else if (_InstancerData const* instrData =
         TfMapLookupPtr(_instancerData, usdPrim.GetPath())) {
 
@@ -2034,7 +2035,7 @@ UsdImagingInstanceAdapter::Get(UsdPrim const& usdPrim,
         }
             
     }
-    return BaseAdapter::Get(usdPrim, cachePath, key, time);
+    return BaseAdapter::Get(usdPrim, cachePath, key, time, outIndices);
 }
 
 void

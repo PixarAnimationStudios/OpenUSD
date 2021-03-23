@@ -2361,6 +2361,22 @@ UsdImagingDelegate::GetVisible(SdfPath const& id)
 VtValue 
 UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
 {
+    return _Get(id, key, nullptr);
+}
+
+/*virtual*/ 
+VtValue 
+UsdImagingDelegate::GetIndexedPrimvarValue(SdfPath const& id, 
+                                           TfToken const& key, 
+                                           VtIntArray *outIndices)
+{
+    return _Get(id, key, outIndices);
+}
+
+VtValue 
+UsdImagingDelegate::_Get(SdfPath const& id, TfToken const& key, 
+                         VtIntArray *outIndices)
+{
     HD_TRACE_FUNCTION();
 
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
@@ -2375,7 +2391,7 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
     if (!TF_VERIFY(prim)) {
         return value;
     }
-    value = primInfo->adapter->Get(prim, cachePath, key, _time);
+    value = primInfo->adapter->Get(prim, cachePath, key, _time, outIndices);
 
     // We generally don't want Vec2d arrays, convert to vec2f.
     if (value.IsHolding<VtVec2dArray>()) {
@@ -2736,7 +2752,8 @@ UsdImagingDelegate::GetCameraParamValue(SdfPath const &id,
             primInfo->usdPrim, 
             cachePath, 
             paramName,
-            _time);
+            _time,
+            nullptr);
     }
     return VtValue();
 }

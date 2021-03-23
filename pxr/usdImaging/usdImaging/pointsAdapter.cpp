@@ -253,7 +253,8 @@ VtValue
 UsdImagingPointsAdapter::Get(UsdPrim const& prim,
                              SdfPath const& cachePath,
                              TfToken const& key,
-                             UsdTimeCode time) const
+                             UsdTimeCode time,
+                             VtIntArray *outIndices) const
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -269,10 +270,15 @@ UsdImagingPointsAdapter::Get(UsdPrim const& prim,
         }
 
         VtValue value;
-
-        if (pv && pv.ComputeFlattened(&value, time)) {
+        
+        if (outIndices) {
+            if (pv && pv.Get(&value, time)) {
+                pv.GetIndices(outIndices, time);
+                return value;
+            }
+        } else if (pv && pv.ComputeFlattened(&value, time)) {
             return value;
-        } 
+        }
 
         // If there's no "primvars:normals",
         // fall back to UsdGeomPoints's "normals" attribute. 
@@ -295,9 +301,14 @@ UsdImagingPointsAdapter::Get(UsdPrim const& prim,
 
         VtValue value;
 
-        if (pv && pv.ComputeFlattened(&value, time)) {
+        if (outIndices) {
+            if (pv && pv.Get(&value, time)) {
+                pv.GetIndices(outIndices, time);
+                return value;
+            }
+        } else if (pv && pv.ComputeFlattened(&value, time)) {
             return value;
-        } 
+        }
 
         // Fallback to UsdGeomPoints' "normals" attribute.
         UsdGeomPoints points(prim);
@@ -308,7 +319,7 @@ UsdImagingPointsAdapter::Get(UsdPrim const& prim,
         }
     }
 
-    return BaseAdapter::Get(prim, cachePath, key, time);
+    return BaseAdapter::Get(prim, cachePath, key, time, outIndices);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

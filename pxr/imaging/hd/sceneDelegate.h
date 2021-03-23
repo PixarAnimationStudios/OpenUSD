@@ -152,12 +152,16 @@ struct HdPrimvarDescriptor {
     /// for example, to distinguish color/vector/point/normal.
     /// See HdPrimvarRoleTokens; default is HdPrimvarRoleTokens->none.
     TfToken role;
+    /// Optional bool, true if primvar is indexed. This value should be checked
+    /// before calling "GetIndexedPrimvarValue"
+    bool indexed;
 
     HdPrimvarDescriptor() {}
     HdPrimvarDescriptor(TfToken const& name_,
                         HdInterpolation interp_,
-                        TfToken const& role_=HdPrimvarRoleTokens->none)
-        : name(name_), interpolation(interp_), role(role_)
+                        TfToken const& role_=HdPrimvarRoleTokens->none,
+                        bool indexed_=false)
+        : name(name_), interpolation(interp_), role(role_), indexed(indexed_)
     { }
     bool operator==(HdPrimvarDescriptor const& rhs) const {
         return name == rhs.name && role == rhs.role
@@ -192,7 +196,7 @@ struct HdExtComputationPrimvarDescriptor : public HdPrimvarDescriptor {
         SdfPath const & sourceComputationId_,
         TfToken const & sourceComputationOutputName_,
         HdTupleType const & valueType_)
-        : HdPrimvarDescriptor(name_, interp_, role_)
+        : HdPrimvarDescriptor(name_, interp_, role_, false)
         , sourceComputationId(sourceComputationId_)
         , sourceComputationOutputName(sourceComputationOutputName_)
         , valueType(valueType_)
@@ -394,6 +398,14 @@ public:
     /// Returns a named value.
     HD_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key);
+
+    /// Returns a named primvar value. If outIndices is not nullptr and the 
+    /// primvar has indices, it will return the unflattened primvar and set 
+    /// outIndices to the primvar's associated indices.
+    HD_API
+    virtual VtValue GetIndexedPrimvarValue(SdfPath const& id, 
+                                           TfToken const& key, 
+                                           VtIntArray *outIndices);
 
     /// Returns the authored repr (if any) for the given prim.
     HD_API

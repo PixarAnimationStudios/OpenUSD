@@ -738,7 +738,8 @@ VtValue
 UsdSkelImagingSkeletonAdapter::Get(UsdPrim const& prim,
                                    SdfPath const& cachePath,
                                    TfToken const& key,
-                                   UsdTimeCode time) const
+                                   UsdTimeCode time,
+                                   VtIntArray *outIndices) const
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -770,10 +771,10 @@ UsdSkelImagingSkeletonAdapter::Get(UsdPrim const& prim,
         // Since The SkeletonAdapter hijacks skinned prims (see SkelRootAdapter)
         // make sure to delegate to the actual adapter registered for the prim.
         UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(skinnedPrim);
-        return adapter->Get(skinnedPrim, skinnedPrimPath, key, time);
+        return adapter->Get(skinnedPrim, skinnedPrimPath, key, time, outIndices);
     }
 
-    return BaseAdapter::Get(prim, cachePath, key, time);
+    return BaseAdapter::Get(prim, cachePath, key, time, outIndices);
 }
 
 /*virtual*/

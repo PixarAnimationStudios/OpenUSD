@@ -446,12 +446,15 @@ public:
                                    GfMatrix4d *sampleValues);
 
     /// Gets the value of the parameter named key for the given prim (which
-    /// has the given cache path) and given time.
+    /// has the given cache path) and given time. If outIndices is not nullptr 
+    /// and the value has indices, it will return the unflattened value and set 
+    /// outIndices to the value's associated indices.
     USDIMAGING_API
     virtual VtValue Get(UsdPrim const& prim,
                         SdfPath const& cachePath,
                         TfToken const& key,
-                        UsdTimeCode time) const;
+                        UsdTimeCode time, 
+                        VtIntArray *outIndices) const;
 
     /// Gets the cullstyle of a specific path in the scene graph.
     USDIMAGING_API
@@ -684,13 +687,14 @@ protected:
                              HdDirtyBits* dirtyFlags) const;
 
     // Convenience method for adding or updating a primvar descriptor.
-    // Role defaults to empty token (none).
+    // Role defaults to empty token (none). Indexed defaults to false.
     USDIMAGING_API
     void _MergePrimvar(
         HdPrimvarDescriptorVector* vec,
         TfToken const& name,
         HdInterpolation interp,
-        TfToken const& role = TfToken()) const;
+        TfToken const& role = TfToken(), 
+        bool indexed = false) const;
 
     // Convenience method for removing a primvar descriptor.
     USDIMAGING_API
