@@ -121,9 +121,10 @@ struct _AttributeNames {
 static const _AttributeNames names;
 
 TF_DEFINE_PRIVATE_TOKENS(
-    tokens,
+    _tokens,
 
     ((light, "light"))
+    ((mtlxRenderContext, "mtlx"))
 );
 
 // Returns the name of an element.
@@ -1432,23 +1433,23 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
     // Connect the shader's outputs to the material.
     if (auto output = usdShader.GetOutput(UsdShadeTokens->surface)) {
         UsdShadeConnectableAPI::ConnectToSource(
-            _usdMaterial.CreateSurfaceOutput(),
+            _usdMaterial.CreateSurfaceOutput(_tokens->mtlxRenderContext),
             output);
     }
     if (auto output = usdShader.GetOutput(UsdShadeTokens->displacement)) {
         UsdShadeConnectableAPI::ConnectToSource(
-            _usdMaterial.CreateDisplacementOutput(),
+            _usdMaterial.CreateDisplacementOutput(_tokens->mtlxRenderContext),
             output);
     }
     if (auto output = usdShader.GetOutput(UsdShadeTokens->volume)) {
         UsdShadeConnectableAPI::ConnectToSource(
-            _usdMaterial.CreateVolumeOutput(),
+            _usdMaterial.CreateVolumeOutput(_tokens->mtlxRenderContext),
             output);
     }
-    if (auto output = usdShader.GetOutput(tokens->light)) {
+    if (auto output = usdShader.GetOutput(_tokens->light)) {
         // USD doesn't support this type.
         UsdShadeConnectableAPI::ConnectToSource(
-            _usdMaterial.CreateOutput(tokens->light, SdfValueTypeNames->Token),
+            _usdMaterial.CreateOutput(_tokens->light, SdfValueTypeNames->Token),
             output);
     }
 
@@ -1458,7 +1459,7 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
         if (name != UsdShadeTokens->surface &&
             name != UsdShadeTokens->displacement &&
             name != UsdShadeTokens->volume &&
-            name != tokens->light) {
+            name != _tokens->light) {
             UsdShadeConnectableAPI::ConnectToSource(
                 _usdMaterial.CreateOutput(name, SdfValueTypeNames->Token),
                 output);
@@ -1816,7 +1817,7 @@ _Context::_AddShaderOutput(
     }
     else if (context == "light" || type == mx::LIGHT_SHADER_TYPE_STRING) {
         // USD doesn't support this.
-        return connectable.CreateOutput(tokens->light,
+        return connectable.CreateOutput(_tokens->light,
                                         SdfValueTypeNames->Token);
     }
     else if (!context.empty()) {

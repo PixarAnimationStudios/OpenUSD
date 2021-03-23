@@ -20,8 +20,8 @@ def "MaterialX"
             color3f inputs:otherColor3
             color3f inputs:specColor
             float inputs:specRoughness
-            token outputs:surface.connect = </MaterialX/Materials/Msimple/shader1.outputs:surface>
-            token outputs:volume.connect = </MaterialX/Materials/Msimple/shader2.outputs:volume>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/Msimple/shader1.outputs:surface>
+            token outputs:mtlx:volume.connect = </MaterialX/Materials/Msimple/shader2.outputs:volume>
 
             def Shader "shader1" (
                 prepend references = </MaterialX/Shaders/shader1>
@@ -85,7 +85,7 @@ def "MaterialX"
             color3f inputs:otherColor3
             color3f inputs:specColor
             float inputs:specRoughness
-            token outputs:surface.connect = </MaterialX/Materials/Msimple2/shader1.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/Msimple2/shader1.outputs:surface>
 
             def Shader "shader1" (
                 prepend references = </MaterialX/Shaders/shader1>
@@ -186,7 +186,7 @@ def "MaterialX"
 
         def Material "m_vn"
         {
-            token outputs:surface.connect = </MaterialX/Materials/m_vn/nd_vn_2.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn/nd_vn_2.outputs:surface>
 
             def Shader "nd_vn_2" (
                 prepend references = </MaterialX/Shaders/nd_vn_2>
@@ -197,7 +197,7 @@ def "MaterialX"
 
         def Material "m_vn_1_0"
         {
-            token outputs:surface.connect = </MaterialX/Materials/m_vn_1_0/nd_vn_1_0.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_1_0/nd_vn_1_0.outputs:surface>
 
             def Shader "nd_vn_1_0" (
                 prepend references = </MaterialX/Shaders/nd_vn_1_0>
@@ -208,7 +208,7 @@ def "MaterialX"
 
         def Material "m_vn_nd_1_0"
         {
-            token outputs:surface.connect = </MaterialX/Materials/m_vn_nd_1_0/nd_vn_1_0.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_nd_1_0/nd_vn_1_0.outputs:surface>
 
             def Shader "nd_vn_1_0" (
                 prepend references = </MaterialX/Shaders/nd_vn_1_0>
@@ -219,7 +219,7 @@ def "MaterialX"
 
         def Material "m_vn_2_0"
         {
-            token outputs:surface.connect = </MaterialX/Materials/m_vn_2_0/nd_vn_2.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_2_0/nd_vn_2.outputs:surface>
 
             def Shader "nd_vn_2" (
                 prepend references = </MaterialX/Shaders/nd_vn_2>
@@ -230,7 +230,7 @@ def "MaterialX"
 
         def Material "m_vn_2_1"
         {
-            token outputs:surface.connect = </MaterialX/Materials/m_vn_2_1/nd_vn_2_1.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_2_1/nd_vn_2_1.outputs:surface>
 
             def Shader "nd_vn_2_1" (
                 prepend references = </MaterialX/Shaders/nd_vn_2_1>
@@ -241,7 +241,7 @@ def "MaterialX"
 
         def Material "m_vn_nd_2x"
         {
-            token outputs:surface.connect = </MaterialX/Materials/m_vn_nd_2x/nd_vn_2.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_nd_2x/nd_vn_2.outputs:surface>
 
             def Shader "nd_vn_2" (
                 prepend references = </MaterialX/Shaders/nd_vn_2>
