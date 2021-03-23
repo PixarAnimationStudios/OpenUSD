@@ -502,10 +502,10 @@ HdStRenderDelegate::GetShaderSourceTypes() const
     return {HioGlslfxTokens->glslfx};
 }
 
-TfToken 
-HdStRenderDelegate::GetMaterialNetworkSelector() const
+TfTokenVector
+HdStRenderDelegate::GetMaterialRenderContexts() const
 {
-    return HioGlslfxTokens->glslfx;
+    return {HioGlslfxTokens->glslfx};
 }
 
 Hgi*

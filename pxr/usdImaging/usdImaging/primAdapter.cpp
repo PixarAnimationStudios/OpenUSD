@@ -599,11 +599,11 @@ UsdImagingPrimAdapter::_GetMaterialBindingPurpose() const
         GetMaterialBindingPurpose();
 }
 
-TfToken
-UsdImagingPrimAdapter::_GetMaterialNetworkSelector() const
+TfTokenVector
+UsdImagingPrimAdapter::_GetMaterialRenderContexts() const
 {
     return _delegate->GetRenderIndex().GetRenderDelegate()->
-        GetMaterialNetworkSelector();
+        GetMaterialRenderContexts();
 }
 
 TfTokenVector 

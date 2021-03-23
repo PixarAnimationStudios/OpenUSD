@@ -646,9 +646,9 @@ protected:
     USDIMAGING_API
     TfToken _GetMaterialBindingPurpose() const;
 
-    // Returns the material context from the renderer delegate.
+    // Returns the material contexts from the renderer delegate.
     USDIMAGING_API
-    TfToken _GetMaterialNetworkSelector() const;
+    TfTokenVector _GetMaterialRenderContexts() const;
 
     // Returns the shader source type from the render delegate.
     USDIMAGING_API

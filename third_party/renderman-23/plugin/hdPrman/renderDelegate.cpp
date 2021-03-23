@@ -360,12 +360,21 @@ HdPrmanRenderDelegate::GetMaterialBindingPurpose() const
     return HdTokens->full;
 }
 
+#if HD_API_VERSION < 41
 TfToken
 HdPrmanRenderDelegate::GetMaterialNetworkSelector() const
 {
     static const TfToken ri("ri");
     return ri;
 }
+#else
+TfTokenVector
+HdPrmanRenderDelegate::GetMaterialRenderContexts() const
+{
+    static const TfToken ri("ri");
+    return {ri};
+}
+#endif
 
 TfTokenVector
 HdPrmanRenderDelegate::GetShaderSourceTypes() const
