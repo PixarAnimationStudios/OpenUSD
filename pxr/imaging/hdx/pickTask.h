@@ -223,17 +223,12 @@ private:
     void _InitIfNeeded(GfVec2i const& widthHeight);
     void _ConditionStencilWithGLCallback(
             HdxPickTaskContextParams::DepthMaskCallback maskCallback);
-    void _ConfigureSceneMaterials(
-            bool enableSceneMaterials, HdStRenderPassState *renderPassState);
 
     bool _UseOcclusionPass() const;
 
     // Create a shared render pass each for pickables and unpickables
     HdRenderPassSharedPtr _pickableRenderPass;
     HdRenderPassSharedPtr _occluderRenderPass;
-
-    // Override shader is used when scene materials are disabled
-    HdStShaderCodeSharedPtr _overrideShader;
 
     // Having separate render pass states allows us to use different
     // shader mixins if we choose to (we don't currently).

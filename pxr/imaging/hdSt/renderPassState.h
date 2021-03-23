@@ -115,11 +115,11 @@ public:
         return _renderPassShader;
     }
 
-    /// override shader
+    /// scene materials
     HDST_API
-    void SetOverrideShader(HdStShaderCodeSharedPtr const &overrideShader);
-    HdStShaderCodeSharedPtr const &GetOverrideShader() const {
-        return _overrideShader;
+    void SetUseSceneMaterials(bool state);
+    bool GetUseSceneMaterials() const {
+        return _useSceneMaterials;
     }
 
     /// returns shaders (lighting/renderpass)
@@ -154,12 +154,12 @@ private:
     HdStRenderPassShaderSharedPtr _renderPassShader;
     HdSt_FallbackLightingShaderSharedPtr _fallbackLightingShader;
     HdStLightingShaderSharedPtr _lightingShader;
-    HdStShaderCodeSharedPtr _overrideShader;
 
     HdBufferArrayRangeSharedPtr _renderPassStateBar;
     size_t _clipPlanesBufferSize;
     float _alphaThresholdCurrent;
     bool _resolveMultiSampleAov;
+    bool _useSceneMaterials;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

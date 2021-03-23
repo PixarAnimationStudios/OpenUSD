@@ -109,7 +109,7 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
         return;
     }
 
-    extendedState->SetOverrideShader(HdStShaderCodeSharedPtr());
+    extendedState->SetUseSceneMaterials(true);
 
     if (!oitBufferAccessor.AddOitBufferBindings(
             _oitTranslucentRenderPassShader)) {

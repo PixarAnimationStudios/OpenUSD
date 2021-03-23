@@ -120,14 +120,8 @@ public:
 
 
 private:
-    void _SetHdStRenderPassState(HdxShadowTaskParams const &params,
-        HdStRenderPassState *renderPassState);
-
     void _UpdateDirtyParams(HdStRenderPassStateSharedPtr &renderPassState, 
         HdxShadowTaskParams const &params);
-
-    static HdStShaderCodeSharedPtr _overrideShader;
-    static void _CreateOverrideShader();
 
     HdRenderPassSharedPtrVector _passes;
     HdStRenderPassStateSharedPtrVector _renderPassStates;

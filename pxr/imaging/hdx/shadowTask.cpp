@@ -32,10 +32,7 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 
 
-#include "pxr/imaging/hdSt/glConversions.h"
-#include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/light.h"
-#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
@@ -45,8 +42,6 @@
 #include "pxr/imaging/glf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-HdStShaderCodeSharedPtr HdxShadowTask::_overrideShader;
 
 bool
 _HasDrawItems(HdRenderPassSharedPtr pass)
@@ -320,36 +315,6 @@ HdxShadowTask::GetRenderTags() const
 }
 
 void
-HdxShadowTask::_CreateOverrideShader()
-{
-    static std::mutex shaderCreateLock;
-
-    if (!_overrideShader) {
-        std::lock_guard<std::mutex> lock(shaderCreateLock);
-        if (!_overrideShader) {
-            _overrideShader =
-                std::make_shared<HdStGLSLFXShader>(
-                    std::make_shared<HioGlslfx>(
-                        HdStPackageFallbackSurfaceShader()));
-        }
-    }
-}
-
-void
-HdxShadowTask::_SetHdStRenderPassState(HdxShadowTaskParams const &params,
-    HdStRenderPassState *renderPassState)
-{
-    if (params.enableSceneMaterials) {
-        renderPassState->SetOverrideShader(HdStShaderCodeSharedPtr());
-    } else {
-        if (!_overrideShader) {
-            _CreateOverrideShader();
-        }
-        renderPassState->SetOverrideShader(_overrideShader);
-    }
-}
-
-void
 HdxShadowTask::_UpdateDirtyParams(HdStRenderPassStateSharedPtr &renderPassState,
     HdxShadowTaskParams const &params)
 {
@@ -359,7 +324,7 @@ HdxShadowTask::_UpdateDirtyParams(HdStRenderPassStateSharedPtr &renderPassState,
 
     if (HdStRenderPassState* extendedState =
             dynamic_cast<HdStRenderPassState*>(renderPassState.get())) {
-        _SetHdStRenderPassState(params, extendedState);
+        extendedState->SetUseSceneMaterials(params.enableSceneMaterials);
     }
 }
 

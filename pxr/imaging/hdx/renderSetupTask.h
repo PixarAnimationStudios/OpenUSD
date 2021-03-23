@@ -113,11 +113,7 @@ private:
     GfVec4d _viewport;
     HdRenderPassAovBindingVector _aovBindings;
 
-    static HdStShaderCodeSharedPtr _overrideShader;
-
-    static void _CreateOverrideShader();
-
-    void _SetRenderpassAndOverrideShadersForStorm(
+    void _SetRenderpassShadersForStorm(
         HdxRenderTaskParams const& params,
         HdStRenderPassState *renderPassState);
 

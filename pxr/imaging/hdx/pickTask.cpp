@@ -36,12 +36,9 @@
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/types.h"
 
-#include "pxr/imaging/hdSt/glslfxShader.h"
-#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
-#include "pxr/imaging/hdSt/shaderCode.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/diagnostic.h"
@@ -170,22 +167,6 @@ HdxPickTask::_InitIfNeeded(GfVec2i const& size)
             //"depth", GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F);
 
         _drawTarget->Unbind();
-    }
-}
-
-void
-HdxPickTask::_ConfigureSceneMaterials(bool enableSceneMaterials,
-    HdStRenderPassState *renderPassState)
-{
-    if (enableSceneMaterials) {
-        renderPassState->SetOverrideShader(HdStShaderCodeSharedPtr());
-    } else {
-        if (!_overrideShader) {
-            _overrideShader = HdStShaderCodeSharedPtr(new HdStGLSLFXShader(
-                HioGlslfxSharedPtr(new HioGlslfx(
-                    HdStPackageFallbackSurfaceShader()))));
-        }
-        renderPassState->SetOverrideShader(_overrideShader);
     }
 }
 
@@ -322,7 +303,7 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
                 _contextParams.projectionMatrix,
                 viewport,
                 _contextParams.clipPlanes);
-            _ConfigureSceneMaterials(_params.enableSceneMaterials, extState);
+            extState->SetUseSceneMaterials(_params.enableSceneMaterials);
         }
     }
 
