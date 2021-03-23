@@ -27,7 +27,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiShaderFunctionTextureDesc::HgiShaderFunctionTextureDesc()
   : dimensions(2)
-  , type("float")
+  , format(HgiFormatInvalid)
 {
 }
 
@@ -49,7 +49,7 @@ bool operator==(
 {
     return lhs.nameInShader == rhs.nameInShader &&
            lhs.dimensions == rhs.dimensions &&
-           lhs.type == rhs.type;
+           lhs.format == rhs.format;
 }
 
 bool operator!=(
@@ -102,13 +102,13 @@ void
 HgiShaderFunctionAddTexture(
     HgiShaderFunctionDesc * const desc,
     const std::string &nameInShader,
-    const uint32_t dimensions,
-    const std::string &type)
+    const uint32_t dimensions /* = 2 */,
+    const HgiFormat &format /* = HgiFormatFloat32Vec4*/)
 {
     HgiShaderFunctionTextureDesc texDesc;
     texDesc.nameInShader = nameInShader;
     texDesc.dimensions = dimensions;
-    texDesc.type = type;
+    texDesc.format = format;
 
     desc->textures.push_back(std::move(texDesc));
 }

@@ -173,6 +173,7 @@ public:
         const std::string &identifier,
         const uint32_t layoutIndex,
         const uint32_t dimensions,
+        const HgiFormat format,
         const HgiShaderSectionAttributeVector &attributes,
         const std::string &defaultValue = std::string());
 
@@ -192,8 +193,12 @@ private:
     HgiGLTextureShaderSection & operator=(
         const HgiGLTextureShaderSection&) = delete;
     HgiGLTextureShaderSection(const HgiGLTextureShaderSection&) = delete;
+    
+    void _WriteSamplerType(std::ostream &ss) const;
+    void _WriteSampledDataType(std::ostream &ss) const;
 
     const uint32_t _dimensions;
+    const HgiFormat _format;
     static const std::string _storageQualifier;
 };
 

@@ -187,6 +187,7 @@ HgiGLTextureShaderSection::HgiGLTextureShaderSection(
     const std::string &identifier,
     const unsigned int layoutIndex,
     const unsigned int dimensions,
+    const HgiFormat format,
     const HgiShaderSectionAttributeVector &attributes,
     const std::string &defaultValue)
   : HgiGLShaderSection( identifier,
@@ -194,10 +195,35 @@ HgiGLTextureShaderSection::HgiGLTextureShaderSection(
                         _storageQualifier,
                         defaultValue)
   , _dimensions(dimensions)
+  , _format(format)
 {
 }
 
 HgiGLTextureShaderSection::~HgiGLTextureShaderSection() = default;
+
+static std::string
+_GetTextureTypePrefix(HgiFormat const &format)
+{
+    if (format >= HgiFormatUInt16 && format <= HgiFormatUInt16Vec4) {
+        return "u"; // e.g., usampler, uvec4
+    }
+    if (format >= HgiFormatInt32 && format <= HgiFormatInt32Vec4) {
+        return "i"; // e.g., isampler, ivec4
+    }
+    return ""; // e.g., sampler, vec4
+}
+
+void
+HgiGLTextureShaderSection::_WriteSamplerType(std::ostream &ss) const
+{
+    ss << _GetTextureTypePrefix(_format) << "sampler" << _dimensions << "D";
+}
+
+void
+HgiGLTextureShaderSection::_WriteSampledDataType(std::ostream &ss) const
+{
+    ss << _GetTextureTypePrefix(_format) << "vec4";
+}
 
 void
 HgiGLTextureShaderSection::WriteType(std::ostream &ss) const
@@ -205,7 +231,7 @@ HgiGLTextureShaderSection::WriteType(std::ostream &ss) const
     if(_dimensions < 1 || _dimensions > 3) {
         TF_CODING_ERROR("Invalid texture dimension");
     }
-    ss << "sampler" << _dimensions << "D";
+    _WriteSamplerType(ss); // e.g. sampler<N>D, isampler<N>D, usampler<N>D
 }
 
 bool
@@ -218,14 +244,17 @@ HgiGLTextureShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
 bool
 HgiGLTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
 {
-    //Write a function that let's you query the texture with HDGet_texName(uv)
+    //Write a function that let's you query the texture with HdGet_texName(uv)
     //Used to unify texture sampling across platforms that depend on samplers
     //and don't store textures in global space
-    ss << "vec4 HdGet_";
+    _WriteSampledDataType(ss); // e.g., vec4, ivec4, uvec4
+    ss << " HdGet_";
     WriteIdentifier(ss);
     ss << "(vec" << _dimensions
              << " uv) {\n";
-    ss << "    vec4 result = texture(";
+    ss << "    ";
+    _WriteSampledDataType(ss);
+    ss << " result = texture(";
     WriteIdentifier(ss);
     ss << ", uv);\n";
     ss << "    return result;\n";
@@ -236,10 +265,13 @@ HgiGLTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
         return true;
     }
     
-    ss << "vec4 HdTexelFetch_";
+    _WriteSampledDataType(ss);
+    ss << " HdTexelFetch_";
     WriteIdentifier(ss);
     ss << "(ivec2 coord) {\n";
-    ss << "    vec4 result = texelFetch(";
+    ss << "    ";
+    _WriteSampledDataType(ss);
+    ss << " result = texelFetch(";
     WriteIdentifier(ss);
     ss << ", coord, 0);\n";
     ss << "    return result;\n";

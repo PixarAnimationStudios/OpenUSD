@@ -66,6 +66,7 @@ HgiGLShaderGenerator::_WriteTextures(
                 textureDescription.nameInShader,
                 i,
                 textureDescription.dimensions,
+                textureDescription.format,
                 attrs));
     }
 }
