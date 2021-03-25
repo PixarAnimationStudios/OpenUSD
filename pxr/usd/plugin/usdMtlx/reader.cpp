@@ -47,20 +47,6 @@
 
 #include <algorithm>
 
-// If defined this macro causes default values on shader inputs
-// to get written to each USD shader definition. 
-// Note that this information is available in the corresponding
-// NdrProperty for each input on the NdrNode for the shader.
-// There are pros and cons for including the defaults:
-//   include:
-//     + Final value visible in naive clients
-//     - Redundant, could be out of sync
-//     - Must compare value to detect default
-//   exclude:
-//     + Fewer opinions
-//     + Default iff no opinion
-//     - Naive clients (e.g. usdview) don't know default
-#define ADD_NODE_INPUT_DEFAULTS_TO_USD
 
 namespace mx = MaterialX;
 
@@ -1358,14 +1344,6 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
         _SetCoreUIAttributes(usdShaderImpl.GetPrim(), mtlxShaderNode);
 
         for (auto& i: _GetInheritanceStack(mtlxNodeDef)) {
-#ifdef ADD_NODE_INPUT_DEFAULTS_TO_USD
-            // Copy the nodedef inputs.
-            for (auto mtlxValue: i->getInputs()) {
-                _CopyValue(_MakeInput(usdShaderImpl, mtlxValue), mtlxValue);
-            }
-            // We deliberately ignore tokens here.
-#endif
-
             // Create USD output(s) for each MaterialX output with
             // semantic="shader".
             for (auto mtlxOutput: i->getOutputs()) {
