@@ -3731,6 +3731,9 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
         _SpecsToCreate specsToCreate(*boost::get_pointer(_data));
         newData->VisitSpecs(&specsToCreate);
 
+        bool differentSchema = newDataSchema && newDataSchema != &GetSchema();
+        SdfPath unrecognizedSpecTypePaths[SdfNumSpecTypes];
+
         // Create specs top-down to provide optimal diffs.
         TF_FOR_ALL(i, specsToCreate.paths) {
             const SdfPath& path = *i;
@@ -3760,7 +3763,38 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
 
             SdfSpecType specType = newData->GetSpecType(path);
 
-            _PrimCreateSpec(path, specType, inert);
+            // If this is a cross-schema _SetData call, check to see if the spec
+            // type is known to this layer's schema.  If not, skip creating it
+            // and record it to issue an error later.
+            if (differentSchema && !GetSchema().GetSpecDefinition(specType)) {
+                // Record the path where this spec type was first encountered.
+                if (unrecognizedSpecTypePaths[specType].IsEmpty()) {
+                    unrecognizedSpecTypePaths[specType] = path;
+                }
+            }
+            else {
+                _PrimCreateSpec(path, specType, inert);
+            }
+        }
+        // If there were unrecognized specTypes, issue an error.
+        if (differentSchema) {
+            vector<string> specDescrs;
+            for (int i = 0; i != SdfSpecTypeUnknown; ++i) {
+                if (unrecognizedSpecTypePaths[i].IsEmpty()) {
+                    continue;
+                }
+                specDescrs.push_back(
+                    TfStringPrintf(
+                        "'%s' first seen at <%s>",
+                        TfStringify(static_cast<SdfSpecType>(i)).c_str(),
+                        unrecognizedSpecTypePaths[i].GetAsString().c_str()));
+            }
+            if (!specDescrs.empty()) {
+                TF_ERROR(SdfAuthoringErrorUnrecognizedSpecType,
+                         "Omitted unrecognized spec types setting data on "
+                         "@%s@: %s", GetIdentifier().c_str(),
+                         TfStringJoin(specDescrs, "; ").c_str());
+            }
         }
     }
 
@@ -3782,6 +3816,14 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
                 const SdfSchemaBase &thisLayerSchema = layer->GetSchema();
 
                 bool differentSchema = &thisLayerSchema != &newDataSchema;
+
+                // If this layer has a different schema from newDataSchema, then
+                // it's possible there is no corresponding spec for the path, in
+                // case the spec type is not supported.  Check for this, and
+                // skip field processing if so.
+                if (differentSchema && !layer->HasSpec(path)) {
+                    return true;
+                }
 
                 // Remove empty fields.
                 for (TfToken const &field: oldFields) {
