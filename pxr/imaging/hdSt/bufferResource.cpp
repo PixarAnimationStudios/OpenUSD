@@ -27,9 +27,6 @@
 
 #include "pxr/imaging/hdSt/bufferResource.h"
 
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/staticTokens.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -62,7 +59,8 @@ HdStBufferResource::SetAllocation(HgiBufferHandle const& id, size_t size)
     // https://www.opengl.org/registry/specs/NV/shader_buffer_load.txt
     if (id && caps.bindlessBufferEnabled) {
         glGetNamedBufferParameterui64vNV(
-            id->GetRawResource(), GL_BUFFER_GPU_ADDRESS_NV, (GLuint64EXT*)&_gpuAddr);
+            id->GetRawResource(), GL_BUFFER_GPU_ADDRESS_NV,
+            (GLuint64EXT*)&_gpuAddr);
     } else {
         _gpuAddr = 0;
     }
