@@ -99,6 +99,7 @@ pxr_library(hdSt
         ptexTextureObject
         renderBuffer
         renderDelegate
+        renderParam
         renderPass
         renderPassShader
         renderPassState
@@ -148,7 +149,6 @@ pxr_library(hdSt
         meshTopology 
         pointsShaderKey
         quadrangulate
-        renderParam
         resourceBinder
         shaderKey
         subdivision
