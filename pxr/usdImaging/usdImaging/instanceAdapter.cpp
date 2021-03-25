@@ -2596,6 +2596,11 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
             }
         }
 
+        // If we're not currently drawing this instance, there's nothing to do.
+        if (instanceIndices.empty()) {
+            return true;
+        }
+
         if (selectionCount == selectionPathVec.size()) {
             for (auto const& pair : instrData->primMap) {
                 UsdPrim prefixPrim =
