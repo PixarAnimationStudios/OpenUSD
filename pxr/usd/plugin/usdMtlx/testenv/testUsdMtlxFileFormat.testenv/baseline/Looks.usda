@@ -253,56 +253,24 @@ def "MaterialX"
         def Shader "shader1"
         {
             uniform token info:id = "shader1"
-            color3f inputs:diffColor = (0.18, 0.18, 0.18) (
-                colorSpace = "lin_rec709"
-            )
-            color3f inputs:otherColor1 = (0.1, 0.1, 0.1) (
-                colorSpace = "lin_rec709"
-            )
-            color3f inputs:otherColor2 = (0.1, 0.1, 0.1)
-            color3f inputs:otherColor3 = (0.1, 0.1, 0.1) (
-                colorSpace = "lin_rec709"
-            )
-            color3f inputs:specColor = (0.05, 0.05, 0.05) (
-                colorSpace = "lin_rec709"
-            )
-            float inputs:specRoughness = 0.25
             token outputs:surface
         }
 
         def Shader "shader2"
         {
             uniform token info:id = "shader2"
-            color3f inputs:diffColor = (0.2, 0.2, 0.2) (
-                colorSpace = "lin_rec709"
-            )
-            color3f inputs:specColor = (0.75, 0.75, 0.75) (
-                colorSpace = "lin_rec709"
-            )
-            float inputs:specRoughness = 0.05
             token outputs:volume
         }
 
         def Shader "nd_headlight1"
         {
             uniform token info:id = "nd_headlight1"
-            token inputs:custom (
-                renderType = "customtype"
-            )
-            asset inputs:emissionmap (
-                colorSpace = "lin_rec709"
-            )
-            float inputs:gain = 2000
             token outputs:light
         }
 
         def Shader "nd_headlight0"
         {
             uniform token info:id = "nd_headlight0"
-            token inputs:custom (
-                renderType = "customtype"
-            )
-            float inputs:gain = 1000
             token outputs:light
         }
 
