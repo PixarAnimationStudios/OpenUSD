@@ -100,11 +100,8 @@ def "MaterialX"
             }
             variantSet "vs_simple_srf" = {
                 "plastic2" {
-                    over "shader1"
-                    {
-                        color3f inputs:diffColor = (0.17, 0.26, 0.23)
-                        float inputs:specRoughness = 0.24
-                    }
+                    color3f inputs:diffColor = (0.17, 0.26, 0.23)
+                    float inputs:specRoughness = 0.24
 
                 }
             }

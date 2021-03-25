@@ -67,6 +67,8 @@ struct _AttributeNames {
     Name context          {"context"};
     Name default_         {"default"};
     Name doc              {"doc"};
+    Name enum_            {"enum"};
+    Name enumvalues       {"enumvalues"};
     Name excludegeom      {"excludegeom"};
     Name geom             {"geom"};
     Name helptext         {"helptext"};
@@ -84,12 +86,9 @@ struct _AttributeNames {
     Name node             {"node"};
     Name output           {"output"};
     Name semantic         {"semantic"};
-    Name shaderref        {"shaderref"};
     Name token            {"token"};
     Name type             {"type"};
     Name uicolor          {"uicolor"};
-    Name uienum           {"uienum"};
-    Name uienumvalues     {"uienumvalues"};
     Name uifolder         {"uifolder"};
     Name uimax            {"uimax"};
     Name uimin            {"uimin"};
@@ -511,8 +510,8 @@ _SetUIAttributes(const UsdShadeInput& usd, const mx::ConstElementPtr& mtlx)
         usd.SetDocumentation(helptext);
     }
 
-    mx::StringVec uienum;
-    if (_Value(&uienum, mtlx, names.uienum) && !uienum.empty()) {
+    mx::StringVec enums;
+    if (_Value(&enums, mtlx, names.enum_) && !enums.empty()) {
         // We can't write this directly via Usd API except through
         // SetMetadata() with a hard-coded key.  We'll use the Sdf
         // API instead.
@@ -520,13 +519,13 @@ _SetUIAttributes(const UsdShadeInput& usd, const mx::ConstElementPtr& mtlx)
             TfStatic_cast<SdfAttributeSpecHandle>(
                 usd.GetAttr().GetPropertyStack().front());
         VtTokenArray allowedTokens;
-        allowedTokens.reserve(uienum.size());
-        for (const auto& tokenString: uienum) {
+        allowedTokens.reserve(enums.size());
+        for (const auto& tokenString: enums) {
             allowedTokens.push_back(TfToken(tokenString));
         }
         attr->SetAllowedTokens(allowedTokens);
 
-        // XXX -- uienumvalues has no USD counterpart
+        // XXX -- enumvalues has no USD counterpart
     }
 
     // XXX -- uimin, uimax have no USD counterparts.
@@ -1052,7 +1051,6 @@ public:
     using VariantName = std::string;
     using VariantSetName = std::string;
     using VariantSetOrder = std::vector<VariantSetName>;
-    using VariantShaderSet = std::vector<std::string>;
 
     _Context(const UsdStagePtr& stage, const SdfPath& internalPath);
 
@@ -1065,9 +1063,7 @@ public:
     UsdShadeShader AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode);
     void AddMaterialVariant(const std::string& mtlxMaterialName,
                             const VariantSetName& variantSetName,
-                            const VariantName& variantName,
-                            const VariantName& uniqueVariantName,
-                            const VariantShaderSet* shaders = nullptr) const;
+                            const VariantName& variantName) const;
     UsdCollectionAPI AddCollection(const mx::ConstCollectionPtr&);
     UsdCollectionAPI AddGeometryReference(const mx::ConstGeomElementPtr&);
 
@@ -1321,13 +1317,10 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
     // mtlxShaderNode->getName() and has no meaning other than to uniquely
     // identify the shader.  In USD to support materialinherit we must
     // ensure that shaders have the same name if one should compose over
-    // the other.  MaterialX composes over if a shaderref refers to the
+    // the other.  MaterialX composes over if a shader node refers to the
     // same nodedef so in USD we use the nodedef's name.  This name isn't
     // ideal since it's just an arbitrary unique name;  the nodedef's
-    // node name is more meaningful.  But the MaterialX spec says that
-    // composing over happens if the shaderrefs refer to the same
-    // nodedef element, not the same nodedef node name, and more than one
-    // nodedef can overload a node name.
+    // node name is more meaningful.
     const auto name = _MakeName(mtlxNodeDef);
 
     // Create the shader if it doesn't exist and copy node def values.
@@ -1451,12 +1444,10 @@ void
 _Context::AddMaterialVariant(
     const std::string& mtlxMaterialName,
     const VariantSetName& variantSetName,
-    const VariantName& variantName,
-    const VariantName& uniqueVariantName,
-    const VariantShaderSet* shaders) const
+    const VariantName& variantName) const
 {
-    auto i = _shaders.find(mtlxMaterialName);
-    if (i == _shaders.end()) {
+    auto mtlxMaterial = _shaders.find(mtlxMaterialName);
+    if (mtlxMaterial == _shaders.end()) {
         // Unknown material.
         return;
     }
@@ -1468,37 +1459,25 @@ _Context::AddMaterialVariant(
 
     // Create the variant set on the material.
     auto usdMaterial = GetMaterial(mtlxMaterialName);
-    auto usdVariantSet =
-        usdMaterial.GetPrim().GetVariantSet(variantSetName);
+    auto usdVariantSet = usdMaterial.GetPrim().GetVariantSet(variantSetName);
 
     // Create the variant on the material.
-    if (!usdVariantSet.AddVariant(uniqueVariantName)) {
+    if (!usdVariantSet.AddVariant(variantName)) {
         TF_CODING_ERROR("Failed to author material variant '%s' "
                         "in variant set '%s' on <%s>",
-                        uniqueVariantName.c_str(),
+                        variantName.c_str(),
                         variantSetName.c_str(),
                         usdMaterial.GetPath().GetText());
         return;
     }
 
-    usdVariantSet.SetVariantSelection(uniqueVariantName);
+    usdVariantSet.SetVariantSelection(variantName);
     {
         UsdEditContext ctx(usdVariantSet.GetVariantEditContext());
-        if (shaders) {
-            // Copy to given shader.
-            for (auto& mtlxShaderName: *shaders) {
-                auto j = i->second.find(mtlxShaderName);
-                if (j != i->second.end()) {
-                    _CopyVariant(j->second, *variant);
-                }
-            }
-        }
-        else {
-            // Copy to the material.
-            auto j = i->second.find("");
-            if (j != i->second.end()) {
-                _CopyVariant(j->second, *variant);
-            }
+        // Copy variant to the material.
+        auto mtlxShaderNodeName = mtlxMaterial->second.find("");
+        if (mtlxShaderNodeName != mtlxMaterial->second.end()) {
+            _CopyVariant(mtlxShaderNodeName->second, *variant);
         }
     }
     usdVariantSet.ClearVariantSelection();
@@ -1656,19 +1635,6 @@ const _Context::VariantSetOrder&
 _Context::GetVariantSetOrder() const
 {
     return _variantSetGlobalOrder;
-}
-
-std::set<_Context::VariantName>
-_Context::GetVariants(const VariantSetName& variantSetName) const
-{
-    std::set<VariantName> result;
-    auto i = _variantSets.find(variantSetName);
-    if (i != _variantSets.end()) {
-        for (auto& j: i->second) {
-            result.insert(j.first);
-        }
-    }
-    return result;
 }
 
 UsdShadeMaterial
@@ -1832,9 +1798,8 @@ _Context::_CopyVariant(
     }
 }
 
-/// This class tracks variant selections on materialassigns and any
-/// shaderrefs the variant selection is limited to.  Objects are
-/// created using the VariantAssignmentsBuilder helper.
+/// This class tracks variant selections on materialassigns.  Objects
+/// are created using the VariantAssignmentsBuilder helper.
 class VariantAssignments {
 public:
     using VariantName = _Context::VariantName;
@@ -1845,21 +1810,16 @@ public:
     using MaterialAssignPtr = mx::ConstMaterialAssignPtr;
     using MaterialAssigns = std::vector<MaterialAssignPtr>;
 
-    using ShaderName = std::string;
-    using VariantShaderSet = std::vector<ShaderName>;
-    struct VariantAndShaders {
-        VariantAndShaders(VariantName&& originalName,
-                          VariantName&& uniqueName,
-                          VariantShaderSet&& shaderRefSet)
-            : originalName(std::move(originalName))
-            , uniqueName(std::move(uniqueName))
-            , shaderRefSet(std::move(shaderRefSet)) { }
+    /// Add the variant assignments from \p mtlx to this object.
+    void Add(const mx::ConstElementPtr& mtlx);
 
-        VariantName originalName;
-        VariantName uniqueName;
-        VariantShaderSet shaderRefSet;
-    };
-    using VariantAndShadersBag = std::vector<VariantAndShaders>;
+    /// Add the variant assignments from \p mtlxLook and all inherited
+    /// looks to this object.
+    void AddInherited(const mx::ConstLookPtr& mtlxLook);
+
+    /// Compose variant assignments in this object over assignments in
+    /// \p weaker and store the result in this object.
+    void Compose(const VariantAssignments& weaker);
 
     /// Returns all material assigns.
     const MaterialAssigns& GetMaterialAssigns() const;
@@ -1867,29 +1827,60 @@ public:
     /// Returns the variant set order for the material assign.
     VariantSetOrder GetVariantSetOrder(const MaterialAssignPtr&) const;
 
-    /// Returns the variants for the given variant set on the given
-    /// material assign.  Each variant is accompanied by the shaderrefs
-    /// that it applies to.
-    const VariantAndShadersBag&
-    GetVariants(const MaterialAssignPtr&, const VariantSetName&) const;
-
     /// Returns the variant selections on the given material assign.
     const VariantSelectionSet&
     GetVariantSelections(const MaterialAssignPtr&) const;
 
+    using iterator = std::vector<VariantSelection>::iterator;
+    iterator begin() { return _assignments.begin(); }
+    iterator end() { return _assignments.end(); }
+
 private:
-    VariantAssignments() = default;
+    using _Assignments = std::vector<VariantSelection>;
+
+    _Assignments _Get(const mx::ConstElementPtr& mtlx);
+    void _Compose(const _Assignments& weaker);
 
 private:
     VariantSetOrder _globalVariantSetOrder;
     MaterialAssigns _materialAssigns;
-    std::map<MaterialAssignPtr,
-             std::map<VariantSetName,
-                      VariantAndShadersBag>> _materialInfo;
     std::map<MaterialAssignPtr, VariantSelectionSet> _selections;
+    _Assignments _assignments;
 
+    // Variant sets that have been handled already.
+    std::set<VariantSetName> _seen;
+    
     friend class VariantAssignmentsBuilder;
 };
+
+void
+VariantAssignments::Add(const mx::ConstElementPtr& mtlx)
+{
+    auto&& assignments = _Get(mtlx);
+    _assignments.insert(_assignments.end(),
+                        std::make_move_iterator(assignments.begin()),
+                        std::make_move_iterator(assignments.end()));
+}
+
+void
+VariantAssignments::AddInherited(const mx::ConstLookPtr& mtlxLook)
+{
+    // Compose the look's variant assignments as weaker.
+    _Compose(_Get(mtlxLook));
+
+    // Compose inherited assignments as weaker.
+    if (auto inherited = mtlxLook->getInheritsFrom()) {
+        if (auto inheritedLook = inherited->asA<mx::Look>()) {
+            AddInherited(inheritedLook);
+        }
+    }
+}
+
+void
+VariantAssignments::Compose(const VariantAssignments& weaker)
+{
+    _Compose(weaker._assignments);
+}
 
 const VariantAssignments::MaterialAssigns&
 VariantAssignments::GetMaterialAssigns() const
@@ -1905,125 +1896,20 @@ VariantAssignments::GetVariantSetOrder(
     return _globalVariantSetOrder;
 }
 
-const VariantAssignments::VariantAndShadersBag&
-VariantAssignments::GetVariants(
-    const MaterialAssignPtr& mtlxMaterialAssign,
-    const VariantSetName& variantSetName) const
-{
-    auto i = _materialInfo.find(mtlxMaterialAssign);
-    if (i != _materialInfo.end()) {
-        auto j = i->second.find(variantSetName);
-        if (j != i->second.end()) {
-            return j->second;
-        }
-    }
-    static const VariantAndShadersBag empty;
-    return empty;
-}
-
 const VariantAssignments::VariantSelectionSet&
 VariantAssignments::GetVariantSelections(
     const MaterialAssignPtr& mtlxMaterialAssign) const
 {
-    auto i = _selections.find(mtlxMaterialAssign);
-    if (i != _selections.end()) {
-        return i->second;
+    auto mtlxMaterial = _selections.find(mtlxMaterialAssign);
+    if (mtlxMaterial != _selections.end()) {
+        return mtlxMaterial->second;
     }
     static const VariantSelectionSet empty;
     return empty;
 }
 
-/// This class collects variant assignments and their associated shaderrefs.
-class ShadersForVariantAssignments {
-public:
-    using VariantName      = VariantAssignments::VariantName;
-    using VariantSetName   = VariantAssignments::VariantSetName;
-    using VariantShaderSet = VariantAssignments::VariantShaderSet;
-
-    struct ShadersForVariantAssignment {
-        ShadersForVariantAssignment(const VariantSetName& variantSetName,
-                                    const VariantName& variantName,
-                                    VariantShaderSet&& shaderSet)
-            : variantSetName(variantSetName)
-            , variantName(variantName)
-            , shaderSet(std::move(shaderSet)) { }
-
-        VariantSetName   variantSetName;
-        VariantName      variantName;
-        VariantShaderSet shaderSet;
-    };
-    using iterator = std::vector<ShadersForVariantAssignment>::iterator;
-
-    /// Add the variant assignments from \p mtlx to this object.
-    void Add(const mx::ConstElementPtr& mtlx);
-
-    /// Add the variant assignments from \p mtlxLook and all inherited
-    /// looks to this object.
-    void AddInherited(const mx::ConstLookPtr& mtlxLook);
-
-    /// Compose variant assignments in this object over assignments in
-    /// \p weaker and store the result in this object.
-    void Compose(const ShadersForVariantAssignments& weaker);
-
-    iterator begin() { return _assignments.begin(); }
-    iterator end() { return _assignments.end(); }
-
-private:
-    using _Assignments = std::vector<ShadersForVariantAssignment>;
-
-    VariantShaderSet _GetShaders(const mx::ConstElementPtr& mtlx);
-    _Assignments _Get(const mx::ConstElementPtr& mtlx);
-    void _Compose(const _Assignments& weaker);
-
-private:
-    _Assignments _assignments;
-
-    // Variant sets that have been handled already.
-    std::set<VariantSetName> _seen;
-};
-
-void
-ShadersForVariantAssignments::Add(const mx::ConstElementPtr& mtlx)
-{
-    auto&& assignments = _Get(mtlx);
-    _assignments.insert(_assignments.end(),
-                        std::make_move_iterator(assignments.begin()),
-                        std::make_move_iterator(assignments.end()));
-}
-
-void
-ShadersForVariantAssignments::AddInherited(const mx::ConstLookPtr& mtlxLook)
-{
-    // Compose the look's variant assignments as weaker.
-    _Compose(_Get(mtlxLook));
-
-    // Compose inherited assignments as weaker.
-    if (auto inherited = mtlxLook->getInheritsFrom()) {
-        if (auto inheritedLook = inherited->asA<mx::Look>()) {
-            AddInherited(inheritedLook);
-        }
-    }
-}
-
-void
-ShadersForVariantAssignments::Compose(
-    const ShadersForVariantAssignments& weaker)
-{
-    _Compose(weaker._assignments);
-}
-
-ShadersForVariantAssignments::VariantShaderSet
-ShadersForVariantAssignments::_GetShaders(const mx::ConstElementPtr& mtlx)
-{
-    VariantShaderSet shaders;
-    if (_Value(&shaders, mtlx, names.shaderref)) {
-        std::sort(shaders.begin(), shaders.end());
-    }
-    return shaders;
-}
-
-ShadersForVariantAssignments::_Assignments
-ShadersForVariantAssignments::_Get(const mx::ConstElementPtr& mtlx)
+VariantAssignments::_Assignments
+VariantAssignments::_Get(const mx::ConstElementPtr& mtlx)
 {
     _Assignments result;
 
@@ -2038,8 +1924,7 @@ ShadersForVariantAssignments::_Get(const mx::ConstElementPtr& mtlx)
         _Attr variant(mtlxVariantAssign, names.variant);
         // Ignore assignments to a variant set we've already seen.
         if (_seen.insert(variantset).second) {
-            result.emplace_back(variantset, variant,
-                                _GetShaders(mtlxVariantAssign));
+            result.emplace_back(variantset, variant);
         }
     }
 
@@ -2050,12 +1935,12 @@ ShadersForVariantAssignments::_Get(const mx::ConstElementPtr& mtlx)
 }
 
 void
-ShadersForVariantAssignments::_Compose(const _Assignments& weaker)
+VariantAssignments::_Compose(const _Assignments& weaker)
 {
     // Apply weaker to stronger.  That means we ignore any variantsets
     // already in stronger.
     for (const auto& assignment: weaker) {
-        if (_seen.insert(assignment.variantSetName).second) {
+        if (_seen.insert(assignment.first).second) {
             _assignments.emplace_back(assignment);
         }
     }
@@ -2066,22 +1951,21 @@ class VariantAssignmentsBuilder {
 public:
     using MaterialAssignPtr = VariantAssignments::MaterialAssignPtr;
 
-    /// Add variant assignments (with associated shaders) on a material
-    /// assign to the builder.
-    void Add(const MaterialAssignPtr&, ShadersForVariantAssignments&&);
+    /// Add variant assignments on a material assign to the builder.
+    void Add(const MaterialAssignPtr&, VariantAssignments&&);
 
     /// Build and return a VariantAssignments using the added data.
     /// This also resets the builder.
     VariantAssignments Build(const _Context&);
 
 private:
-    std::map<MaterialAssignPtr, ShadersForVariantAssignments> _data;
+    std::map<MaterialAssignPtr, VariantAssignments> _data;
 };
 
 void
 VariantAssignmentsBuilder::Add(
     const MaterialAssignPtr& mtlxMaterialAssign,
-    ShadersForVariantAssignments&& selection)
+    VariantAssignments&& selection)
 {
     // We don't expect duplicate keys but we use the last data added.
     _data[mtlxMaterialAssign] = std::move(selection);
@@ -2098,44 +1982,16 @@ VariantAssignmentsBuilder::Build(const _Context& context)
     // We could scan for and discard variant assignments that don't
     // affect their material here.
 
-    // We should expand empty shaderref sets into the full set of
-    // shaderrefs on that material or replace full sets with the
-    // empty string so that they compare as identical, otherwise
-    // we'll get different variants with identical opinions for them.
-    // XXX
-
-    // Reorganize data into result, finding variants that must be made
-    // unique.  This is somewhat complicated.  A material M's variants
-    // are those assigned to it over all looks.  Since each variant is
-    // in a variantset this also determines the variantsets.  However,
-    // a variant can also have a shaderref string array which causes
-    // the variant to be applied to a subset of the material's
-    // shaderrefs.  In USD to apply a variant to different shaderref
-    // sets necessitates using different variants.  That means making
-    // up and using a new variant name.
-    // 
-    // visitedNames maps shaderref sets to unique variant names per
-    // (material,variantset,original variant name).  knownNames is
-    // used to construct unique variant names, mapping a (material,
-    // variantset) to a suffix and known variant names.  The suffix
-    // is an integer used to create unique names.
+    // Reorganize data into result, finding variants.  A material M's
+    // variants are those assigned to it over all looks.  Since each
+    // variant is in a variantset this also determines the variantsets.
     //
-    // While making variants unique we also record in the result all
-    // of the material assignments and the variant info and selection
-    // for each (materialassign,variantset).
+    // We also record in the result all of the material assignments and
+    // the variant info and selection for each (materialassign,variantset).
     //
-    using VariantName = VariantAssignments::VariantName;
-    using VariantSetName = VariantAssignments::VariantSetName;
-    using VariantShaderSet = VariantAssignments::VariantShaderSet;
-
-    std::map<std::tuple<std::string, VariantSetName, VariantName>,
-             std::map<VariantShaderSet, VariantName>> visitedNames;
-    std::map<std::pair<std::string, VariantSetName>,
-             std::pair<int, std::set<VariantName>>> knownNames;
-    for (auto& i: _data) {
-        auto& mtlxMaterialAssign         = i.first;
-        auto& variantSelectionAndShaders = i.second;
-        auto& materialInfo = result._materialInfo[mtlxMaterialAssign];
+    for (auto& i : _data) {
+        auto& mtlxMaterialAssign  = i.first;
+        auto& variantAssignments  = i.second;
         auto& selections   = result._selections[mtlxMaterialAssign];
         auto materialName  = _Attr(mtlxMaterialAssign, names.material).str();
 
@@ -2143,64 +1999,12 @@ VariantAssignmentsBuilder::Build(const _Context& context)
         result._materialAssigns.emplace_back(mtlxMaterialAssign);
 
         // Process all variants.
-        for (auto& j: variantSelectionAndShaders) {
-            auto& variantSetName    = j.variantSetName;
-            auto& variantName       = j.variantName;
-            auto& shaderSet         = j.shaderSet;
-            auto& visitedShaderSets =
-                visitedNames[std::make_tuple(materialName,
-                                             variantSetName,
-                                             variantName)];
-
-            // Look up this variantset/variant.
-            std::string uniqueVariantName;
-            if (!visitedShaderSets.empty()) {
-                auto k = visitedShaderSets.find(shaderSet);
-                if (k != visitedShaderSets.end()) {
-                    // We've seen this shader set before.
-                    uniqueVariantName = k->second;
-                }
-                else {
-                    // This variant must be made unique.
-                    auto& newVariantName = visitedShaderSets[shaderSet];
-
-                    // Get the known names, including ones we created.  If
-                    // there are no names yet then populate with the names
-                    // from the context.
-                    auto& m = 
-                        knownNames[std::make_pair(materialName,
-                                                  variantSetName)];
-                    auto& variantSetKnownNames = m.second;
-                    if (variantSetKnownNames.empty()) {
-                        variantSetKnownNames =
-                            context.GetVariants(variantSetName);
-                    }
-
-                    // Choose and save a unique variant name.
-                    int& n = m.first;
-                    auto base = variantName + "_";
-                    do {
-                        newVariantName = base + std::to_string(++n);
-                    } while (!variantSetKnownNames
-                                .emplace(newVariantName).second);
-
-                    uniqueVariantName = newVariantName;
-                }
-            }
-            else {
-                // New variantset/variant for the material.
-                uniqueVariantName =
-                visitedShaderSets[shaderSet] = variantName;
-            }
+        for (auto& variantSelection : variantAssignments) {
+            auto& variantSetName  = variantSelection.first;
+            auto& variantName     = variantSelection.second;
 
             // Note the variant selection.
-            selections.emplace(variantSetName, uniqueVariantName);
-
-            // Add the variant.
-            materialInfo[std::move(variantSetName)]
-                .emplace_back(std::move(variantName),
-                              std::move(uniqueVariantName),
-                              std::move(shaderSet));
+            selections.emplace(variantSetName, variantName);
         }
     }
 
@@ -2377,8 +2181,7 @@ ReadCollections(mx::ConstDocumentPtr mtlx, _Context& context)
 
 // Creates the variants bound to a MaterialX materialassign on the USD
 // Material and/or its shader children.  The variant opinions go on the
-// Material unless MaterialX variantassign uses the shaderref attribute
-// to apply to only certain shaders.
+// Material bound to the materialassign. 
 static
 void
 AddMaterialVariants(
@@ -2392,17 +2195,11 @@ AddMaterialVariants(
     for (const auto& variantSetName:
             assignments.GetVariantSetOrder(mtlxMaterialAssign)) {
         // Loop over all variants in the variant set on the material.
-        for (const auto& variantAndShaders:
-                assignments.GetVariants(mtlxMaterialAssign,
-                                        variantSetName)) {
-            // Add the variant to all shaderrefs in shaders or, if shaders
-            // is empty, to the material.
+        for (const auto& variantSelections :
+                assignments.GetVariantSelections(mtlxMaterialAssign)) {
+            // Add the variant to the material.
             context.AddMaterialVariant(materialName, variantSetName,
-                                       variantAndShaders.originalName,
-                                       variantAndShaders.uniqueName,
-                                       variantAndShaders.shaderRefSet.empty()
-                                           ? nullptr
-                                           : &variantAndShaders.shaderRefSet);
+                                       variantSelections.second);
         }
     }
 }
@@ -2606,12 +2403,12 @@ UsdMtlxRead(
     for (auto& mtlxLook: mtlx->getLooks()) {
         // Get the variant assigns for the look and (recursively) its
         // inherited looks.
-        ShadersForVariantAssignments lookVariantAssigns;
+        VariantAssignments lookVariantAssigns;
         lookVariantAssigns.AddInherited(mtlxLook);
 
         for (auto& mtlxMaterialAssign: mtlxLook->getMaterialAssigns()) {
             // Get the material assign's variant assigns.
-            ShadersForVariantAssignments variantAssigns;
+            VariantAssignments variantAssigns;
             variantAssigns.Add(mtlxMaterialAssign);
 
             // Compose variantAssigns over lookVariantAssigns.
@@ -2624,8 +2421,7 @@ UsdMtlxRead(
     }
 
     // Build the variant assignments object.
-    auto assignments =
-        materialVariantAssignmentsBuilder.Build(context);
+    auto assignments = materialVariantAssignmentsBuilder.Build(context);
 
     // Create the variants on each material.
     for (const auto& mtlxMaterialAssign: assignments.GetMaterialAssigns()) {

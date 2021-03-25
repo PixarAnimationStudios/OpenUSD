@@ -70,9 +70,9 @@ warning.
 on materials; instead, USD encodes lights as object schemas, in UsdLux.
 + Custom type members.  The file format plugin currently doesn't handle
 structures except as blind data.  Consequently it ignores **member** attributes.
-+ _geominfo_, _geomattr_, _geomattrvalue_, _geomattrdefault_ and
-_geomtokendefault_ elements.  These elements are ignored.  The file
-format plugin currently doesn't attempt to bind looks to geometry.
++ _geominfo_, _geomprop_, _geompropvalue_, and _geompropdefault_ elements.
+These elements are ignored.  The file format plugin currently doesn't attempt 
+to bind looks to geometry.
 + **internalgeomprops** attribute.  This attribute is ignored.
 + **defaultgeomprop** attribute.  This attribute is ignored.
 + **geomname** value type.  These are treated as strings but such values
@@ -97,8 +97,8 @@ ignored.
 but MaterialX considers it implicit and the file format plugin will not
 create it automatically.  In addition it has no special meaning to USD.
 In particular, it does not disable the UsdShadeShader prim.
-+ **uienumvalues** attribute.  This attribute is ignored..  USD has no
-corresponding concept.  uienum is handled correctly.
++ **enumvalues** attribute.  This attribute is ignored..  USD has no
+corresponding concept.  enum is handled correctly.
 + **uimin** and **uimax** attributes.  These attributes are ignored.  USD has
 no corresponding concept.
 + _attributedef_ elements.  These elements are ignored.  This is
