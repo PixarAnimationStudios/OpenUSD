@@ -2381,6 +2381,9 @@ UsdImagingDelegate::_Get(SdfPath const& id, TfToken const& key,
 
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
     VtValue value;
+    if (outIndices) {
+        outIndices->clear();
+    }
 
     _HdPrimInfo const *primInfo = _GetHdPrimInfo(cachePath);
     if (!TF_VERIFY(primInfo)) {
