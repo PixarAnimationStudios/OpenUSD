@@ -85,7 +85,7 @@ public:
     CameraUtilFraming();
 
     /// Creates a framing with given display and data window and pixel
-    /// aspect ratio. Also can specify to override the window policy.
+    /// aspect ratio.
     ///
     CAMERAUTIL_API
     CameraUtilFraming(
@@ -94,7 +94,7 @@ public:
         float pixelAspectRatio = 1.0);
 
     /// Creates a framing with equal display and data window (and
-    /// assumes square pixels). No overriding of window policy.
+    /// assuming square pixels).
     ///
     CAMERAUTIL_API
     explicit CameraUtilFraming(
