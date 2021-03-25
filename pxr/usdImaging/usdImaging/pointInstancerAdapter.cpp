@@ -385,7 +385,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                     populatePrim = _GetPrim(instancerChain.at(1));
                 }
 
-                SdfPath const& materialId = GetMaterialUsdPath(populatePrim);
+                SdfPath const& materialId = GetMaterialUsdPath(instanceProxyPrim);
                 TfToken const& drawMode = GetModelDrawMode(instanceProxyPrim);
                 TfToken const& inheritablePurpose = 
                     GetInheritablePurpose(instanceProxyPrim);
@@ -1834,7 +1834,16 @@ UsdImagingPointInstancerAdapter::GetMaterialId(UsdPrim const& usdPrim,
         // Delegate to prototype adapter and USD prim.
         _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(), cachePath);
         UsdPrim protoPrim = _GetProtoUsdPrim(proto);
-        return proto.adapter->GetMaterialId(protoPrim, cachePath, time);
+        SdfPath materialId =
+            proto.adapter->GetMaterialId(protoPrim, cachePath, time);
+        if (!materialId.IsEmpty()) {
+            return materialId;
+        }
+        // If the child prim doesn't have a material ID, see if there's
+        // an instancer material path...
+        UsdPrim instanceProxyPrim = _GetPrim(_GetPrimPathFromInstancerChain(
+                    proto.paths));
+        return GetMaterialUsdPath(instanceProxyPrim);
     }
     return BaseAdapter::GetMaterialId(usdPrim, cachePath, time);
 }
