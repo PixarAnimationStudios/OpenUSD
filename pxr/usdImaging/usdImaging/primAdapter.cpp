@@ -710,7 +710,12 @@ UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
 
     VtValue v;
     TfToken primvarName = primvar.GetPrimvarName();
-    if (primvar.ComputeFlattened(&v, time)) {
+
+    // Note: we call Get() here to check if the primvar exists.
+    // We can't call HasValue(), since it won't take time-varying
+    // blocks (from value clips) into account. Get() should be
+    // fast as long as we don't touch the returned data.
+    if (primvar.Get(&v, time)) {
         HdInterpolation interp = interpOverride ? *interpOverride
             : _UsdToHdInterpolation(primvar.GetInterpolation());
         TfToken role = _UsdToHdRole(primvar.GetAttr().GetRoleName());
