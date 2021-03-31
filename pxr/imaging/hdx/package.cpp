@@ -121,6 +121,13 @@ HdxPackageColorCorrectionShader()
 }
 
 TfToken
+HdxPackageVisualizeAovShader()
+{
+    static TfToken shader = _GetShaderPath("visualize.glslfx");
+    return shader;
+}
+
+TfToken
 HdxPackageRenderPassOitShader()
 {
     static TfToken shader = _GetShaderPath("renderPassOitShader.glslfx");

@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/task.h"
 #include "pxr/imaging/hgi/tokens.h"
+#include "pxr/imaging/hgi/types.h"
 #include "pxr/imaging/hgiInterop/hgiInterop.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -71,11 +72,18 @@ struct HdxPresentTaskParams
 /// A task for taking the final result of the aovs and compositing it over the 
 /// currently bound framebuffer.
 /// This task uses the 'color' and optionally 'depth' aov's in the task
-/// context.
+/// context. The 'color' aov is expected to use non-integer 
+/// (i.e., float or norm) types to keep the interop step simple.
 ///
 class HdxPresentTask : public HdxTask
 {
 public:
+    // Returns true if the format is supported for presentation. This is useful
+    // for upstream tasks to prepare the AOV data accordingly, and keeps the 
+    // interop step simple.
+    HDX_API
+    static bool IsFormatSupported(HgiFormat aovFormat);
+
     HDX_API
     HdxPresentTask(HdSceneDelegate* delegate, SdfPath const& id);
 

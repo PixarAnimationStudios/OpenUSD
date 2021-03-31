@@ -63,6 +63,7 @@ pxr_library(hdx
         taskController
         tokens
         types
+        visualizeAovTask
 
     PUBLIC_HEADERS
         shadowMatrixComputation.h
@@ -94,6 +95,7 @@ pxr_library(hdx
         shaders/renderPassOitVolumeShader.glslfx
         shaders/renderPassShadowShader.glslfx
         shaders/selection.glslfx
+        shaders/visualize.glslfx
         textures/StinsonBeach.exr
 
     DOXYGEN_FILES

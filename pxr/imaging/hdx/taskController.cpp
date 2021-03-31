@@ -28,7 +28,6 @@
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hdx/aovInputTask.h"
 #include "pxr/imaging/hdx/colorizeSelectionTask.h"
-#include "pxr/imaging/hdx/colorChannelTask.h"
 #include "pxr/imaging/hdx/colorCorrectionTask.h"
 #include "pxr/imaging/hdx/freeCameraSceneDelegate.h"
 #include "pxr/imaging/hdx/oitRenderTask.h"
@@ -42,6 +41,7 @@
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
+#include "pxr/imaging/hdx/visualizeAovTask.h"
 
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/tokens.h"
@@ -64,10 +64,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (colorizeSelectionTask)
     (oitResolveTask)
     (colorCorrectionTask)
-    (colorChannelTask)
     (pickTask)
     (pickFromRenderBufferTask)
     (presentTask)
+    (visualizeAovTask)
 
     // global camera
     (camera)
@@ -255,6 +255,7 @@ HdxTaskController::_CreateRenderGraph()
             _CreateOitResolveTask();
             _CreateSelectionTask();
             _CreateColorCorrectionTask();
+            _CreateVisualizeAovTask();
             _CreatePresentTask();
         }
 
@@ -274,9 +275,10 @@ HdxTaskController::_CreateRenderGraph()
         if (_AovsSupported()) {
             _CreateAovInputTask();
             _CreateColorizeSelectionTask();
-            _CreatePickFromRenderBufferTask();
             _CreateColorCorrectionTask();
+            _CreateVisualizeAovTask();
             _CreatePresentTask();
+            _CreatePickFromRenderBufferTask();
             // Initialize the AOV system to render color. Note:
             // SetRenderOutputs special-cases color to include support for
             // depth-compositing and selection highlighting/picking.
@@ -487,13 +489,23 @@ HdxTaskController::_CreateColorCorrectionTask()
     _colorCorrectionTaskId = GetControllerId().AppendChild(
         _tokens->colorCorrectionTask);
 
-    HdxColorCorrectionTaskParams taskParams;
-
     GetRenderIndex()->InsertTask<HdxColorCorrectionTask>(&_delegate,
         _colorCorrectionTaskId);
 
     _delegate.SetParameter(_colorCorrectionTaskId, HdTokens->params,
-        taskParams);
+        HdxColorCorrectionTaskParams());
+}
+
+void
+HdxTaskController::_CreateVisualizeAovTask()
+{
+    _visualizeAovTaskId = GetControllerId().AppendChild(
+        _tokens->visualizeAovTask);
+    GetRenderIndex()->InsertTask<HdxVisualizeAovTask>(&_delegate,
+        _visualizeAovTaskId);
+
+    _delegate.SetParameter(_visualizeAovTaskId, HdTokens->params,
+        HdxVisualizeAovTaskParams());
 }
 
 void
@@ -609,6 +621,16 @@ HdxTaskController::_ColorCorrectionEnabled() const
 }
 
 bool
+HdxTaskController::_VisualizeAovEnabled() const
+{
+    // Only non-color AOVs need special colorization for viz.
+    if (_viewportAov != HdAovTokens->color) {
+        return true;
+    }
+    return false;
+}
+
+bool
 HdxTaskController::_AovsSupported() const
 {
     return GetRenderIndex()->IsBprimTypeSupported(
@@ -634,7 +656,7 @@ HdxTaskController::GetRenderingTasks() const
      * - selectionTaskId
      * - colorizeSelectionTaskId
      * - colorCorrectionTaskId
-     * - colorChannelTaskId
+     * - visualizeAovTaskId
      * - PresentTask
      *
      * Some of these won't be populated, based on the backend type.
@@ -694,6 +716,10 @@ HdxTaskController::GetRenderingTasks() const
     // Apply color correction / grading (convert to display colors)
     if (_ColorCorrectionEnabled()) {
         tasks.push_back(GetRenderIndex()->GetTask(_colorCorrectionTaskId));
+    }
+
+    if (!_visualizeAovTaskId.IsEmpty() && _VisualizeAovEnabled()) {
+        tasks.push_back(GetRenderIndex()->GetTask(_visualizeAovTaskId));
     }
 
     // Render pixels to screen
@@ -1038,14 +1064,17 @@ HdxTaskController::SetViewportRenderOutput(TfToken const& name)
             _colorCorrectionTaskId, HdChangeTracker::DirtyParams);
     }
 
-    if (!_presentTaskId.IsEmpty()) {
-        HdxPresentTaskParams params =
-            _delegate.GetParameter<HdxPresentTaskParams>(
-                _presentTaskId, HdTokens->params);
+    if (!_visualizeAovTaskId.IsEmpty()) {
+        HdxVisualizeAovTaskParams params =
+            _delegate.GetParameter<HdxVisualizeAovTaskParams>(
+                _visualizeAovTaskId, HdTokens->params);
 
-        _delegate.SetParameter(_presentTaskId, HdTokens->params, params);
+        params.aovName = name;
+
+        _delegate.SetParameter(_visualizeAovTaskId, HdTokens->params,
+            params);
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
-            _presentTaskId, HdChangeTracker::DirtyParams);
+            _visualizeAovTaskId, HdChangeTracker::DirtyParams);
     }
 }
 
