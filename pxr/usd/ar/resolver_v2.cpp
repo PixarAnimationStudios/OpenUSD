@@ -1038,6 +1038,11 @@ private:
                 continue;
             }
 
+            TF_DEBUG(AR_RESOLVER_INIT).Msg(
+                "ArGetResolver(): Using %s for URI scheme(s) [\"%s\"]\n",
+                resolverInfo.type.GetTypeName().c_str(),
+                TfStringJoin(uriSchemes, "\", \"").c_str());
+
             // Create resolver. We only want one instance of each resolver
             // type, so make sure we reuse the primary resolver if it has
             // also been registered as handling additional URI schemes.
@@ -1049,11 +1054,6 @@ private:
                 maxSchemeLength = std::max(uriScheme.length(), maxSchemeLength);
                 uriResolvers.emplace(std::move(uriScheme), uriResolver);
             };
-
-            TF_DEBUG(AR_RESOLVER_INIT).Msg(
-                "ArGetResolver(): Using %s for URI scheme(s) [\"%s\"]\n",
-                resolverInfo.type.GetTypeName().c_str(),
-                TfStringJoin(uriSchemes, "\", \"").c_str());
         }
 
         _uriResolvers = std::move(uriResolvers);
@@ -1140,11 +1140,10 @@ private:
         // Search for the first ":" character delimiting a URI scheme in
         // the given asset path. As an optimization, we only search the
         // first _maxURISchemeLength + 1 (to accommodate the ":") characters.
-        if (assetPath.length() < _maxURISchemeLength + 1) {
-            return nullptr;
-        }
+        const size_t numSearchChars =
+            std::min(assetPath.length(), _maxURISchemeLength + 1);
 
-        auto endIt = assetPath.begin() + (_maxURISchemeLength + 1);
+        auto endIt = assetPath.begin() + numSearchChars;
         auto delimIt = std::find(assetPath.begin(), endIt, ':');
         if (delimIt == endIt) {
             return nullptr;

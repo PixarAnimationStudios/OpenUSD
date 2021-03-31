@@ -39,8 +39,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-// Test resolver that handles asset paths of the form "test://...."
-class _TestURIResolver
+// Base class for test URI resolvers
+class _TestURIResolverBase
     : public ArResolver
 {
 public:
@@ -53,22 +53,22 @@ public:
         const std::string& anchorPath, 
         const std::string& path) final
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(anchorPath), "test:"));
-        TF_AXIOM(!TfStringStartsWith(TfStringToLower(path), "test:"));
+        TF_AXIOM(TfStringStartsWith(TfStringToLower(anchorPath), _uriScheme));
+        TF_AXIOM(!TfStringStartsWith(TfStringToLower(path), _uriScheme));
         return TfStringCatPaths(anchorPath, path);
     }
 
     virtual bool IsRelativePath(
         const std::string& path) final
     {
-        TF_AXIOM(!TfStringStartsWith(TfStringToLower(path), "test:"));
+        TF_AXIOM(!TfStringStartsWith(TfStringToLower(path), _uriScheme));
         return true;
     }
 
     virtual std::string _GetExtension(
         const std::string& path) final
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));
+        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), _uriScheme));
         return TfGetExtension(path);
     }
 
@@ -77,8 +77,8 @@ public:
         const ArResolvedPath& anchorAssetPath) final
     {
         TF_AXIOM(
-            TfStringStartsWith(TfStringToLower(assetPath), "test:") ||
-            TfStringStartsWith(TfStringToLower(anchorAssetPath), "test:"));
+            TfStringStartsWith(TfStringToLower(assetPath), _uriScheme) ||
+            TfStringStartsWith(TfStringToLower(anchorAssetPath), _uriScheme));
         return assetPath;
     }
 
@@ -87,15 +87,15 @@ public:
         const ArResolvedPath& anchorAssetPath) final
     {
         TF_AXIOM(
-            TfStringStartsWith(TfStringToLower(assetPath), "test:") ||
-            TfStringStartsWith(TfStringToLower(anchorAssetPath), "test:"));
+            TfStringStartsWith(TfStringToLower(assetPath), _uriScheme) ||
+            TfStringStartsWith(TfStringToLower(anchorAssetPath), _uriScheme));
         return assetPath;
     }
 
     virtual ArResolvedPath _Resolve(
         const std::string& assetPath) final
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(assetPath), "test:"));
+        TF_AXIOM(TfStringStartsWith(TfStringToLower(assetPath), _uriScheme));
 
         const _TestURIResolverContext* uriContext = _GetCurrentContextPtr();
         if (uriContext && !uriContext->data.empty()) {
@@ -136,7 +136,7 @@ public:
     virtual ArResolverContext _CreateDefaultContextForAsset(
         const std::string& filePath) final
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(filePath), "test:"));
+        TF_AXIOM(TfStringStartsWith(TfStringToLower(filePath), _uriScheme));
         return ArResolverContext(_TestURIResolverContext());
     }
 
@@ -153,21 +153,21 @@ public:
         const std::string& path,
         const ArResolvedPath& resolvedPath) final
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));
+        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), _uriScheme));
         return VtValue(42);
     }
 
     virtual std::shared_ptr<ArAsset> _OpenAsset(
         const ArResolvedPath& resolvedPath)
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(resolvedPath), "test:"));
+        TF_AXIOM(TfStringStartsWith(TfStringToLower(resolvedPath), _uriScheme));
         return nullptr;
     }
 
     virtual bool CreatePathForLayer(
         const std::string& path) final
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), "test:"));
+        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), _uriScheme));
         return false;
     }
 
@@ -182,6 +182,11 @@ public:
     }
 
 protected:
+    _TestURIResolverBase(const std::string& uriScheme)
+        : _uriScheme(uriScheme + ":")
+    {
+    }
+
     virtual ArResolverContext _CreateContextFromString(
         const std::string& contextStr) override
     {
@@ -193,7 +198,7 @@ protected:
         const ArResolvedPath& resolvedPath,
         WriteMode writeMode) override
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(resolvedPath), "test:"));
+        TF_AXIOM(TfStringStartsWith(TfStringToLower(resolvedPath), _uriScheme));
         return nullptr;
     }
 
@@ -204,10 +209,43 @@ private:
         return contextStack.empty() ? nullptr : contextStack.back();
     }
 
+    std::string _uriScheme;
+
     using _ContextStack = std::vector<const _TestURIResolverContext*>;
     using _PerThreadContextStack = 
         tbb::enumerable_thread_specific<_ContextStack>;
     _PerThreadContextStack _threadContextStack;
 };
 
-AR_DEFINE_RESOLVER(_TestURIResolver, ArResolver);
+// Test resolver that handles asset paths of the form "test://...."
+class _TestURIResolver
+    : public _TestURIResolverBase
+{
+public:
+    _TestURIResolver()
+        : _TestURIResolverBase("test")
+    {
+    }
+};
+
+// Test resolver that handles asset paths of the form "test_other://...."
+class _TestOtherURIResolver
+    : public _TestURIResolverBase
+{
+public:
+    _TestOtherURIResolver()
+        : _TestURIResolverBase("test_other")
+    {
+    }
+};
+
+// XXX: Should have a AR_DEFINE_ABSTRACT_RESOLVER macro like
+// AR_DEFINE_ABSTRACT_RESOLVER(_TestURIResolverBase, ArResolver)
+// to take care of this registration.
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<_TestURIResolverBase, TfType::Bases<ArResolver>>();
+}
+
+AR_DEFINE_RESOLVER(_TestURIResolver, _TestURIResolverBase);
+AR_DEFINE_RESOLVER(_TestOtherURIResolver, _TestURIResolverBase);
