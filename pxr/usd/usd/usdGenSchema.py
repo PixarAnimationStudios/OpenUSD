@@ -147,13 +147,12 @@ def _GetLibMetadata(layer):
     globalPrim = layer.GetPrimAtPath('/GLOBAL')
     if not globalPrim:
         raise Exception("Code generation requires a \"/GLOBAL\" prim with "
-            "customData to define at least libraryName and libraryPath. "
-            "GLOBAL prim not found.")
+            "customData to define at least libraryName. GLOBAL prim not found.")
     
     if not globalPrim.customData:
         raise Exception("customData is either empty or not defined on /GLOBAL "
-            "prim. At least \"libraryName\" and \"libraryPath\" entries in "
-            "customData are required for code generation.")
+            "prim. At least \"libraryName\" entries in customData are required "
+            "for code generation.")
     
     # Return a copy of customData to avoid accessing an invalid map proxy during
     # template rendering.
@@ -174,10 +173,14 @@ def _GetLibName(layer):
 def _GetLibPath(layer):
     """ Return the libraryPath defined in layer."""
 
+    if _IsDynamicSchemaLayer(layer):
+        return ""
+
     libData = _GetLibMetadata(layer)
-    if 'libraryPath' not in libData:
+    if 'libraryPath' not in libData: 
         raise Exception("Code generation requires that \"libraryPath\" be "
-            "defined in customData on /GLOBAL prim.  The format for "
+            "defined in customData on /GLOBAL prim or the schema must be "
+            "declared dynamic, by specifying isDynamic=true. The format for "
             "libraryPath is \"path/to/lib\".")
 
     return libData['libraryPath']
