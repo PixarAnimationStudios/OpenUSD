@@ -56,6 +56,7 @@ pxr_library(usdUtils
         __init__.py
         complianceChecker.py
         constantsGroup.py
+        updateSchemaWithSdrNode.py
 
     DOXYGEN_FILES
         overview.dox

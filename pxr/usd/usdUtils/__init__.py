@@ -35,3 +35,5 @@ except Exception:
 
 
 from .complianceChecker import ComplianceChecker
+from .updateSchemaWithSdrNode import UpdateSchemaWithSdrNode, \
+        SchemaDefiningKeys, SchemaDefiningMiscConstants, PropertyDefiningKeys
