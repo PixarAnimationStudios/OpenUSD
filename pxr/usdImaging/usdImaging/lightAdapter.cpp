@@ -41,8 +41,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingLightAdapter Adapter;
-    TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
-    // No factory here, UsdImagingLightAdapter is abstract.
+    TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
+    t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
 TF_DEFINE_ENV_SETTING(USDIMAGING_ENABLE_SCENE_LIGHTS, 1, 
@@ -55,6 +55,31 @@ bool UsdImagingLightAdapter::IsEnabledSceneLights() {
 
 UsdImagingLightAdapter::~UsdImagingLightAdapter() 
 {
+}
+
+bool
+UsdImagingLightAdapter::IsSupported(UsdImagingIndexProxy const* index) const
+{
+    return IsEnabledSceneLights() &&
+           index->IsSprimTypeSupported(HdPrimTypeTokens->light);
+}
+
+SdfPath
+UsdImagingLightAdapter::Populate(UsdPrim const& prim, 
+                            UsdImagingIndexProxy* index,
+                            UsdImagingInstancerContext const* instancerContext)
+{
+    index->InsertSprim(HdPrimTypeTokens->light, prim.GetPath(), prim);
+    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+
+    return prim.GetPath();
+}
+
+void
+UsdImagingLightAdapter::_RemovePrim(SdfPath const& cachePath,
+                                    UsdImagingIndexProxy* index)
+{
+    index->RemoveSprim(HdPrimTypeTokens->light, cachePath);
 }
 
 void 

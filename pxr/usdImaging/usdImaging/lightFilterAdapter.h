@@ -49,7 +49,15 @@ public:
     {}
 
     USDIMAGING_API
-    virtual ~UsdImagingLightFilterAdapter();
+    ~UsdImagingLightFilterAdapter() override;
+
+    USDIMAGING_API
+    SdfPath Populate(UsdPrim const& prim,
+                     UsdImagingIndexProxy* index,
+                     UsdImagingInstancerContext const* instancerContext = NULL) override;
+
+    USDIMAGING_API
+    bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
@@ -81,8 +89,8 @@ public:
     /// HdChangeTracker::AllDirty if the entire prim must be resynchronized.
     USDIMAGING_API
     HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
-                                              SdfPath const& cachePath,
-                                              TfToken const& propertyName) override;
+                                      SdfPath const& cachePath,
+                                      TfToken const& propertyName) override;
 
     USDIMAGING_API
     void MarkDirty(UsdPrim const& prim,
@@ -92,13 +100,13 @@ public:
 
     USDIMAGING_API
     void MarkTransformDirty(UsdPrim const& prim,
-                                    SdfPath const& cachePath,
-                                    UsdImagingIndexProxy* index) override;
+                            SdfPath const& cachePath,
+                            UsdImagingIndexProxy* index) override;
 
     USDIMAGING_API
     void MarkVisibilityDirty(UsdPrim const& prim,
-                                     SdfPath const& cachePath,
-                                     UsdImagingIndexProxy* index) override;
+                             SdfPath const& cachePath,
+                             UsdImagingIndexProxy* index) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Utilities 
@@ -108,6 +116,12 @@ public:
     VtValue GetMaterialResource(UsdPrim const &prim,
                                 SdfPath const& cachePath, 
                                 UsdTimeCode time) const override;
+
+protected:
+    USDIMAGING_API
+    void _RemovePrim(SdfPath const& cachePath,
+                     UsdImagingIndexProxy* index) override;
+
 };
 
 

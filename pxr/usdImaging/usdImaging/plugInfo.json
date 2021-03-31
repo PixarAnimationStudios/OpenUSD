@@ -139,6 +139,22 @@
                         "isInternal": true,
                         "primTypeName": "Volume"
                     },
+                    "UsdImagingLightAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Light",
+                        "includeDerivedPrimTypes" : true 
+                    },
+                    "UsdImagingLightFilterAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "LightFilter",
+                        "includeDerivedPrimTypes" : true 
+                    },
                     "UsdImagingDomeLightAdapter": {
                         "bases": [
                             "UsdImagingLightAdapter"
@@ -187,6 +203,20 @@
                         ],
                         "isInternal": true,
                         "primTypeName": "PluginLight"
+                    },
+                    "UsdImagingGeometryLightAdapter": {
+                        "bases": [
+                            "UsdImagingLightAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "GeometryLight"
+                    },
+                    "UsdImagingPortalLightAdapter": {
+                        "bases": [
+                            "UsdImagingLightAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PortalLight"
                     },
                     "UsdImagingPluginLightFilterAdapter": {
                         "bases": [
