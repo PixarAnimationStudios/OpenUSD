@@ -55,6 +55,33 @@ TF_REGISTRY_FUNCTION(TfType)
     // No factory here, GprimAdapter is abstract.
 }
 
+static TfTokenVector
+_CollectMaterialPrimvars(const VtValue & vtMaterial)
+{
+    TfTokenVector primvars;
+
+    if (vtMaterial.IsHolding<HdMaterialNetworkMap>()) {
+
+        HdMaterialNetworkMap const& networkMap = 
+            vtMaterial.UncheckedGet<HdMaterialNetworkMap>();
+
+        // To simplify the logic so we do not have to pick between different
+        // networks (surface, displacement, volume), we merge all primvars.
+
+        for (auto const& itMap : networkMap.map) {
+            HdMaterialNetwork const& network = itMap.second;
+            primvars.insert(primvars.end(), 
+                network.primvars.begin(), network.primvars.end());
+        }
+    }
+
+    std::sort(primvars.begin(), primvars.end());
+    primvars.erase(std::unique(primvars.begin(), primvars.end()),
+                   primvars.end());
+
+    return primvars;
+}
+
 UsdImagingGprimAdapter::~UsdImagingGprimAdapter() 
 {
 }
@@ -295,6 +322,19 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         }
     }
 
+    SdfPath materialUsdPath;
+    if (requestedBits & (HdChangeTracker::DirtyPrimvar |
+                         HdChangeTracker::DirtyMaterialId)) {
+        materialUsdPath = GetMaterialUsdPath(prim);
+
+        // If we're processing this gprim on behalf of an instancer,
+        // use the material binding specified by the instancer if we
+        // aren't able to find a material binding for this prim itself.
+        if (instancerContext && materialUsdPath.IsEmpty()) {
+            materialUsdPath = instancerContext->instancerMaterialUsdPath;
+        }
+    }
+
     if (requestedBits & HdChangeTracker::DirtyPrimvar) {
         // Handle color/opacity specially, since they can be shadowed by
         // material parameters.  If we don't find them, check inherited
@@ -347,10 +387,36 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         std::vector<UsdGeomPrimvar> local = primvarsAPI.GetPrimvarsWithValues();
         primvars.insert(primvars.end(), local.begin(), local.end());
 
+        // Some backends may not want to load all primvars due to memory limits.
+        // We filter the list of primvars based on what the material needs.
+        TfTokenVector matPrimvarNames;
+        if (_IsPrimvarFilteringNeeded() && !materialUsdPath.IsEmpty()) {
+            if (UsdPrim matPrim = _GetPrim(materialUsdPath)) {
+                // NOTE: We need to directly access the registered instance
+                //       of UsdImagingMaterialAdaptor in order to query its
+                //       material resource. Those are registered to match
+                //       the USD prim type name.
+                if (UsdImagingPrimAdapterSharedPtr materialAdapter
+                            =_GetAdapter(matPrim.GetTypeName())) {
+                    VtValue vtMaterial = 
+                            materialAdapter->GetMaterialResource(
+                                    matPrim, matPrim.GetPath(), time);
+                    matPrimvarNames = _CollectMaterialPrimvars(vtMaterial);
+                }
+            }
+        }
+
         for (auto const &pv : primvars) {
             if (_IsBuiltinPrimvar(pv.GetPrimvarName())) {
                 continue;
             }
+            if (_IsPrimvarFilteringNeeded() &&
+                std::find(matPrimvarNames.begin(),
+                          matPrimvarNames.end(),
+                          pv.GetPrimvarName()) == matPrimvarNames.end()) {
+                continue;
+            }
+
             _ComputeAndMergePrimvar(prim, pv, time, &vPrimvars);
         }
     }

@@ -650,6 +650,11 @@ protected:
     USDIMAGING_API
     TfTokenVector _GetMaterialRenderContexts() const;
 
+    // Returns true if render delegate wants primvars to be filtered based.
+    // This will filter the primvars based on the bound material primvar needs.
+    USDIMAGING_API
+    bool _IsPrimvarFilteringNeeded() const;
+
     // Returns the shader source type from the render delegate.
     USDIMAGING_API
     TfTokenVector _GetShaderSourceTypes() const;

@@ -108,6 +108,12 @@ HdRenderDelegate::GetMaterialRenderContexts() const
     return {GetMaterialNetworkSelector()};
 }
 
+bool
+HdRenderDelegate::IsPrimvarFilteringNeeded() const
+{
+    return false;
+}
+
 HdAovDescriptor
 HdRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
 {
