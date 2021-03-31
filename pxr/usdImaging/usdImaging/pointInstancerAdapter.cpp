@@ -1630,7 +1630,8 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
     UsdTimeCode time, 
     size_t maxNumSamples, 
     float *sampleTimes, 
-    VtValue *sampleValues)
+    VtValue *sampleValues,
+    VtIntArray *sampleIndices)
 {
     HD_TRACE_FUNCTION();
 
@@ -1645,7 +1646,7 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
         UsdPrim protoPrim = _GetProtoUsdPrim(proto);
         return proto.adapter->SamplePrimvar(
             protoPrim, cachePath, key, time,
-            maxNumSamples, sampleTimes, sampleValues);
+            maxNumSamples, sampleTimes, sampleValues, sampleIndices);
     } else {
         // Map Hydra-PI transform keys to their USD equivalents.
         TfToken usdKey = key;
@@ -1658,7 +1659,7 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
         }
         return UsdImagingPrimAdapter::SamplePrimvar(
             usdPrim, cachePath, usdKey, time,
-            maxNumSamples, sampleTimes, sampleValues);
+            maxNumSamples, sampleTimes, sampleValues, sampleIndices);
     }
 }
 

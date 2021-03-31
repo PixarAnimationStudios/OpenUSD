@@ -388,7 +388,7 @@ inline VtValue
 HdRprim::GetIndexedPrimvar(HdSceneDelegate* delegate, const TfToken &name, 
                            VtIntArray *indices) const
 {
-    return delegate->GetIndexedPrimvarValue(GetId(), name, indices);
+    return delegate->GetIndexedPrimvar(GetId(), name, indices);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

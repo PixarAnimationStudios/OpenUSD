@@ -178,7 +178,7 @@ HdSceneDelegate::Get(SdfPath const& id, TfToken const& key)
 
 /*virtual*/
 VtValue
-HdSceneDelegate::GetIndexedPrimvarValue(SdfPath const& id, TfToken const& key, 
+HdSceneDelegate::GetIndexedPrimvar(SdfPath const& id, TfToken const& key, 
                                         VtIntArray *outIndices) 
 {
     // We return an empty value here rather than returning the result of 
@@ -199,6 +199,23 @@ HdSceneDelegate::SamplePrimvar(SdfPath const& id,
     if (maxSampleCount > 0) {
         sampleTimes[0] = 0.0;
         sampleValues[0] = Get(id, key);
+        return 1;
+    }
+    return 0;
+}
+
+/*virtual*/
+size_t
+HdSceneDelegate::SampleIndexedPrimvar(SdfPath const& id, 
+                               TfToken const& key,
+                               size_t maxSampleCount,
+                               float *sampleTimes,
+                               VtValue *sampleValues,
+                               VtIntArray *sampleIndices)
+{
+    if (maxSampleCount > 0) {
+        sampleTimes[0] = 0.0;
+        sampleValues[0] = GetIndexedPrimvar(id, key, &sampleIndices[0]);
         return 1;
     }
     return 0;

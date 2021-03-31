@@ -153,7 +153,7 @@ struct HdPrimvarDescriptor {
     /// See HdPrimvarRoleTokens; default is HdPrimvarRoleTokens->none.
     TfToken role;
     /// Optional bool, true if primvar is indexed. This value should be checked
-    /// before calling "GetIndexedPrimvarValue"
+    /// before calling "GetIndexedPrimvar"
     bool indexed;
 
     HdPrimvarDescriptor() {}
@@ -399,13 +399,14 @@ public:
     HD_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key);
 
-    /// Returns a named primvar value. If outIndices is not nullptr and the 
+    /// Returns a named primvar value. If \a *outIndices is not nullptr and the 
     /// primvar has indices, it will return the unflattened primvar and set 
-    /// outIndices to the primvar's associated indices.
+    /// \a *outIndices to the primvar's associated indices, clearing the array
+    /// if the primvar is not indexed.
     HD_API
-    virtual VtValue GetIndexedPrimvarValue(SdfPath const& id, 
-                                           TfToken const& key, 
-                                           VtIntArray *outIndices);
+    virtual VtValue GetIndexedPrimvar(SdfPath const& id, 
+                                      TfToken const& key, 
+                                      VtIntArray *outIndices);
 
     /// Returns the authored repr (if any) for the given prim.
     HD_API
@@ -525,7 +526,7 @@ public:
     ///
     /// For example, this means that a mesh that is fracturing over time
     /// will return samples with the same number of points; the number
-    /// of points will change as the scene delegate is resynchronzied
+    /// of points will change as the scene delegate is resynchronized
     /// to represent the scene at a time with different topology.
     ///
     /// Sample times are relative to the scene delegate's current time.
@@ -546,29 +547,30 @@ public:
     void 
     SamplePrimvar(SdfPath const &id, 
                   TfToken const& key,
-                  HdTimeSampleArray<VtValue, CAPACITY> *sa) {
-        size_t authoredSamples = 
-            SamplePrimvar(
-                id, 
-                key, 
-                CAPACITY, 
-                sa->times.data(), 
-                sa->values.data());
-        if (authoredSamples > CAPACITY) {
-            sa->Resize(authoredSamples);
-            size_t authoredSamplesSecondAttempt = 
-                SamplePrimvar(
-                    id, 
-                    key, 
-                    authoredSamples, 
-                    sa->times.data(), 
-                    sa->values.data());
-            // Number of samples should be consisntent through multiple
-            // invokations of the sampling function.
-            TF_VERIFY(authoredSamples == authoredSamplesSecondAttempt);
-        }
-        sa->count = authoredSamples;
-    }
+                  HdTimeSampleArray<VtValue, CAPACITY> *sa);
+
+    /// SamplePrimvar() for getting an unflattened primvar and its indices. If 
+    /// \a *sampleIndices is not nullptr and the primvar has indices, it will 
+    /// return unflattened primvar samples in \a *sampleValues and the primvar's 
+    /// sampled indices in \a *sampleIndices, clearing the \a *sampleIndices 
+    /// array if the primvar is not indexed.
+    HD_API
+    virtual size_t
+    SampleIndexedPrimvar(SdfPath const& id, 
+                         TfToken const& key,
+                         size_t maxSampleCount, 
+                         float *sampleTimes, 
+                         VtValue *sampleValues,
+                         VtIntArray *sampleIndices);
+
+    /// Convenience form of SampleIndexedPrimvar() that takes 
+    /// HdTimeSampleArrays. This function returns the union of the authored 
+    /// samples and the boundaries of the current camera shutter interval.
+    template <unsigned int CAPACITY>
+    void 
+    SampleIndexedPrimvar(SdfPath const &id, 
+                         TfToken const& key,
+                         HdIndexedTimeSampleArray<VtValue, CAPACITY> *sa);
 
     // -----------------------------------------------------------------------//
     /// \name Instancer prototypes
@@ -798,6 +800,63 @@ private:
     HdSceneDelegate &operator=(HdSceneDelegate &) =  delete;
 };
 
+template <unsigned int CAPACITY>
+void 
+HdSceneDelegate::SamplePrimvar(SdfPath const &id, 
+                               TfToken const& key,
+                               HdTimeSampleArray<VtValue, CAPACITY> *sa) {
+    size_t authoredSamples = 
+        SamplePrimvar(
+            id, 
+            key, 
+            CAPACITY, 
+            sa->times.data(), 
+            sa->values.data());
+    if (authoredSamples > CAPACITY) {
+        sa->Resize(authoredSamples);
+        size_t authoredSamplesSecondAttempt = 
+            SamplePrimvar(
+                id, 
+                key, 
+                authoredSamples, 
+                sa->times.data(), 
+                sa->values.data());
+        // Number of samples should be consistent through multiple
+        // invocations of the sampling function.
+        TF_VERIFY(authoredSamples == authoredSamplesSecondAttempt);
+    }
+    sa->count = authoredSamples;
+}
+
+template <unsigned int CAPACITY>
+void 
+HdSceneDelegate::SampleIndexedPrimvar(SdfPath const &id, 
+                         TfToken const& key,
+                         HdIndexedTimeSampleArray<VtValue, CAPACITY> *sa) {
+    size_t authoredSamples = 
+        SampleIndexedPrimvar(
+            id, 
+            key, 
+            CAPACITY, 
+            sa->times.data(), 
+            sa->values.data(),
+            sa->indices.data());
+    if (authoredSamples > CAPACITY) {
+        sa->Resize(authoredSamples);
+        size_t authoredSamplesSecondAttempt = 
+            SampleIndexedPrimvar(
+                id, 
+                key, 
+                authoredSamples, 
+                sa->times.data(), 
+                sa->values.data(),
+                sa->indices.data());
+        // Number of samples should be consistent through multiple
+        // invocations of the sampling function.
+        TF_VERIFY(authoredSamples == authoredSamplesSecondAttempt);
+    }
+    sa->count = authoredSamples;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

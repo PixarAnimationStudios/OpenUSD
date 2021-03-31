@@ -2366,9 +2366,9 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
 
 /*virtual*/ 
 VtValue 
-UsdImagingDelegate::GetIndexedPrimvarValue(SdfPath const& id, 
-                                           TfToken const& key, 
-                                           VtIntArray *outIndices)
+UsdImagingDelegate::GetIndexedPrimvar(SdfPath const& id, 
+                                      TfToken const& key, 
+                                      VtIntArray *outIndices)
 {
     return _Get(id, key, outIndices);
 }
@@ -2426,13 +2426,42 @@ UsdImagingDelegate::SamplePrimvar(SdfPath const& id,
                                   float *sampleTimes, 
                                   VtValue *sampleValues)
 {
+    return _SamplePrimvar(id, key, maxNumSamples, sampleTimes, sampleValues, 
+                          nullptr);
+}
+
+/*virtual*/
+size_t
+UsdImagingDelegate::SampleIndexedPrimvar(SdfPath const& id,
+                                  TfToken const& key,
+                                  size_t maxNumSamples,
+                                  float *sampleTimes, 
+                                  VtValue *sampleValues,
+                                  VtIntArray *sampleIndices)
+{
+    return _SamplePrimvar(id, key, maxNumSamples, sampleTimes, sampleValues, 
+                          sampleIndices);
+}
+
+size_t
+UsdImagingDelegate::_SamplePrimvar(SdfPath const& id,
+                                  TfToken const& key,
+                                  size_t maxNumSamples,
+                                  float *sampleTimes, 
+                                  VtValue *sampleValues,
+                                  VtIntArray *sampleIndices)
+{
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo)) {
+        if (sampleIndices) {
+            sampleIndices[0] = VtIntArray(0);
+        }
         // Retrieve the multi-sampled result.
         size_t nSamples = primInfo->adapter
             ->SamplePrimvar(primInfo->usdPrim, cachePath, key,
-                            _time, maxNumSamples, sampleTimes, sampleValues);
+                            _time, maxNumSamples, sampleTimes, sampleValues, 
+                            sampleIndices);
         return nSamples;
     }
     return 0;

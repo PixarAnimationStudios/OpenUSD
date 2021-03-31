@@ -300,8 +300,11 @@ public:
         UsdPrim const& usdPrim,
         SdfPath const& cachePath) const;
 
-    /// Sample the primvar for the given prim.
-    /// \see HdSceneDelegate::SamplePrimvar()
+    /// Sample the primvar for the given prim. If *sampleIndices is not nullptr 
+    /// and the primvar has indices, it will sample the unflattened primvar and 
+    /// set *sampleIndices to the primvar's sampled indices.
+    /// \see HdSceneDelegate::SamplePrimvar() and 
+    /// HdSceneDelegate::SampleIndexedPrimvar()
     USDIMAGING_API
     virtual size_t
     SamplePrimvar(UsdPrim const& usdPrim,
@@ -310,7 +313,8 @@ public:
                   UsdTimeCode time,
                   size_t maxNumSamples, 
                   float *sampleTimes,
-                  VtValue *sampleValues);
+                  VtValue *sampleValues,
+                  VtIntArray *sampleIndices);
 
     /// Get the subdiv tags for this prim.
     USDIMAGING_API

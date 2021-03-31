@@ -1639,7 +1639,8 @@ UsdImagingInstanceAdapter::SamplePrimvar(
     UsdTimeCode time,
     size_t maxNumSamples, 
     float *sampleTimes, 
-    VtValue *sampleValues)
+    VtValue *sampleValues,
+    VtIntArray *sampleIndices)
 {
     HD_TRACE_FUNCTION();
 
@@ -1659,7 +1660,7 @@ UsdImagingInstanceAdapter::SamplePrimvar(
         }
         return proto.adapter->SamplePrimvar(
             _GetPrim(proto.path), cachePath, key, time,  
-            maxNumSamples, sampleTimes, sampleValues);
+            maxNumSamples, sampleTimes, sampleValues, sampleIndices);
     }
 
     GfInterval interval = _GetCurrentTimeSamplingInterval();

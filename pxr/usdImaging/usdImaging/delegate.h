@@ -327,9 +327,9 @@ public:
     USDIMAGING_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key) override;
     USDIMAGING_API
-    virtual VtValue GetIndexedPrimvarValue(SdfPath const& id, 
-                                           TfToken const& key, 
-                                           VtIntArray *outIndices) override;
+    virtual VtValue GetIndexedPrimvar(SdfPath const& id, 
+                                      TfToken const& key, 
+                                      VtIntArray *outIndices) override;
     USDIMAGING_API
     HdIdVectorSharedPtr
     virtual GetCoordSysBindings(SdfPath const& id) override;
@@ -372,6 +372,12 @@ public:
     SamplePrimvar(SdfPath const& id, TfToken const& key,
                   size_t maxNumSamples, float *times,
                   VtValue *samples) override;
+
+    USDIMAGING_API
+    virtual size_t
+    SampleIndexedPrimvar(SdfPath const& id, TfToken const& key,
+                         size_t maxNumSamples, float *times,
+                         VtValue *samples, VtIntArray *indices) override;
 
     // Material Support
     USDIMAGING_API
@@ -514,8 +520,12 @@ public:
     bool IsInInvisedPaths(const SdfPath &usdPath) const;
 
 private:
-    // Internal Get 
+    // Internal Get and SamplePrimvar
     VtValue _Get(SdfPath const& id, TfToken const& key, VtIntArray *outIndices);
+
+    size_t _SamplePrimvar(SdfPath const& id, TfToken const& key,
+                          size_t maxNumSamples, float *times, VtValue *samples, 
+                          VtIntArray *indices);
 
     // Internal friend class.
     class _Worker;

@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
+#include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/quatf.h"
@@ -80,7 +81,7 @@ T HdResampleRawTimeSamples(
     const T *vs)
 {
     if (numSamples == 0) {
-        TF_CODING_ERROR("HdResample: Zero samples provided");
+        TF_CODING_ERROR("HdResampleRawTimeSamples: Zero samples provided");
         return T();
     }
 
@@ -113,6 +114,55 @@ T HdResampleRawTimeSamples(
     }
 }
 
+/// Resample a function described by an ordered array of samples and sample
+/// indices, using a linear reconstruction filter evaluated at the given
+/// parametric position u.  The function is considered constant outside the 
+/// supplied sample range.
+template <typename T>
+std::pair<T, VtIntArray> HdResampleRawTimeSamples(
+    float u, 
+    size_t numSamples,
+    const float *us, 
+    const T *vs,
+    const VtIntArray *is)
+{
+    if (numSamples == 0) {
+        TF_CODING_ERROR("HdResampleRawTimeSamples: Zero samples provided");
+        return std::pair<T, VtIntArray>(T(), VtIntArray(0));
+    }
+
+    size_t i=0;
+    for (; i < numSamples; ++i) {
+        if (us[i] == u) {
+            // Fast path for exact parameter match.
+            return std::pair<T, VtIntArray>(vs[i], is[i]);
+        }
+        if (us[i] > u) {
+            break;
+        }
+    }
+    if (i == 0) {
+        // u is before the first sample.
+        return std::pair<T, VtIntArray>(vs[0], is[0]);
+    } else if (i == numSamples) {
+        // u is after the last sample.
+        return std::pair<T, VtIntArray>(vs[numSamples-1], is[numSamples-1]);
+    } else if (us[i] == us[i-1]) {
+        // Neighboring samples have identical parameter.
+        // Arbitrarily choose a sample.
+        TF_WARN("HdResampleRawTimeSamples: overlapping samples at %f; "
+                "using first sample", us[i]);
+        return std::pair<T, VtIntArray>(vs[i-1], is[i-1]);
+    } else {
+        // Linear blend of neighboring samples for values
+        // Hold earlier value for indices
+        float alpha = (us[i]-u) / (us[i]-us[i-1]);
+        return std::pair<T, VtIntArray>(
+            HdResampleNeighbors(alpha, vs[i-1], vs[i]),
+            is[i-1]);
+    }
+}
+
 /// An array of a value sampled over time, in struct-of-arrays layout.
 /// This is provided as a convenience for time-sampling attributes.
 /// This type has static capacity but dynamic size, providing
@@ -141,7 +191,7 @@ struct HdTimeSampleArray
     }
 
     /// Resize the internal buffers.
-    void Resize(unsigned int newSize) {
+    virtual void Resize(unsigned int newSize) {
         times.resize(newSize);
         values.resize(newSize);
         count = newSize;
@@ -154,7 +204,7 @@ struct HdTimeSampleArray
     }
 
     /// Unbox an HdTimeSampleArray holding boxed VtValue<VtArray<T>>
-    /// samples into an aray holding VtArray<T> samples.
+    /// samples into an array holding VtArray<T> samples.
     ///
     /// Similar to VtValue::Get(), this will issue a coding error if the
     /// VtValue is not holding the expected type.
@@ -175,6 +225,66 @@ struct HdTimeSampleArray
     size_t count;
     TfSmallVector<float, CAPACITY> times;
     TfSmallVector<TYPE, CAPACITY> values;
+};
+
+/// An array of a value and its indices sampled over time, in struct-of-arrays 
+/// layout.
+template<typename TYPE, unsigned int CAPACITY>
+struct HdIndexedTimeSampleArray : public HdTimeSampleArray<TYPE, CAPACITY>
+{
+    HdIndexedTimeSampleArray() : HdTimeSampleArray<TYPE, CAPACITY>() {
+        indices.resize(CAPACITY);
+    }
+
+    HdIndexedTimeSampleArray(const HdIndexedTimeSampleArray& rhs) : 
+        HdTimeSampleArray<TYPE, CAPACITY>(rhs) {
+        indices = rhs.indices;
+    }
+
+    HdIndexedTimeSampleArray& 
+    operator=(const HdIndexedTimeSampleArray& rhs) {
+        this->times = rhs.times;
+        this->values = rhs.values;
+        this->count = rhs.count;
+        indices = rhs.indices;
+        return *this;
+    }
+
+    /// Resize the internal buffers.
+    void Resize(unsigned int newSize) override {
+        HdTimeSampleArray<TYPE, CAPACITY>::Resize(newSize);
+        indices.resize(newSize);
+    }
+
+    /// Convience method for invoking HdResampleRawTimeSamples
+    /// on this HdIndexedTimeSampleArray.
+    std::pair<TYPE, VtIntArray> ResampleIndexed(float u) const {
+        return HdResampleRawTimeSamples(u, this->count, this->times.data(), 
+                                        this->values.data(), indices.data());
+    }
+
+    /// Unbox an HdIndexedTimeSampleArray holding boxed VtValue<VtArray<T>>
+    /// samples into an array holding VtArray<T> samples.
+    ///
+    /// Similar to VtValue::Get(), this will issue a coding error if the
+    /// VtValue is not holding the expected type.
+    ///
+    /// \see VtValue::Get()
+    void 
+    UnboxFrom(HdIndexedTimeSampleArray<VtValue, CAPACITY> const& box) {
+        Resize(box.count);
+        this->times = box.times;
+        indices = box.indices;
+        for (size_t i=0; i < box.count; ++i) {
+            if (box.values[i].GetArraySize() > 0) {
+                this->values[i] = box.values[i].template Get<TYPE>();
+            } else {
+                this->values[i] = TYPE();
+            }
+        }
+    }
+
+    TfSmallVector<VtIntArray, CAPACITY> indices;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

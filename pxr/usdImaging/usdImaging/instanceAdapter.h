@@ -209,7 +209,8 @@ public:
                          UsdTimeCode time,
                          size_t maxNumSamples, 
                          float *sampleTimes,
-                         VtValue *sampleValues) override;
+                         VtValue *sampleValues,
+                         VtIntArray *sampleIndices) override;
 
     TfToken GetPurpose(
         UsdPrim const& usdPrim, 

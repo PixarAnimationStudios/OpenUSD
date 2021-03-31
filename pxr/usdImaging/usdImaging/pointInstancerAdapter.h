@@ -160,7 +160,8 @@ public:
                          UsdTimeCode time,
                          size_t maxNumSamples, 
                          float *sampleTimes,
-                         VtValue *sampleValues) override;
+                         VtValue *sampleValues,
+                         VtIntArray *sampleIndices) override;
 
     PxOsdSubdivTags GetSubdivTags(UsdPrim const& usdPrim,
                                   SdfPath const& cachePath,
