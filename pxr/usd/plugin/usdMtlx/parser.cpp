@@ -30,6 +30,8 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
+#include "pxr/usd/usdUtils/pipeline.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -47,6 +49,21 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((discoveryType, "mtlx"))
     ((sourceType, ""))
 );
+
+// This environment variable lets users override the name of the primary
+// UV set that MaterialX should look for.  If it's empty, it uses the USD
+// default, "st".
+TF_DEFINE_ENV_SETTING(USDMTLX_PRIMARY_UV_NAME, "",
+    "The name usdMtlx should use to reference the primary UV set.");
+
+static const std::string _GetPrimaryUvSetName()
+{
+    static const std::string env = TfGetEnvSetting(USDMTLX_PRIMARY_UV_NAME);
+    if (env.empty()) {
+        return UsdUtilsGetPrimaryUVSetName().GetString();
+    }
+    return env;
+}
 
 // A builder for shader nodes.  We find it convenient to build the
 // arguments to SdrShaderNode across multiple functions.  This type
@@ -89,7 +106,8 @@ public:
         }
     }
 
-    void AddProperty(const mx::ConstTypedElementPtr& element, bool isOutput);
+    void AddProperty(const mx::ConstTypedElementPtr& element,
+                     bool isOutput, NdrStringVec *primvars);
 
 public:
     const NdrNodeDiscoveryResult& discoveryResult;
@@ -108,7 +126,7 @@ private:
 void
 ShaderBuilder::AddProperty(
     const mx::ConstTypedElementPtr& element,
-    bool isOutput)
+    bool isOutput, NdrStringVec *primvars)
 {
     TfToken type;
     NdrTokenMap metadata;
@@ -116,7 +134,7 @@ ShaderBuilder::AddProperty(
     NdrOptionVec options;
     VtValue defaultValue;
 
-    auto&& mtlxType = element->getType();
+    const auto& mtlxType = element->getType();
     const auto converted = UsdMtlxGetUsdType(mtlxType);
     if (converted.shaderPropertyType.IsEmpty()) {
         // Not found.  If an Sdf type exists use that.
@@ -154,7 +172,7 @@ ShaderBuilder::AddProperty(
     // If this is an output then save the defaultinput, if any.
     static const std::string defaultinputName("defaultinput");
     if (isOutput) {
-        auto&& defaultinput = element->getAttribute(defaultinputName);
+        const auto& defaultinput = element->getAttribute(defaultinputName);
         if (!defaultinput.empty()) {
             metadata.emplace(SdrPropertyMetadata->DefaultInput, defaultinput);
         }
@@ -163,7 +181,7 @@ ShaderBuilder::AddProperty(
     // Record the targets on inputs.
     static const std::string targetName("target");
     if (!isOutput) {
-        auto&& target = element->getAttribute(targetName);
+        const auto& target = element->getAttribute(targetName);
         if (!target.empty()) {
             metadata.emplace(SdrPropertyMetadata->Target, target);
         }
@@ -172,7 +190,7 @@ ShaderBuilder::AddProperty(
     // Record the colorspace on inputs and outputs.
     static const std::string colorspaceName("colorspace");
     if (isOutput || element->isA<mx::Input>()) {
-        auto&& colorspace = element->getAttribute(colorspaceName);
+        const auto& colorspace = element->getAttribute(colorspaceName);
         if (!colorspace.empty() &&
                 colorspace != element->getParent()->getActiveColorSpace()) {
             metadata.emplace(SdrPropertyMetadata->Colorspace, colorspace);
@@ -181,6 +199,26 @@ ShaderBuilder::AddProperty(
 
     // Get the property name.
     auto name = element->getName();
+
+    // Record builtin primvar references for this node's inputs.
+    static const std::string defaultgeompropName("defaultgeomprop");
+    if (!isOutput && primvars != nullptr) {
+
+        // If an input has "defaultgeomprop", that means it reads from the
+        // primvar specified unless connected. We mark these in Sdr as
+        // always-required primvars; note that this means we might overestimate
+        // which primvars are referenced in a material.
+        const auto& defaultgeomprop = element->getAttribute(defaultgeompropName);
+        if (!defaultgeomprop.empty()) {
+            // Note: MaterialX uses a default texcoord of "UV0", which we
+            // inline replace with the configured default.
+            if (defaultgeomprop == "UV0") {
+                primvars->push_back(_GetPrimaryUvSetName());
+            } else {
+                primvars->push_back(defaultgeomprop);
+            }
+        }
+    }
 
     // MaterialX doesn't name the output of a nodedef unless it has
     // multiple outputs.  The default name would be the name of the
@@ -216,7 +254,7 @@ ParseMetadata(
     const mx::ConstElementPtr& element,
     const std::string& attribute)
 {
-    auto&& value = element->getAttribute(attribute);
+    const auto& value = element->getAttribute(attribute);
     if (!value.empty()) {
         // Change the MaterialX Texture node role from 'texture2d' to 'texture' 
         if (key == SdrNodeMetadata->Role && value == "texture2d") {
@@ -251,7 +289,7 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
         return;
     }
 
-    auto&& type = nodeDef->getType();
+    const auto& type = nodeDef->getType();
 
     // Get the context.
     TfToken context = GetContext(nodeDef->getDocument(), type);
@@ -278,13 +316,40 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
 
     // XXX -- version
 
+    NdrStringVec primvars;
+
+    // If the nodeDef name starts with ND_geompropvalue, it's a primvar reader
+    // node and we want to add $geomprop to the list of referenced primvars.
+    if (TfStringStartsWith(nodeDef->getName(), "ND_geompropvalue")) {
+        primvars.push_back("$geomprop");
+    }
+
+    // Also check internalgeomprops.
+    static const std::string internalgeompropsName("internalgeomprops");
+    const auto& internalgeomprops = nodeDef->getAttribute(internalgeompropsName);
+    if (!internalgeomprops.empty()) {
+        std::vector<std::string> split =
+            UsdMtlxSplitStringArray(internalgeomprops);
+        // Note: MaterialX uses a default texcoord of "UV0", which we
+        // inline replace with the configured default.
+        for (auto& name : split) {
+            if (name == "UV0") {
+                name = _GetPrimaryUvSetName();
+            }
+        }
+        primvars.insert(primvars.end(), split.begin(), split.end());
+    }
+
     // Properties
-    for (auto&& mtlxInput: nodeDef->getInputs()) {
-        builder->AddProperty(mtlxInput, false);
+    for (const auto& mtlxInput: nodeDef->getInputs()) {
+        builder->AddProperty(mtlxInput, false, &primvars);
     }
-    for (auto&& mtlxOutput: nodeDef->getOutputs()) {
-        builder->AddProperty(mtlxOutput, true);
+    for (const auto& mtlxOutput: nodeDef->getOutputs()) {
+        builder->AddProperty(mtlxOutput, true, nullptr);
     }
+
+    builder->metadata[SdrNodeMetadata->Primvars] =
+        TfStringJoin(primvars.begin(), primvars.end(), "|");
 }
 
 static
@@ -308,7 +373,7 @@ ParseElement(
     const NdrNodeDiscoveryResult& discoveryResult)
 {
     // Name remapping.
-    for (auto&& mtlxInput: impl->getInputs()) {
+    for (const auto& mtlxInput: impl->getInputs()) {
         builder->AddPropertyNameRemapping(
             mtlxInput->getName(),
             mtlxInput->getAttribute("implname"));
@@ -353,7 +418,7 @@ ParseElement(
     builder->implementationURI = filename;
 
     // Function
-    auto&& function = impl->getFunction();
+    const auto& function = impl->getFunction();
     if (!function.empty()) {
         builder->metadata[SdrNodeMetadata->ImplementationName] = function;
     }

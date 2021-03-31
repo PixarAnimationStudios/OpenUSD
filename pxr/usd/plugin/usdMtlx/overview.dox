@@ -70,11 +70,9 @@ warning.
 on materials; instead, USD encodes lights as object schemas, in UsdLux.
 + Custom type members.  The file format plugin currently doesn't handle
 structures except as blind data.  Consequently it ignores **member** attributes.
-+ _geominfo_, _geomprop_, _geompropvalue_, and _geompropdefault_ elements.
++ _geominfo_, _geompropdef_, and _geomprop_ elements.
 These elements are ignored.  The file format plugin currently doesn't attempt 
 to bind looks to geometry.
-+ **internalgeomprops** attribute.  This attribute is ignored.
-+ **defaultgeomprop** attribute.  This attribute is ignored.
 + **geomname** value type.  These are treated as strings but such values
 are never used.  The file format plugin currently doesn't attempt
 to bind looks to geometry.
