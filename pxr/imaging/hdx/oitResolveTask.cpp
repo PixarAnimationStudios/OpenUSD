@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/garch/glApi.h"
+
 #include "pxr/imaging/hdx/oitResolveTask.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/package.h"
@@ -41,10 +43,103 @@
 
 #include "pxr/imaging/hdx/oitBufferAccessor.h"
 
+#include "pxr/imaging/glf/contextCaps.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
 
+static GfVec2i
+_GetScreenSize()
+{
+    // XXX Ideally we want screenSize to be passed in via the app. 
+    // (see Presto Stagecontext/TaskGraph), but for now we query this from GL.
+    //
+    // Using GL_VIEWPORT here (or viewport from RenderParams) is in-correct!
+    //
+    // The gl_FragCoord we use in the OIT shaders is relative to the FRAMEBUFFER 
+    // size (screen size), not the gl_viewport size.
+    // We do various tricks with glViewport for Presto slate mode so we cannot
+    // rely on it to determine the 'screenWidth' we need in the gl shaders.
+    // 
+    // The CounterBuffer is especially fragile to this because in the glsl shdr
+    // we calculate a 'screenIndex' based on gl_fragCoord that indexes into
+    // the CounterBuffer. If we did not make enough room in the CounterBuffer
+    // we may be reading/writing an invalid index into the CounterBuffer.
+    //
+    
+    GLint attachType = 0;
+    glGetFramebufferAttachmentParameteriv(
+        GL_DRAW_FRAMEBUFFER, 
+        GL_COLOR_ATTACHMENT0,
+        GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE,
+        &attachType);
+    
+    GLint attachId = 0;
+    glGetFramebufferAttachmentParameteriv(
+        GL_DRAW_FRAMEBUFFER, 
+        GL_COLOR_ATTACHMENT0,
+        GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME,
+        &attachId);
+    
+    // XXX Fallback to gl viewport in case we do not find a non-default FBO for
+    // bakends that do not attach a custom FB. This is in-correct, but gl does
+    // not let us query size properties of default framebuffer. For this we
+    // need the screenSize to be passed in via app (see note above)
+    if (attachId <= 0) {
+        GLint viewport[4];
+        glGetIntegerv(GL_VIEWPORT, viewport);
+        return GfVec2i(viewport[2], viewport[3]);
+    }
+    
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
+
+    if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
+        if (attachType == GL_TEXTURE) {
+            GLint w, h;
+            glGetTextureLevelParameteriv(attachId, 0, GL_TEXTURE_WIDTH, &w);
+            glGetTextureLevelParameteriv(attachId, 0, GL_TEXTURE_HEIGHT, &h);
+            return GfVec2i(w,h);
+        }
+
+        if (attachType == GL_RENDERBUFFER) {
+            GLint w, h;
+            glGetNamedRenderbufferParameteriv(
+                attachId, GL_RENDERBUFFER_WIDTH, &w);
+            glGetNamedRenderbufferParameteriv(
+                attachId, GL_RENDERBUFFER_HEIGHT, &h);
+            return GfVec2i(w,h);
+        }
+    } else {
+        if (attachType == GL_TEXTURE) {
+            GLint w, h;
+            GLint oldBinding;
+            glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldBinding);
+            glBindTexture(GL_TEXTURE_2D, attachId);
+            glGetTexLevelParameteriv(GL_TEXTURE_2D,0, GL_TEXTURE_WIDTH, &w);
+            glGetTexLevelParameteriv(GL_TEXTURE_2D,0, GL_TEXTURE_HEIGHT, &h);
+            glBindTexture(GL_TEXTURE_2D, oldBinding);
+            return GfVec2i(w,h);
+        }
+        
+        if (attachType == GL_RENDERBUFFER) {
+            GLint w, h;
+            GLint oldBinding;
+            glGetIntegerv(GL_RENDERBUFFER_BINDING, &oldBinding);
+            glBindRenderbuffer(GL_RENDERBUFFER, attachId);
+            glGetRenderbufferParameteriv(
+                GL_RENDERBUFFER,GL_RENDERBUFFER_WIDTH,&w);
+            glGetRenderbufferParameteriv(
+                GL_RENDERBUFFER,GL_RENDERBUFFER_HEIGHT,&h);
+            glBindRenderbuffer(GL_RENDERBUFFER, oldBinding);
+            return GfVec2i(w,h);
+        }
+    }
+
+    constexpr int oitScreenSizeFallback = 2048;
+
+    return GfVec2i(oitScreenSizeFallback, oitScreenSizeFallback);
+}        
 
 HdxOitResolveTask::HdxOitResolveTask(
     HdSceneDelegate* delegate, 
@@ -274,13 +369,8 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
         unsigned int h = aovBindings.front().renderBuffer->GetHeight();
         screenSize = GfVec2i(w,h);
     } else {
-        // Without AOVs we don't know the window / screen size.
-        const int oitScreenSizeFallback = 2048;
-        if (_screenSize[0] != oitScreenSizeFallback) {
-            TF_WARN("Invalid AOVs for Oit Resolve Task");
-        }
-        screenSize[0] = oitScreenSizeFallback;
-        screenSize[1] = oitScreenSizeFallback;
+        // Without AOVs, try to use OpenGL state to get the screen size.
+        screenSize = _GetScreenSize();
     }
 
     _PrepareOitBuffers(ctx, renderIndex, screenSize); 
