@@ -46,9 +46,9 @@ HdStBufferResource::~HdStBufferResource()
 }
 
 void
-HdStBufferResource::SetAllocation(HgiBufferHandle const& id, size_t size)
+HdStBufferResource::SetAllocation(HgiBufferHandle const& handle, size_t size)
 {
-    _id = id;
+    _handle = handle;
     HdResource::SetSize(size);
 
     GlfContextCaps const & caps = GlfContextCaps::GetInstance();
@@ -57,9 +57,9 @@ HdStBufferResource::SetAllocation(HgiBufferHandle const& id, size_t size)
     // or when the data store is respecified via BufferData/BufferStorage.
     // It doesn't change even when we make the buffer resident or non-resident.
     // https://www.opengl.org/registry/specs/NV/shader_buffer_load.txt
-    if (id && caps.bindlessBufferEnabled) {
+    if (handle && caps.bindlessBufferEnabled) {
         glGetNamedBufferParameterui64vNV(
-            id->GetRawResource(), GL_BUFFER_GPU_ADDRESS_NV,
+            handle->GetRawResource(), GL_BUFFER_GPU_ADDRESS_NV,
             (GLuint64EXT*)&_gpuAddr);
     } else {
         _gpuAddr = 0;

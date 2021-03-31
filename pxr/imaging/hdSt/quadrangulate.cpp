@@ -546,8 +546,8 @@ HdSt_QuadrangulateComputationGPU::Execute(
     // Generate hash for resource bindings and pipeline.
     // XXX Needs fingerprint hash to avoid collisions
     uint64_t rbHash = (uint64_t) TfHash::Combine(
-        primvar->GetId().Get(),
-        quadrangulateTable->GetId().Get());
+        primvar->GetHandle().Get(),
+        quadrangulateTable->GetHandle().Get());
 
     uint64_t pHash = (uint64_t) TfHash::Combine(
         computeProgram->GetProgram().Get(),
@@ -558,7 +558,7 @@ HdSt_QuadrangulateComputationGPU::Execute(
         hdStResourceRegistry->RegisterResourceBindings(rbHash);
     if (resourceBindingsInstance.IsFirstInstance()) {
         HgiResourceBindingsSharedPtr rb = _CreateResourceBindings(
-            hgi, primvar->GetId(), quadrangulateTable->GetId());
+            hgi, primvar->GetHandle(), quadrangulateTable->GetHandle());
         resourceBindingsInstance.SetValue(rb);
     }
 

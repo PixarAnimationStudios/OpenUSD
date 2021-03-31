@@ -65,17 +65,17 @@ public:
     /// Sets the HgiBufferHandle for this resource and its size.
     /// also caches the gpu address of the buffer.
     HDST_API
-    void SetAllocation(HgiBufferHandle const& id, size_t size);
+    void SetAllocation(HgiBufferHandle const& handle, size_t size);
 
     /// Returns the HgiBufferHandle for this GPU resource
-    HgiBufferHandle& GetId() { return _id; }
+    HgiBufferHandle& GetHandle() { return _handle; }
 
     /// Returns the gpu address (if available. otherwise returns 0).
     uint64_t GetGPUAddress() const { return _gpuAddr; }
 
 private:
     uint64_t _gpuAddr;
-    HgiBufferHandle _id;
+    HgiBufferHandle _handle;
 };
 
 

@@ -515,9 +515,9 @@ HdStResourceRegistry::RegisterBufferResource(
     HgiBufferDesc bufDesc;
     bufDesc.usage= HgiBufferUsageUniform;
     bufDesc.byteSize= byteSize;
-    HgiBufferHandle newId = _hgi->CreateBuffer(bufDesc);
+    HgiBufferHandle buffer = _hgi->CreateBuffer(bufDesc);
 
-    result->SetAllocation(newId, byteSize);
+    result->SetAllocation(buffer, byteSize);
 
     _bufferResourceRegistry.push_back(result);
 

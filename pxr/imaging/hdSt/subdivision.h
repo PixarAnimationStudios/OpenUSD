@@ -222,7 +222,7 @@ public:
             return HdGetComponentCount(_resource->GetTupleType().type);
         }
         uint64_t BindVBO() {
-            return _resource->GetId()->GetRawResource();
+            return _resource->GetHandle()->GetRawResource();
         }
         HdStBufferResourceSharedPtr _resource;
     };
