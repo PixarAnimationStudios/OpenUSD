@@ -137,6 +137,8 @@ void wrapQuat{{ SUFFIX }}()
         .def("GetConjugate", &{{ QUAT }}::GetConjugate)
         .def("GetInverse", &{{ QUAT }}::GetInverse)
 
+        .def("Transform", &{{ QUAT }}::Transform)
+
         .def(str(self))
         .def(-self)
         .def(self == self)
