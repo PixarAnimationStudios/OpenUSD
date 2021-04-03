@@ -297,11 +297,11 @@ UsdNprStrokeGraph::GetViewPoint() const
 float
 UsdNprStrokeGraph::GetSilhouetteWeight(int index) const
 {
-  std::cout << "LOOKUP SILHOUETTE WEIGHT FOR INDEX ---> " << index << std::endl;
+  //std::cout << "LOOKUP SILHOUETTE WEIGHT FOR INDEX ---> " << index << std::endl;
   const auto& it = _silhouetteWeightsMap.find(index);
   if(it != _silhouetteWeightsMap.end())
     return _silhouetteWeights[it->second];
-  std::cout << "SILHOUETTE WEIGHT NOT FOUND ---> DEFAULT 0.5" << std::endl;
+  //std::cout << "SILHOUETTE WEIGHT NOT FOUND ---> DEFAULT 0.5" << std::endl;
   return 0.5f;
 };
 

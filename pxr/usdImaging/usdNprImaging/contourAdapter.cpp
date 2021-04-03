@@ -409,7 +409,6 @@ UsdImagingContourAdapter::GetTopology(UsdPrim const& prim,
                                    SdfPath const& cachePath,
                                    UsdTimeCode time) const
 {
-  std::cout << "GET TOPOLOGY : " << _topology.GetNumPoints() << std::endl;
   return VtValue(_topology);
 }
 
