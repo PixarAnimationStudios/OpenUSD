@@ -75,7 +75,12 @@ UsdNprContour::Define(
 }
 
 /* virtual */
-UsdSchemaType UsdNprContour::_GetSchemaType() const {
+UsdSchemaKind UsdNprContour::_GetSchemaKind() const {
+    return UsdNprContour::schemaKind;
+}
+
+/* virtual */
+UsdSchemaKind UsdNprContour::_GetSchemaType() const {
     return UsdNprContour::schemaType;
 }
 

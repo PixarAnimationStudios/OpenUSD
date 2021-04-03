@@ -47,34 +47,34 @@ class Contour "Contour" (
     }
     prepend apiSchemas = ["CollectionAPI:surfaces"]
 ) {
-	bool drawSilhouette = true()
-	bool drawBoundary = true()
-	bool drawCrease = true()
-	
-	float silhouetteWidth = 1.0(
-		doc = """Thickness of the silhouette strokes"""
-	)
-	
-	float boundaryWidth = 1.0(
-		doc = """Thickness of the boundary strokes"""
-	)
-	
-	float creaseWidth = 1.0(
-		doc = """Thickness of the crease strokes"""
-	)
-	
+  bool drawSilhouette = true
+  bool drawBoundary = true
+  bool drawCrease = true
+
+  float silhouetteWidth = 1.0(
+    doc = """Thickness of the silhouette strokes"""
+  )
+
+  float boundaryWidth = 1.0(
+    doc = """Thickness of the boundary strokes"""
+  )
+
+  float creaseWidth = 1.0(
+    doc = """Thickness of the crease strokes"""
+  )
+
   rel contour:viewPoint (
     customData = {
             string apiName = "contourViewPoint"
         } 
       doc = """View Point"""
   )
-	
-	rel contour:surfaces (
-		customData = {
+
+  rel contour:surfaces (
+    customData = {
             string apiName = "contourSurfaces"
         }       
         doc = """Surfaces from which the strokes are generated"""
-	)
+  )
 }
 

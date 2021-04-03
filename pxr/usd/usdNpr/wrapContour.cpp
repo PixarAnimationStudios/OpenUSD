@@ -91,6 +91,15 @@ _CreateCreaseWidthAttr(UsdNprContour &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdNprContour &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdNpr.Contour(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdNprContour()
@@ -176,6 +185,7 @@ void wrapUsdNprContour()
              &This::GetContourSurfacesRel)
         .def("CreateContourSurfacesRel",
              &This::CreateContourSurfacesRel)
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);
