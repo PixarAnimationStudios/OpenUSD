@@ -157,6 +157,22 @@ private:
   UsdNprHalfEdgeMeshMap           _halfEdgeMeshes;
   mutable VtArray<GfVec3f>        _points;
   mutable HdMeshTopology          _topology;
+
+  /// Data for a contour instance.
+  struct _ContourData {
+
+  private:
+      UsdNprHalfEdgeMeshMap           _halfEdgeMeshes;
+      mutable VtArray<GfVec3f>        _points;
+      mutable HdMeshTopology          _topology;
+  };
+
+  _ContourData*  _GetContourData(const SdfPath& cachePath) const;
+  
+  UsdNprContourCache _contourCache;
+  using _ContourDataMap =
+      std::unordered_map<SdfPath, std::shared_ptr<_ContourData>, SdfPath::Hash>;
+  _ContourDataMap _contourDataCache;
 };
 
 // ---------------------------------------------------------------------- //

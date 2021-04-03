@@ -286,13 +286,15 @@ UsdImagingContourAdapter::MarkDirty(UsdPrim const& prim,
 
 // parameters
 void
-UsdImagingContourAdapter::_PopulateStrokeParams(UsdPrim const& prim, UsdNprStrokeParams* params)
+UsdImagingContourAdapter::_PopulateStrokeParams(UsdPrim const& prim,
+  UsdNprStrokeParams* params)
 {
 
 }
 
 void
-UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprOutputBufferVector& buffers,
+UsdImagingContourAdapter::_ComputeOutputGeometry(
+  const UsdNprOutputBufferVector& buffers,
   UsdImagingPrimvarDescCache* primvarDescCache, SdfPath const& cachePath) const
 {
   
@@ -331,7 +333,8 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprOutputBufferVector&
     size_t numIndices = buffer.faceVertexIndices.size();
     if(numIndices) {
       for(int i=0;i<numIndices;++i)
-        faceVertexIndices[indicesIndex + i] = buffer.faceVertexIndices[i] + indicesIndex;
+        faceVertexIndices[indicesIndex + i] = 
+          buffer.faceVertexIndices[i] + indicesIndex;
       indicesIndex += numIndices;
     }
   }
@@ -343,10 +346,10 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprOutputBufferVector&
 }
 
 void
-UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprStrokeGraphList& strokeGraphs,
+UsdImagingContourAdapter::_ComputeOutputGeometry(
+  const UsdNprStrokeGraphList& strokeGraphs,
   UsdImagingPrimvarDescCache* primvarDescCache, SdfPath const& cachePath) const
 {
-  std::cout << "NPR COMPOUTE OUTPUT GEOMETRY" << std::endl;
   size_t numPoints = 0;
   size_t numCounts = 0;
   size_t numIndices = 0;
