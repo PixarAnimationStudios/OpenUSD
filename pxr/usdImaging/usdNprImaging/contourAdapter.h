@@ -40,12 +40,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-struct UsdNprOutputBuffer {
-  VtArray<GfVec3f> points;
-  VtArray<int> faceVertexCounts;
-  VtArray<int> faceVertexIndices;
-};
-
 struct _ContourAdapterComputeDatas {
   const UsdPrim* prim;
   double time;
@@ -54,13 +48,12 @@ struct _ContourAdapterComputeDatas {
 
   UsdNprHalfEdgeMesh* halfEdgeMesh;
   GfMatrix4d viewPointMatrix;
-  UsdNprOutputBuffer* outputBuffer;
   UsdNprEdgeClassification classification;
 
 };
 
-typedef std::vector<UsdNprOutputBuffer> UsdNprOutputBufferVector;
-typedef TfHashMap<SdfPath, UsdNprHalfEdgeMeshSharedPtr, SdfPath::Hash> UsdNprHalfEdgeMeshMap;
+typedef TfHashMap<SdfPath, UsdNprHalfEdgeMeshSharedPtr, SdfPath::Hash> 
+  UsdNprHalfEdgeMeshMap;
 
 
 /// \class UsdImagingContourAdapter
@@ -147,29 +140,28 @@ public:
                 VtIntArray *outIndices) const override;     
        
 private:
-  void _PopulateStrokeParams(UsdPrim const& prim, UsdNprStrokeParams* params);
-  void _ComputeOutputGeometry(const UsdNprOutputBufferVector& buffers,
-    UsdImagingPrimvarDescCache* valueCache, SdfPath const& cachePath) const;
+  /// Data for a contour instance.
+  struct _ContourData {
+    UsdNprHalfEdgeMeshMap           halfEdgeMeshes;
+    mutable VtArray<GfVec3f>        points;
+    mutable HdMeshTopology          topology;
+  };
 
-  void _ComputeOutputGeometry(const UsdNprStrokeGraphList& strokeGraphs,
-    UsdImagingPrimvarDescCache* valueCache, SdfPath const& cachePath) const;
+  void _PopulateStrokeParams(UsdPrim const& prim, UsdNprStrokeParams* params);
+
+  void _ComputeOutputGeometry(
+    _ContourData* contourData, 
+    const UsdNprStrokeGraphList& strokeGraphs,
+    UsdImagingPrimvarDescCache* valueCache, 
+    SdfPath const& cachePath) const;
 
   UsdNprHalfEdgeMeshMap           _halfEdgeMeshes;
   mutable VtArray<GfVec3f>        _points;
   mutable HdMeshTopology          _topology;
 
-  /// Data for a contour instance.
-  struct _ContourData {
-
-  private:
-      UsdNprHalfEdgeMeshMap           _halfEdgeMeshes;
-      mutable VtArray<GfVec3f>        _points;
-      mutable HdMeshTopology          _topology;
-  };
-
   _ContourData*  _GetContourData(const SdfPath& cachePath) const;
   
-  UsdNprContourCache _contourCache;
+  //UsdNprContourCache _contourCache;
   using _ContourDataMap =
       std::unordered_map<SdfPath, std::shared_ptr<_ContourData>, SdfPath::Hash>;
   _ContourDataMap _contourDataCache;

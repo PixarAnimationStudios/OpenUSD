@@ -90,6 +90,7 @@ LoFiVertexArray::Draw() const
         glDrawArrays(GL_LINES, 0, _numElements);
       break;
     case LoFiTopology::Type::TRIANGLES:
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glDrawArrays(GL_TRIANGLES, 0, _numElements);
       break;
   }
@@ -135,17 +136,20 @@ LoFiVertexArray::GetBuffer(LoFiAttributeChannel channel)
 }
 
 void 
-LoFiVertexArray::SetBuffer(LoFiAttributeChannel channel, LoFiVertexBufferSharedPtr buffer)
+LoFiVertexArray::SetBuffer(LoFiAttributeChannel channel, 
+  LoFiVertexBufferSharedPtr buffer)
 {
   _buffers[channel] = buffer;
 }
 
 LoFiVertexBufferSharedPtr 
 LoFiVertexArray::CreateBuffer(LoFiTopology* topo, LoFiAttributeChannel channel, 
-  uint32_t numInputElements, uint32_t numOutputElements, HdInterpolation interpolation, const std::string& name)
+  uint32_t numInputElements, uint32_t numOutputElements, 
+  HdInterpolation interpolation, const std::string& name)
 {
   return LoFiVertexBufferSharedPtr(
-    new LoFiVertexBuffer(topo, channel, numInputElements, numOutputElements, interpolation, name)
+    new LoFiVertexBuffer(topo, channel, numInputElements, numOutputElements, 
+      interpolation, name)
   );
 }
 
