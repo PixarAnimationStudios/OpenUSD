@@ -54,10 +54,10 @@ void main()
 #else
   vec3 color = LOFI_GET_displayColor();
 #endif
-  float dc = dot(delta, LOFI_GET_normal())  ;
+  //float dc = dot(delta, LOFI_GET_normal())  ;
   //if(dc< 0.5) color *= 0.0;
-  float dl = dot(lightDir, LOFI_GET_normal())  ;
-  color *= dl;
+  //float dl = dot(lightDir, LOFI_GET_normal())  ;
+  //color *= dl;
   
   LOFI_SET_result(vec4(color, 1.0));
 }

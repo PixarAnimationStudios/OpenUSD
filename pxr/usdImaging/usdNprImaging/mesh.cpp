@@ -72,21 +72,35 @@ void UsdNprHalfEdge::GetVertexNormal(const GfVec3f* normals, GfVec3f& normal) co
     }
   }
   normal *= 1.f/(float)numTriangles;
+  normal.Normalize();
 }
 
-bool UsdNprHalfEdge::GetFacing(const GfVec3f* positions, const GfVec3f& v) const
+bool UsdNprHalfEdge::GetVertexFacing(const GfVec3f* positions, 
+  const GfVec3f* normals,const GfVec3f& v, float* weight) const
+{
+  GfVec3f vn;
+  GetVertexNormal(normals, vn);
+  GfVec3f dir = (positions[vertex] - v).GetNormalized();
+  *weight = GfDot(vn, dir);
+  return (*weight > 0.0);
+}
+
+bool UsdNprHalfEdge::GetFacing(const GfVec3f* positions, const GfVec3f& v,
+  float* weight) const
 {
   GfVec3f tn;
   GetTriangleNormal(positions, tn);
   GfVec3f dir = (positions[vertex] - v).GetNormalized();
-  return GfDot(tn, dir) > 0.0;
+  *weight = GfDot(tn, dir);
+  return (*weight > 0.0);
 }
 
 bool UsdNprHalfEdge::GetFacing(const GfVec3f* positions, const GfVec3f* normals, 
-  const GfVec3f& v) const
+  const GfVec3f& v, float* weight) const
 {
   GfVec3f dir = (positions[vertex] - v).GetNormalized();
-  return GfDot(normals[GetTriangleIndex()], dir) > 0.0;
+  *weight = GfDot(normals[GetTriangleIndex()], dir);
+  return (*weight > 0.0);
 }
 
 float UsdNprHalfEdge::GetDot(const GfVec3f* positions, const GfVec3f* normals,
@@ -106,16 +120,35 @@ bool UsdNprHalfEdge::GetFacing(const GfVec3f* positions, const GfVec3f* normals,
 */
 
 short UsdNprHalfEdge::GetFlags(const GfVec3f* positions, const GfVec3f* normals, 
-  const GfVec3f& v, float creaseValue) const
+  const GfVec3f& v, float creaseValue, float* weight) const
 {
   short flags = 0;
   if(!twin)return flags | EDGE_BOUNDARY;
 
   if(twin->GetTriangleIndex() < GetTriangleIndex()) return flags | EDGE_TWIN;
 
-  bool s1 = GetFacing(positions, normals, v);
-  bool s2 = twin->GetFacing(positions, normals, v);
-  if(s1 != s2) flags |= EDGE_SILHOUETTE;
+  float weight1, weight2;
+  bool s1 = GetVertexFacing(positions, normals, v, &weight1);
+  bool s2 = twin->GetVertexFacing(positions, normals, v, &weight2);
+  
+  if(s1 != s2) {
+    flags |= EDGE_SILHOUETTE;
+    *weight = 0.5f;
+    if(weight1 < 0.f) {
+      *weight = weight1 / (weight1 - weight2);
+    } else {
+      *weight = 0.5f;
+    }
+
+    /*
+    if(weight1 > weight2) {
+      *weight = (weight1 - weight2) / weight1;
+    } else {
+      *weight = (weight2 - weight1) / weight2;
+    }*/
+  } else {
+    *weight = 0.5f;
+  }
 
   if(creaseValue >= 0.0) {
     GfVec3f tn1, tn2;
@@ -279,71 +312,14 @@ inline static GfVec3f _ComputePoint(const GfVec3f& A, const GfVec3f& B, const Gf
 
   switch(index) {
     case 0:
-      return (A * 0.99 + V * 0.01) - normal * width;
+      return A - normal * width;
     case 1:
-      return (B * 0.99 + V * 0.01) - normal * width;
+      return B - normal * width;
     case 2:
-      return (B * 0.99 + V * 0.01) + normal * width;
+      return B + normal * width;
     case 3:
-      return (A * 0.99 + V * 0.01) + normal * width;
+      return A + normal * width;
   };
-}
-
-void UsdNprHalfEdgeMesh::ComputeOutputGeometry(
-  const std::vector<const UsdNprHalfEdge*>& silhouettes,
-  const GfVec3f& viewPoint, 
-  VtArray<GfVec3f>& points, 
-  VtArray<int>& faceVertexCounts,
-  VtArray<int>& faceVertexIndices)
-{
-  size_t numEdges = silhouettes.size();// + _creases.size() + _boundaries.size();
-  size_t numPoints = numEdges * 4;
-
-  // topology
-  faceVertexCounts.resize(numEdges);
-  for(int i=0;i<numEdges;++i)faceVertexCounts[i] = 4;
-  faceVertexIndices.resize(numPoints);
-  for(int i=0;i<numPoints;++i)faceVertexIndices[i] = i;
-
-  // points
-  points.resize(numPoints);
-  size_t index = 0;
-  float width = 0.04;
-  
-  for(const auto& halfEdge: silhouettes)
-  {
-    const GfVec3f* positions = &_positions[0];
-    const GfVec3f& A = _xform.Transform(positions[halfEdge->vertex]);
-    const GfVec3f& B = _xform.Transform(positions[halfEdge->twin->vertex]);
-    points[index++] = _ComputePoint(A, B, viewPoint, width, 0);
-    points[index++] = _ComputePoint(A, B, viewPoint, width, 1);
-    points[index++] = _ComputePoint(A, B, viewPoint, width, 2);
-    points[index++] = _ComputePoint(A, B, viewPoint, width, 3);
-  }
-  
-  /*
-  for(const auto& halfEdge: _boundaries)
-  {
-    const GfVec3f* positions = _halfEdgeMesh->GetPositionsPtr();
-    const GfVec3f& A = _meshXform.Transform(positions[halfEdge->vertex]);
-    const GfVec3f& B = _meshXform.Transform(positions[halfEdge->next->vertex]);
-    points[index++] = _ComputePoint(A, B, viewPoint, width, 0);
-    points[index++] = _ComputePoint(A, B, viewPoint, width, 1);
-    points[index++] = _ComputePoint(A, B, viewPoint, width, 2);
-    points[index++] = _ComputePoint(A, B, viewPoint, width, 3);
-  }
-
-  for(const auto& halfEdge: _creases)
-  {
-    const GfVec3f* positions = _halfEdgeMesh->GetPositionsPtr();
-    const GfVec3f& A = _meshXform.Transform(positions[halfEdge->vertex]);
-    const GfVec3f& B = _meshXform.Transform(positions[halfEdge->twin->vertex]);
-    points[index++] = _ComputePoint(A, B, viewPoint, width, 0);
-    points[index++] = _ComputePoint(A, B, viewPoint, width, 1);
-    points[index++] = _ComputePoint(A, B, viewPoint, width, 2);
-    points[index++] = _ComputePoint(A, B, viewPoint, width, 3);
-  }
-  */
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

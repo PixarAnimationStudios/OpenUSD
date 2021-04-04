@@ -71,27 +71,39 @@ UsdImagingContourAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
+  SdfPath const& contourPath = prim.GetPath();
+
+  if (_contourDataCache.find(contourPath) == _contourDataCache.end()) {
+      auto contourData = std::make_shared<_ContourData>();
+      _contourDataCache[contourPath] = contourData;
+  }
+  _ContourData* contourData = _GetContourData(contourPath);
   UsdNprContour contour(prim); 
   UsdGeomXformCache xformCache(UsdTimeCode::Default());
   std::vector<UsdPrim> contourSurfaces = contour.GetContourSurfaces();
   for(int i=0;i<contourSurfaces.size();++i)
   {
     SdfPath contourSurfacePath = contourSurfaces[i].GetPath();
-    if(_halfEdgeMeshes.find(contourSurfacePath) == _halfEdgeMeshes.end())
+    if(contourData->halfEdgeMeshes.find(contourSurfacePath) == 
+      contourData->halfEdgeMeshes.end())
     {
       const UsdImagingPrimAdapterSharedPtr& adapter = 
         _GetPrimAdapter(contourSurfaces[i], false);
 
-      SdfPath cachePath = _ResolveCachePath(contourSurfaces[i].GetPath(), nullptr);
+      SdfPath cachePath = 
+        _ResolveCachePath(contourSurfaces[i].GetPath(), nullptr);
       HdDirtyBits varyingBits = HdChangeTracker::Clean;
-      adapter->TrackVariability(contourSurfaces[i], cachePath, &varyingBits, nullptr );
+      adapter->TrackVariability(
+        contourSurfaces[i], cachePath, &varyingBits, nullptr );
 
       UsdNprHalfEdgeMeshSharedPtr halfEdgeMesh(
         new UsdNprHalfEdgeMesh(contourSurfacePath, varyingBits));
 
-      halfEdgeMesh->Init(UsdGeomMesh(contourSurfaces[i]), UsdTimeCode::EarliestTime());
-      halfEdgeMesh->SetMatrix(xformCache.GetLocalToWorldTransform(contourSurfaces[i]));
-      _halfEdgeMeshes[contourSurfacePath] = halfEdgeMesh;
+      halfEdgeMesh->Init(
+        UsdGeomMesh(contourSurfaces[i]), UsdTimeCode::EarliestTime());
+      halfEdgeMesh->SetMatrix(
+        xformCache.GetLocalToWorldTransform(contourSurfaces[i]));
+      contourData->halfEdgeMeshes[contourSurfacePath] = halfEdgeMesh;
     }
   }
 
@@ -143,21 +155,6 @@ _BuildStrokes(_ContourAdapterComputeDatas& datas)
   graph->Prepare(*datas.strokeParams);
   graph->ClearStrokeChains();
   graph->BuildStrokeChains(EDGE_SILHOUETTE);
-/*
-  UsdNprOutputBuffer* outputBuffer = datas.outputBuffer;
-  
-  halfEdgeMesh->ComputeOutputGeometry(
-    graph->GetSilhouettes(),
-    GfVec3f(
-      datas.viewPointMatrix[3][0],
-      datas.viewPointMatrix[3][1],
-      datas.viewPointMatrix[3][2]
-    ), 
-    outputBuffer->points, 
-    outputBuffer->faceVertexCounts,
-    outputBuffer->faceVertexIndices
-  );
-  */
 }
 
 void 
@@ -194,8 +191,8 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
       }
     }
 
+    _ContourData* contourData = _GetContourData(prim.GetPath());
     std::vector<_ContourAdapterComputeDatas> datas(contourSurfaces.size());
-    UsdNprOutputBufferVector outputBuffers(contourSurfaces.size());
     UsdNprStrokeGraphList strokeGraphs(contourSurfaces.size());
     UsdNprStrokeParams strokeParams;
 
@@ -204,9 +201,9 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
     {
       SdfPath contourSurfacePath = contourSurface.GetPath();
       UsdNprHalfEdgeMeshMap::const_iterator it = 
-        _halfEdgeMeshes.find(contourSurfacePath);
+        contourData->halfEdgeMeshes.find(contourSurfacePath);
 
-      if(it != _halfEdgeMeshes.end())
+      if(it != contourData->halfEdgeMeshes.end())
       {
         const UsdNprHalfEdgeMeshSharedPtr& halfEdgeMesh = it->second;
         char varyingBits = halfEdgeMesh->GetVaryingBits();
@@ -224,11 +221,9 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
           halfEdgeMesh.get(), 
           GfMatrix4f(viewMatrix), 
           GfMatrix4f(projMatrix));
-        threadData->graph = &strokeGraphs[index];
-        
+        threadData->graph = &strokeGraphs[index];   
 
         threadData->halfEdgeMesh = halfEdgeMesh.get();
-        threadData->outputBuffer = &outputBuffers[index];
         threadData->viewPointMatrix = viewMatrix;
       }
       
@@ -238,7 +233,7 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
     WorkParallelForEach(datas.begin(), datas.end(), _BuildStrokes);
 
     UsdImagingPrimvarDescCache* valueCache = _GetPrimvarDescCache();
-    _ComputeOutputGeometry(strokeGraphs, valueCache, cachePath);
+    _ComputeOutputGeometry(contourData, strokeGraphs, valueCache, cachePath);
   }
 }
 
@@ -294,61 +289,10 @@ UsdImagingContourAdapter::_PopulateStrokeParams(UsdPrim const& prim,
 
 void
 UsdImagingContourAdapter::_ComputeOutputGeometry(
-  const UsdNprOutputBufferVector& buffers,
-  UsdImagingPrimvarDescCache* primvarDescCache, SdfPath const& cachePath) const
-{
-  
-  size_t numPoints = 0;
-  size_t numCounts = 0;
-  size_t numIndices = 0;
-  for(const auto& buffer: buffers){
-    numPoints += buffer.points.size();
-    numCounts += buffer.faceVertexCounts.size();
-    numIndices += buffer.faceVertexIndices.size();
-  }
-
-  VtArray<int> faceVertexCounts(numCounts);
-  VtArray<int> faceVertexIndices(numIndices);
-  _points.resize(numPoints);
-
-  size_t pointsIndex = 0;
-  size_t countsIndex = 0;
-  size_t indicesIndex = 0;
-
-  for(const auto& buffer: buffers) {
-    size_t numPoints =  buffer.points.size();
-    if(numPoints) {
-      memcpy(&_points[pointsIndex], &buffer.points[0], 
-        numPoints * sizeof(GfVec3f));
-      pointsIndex += numPoints;
-    }
-  
-    size_t numCounts = buffer.faceVertexCounts.size();
-    if(numCounts) {
-      memcpy(&faceVertexCounts[countsIndex], &buffer.faceVertexCounts[0], 
-        numCounts * sizeof(int));
-      countsIndex += numCounts;
-    }
-    
-    size_t numIndices = buffer.faceVertexIndices.size();
-    if(numIndices) {
-      for(int i=0;i<numIndices;++i)
-        faceVertexIndices[indicesIndex + i] = 
-          buffer.faceVertexIndices[i] + indicesIndex;
-      indicesIndex += numIndices;
-    }
-  }
-
-  _topology = HdMeshTopology(PxOsdOpenSubdivTokens->none,
-                             UsdGeomTokens->rightHanded,
-                             faceVertexCounts,
-                             faceVertexIndices);
-}
-
-void
-UsdImagingContourAdapter::_ComputeOutputGeometry(
+  _ContourData* contourData, 
   const UsdNprStrokeGraphList& strokeGraphs,
-  UsdImagingPrimvarDescCache* primvarDescCache, SdfPath const& cachePath) const
+  UsdImagingPrimvarDescCache* primvarDescCache, 
+  SdfPath const& cachePath) const
 {
   size_t numPoints = 0;
   size_t numCounts = 0;
@@ -367,7 +311,7 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(
   for(int i=0;i<numCounts;++i)faceVertexCounts[i] = 4;
 
   VtArray<int> faceVertexIndices(numIndices);
-  _points.resize(numPoints);
+  contourData->points.resize(numPoints);
 
   size_t pointsIndex = 0;
   size_t indicesIndex = 0;
@@ -381,7 +325,7 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(
       if(numNodes >1) {
         size_t numPoints =  numNodes * 2;
         if(numPoints) {
-          stroke.ComputeOutputPoints( mesh, viewPoint, &_points[pointsIndex]);
+          stroke.ComputeOutputPoints( mesh, viewPoint, &contourData->points[pointsIndex]);
         }
         pointsIndex += numPoints;
         
@@ -399,10 +343,10 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(
     }
   }
 
-  _topology = HdMeshTopology(PxOsdOpenSubdivTokens->none,
-                             UsdGeomTokens->rightHanded,
-                             faceVertexCounts,
-                             faceVertexIndices);
+  contourData->topology = HdMeshTopology(PxOsdOpenSubdivTokens->none,
+                                         UsdGeomTokens->rightHanded,
+                                         faceVertexCounts,
+                                         faceVertexIndices);
 }
 
 
@@ -412,7 +356,12 @@ UsdImagingContourAdapter::GetTopology(UsdPrim const& prim,
                                    SdfPath const& cachePath,
                                    UsdTimeCode time) const
 {
-  return VtValue(_topology);
+  _ContourData* contourData = _GetContourData(prim.GetPath());
+  if(contourData) {
+    return VtValue(contourData->topology);
+  } else {
+    return VtValue();
+  }
 }
 
 /*virtual*/
@@ -427,10 +376,22 @@ UsdImagingContourAdapter::Get(UsdPrim const& prim,
   HF_MALLOC_TAG_FUNCTION();
 
   if (key == HdTokens->points) {
-    return VtValue(_points);
+    _ContourData* contourData = _GetContourData(prim.GetPath());
+    if(contourData) {
+      return VtValue(contourData->points);
+    } else {
+      return VtValue();
+    }
   }
 
   return BaseAdapter::Get(prim, cachePath, key, time, outIndices);
+}
+
+UsdImagingContourAdapter::_ContourData*
+UsdImagingContourAdapter::_GetContourData(const SdfPath& cachePath) const
+{
+    auto it = _contourDataCache.find(cachePath);
+    return it != _contourDataCache.end() ? it->second.get() : nullptr;
 }
 
 
