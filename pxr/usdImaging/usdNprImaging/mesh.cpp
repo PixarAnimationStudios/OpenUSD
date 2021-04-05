@@ -72,7 +72,6 @@ void UsdNprHalfEdge::GetVertexNormal(const GfVec3f* normals, GfVec3f& normal) co
     }
   }
   normal *= 1.f/(float)numTriangles;
-  normal.Normalize();
 }
 
 bool UsdNprHalfEdge::GetVertexFacing(const GfVec3f* positions, 
@@ -133,19 +132,7 @@ short UsdNprHalfEdge::GetFlags(const GfVec3f* positions, const GfVec3f* normals,
   
   if(s1 != s2) {
     flags |= EDGE_SILHOUETTE;
-    *weight = 0.5f;
-    if(weight1 < 0.f) {
-      *weight = weight1 / (weight1 - weight2);
-    } else {
-      *weight = 0.5f;
-    }
-
-    /*
-    if(weight1 > weight2) {
-      *weight = (weight1 - weight2) / weight1;
-    } else {
-      *weight = (weight2 - weight1) / weight2;
-    }*/
+    *weight = std::fabsf(weight1) / (std::fabsf(weight1) + std::fabsf(weight2));
   } else {
     *weight = 0.5f;
   }
@@ -159,23 +146,6 @@ short UsdNprHalfEdge::GetFlags(const GfVec3f* positions, const GfVec3f* normals,
 
   return flags;
 }
-
-float UsdNprHalfEdge::GetWeight(const GfVec3f* positions, const GfVec3f* normals, 
-  const GfVec3f& v) const
-{
-  GfVec3f normal1, normal2;
-  GetVertexNormal(normals, normal1);
-  next->GetVertexNormal(normals, normal2);
-
-  GfVec3f dir1 = (positions[vertex] - v).GetNormalized();
-  GfVec3f dir2 = (positions[next->vertex] - v).GetNormalized();
-
-  float dot1 = GfDot(normal1, dir1);
-  float dot2 = GfDot(normal2, dir2);
-
-  return GfAbs(dot2)/(GfAbs(dot1)+GfAbs(dot2));
-}
-
 
 UsdNprHalfEdgeMesh::UsdNprHalfEdgeMesh(const SdfPath& path, 
   const HdDirtyBits& varyingBits)

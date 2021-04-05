@@ -52,6 +52,7 @@ pxr_plugin(LoFi
         subtextureIdentifier
         textureObjectRegistry
         ptexTextureObject
+	ptexMipmapTextureLoader
         udimTextureObject
         dynamicUvTextureObject
         field 

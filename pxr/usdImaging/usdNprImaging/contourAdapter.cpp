@@ -130,7 +130,7 @@ _BuildStrokes(_ContourAdapterComputeDatas& datas)
   UsdNprHalfEdgeMesh* halfEdgeMesh = graph->GetMesh();
   if(!halfEdgeMesh)return;
   
-  const std::lock_guard<std::mutex> lock(halfEdgeMesh->GetMutex());
+  std::unique_lock<std::mutex> lock(halfEdgeMesh->GetMutex());
   if(halfEdgeMesh->IsVarying()) {
     
     if(halfEdgeMesh->GetLastTime() != datas.time)
@@ -151,6 +151,7 @@ _BuildStrokes(_ContourAdapterComputeDatas& datas)
       halfEdgeMesh->SetLastTime(datas.time);
     }
   }
+  lock.unlock();
 
   graph->Prepare(*datas.strokeParams);
   graph->ClearStrokeChains();
@@ -313,14 +314,22 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(
   VtArray<int> faceVertexIndices(numIndices);
   contourData->points.resize(numPoints);
 
+  VtArray<GfVec3f> colors(numIndices);
+
   size_t pointsIndex = 0;
   size_t indicesIndex = 0;
+  size_t colorIndex = 0;
   size_t offsetIndex = 0;
   
   for(const auto& strokeGraph: strokeGraphs) {
     const UsdNprHalfEdgeMesh* mesh = strokeGraph.GetMesh();
     GfVec3f viewPoint = strokeGraph.GetViewPoint();
     for(const auto& stroke: strokeGraph.GetStrokes()) {
+      GfVec3f color(
+        (float)rand() / float(RAND_MAX),
+        (float)rand() / float(RAND_MAX),
+        (float)rand() / float(RAND_MAX)
+      );
       size_t numNodes = stroke.GetNumNodes();
       if(numNodes >1) {
         size_t numPoints =  numNodes * 2;
@@ -336,6 +345,10 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(
             faceVertexIndices[indicesIndex++] = offsetIndex + i * 2 + 1;
             faceVertexIndices[indicesIndex++] = offsetIndex + i * 2 + 3;
             faceVertexIndices[indicesIndex++] = offsetIndex + i * 2 + 2;
+            colors[colorIndex++] = color;
+            colors[colorIndex++] = color;
+            colors[colorIndex++] = color;
+            colors[colorIndex++] = color;
           }
         }
         offsetIndex += numNodes * 2;
@@ -347,6 +360,8 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(
                                          UsdGeomTokens->rightHanded,
                                          faceVertexCounts,
                                          faceVertexIndices);
+
+  contourData->colors = colors;
 }
 
 
@@ -364,6 +379,30 @@ UsdImagingContourAdapter::GetTopology(UsdPrim const& prim,
   }
 }
 
+/*
+bool
+UsdImagingContourAdapter::GetColor(UsdPrim const& prim,
+                                 UsdTimeCode time,
+                                 TfToken* interpolation,
+                                 VtValue* color,
+                                 VtIntArray *indices)
+{
+  _ContourData* contourData = 
+    UsdImagingContourAdapter::_GetContourData(prim.GetPath());
+  if(contourData) {
+    if (interpolation) {
+        *interpolation = UsdGeomTokens->faceVarying;
+    }
+    if (color) {
+        *color = VtValue(contourData->colors);
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+*/
+
 /*virtual*/
 VtValue
 UsdImagingContourAdapter::Get(UsdPrim const& prim,
@@ -375,12 +414,12 @@ UsdImagingContourAdapter::Get(UsdPrim const& prim,
   TRACE_FUNCTION();
   HF_MALLOC_TAG_FUNCTION();
 
-  if (key == HdTokens->points) {
-    _ContourData* contourData = _GetContourData(prim.GetPath());
-    if(contourData) {
+  _ContourData* contourData = _GetContourData(prim.GetPath());
+  if(contourData) {
+    if (key == HdTokens->points) {
       return VtValue(contourData->points);
-    } else {
-      return VtValue();
+    } else if(key == HdTokens->displayColor) {
+      return VtValue(contourData->colors);
     }
   }
 

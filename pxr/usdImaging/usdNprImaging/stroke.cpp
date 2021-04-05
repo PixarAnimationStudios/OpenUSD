@@ -23,9 +23,12 @@ _GetNextEdge(UsdNprHalfEdge* edge, const std::vector<short>& classifications, sh
   {
     if(!(classifications[next->index] & EDGE_CHAINED)) {
       short flags = classifications[next->index];
-      if(flags & EDGE_TWIN)
+      if(flags & EDGE_TWIN) {
         flags = classifications[next->twin->index];
-      if(flags & type)return next;
+      } 
+      if(flags & type){
+        return next;
+      }
     }
     if(next->twin) next = next->twin->next;
     else next = NULL;
@@ -36,9 +39,12 @@ _GetNextEdge(UsdNprHalfEdge* edge, const std::vector<short>& classifications, sh
   {
     if(!(classifications[next->index] & EDGE_CHAINED)) {
       short flags = classifications[next->index];
-      if(flags & EDGE_TWIN)
+      if(flags & EDGE_TWIN) {
         flags = classifications[next->twin->index];
-      if(flags & type)return next;
+      }
+      if(flags & type) {
+        return next;
+      }
     }
     if(next->twin) next = next->twin->next->next;
     else next = NULL;
@@ -53,20 +59,32 @@ void UsdNprStrokeChain::Build(const UsdNprStrokeGraph* graph,
   UsdNprStrokeNode* node = &_nodes.back();
   UsdNprHalfEdge* edge = node->edge;
   classifications[edge->index] |= EDGE_CHAINED;
+  if(edge->twin)classifications[edge->twin->index] |= EDGE_CHAINED;
   UsdNprHalfEdge* current = edge;
   bool edgesWeighted = (type == EDGE_SILHOUETTE);
   //_nodes.push_back(UsdNprStrokeNode(edge, 1.0));
   while(true)
   {
+    UsdNprHalfEdge* last = _nodes.back().edge;
     UsdNprHalfEdge* next = _GetNextEdge(current, classifications, type);
     
     if(next)
     {
-      if(edgesWeighted)
-        _nodes.push_back(UsdNprStrokeNode(next, 5.0, 
-          graph->GetSilhouetteWeight(next->index)));
-      else
-        _nodes.push_back(UsdNprStrokeNode(next, 5.0, 0.5f));
+      if(edgesWeighted) {
+        //_nodes.push_back(UsdNprStrokeNode(next, 5.0, 0.f));
+        //_nodes.push_back(UsdNprStrokeNode(next, 5.0, 1.f));
+        
+        if(classifications[next->index] & EDGE_TWIN){
+          _nodes.push_back(UsdNprStrokeNode(next->twin, 5.0, 
+            graph->GetSilhouetteWeight(next->twin->index)));
+        } else {
+          _nodes.push_back(UsdNprStrokeNode(next, 5.0, 
+            graph->GetSilhouetteWeight(next->index)));
+        }
+      } else {
+        _nodes.push_back(UsdNprStrokeNode(next, 5.0, 0.f));
+        _nodes.push_back(UsdNprStrokeNode(next, 5.0, 1.f));
+      }
       classifications[next->index] |= EDGE_CHAINED;
       if(next->twin)classifications[next->twin->index] |= EDGE_CHAINED;
       if(next == edge || next == edge->twin)return;
@@ -74,7 +92,7 @@ void UsdNprStrokeChain::Build(const UsdNprStrokeGraph* graph,
     }
     else break;
   }
-  if(edge->twin)classifications[edge->twin->index] |= EDGE_CHAINED;
+  
 };
 
 void UsdNprStrokeChain::_ComputePoint(const GfVec3f* positions, const GfMatrix4f& xform,
@@ -97,7 +115,7 @@ void UsdNprStrokeChain::_ComputePoint(const GfVec3f* positions, const GfMatrix4f
 
     const GfVec3f T = (B-A);
     const GfVec3f D = ((A+B)*0.5 - V);
-    N = (T ^ D).GetNormalized();
+    N = (T.GetNormalized() ^ D.GetNormalized()).GetNormalized();
 
     *p1 = A - N * width;
     *p2 = A + N * width;
@@ -118,7 +136,7 @@ void UsdNprStrokeChain::_ComputePoint(const GfVec3f* positions, const GfMatrix4f
 
     const GfVec3f T = (B-A);
     const GfVec3f D = ((A+B)*0.5 - V);
-    N = (T ^ D).GetNormalized();
+    N = (T.GetNormalized() ^ D.GetNormalized()).GetNormalized();
 
     *p1 = B - N * width;
     *p2 = B + N * width;
@@ -144,7 +162,7 @@ void UsdNprStrokeChain::_ComputePoint(const GfVec3f* positions, const GfMatrix4f
 
     const GfVec3f T = ((B-A) + (C-B)) * 0.5f;
     const GfVec3f D = (B - V);
-    N = (T ^ D).GetNormalized();
+    N = (T.GetNormalized() ^ D.GetNormalized()).GetNormalized();
 
     *p1 = B - N * width;
     *p2 = B + N * width;
@@ -158,7 +176,8 @@ void UsdNprStrokeChain::ComputeOutputPoints( const UsdNprHalfEdgeMesh* mesh,
   const GfMatrix4f& xform = mesh->GetMatrix();
   
   for(size_t i=0;i<_nodes.size();++i)
-    _ComputePoint(positions, xform, i, viewPoint, _width, &points[i*2], &points[i*2+1]);
+    _ComputePoint(positions, xform, i, viewPoint, _width, 
+      &points[i*2], &points[i*2+1]);
 }
 
 void
@@ -191,12 +210,13 @@ UsdNprStrokeGraph::Prepare(const UsdNprStrokeParams& params)
     dots[i] = GfDot((positions[i] - v).GetNormalized(), normals[i]);
 
   size_t edgeIndex = 0;
-  size_t silhouetteIndex = 0;
   const std::vector<UsdNprHalfEdge>& halfEdges = _mesh->GetHalfEdges();
-
+  size_t numHalfEdges = halfEdges.size();
+  _silhouetteWeights.resize(numHalfEdges);
+  memset(&_silhouetteWeights[0], 0.f, numHalfEdges * sizeof(float));
+  float weight;
   for(auto& halfEdge: halfEdges)
   {
-    float weight;
     short flags = halfEdge.GetFlags(positions, normals, v, 0.25, &weight);
     
     _allFlags[edgeIndex++] = flags;
@@ -209,8 +229,7 @@ UsdNprStrokeGraph::Prepare(const UsdNprStrokeParams& params)
         _creases.push_back(&halfEdge);
       if(flags & EDGE_SILHOUETTE) {
         _silhouettes.push_back(&halfEdge);
-        _silhouetteWeights.push_back(weight);
-        _silhouetteWeightsMap[halfEdge.index] = silhouetteIndex++;
+        _silhouetteWeights[halfEdge.index] = weight;
       }
     }
   }
@@ -249,13 +268,14 @@ UsdNprStrokeGraph::BuildStrokeChains(short edgeType)
     size_t startId = 0;
     while(startId < numEdges)
     {
-      if(!(_allFlags[(*edges)[startId]->index] & EDGE_CHAINED)) {
+      UsdNprHalfEdge* currentEdge = (UsdNprHalfEdge*)(*edges)[startId];
+      if(!(_allFlags[currentEdge->index] & EDGE_CHAINED)) {
         UsdNprStrokeChain stroke;
         if(edgesWeighted)
-          stroke.Init((UsdNprHalfEdge*)(*edges)[startId], edgeType, 0.04, 
-            _silhouetteWeights[startId]);
+          stroke.Init(currentEdge, edgeType, 0.04, 
+            _silhouetteWeights[currentEdge->index]);
         else
-          stroke.Init((UsdNprHalfEdge*)(*edges)[startId], edgeType, 0.04);
+          stroke.Init(currentEdge, edgeType, 0.04);
 
         stroke.Build(this, _allFlags, edgeType);
         if(stroke.GetNumNodes()>1)
@@ -293,12 +313,7 @@ UsdNprStrokeGraph::GetViewPoint() const
 float
 UsdNprStrokeGraph::GetSilhouetteWeight(int index) const
 {
-  //std::cout << "LOOKUP SILHOUETTE WEIGHT FOR INDEX ---> " << index << std::endl;
-  const auto& it = _silhouetteWeightsMap.find(index);
-  if(it != _silhouetteWeightsMap.end())
-    return _silhouetteWeights[it->second];
-  //std::cout << "SILHOUETTE WEIGHT NOT FOUND ---> DEFAULT 0.5" << std::endl;
-  return 0.5f;
+  return _silhouetteWeights[index];
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

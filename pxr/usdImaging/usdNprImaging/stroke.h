@@ -134,7 +134,6 @@ private:
 
   std::vector<const UsdNprHalfEdge*> _silhouettes;
   std::vector<float>                 _silhouetteWeights;
-  std::map<int, int>                 _silhouetteWeightsMap;
   std::vector<const UsdNprHalfEdge*> _boundaries;
   std::vector<const UsdNprHalfEdge*> _creases;
   std::vector<short>                 _allFlags;
