@@ -132,6 +132,15 @@ public:
                         SdfPath const& cachePath,
                         UsdTimeCode time) const override;
 
+    /*
+    USDNPRIMAGING_API
+    static bool GetColor(UsdPrim const& prim, 
+                         UsdTimeCode time,
+                         TfToken *interpolation,
+                         VtValue *color,
+                         VtIntArray *indices);
+    */
+
     USDNPRIMAGING_API
     VtValue Get(UsdPrim const& prim,
                 SdfPath const& cachePath,
@@ -143,8 +152,9 @@ private:
   /// Data for a contour instance.
   struct _ContourData {
     UsdNprHalfEdgeMeshMap           halfEdgeMeshes;
-    mutable VtArray<GfVec3f>        points;
-    mutable HdMeshTopology          topology;
+    VtArray<GfVec3f>                points;
+    VtArray<GfVec3f>                colors;
+    HdMeshTopology                  topology;
   };
 
   void _PopulateStrokeParams(UsdPrim const& prim, UsdNprStrokeParams* params);
@@ -154,10 +164,6 @@ private:
     const UsdNprStrokeGraphList& strokeGraphs,
     UsdImagingPrimvarDescCache* valueCache, 
     SdfPath const& cachePath) const;
-
-  UsdNprHalfEdgeMeshMap           _halfEdgeMeshes;
-  mutable VtArray<GfVec3f>        _points;
-  mutable HdMeshTopology          _topology;
 
   _ContourData*  _GetContourData(const SdfPath& cachePath) const;
   
