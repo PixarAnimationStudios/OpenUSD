@@ -34,6 +34,8 @@
 
 #include "pxr/imaging/hdSt/renderPassShader.h"
 
+#include "pxr/imaging/glf/diagnostic.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdxOitRenderTask::HdxOitRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
@@ -87,6 +89,8 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
+    GLF_GROUP_FUNCTION();
 
     if (!_isOitEnabled) return;
     if (!HdxRenderTask::_HasDrawItems()) return;
