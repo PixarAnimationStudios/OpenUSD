@@ -29,10 +29,10 @@
 
 #include "pxr/base/tf/envSetting.h"
 
-#include <tbb/atomic.h>
 #include <tbb/task_scheduler_init.h>
 
 #include <algorithm>
+#include <atomic>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -63,7 +63,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // if PXR_WORK_THREAD_LIMIT is set to some nonzero value, otherwise we leave it
 // up to others.  So there's no guarantee that calling
 // WorkSetConcurrencyLimit(n) will actually limit Work to n threads.
-static tbb::atomic<unsigned> _threadLimit;
+static std::atomic<unsigned> _threadLimit;
 
 // We create a task_scheduler_init instance at static initialization time if
 // PXR_WORK_THREAD_LIMIT is set to a nonzero value.  Otherwise this stays NULL.
