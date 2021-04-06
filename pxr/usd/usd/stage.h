@@ -123,7 +123,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// - \ref Usd_stageSerialization "Serialization" methods for "flattening" a
 /// composition (to varying degrees), and exporting a completely flattened
 /// view of the stage to a string or file.  These methods can be very useful
-/// for targetted asset optimization and debugging, though care should be 
+/// for targeted asset optimization and debugging, though care should be
 /// exercized with large scenes, as flattening defeats some of the benefits of
 /// referenced scene description, and may produce very large results, 
 /// especially in file formats that do not support data de-duplication, like
