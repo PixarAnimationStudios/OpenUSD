@@ -58,6 +58,8 @@ struct UsdNprHalfEdge
     const GfVec3f& v) const;
   short GetFlags(const GfVec3f* positions, const GfVec3f* normals, 
     const GfVec3f& v, float creaseValue, float* weight) const;
+  void GetWeightedPositionAndNormal(const GfVec3f* positions, 
+    const GfVec3f* normals, float weight, GfVec3f& position, GfVec3f& normal);
 };
 
 /// \class UsdNprHalfEdgeMesh
