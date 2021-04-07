@@ -69,19 +69,22 @@ struct UsdNprStrokeNode {
 
   GfVec3f position;
   GfVec3f color;
+  GfVec3f normal;
 
   UsdNprStrokeNode(UsdNprHalfEdge* e, float width, float weight):
     edge(e), width(width), weight(weight){};
 
-  UsdNprStrokeNode(UsdNprHalfEdge* e, float width, float weight, const GfVec3f& p):
-    edge(e), width(width), weight(weight), position(p){};
+  UsdNprStrokeNode(UsdNprHalfEdge* e, float width, float weight, 
+    const GfVec3f& p, const GfVec3f& n):
+    edge(e), width(width), weight(weight), position(p), normal(n){};
 };
 
 typedef std::vector<UsdNprStrokeNode> UsdNprStrokeNodeList;
 class UsdNprStrokeGraph;
 class UsdNprStrokeChain {
 public:
-  void Init(UsdNprHalfEdge* edge, short type, float width, float weight=0.5f);
+  void Init(UsdNprHalfEdge* edge, short type, float width, float weight,
+    const GfVec3f& position, const GfVec3f& normal);
   void Build(const UsdNprStrokeGraph* graph, 
     std::vector<short>& edgeClassification, short type);
   

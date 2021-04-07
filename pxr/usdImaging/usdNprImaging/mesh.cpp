@@ -147,6 +147,17 @@ short UsdNprHalfEdge::GetFlags(const GfVec3f* positions, const GfVec3f* normals,
   return flags;
 }
 
+void UsdNprHalfEdge::GetWeightedPositionAndNormal(const GfVec3f* positions, 
+  const GfVec3f* normals, float weight, GfVec3f& position, GfVec3f& normal)
+{
+  position = positions[vertex] * weight +
+    positions[next->vertex] * (1.f - weight);
+  GfVec3f n1, n2;
+  GetVertexNormal(normals, n1);
+  next->GetVertexNormal(normals, n2);
+  normal = n1 * weight + n2  * (1.f - weight);
+}
+
 UsdNprHalfEdgeMesh::UsdNprHalfEdgeMesh(const SdfPath& path, 
   const HdDirtyBits& varyingBits)
   :_varyingBits(_ConvertVaryingBits(varyingBits))

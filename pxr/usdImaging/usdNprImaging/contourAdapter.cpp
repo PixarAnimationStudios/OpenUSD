@@ -72,7 +72,9 @@ UsdImagingContourAdapter::Populate(UsdPrim const& prim,
                             UsdImagingInstancerContext const* instancerContext)
 {
   SdfPath const& contourPath = prim.GetPath();
-
+  UsdGeomGprim gprim(prim);
+  gprim.CreateDisplayColorPrimvar(UsdGeomTokens->faceVarying);
+  
   if (_contourDataCache.find(contourPath) == _contourDataCache.end()) {
       auto contourData = std::make_shared<_ContourData>();
       _contourDataCache[contourPath] = contourData;
@@ -84,8 +86,8 @@ UsdImagingContourAdapter::Populate(UsdPrim const& prim,
   for(int i=0;i<contourSurfaces.size();++i)
   {
     SdfPath contourSurfacePath = contourSurfaces[i].GetPath();
-    if(contourData->halfEdgeMeshes.find(contourSurfacePath) == 
-      contourData->halfEdgeMeshes.end())
+    if(_halfEdgeMeshes.find(contourSurfacePath) == 
+      _halfEdgeMeshes.end())
     {
       const UsdImagingPrimAdapterSharedPtr& adapter = 
         _GetPrimAdapter(contourSurfaces[i], false);
@@ -103,8 +105,10 @@ UsdImagingContourAdapter::Populate(UsdPrim const& prim,
         UsdGeomMesh(contourSurfaces[i]), UsdTimeCode::EarliestTime());
       halfEdgeMesh->SetMatrix(
         xformCache.GetLocalToWorldTransform(contourSurfaces[i]));
-      contourData->halfEdgeMeshes[contourSurfacePath] = halfEdgeMesh;
+      _halfEdgeMeshes[contourSurfacePath] = halfEdgeMesh;
     }
+    contourData->halfEdgeMeshes[contourSurfacePath] =
+      _halfEdgeMeshes[contourSurfacePath];
   }
 
   return _AddRprim(HdPrimTypeTokens->mesh,

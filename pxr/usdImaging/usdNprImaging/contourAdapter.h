@@ -171,6 +171,9 @@ private:
   using _ContourDataMap =
       std::unordered_map<SdfPath, std::shared_ptr<_ContourData>, SdfPath::Hash>;
   _ContourDataMap _contourDataCache;
+
+  // shared half edge meshes
+  UsdNprHalfEdgeMeshMap           _halfEdgeMeshes;
 };
 
 // ---------------------------------------------------------------------- //
