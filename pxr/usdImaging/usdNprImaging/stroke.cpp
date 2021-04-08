@@ -65,7 +65,7 @@ void UsdNprStrokeChain::Build(const UsdNprStrokeGraph* graph,
   UsdNprHalfEdge* current = edge;
   const UsdNprHalfEdgeMesh* mesh = graph->GetMesh();
   const GfVec3f* positions = mesh->GetPositionsPtr();
-  const GfVec3f* normals = mesh->GetNormalsPtr();
+  const GfVec3f* normals = mesh->GetVertexNormalsPtr();
   bool edgesWeighted = (type == EDGE_SILHOUETTE);
   //_nodes.push_back(UsdNprStrokeNode(edge, 1.0));
   while(true)
@@ -91,13 +91,13 @@ void UsdNprStrokeChain::Build(const UsdNprStrokeGraph* graph,
             weight, position, normal));
         }
       } else {
-        GfVec3f n1, n2;
-        next->GetVertexNormal(normals, n1);
-        next->GetVertexNormal(normals, n2);
+        //GfVec3f n1, n2;
+        //next->GetVertexNormal(normals, n1);
+        //next->GetVertexNormal(normals, n2);
         _nodes.push_back(UsdNprStrokeNode(next, 5.0, 0.f, 
-          positions[next->vertex], n1));
+          positions[next->vertex], normals[next->vertex]));
         _nodes.push_back(UsdNprStrokeNode(next, 5.0, 1.f,
-          positions[next->next->vertex], n2));
+          positions[next->next->vertex], normals[next->next->vertex]));
       }
       classifications[next->index] |= EDGE_CHAINED;
       if(next->twin)classifications[next->twin->index] |= EDGE_CHAINED;
@@ -221,7 +221,7 @@ UsdNprStrokeGraph::Prepare(const UsdNprStrokeParams& params)
   );
 
   const GfVec3f* positions = _mesh->GetPositionsPtr();
-  const GfVec3f* normals = _mesh->GetNormalsPtr();
+  const GfVec3f* normals = _mesh->GetVertexNormalsPtr();
 
   size_t numVertices = _mesh->GetNumPoints();
   std::vector<float> dots(numVertices);
@@ -271,7 +271,7 @@ void
 UsdNprStrokeGraph::BuildStrokeChains(short edgeType)
 {
   const GfVec3f* positions = _mesh->GetPositionsPtr();
-  const GfVec3f* normals = _mesh->GetNormalsPtr();
+  const GfVec3f* normals = _mesh->GetVertexNormalsPtr();
   std::vector<const UsdNprHalfEdge*>* edges;
   bool edgesWeighted = false;
   if(edgeType == EDGE_SILHOUETTE) {
@@ -299,13 +299,12 @@ UsdNprStrokeGraph::BuildStrokeChains(short edgeType)
             weight, position, normal);
           stroke.Init(currentEdge, edgeType, 0.1, weight, position, normal);
         } else {
-          GfVec3f p1, p2, n1, n2;
-          currentEdge->GetVertexNormal(normals, n1);
-          currentEdge->next->GetVertexNormal(normals, n2);
+          //currentEdge->GetVertexNormal(normals, n1);
+          //currentEdge->next->GetVertexNormal(normals, n2);
           stroke.Init(currentEdge, edgeType, 0.1, 0.f, 
-            positions[currentEdge->vertex], n1);
+            positions[currentEdge->vertex], normals[currentEdge->vertex]);
           stroke.Init(currentEdge, edgeType, 0.1, 1.f, 
-            positions[currentEdge->next->vertex], n2);
+            positions[currentEdge->next->vertex], normals[currentEdge->next->vertex]);
         }
           
 

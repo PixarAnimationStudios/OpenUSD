@@ -42,24 +42,27 @@ struct UsdNprHalfEdge
 {
   uint32_t                index;     // half edge index
   uint32_t                vertex;    // vertex index
+  uint32_t                polygon;   // polygon index
   struct UsdNprHalfEdge*  twin;      // opposite half-edge
   struct UsdNprHalfEdge*  next;      // next half-edge
 
-  UsdNprHalfEdge():vertex(0),twin(NULL),next(NULL){};
+  UsdNprHalfEdge():vertex(0),polygon(0),twin(NULL),next(NULL){};
   inline size_t GetTriangleIndex() const {return index / 3;};
-  void GetTriangleNormal(const GfVec3f* positions, GfVec3f& normal) const;
-  void GetVertexNormal(const GfVec3f* normals, GfVec3f& normal) const;
-  bool GetFacing(const GfVec3f* positions, const GfVec3f& v, float* weight) const;
-  bool GetFacing(const GfVec3f* positions, const GfVec3f* normals,
-    const GfVec3f& v, float* weight) const;
-  bool GetVertexFacing(const GfVec3f* positions, const GfVec3f* normals,
-    const GfVec3f& v, float* weight) const;
-  float GetDot(const GfVec3f* positions, const GfVec3f* normals,
-    const GfVec3f& v) const;
-  short GetFlags(const GfVec3f* positions, const GfVec3f* normals, 
-    const GfVec3f& v, float creaseValue, float* weight) const;
+  inline size_t GetPolygonIndex() const {return polygon;};
+  //void GetTriangleNormal(const GfVec3f* positions, GfVec3f& normal) const;
+  void GetPolygonNormal(const GfVec3f* positions, GfVec3f& normal) const;
+  //void GetVertexNormal(const GfVec3f* normals, GfVec3f& normal) const;
+  bool GetFacing(const GfVec3f* positions, const GfVec3f* polygonNormals,
+    const GfVec3f& viewPoint, float* weight) const;
+  bool GetVertexFacing(const GfVec3f* positions, const GfVec3f* vertexNormals,
+    const GfVec3f& viewPoint, float* weight) const;
+  float GetDot(const GfVec3f* positions, const GfVec3f* vertexNormals,
+    const GfVec3f& viewPoint) const;
+  short GetFlags(const GfVec3f* positions, const GfVec3f* vertexNormals, 
+    const GfVec3f& viewPoint, float creaseValue, float* weight) const;
   void GetWeightedPositionAndNormal(const GfVec3f* positions, 
-    const GfVec3f* normals, float weight, GfVec3f& position, GfVec3f& normal);
+    const GfVec3f* vertexNormals, float weight, GfVec3f& position, 
+    GfVec3f& normal);
 };
 
 /// \class UsdNprHalfEdgeMesh
@@ -75,7 +78,8 @@ public:
   const std::vector<UsdNprHalfEdge>& GetHalfEdges(){return _halfEdges;};
   const UsdNprHalfEdge* GetHalfEdgesPtr() const {return &_halfEdges[0];};
   const GfVec3f* GetPositionsPtr() const {return &_positions[0];};
-  const GfVec3f* GetNormalsPtr() const {return &_normals[0];};
+  const GfVec3f* GetVertexNormalsPtr() const {return &_vertexNormals[0];};
+  const GfVec3f* GetPolygonNormalsPtr() const {return &_polygonNormals[0];};
   size_t GetNumPoints() const {return _positions.size();};
   size_t GetNumTriangles() const {return _numTriangles;};
   size_t GetNumHalfEdges() const {return _halfEdges.size();};
@@ -106,9 +110,11 @@ private:
   SdfPath                     _sdfPath;
   GfMatrix4f                  _xform;
   size_t                      _numTriangles;
+  size_t                      _numPolygons;
   std::vector<UsdNprHalfEdge> _halfEdges; 
   VtArray<GfVec3f>            _positions;
-  VtArray<GfVec3f>            _normals;
+  VtArray<GfVec3f>            _polygonNormals;
+  VtArray<GfVec3f>            _vertexNormals;
   char                        _varyingBits;
   double                      _lastTime;
   mutable std::mutex          _mutex;
