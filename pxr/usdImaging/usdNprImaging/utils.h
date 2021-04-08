@@ -21,11 +21,12 @@ UsdNprTriangulateMesh(const VtArray<int>& counts,
 
 /// Compute smooth vertex normals on a triangulated polymesh
 void 
-UsdNprComputeVertexNormals(const VtArray<GfVec3f>& positions,
+UsdNprComputeNormals(const VtArray<GfVec3f>& positions,
                           const VtArray<int>& counts,
                           const VtArray<int>& indices,
                           const VtArray<int>& samples,
-                          VtArray<GfVec3f>& normals);
+                          VtArray<GfVec3f>& polygonNormals,
+                          VtArray<GfVec3f>& vertexNormals);
 
 /// Compute triangle normals
 void 

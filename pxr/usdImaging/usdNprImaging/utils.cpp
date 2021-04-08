@@ -34,15 +34,17 @@ UsdNprTriangulateMesh(const VtArray<int>& counts,
 }
 
 void 
-UsdNprComputeVertexNormals( const VtArray<GfVec3f>& positions,
+UsdNprComputeNormals( const VtArray<GfVec3f>& positions,
                           const VtArray<int>& counts,
                           const VtArray<int>& indices,
                           const VtArray<int>& samples,
-                          VtArray<GfVec3f>& normals)
+                          VtArray<GfVec3f>& polygonNormals,
+                          VtArray<GfVec3f>& vertexNormals)
 {
   // we want smooth vertex normals
-  normals.resize(positions.size());
-  memset(normals.data(), 0.f, normals.size() * sizeof(GfVec3f));
+  size_t numPoints = positions.size();
+  vertexNormals.resize(numPoints);
+  memset(vertexNormals.data(), 0.f, numPoints * sizeof(GfVec3f));
 
   // first compute triangle normals
   int totalNumTriangles = samples.size()/3;
@@ -58,7 +60,6 @@ UsdNprComputeVertexNormals( const VtArray<GfVec3f>& positions,
 
   // then polygons normals
   int numPolygons = counts.size();
-  VtArray<GfVec3f> polygonNormals;
   polygonNormals.resize(numPolygons);
   int base = 0;
   for(int i=0; i < counts.size(); ++i)
@@ -81,12 +82,12 @@ UsdNprComputeVertexNormals( const VtArray<GfVec3f>& positions,
     int numVertices = counts[i];
     for(int j = 0; j < numVertices; ++j)
     {
-      normals[indices[base + j]] += polygonNormals[i];
+      vertexNormals[indices[base + j]] += polygonNormals[i];
     }
     base += numVertices;
   }
   
-  for(auto& n: normals) n.Normalize();
+  for(auto& n: vertexNormals) n.Normalize();
   
 }
 
