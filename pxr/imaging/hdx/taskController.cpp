@@ -387,14 +387,14 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
         renderParams->blendEnable = false;
         renderParams->enableAlphaToCoverage = false;
         renderParams->depthMaskEnable = false;
-    } else if (materialTag == HdStMaterialTagTokens->masked) {
+    } else {
+        // The default and masked material tags share the same blend state, but 
+        // we classify them as separate because in the general case, masked 
+        // materials use fragment shader discards while the defaultMaterialTag 
+        // should not.
         renderParams->blendEnable = false;
         renderParams->depthMaskEnable = true;
         renderParams->enableAlphaToCoverage = true;
-    } else {
-        renderParams->blendEnable = false;
-        renderParams->depthMaskEnable = true;
-        renderParams->enableAlphaToCoverage = false;
     }
 }
 
