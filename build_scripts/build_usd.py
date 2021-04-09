@@ -1480,9 +1480,9 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_BUILD_DRACO_PLUGIN=OFF')
 
         if context.buildMaterialX:
-            extraArgs.append('-DPXR_BUILD_MATERIALX_PLUGIN=ON')
+            extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=ON')
         else:
-            extraArgs.append('-DPXR_BUILD_MATERIALX_PLUGIN=OFF')
+            extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
 
         if Windows():
             # Increase the precompiled header buffer limit.
