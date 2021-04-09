@@ -43,7 +43,7 @@ class SchemaDefiningMiscConstants(ConstantsGroup):
 
 class PropertyDefiningKeys(ConstantsGroup):
     USD_VARIABILITY = "usdVariability"
-    SUPPRESS_PROPERTY = "suppressProperty"
+    USD_SUPPRESS_PROPERTY = "usdSuppressProperty"
     SDF_VARIABILITY_UNIFORM_STRING = "Uniform"
     CONNECTABILITY = "connectability"
 
@@ -71,8 +71,8 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, usdSchemaNode,
     
     # Early out if the property should be suppressed from being translated to
     # propertySpec
-    if (propMetadata.has_key(PropertyDefiningKeys.SUPPRESS_PROPERTY) and
-            propMetadata[PropertyDefiningKeys.SUPPRESS_PROPERTY] == "True"):
+    if (propMetadata.has_key(PropertyDefiningKeys.USD_SUPPRESS_PROPERTY) and
+            propMetadata[PropertyDefiningKeys.USD_SUPPRESS_PROPERTY] == "True"):
         return
 
     if not Sdf.Path.IsValidNamespacedIdentifier(propName):
@@ -151,7 +151,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
         - USD_VARIABILITY:  A property level metadata, which specified a 
           specific sdrNodeProperty should its usd variability set to Uniform or 
           Varying.
-        - SUPPRESS_PROPERTY: A property level metadata, which determines if the
+        - USD_SUPPRESS_PROPERTY: A property level metadata, which determines if the
           property should be suppressed from translation from args to property
           spec.
     """
