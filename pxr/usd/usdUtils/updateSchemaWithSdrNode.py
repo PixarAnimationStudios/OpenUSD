@@ -43,6 +43,7 @@ class SchemaDefiningMiscConstants(ConstantsGroup):
 
 class PropertyDefiningKeys(ConstantsGroup):
     USD_VARIABILITY = "usdVariability"
+    SUPPRESS_PROPERTY = "suppressProperty"
     SDF_VARIABILITY_UNIFORM_STRING = "Uniform"
     CONNECTABILITY = "connectability"
 
@@ -67,6 +68,12 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, usdSchemaNode,
             return
 
     propMetadata = prop.GetMetadata()
+    
+    # Early out if the property should be suppressed from being translated to
+    # propertySpec
+    if (propMetadata.has_key(PropertyDefiningKeys.SUPPRESS_PROPERTY) and
+            propMetadata[PropertyDefiningKeys.SUPPRESS_PROPERTY] == "True"):
+        return
 
     if not Sdf.Path.IsValidNamespacedIdentifier(propName):
         Tf.RaiseRuntimeError("Property name (%s) for schema (%s) is an " \
@@ -141,8 +148,12 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
           system. This gets appended to the domain name to register with TfType.
 
     Property Level Metadata:
-        USD_VARIABILITY = A property level metadata, which specified a specific
-        sdrNodeProperty should its usd variability set to Uniform or Varying.
+        - USD_VARIABILITY:  A property level metadata, which specified a 
+          specific sdrNodeProperty should its usd variability set to Uniform or 
+          Varying.
+        - SUPPRESS_PROPERTY: A property level metadata, which determines if the
+          property should be suppressed from translation from args to property
+          spec.
     """
     # Early exit on invalid parameters
     if not schemaLayer:
