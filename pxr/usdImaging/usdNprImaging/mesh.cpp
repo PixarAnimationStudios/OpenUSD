@@ -53,54 +53,9 @@ void UsdNprHalfEdge::GetPolygonNormal(const GfVec3f* positions,
   normal *= 1.f / static_cast<float>(numEdges);
 }
 
-/*
-void UsdNprHalfEdge::GetTriangleNormal(const GfVec3f* positions, 
-  GfVec3f& normal) const
-{
-  GfVec3f ab = positions[vertex] - positions[next->vertex];
-  GfVec3f ac = positions[vertex] - positions[next->next->vertex];
-  normal = (ab ^ ac).GetNormalized();
-}
-
-
-void UsdNprHalfEdge::GetVertexNormal(const GfVec3f* normals, 
-  GfVec3f& normal) const
-{
-  bool closed = false;
-  normal = normals[GetTriangleIndex()];
-  size_t numTriangles = 1;
-  UsdNprHalfEdge* current = (UsdNprHalfEdge*)this;
-  while(current->next->twin) {
-    current = current->next->twin;
-    if(current == this) {
-      closed = true;
-      break;
-    }
-    else {
-      normal += normals[current->GetTriangleIndex()];
-      numTriangles++;
-    }
-  }
-
-  if(!closed && this->twin) {
-    current = this->twin;
-    normal += normals[current->GetTriangleIndex()];
-    numTriangles++;
-    while(current->next->next->twin) {
-      current = current->next->next->twin;
-      normal += normals[current->GetTriangleIndex()];
-      numTriangles++;
-    }
-  }
-  normal *= 1.f/(float)numTriangles;
-}
-*/
-
 bool UsdNprHalfEdge::GetVertexFacing(const GfVec3f* positions, 
   const GfVec3f* vertexNormals,const GfVec3f& viewPoint, float* weight) const
 {
-  //GfVec3f vn;
-  //GetVertexNormal(normals, vn);
   GfVec3f dir = (positions[vertex] - viewPoint).GetNormalized();
   *weight = GfDot(vertexNormals[vertex], dir);
   return (*weight > 0.0);
@@ -122,8 +77,8 @@ float UsdNprHalfEdge::GetDot(const GfVec3f* positions, const GfVec3f* normals,
 }
 
 short UsdNprHalfEdge::GetFlags(const GfVec3f* positions, 
-  const GfVec3f* vertexNormals, const GfVec3f& viewPoint, float creaseValue, 
-  float* weight) const
+  const GfVec3f* vertexNormals, const GfVec3f* polygonNormals, 
+  const GfVec3f& viewPoint, float creaseValue, float* weight) const
 {
   short flags = 0;
   if(!twin)return flags | EDGE_BOUNDARY;
@@ -131,9 +86,11 @@ short UsdNprHalfEdge::GetFlags(const GfVec3f* positions,
   if(twin->GetPolygonIndex() < GetPolygonIndex()) return flags | EDGE_TWIN;
 
   float weight1, weight2;
-  bool s1 = GetVertexFacing(positions, vertexNormals, viewPoint, &weight1);
-  bool s2 = twin->GetVertexFacing(positions, vertexNormals, viewPoint, &weight2);
-  
+  //bool s1 = GetVertexFacing(positions, vertexNormals, viewPoint, &weight1);
+  //bool s2 = twin->GetVertexFacing(positions, vertexNormals, viewPoint, &weight2);
+  bool s1 = GetFacing(positions, polygonNormals, viewPoint, &weight1);
+  bool s2 = twin->GetFacing(positions, polygonNormals, viewPoint, &weight2);
+
   if(s1 != s2) {
     flags |= EDGE_SILHOUETTE;
     *weight = std::fabsf(weight1) / (std::fabsf(weight1) + std::fabsf(weight2));
@@ -141,14 +98,11 @@ short UsdNprHalfEdge::GetFlags(const GfVec3f* positions,
     *weight = 0.5f;
   }
 
-/*
   if(creaseValue >= 0.0) {
-    GfVec3f tn1, tn2;
-    if(GfAbs(GfDot(normals[GetTriangleIndex()], 
-                   normals[twin->GetTriangleIndex()])) < creaseValue)
+    if(GfAbs(GfDot(polygonNormals[GetPolygonIndex()], 
+                   polygonNormals[twin->GetPolygonIndex()])) < 1.f - creaseValue)
       flags |= EDGE_CREASE;
   }
-*/
   return flags;
 }
 
@@ -157,9 +111,6 @@ void UsdNprHalfEdge::GetWeightedPositionAndNormal(const GfVec3f* positions,
 {
   position = positions[vertex] * weight +
     positions[next->vertex] * (1.f - weight);
-  //GfVec3f n1, n2;
-  //GetVertexNormal(normals, n1);
-  //next->GetVertexNormal(normals, n2);
   normal = vertexNormals[vertex] * weight + 
     vertexNormals[next->vertex]  * (1.f - weight);
 }
@@ -183,24 +134,23 @@ void UsdNprHalfEdgeMesh::Init(const UsdGeomMesh& mesh, const UsdTimeCode& timeCo
   VtArray<int> faceVertexIndices;
   faceVertexCountsAttr.Get(&faceVertexCounts, timeCode);
   faceVertexIndicesAttr.Get(&faceVertexIndices, timeCode);
-  VtArray<int> samples;
+  VtArray<int> triangles;
 
   UsdNprTriangulateMesh(faceVertexCounts, 
                         faceVertexIndices, 
-                        samples);
+                        triangles);
 
-  //UsdNprComputeTriangleNormals(_positions, samples, _normals);
-  
+  // compute vertex and polygon normals  
   UsdNprComputeNormals(
     _positions,
     faceVertexCounts,
     faceVertexIndices,
-    samples,
+    triangles,
     _polygonNormals,
     _vertexNormals
   );
 
-  _numTriangles = samples.size() / 3;
+  _numTriangles = triangles.size() / 3;
   _numPolygons = faceVertexCounts.size();
   
   _halfEdges.resize(faceVertexIndices.size());
@@ -210,60 +160,31 @@ void UsdNprHalfEdgeMesh::Init(const UsdGeomMesh& mesh, const UsdTimeCode& timeCo
   UsdNprHalfEdge* halfEdge = &_halfEdges[0];
   const int* indices = &faceVertexIndices[0];
   size_t halfEdgeIndex = 0;
+
+  // for each face build half-edges and insert in map
   for(int faceIndex = 0; faceIndex < _numPolygons; ++ faceIndex) {
     size_t numFaceVertices = faceVertexCounts[faceIndex];
     for(int faceVertexIndex = 0; faceVertexIndex < numFaceVertices; ++faceVertexIndex) {
       uint64_t p0 = indices[faceVertexIndex];
       uint64_t p1 = indices[(faceVertexIndex + 1) % numFaceVertices];
-
-      // create the half-edge that goes from p1 to p0:
       halfEdgesMap[p1 | (p0 << 32)] = halfEdge;
       halfEdge->index = halfEdgeIndex++;
       halfEdge->vertex = p0;
       halfEdge->polygon = faceIndex;
-      halfEdge->next = 
-        faceVertexIndex < (numFaceVertices - 1) ? 
-          1 + halfEdge : halfEdge - (numFaceVertices - 1);
+      
+      halfEdge->next = faceVertexIndex < (numFaceVertices - 1) ? 
+          halfEdge + 1 : halfEdge - (numFaceVertices - 1);
+
       ++halfEdge;
     }
 
     indices += numFaceVertices;
   }
-/*
-  const int* sample = &samples[0];
-  UsdNprHalfEdge* halfEdge = &_halfEdges[0];
-  for (int triIndex = 0; triIndex < _numTriangles; ++triIndex)
-  {
-      uint64_t A = sample[0];sample++;
-      uint64_t B = sample[0];sample++;
-      uint64_t C = sample[0];sample++;
 
-      // create the half-edge that goes from C to A:
-      halfEdgesMap[A | (C << 32)] = halfEdge;
-      halfEdge->index = triIndex * 3;
-      halfEdge->vertex = C;
-      halfEdge->next = 1 + halfEdge;
-      ++halfEdge;
-
-      // create the half-edge that goes from A to B:
-      halfEdgesMap[B | (A << 32)] = halfEdge;
-      halfEdge->index = triIndex * 3 + 1;
-      halfEdge->vertex = A;
-      halfEdge->next = 1 + halfEdge;
-      ++halfEdge;
-
-      // create the half-edge that goes from B to C:
-      halfEdgesMap[C | (B << 32)] = halfEdge;
-      halfEdge->index = triIndex * 3 + 2;
-      halfEdge->vertex = B;
-      halfEdge->next = halfEdge - 2;
-      ++halfEdge;
-  }
-*/
   // verify that the mesh is clean:
   size_t numEntries = halfEdgesMap.size();
   bool problematic = false;
-  if(numEntries != _numTriangles * 3)problematic = true;
+  if(numEntries != faceVertexIndices.size())problematic = true;
 
   // populate the twin pointers by iterating over the hash map:
   uint64_t edgeIndex; 
@@ -294,18 +215,18 @@ void UsdNprHalfEdgeMesh::Update(const UsdGeomMesh& mesh, const UsdTimeCode& time
   VtArray<int> faceVertexIndices;
   faceVertexCountsAttr.Get(&faceVertexCounts, timeCode);
   faceVertexIndicesAttr.Get(&faceVertexIndices, timeCode);
-  VtArray<int> samples;
+  VtArray<int> triangles;
 
   UsdNprTriangulateMesh(faceVertexCounts, 
                         faceVertexIndices, 
-                        samples);
+                        triangles);
 
   //UsdNprComputeTriangleNormals(_positions, samples, _normals);
   UsdNprComputeNormals(
     _positions,
     faceVertexCounts,
     faceVertexIndices,
-    samples,
+    triangles,
     _polygonNormals,
     _vertexNormals
   );

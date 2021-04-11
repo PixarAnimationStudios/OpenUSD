@@ -37,7 +37,7 @@ void
 UsdNprComputeNormals( const VtArray<GfVec3f>& positions,
                           const VtArray<int>& counts,
                           const VtArray<int>& indices,
-                          const VtArray<int>& samples,
+                          const VtArray<int>& triangles,
                           VtArray<GfVec3f>& polygonNormals,
                           VtArray<GfVec3f>& vertexNormals)
 {
@@ -47,14 +47,14 @@ UsdNprComputeNormals( const VtArray<GfVec3f>& positions,
   memset(vertexNormals.data(), 0.f, numPoints * sizeof(GfVec3f));
 
   // first compute triangle normals
-  int totalNumTriangles = samples.size()/3;
+  int totalNumTriangles = triangles.size()/3;
   VtArray<GfVec3f> triangleNormals;
   triangleNormals.resize(totalNumTriangles);
 
   for(int i = 0; i < totalNumTriangles; ++i)
   {
-    GfVec3f ab = positions[samples[i*3+1]] - positions[samples[i*3]];
-    GfVec3f ac = positions[samples[i*3+2]] - positions[samples[i*3]];
+    GfVec3f ab = positions[triangles[i*3+1]] - positions[triangles[i*3]];
+    GfVec3f ac = positions[triangles[i*3+2]] - positions[triangles[i*3]];
     triangleNormals[i] = (ab ^ ac).GetNormalized();
   }
 

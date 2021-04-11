@@ -165,6 +165,16 @@ private:
     UsdImagingPrimvarDescCache* valueCache, 
     SdfPath const& cachePath) const;
 
+  void _ComputeNormalsGeometry(
+    _ContourData* contourData,
+    const UsdNprStrokeGraphList& strokeGraphs
+  ) const;
+
+  void _ComputeHalfEdgesGeometry(
+    _ContourData* contourData,
+    const UsdNprStrokeGraphList& strokeGraphs
+  ) const;
+
   _ContourData*  _GetContourData(const SdfPath& cachePath) const;
   
   //UsdNprContourCache _contourCache;

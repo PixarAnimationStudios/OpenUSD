@@ -74,7 +74,7 @@ UsdImagingContourAdapter::Populate(UsdPrim const& prim,
   SdfPath const& contourPath = prim.GetPath();
   UsdGeomGprim gprim(prim);
   gprim.CreateDisplayColorPrimvar(UsdGeomTokens->faceVarying);
-  
+
   if (_contourDataCache.find(contourPath) == _contourDataCache.end()) {
       auto contourData = std::make_shared<_ContourData>();
       _contourDataCache[contourPath] = contourData;
@@ -159,7 +159,10 @@ _BuildStrokes(_ContourAdapterComputeDatas& datas)
 
   graph->Prepare(*datas.strokeParams);
   graph->ClearStrokeChains();
-  graph->BuildStrokeChains(EDGE_SILHOUETTE);
+  graph->BuildRawStrokes(EDGE_SILHOUETTE, GfVec3f(1.f, 0.f, 0.f));
+  graph->BuildRawStrokes(EDGE_BOUNDARY, GfVec3f(0.f, 1.f, 0.f));
+  graph->BuildRawStrokes(EDGE_CREASE, GfVec3f(0.f, 0.f, 1.f));
+  //graph->BuildStrokeChains(EDGE_SILHOUETTE, GfVec3f(0.f, 1.f, 0.f));
 }
 
 void 
@@ -239,6 +242,8 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
 
     UsdImagingPrimvarDescCache* valueCache = _GetPrimvarDescCache();
     _ComputeOutputGeometry(contourData, strokeGraphs, valueCache, cachePath);
+    //_ComputeNormalsGeometry(contourData, strokeGraphs);
+    //_ComputeHalfEdgesGeometry(contourData,strokeGraphs);
   }
 }
 
@@ -324,24 +329,29 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(
   size_t indicesIndex = 0;
   size_t colorIndex = 0;
   size_t offsetIndex = 0;
-  
-  for(const auto& strokeGraph: strokeGraphs) {
-    const UsdNprHalfEdgeMesh* mesh = strokeGraph.GetMesh();
-    GfVec3f viewPoint = strokeGraph.GetViewPoint();
-    for(const auto& stroke: strokeGraph.GetStrokes()) {
-      GfVec3f color(
+
+  /*
+  GfVec3f color(
         (float)rand() / float(RAND_MAX),
         (float)rand() / float(RAND_MAX),
         (float)rand() / float(RAND_MAX)
       );
+  */ 
+ //const GfVec3f color(0.1f, 0.1f, .1f);
+  for(const auto& strokeGraph: strokeGraphs) {
+    const UsdNprHalfEdgeMesh* mesh = strokeGraph.GetMesh();
+    GfVec3f viewPoint = strokeGraph.GetViewPoint();
+    for(const auto& stroke: strokeGraph.GetStrokes()) {
+      
       size_t numNodes = stroke.GetNumNodes();
       if(numNodes >1) {
         size_t numPoints =  numNodes * 2;
         if(numPoints) {
-          stroke.ComputeOutputPoints( mesh, viewPoint, &contourData->points[pointsIndex]);
+          stroke.ComputeOutputPoints( mesh, viewPoint, 
+          &contourData->points[pointsIndex]);
         }
         pointsIndex += numPoints;
-        
+       
         size_t numIndices = (numNodes - 1) * 4;
         if(numIndices) {
           for(int i=0; i < numNodes - 1; ++i) {
@@ -349,6 +359,7 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(
             faceVertexIndices[indicesIndex++] = offsetIndex + i * 2 + 1;
             faceVertexIndices[indicesIndex++] = offsetIndex + i * 2 + 3;
             faceVertexIndices[indicesIndex++] = offsetIndex + i * 2 + 2;
+            const GfVec3f& color = stroke.GetNode(i)->color;
             colors[colorIndex++] = color;
             colors[colorIndex++] = color;
             colors[colorIndex++] = color;
@@ -368,6 +379,152 @@ UsdImagingContourAdapter::_ComputeOutputGeometry(
   contourData->colors = colors;
 }
 
+struct _DebugMesh{
+  pxr::VtArray<int> faceCounts;
+  pxr::VtArray<int> faceIndices;
+  pxr::VtArray<GfVec3f> positions;
+  pxr::VtArray<GfVec3f> colors;
+};
+
+static void _AddNormal(
+  _DebugMesh* mesh, const GfVec3f& position, const GfVec3f& normal, 
+  const GfVec3f& color, const GfVec3f& view)
+{
+  size_t baseIndex = mesh->faceIndices.size();
+  mesh->faceCounts.push_back(4);
+  for(size_t i = 0; i < 4; ++i) {
+    mesh->faceIndices.push_back(baseIndex + i);
+    mesh->colors.push_back(color);
+  }
+
+  GfVec3f side = (position - view).GetNormalized() ^ normal;
+  mesh->positions.push_back(position - side * 0.1f);
+  mesh->positions.push_back(position + side * 0.1f);
+  mesh->positions.push_back(position + side * 0.1f + normal);
+  mesh->positions.push_back(position - side * 0.1f + normal);
+}
+
+static void _AddHalfEdge(
+  const UsdNprHalfEdgeMesh* mesh,
+  _DebugMesh* output, const UsdNprHalfEdge* edge, 
+  const GfVec3f& color, const GfVec3f& view)
+{
+  const GfVec3f* positions = mesh->GetPositionsPtr();
+  const GfVec3f* normals = mesh->GetVertexNormalsPtr();
+  {
+    size_t baseIndex = output->faceIndices.size();
+    output->faceCounts.push_back(4);
+    const GfVec3f p0 = positions[edge->vertex];
+    const GfVec3f p1 = positions[edge->next->vertex];
+    const GfVec3f n0 = normals[edge->vertex];
+    const GfVec3f n1 = normals[edge->next->vertex];
+    
+    for(size_t i = 0; i < 4; ++i) {
+      output->faceIndices.push_back(baseIndex + i);
+      output->colors.push_back(color);
+    }
+
+    const GfVec3f side = (p1 - p0).GetNormalized() ^ (n0 + n1) * 0.5f;
+    output->positions.push_back(p0);
+    output->positions.push_back(p1);
+    output->positions.push_back(p1 + side * 0.1f);
+    output->positions.push_back(p0 + side * 0.1f);
+  }
+
+  if(edge->twin) {
+    size_t baseIndex = output->faceIndices.size();
+    output->faceCounts.push_back(4);
+    const GfVec3f p0 = positions[edge->vertex];
+    const GfVec3f p1 = positions[edge->next->vertex];
+    const GfVec3f n0 = normals[edge->vertex];
+    const GfVec3f n1 = normals[edge->next->vertex];
+    
+    for(size_t i = 0; i < 4; ++i) {
+      output->faceIndices.push_back(baseIndex + i);
+      output->colors.push_back(color);
+    }
+
+    const GfVec3f side = (p0 - p1).GetNormalized() ^ (n0 + n1) * 0.5f;
+    output->positions.push_back(p0);
+    output->positions.push_back(p1);
+    output->positions.push_back(p1 + side * 0.1f);
+    output->positions.push_back(p0 + side * 0.1f);
+  }
+}
+
+
+
+void
+UsdImagingContourAdapter::_ComputeNormalsGeometry(
+  _ContourData* contourData, 
+  const UsdNprStrokeGraphList& strokeGraphs) const
+{
+  _DebugMesh debugMesh;
+  GfVec3f color(1.f, 0.f, 0.f);
+  
+  for(const auto& strokeGraph: strokeGraphs) {
+    const UsdNprHalfEdgeMesh* mesh = strokeGraph.GetMesh();
+    GfVec3f viewPoint = strokeGraph.GetViewPoint();
+    const GfVec3f* positions = mesh->GetPositionsPtr();
+    const GfVec3f* normals = mesh->GetVertexNormalsPtr();
+    size_t numPoints = mesh->GetNumPoints();
+    for(size_t p = 0; p < numPoints; ++p) {
+      _AddNormal(&debugMesh, positions[p], normals[p], color, viewPoint);
+    }
+  }
+
+  contourData->topology = HdMeshTopology(PxOsdOpenSubdivTokens->none,
+                                         UsdGeomTokens->rightHanded,
+                                         debugMesh.faceCounts,
+                                         debugMesh.faceIndices);
+
+  contourData->points = debugMesh.positions;
+  contourData->colors = debugMesh.colors;
+}
+
+void
+UsdImagingContourAdapter::_ComputeHalfEdgesGeometry(
+  _ContourData* contourData, 
+  const UsdNprStrokeGraphList& strokeGraphs) const
+{
+  _DebugMesh debugMesh;
+  
+  for(const auto& strokeGraph: strokeGraphs) {
+    const UsdNprHalfEdgeMesh* mesh = strokeGraph.GetMesh();
+    size_t numHalfEdges = mesh->GetNumHalfEdges();
+    std::vector<int> flags(numHalfEdges);
+    memset(&flags[0], 0, sizeof(int) * numHalfEdges);
+
+    GfVec3f viewPoint = strokeGraph.GetViewPoint();
+    const GfVec3f* positions = mesh->GetPositionsPtr();
+    const GfVec3f* normals = mesh->GetVertexNormalsPtr();
+    
+    const UsdNprHalfEdge* halfEdges = mesh->GetHalfEdgesPtr();
+    for(size_t e = 0; e < numHalfEdges; ++e) {
+      const UsdNprHalfEdge* halfEdge = &halfEdges[e];
+      if(!flags[e]) {
+        GfVec3f color(
+          (float)rand()/(float)RAND_MAX,
+          (float)rand()/(float)RAND_MAX,
+          (float)rand()/(float)RAND_MAX
+        );
+        _AddHalfEdge(mesh, &debugMesh, halfEdge, color, viewPoint);
+        flags[e] = true;
+        if(halfEdge->twin) {
+          flags[halfEdge->twin->index] = true;
+        }
+      }
+    }
+  }
+
+  contourData->topology = HdMeshTopology(PxOsdOpenSubdivTokens->none,
+                                         UsdGeomTokens->rightHanded,
+                                         debugMesh.faceCounts,
+                                         debugMesh.faceIndices);
+
+  contourData->points = debugMesh.positions;
+  contourData->colors = debugMesh.colors;
+}
 
 /*virtual*/ 
 VtValue

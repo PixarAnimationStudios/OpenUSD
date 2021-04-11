@@ -32,7 +32,8 @@ enum UsdNprEdgeFlags : short {
   EDGE_SILHOUETTE = 4,
   EDGE_TWIN       = 8,
   EDGE_VISITED    = 16,
-  EDGE_CHAINED    = 32
+  EDGE_CHAINED    = 32,
+  EDGE_TERMINAL   = 64
 };
 
 struct UsdNprEdgeClassification {
@@ -65,34 +66,34 @@ struct UsdNprStrokeParams {
 struct UsdNprStrokeNode {
   UsdNprHalfEdge* edge;
   float width;
-  float weight;
 
   GfVec3f position;
   GfVec3f color;
   GfVec3f normal;
 
-  UsdNprStrokeNode(UsdNprHalfEdge* e, float width, float weight):
-    edge(e), width(width), weight(weight){};
-
-  UsdNprStrokeNode(UsdNprHalfEdge* e, float width, float weight, 
-    const GfVec3f& p, const GfVec3f& n):
-    edge(e), width(width), weight(weight), position(p), normal(n){};
+  UsdNprStrokeNode(UsdNprHalfEdge* e, float width, 
+    const GfVec3f& p, const GfVec3f& n, const GfVec3f& c):
+    edge(e), width(width), position(p), normal(n), color(c){};
 };
 
 typedef std::vector<UsdNprStrokeNode> UsdNprStrokeNodeList;
 class UsdNprStrokeGraph;
 class UsdNprStrokeChain {
 public:
-  void Init(UsdNprHalfEdge* edge, short type, float width, float weight,
-    const GfVec3f& position, const GfVec3f& normal);
+  void Init(UsdNprHalfEdge* edge, short type, float width,
+    const GfVec3f& position, const GfVec3f& normal, const GfVec3f& color);
   void Build(const UsdNprStrokeGraph* graph, 
     std::vector<short>& edgeClassification, short type);
+
+  void FromEdge(UsdNprHalfEdge* edge, float width, const GfVec3f* positions,
+    const GfVec3f* normals, const GfVec3f& color);
   
   void ComputeOutputPoints( const UsdNprHalfEdgeMesh* mesh, 
     const GfVec3f& viewPoint, GfVec3f* points) const;
 
   size_t GetNumNodes() const {return _nodes.size();};
   const UsdNprStrokeNodeList GetNodes() const {return _nodes;};
+  const UsdNprStrokeNode* GetNode(size_t idx) const {return &_nodes[idx];};
 
 private:
   void _ComputePoint(const GfVec3f* positions, const GfMatrix4f& xform,
@@ -113,7 +114,8 @@ public:
   void Prepare(const UsdNprStrokeParams& params);
   void ResetChainedFlag(const std::vector<const UsdNprHalfEdge*>& edges);
   void ClearStrokeChains();
-  void BuildStrokeChains(short edgeType);
+  void BuildStrokeChains(short edgeType, const GfVec3f& color);
+  void BuildRawStrokes(short edgeType, const GfVec3f& color);
   void ConnectChains(short edgeType);
 
   const UsdNprStrokeChainList& GetStrokes() const {return _strokes;};

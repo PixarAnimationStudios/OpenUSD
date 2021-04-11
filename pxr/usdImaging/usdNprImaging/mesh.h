@@ -32,10 +32,10 @@ struct UsdNprEdgeClassification;
   
 
 enum UsdHalfEdgeMeshVaryingBits {
-  VARYING_TOPOLOGY = 1,
-  VARYING_DEFORM = 2,
-  VARYING_TRANSFORM = 4,
-  VARYING_VISIBILITY = 8
+  VARYING_TOPOLOGY    = 1,
+  VARYING_DEFORM      = 2,
+  VARYING_TRANSFORM   = 4,
+  VARYING_VISIBILITY  = 8
 };
 
 struct UsdNprHalfEdge
@@ -47,7 +47,6 @@ struct UsdNprHalfEdge
   struct UsdNprHalfEdge*  next;      // next half-edge
 
   UsdNprHalfEdge():vertex(0),polygon(0),twin(NULL),next(NULL){};
-  inline size_t GetTriangleIndex() const {return index / 3;};
   inline size_t GetPolygonIndex() const {return polygon;};
   //void GetTriangleNormal(const GfVec3f* positions, GfVec3f& normal) const;
   void GetPolygonNormal(const GfVec3f* positions, GfVec3f& normal) const;
@@ -59,7 +58,8 @@ struct UsdNprHalfEdge
   float GetDot(const GfVec3f* positions, const GfVec3f* vertexNormals,
     const GfVec3f& viewPoint) const;
   short GetFlags(const GfVec3f* positions, const GfVec3f* vertexNormals, 
-    const GfVec3f& viewPoint, float creaseValue, float* weight) const;
+    const GfVec3f* polygonNormals, const GfVec3f& viewPoint, float creaseValue, 
+    float* weight) const;
   void GetWeightedPositionAndNormal(const GfVec3f* positions, 
     const GfVec3f* vertexNormals, float weight, GfVec3f& position, 
     GfVec3f& normal);
@@ -122,15 +122,6 @@ private:
 };
 
 typedef std::shared_ptr<UsdNprHalfEdgeMesh> UsdNprHalfEdgeMeshSharedPtr;
-
-/*
-class UsdNprEdgeBuffer {
-public:
-  void Init()
-private:
-  TfHashMap<size_t, uint64_t, TfHash> buffer;
-};
-*/
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

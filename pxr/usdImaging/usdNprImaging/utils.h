@@ -24,7 +24,7 @@ void
 UsdNprComputeNormals(const VtArray<GfVec3f>& positions,
                           const VtArray<int>& counts,
                           const VtArray<int>& indices,
-                          const VtArray<int>& samples,
+                          const VtArray<int>& triangles,
                           VtArray<GfVec3f>& polygonNormals,
                           VtArray<GfVec3f>& vertexNormals);
 
