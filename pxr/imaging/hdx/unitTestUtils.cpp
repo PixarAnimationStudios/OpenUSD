@@ -59,7 +59,7 @@ _GetPartialHitHash(HdxPickHit const& hit)
     return hash;
 }
 
-typedef std::unordered_map<size_t, AggregatedHit> AggregatedHits;
+using AggregatedHits = std::unordered_map<size_t, AggregatedHit>;
 
 // aggregates subprimitive hits to the same prim/instance
 static AggregatedHits

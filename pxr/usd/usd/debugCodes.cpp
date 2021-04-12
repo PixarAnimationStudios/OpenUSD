@@ -32,22 +32,40 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_CHANGES, "Usd change processing");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_CLIPS, "Usd clip details");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_COMPOSITION, "Usd composition details");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_DATA_BD, "Usd BD file format traces");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_DATA_BD_TRY, "Usd BD call traces. Prints names, errors and results.");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_INSTANCING, "Usd instancing diagnostics");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_PATH_RESOLUTION, "Usd path resolution diagnostics");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_PAYLOADS, "Usd payload load/unload messages");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_PRIM_LIFETIMES, "Usd prim ctor/dtor messages");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_SCHEMA_REGISTRATION, "Usd schema registration details.");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_STAGE_CACHE, "Usd stage cache details");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_STAGE_LIFETIMES, "Usd stage ctor/dtor messages");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_STAGE_OPEN, "Usd stage opening details");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_STAGE_INSTANTIATION_TIME, "Usd stage instantiation timing");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_VALIDATE_VARIABILITY, "Usd attribute variability validation");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_VALUE_RESOLUTION, "Usd trace of layers inspected as values are resolved");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_AUTO_APPLY_API_SCHEMAS, 
+        "USD API schema auto application details");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_CHANGES, 
+        "USD change processing");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_CLIPS, 
+        "USD clip details");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_COMPOSITION, 
+        "USD composition details");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_DATA_BD, 
+        "USD BD file format traces");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_DATA_BD_TRY, 
+        "USD BD call traces. Prints names, errors and results.");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_INSTANCING, 
+        "USD instancing diagnostics");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_PATH_RESOLUTION, 
+        "USD path resolution diagnostics");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_PAYLOADS, 
+        "USD payload load/unload messages");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_PRIM_LIFETIMES, 
+        "USD prim ctor/dtor messages");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_SCHEMA_REGISTRATION, 
+        "USD schema registration details.");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_STAGE_CACHE, 
+        "USD stage cache details");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_STAGE_LIFETIMES, 
+        "USD stage ctor/dtor messages");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_STAGE_OPEN, 
+        "USD stage opening details");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_STAGE_INSTANTIATION_TIME, 
+        "USD stage instantiation timing");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_VALIDATE_VARIABILITY, 
+        "USD attribute variability validation");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USD_VALUE_RESOLUTION, 
+        "USD trace of layers inspected as values are resolved");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

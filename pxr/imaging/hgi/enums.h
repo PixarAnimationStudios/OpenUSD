@@ -177,7 +177,9 @@ enum HgiMipFilter
 enum HgiSampleCount
 {
     HgiSampleCount1  = 1,
+    HgiSampleCount2  = 2,
     HgiSampleCount4  = 4,
+    HgiSampleCount8  = 8,
     HgiSampleCount16 = 16,
 
     HgiSampleCountEnd

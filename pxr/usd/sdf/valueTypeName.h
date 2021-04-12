@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/base/tf/token.h"
-#include <boost/operators.hpp>
+
 #include <iosfwd>
 #include <string>
 #include <vector>
@@ -44,7 +44,7 @@ class Sdf_ValueTypeImpl;
 /// Represents the shape of a value type (or that of an element in an array).
 ///
 struct SdfTupleDimensions 
-    : boost::equality_comparable<SdfTupleDimensions> {
+{
 public:
     SdfTupleDimensions() : size(0) {}
     SdfTupleDimensions(size_t m) : size(1) { d[0] = m; }
@@ -52,7 +52,11 @@ public:
     SdfTupleDimensions(const size_t (&s)[2])
         : size(2) { d[0] = s[0]; d[1] = s[1]; }
 
+    SDF_API
     bool operator==(const SdfTupleDimensions& rhs) const;
+    bool operator!=(const SdfTupleDimensions& rhs) const {
+        return !(*this == rhs);
+    }
 
 public:
     size_t d[2];
@@ -81,10 +85,7 @@ public:
 /// Aliases compare equal, even if registered by different schemas.
 /// 
 class SdfValueTypeName
-    : boost::equality_comparable<SdfValueTypeName, std::string
-    , boost::equality_comparable<SdfValueTypeName, TfToken
-    , boost::equality_comparable<SdfValueTypeName
-    > > > {
+{
 public:
     /// Constructs an invalid type name.
     SDF_API
@@ -148,16 +149,43 @@ public:
     /// compare equal.
     SDF_API
     bool operator==(const SdfValueTypeName& rhs) const;
+    bool operator!=(const SdfValueTypeName& rhs) const {
+        return !(*this == rhs);
+    }
 
     /// Returns \c true if this type name is equal to \p rhs.  Aliases
     /// compare equal.  Avoid relying on this overload.
     SDF_API
     bool operator==(const std::string& rhs) const;
+    bool operator!=(const std::string& rhs) const {
+        return !(*this == rhs);
+    }
 
     /// Returns \c true if this type name is equal to \p rhs.  Aliases
     /// compare equal.  Avoid relying on this overload.
     SDF_API
     bool operator==(const TfToken& rhs) const;
+    bool operator!=(const TfToken& rhs) const {
+        return !(*this == rhs);
+    }
+
+    friend inline
+    bool operator==(const std::string& lhs, const SdfValueTypeName& rhs) {
+        return rhs == lhs;
+    }
+    friend inline
+    bool operator!=(const std::string& lhs, const SdfValueTypeName& rhs) {
+        return !(rhs == lhs);
+    }
+
+    friend inline
+    bool operator==(const TfToken& lhs, const SdfValueTypeName &rhs) {
+        return rhs == lhs;
+    }
+    friend inline
+    bool operator!=(const TfToken& lhs, const SdfValueTypeName &rhs) {
+        return !(rhs == lhs);
+    }
 
     /// Returns a hash value for this type name.
     SDF_API

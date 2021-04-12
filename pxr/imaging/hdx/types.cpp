@@ -23,7 +23,9 @@
 //
 #include "pxr/imaging/hdx/types.h"
 
-#include <iostream>
+#include "pxr/base/tf/iterator.h"
+
+#include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -51,8 +53,8 @@ operator<<(std::ostream& out, const HdxShaderInputs& pv)
         << pv.textures << " "
         << pv.textureFallbackValues << " ";
 
-    TF_FOR_ALL(it, pv.attributes) {
-        out << *it;
+    for (const TfToken &attribute : pv.attributes) {
+        out << attribute;
     }
     return out;
 }
@@ -120,7 +122,7 @@ constexpr bool _CompileTimeValidateHgiFormatTable() {
 static_assert(_CompileTimeValidateHgiFormatTable(), 
               "_FormatDesc array out of sync with HgiFormat enum");
 
-HioFormat GetHioFormat(HgiFormat hgiFormat)
+HioFormat HdxGetHioFormat(HgiFormat hgiFormat)
 {
     return FORMAT_DESC[hgiFormat];
 }

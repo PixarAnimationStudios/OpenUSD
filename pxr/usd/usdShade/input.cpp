@@ -398,9 +398,11 @@ UsdShadeInput::ClearConnectability() const
 }
 
 UsdShadeAttributeVector
-UsdShadeInput::GetValueProducingAttributes() const
+UsdShadeInput::GetValueProducingAttributes(
+    bool shaderOutputsOnly) const
 {
-    return UsdShadeUtils::GetValueProducingAttributes(*this);
+    return UsdShadeUtils::GetValueProducingAttributes(*this,
+                                                      shaderOutputsOnly);
 }
 
 UsdAttribute

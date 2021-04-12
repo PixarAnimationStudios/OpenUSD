@@ -4067,33 +4067,6 @@ UsdStage::_Recompose(const PcpChanges &changes,
     T *pathsToRecompose = initialPathsToRecompose ?
         initialPathsToRecompose : &newPathsToRecompose;
 
-    _RecomposePrims(changes, pathsToRecompose);
-
-    // Update layer change notice listeners if changes may affect
-    // the set of used layers.
-    bool changedUsedLayers = !pathsToRecompose->empty();
-    if (!changedUsedLayers) {
-        const PcpChanges::LayerStackChanges& layerStackChanges = 
-            changes.GetLayerStackChanges();
-        for (const auto& entry : layerStackChanges) {
-            if (entry.second.didChangeLayers ||
-                entry.second.didChangeSignificantly) {
-                changedUsedLayers = true;
-                break;
-            }
-        }
-    }
-
-    if (changedUsedLayers) {
-        _RegisterPerLayerNotices();
-    }
-}
-
-template <class T>
-void 
-UsdStage::_RecomposePrims(const PcpChanges &changes,
-                          T *pathsToRecompose)
-{
     // Note: Calling changes.Apply() will result in recomputation of  
     // pcpPrimIndexes for changed prims, these get updated on the respective  
     // prims during _ComposeSubtreeImpl call. Using these outdated primIndexes
@@ -4109,11 +4082,19 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
     const PcpChanges::LayerStackChanges &layerStackChanges = 
         changes.GetLayerStackChanges();
 
+    // Some changes may cause the stage's used layers to change so we track
+    // them to see if we may need to update layer notices.
+    bool changedUsedLayers = false;
+
     for (const auto& layerStackChange : layerStackChanges) {
         const PcpLayerStackPtr& layerStack = layerStackChange.first;
         const PcpErrorVector& errors = layerStack->GetLocalErrors();
         if (!errors.empty()) {
             _ReportPcpErrors(errors, "Recomposing stage");
+        }
+        if (layerStackChange.second.didChangeLayers ||
+            layerStackChange.second.didChangeSignificantly) {
+            changedUsedLayers = true;
         }
     }
 
@@ -4124,12 +4105,14 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
 
         for (const auto& path : ourChanges.didChangeSignificantly) {
             (*pathsToRecompose)[path];
+            changedUsedLayers = true;
             TF_DEBUG(USD_CHANGES).Msg("Did Change Significantly: %s\n",
                                       path.GetText());
         }
 
         for (const auto& path : ourChanges.didChangePrims) {
             (*pathsToRecompose)[path];
+            changedUsedLayers = true;
             TF_DEBUG(USD_CHANGES).Msg("Did Change Prim: %s\n",
                                       path.GetText());
         }
@@ -4138,6 +4121,20 @@ UsdStage::_RecomposePrims(const PcpChanges &changes,
         TF_DEBUG(USD_CHANGES).Msg("No cache changes\n");
     }
 
+    _RecomposePrims(pathsToRecompose);
+
+    // Update layer change notice listeners if changes may affect
+    // the set of used layers. This is potentially expensive which is why we
+    // try to make sure the changes require it.
+    if (changedUsedLayers) {
+        _RegisterPerLayerNotices();
+    }
+}
+
+template <class T>
+void 
+UsdStage::_RecomposePrims(T *pathsToRecompose)
+{
     if (pathsToRecompose->empty()) {
         TF_DEBUG(USD_CHANGES).Msg("Nothing to recompose in cache changes\n");
         return;

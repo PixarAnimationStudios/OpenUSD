@@ -63,6 +63,11 @@ public:
         std::ostream& ss,
         const std::string &scopeInstanceName);
 
+    /// Write out the attribute and also the attribute index in case
+    /// either exists
+    HGIMETAL_API
+    void WriteAttributesWithIndex(std::ostream& ss) const;
+
     using HgiShaderSection::HgiShaderSection;
 };
 
@@ -110,8 +115,7 @@ public:
     HgiMetalMemberShaderSection(
         const std::string &identifier,
         const std::string &type,
-        const std::string &attribute = std::string(),
-        const std::string &attributeIndex = std::string());
+        const HgiShaderSectionAttributeVector &attributes = {});
 
     HGIMETAL_API
     ~HgiMetalMemberShaderSection() override;
@@ -137,8 +141,7 @@ public:
     HGIMETAL_API
     HgiMetalSamplerShaderSection(
         const std::string &textureSharedIdentifier,
-        const std::string &attribute = std::string(),
-        const std::string &attributeIndex = std::string());
+        const HgiShaderSectionAttributeVector &attributes = {});
 
     HGIMETAL_API
     void WriteType(std::ostream& ss) const override;
@@ -165,8 +168,7 @@ public:
     HGIMETAL_API
     HgiMetalTextureShaderSection(
         const std::string &samplerSharedIdentifier,
-        const std::string &attribute,
-        const std::string &attributeIndex,
+        const HgiShaderSectionAttributeVector &attributes,
         const HgiMetalSamplerShaderSection *samplerShaderSectionDependency,
         const std::string &defaultValue = std::string(),
         uint32_t dimension = 2);
@@ -233,8 +235,7 @@ public:
     HGIMETAL_API
     explicit HgiMetalStructInstanceShaderSection(
         const std::string &identifier,
-        const std::string &attribute,
-        const std::string &attributeIndex,
+        const HgiShaderSectionAttributeVector &attributes,
         HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration,
         const std::string &defaultValue = std::string());
 
@@ -261,8 +262,7 @@ public:
     HGIMETAL_API
     explicit HgiMetalArgumentBufferInputShaderSection(
         const std::string &identifier,
-        const std::string &attribute,
-        const std::string &attributeIndex,
+        const HgiShaderSectionAttributeVector &attributes,
         const std::string &addressSpace,
         const bool isPointer,
         HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration);
@@ -302,8 +302,7 @@ public:
     HGIMETAL_API
     explicit HgiMetalStageOutputShaderSection(
         const std::string &identifier,
-        const std::string &attribute,
-        const std::string &attributeIndex,
+        const HgiShaderSectionAttributeVector &attributes,
         const std::string &addressSpace,
         const bool isPointer,
         HgiMetalStructTypeDeclarationShaderSection *structTypeDeclaration);

@@ -93,10 +93,12 @@ public:
         DirtyParams           = 1 << 1,
         DirtyShadowParams     = 1 << 2,
         DirtyCollection       = 1 << 3,
+        DirtyResource         = 1 << 4,
         AllDirty              = (DirtyTransform
                                  |DirtyParams
                                  |DirtyShadowParams
-                                 |DirtyCollection)
+                                 |DirtyCollection
+                                 |DirtyResource)
     };
 };
 

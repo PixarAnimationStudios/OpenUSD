@@ -25,6 +25,8 @@
 #include "pxr/imaging/glf/glContextRegistry.h"
 #include "pxr/imaging/garch/glPlatformContext.h"
 
+#include "pxr/base/trace/trace.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -57,6 +59,8 @@ GlfGLContext::GetSharedGLContext()
 void
 GlfGLContext::MakeCurrent(const GlfGLContextSharedPtr& context)
 {
+    TRACE_FUNCTION();
+
     if (context && context->IsValid()) {
         context->_MakeCurrent();
 

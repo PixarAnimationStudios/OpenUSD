@@ -91,10 +91,12 @@ T* _BuildStructInstance(
                 typeName,
                 members);
 
+    const HgiShaderSectionAttributeVector attributes = {
+        HgiShaderSectionAttribute{attribute, ""}};
+
     return generator->CreateShaderSection<T>(
         instanceName,
-        attribute,
-        /* attributeIndex = */ std::string(),
+        attributes,
         addressSpace,
         isPointer,
         section);
@@ -477,26 +479,30 @@ ShaderStageData::AccumulateParams(
                 }
             }
 
+            const HgiShaderSectionAttributeVector attributes = {
+                HgiShaderSectionAttribute{p.role, indexAsStr} };
+
             HgiMetalMemberShaderSection * const section =
                 generator->CreateShaderSection<
                     HgiMetalMemberShaderSection>(
                         p.nameInShader,
                         p.type,
-                        p.role,
-                        indexAsStr);
+                        attributes);
             stageShaderSections.push_back(section);
         }
     } else {
         for (size_t i = 0; i < params.size(); i++) {
             const HgiShaderFunctionParamDesc &p = params[i];
+            //For metal, the role is the actual attribute so far
+            const HgiShaderSectionAttributeVector attributes = {
+                HgiShaderSectionAttribute{"attribute", std::to_string(i)}};
+
             HgiMetalMemberShaderSection * const section =
                 generator->CreateShaderSection<
                     HgiMetalMemberShaderSection>(
                         p.nameInShader,
                         p.type,
-                        //For metal, the role is the actual attribute so far
-                        /* attribute = */ "attribute",
-                        std::to_string(i));
+                        attributes);
             stageShaderSections.push_back(section);
         }
     }
@@ -728,24 +734,27 @@ void HgiMetalShaderGenerator::_BuildTextureShaderSections(
     for (size_t i = 0; i < textures.size(); ++i) {
         //Create the sampler shader section
         const std::string &texName = textures[i].nameInShader;
+        
+        const HgiShaderSectionAttributeVector samplerAttributes = {
+            HgiShaderSectionAttribute{"sampler", std::to_string(i)}};
 
         //Shader section vector on the generator
         // owns all sections, point to it in the vector
         HgiMetalSamplerShaderSection * const samplerSection =
             CreateShaderSection<HgiMetalSamplerShaderSection>(
-                texName,
-                /* samplerAttribute = */ "sampler",
-                std::to_string(i));
+                texName, samplerAttributes);
 
         //fx texturing struct depends on the sampler
         structMembers.push_back(samplerSection);
+
+        const HgiShaderSectionAttributeVector textureAttributes = {
+            HgiShaderSectionAttribute{"texture", std::to_string(i) } };
 
         //Create the actual texture shader section
         HgiMetalTextureShaderSection * const textureSection =
             CreateShaderSection<HgiMetalTextureShaderSection>(
                 texName,
-                "texture",
-                std::to_string(i),
+                textureAttributes,
                 samplerSection,
                 std::string());
 
@@ -759,8 +768,7 @@ void HgiMetalShaderGenerator::_BuildTextureShaderSections(
 
     CreateShaderSection<HgiMetalArgumentBufferInputShaderSection>(
         "fsTexturing",
-        std::string(),
-        std::string(),
+        HgiShaderSectionAttributeVector{},
         std::string(),
         false,
         structSection);

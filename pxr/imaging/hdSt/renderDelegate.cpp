@@ -38,7 +38,7 @@
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
-#include "pxr/imaging/hdSt/texture.h"
+#include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/volume.h"
@@ -86,6 +86,11 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->simpleLight,
     HdPrimTypeTokens->sphereLight
 };
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (mtlx)
+);
 
 using HdStResourceRegistryWeakPtr =  std::weak_ptr<HdStResourceRegistry>;
 
@@ -168,6 +173,7 @@ HdStRenderDelegate::HdStRenderDelegate()
 HdStRenderDelegate::HdStRenderDelegate(HdRenderSettingsMap const& settingsMap)
     : HdRenderDelegate(settingsMap)
     , _hgi(nullptr)
+    , _renderParam(std::make_unique<HdStRenderParam>())
 {
     // Initialize the settings and settings descriptors.
     _settingDescriptors = {
@@ -261,7 +267,6 @@ TfTokenVector
 _ComputeSupportedBprimTypes()
 {
     TfTokenVector result;
-    result.push_back(HdPrimTypeTokens->texture);
     result.push_back(HdPrimTypeTokens->renderBuffer);
 
     for (const TfToken &primType : HdStField::GetSupportedBprimTypes()) {
@@ -281,7 +286,7 @@ HdStRenderDelegate::GetSupportedBprimTypes() const
 HdRenderParam *
 HdStRenderDelegate::GetRenderParam() const
 {
-    return nullptr;
+    return _renderParam.get();
 }
 
 HdResourceRegistrySharedPtr
@@ -413,9 +418,7 @@ HdBprim *
 HdStRenderDelegate::CreateBprim(TfToken const& typeId,
                                 SdfPath const& bprimId)
 {
-    if (typeId == HdPrimTypeTokens->texture) {
-        return new HdStTexture(bprimId);
-    } else if (HdStField::IsSupportedBprimType(typeId)) {
+    if (HdStField::IsSupportedBprimType(typeId)) {
         return new HdStField(bprimId, typeId);
     } else if (typeId == HdPrimTypeTokens->renderBuffer) {
         return new HdStRenderBuffer(_resourceRegistry.get(), bprimId);
@@ -429,9 +432,7 @@ HdStRenderDelegate::CreateBprim(TfToken const& typeId,
 HdBprim *
 HdStRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
 {
-    if (typeId == HdPrimTypeTokens->texture) {
-        return new HdStTexture(SdfPath::EmptyPath());
-    } else if (HdStField::IsSupportedBprimType(typeId)) {
+    if (HdStField::IsSupportedBprimType(typeId)) {
         return new HdStField(SdfPath::EmptyPath(), typeId);
     } else if (typeId == HdPrimTypeTokens->renderBuffer) {
         return new HdStRenderBuffer(_resourceRegistry.get(),
@@ -466,6 +467,7 @@ HdStRenderDelegate::_CreateFallbackMaterialPrim()
 void
 HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
+    TF_UNUSED(tracker);
     GLF_GROUP_FUNCTION();
     
     _ApplyTextureSettings();
@@ -482,9 +484,10 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
     // Commit all pending source data.
     _resourceRegistry->Commit();
 
-    if (tracker->IsGarbageCollectionNeeded()) {
+    HdStRenderParam *stRenderParam = _renderParam.get();
+    if (stRenderParam->IsGarbageCollectionNeeded()) {
         _resourceRegistry->GarbageCollect();
-        tracker->ClearGarbageCollectionNeeded();
+        stRenderParam->ClearGarbageCollectionNeeded();
     }
 
     // see bug126621. currently dispatch buffers need to be released
@@ -501,19 +504,19 @@ HdStRenderDelegate::IsSupported()
 TfTokenVector
 HdStRenderDelegate::GetShaderSourceTypes() const
 {
-    return {HioGlslfxTokens->glslfx};
+    return {HioGlslfxTokens->glslfx, _tokens->mtlx};
+}
+
+TfTokenVector
+HdStRenderDelegate::GetMaterialRenderContexts() const
+{
+    return {HioGlslfxTokens->glslfx, _tokens->mtlx};
 }
 
 bool
 HdStRenderDelegate::IsPrimvarFilteringNeeded() const
 {
     return true;
-}
-
-TfToken 
-HdStRenderDelegate::GetMaterialNetworkSelector() const
-{
-    return HioGlslfxTokens->glslfx;
 }
 
 Hgi*

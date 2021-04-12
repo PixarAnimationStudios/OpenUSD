@@ -30,6 +30,7 @@
 #include "hdPrman/renderPass.h"
 #include "hdPrman/rixStrings.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/usd/usdVol/tokens.h"
 #include "pxr/usdImaging/usdVolImaging/tokens.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -106,6 +107,109 @@ HdPrman_Volume::GetInitialDirtyBitsMask() const
 
 namespace { // anonymous namespace
 
+HdPrman_Volume::FieldType
+_DetermineOpenVDBFieldType(HdSceneDelegate *sceneDelegate,
+                           SdfPath const& fieldId)
+{
+    VtValue fieldDataTypeValue =
+        sceneDelegate->Get(fieldId, UsdVolTokens->fieldDataType);
+    if (!fieldDataTypeValue.IsHolding<TfToken>()) {
+        TF_WARN("Missing fieldDataType attribute on volume field prim %s. "
+                "Assuming float.", fieldId.GetText());
+        return HdPrman_Volume::FieldType::FloatType;
+    }
+    const TfToken& fieldDataType = fieldDataTypeValue.UncheckedGet<TfToken>();
+
+    if (fieldDataType == UsdVolTokens->half ||
+        fieldDataType == UsdVolTokens->float_ ||
+        fieldDataType == UsdVolTokens->double_) {
+        return HdPrman_Volume::FieldType::FloatType;
+    }
+
+    if (fieldDataType == UsdVolTokens->int_ ||
+        fieldDataType == UsdVolTokens->uint ||
+        fieldDataType == UsdVolTokens->int64) {
+        // Not yet supported by impl_openvdb plugin
+        return HdPrman_Volume::FieldType::IntType;
+    }
+
+    if (fieldDataType == UsdVolTokens->half2 ||
+        fieldDataType == UsdVolTokens->float2 ||
+        fieldDataType == UsdVolTokens->double2) {
+        // Not yet supported by impl_openvdb plugin
+        return HdPrman_Volume::FieldType::Float2Type;
+    }
+
+    if (fieldDataType == UsdVolTokens->int2) {
+        // Not yet supported by impl_openvdb plugin
+        return HdPrman_Volume::FieldType::Int2Type;
+    }
+
+    if (fieldDataType == UsdVolTokens->half3 ||
+        fieldDataType == UsdVolTokens->float3 ||
+        fieldDataType == UsdVolTokens->double3) {
+
+        // The role hint for vector data is optional
+        TfToken vectorDataRoleHint;
+        VtValue roleHint =
+            sceneDelegate->Get(fieldId, UsdVolTokens->vectorDataRoleHint);
+        if (roleHint.IsHolding<TfToken>()) {
+            vectorDataRoleHint = roleHint.UncheckedGet<TfToken>();
+        }
+
+        if (vectorDataRoleHint == UsdVolTokens->color) {
+            return HdPrman_Volume::FieldType::ColorType;
+        } else if (vectorDataRoleHint == UsdVolTokens->point) {
+            return HdPrman_Volume::FieldType::PointType;
+        } else if (vectorDataRoleHint == UsdVolTokens->normal) {
+            return HdPrman_Volume::FieldType::NormalType;
+        } else if (vectorDataRoleHint == UsdVolTokens->vector) {
+            return HdPrman_Volume::FieldType::VectorType;
+        } else if (vectorDataRoleHint == UsdVolTokens->none) {
+            // Fall through
+        } else if (!vectorDataRoleHint.IsEmpty()) {
+            TF_WARN("Unknown vectorDataRoleHint value '%s' on volume field prim"
+                    " %s. Treating it as a regular float3 field.",
+                    vectorDataRoleHint.GetText(), fieldId.GetText());
+        }
+
+        return HdPrman_Volume::FieldType::Float3Type;
+    }
+
+    if (fieldDataType == UsdVolTokens->int3) {
+        // Not yet supported by impl_openvdb plugin
+        return HdPrman_Volume::FieldType::Int3Type;
+    }
+
+    if (fieldDataType == UsdVolTokens->matrix3d ||
+        fieldDataType == UsdVolTokens->matrix4d) {
+        // Not yet supported by impl_openvdb plugin
+        return HdPrman_Volume::FieldType::MatrixType;
+    }
+
+    if (fieldDataType == UsdVolTokens->quatd) {
+        // Not yet supported by impl_openvdb plugin
+        return HdPrman_Volume::FieldType::Float4Type;
+    }
+
+    if (fieldDataType == UsdVolTokens->bool_ ||
+        fieldDataType == UsdVolTokens->mask) {
+        // Not yet supported by impl_openvdb plugin
+        return HdPrman_Volume::FieldType::IntType;
+    }
+
+    if (fieldDataType == UsdVolTokens->string) {
+        // Not yet supported by impl_openvdb plugin
+        return HdPrman_Volume::FieldType::StringType;
+    }
+
+    TF_WARN("Unsupported OpenVDB fieldDataType value '%s' on volume field "
+            "prim %s. Assuming float.",
+            fieldDataType.GetText(), fieldId.GetText());
+
+    return HdPrman_Volume::FieldType::FloatType;
+}
+
 void
 _EmitOpenVDBVolume(HdSceneDelegate *sceneDelegate,
                    const SdfPath& id,
@@ -139,6 +243,14 @@ _EmitOpenVDBVolume(HdSceneDelegate *sceneDelegate,
         RtUString(firstfield.fieldName.GetText())
     };
     primvars->SetStringArray(RixStr.k_blobbydso_stringargs, sa, 2);
+
+    // The individual fields of this volume need to be declared as primvars
+    for (HdVolumeFieldDescriptor const& field : fields) {
+        HdPrman_Volume::DeclareFieldPrimvar(
+            primvars,
+            RtUString(field.fieldName.GetText()),
+            _DetermineOpenVDBFieldType(sceneDelegate, field.fieldId));
+    }
 }
 
 // Returns the prim type token of a list of fields, if all the fields have the
@@ -162,59 +274,6 @@ _DetermineConsistentFieldPrimType(const HdVolumeFieldDescriptorVector& fields)
     }
 
     return fieldPrimType;
-}
-
-enum _FieldType {
-    FloatType = 0,
-    ColorType,
-    PointType,
-    NormalType,
-    VectorType
-};
-
-_FieldType
-_DetermineFieldType(HdVolumeFieldDescriptor const& field)
-{
-    // XXX To get one experiement to work, we check for Cd, which is
-    //     actually a color field.
-    if (field.fieldName.GetString() == "Cd") {
-        return ColorType;
-    }
-
-    // TODO Only Float grids for now because we do not know the grid type
-    // here without reading directly from the grid which would require 
-    // opening the file (linking with openvdb) or getting the vdb ptr from
-    // houdini (linking with the hdk)
-    return FloatType;
-}
-
-void
-_SetupFieldPrimvars(HdVolumeFieldDescriptorVector const& fields,
-                    RtParamList* primvars)
-{
-    for (HdVolumeFieldDescriptor const& field : fields) {
-        RtUString fieldName = RtUString(field.fieldName.GetText());
-        RtDetailType detailType = RtDetailType::k_varying;
-
-        _FieldType type = _DetermineFieldType(field);
-        switch (type) {
-            case FloatType:
-                primvars->SetFloatDetail(fieldName, nullptr, detailType);
-                break;
-            case ColorType:
-                primvars->SetColorDetail(fieldName, nullptr, detailType);
-                break;
-            case PointType:
-                primvars->SetPointDetail(fieldName, nullptr, detailType);
-                break;
-            case NormalType:
-                primvars->SetNormalDetail(fieldName, nullptr, detailType);
-                break;
-            case VectorType:
-                primvars->SetVectorDetail(fieldName, nullptr, detailType);
-                break;
-        }
-    }
 }
 
 } // end anonymous namespace
@@ -249,6 +308,60 @@ HdPrman_Volume::AddVolumeTypeEmitter(TfToken const& fieldPrimType,
     }
 
     return false;
+}
+
+/* static */
+void
+HdPrman_Volume::DeclareFieldPrimvar(RtParamList* primvars,
+                                    RtUString const& fieldName,
+                                    FieldType type)
+{
+    RtDetailType detailType = RtDetailType::k_varying;
+
+    // Note, the Set*Detail calls below declare a primvar for each field,
+    // but do not provide the data. The data itself has to be provided by
+    // the plugin that extracts the actual data from the volume files.
+    switch (type) {
+        case FloatType:
+            primvars->SetFloatDetail(fieldName, nullptr, detailType);
+            break;
+        case IntType:
+            primvars->SetIntegerArrayDetail(fieldName, nullptr, 1, detailType);
+            break;
+        case Float2Type:
+            primvars->SetFloatArrayDetail(fieldName, nullptr, 2, detailType);
+            break;
+        case Int2Type:
+            primvars->SetIntegerArrayDetail(fieldName, nullptr, 2, detailType);
+            break;
+        case Float3Type:
+            primvars->SetFloatArrayDetail(fieldName, nullptr, 3, detailType);
+            break;
+        case Int3Type:
+            primvars->SetIntegerArrayDetail(fieldName, nullptr, 3, detailType);
+            break;
+        case ColorType:
+            primvars->SetColorDetail(fieldName, nullptr, detailType);
+            break;
+        case PointType:
+            primvars->SetPointDetail(fieldName, nullptr, detailType);
+            break;
+        case NormalType:
+            primvars->SetNormalDetail(fieldName, nullptr, detailType);
+            break;
+        case VectorType:
+            primvars->SetVectorDetail(fieldName, nullptr, detailType);
+            break;
+        case Float4Type:
+            primvars->SetFloatArrayDetail(fieldName, nullptr, 4, detailType);
+            break;
+        case MatrixType:
+            primvars->SetMatrixDetail(fieldName, nullptr, detailType);
+            break;
+        case StringType:
+            primvars->SetStringDetail(fieldName, nullptr, detailType);
+            break;
+    }
 }
 
 RtParamList
@@ -294,10 +407,8 @@ HdPrman_Volume::_ConvertGeometry(HdPrman_Context *context,
     HdPrman_VolumeTypeEmitter emitterFunc = iter->second;
     emitterFunc(sceneDelegate, id, fields, &primvars);
 
-    // The individual fields of this volume need to be declared as primvars
-    _SetupFieldPrimvars(fields, &primvars);
-
     HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, 1, dim, dim, dim);
+
     return primvars;
 }
 

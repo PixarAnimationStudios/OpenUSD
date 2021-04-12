@@ -173,7 +173,17 @@ _MergeValueFn(
     }
 
     // Merge specific fields together.
-    if (field == SdfFieldKeys->TimeSamples) {
+    if (field == SdfFieldKeys->Specifier) {
+        SdfSpecifier srcSpecifier, dstSpecifier;
+        TF_VERIFY(srcLayer->HasField(srcPath, field, &srcSpecifier));
+        TF_VERIFY(dstLayer->HasField(dstPath, field, &dstSpecifier));
+        // If the stronger (src) specifier is 'over', take the weaker (dst).
+        // Otherwise take the stronger.
+        *valueToCopy = VtValue(srcSpecifier == SdfSpecifierOver ?
+                               dstSpecifier : srcSpecifier);
+        return true;
+    }
+    else if (field == SdfFieldKeys->TimeSamples) {
         SdfTimeSampleMap edits;
         for (const double time : srcLayer->ListTimeSamplesForPath(srcPath)) {
             if (!dstLayer->QueryTimeSample(dstPath, time)) {

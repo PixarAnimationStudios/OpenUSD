@@ -224,7 +224,7 @@ public:
             const UsdImagingInstancerContext* instancerContext) const override;
 
     USDIMAGING_API
-    virtual VtValue 
+    VtValue 
     GetExtComputationInput(
             UsdPrim const& prim,
             SdfPath const& cachePath,
@@ -233,7 +233,19 @@ public:
             const UsdImagingInstancerContext* instancerContext) const override;
 
     USDIMAGING_API
-    virtual std::string 
+    size_t
+    SampleExtComputationInput(
+            UsdPrim const& prim,
+            SdfPath const& cachePath,
+            TfToken const& name,
+            UsdTimeCode time,
+            const UsdImagingInstancerContext* instancerContext,
+            size_t maxSampleCount,
+            float *sampleTimes,
+            VtValue *sampleValues) override;
+
+    USDIMAGING_API
+    std::string 
     GetExtComputationKernel(
             UsdPrim const& prim,
             SdfPath const& cachePath,
@@ -244,7 +256,8 @@ public:
     VtValue Get(UsdPrim const& prim,
                 SdfPath const& cachePath,
                 TfToken const& key,
-                UsdTimeCode time) const override;
+                UsdTimeCode time,
+                VtIntArray *outIndices) const override;
 
 protected:
     // ---------------------------------------------------------------------- //
@@ -362,6 +375,28 @@ private:
             UsdTimeCode time,
             const UsdImagingInstancerContext* instancerContext) const;
 
+    size_t
+    _SampleExtComputationInputForSkinningComputation(
+            UsdPrim const& prim,
+            SdfPath const& cachePath,
+            TfToken const& name,
+            UsdTimeCode time,
+            const UsdImagingInstancerContext* instancerContext,
+            size_t maxSampleCount,
+            float *sampleTimes,
+            VtValue *sampleValues);
+
+    size_t
+    _SampleExtComputationInputForInputAggregator(
+            UsdPrim const& prim,
+            SdfPath const& cachePath,
+            TfToken const& name,
+            UsdTimeCode time,
+            const UsdImagingInstancerContext* instancerContext,
+            size_t maxSampleCount,
+            float *sampleTimes,
+            VtValue *sampleValues);
+
 
     // ---------------------------------------------------------------------- //
     /// Populated skeleton state
@@ -410,6 +445,7 @@ private:
 
         std::shared_ptr<UsdSkelBlendShapeQuery> blendShapeQuery;
         UsdSkelSkinningQuery skinningQuery;
+        UsdSkelAnimQuery animQuery;
         SdfPath skelPath, skelRootPath;
         bool hasJointInfluences = false;
     };

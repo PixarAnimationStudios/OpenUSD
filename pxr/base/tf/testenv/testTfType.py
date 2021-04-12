@@ -229,16 +229,31 @@ class TestTfType(unittest.TestCase):
         self.assertEqual(tTestPyDerived, Tf._TestFindType(TestPyDerived()))
 
     def test_TypeAliases(self):
-        class JamesBond(object):
+        class SecretAgent(object):
             pass
+        class JamesBond(SecretAgent):
+            pass
+        tAgent = Tf.Type.Define(SecretAgent)
         tBond = Tf.Type.Define(JamesBond)
         self.assertTrue(Tf.Type.FindByName('007').isUnknown)
         self.assertNotIn('007', Tf.Type.GetRoot().GetAliases(tBond))
+        self.assertTrue(tAgent.FindDerivedByName('007').isUnknown)
         tBond.AddAlias( Tf.Type.GetRoot(), '007' )
         self.assertEqual(tBond, Tf.Type.FindByName('007'))
         self.assertIn('007', Tf.Type.GetRoot().GetAliases(tBond))
+        # The alias was registered under the root; it does not apply to other
+        # bases.
+        self.assertTrue(tAgent.FindDerivedByName('007').isUnknown)
 
-        #Test alias collision -- error expected
+        # Test adding an alias that matches an existing type name. This is 
+        # only allowed if the existing type is not a derived type of the base
+        # the alias is being registered .
+        tBond.AddAlias(tAgent, 'int')
+        self.assertNotEqual(tBond, Tf.Type.FindByName('int'))
+        self.assertEqual(tBond, tAgent.FindDerivedByName('int'))
+
+        # Test alias collision when the existing type is a derived type of the 
+        # base -- error expected
         with self.assertRaises(Tf.ErrorException):
             tBond.AddAlias(Tf.Type.GetRoot(), 'int' )
         self.assertNotEqual(tBond, Tf.Type.FindByName('int'))

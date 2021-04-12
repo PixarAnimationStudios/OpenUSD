@@ -367,8 +367,10 @@ class "ConnectableAPI"
     customData = {
         token apiSchemaType = "nonApplied"
         string extraIncludes = '''
-#include "pxr/usd/usdShade/shader.h"
-#include "pxr/usd/usdShade/nodeGraph.h"
+#include "pxr/usd/usd/typed.h"
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/usdShade/types.h"'''
     }
 )

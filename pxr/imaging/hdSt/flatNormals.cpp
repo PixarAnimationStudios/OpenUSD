@@ -263,10 +263,10 @@ HdSt_FlatNormalsComputationGPU::Execute(
     // Generate hash for resource bindings and pipeline.
     // XXX Needs fingerprint hash to avoid collisions
     uint64_t rbHash = (uint64_t) TfHash::Combine(
-        points->GetId().Get(),
-        normals->GetId().Get(),
-        indices->GetId().Get(),
-        primitiveParam->GetId().Get());
+        points->GetHandle().Get(),
+        normals->GetHandle().Get(),
+        indices->GetHandle().Get(),
+        primitiveParam->GetHandle().Get());
 
     uint64_t pHash = (uint64_t) TfHash::Combine(
         computeProgram->GetProgram().Get(),
@@ -276,9 +276,12 @@ HdSt_FlatNormalsComputationGPU::Execute(
     HdInstance<HgiResourceBindingsSharedPtr> resourceBindingsInstance =
         hdStResourceRegistry->RegisterResourceBindings(rbHash);
     if (resourceBindingsInstance.IsFirstInstance()) {
-        HgiResourceBindingsSharedPtr rb = _CreateResourceBindings(
-            hgi, points->GetId(), normals->GetId(), indices->GetId(),
-            primitiveParam->GetId());
+        HgiResourceBindingsSharedPtr rb =
+            _CreateResourceBindings(hgi,
+                                    points->GetHandle(),
+                                    normals->GetHandle(),
+                                    indices->GetHandle(),
+                                    primitiveParam->GetHandle());
         resourceBindingsInstance.SetValue(rb);
     }
 

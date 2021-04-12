@@ -138,44 +138,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (outputs)
 );
 
-// Env var to disable warning noises about deprecated API
-TF_DEFINE_ENV_SETTING(
-    USD_SHADE_CONNECTABLE_API_DEPRECATION_WARNING, true,
-    "Enable API deprecation warning for UsdShadeConnectableAPI");
-
-// One-shot flag for warning about deprecated API
-static std::atomic_flag _didCheckDeprecatedAPIUsage = ATOMIC_FLAG_INIT;
-
-bool 
-UsdShadeConnectableAPI::IsShader() const
-{
-    if (!_didCheckDeprecatedAPIUsage.test_and_set()) {
-        if (TfGetEnvSetting(USD_SHADE_CONNECTABLE_API_DEPRECATION_WARNING)) {
-            TF_WARN("UsdShadeConnectableAPI::IsNodeGraph() and IsShader() "
-                    "are deprecated API's and will be removed in a future "
-                    "release of USD.  To suppress this warning, set the "
-                    "environment variable "
-                    "USD_SHADE_CONNECTABLE_API_DEPRECATION_WARNING to 0.");
-        }
-    }
-    return GetPrim().IsA<UsdShadeShader>();
-}
-
-bool 
-UsdShadeConnectableAPI::IsNodeGraph() const
-{
-    if (!_didCheckDeprecatedAPIUsage.test_and_set()) {
-        if (TfGetEnvSetting(USD_SHADE_CONNECTABLE_API_DEPRECATION_WARNING)) {
-            TF_WARN("UsdShadeConnectableAPI::IsNodeGraph() and IsShader() "
-                    "are deprecated API's and will be removed in a future "
-                    "release of USD.  To suppress this warning, set the "
-                    "environment variable "
-                    "USD_SHADE_CONNECTABLE_API_DEPRECATION_WARNING to 0.");
-        }
-    }
-    return GetPrim().IsA<UsdShadeNodeGraph>();
-}
-
 static UsdAttribute
 _GetOrCreateSourceAttr(UsdShadeConnectionSourceInfo const &sourceInfo,
                        SdfValueTypeName fallbackTypeName)
@@ -576,22 +538,25 @@ UsdShadeConnectableAPI::GetOutput(const TfToken &name) const
 }
 
 std::vector<UsdShadeOutput> 
-UsdShadeConnectableAPI::GetOutputs() const
+UsdShadeConnectableAPI::GetOutputs(bool onlyAuthored) const
 {
-    std::vector<UsdShadeOutput> ret;
-
-    std::vector<UsdAttribute> attrs = GetPrim().GetAttributes();
-    TF_FOR_ALL(attrIter, attrs) { 
-        const UsdAttribute& attr = *attrIter;
-        // If the attribute is in the "outputs:" namespace, then
-        // it must be a valid UsdShadeOutput.
-        if (TfStringStartsWith(attr.GetName().GetString(), 
-                               UsdShadeTokens->outputs)) {
-            ret.push_back(UsdShadeOutput(attr));
-        }
+    std::vector<UsdProperty> props;
+    if (onlyAuthored) {
+        props = GetPrim().GetAuthoredPropertiesInNamespace(
+            UsdShadeTokens->outputs);
+    } else {
+        props = GetPrim().GetPropertiesInNamespace(UsdShadeTokens->outputs);
     }
 
-    return ret;
+    // Filter for attributes and convert them to ouputs
+    std::vector<UsdShadeOutput> outputs;
+    outputs.reserve(props.size());
+    for (UsdProperty const& prop: props) {
+        if (UsdAttribute attr = prop.As<UsdAttribute>()) {
+            outputs.push_back(UsdShadeOutput(attr));
+        }
+    }
+    return outputs;
 }
 
 UsdShadeInput 
@@ -615,23 +580,25 @@ UsdShadeConnectableAPI::GetInput(const TfToken &name) const
 }
 
 std::vector<UsdShadeInput> 
-UsdShadeConnectableAPI::GetInputs() const
+UsdShadeConnectableAPI::GetInputs(bool onlyAuthored) const
 {
-    std::vector<UsdShadeInput> ret;
-
-    std::vector<UsdAttribute> attrs = GetPrim().GetAttributes();
-    TF_FOR_ALL(attrIter, attrs) { 
-        const UsdAttribute& attr = *attrIter;
-        // If the attribute is in the "inputs:" namespace, then
-        // it must be a valid UsdShadeInput.
-        if (TfStringStartsWith(attr.GetName().GetString(), 
-                               UsdShadeTokens->inputs)) {
-            ret.push_back(UsdShadeInput(attr));
-            continue;
-        }
+    std::vector<UsdProperty> props;
+    if (onlyAuthored) {
+        props = GetPrim().GetAuthoredPropertiesInNamespace(
+            UsdShadeTokens->inputs);
+    } else {
+        props = GetPrim().GetPropertiesInNamespace(UsdShadeTokens->inputs);
     }
 
-    return ret;
+    // Filter for attributes and convert them to inputs
+    std::vector<UsdShadeInput> inputs;
+    inputs.reserve(props.size());
+    for (UsdProperty const& prop: props) {
+        if (UsdAttribute attr = prop.As<UsdAttribute>()) {
+            inputs.push_back(UsdShadeInput(attr));
+        }
+    }
+    return inputs;
 }
 
 UsdShadeConnectionSourceInfo::UsdShadeConnectionSourceInfo(

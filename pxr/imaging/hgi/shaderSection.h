@@ -30,8 +30,19 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+//struct to hold attribute definitions
+struct HgiShaderSectionAttribute
+{
+    std::string identifier;
+    std::string index;
+};
+
+using HgiShaderSectionAttributeVector =
+    std::vector<HgiShaderSectionAttribute>;
 
 /// \class HgiShaderSection
 ///
@@ -65,23 +76,14 @@ public:
     HGI_API
     virtual void WriteParameter(std::ostream& ss) const;
 
-    /// Write out the attribute and also the attribute index in case
-    /// either exists
     HGI_API
-    virtual void WriteAttributeWithIndex(std::ostream& ss) const;
-
-    HGI_API
-    const std::string& GetAttribute() const;
-
-    HGI_API
-    const std::string& GetAttributeIndex() const;
+    const HgiShaderSectionAttributeVector& GetAttributes() const;
 
 protected:
     HGI_API
     explicit HgiShaderSection(
             const std::string &identifier,
-            const std::string &attribute = std::string(),
-            const std::string &attributeIndex = std::string(),
+            const HgiShaderSectionAttributeVector& attributes = {},
             const std::string &defaultValue = std::string());
 
     HGI_API
@@ -89,8 +91,7 @@ protected:
 
 private:
     const std::string _identifierVar;
-    const std::string _attribute;
-    const std::string _attributeIndex;
+    const HgiShaderSectionAttributeVector _attributes;
     const std::string _defaultValue;
 };
 

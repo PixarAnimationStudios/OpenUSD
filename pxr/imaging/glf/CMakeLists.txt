@@ -15,12 +15,6 @@ endif()
 set(optionalLibs "")
 set(optionalIncludeDirs "")
 
-if (PXR_ENABLE_OPENVDB_SUPPORT)
-    list(APPEND optionalPublicClasses vdbTextureData)
-    list(APPEND optionalLibs ${OPENEXR_Half_LIBRARY} ${OPENVDB_LIBRARY})
-    list(APPEND optionalIncludeDirs ${OPENVDB_INCLUDE_DIR})
-endif()
-
 pxr_library(glf
     LIBRARIES
         ar
@@ -44,14 +38,10 @@ pxr_library(glf
         ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
-        arrayTexture
-        baseTexture
-        baseTextureData
         bindingMap
         contextCaps
         diagnostic
         drawTarget
-        field3DTextureDataBase
         glContext
         glRawContext
         info
@@ -60,14 +50,8 @@ pxr_library(glf
         simpleMaterial
         simpleShadowArray
         texture
-        textureHandle
-        textureRegistry
         uniformBlock
         utils
-        uvTexture
-        uvTextureData
-        uvTextureStorage
-        uvTextureStorageData
         ${optionalPublicClasses}
 
     PRIVATE_CLASSES
@@ -76,7 +60,6 @@ pxr_library(glf
 
     PUBLIC_HEADERS
         api.h
-        fieldTextureData.h
 
     CPPFILES
         ${optionalCppFiles}
@@ -86,15 +69,11 @@ pxr_library(glf
 
     PYMODULE_CPPFILES
         module.cpp
-        wrapBaseTexture.cpp
         wrapDiagnostic.cpp
         wrapDrawTarget.cpp
         wrapSimpleLight.cpp
         wrapSimpleMaterial.cpp
         wrapTexture.cpp
-        wrapTextureRegistry.cpp
-        wrapUVTexture.cpp
-        wrapUVTextureStorage.cpp
 
     PYMODULE_FILES
         __init__.py

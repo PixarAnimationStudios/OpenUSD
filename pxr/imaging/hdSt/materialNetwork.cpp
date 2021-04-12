@@ -28,7 +28,7 @@
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
-#ifdef PXR_MATERIALX_IMAGING_SUPPORT_ENABLED
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include "pxr/imaging/hdSt/materialXFilter.h"
 #endif
 
@@ -64,34 +64,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     (a)
 
     (HwUvTexture_1)
-
     (textureMemory)
-    (wrapS)
-    (wrapT)
-    (wrapR)
-    (minFilter)
-    (magFilter)
     (sourceColorSpace)
-
     (in)
-);
 
-// These are the same as the UsdHydraTokens.
-TF_DEFINE_PRIVATE_TOKENS(
-    _samplingValueTokens,
-    (repeat)
-    (mirror)
-    (clamp)
-    (black)
-    (useMetadata)
-
-    (linear)
-    (nearest)
-
-    (linearMipmapLinear)
-    (linearMipmapNearest)
-    (nearestMipmapLinear)
-    (nearestMipmapNearest)
+    (mtlx)
 );
 
 static TfToken
@@ -118,7 +95,7 @@ _GetMaterialTag(
         VtValue const& vtOpacityThreshold = paramIt.second;
         if (vtOpacityThreshold.Get<float>() > 0.0f) {
             return HdStMaterialTagTokens->masked;
-        }      
+        }
     }
 
     bool isTranslucent = false;
@@ -445,6 +422,8 @@ _MakeMaterialParamsForTransform2d(
     transform2dParam.fallbackValue = _GetParamFallbackValue(network, node,
                                                             _tokens->in);
 
+    HdSt_MaterialParamVector additionalParams;
+
     // Find the input connection to the transform2d node
     auto inIt = node.inputConnections.find(_tokens->in);
     if (inIt != node.inputConnections.end()) {
@@ -472,11 +451,16 @@ _MakeMaterialParamsForTransform2d(
                 if (!primvarParams.empty()) {
                     HdSt_MaterialParam const& primvarParam = 
                         primvarParams.front();
-                    // We do not put the primvar connected to the transform2d 
-                    // into the material params. We only wanted to extract the 
-                    // primvar name and put it into the transform2d's 
-                    // samplerCoords.
+                    // Extract the referenced primvar(s) to go into the
+                    // transform2d's sampler coords.
                     transform2dParam.samplerCoords = primvarParam.samplerCoords;
+                }
+
+                // Make sure we add any referenced primvars as "additional
+                // primvars" so they make it through primvar filtering.
+                for (auto const& primvarName : transform2dParam.samplerCoords) {
+                    _MakeMaterialParamsForAdditionalPrimvar(
+                        primvarName, &additionalParams);
                 }
             }
         }
@@ -520,6 +504,12 @@ _MakeMaterialParamsForTransform2d(
     transParam.fallbackValue = _GetParamFallbackValue(network, node,
                                                       HdStTokens->translation);
     params->push_back(std::move(transParam));
+
+    // Need to add these at the end because the caller expects the
+    // "transform" param to be first.
+    params->insert(params->end(),
+            additionalParams.begin(),
+            additionalParams.end());
 }
 
 static std::string
@@ -584,25 +574,25 @@ _ResolveWrapSamplerParameter(
     TfToken const &name)
 {
     const TfToken value = _ResolveParameter(
-        node, sdrNode, name, _samplingValueTokens->useMetadata);
+        node, sdrNode, name, HdStTextureTokens->useMetadata);
 
-    if (value == _samplingValueTokens->repeat) {
+    if (value == HdStTextureTokens->repeat) {
         return HdWrapRepeat;
     }
 
-    if (value == _samplingValueTokens->mirror) {
+    if (value == HdStTextureTokens->mirror) {
         return HdWrapMirror;
     }
 
-    if (value == _samplingValueTokens->clamp) {
+    if (value == HdStTextureTokens->clamp) {
         return HdWrapClamp;
     }
 
-    if (value == _samplingValueTokens->black) {
+    if (value == HdStTextureTokens->black) {
         return HdWrapBlack;
     }
 
-    if (value == _samplingValueTokens->useMetadata) {
+    if (value == HdStTextureTokens->useMetadata) {
         if (node.nodeTypeId == _tokens->HwUvTexture_1) {
             return HdWrapLegacy;
         }
@@ -630,30 +620,30 @@ _ResolveMinSamplerParameter(
     // token was authored, linear was used.
 
     const TfToken value = _ResolveParameter(
-        node, sdrNode, _tokens->minFilter,
-        _samplingValueTokens->linearMipmapLinear);
+        node, sdrNode, HdStTextureTokens->minFilter,
+        HdStTextureTokens->linearMipmapLinear);
 
-    if (value == _samplingValueTokens->nearest) {
+    if (value == HdStTextureTokens->nearest) {
         return HdMinFilterNearest;
     }
 
-    if (value == _samplingValueTokens->linear) {
+    if (value == HdStTextureTokens->linear) {
         return HdMinFilterLinear;
     }
 
-    if (value == _samplingValueTokens->nearestMipmapNearest) {
+    if (value == HdStTextureTokens->nearestMipmapNearest) {
         return HdMinFilterNearestMipmapNearest;
     }
 
-    if (value == _samplingValueTokens->nearestMipmapLinear) {
+    if (value == HdStTextureTokens->nearestMipmapLinear) {
         return HdMinFilterNearestMipmapLinear;
     }
 
-    if (value == _samplingValueTokens->linearMipmapNearest) {
+    if (value == HdStTextureTokens->linearMipmapNearest) {
         return HdMinFilterLinearMipmapNearest;
     }
 
-    if (value == _samplingValueTokens->linearMipmapLinear) {
+    if (value == HdStTextureTokens->linearMipmapLinear) {
         return HdMinFilterLinearMipmapLinear;
     }
 
@@ -667,9 +657,9 @@ _ResolveMagSamplerParameter(
     SdrShaderNodeConstPtr const &sdrNode)
 {
     const TfToken value = _ResolveParameter(
-        node, sdrNode, _tokens->magFilter, _samplingValueTokens->linear);
+        node, sdrNode, HdStTextureTokens->magFilter, HdStTextureTokens->linear);
 
-    if (value == _samplingValueTokens->nearest) {
+    if (value == HdStTextureTokens->nearest) {
         return HdMagFilterNearest;
     }
 
@@ -686,11 +676,11 @@ _GetSamplerParameters(
     SdrShaderNodeConstPtr const &sdrNode)
 {
     return { _ResolveWrapSamplerParameter(
-                 nodePath, node, sdrNode, _tokens->wrapS),
+                 nodePath, node, sdrNode, HdStTextureTokens->wrapS),
              _ResolveWrapSamplerParameter(
-                 nodePath, node, sdrNode, _tokens->wrapT),
+                 nodePath, node, sdrNode, HdStTextureTokens->wrapT),
              _ResolveWrapSamplerParameter(
-                 nodePath, node, sdrNode, _tokens->wrapR),
+                 nodePath, node, sdrNode, HdStTextureTokens->wrapR),
              _ResolveMinSamplerParameter(
                  nodePath, node, sdrNode),
              _ResolveMagSamplerParameter(
@@ -741,8 +731,8 @@ _MakeMaterialParamsForTexture(
     if (visitedNodes->find(nodePath) != visitedNodes->end()) return;
 
     SdrRegistry& shaderReg = SdrRegistry::GetInstance();
-    SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
-        node.nodeTypeId, HioGlslfxTokens->glslfx);
+    SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(
+        node.nodeTypeId, {HioGlslfxTokens->glslfx, _tokens->mtlx});
 
     HdSt_MaterialParam texParam;
     texParam.paramType = HdSt_MaterialParam::ParamTypeTexture;
@@ -893,13 +883,17 @@ _MakeMaterialParamsForTexture(
 
                     if (!primvarParams.empty()) {
                         HdSt_MaterialParam const& primvarParam = primvarParams.front();
-                        // We do not put the primvar connected to the texture into the
-                        // material params. We only wanted to extract the primvar name
-                        // and put it into the texture's samplerCoords.
-                        //    params.push_back(std::move(primvarParam));
+                        // Extract the referenced primvar(s) for use in the texture
+                        // sampler coords.
                         texParam.samplerCoords = primvarParam.samplerCoords;
                     }
 
+                    // For any referenced primvars, add them as "additional primvars"
+                    // to make sure they pass primvar filtering.
+                    for (auto const& primvarName : texParam.samplerCoords) {
+                        _MakeMaterialParamsForAdditionalPrimvar(
+                            primvarName, params);
+                    }
                 } else if (sdrRole == SdrNodeRole->Math) {
                     HdSt_MaterialParamVector transform2dParams;
 
@@ -921,9 +915,9 @@ _MakeMaterialParamsForTexture(
                     }
 
                     // Copy params created for tranform2d node to param list
- 		            params->insert(params->end(), 
+                    params->insert(params->end(), 
                                    transform2dParams.begin(), 
- 		                           transform2dParams.end());
+                                   transform2dParams.end());
                 }
             }
         }
@@ -968,8 +962,7 @@ _MakeMaterialParamsForTexture(
 
     // Attribute is in Mebibytes, but Storm texture system expects
     // bytes.
-    const size_t memoryRequest =
-        1048576 *
+    const size_t memoryRequest = 1048576 * 
         _ResolveParameter<float>(node, sdrNode, _tokens->textureMemory, 0.0f);
 
     textureDescriptors->push_back(
@@ -1063,9 +1056,9 @@ _MakeParamsForInputParameter(
                 HdMaterialNode2 const& upstreamNode = upIt->second;
 
                 SdrShaderNodeConstPtr upstreamSdr = 
-                    shaderReg.GetShaderNodeByIdentifierAndType(
+                    shaderReg.GetShaderNodeByIdentifier(
                         upstreamNode.nodeTypeId,
-                        HioGlslfxTokens->glslfx);
+                        {HioGlslfxTokens->glslfx, _tokens->mtlx});
 
                 if (upstreamSdr) {
                     TfToken sdrRole(upstreamSdr->GetRole());
@@ -1161,9 +1154,11 @@ _GatherMaterialParams(
             params, textureDescriptors, materialTag);
     }
 
-    // Set fallback values for the inputs on the terminal
+    // Set fallback values for the inputs on the terminal (excepting
+    // referenced sampler coords).
     for (HdSt_MaterialParam& p : *params) {
-        if (p.fallbackValue.IsEmpty()) {
+        if (p.paramType != HdSt_MaterialParam::ParamTypeAdditionalPrimvar &&
+            p.fallbackValue.IsEmpty()) {
             p.fallbackValue = _GetParamFallbackValue(network, node, p.name);
         }
     }
@@ -1222,7 +1217,7 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
     if (HdMaterialNode2 const* surfTerminal = 
             _GetTerminalNode(surfaceNetwork, terminalName, &surfTerminalPath)) {
 
-#ifdef PXR_MATERIALX_IMAGING_SUPPORT_ENABLED
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
         if (!isVolume) {
             HdSt_ApplyMaterialXFilter(&surfaceNetwork, materialId,
                                       *surfTerminal, surfTerminalPath);

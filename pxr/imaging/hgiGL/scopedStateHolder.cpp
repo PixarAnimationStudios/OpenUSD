@@ -27,6 +27,7 @@
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/iterator.h"
 
@@ -54,6 +55,8 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     , _rasterizerDiscard(true)
     , _restoreFramebufferSRGB(false)
 {
+    TRACE_FUNCTION();
+
     #if defined(GL_KHR_debug)
     if (GARCH_GLAPI_HAS(KHR_debug)) {
         glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, "Capture state");
@@ -99,6 +102,8 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
 
 HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
 {
+    TRACE_FUNCTION();
+
     #if defined(GL_KHR_debug)
     if (GARCH_GLAPI_HAS(KHR_debug)) {
         glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, "Restore state");

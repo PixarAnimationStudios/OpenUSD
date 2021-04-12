@@ -344,7 +344,8 @@ VtValue
 UsdImagingBasisCurvesAdapter::Get(UsdPrim const& prim,
                                   SdfPath const& cachePath,
                                   TfToken const& key,
-                                  UsdTimeCode time) const
+                                  UsdTimeCode time,
+                                  VtIntArray *outIndices) const
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -360,10 +361,15 @@ UsdImagingBasisCurvesAdapter::Get(UsdPrim const& prim,
         }
 
         VtValue value;
-
-        if (pv && pv.ComputeFlattened(&value, time)) {
+        
+        if (outIndices) {
+            if (pv && pv.Get(&value, time)) {
+                pv.GetIndices(outIndices, time);
+                return value;
+            }
+        } else if (pv && pv.ComputeFlattened(&value, time)) {
             return value;
-        } 
+        }
 
         // If there's no "primvars:normals",
         // fall back to UsdGeomBasisCurves' "normals" attribute. 
@@ -386,9 +392,14 @@ UsdImagingBasisCurvesAdapter::Get(UsdPrim const& prim,
 
         VtValue value;
 
-        if (pv && pv.ComputeFlattened(&value, time)) {
+        if (outIndices) {
+            if (pv && pv.Get(&value, time)) {
+                pv.GetIndices(outIndices, time);
+                return value;
+            }
+        } else if (pv && pv.ComputeFlattened(&value, time)) {
             return value;
-        } 
+        }
         
         // Try to get widths directly from the curves
         UsdGeomBasisCurves curves(prim);
@@ -399,7 +410,7 @@ UsdImagingBasisCurvesAdapter::Get(UsdPrim const& prim,
         }
     }
 
-    return BaseAdapter::Get(prim, cachePath, key, time);
+    return BaseAdapter::Get(prim, cachePath, key, time, outIndices);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

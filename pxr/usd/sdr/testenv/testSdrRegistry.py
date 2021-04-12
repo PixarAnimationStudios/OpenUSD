@@ -133,18 +133,78 @@ class TestShaderNode(unittest.TestCase):
             "TestNodeSameName",
             "TestNodeGLSLFX"
         }
+        # Verify that GetNodeIdentifiers follows the same rules as GetNodeNames.
+        # Note that the names and identifiers do happen to be the same in this
+        # test case which is common.
+        assert set(reg.GetNodeIdentifiers()) == {
+            "TestNodeARGS",
+            "TestNodeARGS2",
+            "TestNodeOSL",
+            "TestNodeSameName",
+            "TestNodeGLSLFX"
+        }
 
         assert id(reg.GetShaderNodeByName(nodes[0].GetName())) == id(nodes[0])
 
+        nodeName = "TestNodeSameName"
+        nodeIdentifier = "TestNodeSameName"
+        nodeAlias = "Alias_TestNodeSameName"
+
         # Ensure that the registry can retrieve two nodes of the same name but
         # different source types
-        assert len(reg.GetShaderNodesByName("TestNodeSameName")) == 2
-        assert reg.GetShaderNodeByNameAndType("TestNodeSameName", oslType) is not None
-        assert reg.GetShaderNodeByNameAndType("TestNodeSameName", argsType) is not None
-        assert reg.GetShaderNodeByName("TestNodeSameName", [oslType, argsType])\
-                  .GetSourceType() == oslType
-        assert reg.GetShaderNodeByName("TestNodeSameName", [argsType, oslType])\
-                  .GetSourceType() == argsType
+        assert len(reg.GetShaderNodesByName(nodeName)) == 2
+        node = reg.GetShaderNodeByNameAndType(nodeName, oslType)
+        assert node is not None
+        node = reg.GetShaderNodeByNameAndType(nodeName, argsType) 
+        assert node is not None
+        node = reg.GetShaderNodeByName(nodeName, [oslType, argsType])
+        assert node.GetSourceType() == oslType
+        node = reg.GetShaderNodeByName(nodeName, [argsType, oslType])
+        assert node.GetSourceType() == argsType
+
+        # Ensure that the registry can retrieve these same nodes via identifier,
+        # which, in these cases, are the same as the node names.
+        assert len(reg.GetShaderNodesByIdentifier(nodeIdentifier)) == 2
+        node = reg.GetShaderNodeByIdentifierAndType(nodeIdentifier, oslType) 
+        assert node is not None
+        node = reg.GetShaderNodeByIdentifierAndType(nodeIdentifier, argsType) 
+        assert node is not None
+        node = reg.GetShaderNodeByIdentifier(nodeIdentifier, [oslType, argsType])
+        assert node.GetSourceType() == oslType
+        node = reg.GetShaderNodeByIdentifier(nodeIdentifier, [argsType, oslType])
+        assert node.GetSourceType() == argsType
+
+        # Test aliases. The discovery result for the args type 
+        # "TestNodeSameName" has been given an alias by its discovery plugin
+        # (see TestSdrPlugin_discoveryPlugin.cpp).
+        # The args type node can be found by its alias through the 
+        # GetShaderNodeByIdentifier APIs. The osl type node is not found 
+        # by this alias
+        assert len(reg.GetShaderNodesByIdentifier(nodeAlias)) == 1
+        node = reg.GetShaderNodeByIdentifierAndType(nodeAlias, oslType)
+        assert node is None
+        node = reg.GetShaderNodeByIdentifierAndType(nodeAlias, argsType)
+        assert node is not None
+        assert node.GetIdentifier() == nodeIdentifier 
+        assert node.GetSourceType() == argsType
+        node = reg.GetShaderNodeByIdentifier(nodeAlias, [oslType, argsType])
+        assert node.GetIdentifier() == nodeIdentifier 
+        assert node.GetSourceType() == argsType
+        node = reg.GetShaderNodeByIdentifier(nodeAlias, [argsType, oslType])
+        assert node.GetIdentifier() == nodeIdentifier 
+        assert node.GetSourceType() == argsType
+
+        # Ensure that GetShaderNodeByName APIs are NOT able to find nodes using 
+        # aliases.
+        assert len(reg.GetShaderNodesByName(nodeAlias)) == 0
+        node = reg.GetShaderNodeByNameAndType(nodeAlias, oslType)
+        assert node is None
+        node = reg.GetShaderNodeByNameAndType(nodeAlias, argsType) 
+        assert node is None
+        node = reg.GetShaderNodeByName(nodeAlias, [oslType, argsType])
+        assert node is None
+        node = reg.GetShaderNodeByName(nodeAlias, [argsType, oslType])
+        assert node is None
 
         # Test GetShaderNodeFromAsset to check that a subidentifier is part of
         # the node's identifier if one is specified
@@ -153,6 +213,7 @@ class TestShaderNode(unittest.TestCase):
             {},                                         # metadata
             "mySubIdentifier")                          # subIdentifier
         assert node.GetIdentifier().endswith("<mySubIdentifier><>")
+        assert node.GetName() == "TestNodeSourceAsset.oso"
 
         # Test GetShaderNodeFromAsset to check that a sourceType is part of
         # the node's identifier if one is specified

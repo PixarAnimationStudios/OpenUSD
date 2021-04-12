@@ -38,7 +38,7 @@ class Hgi;
 class HgiInteropMetal;
 class HgiInteropOpenGL;
 class HgiInteropVulkan;
-
+class VtValue;
 
 /// \class HgiInterop
 ///
@@ -58,35 +58,43 @@ public:
 
     /// Composite the provided textures over the application / viewer's
     /// framebuffer contents.
-    /// `hgi`: 
+    /// `srcHgi`: 
     ///     Determines the source format/platform of the textures.
     ///     Eg. if hgi is of type HgiMetal, the textures are HgiMetalTexture.
-    /// `interopDst`: 
+    /// `srcColor`: is the source color aov texture to composite to screen.
+    /// `srcDepth`: (optional) is the depth aov texture to composite to screen.
+    /// `dstApi`: 
     ///     Determines what target format/platform the application is using.
-    ///     E.g. If hgi==HgiMetal and interopDst==OpenGL then TransferToApp
+    ///     E.g. If hgi==HgiMetal and dstApi==OpenGL then TransferToApp
     ///     will present the metal textures to the gl application.
-    /// `compRegion`:
+    /// `dstFramebuffer`:
+    ///     The framebuffer that the source textures are presented into. This
+    ///     is a VtValue that encoding a framebuffer in a dstApi specific way.
+    ///     E.g., a uint32_t (aka GLuint) for framebuffer object for
+    ///     dstApi==OpenGL. For backwards compatibility, the currently bound
+    ///     framebuffer is used when the VtValue is empty.
+    ///     
+    /// `dstRegion`:
     ///     Subrect region of the framebuffer over which to composite.
     ///     Coordinates are (left, BOTTOM, width, height) which is the same
     ///     convention as OpenGL viewport coordinates.
-    /// `color`: is the source color aov texture to composite to screen.
-    /// `depth`: (optional) is the depth aov texture to composite to screen.
     ///
     /// Note:
     /// To composite correctly, blending is enabled. 
-    /// If `depth` is provided, depth testing is enabled.
-    /// As a result, the contents of the application framebuffer matter. In
-    /// order to use the contents of `color` and `depth` as-is (i.e., blit), the
-    /// color attachment should be cleared to (0,0,0,0) and the depth
-    /// attachment needs to be cleared to 1.
+    /// If `srcDepth` is provided, depth testing is enabled.
+    /// As a result, the contents of the application framebuffer matter.
+    /// In order to use the contents of `srcColor` and `srcDepth` as-is
+    /// (i.e., blit), the color attachment should be cleared to (0,0,0,0) and
+    /// the depth attachment needs to be cleared to 1.
     /// 
     HGIINTEROP_API
     void TransferToApp(
-        Hgi *hgi,
-        TfToken const &interopDst,
-        GfVec4i const &compRegion,
-        HgiTextureHandle const &color,
-        HgiTextureHandle const &depth);
+        Hgi *srcHgi,
+        HgiTextureHandle const &srcColor,
+        HgiTextureHandle const &srcDepth,
+        TfToken const &dstApi,
+        VtValue const &dstFramebuffer,
+        GfVec4i const &dstRegion);
 
 private:
     HgiInterop & operator=(const HgiInterop&) = delete;

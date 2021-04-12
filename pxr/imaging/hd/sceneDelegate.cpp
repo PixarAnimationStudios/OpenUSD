@@ -177,6 +177,18 @@ HdSceneDelegate::Get(SdfPath const& id, TfToken const& key)
 }
 
 /*virtual*/
+VtValue
+HdSceneDelegate::GetIndexedPrimvar(SdfPath const& id, TfToken const& key, 
+                                        VtIntArray *outIndices) 
+{
+    // We return an empty value here rather than returning the result of 
+    // Get(id, key) since that would leave callers of this method with an 
+    // empty outIndices which is semantically different than a non-indexed 
+    // primvar.
+    return VtValue();
+}
+
+/*virtual*/
 size_t
 HdSceneDelegate::SamplePrimvar(SdfPath const& id, 
                                TfToken const& key,
@@ -187,6 +199,23 @@ HdSceneDelegate::SamplePrimvar(SdfPath const& id,
     if (maxSampleCount > 0) {
         sampleTimes[0] = 0.0;
         sampleValues[0] = Get(id, key);
+        return 1;
+    }
+    return 0;
+}
+
+/*virtual*/
+size_t
+HdSceneDelegate::SampleIndexedPrimvar(SdfPath const& id, 
+                               TfToken const& key,
+                               size_t maxSampleCount,
+                               float *sampleTimes,
+                               VtValue *sampleValues,
+                               VtIntArray *sampleIndices)
+{
+    if (maxSampleCount > 0) {
+        sampleTimes[0] = 0.0;
+        sampleValues[0] = GetIndexedPrimvar(id, key, &sampleIndices[0]);
         return 1;
     }
     return 0;
@@ -242,6 +271,13 @@ SdfPath
 HdSceneDelegate::GetInstancerId(SdfPath const& primId)
 {
     return SdfPath();
+}
+
+/*virtual*/
+SdfPathVector
+HdSceneDelegate::GetInstancerPrototypes(SdfPath const& instancerId)
+{
+    return SdfPathVector();
 }
 
 /*virtual*/
@@ -396,6 +432,22 @@ HdSceneDelegate::GetExtComputationInput(SdfPath const& computationId,
                                         TfToken const& input)
 {
     return VtValue();
+}
+
+/*virtual*/
+size_t
+HdSceneDelegate::SampleExtComputationInput(SdfPath const& computationId,
+                                           TfToken const& input,
+                                           size_t maxSampleCount,
+                                           float *sampleTimes,
+                                           VtValue *sampleValues)
+{
+    if (maxSampleCount > 0) {
+        sampleTimes[0] = 0.0;
+        sampleValues[0] = GetExtComputationInput(computationId, input);
+        return 1;
+    }
+    return 0;
 }
 
 /*virtual*/

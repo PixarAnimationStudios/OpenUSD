@@ -56,6 +56,16 @@ UsdShadeConnectableAPIBehavior::CanConnectInputToSource(
     const UsdAttribute &source,
     std::string *reason)
 {
+    return _CanConnectInputToSource(input, source, reason);
+}
+
+bool
+UsdShadeConnectableAPIBehavior::_CanConnectInputToSource(
+    const UsdShadeInput &input,
+    const UsdAttribute &source,
+    std::string *reason,
+    ConnectableNodeTypes nodeType)
+{
     if (!input.IsDefined()) {
         if (reason) {
             *reason = TfStringPrintf("Invalid input: %s",  
@@ -72,15 +82,128 @@ UsdShadeConnectableAPIBehavior::CanConnectInputToSource(
         return false;
     }
 
+
+    // Ensure that the source prim is the closest ancestor container of the 
+    // NodeGraph owning the input.
+    auto encapsulationCheckForInputSources = [&input, &source](
+            std::string *reason) {
+        const SdfPath inputPrimPath = input.GetPrim().GetPath();
+        const SdfPath sourcePrimPath = source.GetPrim().GetPath();
+
+        if (!UsdShadeConnectableAPI(source.GetPrim()).IsContainer()) {
+            if (reason) {
+                *reason = TfStringPrintf("Encapsulation check failed - "
+                        "prim '%s' owning the input source '%s' is not a "
+                        "container.", sourcePrimPath.GetText(),
+                        source.GetName().GetText());
+            }
+            return false;
+        }
+        if (inputPrimPath.GetParentPath() != sourcePrimPath) {
+            if (reason) {
+                *reason = TfStringPrintf("Encapsulation check failed - "
+                        "input source prim '%s' is not the closest ancestor "
+                        "container of the NodeGraph '%s' owning the input "
+                        "attribute '%s'.", sourcePrimPath.GetText(), 
+                        inputPrimPath.GetText(), input.GetFullName().GetText());
+            }
+            return false;
+        }
+
+        return true;
+    };
+
+    // Ensure that the source prim and input prim are contained by the same
+    // inner most container for all nodes, other than DerivedContainerNodes,
+    // for these make sure source prim is an immediate descendent of the input
+    // prim.
+    auto encapsulationCheckForOutputSources = [&input, &source, 
+         &nodeType](std::string *reason) {
+        const SdfPath inputPrimPath = input.GetPrim().GetPath();
+        const SdfPath sourcePrimPath = source.GetPrim().GetPath();
+
+        switch (nodeType) {
+            case ConnectableNodeTypes::DerivedContainerNodes:
+                if (!UsdShadeConnectableAPI(input.GetPrim()).IsContainer()) {
+                    if (reason) {
+                        *reason = TfStringPrintf("Encapsulation check failed - "
+                                "For input's prim type '%s', prim owning the "
+                                "input '%s' is not a container.",
+                                input.GetPrim().GetTypeName().GetText(),
+                                input.GetAttr().GetPath().GetText());
+                    }
+                    return false;
+                }
+                if (sourcePrimPath.GetParentPath() != inputPrimPath) {
+                    if (reason) {
+                        *reason = TfStringPrintf("Encapsulation check failed - "
+                                "For input's prim type '%s', Output source's "
+                                "prim '%s' is not an immediate descendent of "
+                                "the input's prim '%s'.",
+                                input.GetPrim().GetTypeName().GetText(),
+                                sourcePrimPath.GetText(), 
+                                inputPrimPath.GetText());
+                    }
+                    return false;
+                }
+                return true;
+                break;
+
+            case ConnectableNodeTypes::BasicNodes:
+            default:
+                if (!UsdShadeConnectableAPI(input.GetPrim().GetParent()).
+                        IsContainer()) {
+                    if (reason) {
+                        *reason = TfStringPrintf("Encapsulation check failed - "
+                                "For input's prim type '%s', Immediate ancestor"
+                                " '%s' for the prim owning the output source "
+                                "'%s' is not a container.",
+                                input.GetPrim().GetTypeName().GetText(),
+                                sourcePrimPath.GetParentPath().GetText(),
+                                source.GetPath().GetText());
+                    }
+                    return false;
+                }
+                if (inputPrimPath.GetParentPath() != 
+                        sourcePrimPath.GetParentPath()) {
+                    if (reason) {
+                        *reason = TfStringPrintf("Encapsulation check failed - "
+                                "For input's prim type '%s', Input's prim '%s' "
+                                "and source's prim '%s' are not contained by "
+                                "the same container prim.",
+                                input.GetPrim().GetTypeName().GetText(),
+                                inputPrimPath.GetText(), 
+                                sourcePrimPath.GetText());
+                    }
+                    return false;
+                }
+                return true;
+                break;
+        }
+    };
+
     TfToken inputConnectability = input.GetConnectability();
     if (inputConnectability == UsdShadeTokens->full) {
-        return true;
+        if (UsdShadeInput::IsInput(source)) {
+            if (encapsulationCheckForInputSources(reason)) {
+                return true;
+            }
+            return false;
+        }
+        /* source is an output - allow connection */
+        if (encapsulationCheckForOutputSources(reason)) {
+            return true;
+        }
+        return false;
     } else if (inputConnectability == UsdShadeTokens->interfaceOnly) {
         if (UsdShadeInput::IsInput(source)) {
             TfToken sourceConnectability = 
                 UsdShadeInput(source).GetConnectability();
             if (sourceConnectability == UsdShadeTokens->interfaceOnly) {
-                return true;
+                if (encapsulationCheckForInputSources(reason)) {
+                    return true;
+                }
+                return false;
             } else {
                 if (reason) {
                     *reason = "Input connectability is 'interfaceOnly' and " \
@@ -102,6 +225,72 @@ UsdShadeConnectableAPIBehavior::CanConnectInputToSource(
         return false;
     }
     return false;
+}
+
+bool
+UsdShadeConnectableAPIBehavior::_CanConnectOutputToSource(
+    const UsdShadeOutput &output,
+    const UsdAttribute &source,
+    std::string *reason,
+    ConnectableNodeTypes nodeType)
+{
+    // Nodegraphs allow connections to their outputs, but only from
+    // internal nodes.
+    if (!output.IsDefined()) {
+        if (reason) {
+            *reason = TfStringPrintf("Invalid output");
+        }
+        return false;
+    }
+    if (!source) {
+        if (reason) {
+            *reason = TfStringPrintf("Invalid source");
+        }
+        return false;
+    }
+
+    const SdfPath sourcePrimPath = source.GetPrim().GetPath();
+    const SdfPath outputPrimPath = output.GetPrim().GetPath();
+
+    if (UsdShadeInput::IsInput(source)) {
+        // passthrough usage is not allowed for DerivedContainerNodes
+        if (nodeType == ConnectableNodeTypes::DerivedContainerNodes) {
+            if (reason) {
+                *reason = TfStringPrintf("Encapsulation check failed - "
+                        "passthrough usage is not allowed for output prim '%s' "
+                        "of type '%s'.", outputPrimPath.GetText(),
+                        output.GetPrim().GetTypeName().GetText());
+            }
+            return false;
+        }
+        // output can connect to an input of the same container as a
+        // passthrough.
+        if (sourcePrimPath != outputPrimPath) {
+            if (reason) {
+                *reason = TfStringPrintf("Encapsulation check failed - output "
+                        "'%s' and input source '%s' must be encapsulated by "
+                        "the same container prim", 
+                        output.GetAttr().GetPath().GetText(),
+                        source.GetPath().GetText());
+            }
+            return false;
+        }
+        return true;
+    } else { // Source is an output
+        // output can connect to other node's output directly encapsulated by
+        // it.
+        if (sourcePrimPath.GetParentPath() != outputPrimPath) {
+            if (reason) {
+                *reason = TfStringPrintf("Encapsulation check failed - prim "
+                        "owning the output '%s' is not an immediate descendent "
+                        " of the prim owning the output source '%s'.",
+                        output.GetAttr().GetPath().GetText(),
+                        source.GetPath().GetText());
+            }
+            return false;
+        }
+        return true;
+    }
 }
 
 bool

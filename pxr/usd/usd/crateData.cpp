@@ -206,16 +206,29 @@ public:
         return true;
     }
 
+    // Return either TargetPaths or ConnectionPaths as a VtValue.  If
+    // specTypeOut is not null, set it to SdfSpecTypeRelationship if we find
+    // TargetPaths, otherwise to SdfSpecTypeAttribute if we find
+    // ConnectionPaths, otherwise SdfSpecTypeUnknown.
     inline VtValue
-    _GetTargetOrConnectionListOpValue(SdfPath const &path) const {
+    _GetTargetOrConnectionListOpValue(
+        SdfPath const &path, SdfSpecType *specTypeOut = nullptr) const {
         VtValue targetPaths;
+        SdfSpecType specType = SdfSpecTypeUnknown;
         if (path.IsPrimPropertyPath()) {
-            if ((Has(path, SdfFieldKeys->TargetPaths, &targetPaths) ||
-                 Has(path, SdfFieldKeys->ConnectionPaths, &targetPaths))) {
-                if (!targetPaths.IsHolding<SdfPathListOp>()) {
-                    targetPaths = VtValue();
-                }
+            if (Has(path, SdfFieldKeys->TargetPaths, &targetPaths)) {
+                specType = SdfSpecTypeRelationship;
             }
+            else if (Has(path, SdfFieldKeys->ConnectionPaths, &targetPaths)) {
+                specType = SdfSpecTypeAttribute;
+            }
+            if (!targetPaths.IsHolding<SdfPathListOp>()) {
+                specType = SdfSpecTypeUnknown;
+                targetPaths = VtValue();
+            }
+        }
+        if (specTypeOut) {
+            *specTypeOut = specType;
         }
         return targetPaths;
     }
@@ -461,6 +474,11 @@ public:
             }
             return true;
         }
+        else if (ARCH_UNLIKELY(
+                     field == SdfChildrenKeys->ConnectionChildren ||
+                     field == SdfChildrenKeys->RelationshipTargetChildren)) {
+            return _HasConnectionOrTargetChildren(path, field, value);
+        }
         return false;
     }
 
@@ -484,6 +502,45 @@ public:
                     // SdfPayload to be compatible with older crate versions.
                     *value = _ToPayloadListOpValue(*value);
                 }
+            }
+            return true;
+        }
+        else if (ARCH_UNLIKELY(
+                     field == SdfChildrenKeys->ConnectionChildren ||
+                     field == SdfChildrenKeys->RelationshipTargetChildren)) {
+            return _HasConnectionOrTargetChildren(path, field, value);
+        }
+        return false;
+    }
+
+    bool _HasConnectionOrTargetChildren(const SdfPath &path,
+                                        const TfToken &field,
+                                        SdfAbstractDataValue *value) const {
+        VtValue listOpVal = _GetTargetOrConnectionListOpValue(path);
+        if (!listOpVal.IsEmpty()) {
+            if (value) {
+                SdfPathListOp const &plo =
+                    listOpVal.UncheckedGet<SdfPathListOp>();
+                SdfPathVector paths;
+                plo.ApplyOperations(&paths);
+                value->StoreValue(paths);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    bool _HasConnectionOrTargetChildren(const SdfPath &path,
+                                        const TfToken &field,
+                                        VtValue *value) const {
+        VtValue listOpVal = _GetTargetOrConnectionListOpValue(path);
+        if (!listOpVal.IsEmpty()) {
+            if (value) {
+                SdfPathListOp const &plo =
+                    listOpVal.UncheckedGet<SdfPathListOp>();
+                SdfPathVector paths;
+                plo.ApplyOperations(&paths);
+                *value = paths;
             }
             return true;
         }
@@ -517,6 +574,19 @@ public:
             for (size_t j=0, jEnd = fields.size(); j != jEnd; ++j) {
                 out[j] = fields[j].first;
             }
+            // If 'path' is a property path, we may have to "spoof" the
+            // existence of connectionChildren or targetChildren.
+            if (path.IsPrimPropertyPath()) {
+                SdfSpecType specType = SdfSpecTypeUnknown;
+                VtValue listOpVal = 
+                    _GetTargetOrConnectionListOpValue(path, &specType);
+                if (specType == SdfSpecTypeRelationship) {
+                    out.push_back(SdfChildrenKeys->RelationshipTargetChildren);
+                }
+                else if (specType == SdfSpecTypeAttribute) {
+                    out.push_back(SdfChildrenKeys->ConnectionChildren);
+                }
+            }
         }
     }
 
@@ -543,6 +613,13 @@ public:
                 return;
             }
             lastSet = &(*i);
+        }
+
+        if (fieldName == SdfChildrenKeys->ConnectionChildren ||
+            fieldName == SdfChildrenKeys->RelationshipTargetChildren) {
+            // Silently do nothing -- we synthesize these fields from the list
+            // ops.
+            return;
         }
         
         VtValue const *valPtr = &value;

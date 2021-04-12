@@ -62,9 +62,6 @@ HgiMetalComputePipeline::HgiMetalComputePipeline(
         NSString *err = [error localizedDescription];
         TF_WARN("Failed to create compute pipeline state, error %s",
             [err UTF8String]);
-        if (error) {
-            [error release];
-        }
     }
 }
 

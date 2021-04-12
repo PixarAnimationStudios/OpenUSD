@@ -107,7 +107,9 @@ static const uint32_t
 _SampleCountTable[][2] =
 {
     {HgiSampleCount1,  VK_SAMPLE_COUNT_1_BIT},
+    {HgiSampleCount2,  VK_SAMPLE_COUNT_2_BIT},
     {HgiSampleCount4,  VK_SAMPLE_COUNT_4_BIT},
+    {HgiSampleCount8,  VK_SAMPLE_COUNT_8_BIT},
     {HgiSampleCount16, VK_SAMPLE_COUNT_16_BIT}
 };
 static_assert(HgiSampleCountEnd==17, "");

@@ -152,5 +152,21 @@ class TestFileFormat(unittest.TestCase):
         stage = UsdMtlx._TestFile('Looks.mtlx')
         stage.GetRootLayer().Export('Looks.usda')
 
+    def test_StdlibShaderRefs(self):
+        """
+        Test that we can use a shader nodedef from the MaterialX stdlib.
+        """
+
+        stage = UsdMtlx._TestFile('usd_preview_surface_gold.mtlx')
+        # check stage contents
+        mprim = stage.GetPrimAtPath("/MaterialX/Materials/USD_Gold")
+        self.assertTrue(mprim)
+        material = UsdShade.Material(mprim)
+        self.assertTrue(material)
+        input = material.GetInput("specularColor")
+        self.assertTrue(input)
+        self.assertEqual(input.GetFullName(),"inputs:specularColor")
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -58,14 +58,15 @@ HgiGLShaderGenerator::_WriteTextures(
     //Extract texture descriptors and add appropriate texture sections
     for(size_t i=0; i<textures.size(); i++) {
         const HgiShaderFunctionTextureDesc &textureDescription = textures[i];
-        const HgiGLShaderSectionAttributeVector attrs = {
-            HgiGLShaderSectionAttribute{"binding", std::to_string(i)}};
+        const HgiShaderSectionAttributeVector attrs = {
+            HgiShaderSectionAttribute{"binding", std::to_string(i)}};
 
         GetShaderSections()->push_back(
             std::make_unique<HgiGLTextureShaderSection>(
                 textureDescription.nameInShader,
                 i,
                 textureDescription.dimensions,
+                textureDescription.format,
                 attrs));
     }
 }
@@ -113,8 +114,8 @@ HgiGLShaderGenerator::_WriteInOuts(
             continue;
         }
 
-        const HgiGLShaderSectionAttributeVector attrs {
-            HgiGLShaderSectionAttribute{"location", std::to_string(counter)}
+        const HgiShaderSectionAttributeVector attrs {
+            HgiShaderSectionAttribute{"location", std::to_string(counter)}
         };
 
         GetShaderSections()->push_back(

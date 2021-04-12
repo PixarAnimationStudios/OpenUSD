@@ -614,9 +614,11 @@ int LZ4_sizeofState() { return LZ4_STREAMSIZE; }
 /*-************************************
 *  Internal Definitions used in Tests
 **************************************/
+/* PXR - modification; remove C linkage.
 #if defined (__cplusplus)
 extern "C" {
 #endif
+*/
 
 int LZ4_compress_forceExtDict (LZ4_stream_t* LZ4_dict, const char* source, char* dest, int srcSize);
 
@@ -624,9 +626,11 @@ int LZ4_decompress_safe_forceExtDict(const char* source, char* dest,
                                      int compressedSize, int maxOutputSize,
                                      const void* dictStart, size_t dictSize);
 
+/* PXR - modification; remove C linkage.
 #if defined (__cplusplus)
 }
 #endif
+*/
 
 /*-******************************
 *  Compression functions

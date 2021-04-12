@@ -41,6 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (imagerVersion)             \
     (lightingContext)           \
     (lightingShader)            \
+    (occludedSelectionOpacity)  \
     (oitCounter)                \
     (oitData)                   \
     (oitDepth)                  \

@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
+#include "pxr/imaging/hdSt/textureUtils.h"
 
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/texture.h"
@@ -46,37 +47,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-using _Data = std::unique_ptr<uint8_t[]>;
-
-template<typename T, uint32_t alpha>
-_Data
-_ConvertRGBToRGBA(
-    const void * const data,
-    const size_t numPixels)
+// Implements Deleter for std::unique_ptr calling release.
+template<typename T>
+struct _ReleaseDeleter
 {
-    TRACE_FUNCTION();
+    void operator()(T * const obj) { return obj->release(); }
+};
 
-    const T * const typedData = reinterpret_cast<const T*>(data);
+// unique_ptr calling release instead of d'tor.
+template<typename T>
+using _ReleaseUniquePtr = std::unique_ptr<T, _ReleaseDeleter<T>>;
 
-    std::unique_ptr<uint8_t[]> result =
-        std::make_unique<uint8_t[]>(numPixels * sizeof(T) * 4);
-
-    T * const typedConvertedData = reinterpret_cast<T*>(result.get());
-
-    for (size_t i = 0; i < numPixels; i++) {
-        typedConvertedData[4 * i + 0] = typedData[3 * i + 0];
-        typedConvertedData[4 * i + 1] = typedData[3 * i + 1];
-        typedConvertedData[4 * i + 2] = typedData[3 * i + 2];
-        typedConvertedData[4 * i + 3] = T(alpha);
-    }
-
-    return result;
-}
-
-using _ConversionFunction = _Data(*)(const void * data, size_t numTargetBytes);
-
-// anonymous namespace
-}
+} // anonymous namespace
 
 bool HdStIsSupportedPtexTexture(std::string const & imageFilePath)
 {
@@ -97,11 +79,11 @@ HdStPtexTextureObject::HdStPtexTextureObject(
     HdSt_TextureObjectRegistry * const textureObjectRegistry)
   : HdStTextureObject(textureId, textureObjectRegistry)
   , _format(HgiFormatInvalid)
-  , _numChannels(0)
-  , _numBytesPerPixel(0)
   , _texelDimensions(0)
+  , _texelLayers(0)
+  , _texelDataSize(0)
   , _layoutDimensions(0)
-  , _numFaces(0)
+  , _layoutDataSize(0)
 {
 }
 
@@ -123,6 +105,25 @@ HdStPtexTextureObject::_DestroyTextures()
     }
 }
 
+#ifdef PXR_PTEX_SUPPORT_ENABLED
+static
+HioType
+_GetHioType(const Ptex::DataType t)
+{
+    switch(t) {
+    case Ptex::dt_float:
+        return HioTypeFloat;
+    case Ptex::dt_half:
+        return HioTypeHalfFloat;
+    case Ptex::dt_uint16:
+        return HioTypeUnsignedShort;
+    case Ptex::dt_uint8:
+        return HioTypeUnsignedByte;
+    }
+    return HioTypeUnsignedByte;
+}
+#endif
+
 void
 HdStPtexTextureObject::_Load()
 {
@@ -132,13 +133,7 @@ HdStPtexTextureObject::_Load()
 
     TRACE_SCOPE("HdStPtexTextureObject::_Load() (read ptex)");
 
-    HioType hioFormat = HioTypeUnsignedByte;
-
-    const unsigned char *loaderLayoutBuffer = nullptr;
-    const unsigned char *loaderTexelBuffer = nullptr;
-
-    size_t layoutNumInt32Vec3ToAlloc = 0;
-    size_t layoutNumInt16ToCopy = 0;
+    _format = HgiFormatInvalid;
 
 #ifdef PXR_PTEX_SUPPORT_ENABLED
     const std::string & filename = GetTextureIdentifier().GetFilePath();
@@ -148,10 +143,10 @@ HdStPtexTextureObject::_Load()
 
     // create a temporary ptex cache
     // (required to build guttering pixels efficiently)
-    static const int PTEX_MAX_CACHE_SIZE = 128 * 1024 * 1024;
-    std::unique_ptr<PtexCache, std::function<void(PtexCache*)>> cache(
-        PtexCache::create(1, PTEX_MAX_CACHE_SIZE, premultiplyAlpha),
-            [](PtexCache* p) { p->release(); });
+    constexpr int PTEX_MAX_CACHE_SIZE = 128 * 1024 * 1024;
+    // Held by std::unique_ptr calling release instead of d'tor
+    const _ReleaseUniquePtr<PtexCache> cache(
+        PtexCache::create(1, PTEX_MAX_CACHE_SIZE, premultiplyAlpha));
     if (!cache) {
         TF_WARN("Unable to create PtexCache");
         return;
@@ -159,9 +154,9 @@ HdStPtexTextureObject::_Load()
 
     // load
     Ptex::String ptexError;
-    std::unique_ptr<PtexTexture, std::function<void(PtexTexture*)>> reader(
-        cache->get(filename.c_str(), ptexError),
-        [](PtexTexture* p) { p->release(); });
+    // Held by std::unique_ptr calling release instead of d'tor
+    const _ReleaseUniquePtr<PtexTexture> reader(
+        cache->get(filename.c_str(), ptexError));
     if (!reader) {
         TF_WARN("Unable to open ptex %s : %s",
                 filename.c_str(), ptexError.c_str());
@@ -171,127 +166,79 @@ HdStPtexTextureObject::_Load()
     // Read the ptexture data and pack the texels
 
     TRACE_SCOPE("HdStPtexTextureObject::_Load() (generate texture)");
-    const size_t targetMemory = GetTargetMemory();
 
     // This is the minimum texture layers guaranteed by OpenGL 4.5 and Metal
-    const size_t maxNumPages = 2048;
+    constexpr size_t maxNumPages = 2048;
 
     // maxLevels = -1 : load all mip levels
     // maxLevels = 0  : load only the highest resolution
     constexpr int maxLevels = -1;
     HdStPtexMipmapTextureLoader loader(
-            reader.get(), maxNumPages, maxLevels, targetMemory);
+        reader.get(), maxNumPages, maxLevels, GetTargetMemory());
 
-    const Ptex::DataType type = reader->dataType();
-    if (type == Ptex::dt_float) {
-        hioFormat = HioTypeFloat;
-    } else if (type == Ptex::dt_half) {
-        hioFormat = HioTypeHalfFloat;
-    } else if (type == Ptex::dt_uint16) {
-        hioFormat = HioTypeUnsignedShort;
-    } else if (type == Ptex::dt_uint8) {
-        hioFormat = HioTypeUnsignedByte;
+    const unsigned char * const loaderLayoutBuffer = loader.GetLayoutBuffer();
+    if (!loaderLayoutBuffer) {
+        return;
     }
-
-    // Texel data in memory buffer after load
-    _numChannels = reader->numChannels();
-    _numFaces = loader.GetNumFaces();
-    _texelDimensions = GfVec3i(loader.GetPageWidth(),
-                          loader.GetPageHeight(),
-                          loader.GetNumPages());
-    loaderLayoutBuffer = loader.GetLayoutBuffer();
+    const size_t numFaces = loader.GetNumFaces();
 
     // Layout data in memory buffer after load
-    const size_t maxTextureSize = 16384;
-    const size_t layoutNumInt16 = _numFaces * 6; // 6 uint16_t per face
-    const size_t layoutNumInt32Vec3 = layoutNumInt16 / 6; // 1 ivec3 per texel
-    const size_t layoutNumInt32Vec3PerLayer = maxTextureSize;
-    const size_t layoutNumLayers =
-        (size_t) ceil((float)layoutNumInt32Vec3 / layoutNumInt32Vec3PerLayer);
+    constexpr size_t maxTextureWidth = 16384;
+    constexpr size_t layoutTexelsPerFace = 3;
+    constexpr size_t maxFacesPerLayer = maxTextureWidth / layoutTexelsPerFace;
 
-    layoutNumInt32Vec3ToAlloc = layoutNumLayers * layoutNumInt32Vec3PerLayer;
-    layoutNumInt16ToCopy = layoutNumInt16;
-    _layoutDimensions = GfVec2i(layoutNumInt32Vec3PerLayer,
-                                layoutNumLayers);
-    loaderTexelBuffer = loader.GetTexelBuffer();
-#endif
+    _layoutDimensions = GfVec2i(
+        maxFacesPerLayer * layoutTexelsPerFace,
+        (numFaces + maxFacesPerLayer - 1) / maxFacesPerLayer);
 
-    if (!loaderLayoutBuffer || !loaderTexelBuffer) {
+    const unsigned char * const loaderTexelBuffer = loader.GetTexelBuffer();
+    if (!loaderTexelBuffer) {
         return;
     }
 
-    bool convertRGBtoRGBA = false;
-    if (_numChannels == 3) {
-        _numChannels = 4;
-        convertRGBtoRGBA = true;
-    }
+    const HioFormat hioFormat =
+        HioGetFormat(reader->numChannels(),
+                     _GetHioType(reader->dataType()),
+                     /* isSRGB = */ false);
 
-    const size_t numPixels =
-        _texelDimensions[0] * _texelDimensions[1] * _texelDimensions[2];
-    _numBytesPerPixel = 0;
-    _ConversionFunction conversionFunction = nullptr;
+    // Texel data in memory buffer after load
+    _texelDimensions = GfVec3i(loader.GetPageWidth(),
+                               loader.GetPageHeight(),
+                               1);
+    _texelLayers = loader.GetNumPages();
+    
+    // premultiplyAlpha = false since Ptex cache already premultiplied.
+    _format = HdStTextureUtils::GetHgiFormat(
+        hioFormat,
+        /* premultiplyAlpha = */ false);
 
-    if (hioFormat == HioTypeFloat) {
-        static HgiFormat floatFormats[] =
-            { HgiFormatFloat32, HgiFormatFloat32Vec2,
-              HgiFormatFloat32Vec4, HgiFormatFloat32Vec4 };
-        _format = floatFormats[_numChannels - 1];
+    const HdStTextureUtils::ConversionFunction conversionFunction =
+        HdStTextureUtils::GetHioToHgiConversion(
+            hioFormat,
+            /* premultiplyAlpha = */ false);
 
-        _numBytesPerPixel = _numChannels *  sizeof(float);
+    _texelDataSize =
+        _texelLayers * HgiGetDataSize(_format, _texelDimensions);
 
-        if (convertRGBtoRGBA) {
-            conversionFunction = _ConvertRGBToRGBA<float, 1>;
-        }
-    } else if (hioFormat == HioTypeUnsignedShort) {
-        static HgiFormat uint16Formats[] =
-            { HgiFormatInt32, HgiFormatInt32Vec2,
-              HgiFormatInt32Vec4, HgiFormatInt32Vec4 };
-        _format = uint16Formats[_numChannels - 1];
-
-        _numBytesPerPixel = _numChannels * sizeof(uint16_t);
-
-        if (convertRGBtoRGBA) {
-            conversionFunction = _ConvertRGBToRGBA<uint16_t, 65535>;
-        }
-    } else if (hioFormat == HioTypeHalfFloat) {
-        static HgiFormat halfFormats[] =
-            { HgiFormatFloat16, HgiFormatFloat16Vec2,
-              HgiFormatFloat16Vec4, HgiFormatFloat16Vec4 };
-        _format = halfFormats[_numChannels - 1];
-
-        _numBytesPerPixel = _numChannels * sizeof(GfHalf);
-
-        if (convertRGBtoRGBA) {
-            conversionFunction = _ConvertRGBToRGBA<GfHalf, 1>;
-        }
-    } else if (hioFormat == HioTypeUnsignedByte) {
-        static HgiFormat uint8Formats[] =
-            { HgiFormatUNorm8, HgiFormatUNorm8Vec2,
-              HgiFormatUNorm8Vec4, HgiFormatUNorm8Vec4 };
-        _format = uint8Formats[_numChannels - 1];
-
-        _numBytesPerPixel = _numChannels * sizeof(uint8_t);
-
-        if (convertRGBtoRGBA) {
-            conversionFunction = _ConvertRGBToRGBA<uint8_t, 255>;
-        }
-    } else {
-        _format = HgiFormatUNorm8;
-        TF_CODING_ERROR("Unsupported format");
-    }
-
-    const size_t texelDataSize = numPixels * _numBytesPerPixel;
+    _texelData = std::make_unique<uint8_t[]>(_texelDataSize);
     if (conversionFunction) {
-        _texelData =
-            conversionFunction(loaderTexelBuffer, numPixels);
+        const size_t numTexels =
+            _texelLayers * _texelDimensions[0] * _texelDimensions[1];
+        conversionFunction(
+            loaderTexelBuffer, numTexels, _texelData.get());
     } else {
-        _texelData = std::make_unique<uint8_t[]>(texelDataSize);
-        memcpy(_texelData.get(), loaderTexelBuffer, texelDataSize);
+        memcpy(_texelData.get(), loaderTexelBuffer, _texelDataSize);
     }
 
-    const size_t layoutDataSize = layoutNumInt16ToCopy * sizeof(uint16_t);
-    _layoutData = std::make_unique<uint32_t[]>(3*layoutNumInt32Vec3ToAlloc);
-    memcpy(_layoutData.get(), loaderLayoutBuffer, layoutDataSize);
+    static const size_t layoutBytesPerTexel =
+        HgiGetDataSizeOfFormat(HgiFormatUInt16Vec2);
+
+    _layoutDataSize =
+        _layoutDimensions[0] * _layoutDimensions[1] * layoutBytesPerTexel;
+    _layoutData = std::make_unique<uint8_t[]>(_layoutDataSize);
+    memcpy(_layoutData.get(), loaderLayoutBuffer,
+           numFaces * layoutTexelsPerFace * layoutBytesPerTexel);
+#endif
 }
 
 void
@@ -316,13 +263,12 @@ HdStPtexTextureObject::_Commit()
         texDesc.debugName = _GetDebugName(GetTextureIdentifier());
         texDesc.usage = HgiTextureUsageBitsShaderRead;
         texDesc.type = HgiTextureType2DArray;
-        texDesc.dimensions = GfVec3i(_texelDimensions[0],
-                                     _texelDimensions[1], 1);
-        texDesc.layerCount = _texelDimensions[2];
+        texDesc.dimensions = _texelDimensions;
+        texDesc.layerCount = _texelLayers;
         texDesc.format = _format;
         texDesc.mipLevels = 1;
         texDesc.initialData = _texelData.get();
-        texDesc.pixelsByteSize = _numBytesPerPixel;
+        texDesc.pixelsByteSize = _texelDataSize;
         _texelTexture = hgi->CreateTexture(texDesc);
     }
 
@@ -345,10 +291,10 @@ HdStPtexTextureObject::_Commit()
         texDesc.type = HgiTextureType1DArray;
         texDesc.dimensions = GfVec3i(_layoutDimensions[0], 1, 1);
         texDesc.layerCount = _layoutDimensions[1];
-        texDesc.format = HgiFormatInt32Vec3;
+        texDesc.format = HgiFormatUInt16Vec2;
         texDesc.mipLevels = 1;
         texDesc.initialData = _layoutData.get();
-        texDesc.pixelsByteSize = sizeof(uint32_t);
+        texDesc.pixelsByteSize = _layoutDataSize;
         _layoutTexture = hgi->CreateTexture(texDesc);
     }
 
@@ -360,8 +306,7 @@ HdStPtexTextureObject::_Commit()
 bool
 HdStPtexTextureObject::IsValid() const
 {
-    // Checking whether ptex texture is valid not supported yet.
-    return true;
+    return _format != HgiFormatInvalid;
 }
 
 HdTextureType

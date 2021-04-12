@@ -45,8 +45,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   The name written from the codegen into shader file for the texture.</li>
 /// <li>dimensions:
 ///   1d, 2d or 3d texture declaration.</li>
-/// <li>type:
-///   if it's a texture of floats, ints or any allowed type.</li>
+/// <li>format
+///   Format of the texture. This is required in APIs where sampler types depend
+///   on the texture (e.g., GL) </li>
 /// </ul>
 ///
 struct HgiShaderFunctionTextureDesc
@@ -56,7 +57,7 @@ struct HgiShaderFunctionTextureDesc
 
     std::string nameInShader;
     uint32_t dimensions;
-    std::string type;
+    HgiFormat format;
 };
 
 using HgiShaderFunctionTextureDescVector =
@@ -168,7 +169,7 @@ HgiShaderFunctionAddTexture(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     uint32_t dimensions = 2,
-    const std::string &type = "float");
+    const HgiFormat &format = HgiFormatFloat32Vec4);
 
 /// Adds constant function param descriptor to given shader function
 /// descriptor.

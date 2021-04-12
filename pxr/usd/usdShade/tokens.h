@@ -88,7 +88,7 @@ struct UsdShadeTokensType {
     const TfToken full;
     /// \brief "id"
     /// 
-    /// Possible value for UsdShadeNodeDefAPI::GetInfoImplementationSourceAttr(), Default value for UsdShadeNodeDefAPI::GetInfoImplementationSourceAttr()
+    /// Possible value for UsdShadeNodeDefAPI::GetImplementationSourceAttr(), Default value for UsdShadeNodeDefAPI::GetImplementationSourceAttr()
     const TfToken id;
     /// \brief "info:id"
     /// 
@@ -148,11 +148,11 @@ struct UsdShadeTokensType {
     const TfToken sdrMetadata;
     /// \brief "sourceAsset"
     /// 
-    /// Possible value for UsdShadeNodeDefAPI::GetInfoImplementationSourceAttr()
+    /// Possible value for UsdShadeNodeDefAPI::GetImplementationSourceAttr()
     const TfToken sourceAsset;
     /// \brief "sourceCode"
     /// 
-    /// Possible value for UsdShadeNodeDefAPI::GetInfoImplementationSourceAttr()
+    /// Possible value for UsdShadeNodeDefAPI::GetImplementationSourceAttr()
     const TfToken sourceCode;
     /// \brief "strongerThanDescendants"
     /// 

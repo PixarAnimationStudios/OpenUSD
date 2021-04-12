@@ -47,7 +47,8 @@ class Hgi;
 /// (color/depth) to a hgi texture. This lets callers composite results
 /// into existing scenes.
 ///
-class HdxFullscreenShader {
+class HdxFullscreenShader
+{
 public:
     /// Create a new fullscreen shader object.
     /// 'debugName' is assigned to the fullscreen pass as gpu debug group that

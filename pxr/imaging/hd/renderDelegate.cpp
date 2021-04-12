@@ -93,10 +93,19 @@ HdRenderDelegate::GetShaderSourceTypes() const
     return TfTokenVector();
 }
 
+// deprecated
 TfToken 
 HdRenderDelegate::GetMaterialNetworkSelector() const
 {
     return TfToken();
+}
+
+TfTokenVector
+HdRenderDelegate::GetMaterialRenderContexts() const
+{
+    // To support RenderDelegates that have not yet updated 
+    // GetMaterialNetworkSelector()
+    return {GetMaterialNetworkSelector()};
 }
 
 bool

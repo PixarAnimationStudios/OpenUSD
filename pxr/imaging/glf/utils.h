@@ -29,20 +29,11 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/api.h"
 #include "pxr/imaging/garch/glApi.h"
-#include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/hio/types.h"
 
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-/// Base image format
-///
-/// Returns the base image format for the given number of components
-///
-/// Supported number of components: 1, 2, 3, 4
-GLF_API 
-GLenum GlfGetBaseFormat(int numComponents);
 
 /// Number of elements.
 ///
@@ -53,12 +44,6 @@ GLenum GlfGetBaseFormat(int numComponents);
 GLF_API 
 int GlfGetNumElements(GLenum format);
 
-/// Number of elements.
-///
-/// Returns the number of elements (channels) in a given HioFormat.
-GLF_API 
-int GlfGetNumElements(HioFormat format);
-
 /// Byte size of a GL type.
 ///
 /// Returns the size in bytes of a given GL type.
@@ -67,31 +52,6 @@ int GlfGetNumElements(HioFormat format);
 /// GL_SHORT, GL_FLOAT, GL_DOUBLE
 GLF_API
 int GlfGetElementSize(GLenum type);
-
-/// Byte size of the element type of a given HioFormat.
-///
-/// Returns the size in bytes for an element in the given hioFormat. 
-GLF_API
-int GlfGetElementSize(HioFormat hioFormat);
-
-
-/// GL type.
-///
-/// Returns the GL type for a given HioFormat.
-GLF_API
-GLenum GlfGetGLType(HioFormat format);
-
-/// GL format.
-///
-/// Returns the GL format for a given HioFormat.
-GLF_API
-GLenum GlfGetGLFormat(HioFormat format);
-
-/// GL Internal Format.
-///
-/// Returns the GL Internal Format for a given HioFormat.
-GLF_API
-GLenum GlfGetGLInternalFormat(HioFormat format);
 
 /// HioFormat
 ///

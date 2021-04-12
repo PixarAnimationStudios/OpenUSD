@@ -113,8 +113,8 @@ private:
     std::vector<HdStDrawItemInstance> _drawItemInstances;
     HdSt_DrawBatchSharedPtrVector _drawBatches;
     size_t _visibleSize;
-    unsigned _visChangeCount;
-    unsigned _batchVersion;
+    unsigned int _visChangeCount;
+    unsigned int _drawBatchesVersion;
 };
 
 

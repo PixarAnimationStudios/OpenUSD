@@ -28,12 +28,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiVulkanShaderSection::HgiVulkanShaderSection(
     const std::string &identifier,
-    const HgiVulkanShaderSectionAttributeVector &attributes,
+    const HgiShaderSectionAttributeVector &attributes,
     const std::string &storageQualifier,
     const std::string &defaultValue)
-  : HgiShaderSection(identifier, std::string(), std::string(), defaultValue)
+  : HgiShaderSection(identifier, attributes, defaultValue)
   , _storageQualifier(storageQualifier)
-  , _attributes(attributes)
 {
 }
 
@@ -44,10 +43,12 @@ HgiVulkanShaderSection::WriteDeclaration(std::ostream &ss) const
 {
     //If it has attributes, write them with corresponding layout
     //identifiers and indicies
-    if(!_attributes.empty()) {
+    const HgiShaderSectionAttributeVector &attributes = GetAttributes();
+
+    if(!attributes.empty()) {
         ss << "layout(";
-        for (size_t i = 0; i < _attributes.size(); ++i) {
-            const HgiVulkanShaderSectionAttribute &a = _attributes[i];
+        for (size_t i = 0; i < attributes.size(); ++i) {
+            const HgiShaderSectionAttribute &a = attributes[i];
             if (i > 0) {
                 ss << ", ";
             }
@@ -126,7 +127,7 @@ HgiVulkanMacroShaderSection::VisitGlobalMacros(std::ostream &ss)
 HgiVulkanMemberShaderSection::HgiVulkanMemberShaderSection(
     const std::string &identifier,
     const std::string &typeName,
-    const HgiVulkanShaderSectionAttributeVector &attributes,
+    const HgiShaderSectionAttributeVector &attributes,
     const std::string &storageQualifier,
     const std::string &defaultValue)
   : HgiVulkanShaderSection(identifier,
@@ -180,7 +181,7 @@ HgiVulkanTextureShaderSection::HgiVulkanTextureShaderSection(
     const std::string &identifier,
     const unsigned int layoutIndex,
     const unsigned int dimensions,
-    const HgiVulkanShaderSectionAttributeVector &attributes,
+    const HgiShaderSectionAttributeVector &attributes,
     const std::string &defaultValue)
   : HgiVulkanShaderSection( identifier,
                             attributes,

@@ -351,12 +351,14 @@ void wrapTypes()
     TfPyWrapEnum<SdfSpecifier>();
     TfPyWrapEnum<SdfVariability>();
     TfPyWrapEnum<SdfSpecType>();
+    TfPyWrapEnum<SdfAuthoringError>();
 
     VtValueFromPython<SdfListOpType>();
     VtValueFromPython<SdfPermission>();
     VtValueFromPython<SdfSpecifier>();
     VtValueFromPython<SdfVariability>();
     VtValueFromPython<SdfSpecType>();
+    VtValueFromPython<SdfAuthoringError>();
 
     // Wrap all units enums.
     #define _WRAP_ENUM(r, unused, elem)                     \

@@ -861,24 +861,45 @@ HgiGLOps::ResolveFramebuffer(
 
         GfVec3i dim(0);
         GLbitfield mask = 0;
+        size_t numResolvesRequired = 0;
         if (!graphicsCmds.colorResolveTextures.empty()) {
             mask |= GL_COLOR_BUFFER_BIT;
             HgiTextureHandle const& tex = 
                 graphicsCmds.colorResolveTextures.front();
             dim = tex->GetDescriptor().dimensions;
+            numResolvesRequired = graphicsCmds.colorTextures.size();
         }
         if (graphicsCmds.depthResolveTexture) {
             mask |= GL_DEPTH_BUFFER_BIT;
             dim = graphicsCmds.depthResolveTexture->GetDescriptor().dimensions;
+            numResolvesRequired = std::max<size_t>(1, numResolvesRequired);
         }
 
+        // glBlitFramebuffer transfers the contents of the read buffer in the 
+        // read fbo to *all* the draw buffers in the draw fbo.
+        // In order to transfer to the contents of each color attachment to
+        // the corresponding resolved attachment, we need to manipulate the
+        // read and draw buffer accordingly.
+        // See https://www.khronos.org/opengl/wiki/Framebuffer#Blitting
         glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolvedFramebuffer);
         glEnable(GL_FRAMEBUFFER_SRGB);
-        glBlitFramebuffer(0, 0, dim[0], dim[1],
-                          0, 0, dim[0], dim[1],
-                          mask,
-                          GL_NEAREST);
+        GLint restoreReadBuffer;
+        glGetIntegerv(GL_READ_BUFFER, &restoreReadBuffer);
+        GLint restoreDrawBuffer;
+        glGetIntegerv(GL_DRAW_BUFFER, &restoreDrawBuffer);
+        
+        for (size_t i = 0; i < numResolvesRequired; i++) {
+            glReadBuffer(GL_COLOR_ATTACHMENT0 + i);
+            glDrawBuffer(GL_COLOR_ATTACHMENT0 + i);
+            glBlitFramebuffer(0, 0, dim[0], dim[1],
+                            0, 0, dim[0], dim[1],
+                            /* resolve depth buffer just the once */
+                            i == 0 ? mask : mask & ~GL_DEPTH_BUFFER_BIT,
+                            GL_NEAREST);
+        }
+        glReadBuffer(restoreReadBuffer);
+        glDrawBuffer(restoreDrawBuffer);
     };
 }
 

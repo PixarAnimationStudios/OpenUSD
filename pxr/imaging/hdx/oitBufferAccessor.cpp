@@ -171,8 +171,9 @@ HdxOitBufferAccessor::InitializeOitBuffersIfNecessary()
 
     // XXX todo add a Clear() fn on HdStBufferResource so that we do not have
     // to use direct gl calls. below.
-    HgiBufferHandle& buffer = stCounterResource->GetId();
-    HgiGLBuffer* glBuffer = dynamic_cast<HgiGLBuffer*>(buffer.Get());
+    HgiBufferHandle const & buffer = stCounterResource->GetHandle();
+    HgiGLBuffer const * glBuffer =
+        dynamic_cast<HgiGLBuffer const *>(buffer.Get());
     if (!glBuffer) {
         TF_CODING_ERROR("Todo: Add HdStBufferResource::Clear");
         return;

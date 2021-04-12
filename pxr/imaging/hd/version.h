@@ -44,7 +44,16 @@
 // 34 -> 35: HdRepr is using std::unique_ptr<HdDrawItem>
 // 35 -> 36: InsertRprim/InsertInstancer no longer take instancerId,
 //           HdSceneDelegate now has GetInstancerId
-#define HD_API_VERSION 36
+// 36 -> 37: Renamed HdRprim::_SetMaterialId to SetMaterialId. It no longer
+//           takes changeTracker.
+// 37 -> 38: Removed Bprim garbage collection API from HdChangeTracker and
+//           HdResourceRegistry.
+// 38 -> 39: Removed garbage collection API from HdChangeTracker and
+//           HdResourceRegistry.
+// 39 -> 40: Removed Bind and Unbind API from HdRenderPassState.
+// 40 -> 41: Renamed HdDelegate::GetMaterialNeworkselector() to 
+//           GetMaterialRenderContexts(). It now returns a TfTokenVector.
+#define HD_API_VERSION 41
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

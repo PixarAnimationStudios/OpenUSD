@@ -420,6 +420,10 @@ std::vector<std::string> TfStringSplit(std::string const &src,
 /// The string \p source is broken apart into individual words, where a word
 /// is delimited by the characters in \p delimiters.  Delimiters default to
 /// white space (space, tab, and newline).
+///
+/// No empty strings are returned: delimiters at the start or end are ignored,
+/// consecutive delimiters are treated as though they were one, and an empty
+/// input will result in an empty return vector.
 TF_API
 std::vector<std::string> TfStringTokenize(const std::string& source,
                                           const char* delimiters = " \t\n");

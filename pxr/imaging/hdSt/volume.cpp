@@ -27,15 +27,15 @@
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/field.h"
+#include "pxr/imaging/hdSt/materialParam.h"
+#include "pxr/imaging/hdSt/primUtils.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hdSt/rprimUtils.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
+#include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/volumeShader.h"
 #include "pxr/imaging/hdSt/volumeShaderKey.h"
-#include "pxr/imaging/hdSt/textureBinder.h"
-#include "pxr/imaging/hdSt/materialParam.h"
-#include "pxr/imaging/hdSt/resourceBinder.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -125,16 +125,12 @@ HdStVolume::Sync(HdSceneDelegate *delegate,
                  HdDirtyBits     *dirtyBits,
                  TfToken const   &reprToken)
 {
-    TF_UNUSED(renderParam);
-
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
-        _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(),
-                       delegate->GetMaterialId(GetId()));
-
-        _sharedData.materialTag = _GetMaterialTag(delegate->GetRenderIndex());
+        HdStSetMaterialId(delegate, renderParam, this);
+        SetMaterialTag(HdStMaterialTagTokens->volume);
     }
 
-    _UpdateRepr(delegate, reprToken, dirtyBits);
+    _UpdateRepr(delegate, renderParam, reprToken, dirtyBits);
 
     // This clears all the non-custom dirty bits. This ensures that the rprim
     // doesn't have pending dirty bits that add it to the dirty list every
@@ -144,14 +140,15 @@ HdStVolume::Sync(HdSceneDelegate *delegate,
     *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
 
-const TfToken&
-HdStVolume::_GetMaterialTag(const HdRenderIndex &renderIndex) const
+void
+HdStVolume::Finalize(HdRenderParam *renderParam)
 {
-    return HdStMaterialTagTokens->volume;
+    HdStMarkGarbageCollectionNeeded(renderParam);
 }
 
 void
 HdStVolume::_UpdateRepr(HdSceneDelegate *sceneDelegate,
+                        HdRenderParam *renderParam,
                         TfToken const &reprToken,
                         HdDirtyBits *dirtyBits)
 {
@@ -168,7 +165,7 @@ HdStVolume::_UpdateRepr(HdSceneDelegate *sceneDelegate,
         curRepr->GetDrawItem(0));
 
     if (HdChangeTracker::IsDirty(*dirtyBits)) {
-        _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits);
+        _UpdateDrawItem(sceneDelegate, renderParam, drawItem, dirtyBits);
     }
 
     *dirtyBits &= ~HdChangeTracker::NewRepr;
@@ -492,6 +489,7 @@ _GetCubeTriangleIndices()
 
 void
 HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
+                            HdRenderParam *renderParam,
                             HdStDrawItem *drawItem,
                             HdDirtyBits *dirtyBits)
 {
@@ -506,8 +504,13 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         const HdPrimvarDescriptorVector constantPrimvars =
             HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
                                       HdInterpolationConstant);
-        HdStPopulateConstantPrimvars(this, &_sharedData, sceneDelegate,
-                                     drawItem, dirtyBits, constantPrimvars);
+        HdStPopulateConstantPrimvars(this,
+                                     &_sharedData,
+                                     sceneDelegate,
+                                     renderParam,
+                                     drawItem,
+                                     dirtyBits,
+                                     constantPrimvars);
     }
         
     if ((*dirtyBits) & HdChangeTracker::DirtyMaterialId) {

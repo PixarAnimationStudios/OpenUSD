@@ -173,8 +173,12 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
 
     // Resolve material binding.  Default to fallbackGprimMaterial.
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
+#if HD_API_VERSION < 37
         BASE::_SetMaterialId(sceneDelegate->GetRenderIndex().GetChangeTracker(),
                              sceneDelegate->GetMaterialId(id));
+#else
+        BASE::SetMaterialId(sceneDelegate->GetMaterialId(id));
+#endif
     }
     riley::MaterialId materialId = _GetFallbackMaterial(context);
     riley::DisplacementId dispId = riley::DisplacementId::k_InvalidId;

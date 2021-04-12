@@ -90,7 +90,7 @@ transformPoint(MAT4 m, vec3 point)
 vec3
 transformDir(MAT4 m, vec3 dir)
 {
-    const vec4 result = m * vec4(dir, 0.0);
+    const vec4 result = vec4(m * vec4(dir, 0.0));
     return result.xyz;
 }
 
@@ -371,7 +371,7 @@ float
 NDCtoEyeZ(float z)
 {
     const MAT4 m = inverse(GetProjectionMatrix());
-    return (m[2][2] * z + m[3][2]) / (m[2][3] * z + m[3][3]);
+    return float((m[2][2] * z + m[3][2]) / (m[2][3] * z + m[3][3]));
 }
 
 // Compute the z-value of the near clipping plane in eye space.
@@ -401,7 +401,7 @@ computeRayDirectionEye(vec3 rayPointEye)
     // get to homogeneous eye space.
     // Or alternatively, we can get the direction in homogeneous eye space
     // by taking the respective column of the inverse projection matrix:
-    const vec4 dir = inverse(GetProjectionMatrix())[2];
+    const vec4 dir = vec4(inverse(GetProjectionMatrix())[2]);
 
     // To compute the corresponding direction in non-homogeneous eye space,
     // compute the position of the ray after time dt << 1:

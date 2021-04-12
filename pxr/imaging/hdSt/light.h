@@ -37,7 +37,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdStLight
 ///
-/// A light model, used in conjunction with HdRenderPass.
+/// A light model for use in Storm.
+/// Note: This class simply stores the light parameters and relies on an
+/// external task (HdxSimpleLightTask) to upload them to the GPU.
 ///
 class HdStLight final : public HdLight {
 public:
@@ -51,6 +53,12 @@ public:
     void Sync(HdSceneDelegate *sceneDelegate,
               HdRenderParam   *renderParam,
               HdDirtyBits     *dirtyBits) override;
+    
+    /// Finalizes object resources. This function might not delete resources,
+    /// but it should deal with resource ownership so that the sprim is
+    /// deletable.
+    HDST_API
+    void Finalize(HdRenderParam *renderParam) override;
     
     /// Accessor for tasks to get the parameters cached in this object.
     HDST_API

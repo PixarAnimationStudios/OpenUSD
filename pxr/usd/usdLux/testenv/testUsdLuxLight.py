@@ -78,6 +78,7 @@ class TestUsdLuxLight(unittest.TestCase):
         stage = Usd.Stage.CreateInMemory()
         light = UsdLux.RectLight.Define(stage, '/RectLight')
         self.assertTrue(light)
+        self.assertTrue(light.ConnectableAPI())
 
         # Rect light has the following built-in inputs attributes.
         inputNames = ['color', 
@@ -91,8 +92,10 @@ class TestUsdLuxLight(unittest.TestCase):
                       'specular', 
                       'texture:file', 
                       'width']
-        # GetInputs returns the inputs for all the built-ins.
-        self.assertEqual(light.GetInputs(), 
+        # GetInputs returns only authored inputs by default
+        self.assertEqual(light.GetInputs(), [])
+        # GetInputs(false) returns the inputs for all the built-ins.
+        self.assertEqual(light.GetInputs(onlyAuthored=False), 
                          [light.GetInput(name) for name in inputNames])
         # Verify each input's attribute is prefixed.
         for name in inputNames:
@@ -108,17 +111,27 @@ class TestUsdLuxLight(unittest.TestCase):
         # attribute is created.
         lightInput = light.CreateInput('newInput', Sdf.ValueTypeNames.Float)
         self.assertIn(lightInput, light.GetInputs())
+        # By default GetInputs() returns onlyAuthored inputs, of which
+        # there is now 1.
+        self.assertEqual(len(light.GetInputs()), 1)
+        # Passing onlyAuthored=False will return the authored input
+        # in addition to the builtins.
+        self.assertEqual(len(light.GetInputs(onlyAuthored=False)),
+            len(inputNames)+1)
         self.assertEqual(light.GetInput('newInput'), lightInput)
         self.assertEqual(lightInput.GetAttr(), 
                          light.GetPrim().GetAttribute("inputs:newInput"))
 
-        # Rect light has no built-in outputs.
+        # Rect light has no authored outputs.
         self.assertEqual(light.GetOutputs(), [])
+        # Rect light has no built-in outputs, either.
+        self.assertEqual(light.GetOutputs(onlyAuthored=False), [])
 
         # Create a new output, and verify that the output interface conforming
         # attribute is created.
         lightOutput = light.CreateOutput('newOutput', Sdf.ValueTypeNames.Float)
         self.assertEqual(light.GetOutputs(), [lightOutput])
+        self.assertEqual(light.GetOutputs(onlyAuthored=False), [lightOutput])
         self.assertEqual(light.GetOutput('newOutput'), lightOutput)
         self.assertEqual(lightOutput.GetAttr(), 
                          light.GetPrim().GetAttribute("outputs:newOutput"))
@@ -126,6 +139,7 @@ class TestUsdLuxLight(unittest.TestCase):
         # Do the same with a light filter
         lightFilter = UsdLux.LightFilter.Define(stage, '/LightFilter')
         self.assertTrue(lightFilter)
+        self.assertTrue(lightFilter.ConnectableAPI())
 
         # Light filter has no built-in inputs.
         self.assertEqual(lightFilter.GetInputs(), [])
@@ -141,12 +155,15 @@ class TestUsdLuxLight(unittest.TestCase):
 
         # Light filter has no built-in outputs.
         self.assertEqual(lightFilter.GetOutputs(), [])
+        self.assertEqual(lightFilter.GetOutputs(onlyAuthored=False), [])
 
         # Create a new output, and verify that the output interface conforming
         # attribute is created.
         filterOutput = lightFilter.CreateOutput('newOutput', 
                                                 Sdf.ValueTypeNames.Float)
         self.assertEqual(lightFilter.GetOutputs(), [filterOutput])
+        self.assertEqual(lightFilter.GetOutputs(onlyAuthored=False),
+            [filterOutput])
         self.assertEqual(lightFilter.GetOutput('newOutput'), filterOutput)
         self.assertEqual(filterOutput.GetAttr(), 
                          lightFilter.GetPrim().GetAttribute("outputs:newOutput"))
@@ -171,8 +188,8 @@ class TestUsdLuxLight(unittest.TestCase):
         self.assertFalse(lightOutput.CanConnect(filterGraphOutput))
 
         # From the custom behavior, light inputs can only be connected to 
-        # sources from the light or its descendant (encapsultated) prims.
-        self.assertTrue(lightInput.CanConnect(lightOutput))
+        # sources from immediate descendants (encapsultated) prims of the light.
+        self.assertFalse(lightInput.CanConnect(lightOutput))
         self.assertTrue(lightInput.CanConnect(lightGraphOutput))
         self.assertFalse(lightInput.CanConnect(filterGraphOutput))
 
@@ -181,10 +198,62 @@ class TestUsdLuxLight(unittest.TestCase):
         self.assertFalse(filterOutput.CanConnect(filterGraphOutput))
 
         # From the custom behavior, light filter inputs can only be connected to 
-        # sources from the light filter or its descendant (encapsultated) prims.
-        self.assertTrue(filterInput.CanConnect(filterOutput))
+        # sources from immediate descendants (encapsultated) prims of the light 
+        # filter.
+        self.assertFalse(filterInput.CanConnect(filterOutput))
         self.assertTrue(filterInput.CanConnect(filterGraphOutput))
         self.assertFalse(filterInput.CanConnect(lightGraphOutput))
+
+        # The shaping API can add more connectable attributes to the light 
+        # and implements the same connectable interface functions. We test 
+        # those here.
+        shapingAPI = UsdLux.ShapingAPI.Apply(light.GetPrim())
+        self.assertTrue(shapingAPI)
+        self.assertTrue(shapingAPI.ConnectableAPI())
+        # Verify input attributes match the getter API attributes.
+        self.assertEqual(shapingAPI.GetInput('shaping:cone:angle').GetAttr(), 
+                         shapingAPI.GetShapingConeAngleAttr())
+        self.assertEqual(shapingAPI.GetInput('shaping:focus').GetAttr(), 
+                         shapingAPI.GetShapingFocusAttr())
+        # These inputs have the same connectable behaviors as all light inputs,
+        # i.e. they can only be connected to sources from immediate 
+        # descendant (encapsultated) prims of the light.
+        shapingInput = shapingAPI.GetInput('shaping:focus')
+        self.assertFalse(shapingInput.CanConnect(lightOutput))
+        self.assertTrue(shapingInput.CanConnect(lightGraphOutput))
+        self.assertFalse(shapingInput.CanConnect(filterGraphOutput))
+
+        # The shadow API can add more connectable attributes to the light 
+        # and implements the same connectable interface functions. We test 
+        # those here.
+        shadowAPI = UsdLux.ShadowAPI.Apply(light.GetPrim())
+        self.assertTrue(shadowAPI)
+        self.assertTrue(shadowAPI.ConnectableAPI())
+        # Verify input attributes match the getter API attributes.
+        self.assertEqual(shadowAPI.GetInput('shadow:color').GetAttr(), 
+                         shadowAPI.GetShadowColorAttr())
+        self.assertEqual(shadowAPI.GetInput('shadow:distance').GetAttr(), 
+                         shadowAPI.GetShadowDistanceAttr())
+        # These inputs have the same connectable behaviors as all light inputs,
+        # i.e. they can only be connected to sources from immediate 
+        # descendant (encapsultated) prims of the light.
+        shadowInput = shadowAPI.GetInput('shadow:color')
+        self.assertFalse(shadowInput.CanConnect(lightOutput))
+        self.assertTrue(shadowInput.CanConnect(lightGraphOutput))
+        self.assertFalse(shadowInput.CanConnect(filterGraphOutput))
+
+        # Even though the shadow and shaping API schemas provide connectable
+        # attributes and an interface for the ConnectableAPI, the typed schema
+        # of the prim is still what provides its connectable behavior. Here
+        # we verify that applying these APIs to a prim whose type is not 
+        # connectable does NOT cause the prim to conform to the Connectable API.
+        nonConnectablePrim = stage.DefinePrim("/Sphere", "Sphere")
+        shadowAPI = UsdLux.ShadowAPI.Apply(nonConnectablePrim)
+        self.assertTrue(shadowAPI)
+        self.assertFalse(shadowAPI.ConnectableAPI())
+        shapingAPI = UsdLux.ShapingAPI.Apply(nonConnectablePrim)
+        self.assertTrue(shapingAPI)
+        self.assertFalse(shapingAPI.ConnectableAPI())
 
     def test_DomeLight_OrientToStageUpAxis(self):
         from pxr import UsdGeom
@@ -220,10 +289,11 @@ class TestUsdLuxLight(unittest.TestCase):
     def test_SdrShaderNodesForLights(self):
         """
         Test the automatic registration of SdrShaderNodes for all the UsdLux
-        light types.
+        light and light filter types.
         """
         # Get all the derived types of UsdLuxLight
         lightTypes = Tf.Type(UsdLux.Light).GetAllDerivedTypes()
+        lightFilterTypes = Tf.Type(UsdLux.LightFilter).GetAllDerivedTypes()
         self.assertTrue(lightTypes)
         # Verify that at least one known light type is in our list to guard
         # against this giving false positives if no light types are available.
@@ -232,18 +302,21 @@ class TestUsdLuxLight(unittest.TestCase):
         stage = Usd.Stage.CreateInMemory()
         prim = stage.DefinePrim("/Prim")
 
-        for lightType in lightTypes:
-            # Every concrete light type will have an SdrShaderNode with source
-            # type 'USD' registered for it under its USD schema type name.
-            typeName = Usd.SchemaRegistry.GetConcreteSchemaTypeName(lightType)
+        for lightOrFilterType in (lightTypes + lightFilterTypes):
+            print("Test SdrNode for schema type " + str(lightOrFilterType))
+
+            # Every concrete light and light filter type will have an 
+            # SdrShaderNode with source type 'USD' registered for it under its 
+            # USD schema type name.
+            typeName = Usd.SchemaRegistry.GetConcreteSchemaTypeName(lightOrFilterType)
             node = Sdr.Registry().GetNodeByName(typeName, ['USD'])
-            self.assertTrue(node.IsValid())
+            self.assertTrue(node is not None)
 
             # Set the prim to the light type so we can cross check node inputs
             # with the light prim built-in properties.
             prim.SetTypeName(typeName)
-            light = UsdLux.Light(prim)
-            self.assertTrue(light)
+            lightOrFilter = UsdLux.Light(prim) or UsdLux.LightFilter(prim)
+            self.assertTrue(lightOrFilter)
 
             # Names, identifier, and role for the node all match the USD schema
             # type name
@@ -253,8 +326,12 @@ class TestUsdLuxLight(unittest.TestCase):
             self.assertEqual(node.GetRole(), typeName)
             self.assertTrue(node.GetInfoString().startswith(typeName))
 
-            # The context is always 'light'. Source type is 'USD'
-            self.assertEqual(node.GetContext(), 'light')
+            # The context is always 'light' for lights or 'lightFilter' for 
+            # light filters. Source type is 'USD'
+            if prim.IsA(UsdLux.Light):
+                self.assertEqual(node.GetContext(), 'light')
+            else:
+                self.assertEqual(node.GetContext(), 'lightFilter')
             self.assertEqual(node.GetSourceType(), 'USD')
 
             # Help string is generated and encoded in the node's metadata (no
@@ -274,20 +351,36 @@ class TestUsdLuxLight(unittest.TestCase):
             self.assertFalse(node.GetLabel())
             self.assertFalse(node.GetVersion())
             self.assertFalse(node.GetAllVstructNames())
+
+            # If schema type has no input or output properties, the node is 
+            # created and registered, but isn't considered valid.
+            if not (lightOrFilter.GetInputs(onlyAuthored=False) or 
+                    lightOrFilter.GetOutputs(onlyAuthored=False)):
+                print("  Prim type " + str(lightOrFilterType) + " has no properties")
+                self.assertFalse(node.IsValid())
+                continue
+
+            self.assertTrue(node.IsValid())
             self.assertEqual(node.GetPages(), [''])
 
             # Helper for comparing an SdrShaderProperty from node to the 
             # corresponding UsdShadeInput/UsdShadeOutput from a UsdLuxLight
-            def _CompareLightPropToNodeProp(nodeInput, lightInput):
+            def _CompareLightPropToNodeProp(nodeInput, primInput):
                 # Input names and default values match.
-                self.assertEqual(nodeInput.GetName(), lightInput.GetBaseName())
-                self.assertEqual(nodeInput.GetDefaultValue(),
-                                 lightInput.GetAttr().Get())
+                primDefaultValue = primInput.GetAttr().Get()
+                self.assertEqual(nodeInput.GetName(), primInput.GetBaseName())
+                self.assertEqual(nodeInput.GetDefaultValue(), primDefaultValue)
 
                 # Some USD property types don't match exactly one to one and are
                 # converted to different types. In particular relevance to 
                 # lights, Bool becomes Int and Token becomes String.
-                expectedTypeName = lightInput.GetTypeName()
+                expectedTypeName = primInput.GetTypeName()
+                # Array valued attributes have their array size determined from
+                # the default value and will be converted to scalar in the 
+                # SdrProperty if the array size is zero.
+                if expectedTypeName.isArray:
+                    if not primDefaultValue or len(primDefaultValue) == 0:
+                        expectedTypeName = expectedTypeName.scalarType
                 if expectedTypeName == Sdf.ValueTypeNames.Bool:
                     expectedTypeName = Sdf.ValueTypeNames.Int 
                 elif expectedTypeName == Sdf.ValueTypeNames.Token:
@@ -296,53 +389,58 @@ class TestUsdLuxLight(unittest.TestCase):
                 # (with the noted above exceptions).
                 self.assertEqual(
                     nodeInput.GetTypeAsSdfType()[0], expectedTypeName,
-                    msg="Type {} != {}".format(
+                    msg="{}.{} Type {} != {}".format(
+                        str(node.GetName()),
+                        str(nodeInput.GetName()),
                         str(nodeInput.GetTypeAsSdfType()[0]),
                         str(expectedTypeName)))
                 # If the USD property type is an Asset, it will be listed in 
-                # the node's asset indentifier inputs.
+                # the node's asset identifier inputs.
                 if expectedTypeName == Sdf.ValueTypeNames.Asset:
                     self.assertIn(nodeInput.GetName(), 
                                   node.GetAssetIdentifierInputNames())
 
             # There will be a one to one correspondence between node inputs
-            # and light prim inputs.
+            # and prim inputs.
             nodeInputs = [node.GetInput(i) for i in node.GetInputNames()]
-            lightInputs = light.GetInputs()
-            for nodeInput, lightInput in zip(nodeInputs, lightInputs):
+            primInputs = lightOrFilter.GetInputs(onlyAuthored=False)
+            self.assertEqual(len(nodeInputs), len(primInputs))
+            for nodeInput, primInput in zip(nodeInputs, primInputs):
                 self.assertFalse(nodeInput.IsOutput())
-                _CompareLightPropToNodeProp(nodeInput, lightInput)
+                _CompareLightPropToNodeProp(nodeInput, primInput)
 
             # There will also be a one to one correspondence between node 
-            # outputs and light prim outputs.
+            # outputs and prim outputs.
             nodeOutputs = [node.GetOutput(i) for i in node.GetOutputNames()]
-            lightOutputs = light.GetOutputs()
-            for nodeOutput, lightOutput in zip(nodeOutputs, lightOutputs):
+            primOutputs = lightOrFilter.GetOutputs(onlyAuthored=False)
+            self.assertEqual(len(nodeOutputs), len(primOutputs))
+            for nodeOutput, primOutput in zip(nodeOutputs, primOutputs):
                 self.assertTrue(nodeOutput.IsOutput())
-                _CompareLightPropToNodeProp(nodeOutput, lightOutput)
+                _CompareLightPropToNodeProp(nodeOutput, primOutput)
 
             # The reverse is tested just above, but for all asset identifier
             # inputs listed for the node there is a corresponding asset value
-            # input property on the light prim.
+            # input property on the prim.
             for inputName in node.GetAssetIdentifierInputNames():
-                self.assertEqual(light.GetInput(inputName).GetTypeName(),
+                self.assertEqual(lightOrFilter.GetInput(inputName).GetTypeName(),
                                  Sdf.ValueTypeNames.Asset)
 
             # These primvars come from sdrMetadata on the prim itself which
-            # isn't supported for light schemas so it will alwasy be empty.
+            # isn't supported for light and light filter schemas so it will 
+            # always be empty.
             self.assertFalse(node.GetPrimvars())
             # sdrMetadata on input properties is supported so additional 
-            # primvar properties will correspond to light inputs with that 
+            # primvar properties will correspond to prim inputs with that 
             # metadata set.
             for propName in node.GetAdditionalPrimvarProperties():
-                self.assertTrue(light.GetInput(propName).GetSdrMetadataByKey(
+                self.assertTrue(lightOrFilter.GetInput(propName).GetSdrMetadataByKey(
                     'primvarProperty'))
 
             # Default input can also be specified in the property's sdrMetadata.
             if node.GetDefaultInput():
-                defaultLightInput = light.GetInput(
+                defaultInput = lightOrFilter.GetInput(
                     node.GetDefaultInput().GetName())
-                self.assertTrue(lightInput.GetSdrMetadataByKey('defaultInput'))
+                self.assertTrue(defaultInput.GetSdrMetadataByKey('defaultInput'))
 
 
 if __name__ == '__main__':

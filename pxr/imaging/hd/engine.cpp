@@ -93,6 +93,8 @@ HdEngine::ClearTaskContextData()
 void
 HdEngine::Execute(HdRenderIndex *index, HdTaskSharedPtrVector *tasks)
 {
+    TRACE_FUNCTION();
+
     if ((index == nullptr) || (tasks == nullptr)) {
         TF_CODING_ERROR("Passed nullptr to HdEngine::Execute()");
         return;

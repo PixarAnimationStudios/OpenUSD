@@ -188,6 +188,14 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
     *dirtyBits = Clean;
 }
 
+/* virtual */
+void
+HdStLight::Finalize(HdRenderParam *renderParam)
+{
+    // HdStLight doesn't own resources directly, so we don't need to
+    // flag garbage collection.
+}
+
 VtValue
 HdStLight::Get(TfToken const &token) const
 {

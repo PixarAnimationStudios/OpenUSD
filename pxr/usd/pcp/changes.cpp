@@ -137,6 +137,11 @@ static
 Pcp_ChangesLayerStackChange
 Pcp_EntryRequiresLayerStackChange(const SdfChangeList::Entry& entry)
 {
+    // If a layer's content was entirely replaced, we must blow layer stacks.
+    if (entry.flags.didReplaceContent) {
+        return Pcp_ChangesLayerStackChangeSignificant;
+    }
+    
     // XXX: This only requires blowing the layer stacks using this
     //      identifier that haven't also been updated to use the new
     //      identifier.

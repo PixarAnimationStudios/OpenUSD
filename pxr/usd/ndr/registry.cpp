@@ -23,8 +23,8 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/pathUtils.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/loops.h"
@@ -114,36 +114,6 @@ template <> struct _NdrObjectAccess<NdrNodeUniquePtr> {
     static const TfToken& GetFamily(const Type& x) { return x->GetFamily(); }
     static NdrVersion GetVersion(const Type& x) { return x->GetVersion(); }
 };
-
-template <typename T>
-static
-bool
-_MatchesNameAndFilter(
-    const T& object,
-    const std::string& name,
-    NdrVersionFilter filter)
-{
-    using Access = _NdrObjectAccess<T>;
-
-    // Check the name.
-    if (name != Access::GetName(object)) {
-        return false;
-    }
-
-    // Check the filter.
-    switch (filter) {
-    case NdrVersionFilterDefaultOnly:
-        if (!Access::GetVersion(object).IsDefault()) {
-            return false;
-        }
-        break;
-
-    default:
-        break;
-    }
-
-    return true;
-}
 
 template <typename T>
 static
@@ -315,12 +285,6 @@ NdrRegistry::~NdrRegistry()
     // nothing yet
 }
 
-NdrRegistry&
-NdrRegistry::GetInstance()
-{
-    return TfSingleton<NdrRegistry>::GetInstance();
-}
-
 void
 NdrRegistry::SetExtraDiscoveryPlugins(DiscoveryPluginRefPtrVec plugins)
 {
@@ -457,7 +421,7 @@ NdrRegistry::GetNodeFromAsset(const SdfAssetPath &asset,
 
     NdrNodeDiscoveryResult dr(identifier,
                               NdrVersion(), /* use an invalid version */
-                              /* name */ identifier, 
+                              /* name */ TfGetBaseName(resolvedUri),
                               /*family*/ TfToken(), 
                               discoveryType, 
                               /* sourceType */ thisSourceType,
@@ -478,6 +442,8 @@ NdrRegistry::GetNodeFromAsset(const SdfAssetPath &asset,
     // in the Get*() methods
     {
         std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+        _discoveryResultIndicesBySourceType[dr.sourceType].push_back(
+            _discoveryResults.size());
         _discoveryResults.emplace_back(std::move(dr));
     }
 
@@ -555,6 +521,8 @@ NdrRegistry::GetNodeFromSourceCode(const std::string &sourceCode,
     // in the Get*() methods
     {
         std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+        _discoveryResultIndicesBySourceType[dr.sourceType].push_back(
+            _discoveryResults.size());
         _discoveryResults.emplace_back(std::move(dr));
     }
 
@@ -638,80 +606,199 @@ NdrRegistry::GetNodeNames(const TfToken& family) const
 
 NdrNodeConstPtr
 NdrRegistry::GetNodeByIdentifier(
-    const NdrIdentifier& identifier, const NdrTokenVec& typePriority)
+    const NdrIdentifier& identifier, const NdrTokenVec& sourceTypePriority)
 {
-    return _GetNodeByTypePriority(GetNodesByIdentifier(identifier),
-                                  typePriority);
-}
+    TRACE_FUNCTION();
+    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
 
-NdrNodeConstPtr
-NdrRegistry::GetNodeByIdentifierAndType(
-    const NdrIdentifier& identifier, const TfToken& nodeType)
-{
-    return NdrRegistry::GetNodeByIdentifier(identifier,NdrTokenVec({nodeType}));
-}
-
-NdrNodeConstPtr
-NdrRegistry::GetNodeByName(
-    const std::string& name,
-    const NdrTokenVec& typePriority,
-    NdrVersionFilter filter)
-{
-    return _GetNodeByTypePriority(GetNodesByName(name, filter), typePriority);
-}
-
-NdrNodeConstPtr
-NdrRegistry::GetNodeByNameAndType(
-    const std::string& name, const TfToken& nodeType, NdrVersionFilter filter)
-{
-    return NdrRegistry::GetNodeByName(name, NdrTokenVec({nodeType}), filter);
-}
-
-NdrNodeConstPtr
-NdrRegistry::_GetNodeByTypePriority(
-    const NdrNodeConstPtrVec& nodes,
-    const NdrTokenVec& typePriority)
-{
     // If the type priority specifier is empty, pick the first node that matches
-    // the name
-    if (typePriority.empty() && !nodes.empty()) {
-        return nodes.front();
-    }
-
-    // Although this is a doubly-nested loop, the number of types in the
-    // priority list should be small as should the number of nodes.
-    for (const TfToken& nodeType : typePriority) {
-        for (const NdrNodeConstPtr& node : nodes) {
-            if (node->GetSourceType() == nodeType) {
+    // the identifier regardless of source type.
+    if (sourceTypePriority.empty()) {
+        // We check for any node that matches the identifier first. If no 
+        // matching node is found we'll try to find a node with an alias 
+        // matching the identifier.
+        for (const NdrNodeDiscoveryResult& dr : _discoveryResults) {
+            if (NdrNodeConstPtr node = 
+                    _ParseNodeMatchingIdentifier(dr, identifier)) {
                 return node;
             }
+        }
+
+        for (const NdrNodeDiscoveryResult& dr : _discoveryResults) {
+            if (NdrNodeConstPtr node = 
+                    _ParseNodeMatchingAlias(dr, identifier)) {
+                return node;
+            }
+        }
+    }
+
+    // Otherwise we attempt to get a node for matching the identifier (possibly
+    // through an alias) for each source type in priority order.
+    for (const TfToken& sourceType : sourceTypePriority) {
+        if (NdrNodeConstPtr node = 
+                _GetNodeByIdentifierAndTypeImpl(identifier, sourceType)) {
+            return node;
         }
     }
 
     return nullptr;
 }
 
+NdrNodeConstPtr
+NdrRegistry::GetNodeByIdentifierAndType(
+    const NdrIdentifier& identifier, const TfToken& sourceType)
+{
+    TRACE_FUNCTION();
+    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+
+    return _GetNodeByIdentifierAndTypeImpl(identifier, sourceType);
+}
+
+NdrNodeConstPtr
+NdrRegistry::_GetNodeByIdentifierAndTypeImpl(
+    const NdrIdentifier& identifier, const TfToken& sourceType)
+{
+    // Note that this impl function doesn't lock the discovery result mutex as
+    // it expects the caller to have appropriately locked it.
+
+    const auto it = _discoveryResultIndicesBySourceType.find(sourceType);
+    if (it == _discoveryResultIndicesBySourceType.end()) {
+        return nullptr;
+    }
+
+    const std::vector<size_t> &indices = it->second;
+
+    // We check for any node that matches the identifier first. If no 
+    // matching node is found we'll try to find a node with an alias 
+    // matching the identifier.
+    for (size_t index : indices) {
+        const NdrNodeDiscoveryResult &dr = _discoveryResults[index];
+        if (NdrNodeConstPtr node = _ParseNodeMatchingIdentifier(dr, identifier)) {
+            return node;
+        }
+    }
+    for (size_t index : indices) {
+        const NdrNodeDiscoveryResult &dr = _discoveryResults[index];
+        if (NdrNodeConstPtr node = _ParseNodeMatchingAlias(dr, identifier)) {
+            return node;
+        }
+    }
+
+    return nullptr;
+}
+
+NdrNodeConstPtr
+NdrRegistry::GetNodeByName(
+    const std::string& name,
+    const NdrTokenVec& sourceTypePriority,
+    NdrVersionFilter filter)
+{
+    TRACE_FUNCTION();
+    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+
+    // If the type priority specifier is empty, pick the first node that matches
+    // the name
+    if (sourceTypePriority.empty()) {
+        for (const NdrNodeDiscoveryResult& dr : _discoveryResults) {
+            if (NdrNodeConstPtr node = 
+                    _ParseNodeMatchingNameAndFilter(dr, name, filter)) {
+                return node;
+            }
+        }
+    }
+
+    // Although this is a doubly-nested loop, the number of types in the
+    // priority list should be small as should the number of nodes.
+    for (const TfToken& sourceType : sourceTypePriority) {
+        if (NdrNodeConstPtr node = 
+                _GetNodeByNameAndTypeImpl(name, sourceType, filter)) {
+            return node;
+        }
+    }
+
+    return nullptr;
+}
+
+NdrNodeConstPtr
+NdrRegistry::GetNodeByNameAndType(
+    const std::string& name, const TfToken& sourceType, NdrVersionFilter filter)
+{
+    TRACE_FUNCTION();
+    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+
+    return _GetNodeByNameAndTypeImpl(name, sourceType, filter);
+}
+
+NdrNodeConstPtr 
+NdrRegistry::_GetNodeByNameAndTypeImpl(
+    const std::string& name, const TfToken& sourceType,
+    NdrVersionFilter filter)
+{
+    // Note that this impl function doesn't lock the discovery result mutex as
+    // it expects the caller to have appropriately locked it.
+
+    const auto it = _discoveryResultIndicesBySourceType.find(sourceType);
+    if (it == _discoveryResultIndicesBySourceType.end()) {
+        return nullptr;
+    }
+
+    const std::vector<size_t> &indices = it->second;
+
+    for (size_t index : indices) {
+        const NdrNodeDiscoveryResult &dr = _discoveryResults[index];
+        if (NdrNodeConstPtr node = 
+                _ParseNodeMatchingNameAndFilter(dr, name, filter)) {
+            return node;
+        }
+    }
+    return nullptr;
+
+}
 
 NdrNodeConstPtrVec
 NdrRegistry::GetNodesByIdentifier(const NdrIdentifier& identifier)
 {
-    return _ParseNodesMatchingPredicate(
-        [&identifier](const NdrNodeDiscoveryResult& dr) {
-            return dr.identifier == identifier;
-        },
-        false // onlyParseFirstMatch
-    );
+    TRACE_FUNCTION();
+    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+    NdrNodeConstPtrVec parsedNodes;
+
+    for (const NdrNodeDiscoveryResult& dr : _discoveryResults) {
+        if (NdrNodeConstPtr node = 
+                _ParseNodeMatchingIdentifier(dr, identifier)) {
+            parsedNodes.push_back(node);
+        }
+    }
+
+    for (const NdrNodeDiscoveryResult& dr : _discoveryResults) {
+        if (NdrNodeConstPtr node = _ParseNodeMatchingAlias(dr, identifier)) {
+            // In the extremely unlikely case that a node is supplied with an
+            // alias that is the same as its identifier, we just make sure it
+            // doesn't show up in the list twice as it will have already been
+            // added by the above loop.
+            if (ARCH_LIKELY(dr.identifier != identifier)) {
+                parsedNodes.push_back(node);
+            }
+        }
+    }
+
+    return parsedNodes;
 }
 
 NdrNodeConstPtrVec
 NdrRegistry::GetNodesByName(const std::string& name, NdrVersionFilter filter)
 {
-    return _ParseNodesMatchingPredicate(
-        [&name, filter](const NdrNodeDiscoveryResult& dr) {
-            return _MatchesNameAndFilter(dr, name, filter);
-        },
-        false // onlyParseFirstMatch
-    );
+    TRACE_FUNCTION();
+    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+    NdrNodeConstPtrVec parsedNodes;
+
+    for (const NdrNodeDiscoveryResult& dr : _discoveryResults) {
+        if (NdrNodeConstPtr node = _ParseNodeMatchingNameAndFilter(
+                dr, name, filter)) {
+            parsedNodes.push_back(node);
+        }
+    }
+
+    return parsedNodes;
 }
 
 NdrNodeConstPtrVec
@@ -766,34 +853,50 @@ NdrRegistry::GetAllNodeSourceTypes() const
     // to read from it when _RunDiscoveryPlugins could potentially be running
     // and modifying _availableSourceTypes
     std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
-    return _availableSourceTypes;
+    NdrTokenVec availableSourceTypes;
+    availableSourceTypes.reserve(_discoveryResultIndicesBySourceType.size());
+    for (const auto &valuePair : _discoveryResultIndicesBySourceType) {
+        availableSourceTypes.push_back(valuePair.first);
+    }
+    return availableSourceTypes;
 }
 
-NdrNodeConstPtrVec
-NdrRegistry::_ParseNodesMatchingPredicate(
-    std::function<bool(const NdrNodeDiscoveryResult&)> shouldParsePredicate,
-    bool onlyParseFirstMatch)
+NdrNodeConstPtr 
+NdrRegistry::_ParseNodeMatchingIdentifier(
+    const NdrNodeDiscoveryResult& dr, const NdrIdentifier& identifier)
 {
-    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
-    NdrNodeConstPtrVec parsedNodes;
+    if (dr.identifier == identifier) {
+        return _InsertNodeIntoCache(dr);
+    }
+    return nullptr;
+}
 
-    for (const NdrNodeDiscoveryResult& dr : _discoveryResults) {
-        if (!shouldParsePredicate(dr)) {
-            continue;
-        }
-
-        NdrNodeConstPtr parsedNode = _InsertNodeIntoCache(dr);
-
-        if (parsedNode) {
-            parsedNodes.emplace_back(std::move(parsedNode));
-        }
-
-        if (onlyParseFirstMatch) {
-            break;
+NdrNodeConstPtr 
+NdrRegistry::_ParseNodeMatchingAlias(
+    const NdrNodeDiscoveryResult& dr, const NdrIdentifier& identifier)
+{
+    for (const TfToken &alias : dr.aliases) {
+        if (alias == identifier) {
+            return _InsertNodeIntoCache(dr);
         }
     }
+    return nullptr;
+}
 
-    return parsedNodes;
+NdrNodeConstPtr 
+NdrRegistry::_ParseNodeMatchingNameAndFilter(
+    const NdrNodeDiscoveryResult& dr, const std::string& name, 
+    NdrVersionFilter filter)
+{
+    // Check the filter.
+    if (filter == NdrVersionFilterDefaultOnly && !dr.version.IsDefault()) {
+        return nullptr;
+    }
+
+    if (dr.name == name) {
+        return _InsertNodeIntoCache(dr);
+    }
+    return nullptr;
 }
 
 void
@@ -886,31 +989,13 @@ NdrRegistry::_RunDiscoveryPlugins(const DiscoveryPluginRefPtrVec& discoveryPlugi
     for (const NdrDiscoveryPluginRefPtr& dp : discoveryPlugins) {
         NdrNodeDiscoveryResultVec results =
             dp->DiscoverNodes(_DiscoveryContext(*this));
+        _discoveryResults.reserve(_discoveryResults.size() + results.size());
 
-        for (const NdrNodeDiscoveryResult& result : results) {
-            if (!result.sourceType.IsEmpty()) {
-                // Populate the source types that the registry knows about from
-                // the source types we discover
-                NdrTokenVec::iterator it = std::lower_bound(
-                    _availableSourceTypes.begin(),
-                    _availableSourceTypes.end(),
-                    result.sourceType);
-                if (it == _availableSourceTypes.end() ||
-                    result.sourceType != *it) {
-                    // The vector will be sorted because we always insert the
-                    // current result's source type before the first item in the
-                    // vector that does not compare less than the current source
-                    // type.  We don't insert the source type if the iterator
-                    // we get back is pointing to a source type that is the
-                    // same, thus avoiding duplicates.
-                    _availableSourceTypes.insert(it, result.sourceType);
-                }
-            }
+        for (NdrNodeDiscoveryResult &dr : results) {
+            _discoveryResultIndicesBySourceType[dr.sourceType].push_back(
+                _discoveryResults.size());
+            _discoveryResults.emplace_back(std::move(dr));
         }
-
-        _discoveryResults.insert(_discoveryResults.end(),
-                                 std::make_move_iterator(results.begin()),
-                                 std::make_move_iterator(results.end()));
     }
 }
 

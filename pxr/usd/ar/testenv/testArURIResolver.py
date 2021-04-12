@@ -54,6 +54,7 @@ class TestArURIResolver(unittest.TestCase):
         pr = Plug.Registry()
         self.assertTrue(pr.GetPluginWithName('TestArURIResolver'))
         self.assertTrue(Tf.Type.FindByName('_TestURIResolver'))
+        self.assertTrue(Tf.Type.FindByName('_TestOtherURIResolver'))
 
         self.assertTrue(pr.GetPluginWithName('TestArPackageResolver'))
         self.assertTrue(Tf.Type.FindByName('_TestPackageResolver'))
@@ -78,12 +79,24 @@ class TestArURIResolver(unittest.TestCase):
         self.assertEqual(resolver.Resolve("test://foo.package[bar.file]"), 
                          "test://foo.package[bar.file]")
 
+        self.assertEqual(resolver.Resolve("test_other://foo"), 
+                         "test_other://foo")
+        self.assertEqual(
+            resolver.Resolve("test_other://foo.package[bar.file]"), 
+            "test_other://foo.package[bar.file]")
+
         # These calls should hit the URI resolver since schemes are
         # case-insensitive.
         self.assertEqual(resolver.Resolve("TEST://foo"), 
                          "TEST://foo")
         self.assertEqual(resolver.Resolve("TEST://foo.package[bar.file]"), 
                          "TEST://foo.package[bar.file]")
+
+        self.assertEqual(resolver.Resolve("TEST_OTHER://foo"), 
+                         "TEST_OTHER://foo")
+        self.assertEqual(
+            resolver.Resolve("TEST_OTHER://foo.package[bar.file]"), 
+            "TEST_OTHER://foo.package[bar.file]")
 
     def test_ResolveForNewAsset(self):
         resolver = Ar.GetResolver()

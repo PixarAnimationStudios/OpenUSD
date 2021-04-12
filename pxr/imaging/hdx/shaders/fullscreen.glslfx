@@ -53,14 +53,14 @@ void main(void)
 
 void main(void)
 {
-    hd_FragColor = vec4(HdGet_colorIn(hd_Position));
+    hd_FragColor = vec4(HdGet_colorIn(uvOut));
 }
 
 -- glsl Composite.FragmentWithDepth
 
 void main(void)
 {
-    float depth = HdGet_depth(hd_Position);
-    hd_FragColor = vec4(HdGet_colorIn(hd_Position));
+    float depth = HdGet_depth(uvOut).x;
+    hd_FragColor = vec4(HdGet_colorIn(uvOut));
     hd_FragDepth = depth;
 }

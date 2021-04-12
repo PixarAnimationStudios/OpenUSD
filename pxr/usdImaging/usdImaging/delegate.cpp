@@ -2361,10 +2361,29 @@ UsdImagingDelegate::GetVisible(SdfPath const& id)
 VtValue 
 UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
 {
+    return _Get(id, key, nullptr);
+}
+
+/*virtual*/ 
+VtValue 
+UsdImagingDelegate::GetIndexedPrimvar(SdfPath const& id, 
+                                      TfToken const& key, 
+                                      VtIntArray *outIndices)
+{
+    return _Get(id, key, outIndices);
+}
+
+VtValue 
+UsdImagingDelegate::_Get(SdfPath const& id, TfToken const& key, 
+                         VtIntArray *outIndices)
+{
     HD_TRACE_FUNCTION();
 
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
     VtValue value;
+    if (outIndices) {
+        outIndices->clear();
+    }
 
     _HdPrimInfo const *primInfo = _GetHdPrimInfo(cachePath);
     if (!TF_VERIFY(primInfo)) {
@@ -2375,7 +2394,7 @@ UsdImagingDelegate::Get(SdfPath const& id, TfToken const& key)
     if (!TF_VERIFY(prim)) {
         return value;
     }
-    value = primInfo->adapter->Get(prim, cachePath, key, _time);
+    value = primInfo->adapter->Get(prim, cachePath, key, _time, outIndices);
 
     // We generally don't want Vec2d arrays, convert to vec2f.
     if (value.IsHolding<VtVec2dArray>()) {
@@ -2407,13 +2426,42 @@ UsdImagingDelegate::SamplePrimvar(SdfPath const& id,
                                   float *sampleTimes, 
                                   VtValue *sampleValues)
 {
+    return _SamplePrimvar(id, key, maxNumSamples, sampleTimes, sampleValues, 
+                          nullptr);
+}
+
+/*virtual*/
+size_t
+UsdImagingDelegate::SampleIndexedPrimvar(SdfPath const& id,
+                                  TfToken const& key,
+                                  size_t maxNumSamples,
+                                  float *sampleTimes, 
+                                  VtValue *sampleValues,
+                                  VtIntArray *sampleIndices)
+{
+    return _SamplePrimvar(id, key, maxNumSamples, sampleTimes, sampleValues, 
+                          sampleIndices);
+}
+
+size_t
+UsdImagingDelegate::_SamplePrimvar(SdfPath const& id,
+                                  TfToken const& key,
+                                  size_t maxNumSamples,
+                                  float *sampleTimes, 
+                                  VtValue *sampleValues,
+                                  VtIntArray *sampleIndices)
+{
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo)) {
+        if (sampleIndices) {
+            sampleIndices[0] = VtIntArray(0);
+        }
         // Retrieve the multi-sampled result.
         size_t nSamples = primInfo->adapter
             ->SamplePrimvar(primInfo->usdPrim, cachePath, key,
-                            _time, maxNumSamples, sampleTimes, sampleValues);
+                            _time, maxNumSamples, sampleTimes, sampleValues, 
+                            sampleIndices);
         return nSamples;
     }
     return 0;
@@ -2555,6 +2603,25 @@ UsdImagingDelegate::GetInstancerId(SdfPath const &primId)
     return ConvertCachePathToIndexPath(pathValue);
 }
 
+/*virtual*/
+SdfPathVector
+UsdImagingDelegate::GetInstancerPrototypes(SdfPath const &instancerId)
+{
+    SdfPath cachePath = ConvertIndexPathToCachePath(instancerId);
+    SdfPathVector protos;
+
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        protos =
+            primInfo->adapter->GetInstancerPrototypes(primInfo->usdPrim, cachePath);
+    }
+
+    for (size_t i = 0; i < protos.size(); ++i) {
+        protos[i] = ConvertCachePathToIndexPath(protos[i]);
+    }
+    return protos;
+}
+
 /*virtual*/ 
 SdfPath 
 UsdImagingDelegate::GetMaterialId(SdfPath const &rprimId)
@@ -2671,7 +2738,26 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
         { HdLightTokens->specular, UsdLuxTokens->inputsSpecular },
         { HdLightTokens->textureFile, UsdLuxTokens->inputsTextureFile },
         { HdLightTokens->textureFormat, UsdLuxTokens->inputsTextureFormat },
-        { HdLightTokens->width, UsdLuxTokens->inputsWidth }
+        { HdLightTokens->width, UsdLuxTokens->inputsWidth },
+
+        { HdLightTokens->shapingFocus, UsdLuxTokens->inputsShapingFocus },
+        { HdLightTokens->shapingFocusTint, 
+            UsdLuxTokens->inputsShapingFocusTint },
+        { HdLightTokens->shapingConeAngle, 
+            UsdLuxTokens->inputsShapingConeAngle },
+        { HdLightTokens->shapingConeSoftness, 
+            UsdLuxTokens->inputsShapingConeSoftness },
+        { HdLightTokens->shapingIesFile, UsdLuxTokens->inputsShapingIesFile },
+        { HdLightTokens->shapingIesAngleScale, 
+            UsdLuxTokens->inputsShapingIesAngleScale },
+        { HdLightTokens->shapingIesNormalize, 
+            UsdLuxTokens->inputsShapingIesNormalize },
+        { HdLightTokens->shadowEnable, UsdLuxTokens->inputsShadowEnable },
+        { HdLightTokens->shadowColor, UsdLuxTokens->inputsShadowColor },
+        { HdLightTokens->shadowDistance, UsdLuxTokens->inputsShadowDistance },
+        { HdLightTokens->shadowFalloff, UsdLuxTokens->inputsShadowFalloff },
+        { HdLightTokens->shadowFalloffGamma, 
+            UsdLuxTokens->inputsShadowFalloffGamma }
     });
 
     const TfToken *attrName = TfMapLookupPtr(paramToAttrName, paramName);
@@ -2698,7 +2784,8 @@ UsdImagingDelegate::GetCameraParamValue(SdfPath const &id,
             primInfo->usdPrim, 
             cachePath, 
             paramName,
-            _time);
+            _time,
+            nullptr);
     }
     return VtValue();
 }
@@ -2800,6 +2887,28 @@ UsdImagingDelegate::GetExtComputationInput(SdfPath const& computationId,
     }
 
     return VtValue();
+}
+
+size_t
+UsdImagingDelegate::SampleExtComputationInput(SdfPath const& computationId,
+                                              TfToken const& input,
+                                              size_t maxSampleCount,
+                                              float *sampleTimes,
+                                              VtValue *sampleValues)
+{
+    TRACE_FUNCTION();
+
+    SdfPath cachePath = ConvertIndexPathToCachePath(computationId);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+
+    if (TF_VERIFY(primInfo)) {
+        return primInfo->adapter->SampleExtComputationInput(
+            primInfo->usdPrim, cachePath, input, GetTime(),
+            nullptr /* instancerContext */, maxSampleCount, sampleTimes,
+            sampleValues);
+    }
+
+    return 0;
 }
 
 std::string

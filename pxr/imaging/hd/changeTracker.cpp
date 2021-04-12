@@ -43,8 +43,6 @@ HdChangeTracker::HdChangeTracker()
     , _bprimState()
     , _generalState()
     , _collectionState()
-    , _needsGarbageCollection(false)
-    , _needsBprimGarbageCollection(false)
     , _instancerRprimDependencies()
     , _instancerInstancerDependencies()
     // Note: Version numbers start at 1, with observers resetting theirs to 0.
@@ -57,7 +55,6 @@ HdChangeTracker::HdChangeTracker()
     , _sceneStateVersion(1)
     , _visChangeCount(1)
     , _renderTagVersion(1)
-    , _batchVersion(1)
 {
     /*NOTHING*/
 }
@@ -95,9 +92,6 @@ HdChangeTracker::RprimRemoved(SdfPath const& id)
 {
     TF_DEBUG(HD_RPRIM_REMOVED).Msg("Rprim Removed: %s\n", id.GetText());
     _rprimState.erase(id);
-    // Make sure cached DrawItems get flushed out and their buffers are
-    // reclaimed.
-    _needsGarbageCollection = true;
 
     ++_sceneStateVersion;
     ++_rprimIndexVersion;
@@ -463,8 +457,6 @@ HdChangeTracker::SprimRemoved(SdfPath const& id)
 {
     TF_DEBUG(HD_SPRIM_REMOVED).Msg("Sprim Removed: %s\n", id.GetText());
     _sprimState.erase(id);
-    // Make sure sprim resources are reclaimed.
-    _needsGarbageCollection = true;
     ++_sceneStateVersion;
     ++_sprimIndexVersion;
 }
@@ -520,7 +512,6 @@ HdChangeTracker::BprimRemoved(SdfPath const& id)
 {
     TF_DEBUG(HD_BPRIM_REMOVED).Msg("Bprim Removed: %s\n", id.GetText());
     _bprimState.erase(id);
-    _needsBprimGarbageCollection = true;
     ++_sceneStateVersion;
     ++_bprimIndexVersion;
 }
@@ -934,18 +925,6 @@ unsigned
 HdChangeTracker::GetVisibilityChangeCount() const
 {
     return _visChangeCount;
-}
-
-void
-HdChangeTracker::MarkBatchesDirty()
-{
-    ++_batchVersion;
-}
-
-unsigned
-HdChangeTracker::GetBatchVersion() const
-{
-    return _batchVersion;
 }
 
 void

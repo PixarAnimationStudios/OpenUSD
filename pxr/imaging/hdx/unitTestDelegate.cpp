@@ -84,7 +84,7 @@ public:
         frustum.SetProjectionType(GfFrustum::Orthographic);
         frustum.SetWindow(GfRange2d(GfVec2d(-10, -10), GfVec2d(10, 10)));
         frustum.SetNearFar(GfRange1d(0, 100));
-        GfVec4d pos = light.GetPosition();
+        const GfVec4d pos = light.GetPosition();
         frustum.SetPosition(GfVec3d(0, 0, 10));
         frustum.SetRotation(GfRotation(GfVec3d(0, 0, 1),
                                        GfVec3d(pos[0], pos[1], pos[2])));
@@ -93,10 +93,18 @@ public:
             frustum.ComputeViewMatrix() * frustum.ComputeProjectionMatrix();
     }
 
-    virtual std::vector<GfMatrix4d> Compute(
-        const GfVec4f &viewport, CameraUtilConformWindowPolicy policy) {
-        return std::vector<GfMatrix4d>(1, _shadowMatrix);
+    std::vector<GfMatrix4d> Compute(
+            const GfVec4f &viewport,
+            CameraUtilConformWindowPolicy policy) override {
+        return { _shadowMatrix };
     }
+
+    std::vector<GfMatrix4d> Compute(
+            const CameraUtilFraming &framing,
+            CameraUtilConformWindowPolicy policy) override {
+        return { _shadowMatrix };
+    }
+
 private:
     GfMatrix4d _shadowMatrix;
 };
@@ -350,8 +358,6 @@ Hdx_UnitTestDelegate::AddShadowTask(SdfPath const &id)
     GetRenderIndex().InsertTask<HdxShadowTask>(this, id);
     _ValueCache &cache = _valueCacheMap[id];
     HdxShadowTaskParams params;
-    params.camera = _cameraId;
-    params.viewport = GfVec4f(0,0,512,512);
     cache[HdTokens->params] = VtValue(params);
 }
 

@@ -299,6 +299,15 @@ UsdImagingPrimAdapter::GetInstancerId(
 }
 
 /*virtual*/
+SdfPathVector
+UsdImagingPrimAdapter::GetInstancerPrototypes(
+    UsdPrim const& usdPrim,
+    SdfPath const& cachePath) const
+{
+    return SdfPathVector();
+}
+
+/*virtual*/
 size_t
 UsdImagingPrimAdapter::SamplePrimvar(
     UsdPrim const& usdPrim,
@@ -307,7 +316,8 @@ UsdImagingPrimAdapter::SamplePrimvar(
     UsdTimeCode time, 
     size_t maxNumSamples, 
     float *sampleTimes, 
-    VtValue *sampleValues)
+    VtValue *sampleValues,
+    VtIntArray *sampleIndices)
 {
     HD_TRACE_FUNCTION();
 
@@ -325,10 +335,9 @@ UsdImagingPrimAdapter::SamplePrimvar(
 
     if (pv && pv.HasValue()) {
         if (pv.ValueMightBeTimeVarying()) {
-
             pv.GetTimeSamplesInInterval(interval, &timeSamples);
-    
-            // Add time samples at the boudary conditions
+
+            // Add time samples at the boundary conditions
             timeSamples.push_back(interval.GetMin());
             timeSamples.push_back(interval.GetMax());
 
@@ -345,15 +354,35 @@ UsdImagingPrimAdapter::SamplePrimvar(
             // up in profiling, but all of our current caches are cleared on time 
             // change so we'd need to write a new structure.
             size_t numSamplesToEvaluate = std::min(maxNumSamples, numSamples);
-            for (size_t i=0; i < numSamplesToEvaluate; ++i) {
-                sampleTimes[i] = timeSamples[i] - time.GetValue();
-                pv.ComputeFlattened(&sampleValues[i], timeSamples[i]);
+
+            if (sampleIndices) {
+                for (size_t i=0; i < numSamplesToEvaluate; ++i) {
+                    sampleTimes[i] = timeSamples[i] - time.GetValue();
+                    if (pv.Get(&sampleValues[i], timeSamples[i])) {
+                        if (!pv.GetIndices(&sampleIndices[i], timeSamples[i])) {
+                            sampleIndices[i].clear();
+                        }
+                    }
+                }
+            } else {
+                for (size_t i=0; i < numSamplesToEvaluate; ++i) {
+                    sampleTimes[i] = timeSamples[i] - time.GetValue();
+                    pv.ComputeFlattened(&sampleValues[i], timeSamples[i]);
+                }
             }
             return numSamples;
         } else {
             // Return a single sample for non-varying primvars
             sampleTimes[0] = 0.0f;
-            pv.ComputeFlattened(sampleValues, time);
+            if (sampleIndices) {
+                if (pv.Get(sampleValues, time)) {
+                    if (!pv.GetIndices(sampleIndices, time)) {
+                        sampleIndices->clear();
+                    }
+                }
+            } else {
+                pv.ComputeFlattened(sampleValues, time);
+            }
             return 1;
         }
     }
@@ -398,7 +427,7 @@ UsdImagingPrimAdapter::SamplePrimvar(
     // instead synthesize them -- ex: Cube, Cylinder, Capsule.
     if (maxNumSamples > 0) {
         sampleTimes[0] = 0;
-        sampleValues[0] = Get(usdPrim, cachePath, key, time);
+        sampleValues[0] = Get(usdPrim, cachePath, key, time, &sampleIndices[0]);
         return sampleValues[0].IsEmpty() ? 0 : 1;
     }
 
@@ -590,11 +619,11 @@ UsdImagingPrimAdapter::_GetMaterialBindingPurpose() const
         GetMaterialBindingPurpose();
 }
 
-TfToken
-UsdImagingPrimAdapter::_GetMaterialNetworkSelector() const
+TfTokenVector
+UsdImagingPrimAdapter::_GetMaterialRenderContexts() const
 {
     return _delegate->GetRenderIndex().GetRenderDelegate()->
-        GetMaterialNetworkSelector();
+        GetMaterialRenderContexts();
 }
 
 bool
@@ -623,9 +652,10 @@ UsdImagingPrimAdapter::_MergePrimvar(
     HdPrimvarDescriptorVector* vec,
     TfToken const& name,
     HdInterpolation interp,
-    TfToken const& role) const
+    TfToken const& role, 
+    bool indexed) const
 {
-    HdPrimvarDescriptor primvar(name, interp, role);
+    HdPrimvarDescriptor primvar(name, interp, role, indexed);
     HdPrimvarDescriptorVector::iterator it =
         std::find(vec->begin(), vec->end(), primvar);
     if (it == vec->end())
@@ -700,7 +730,12 @@ UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
 
     VtValue v;
     TfToken primvarName = primvar.GetPrimvarName();
-    if (primvar.ComputeFlattened(&v, time)) {
+
+    // Note: we call Get() here to check if the primvar exists.
+    // We can't call HasValue(), since it won't take time-varying
+    // blocks (from value clips) into account. Get() should be
+    // fast as long as we don't touch the returned data.
+    if (primvar.Get(&v, time)) {
         HdInterpolation interp = interpOverride ? *interpOverride
             : _UsdToHdInterpolation(primvar.GetInterpolation());
         TfToken role = _UsdToHdRole(primvar.GetAttr().GetRoleName());
@@ -709,7 +744,8 @@ UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
                  gprim.GetPath().GetText(),
                  primvarName.GetText(),
                  TfEnum::GetName(interp).c_str());
-        _MergePrimvar(primvarDescs, primvarName, interp, role);
+        _MergePrimvar(primvarDescs, primvarName, interp, role, 
+                      primvar.IsIndexed());
 
     } else {
         TF_DEBUG(USDIMAGING_SHADERS)
@@ -1122,7 +1158,8 @@ UsdImagingPrimAdapter::Get(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     TfToken const &key,
-    UsdTimeCode time) const
+    UsdTimeCode time,
+    VtIntArray *outIndices) const
 {
     UsdAttribute const &attr = prim.GetAttribute(key);
     VtValue value;
@@ -1314,6 +1351,27 @@ UsdImagingPrimAdapter::GetExtComputationInput(
     const UsdImagingInstancerContext* instancerContext) const
 {
     return VtValue();
+}
+
+/*virtual*/
+size_t
+UsdImagingPrimAdapter::SampleExtComputationInput(
+    UsdPrim const& prim,
+    SdfPath const& cachePath,
+    TfToken const& name,
+    UsdTimeCode time,
+    const UsdImagingInstancerContext* instancerContext,
+    size_t maxSampleCount,
+    float *sampleTimes,
+    VtValue *sampleValues)
+{
+    if (maxSampleCount > 0) {
+        sampleTimes[0] = 0.0;
+        sampleValues[0] = GetExtComputationInput(prim, cachePath, name, time,
+                                                 instancerContext);
+        return 1;
+    }
+    return 0;
 }
 
 /*virtual*/ 

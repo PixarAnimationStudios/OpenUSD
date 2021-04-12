@@ -243,12 +243,14 @@ WRAP_CUSTOM {
              (arg("name"), arg("type")))
         .def("GetOutput", &UsdLuxLight::GetOutput, arg("name"))
         .def("GetOutputs", &UsdLuxLight::GetOutputs,
+             (arg("onlyAuthored")=true),
              return_value_policy<TfPySequenceToList>())
 
         .def("CreateInput", &UsdLuxLight::CreateInput,
              (arg("name"), arg("type")))
         .def("GetInput", &UsdLuxLight::GetInput, arg("name"))
         .def("GetInputs", &UsdLuxLight::GetInputs,
+             (arg("onlyAuthored")=true),
              return_value_policy<TfPySequenceToList>())
 
         .def("ComputeBaseEmission", &UsdLuxLight::ComputeBaseEmission)

@@ -14,6 +14,7 @@ Our test machines have the following software versions installed
 
 | Software      | Linux                | macOS                        | Windows                        |
 | ------------- | -------------------- | ---------------------------- | ------------------------------ |
+| OS            | CentOS Linux 7       | 10.14.6                      | Windows 10                     |
 | C++ Compiler  | gcc 6.3.1            | Apple LLVM 10.0.0 (Xcode 10.1) | MSVC 14.0 (Visual Studio 2015) |
 | CMake         | 3.14.6               | 3.16.5                       | 3.16.5                         |
 | Python        | 2.7.16, 3.6.8        | 2.7.10, 3.7.7                | 2.7.12, 3.7.4                  |
@@ -27,10 +28,10 @@ Our test machines have the following software versions installed
 | PySide2       | 2.0.0~alpha0, 5.14.1 | 5.14.1                       | 5.14.1                         |
 | PyOpenGL      | 3.1.5                | 3.1.5                        | 3.1.5                          |
 | Embree        | 3.2.2                | 3.2.2                        | 3.2.2                          |
-| RenderMan     | 23.0                 | 23.0                         | 23.0                           |
+| RenderMan     | 23.5                 | 23.5                         | 23.5                           |
 | Alembic       | 1.7.10               | 1.7.10                       | 1.7.10                         |
 | OpenEXR       | 2.2.0                | 2.2.0                        | 2.2.0                          |
-| MaterialX     | 1.37.1               | 1.37.1                       | 1.37.1                         |
+| MaterialX     | 1.38.0               | 1.38.0                       | 1.38.0                         |
 | Jinja2        | 2.0                  |                              |                                |
 | Flex          | 2.5.39               |                              |                                |
 | Bison         | 2.4.1                |                              |                                |

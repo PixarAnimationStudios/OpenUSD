@@ -55,6 +55,9 @@ public:
               HdRenderParam   *renderParam,
               HdDirtyBits     *dirtyBits) override;
 
+    HDST_API
+    void Finalize(HdRenderParam *renderParam) override;
+
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.

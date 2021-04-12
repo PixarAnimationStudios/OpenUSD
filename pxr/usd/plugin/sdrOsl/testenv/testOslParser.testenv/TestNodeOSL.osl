@@ -36,8 +36,8 @@ shader TestNodeOSL
     int inputD[1] = { 1 }
     [[
         string widget = "dynamicArray",
-        string isDynamicArray = "1",
-        string arraySize = "-1",
+        int isDynamicArray = 1,
+        int arraySize = -1,
         string page = "inputs2"
     ]],
     float inputF2[2] = { 1.0, 2.0 } [[

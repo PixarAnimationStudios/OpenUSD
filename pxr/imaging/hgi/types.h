@@ -129,8 +129,8 @@ struct HgiMipInfo
     size_t byteOffset;
     /// Dimension of mip GfVec3i.
     GfVec3i dimensions;
-    /// size of mip map in bytes.
-    size_t byteSize;
+    /// size of (one layer if array of) mip map in bytes.
+    size_t byteSizePerLayer;
 };
 
 /// Return the count of components in the given format.

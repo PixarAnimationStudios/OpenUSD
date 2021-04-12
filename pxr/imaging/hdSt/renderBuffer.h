@@ -49,6 +49,11 @@ public:
     ~HdStRenderBuffer() override;
 
     HDST_API
+    void Sync(HdSceneDelegate *sceneDelegate,
+              HdRenderParam *renderParam,
+              HdDirtyBits *dirtyBits) override;
+
+    HDST_API
     bool Allocate(GfVec3i const& dimensions,
                   HdFormat format,
                   bool multiSampled) override;
@@ -120,6 +125,8 @@ private:
     // Format saved here (somewhat redundantely) since the
     // Hgi texture descriptor holds an HgiFormat instead of HdFormat.
     HdFormat _format;
+
+    uint32_t _msaaSampleCount;
 
     // The GPU texture resource
     HdStDynamicUvTextureObjectSharedPtr _textureObject;

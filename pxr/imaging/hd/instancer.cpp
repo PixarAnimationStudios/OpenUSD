@@ -60,8 +60,9 @@ HdInstancer::GetInstancerNumLevels(HdRenderIndex& index,
     return instancerLevels;
 }
 
+/* static */
 TfTokenVector const &
-HdInstancer::GetBuiltinPrimvarNames() const
+HdInstancer::GetBuiltinPrimvarNames()
 {
     static const TfTokenVector primvarNames = {
         HdInstancerTokens->instanceTransform,

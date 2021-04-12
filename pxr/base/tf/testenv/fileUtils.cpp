@@ -671,30 +671,26 @@ TestTfTouchFile()
 static bool
 TestSymlinkBehavior()
 {
-    if (true)
-    {
-        cout << "Testing symlink behavior" << endl;
+    cout << "Testing symlink behavior" << endl;
 
-        (void) ArchUnlinkFile("junction");
+    (void) ArchUnlinkFile("junction");
+    (void) ArchRmDir("junction-target");
 
-        TF_AXIOM(TfMakeDir("junction-target"));
+    TF_AXIOM(TfMakeDir("junction-target"));
 #if defined(ARCH_OS_WINDOWS)
-        TF_AXIOM(system("mklink /j junction junction-target") == 0);
+    TF_AXIOM(system("mklink /j junction junction-target") == 0);
 #else
-        TF_AXIOM(TfSymlink("junction-target", "junction"));
+    TF_AXIOM(TfSymlink("junction-target", "junction"));
 #endif
-        TF_AXIOM(TfIsLink("junction"));
-        TF_AXIOM(!TfIsDir("junction", false));
-        TF_AXIOM(TfIsDir("junction", true));
-        TF_AXIOM(TfIsDir("junction/", false));
-        TF_AXIOM(TfIsDir("junction/", true));
-        TF_AXIOM(TfTouchFile("junction/test-file"));
-        TF_AXIOM(TfIsFile("junction/test-file", false));
-        TF_AXIOM(TfIsFile("junction/test-file", true));
-        TF_AXIOM(TfDeleteFile("junction/test-file"));
-
-        (void) ArchUnlinkFile("junction");
-    }
+    TF_AXIOM(TfIsLink("junction"));
+    TF_AXIOM(!TfIsDir("junction", false));
+    TF_AXIOM(TfIsDir("junction", true));
+    TF_AXIOM(TfIsDir("junction/", false));
+    TF_AXIOM(TfIsDir("junction/", true));
+    TF_AXIOM(TfTouchFile("junction/test-file"));
+    TF_AXIOM(TfIsFile("junction/test-file", false));
+    TF_AXIOM(TfIsFile("junction/test-file", true));
+    TF_AXIOM(TfDeleteFile("junction/test-file"));
 
     return true;
 }

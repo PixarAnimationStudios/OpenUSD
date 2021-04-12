@@ -548,8 +548,8 @@ public:
     ///
     /// @{
 
-    /// Return the specifiers for \a path. This returns default constructed
-    /// specifiers if no spec exists at \a path.
+    /// Return the spec type for \a path. This returns SdfSpecTypeUnknown if no
+    /// spec exists at \a path.
     SDF_API
     SdfSpecType GetSpecType(const SdfPath& path) const;
 
@@ -1574,6 +1574,33 @@ private:
                          const TfToken &fieldName,
                          SdfSpecType specType = SdfSpecTypeUnknown) const;
 
+    // Return the field definition for \p fieldName if \p fieldName is a
+    // required field for \p specType subject to \p schema.
+    static inline SdfSchema::FieldDefinition const *
+    _GetRequiredFieldDef(const SdfSchemaBase &schema,
+                         const TfToken &fieldName,
+                         SdfSpecType specType);
+
+    // Helper to list all fields on \p data at \p path subject to \p schema.
+    static std::vector<TfToken>
+    _ListFields(SdfSchemaBase const &schema,
+                SdfAbstractData const &data, const SdfPath& path);
+
+    // Helper for HasField for \p path in \p data subject to \p schema.
+    static inline bool
+    _HasField(const SdfSchemaBase &schema,
+              const SdfAbstractData &data,
+              const SdfPath& path,
+              const TfToken& fieldName,
+              VtValue *value);
+
+    // Helper to get a field value for \p path in \p data subject to \p schema.
+    static inline VtValue
+    _GetField(const SdfSchemaBase &schema,
+              const SdfAbstractData &data,
+              const SdfPath& path,
+              const TfToken& fieldName);
+    
     // Set a value.
     template <class T>
     void _SetValue(const TfToken& key, T value);
@@ -1612,9 +1639,15 @@ private:
     // inverses or emit change notification.
     void _SwapData(SdfAbstractDataRefPtr &data);
 
-    // Set _data to match data, calling other primitive setter methods
-    // to provide fine-grained inverses and notification.
-    void _SetData(const SdfAbstractDataPtr &data);
+    // Set _data to match data, calling other primitive setter methods to
+    // provide fine-grained inverses and notification.  If \p data might adhere
+    // to a different schema than this layer's, pass a pointer to it as \p
+    // newDataSchema.  In this case, check to see if fields from \p data are
+    // known to this layer's schema, and if not, omit them and issue a TfError
+    // with SdfAuthoringErrorUnrecognizedFields, but continue to set all other
+    // known fields.
+    void _SetData(const SdfAbstractDataPtr &newData,
+                  const SdfSchemaBase *newDataSchema=nullptr);
 
     // Returns const handle to _data.
     SdfAbstractDataConstPtr _GetData() const;

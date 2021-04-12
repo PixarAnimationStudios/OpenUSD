@@ -44,22 +44,25 @@ HdRenderPassState::HdRenderPassState()
 
     , _overrideColor(0.0f, 0.0f, 0.0f, 0.0f)
     , _wireframeColor(0.0f, 0.0f, 0.0f, 0.0f)
-    , _maskColor(1.0f, 0.0f, 0.0f, 1.0f)
-    , _indicatorColor(0.0f, 1.0f, 0.0f, 1.0f)
     , _pointColor(0.0f, 0.0f, 0.0f, 1.0f)
     , _pointSize(3.0)
-    , _pointSelectedSize(3.0)
     , _lightingEnabled(true)
+
+    , _maskColor(1.0f, 0.0f, 0.0f, 1.0f)
+    , _indicatorColor(0.0f, 1.0f, 0.0f, 1.0f)
+    , _pointSelectedSize(3.0)
 
     , _alphaThreshold(0.5f)
     , _tessLevel(32.0)
     , _drawRange(0.9, -1.0)
+
     , _depthBiasUseDefault(true)
     , _depthBiasEnabled(false)
     , _depthBiasConstantFactor(0.0f)
     , _depthBiasSlopeFactor(1.0f)
     , _depthFunc(HdCmpFuncLEqual)
     , _depthMaskEnabled(true)
+    , _depthTestEnabled(true)
     , _cullStyle(HdCullStyleNothing)
     , _stencilFunc(HdCmpFuncAlways)
     , _stencilRef(0)
@@ -79,7 +82,6 @@ HdRenderPassState::HdRenderPassState()
     , _blendEnabled(false)
     , _alphaToCoverageEnabled(false)
     , _colorMaskUseDefault(true)
-    , _colorMask(HdRenderPassState::ColorMaskRGBA)
     , _useMultiSampleAov(true)
 
 {
@@ -94,18 +96,6 @@ HdRenderPassState::Prepare(HdResourceRegistrySharedPtr const &resourceRegistry)
     if(!TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM)) {
         _cullMatrix = GetWorldToViewMatrix() * GetProjectionMatrix();
     }
-}
-
-/* virtual */
-void
-HdRenderPassState::Bind()
-{
-}
-
-/* virtual */
-void
-HdRenderPassState::Unbind()
-{
 }
 
 void
@@ -327,6 +317,18 @@ HdRenderPassState::GetEnableDepthMask()
 }
 
 void
+HdRenderPassState::SetEnableDepthTest(bool enabled)
+{
+    _depthTestEnabled = enabled;
+}
+
+bool
+HdRenderPassState::GetEnableDepthTest() const
+{
+    return _depthTestEnabled;
+}
+
+void
 HdRenderPassState::SetStencil(HdCompareFunction func,
         int ref, int mask,
         HdStencilOp fail, HdStencilOp zfail, HdStencilOp zpass)
@@ -343,6 +345,12 @@ void
 HdRenderPassState::SetStencilEnabled(bool enabled)
 {
     _stencilEnabled = enabled;
+}
+
+bool
+HdRenderPassState::GetStencilEnabled() const
+{
+    return _stencilEnabled;
 }
 
 void
@@ -392,9 +400,10 @@ HdRenderPassState::SetColorMaskUseDefault(bool useDefault)
 }
 
 void
-HdRenderPassState::SetColorMask(HdRenderPassState::ColorMask const& mask)
+HdRenderPassState::SetColorMasks(
+    std::vector<HdRenderPassState::ColorMask> const& masks)
 {
-    _colorMask = mask;
+    _colorMasks = masks;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

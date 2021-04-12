@@ -108,6 +108,11 @@ public:
     HDST_API
     void AdjustTotalTextureMemory(int64_t memDiff);
 
+    /// The number of texture objects.
+    size_t GetNumberOfTextureObjects() const {
+        return _textureObjectRegistry.size();
+    }
+
 private:
     HdStTextureObjectSharedPtr _MakeTextureObject(
         const HdStTextureIdentifier &textureId,

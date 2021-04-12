@@ -52,30 +52,32 @@ using HdStResourceRegistrySharedPtr =
 
 /// A subdivision surface or poly-mesh object.
 ///
-class HdStMesh final : public HdMesh {
+class HdStMesh final : public HdMesh
+{
 public:
     HF_MALLOC_TAG_NEW("new HdStMesh");
 
-    /// Constructor. instancerId, if specified, is the instancer which uses
-    /// this mesh as a prototype.
     HDST_API
     HdStMesh(SdfPath const& id);
 
     HDST_API
-    virtual ~HdStMesh();
+    ~HdStMesh() override;
 
     HDST_API
-    virtual void Sync(HdSceneDelegate *delegate,
-                      HdRenderParam   *renderParam,
-                      HdDirtyBits     *dirtyBits,
-                      TfToken const   &reprToken) override;
+    void Sync(HdSceneDelegate *delegate,
+              HdRenderParam   *renderParam,
+              HdDirtyBits     *dirtyBits,
+              TfToken const   &reprToken) override;
 
     HDST_API
-    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+    void Finalize(HdRenderParam   *renderParam) override;
+
+    HDST_API
+    HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     /// Topology (member) getter
     HDST_API
-    virtual HdMeshTopologySharedPtr GetTopology() const override;
+    HdMeshTopologySharedPtr GetTopology() const override;
 
     /// Returns whether packed (10_10_10 bits) normals to be used
     HDST_API
@@ -83,13 +85,13 @@ public:
 
 protected:
     HDST_API
-    virtual void _InitRepr(TfToken const &reprToken,
-                           HdDirtyBits *dirtyBits) override;
+    void _InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits) override;
 
     HDST_API
-    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
+    HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
 
     void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                     HdRenderParam *renderParam,
                      TfToken const &reprToken,
                      HdDirtyBits *dirtyBitsState);
 
@@ -110,9 +112,8 @@ protected:
 
     bool _UseFlatNormals(const HdMeshReprDesc &desc) const;
 
-    const TfToken& _GetMaterialTag(const HdRenderIndex &renderIndex) const;
-
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
+                         HdRenderParam *renderParam,
                          HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,
                          const HdMeshReprDesc &desc,
@@ -120,14 +121,17 @@ protected:
                          bool requireFlatNormals);
 
     void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
+                                        HdRenderParam *renderParam,
                                         HdStDrawItem *drawItem,
                                         const HdMeshReprDesc &desc);
 
     void _UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
+                                   HdRenderParam *renderParam,
                                    bool updateMaterialShader,
                                    bool updateGeometricShader);
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
+                           HdRenderParam *renderParam,
                            HdStDrawItem *drawItem,
                            HdDirtyBits *dirtyBits,
                            const HdMeshReprDesc &desc);
@@ -136,16 +140,19 @@ protected:
         HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
+                                 HdRenderParam *renderParam,
                                  HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits,
                                  bool requireSmoothNormals);
 
     void _PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
+                                      HdRenderParam *renderParam,
                                       HdStDrawItem *drawItem,
                                       HdDirtyBits *dirtyBits,
                                       const HdMeshReprDesc &desc);
 
     void _PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
+                                  HdRenderParam *renderParam,
                                   HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits,
                                   bool requireFlatNormals);
@@ -186,6 +193,7 @@ private:
     bool _hasVaryingTopology : 1;  // The prim's topology has changed since
                                    // the prim was created
     bool _displayOpacity : 1;
+    bool _occludedSelectionShowsThrough : 1;
 };
 
 

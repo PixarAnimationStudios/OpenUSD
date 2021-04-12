@@ -28,7 +28,6 @@
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hd/task.h"
-#include "pxr/imaging/glf/simpleLightingContext.h"
 
 #include "pxr/base/gf/vec4f.h"
 
@@ -43,8 +42,10 @@ class HdSceneDelegate;
 struct HdxSelectionTaskParams
 {
     bool enableSelection;
-    GfVec4f selectionColor;
-    GfVec4f locateColor;
+    float occludedSelectionOpacity; // lerp factor when blending 
+                                    // occluded selection
+    GfVec4f selectionColor; // "active" selection color
+    GfVec4f locateColor; // "rollover" selection color
 };
 
 using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
@@ -57,29 +58,30 @@ using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 /// extract those buffers and bind them into the current render pass shader to
 /// enable selection highlighting.
 ///
-class HdxSelectionTask : public HdTask {
+class HdxSelectionTask : public HdTask
+{
 public:
     HDX_API
     HdxSelectionTask(HdSceneDelegate* delegate, SdfPath const& id);
 
     HDX_API
-    virtual ~HdxSelectionTask();
+    ~HdxSelectionTask() override;
 
     /// Sync the render pass resources
     HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
-
+    void Sync(HdSceneDelegate* delegate,
+              HdTaskContext* ctx,
+              HdDirtyBits* dirtyBits) override;
+    
 
     /// Prepare the tasks resources
     HDX_API
-    virtual void Prepare(HdTaskContext* ctx,
-                         HdRenderIndex* renderIndex) override;
+    void Prepare(HdTaskContext* ctx,
+                 HdRenderIndex* renderIndex) override;
 
     /// Execute render pass task
     HDX_API
-    virtual void Execute(HdTaskContext* ctx) override;
+    void Execute(HdTaskContext* ctx) override;
 
 
 private:

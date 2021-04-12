@@ -68,7 +68,8 @@ using HdSt_BasisCurvesTopologySharedPtr =
 ///   * if complexity is 3 or above, the patch is displaced into a half tube
 /// We plan for future checkins will remove the need for the camera facing normal
 /// mode, using the fake "bumped" round normal instead.
-class HdStBasisCurves final: public HdBasisCurves {
+class HdStBasisCurves final: public HdBasisCurves
+{
 public:
     HF_MALLOC_TAG_NEW("new HdStBasisCurves");
 
@@ -76,46 +77,52 @@ public:
     HdStBasisCurves(SdfPath const& id);
 
     HDST_API
-    virtual ~HdStBasisCurves();
+    ~HdStBasisCurves() override;
 
     HDST_API
-    virtual void Sync(HdSceneDelegate *delegate,
-                      HdRenderParam   *renderParam,
-                      HdDirtyBits     *dirtyBits,
-                      TfToken const   &reprToken) override;
+    void Sync(HdSceneDelegate *delegate,
+              HdRenderParam   *renderParam,
+              HdDirtyBits     *dirtyBits,
+              TfToken const   &reprToken) override;
 
     HDST_API
-    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+    void Finalize(HdRenderParam   *renderParam) override;
+
+    HDST_API
+    HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 protected:
     HDST_API
-    virtual void _InitRepr(TfToken const &reprToken,
-                           HdDirtyBits *dirtyBits) override;
+    void _InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits) override;
 
     HDST_API
-    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
+    HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
 
     void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                     HdRenderParam *renderParam,
                      TfToken const &reprToken,
                      HdDirtyBits *dirtyBitsState);
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
+                           HdRenderParam *renderParam,
                            HdStDrawItem *drawItem,
                            HdDirtyBits *dirtyBits,
                            const HdBasisCurvesReprDesc &desc);
 
     void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
+                                 HdRenderParam *renderParam,
                                  HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBits);
     
     void _PopulateVaryingPrimvars(HdSceneDelegate *sceneDelegate,
+                                  HdRenderParam *renderParam,
                                   HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits);
 
     void _PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
+                                  HdRenderParam *renderParam,
                                   HdStDrawItem *drawItem,
                                   HdDirtyBits *dirtyBits);
-
 
 private:
     enum DrawingCoord {
@@ -142,18 +149,19 @@ private:
     bool _SupportsUserWidths(HdStDrawItem* drawItem);
     bool _SupportsUserNormals(HdStDrawItem* drawItem);
     
-    const TfToken& _GetMaterialTag(const HdRenderIndex &renderIndex) const;
-    
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
+                         HdRenderParam *renderParam,
                          HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,
                          const HdBasisCurvesReprDesc &desc);
 
     void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
+                                        HdRenderParam *renderParam,
                                         HdStDrawItem *drawItem,
                                         const HdBasisCurvesReprDesc &desc);
     
     void _UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
+                                   HdRenderParam *renderParam,
                                    bool updateMaterialShader,
                                    bool updateGeometricShader);
 
@@ -162,7 +170,8 @@ private:
     HdTopology::ID _topologyId;
     HdDirtyBits _customDirtyBitsInUse;
     int _refineLevel;  // XXX: could be moved into HdBasisCurveTopology.
-    bool _displayOpacity;
+    bool _displayOpacity : 1;
+    bool _occludedSelectionShowsThrough : 1;
 };
 
 

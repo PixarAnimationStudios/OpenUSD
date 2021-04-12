@@ -21,16 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/hdx/selectionTask.h"
 
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/tokens.h"
 
-#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -41,23 +37,21 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // -------------------------------------------------------------------------- //
 
-typedef std::vector<HdBufferSourceSharedPtr> HdBufferSourceSharedPtrVector;
+using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
 
 HdxSelectionTask::HdxSelectionTask(HdSceneDelegate* delegate,
                                    SdfPath const& id)
     : HdTask(id)
     , _lastVersion(-1)
     , _hasSelection(false)
-    , _params({false, GfVec4f(), GfVec4f()})
+    , _params({false, 0.5, GfVec4f(), GfVec4f()})
     , _selOffsetBar(nullptr)
     , _selUniformBar(nullptr)
     , _selPointColorsBar(nullptr)
 {
 }
 
-HdxSelectionTask::~HdxSelectionTask()
-{
-}
+HdxSelectionTask::~HdxSelectionTask() = default;
 
 void
 HdxSelectionTask::Sync(HdSceneDelegate* delegate,
@@ -132,6 +126,8 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
                                       HdTupleType { HdTypeFloatVec4, 1 });
             uniformSpecs.emplace_back(HdxTokens->selLocateColor,
                                       HdTupleType { HdTypeFloatVec4, 1 });
+            uniformSpecs.emplace_back(HdxTokens->occludedSelectionOpacity,
+                                      HdTupleType { HdTypeFloat, 1 });
             _selUniformBar = 
                 hdStResourceRegistry->AllocateUniformBufferArrayRange(
                     /*role*/HdxTokens->selection,
@@ -161,7 +157,10 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
                     VtValue(_params.selectionColor)),
                 std::make_shared<HdVtBufferSource>(
                     HdxTokens->selLocateColor,
-                    VtValue(_params.locateColor))
+                    VtValue(_params.locateColor)),
+                std::make_shared<HdVtBufferSource>(
+                    HdxTokens->occludedSelectionOpacity,
+                    VtValue(_params.occludedSelectionOpacity))
             });
 
         //

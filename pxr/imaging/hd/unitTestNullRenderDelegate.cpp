@@ -27,8 +27,8 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/basisCurves.h"
+#include "pxr/imaging/hd/bprim.h"
 #include "pxr/imaging/hd/points.h"
-#include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
@@ -248,29 +248,6 @@ private:
     Hd_NullCoordSys &operator =(const Hd_NullCoordSys &) = delete;
 };
 
-class Hd_NullTexture final : public HdTexture {
-public:
-    Hd_NullTexture(SdfPath const& id) : HdTexture(id) {}
-    virtual ~Hd_NullTexture() = default;
-
-    virtual void Sync(HdSceneDelegate *sceneDelegate,
-                      HdRenderParam   *renderParam,
-                      HdDirtyBits     *dirtyBits) override
-    {
-        *dirtyBits = HdTexture::Clean;
-    };
-
-    virtual HdDirtyBits GetInitialDirtyBitsMask() const override {
-        return HdMaterial::Clean;
-    }
-
-private:
-    Hd_NullTexture()                                  = delete;
-    Hd_NullTexture(const Hd_NullTexture &)             = delete;
-    Hd_NullTexture &operator =(const Hd_NullTexture &) = delete;
-};
-
-
 const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
     HdPrimTypeTokens->mesh,
@@ -286,7 +263,6 @@ const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_SPRIM_TYPES =
 
 const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_BPRIM_TYPES =
 {
-    HdPrimTypeTokens->texture
 };
 
 const TfTokenVector &
@@ -395,12 +371,7 @@ HdBprim *
 Hd_UnitTestNullRenderDelegate::CreateBprim(TfToken const& typeId,
                                     SdfPath const& bprimId)
 {
-    if (typeId == HdPrimTypeTokens->texture) {
-        return new Hd_NullTexture(bprimId);
-    } else  {
-        TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
-    }
-
+    TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
 
     return nullptr;
 }
@@ -408,11 +379,7 @@ Hd_UnitTestNullRenderDelegate::CreateBprim(TfToken const& typeId,
 HdBprim *
 Hd_UnitTestNullRenderDelegate::CreateFallbackBprim(TfToken const& typeId)
 {
-    if (typeId == HdPrimTypeTokens->texture) {
-        return new Hd_NullTexture(SdfPath::EmptyPath());
-    } else {
-        TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
-    }
+    TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
 
     return nullptr;
 }

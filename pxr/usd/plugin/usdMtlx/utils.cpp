@@ -147,7 +147,6 @@ _GetUsdValue(const std::string& valueString, const std::string& type)
         CASTA(float, float)
         CASTA(std::string, std::string)
 
-        CASTV(mx::Color2, GfVec2f)
         CASTV(mx::Color3, GfVec3f)
         CASTV(mx::Color4, GfVec4f)
         CASTV(mx::Vector2, GfVec2f)
@@ -296,7 +295,7 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
 
 NdrVersion
 UsdMtlxGetVersion(
-    const mx::ConstElementPtr& mtlx, bool* implicitDefault)
+    const mx::ConstInterfaceElementPtr& mtlx, bool* implicitDefault)
 {
     TfErrorMark mark;
 
@@ -304,7 +303,7 @@ UsdMtlxGetVersion(
     auto version = NdrVersion().GetAsDefault();
 
     // Get the version, if any, otherwise use the invalid version.
-    std::string versionString = mtlx->getAttribute("version");
+    std::string versionString = mtlx->getVersionString();
     if (versionString.empty()) {
         // No version specified.  Use the default.
     }
@@ -319,17 +318,14 @@ UsdMtlxGetVersion(
 
     // Check for explicitly default/not default.
     if (implicitDefault) {
-        std::string isdefault = mtlx->getAttribute("isdefaultversion");
-        if (isdefault.empty()) {
-            // No opinion means implicitly a (potential) default.
-            *implicitDefault = true;
+        const bool isdefault = mtlx->getDefaultVersion();
+        if (isdefault) {
+            *implicitDefault = false;
+            version = version.GetAsDefault();
         }
         else {
-            *implicitDefault = false;
-            if (isdefault == "true") {
-                // Explicitly the default.
-                version = version.GetAsDefault();
-            }
+            // No opinion means implicitly a (potential) default.
+            *implicitDefault = true;
         }
     }
 

@@ -221,8 +221,8 @@ public:
         size_t GetNumElements() const {
             return HdGetComponentCount(_resource->GetTupleType().type);
         }
-        GLuint BindVBO() {
-            return _resource->GetId()->GetRawResource();
+        uint64_t BindVBO() {
+            return _resource->GetHandle()->GetRawResource();
         }
         HdStBufferResourceSharedPtr _resource;
     };

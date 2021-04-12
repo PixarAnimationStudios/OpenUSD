@@ -384,12 +384,18 @@ public:
     HD_API
     virtual TfToken GetMaterialBindingPurpose() const;
 
-    ///
-    /// Returns a token that can be used to select among multiple
-    /// material network implementations.  The default is empty.
-    ///
+
+    /// \deprecated use GetMaterialRenderContexts()
     HD_API
     virtual TfToken GetMaterialNetworkSelector() const;
+
+    ///
+    /// Returns a list, in decending order of preference, that can be used to
+    /// select among multiple material network implementations. The default 
+    /// list contains an empty token.
+    ///
+    HD_API
+    virtual TfTokenVector GetMaterialRenderContexts() const;
 
     ///
     /// Return true to indicate that the render delegate wants rprim primvars

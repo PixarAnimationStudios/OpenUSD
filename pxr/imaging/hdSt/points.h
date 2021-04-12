@@ -41,7 +41,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Points.
 ///
-class HdStPoints final : public HdPoints {
+class HdStPoints final : public HdPoints
+{
 public:
     HF_MALLOC_TAG_NEW("new HdStPoints");
 
@@ -49,29 +50,34 @@ public:
     HdStPoints(SdfPath const& id);
 
     HDST_API
-    virtual ~HdStPoints();
+    ~HdStPoints() override;
 
     HDST_API
-    virtual void Sync(HdSceneDelegate *delegate,
-                      HdRenderParam   *renderParam,
-                      HdDirtyBits     *dirtyBits,
-                      TfToken const   &reprToken) override;
+    void Sync(HdSceneDelegate *delegate,
+              HdRenderParam   *renderParam,
+              HdDirtyBits     *dirtyBits,
+              TfToken const   &reprToken) override;
+
     HDST_API
-    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+    void Finalize(HdRenderParam *renderParam) override;
+
+    HDST_API
+    HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 protected:
     HDST_API
-    virtual void _InitRepr(TfToken const &reprToken,
-                           HdDirtyBits *dirtyBits) override;
+    void _InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits) override;
 
     HDST_API
-    virtual HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
+    HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
 
     void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                     HdRenderParam *renderParam,
                      TfToken const &reprToken,
                      HdDirtyBits *dirtyBitsState);
 
     void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
+                                 HdRenderParam *renderParam,
                                  HdStDrawItem *drawItem,
                                  HdDirtyBits *dirtyBitsState);
 
@@ -84,9 +90,8 @@ private:
         InstancePrimvar = HdDrawingCoord::CustomSlotsBegin
     };
 
-    const TfToken& _GetMaterialTag(const HdRenderIndex &renderIndex) const;
-
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
+                         HdRenderParam *renderParam,
                          HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits);
 };

@@ -32,8 +32,10 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
-#include "pxr/usd/usdShade/shader.h"
-#include "pxr/usd/usdShade/nodeGraph.h"
+#include "pxr/usd/usd/typed.h"
+#include "pxr/usd/usdShade/input.h"
+#include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/usdShade/types.h"
 
 #include "pxr/base/vt/value.h"
@@ -175,49 +177,6 @@ protected:
     bool _IsCompatible() const override;
     
 public:
-
-    /// Constructor that takes a UsdShadeShader.
-    /// Allow implicit (auto) conversion of UsdShadeShader to 
-    /// UsdShadeConnectableAPI, so that a shader can be passed into any function
-    /// that accepts a ConnectableAPI.
-    UsdShadeConnectableAPI(const UsdShadeShader &shader):
-        UsdShadeConnectableAPI(shader.GetPrim())
-    { }
-
-    /// Constructor that takes a UsdShadeNodeGraph.
-    /// Allow implicit (auto) conversion of UsdShadeNodeGraph to 
-    /// UsdShadeConnectableAPI, so that a nodegraph can be passed into any function
-    /// that accepts a ConnectableAPI.
-    UsdShadeConnectableAPI(const UsdShadeNodeGraph &nodeGraph):
-        UsdShadeConnectableAPI(nodeGraph.GetPrim())
-    { }
-
-    /// Returns true if the prim is a shader.
-    ///
-    /// \deprecated This API is deprecated, and will be removed in a future
-    /// USD release.  On first usage, a warning will be emitted unless
-    /// the environment variable 
-    /// USD_SHADE_EMIT_CONNECTABLE_API_DEPRECATION_WARNING
-    /// is set to zero.  Calls this to this function can be replaced
-    /// with the equivalent GetPrim().IsA<UsdShadeShader>(), but
-    /// IsContainer() may also be of interest.
-    ///
-    USDSHADE_API
-    bool IsShader() const;
-
-    /// Returns true if the prim is a node-graph.
-    ///
-    /// \deprecated This API is deprecated, and will be removed in a future
-    /// USD release.  On first usage, a warning will be emitted unless
-    /// the environment variable 
-    /// USD_SHADE_EMIT_CONNECTABLE_API_DEPRECATION_WARNING
-    /// is set to zero.  Calls this to this function can be replaced
-    /// with the equivalent GetPrim().IsA<UsdShadeShader>(), but
-    /// IsContainer() may also be of interest.
-    ///
-    USDSHADE_API
-    bool IsNodeGraph() const;
-
     /// Returns true if the prim is a container.
     ///
     /// The underlying prim type may provide runtime behavior
@@ -749,9 +708,12 @@ public:
 
     /// Returns all outputs on the connectable prim (i.e. shader or node-graph). 
     /// Outputs are represented by attributes in the "outputs:" namespace.
-    /// 
+    /// If \p onlyAuthored is true (the default), then only return authored
+    /// attributes; otherwise, this also returns un-authored builtins.
+    ///
     USDSHADE_API
-    std::vector<UsdShadeOutput> GetOutputs() const;
+    std::vector<UsdShadeOutput> GetOutputs(
+          bool onlyAuthored=true) const;
 
     /// @}
 
@@ -775,9 +737,12 @@ public:
 
     /// Returns all inputs on the connectable prim (i.e. shader or node-graph). 
     /// Inputs are represented by attributes in the "inputs:" namespace.
-    /// 
+    /// If \p onlyAuthored is true (the default), then only return authored
+    /// attributes; otherwise, this also returns un-authored builtins.
+    ///
     USDSHADE_API
-    std::vector<UsdShadeInput> GetInputs() const;
+    std::vector<UsdShadeInput> GetInputs(
+          bool onlyAuthored=true) const;
 
     /// @}
 

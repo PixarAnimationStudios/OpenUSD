@@ -87,6 +87,18 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "inputsLength", UsdLuxTokens->inputsLength);
     _AddToken(cls, "inputsNormalize", UsdLuxTokens->inputsNormalize);
     _AddToken(cls, "inputsRadius", UsdLuxTokens->inputsRadius);
+    _AddToken(cls, "inputsShadowColor", UsdLuxTokens->inputsShadowColor);
+    _AddToken(cls, "inputsShadowDistance", UsdLuxTokens->inputsShadowDistance);
+    _AddToken(cls, "inputsShadowEnable", UsdLuxTokens->inputsShadowEnable);
+    _AddToken(cls, "inputsShadowFalloff", UsdLuxTokens->inputsShadowFalloff);
+    _AddToken(cls, "inputsShadowFalloffGamma", UsdLuxTokens->inputsShadowFalloffGamma);
+    _AddToken(cls, "inputsShapingConeAngle", UsdLuxTokens->inputsShapingConeAngle);
+    _AddToken(cls, "inputsShapingConeSoftness", UsdLuxTokens->inputsShapingConeSoftness);
+    _AddToken(cls, "inputsShapingFocus", UsdLuxTokens->inputsShapingFocus);
+    _AddToken(cls, "inputsShapingFocusTint", UsdLuxTokens->inputsShapingFocusTint);
+    _AddToken(cls, "inputsShapingIesAngleScale", UsdLuxTokens->inputsShapingIesAngleScale);
+    _AddToken(cls, "inputsShapingIesFile", UsdLuxTokens->inputsShapingIesFile);
+    _AddToken(cls, "inputsShapingIesNormalize", UsdLuxTokens->inputsShapingIesNormalize);
     _AddToken(cls, "inputsSpecular", UsdLuxTokens->inputsSpecular);
     _AddToken(cls, "inputsTextureFile", UsdLuxTokens->inputsTextureFile);
     _AddToken(cls, "inputsTextureFormat", UsdLuxTokens->inputsTextureFormat);
@@ -98,19 +110,7 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "mirroredBall", UsdLuxTokens->mirroredBall);
     _AddToken(cls, "orientToStageUpAxis", UsdLuxTokens->orientToStageUpAxis);
     _AddToken(cls, "portals", UsdLuxTokens->portals);
-    _AddToken(cls, "shadowColor", UsdLuxTokens->shadowColor);
-    _AddToken(cls, "shadowDistance", UsdLuxTokens->shadowDistance);
-    _AddToken(cls, "shadowEnable", UsdLuxTokens->shadowEnable);
-    _AddToken(cls, "shadowFalloff", UsdLuxTokens->shadowFalloff);
-    _AddToken(cls, "shadowFalloffGamma", UsdLuxTokens->shadowFalloffGamma);
     _AddToken(cls, "shadowLink", UsdLuxTokens->shadowLink);
-    _AddToken(cls, "shapingConeAngle", UsdLuxTokens->shapingConeAngle);
-    _AddToken(cls, "shapingConeSoftness", UsdLuxTokens->shapingConeSoftness);
-    _AddToken(cls, "shapingFocus", UsdLuxTokens->shapingFocus);
-    _AddToken(cls, "shapingFocusTint", UsdLuxTokens->shapingFocusTint);
-    _AddToken(cls, "shapingIesAngleScale", UsdLuxTokens->shapingIesAngleScale);
-    _AddToken(cls, "shapingIesFile", UsdLuxTokens->shapingIesFile);
-    _AddToken(cls, "shapingIesNormalize", UsdLuxTokens->shapingIesNormalize);
     _AddToken(cls, "treatAsLine", UsdLuxTokens->treatAsLine);
     _AddToken(cls, "treatAsPoint", UsdLuxTokens->treatAsPoint);
 }

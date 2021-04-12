@@ -1548,6 +1548,35 @@ UsdImagingInstanceAdapter::GetInstancerId(
 }
 
 /*virtual*/
+SdfPathVector
+UsdImagingInstanceAdapter::GetInstancerPrototypes(
+        UsdPrim const& usdPrim,
+        SdfPath const& cachePath) const
+{
+    HD_TRACE_FUNCTION();
+
+    if (_IsChildPrim(usdPrim, cachePath)) {
+        UsdImagingInstancerContext instancerContext;
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(),
+                cachePath, &instancerContext);
+        if (!TF_VERIFY(proto.adapter, "%s", cachePath.GetText())) {
+            return SdfPathVector();
+        }
+        return proto.adapter->GetInstancerPrototypes(_GetPrim(proto.path), cachePath);
+    } else {
+        SdfPathVector prototypes;
+        if (const _InstancerData* instancerData =
+            TfMapLookupPtr(_instancerData, usdPrim.GetPath())) {
+            for (_PrimMap::const_iterator i = instancerData->primMap.cbegin();
+                 i != instancerData->primMap.cend(); ++i) {
+                prototypes.push_back(i->first);
+            }
+        }
+        return prototypes;
+    }
+}
+
+/*virtual*/
 size_t
 UsdImagingInstanceAdapter::SampleInstancerTransform(
     UsdPrim const& instancerPrim,
@@ -1610,7 +1639,8 @@ UsdImagingInstanceAdapter::SamplePrimvar(
     UsdTimeCode time,
     size_t maxNumSamples, 
     float *sampleTimes, 
-    VtValue *sampleValues)
+    VtValue *sampleValues,
+    VtIntArray *sampleIndices)
 {
     HD_TRACE_FUNCTION();
 
@@ -1630,7 +1660,7 @@ UsdImagingInstanceAdapter::SamplePrimvar(
         }
         return proto.adapter->SamplePrimvar(
             _GetPrim(proto.path), cachePath, key, time,  
-            maxNumSamples, sampleTimes, sampleValues);
+            maxNumSamples, sampleTimes, sampleValues, sampleIndices);
     }
 
     GfInterval interval = _GetCurrentTimeSamplingInterval();
@@ -1971,7 +2001,8 @@ VtValue
 UsdImagingInstanceAdapter::Get(UsdPrim const& usdPrim, 
                                SdfPath const& cachePath,
                                TfToken const &key,
-                               UsdTimeCode time) const
+                               UsdTimeCode time,
+                               VtIntArray *outIndices) const
 {
     TRACE_FUNCTION();
 
@@ -1984,7 +2015,7 @@ UsdImagingInstanceAdapter::Get(UsdPrim const& usdPrim,
             return VtValue();
         }
         return proto.adapter->Get(
-                _GetPrim(proto.path), cachePath, key, time);
+                _GetPrim(proto.path), cachePath, key, time, outIndices);
     } else if (_InstancerData const* instrData =
         TfMapLookupPtr(_instancerData, usdPrim.GetPath())) {
 
@@ -2005,7 +2036,7 @@ UsdImagingInstanceAdapter::Get(UsdPrim const& usdPrim,
         }
             
     }
-    return BaseAdapter::Get(usdPrim, cachePath, key, time);
+    return BaseAdapter::Get(usdPrim, cachePath, key, time, outIndices);
 }
 
 void
@@ -2564,6 +2595,11 @@ struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
                 instanceIndices.push_back(i);
                 break;
             }
+        }
+
+        // If we're not currently drawing this instance, there's nothing to do.
+        if (instanceIndices.empty()) {
+            return true;
         }
 
         if (selectionCount == selectionPathVec.size()) {

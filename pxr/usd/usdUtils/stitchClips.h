@@ -47,7 +47,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// to effectively merge the time samples in the given \p clipLayers under \p
 /// clipPath without copying the samples into a separate layer.
 ///
-/// \p resultLayer            The layer to which clip meta data and frame data 
+/// \p resultLayer            The layer to which clip metadata and frame data 
 ///                           will be written. The layer representing the static
 ///                           scene topology will be authored as a sublayer on
 ///                           this layer as well; it will be authored as the 
@@ -55,7 +55,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 ///
 /// \p clipLayerFiles         The files containing the time varying data.
 ///
-/// \p clipPath               The path at which we will put the clip meta data.
+/// \p clipPath               The path at which we will put the clip metadata.
 ///
 /// \p startTimeCode          The first time coordinate for the rootLayer 
 ///                           to point to. If none is provided, it will be 
@@ -81,16 +81,18 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// Details on how this is accomplished can be found below:
 ///
 /// Pre-existing opinions will be wiped away upon success. Upon failure, the 
-/// original topology layer, if it was pre-existing, will be preserved. 
-/// Topology layers will be named/looked up via the following scheme: 
+/// original topology and manifest layers, if pre-existing, will be preserved. 
+/// These layers will be named/looked up via the following scheme: 
 ///
 ///     topologyLayerName = <resultIdWithoutExt>.topology.<resultExt>
+///     manifestLayerName = <resultIdWithoutExt>.manifest.<resultExt>
 ///
 /// For example: if the resultLayerFile's name is foo.usd the expected topology
-/// layer will be foo.topology.usd. 
+/// layer will be foo.topology.usd and the expected manifest layer will be
+/// foo.manifest.usd.
 /// 
-/// This layer contains the aggregated topology of the set of \p clipLayers.
-/// This process will merge prims and properties, save for time 
+/// The topology layer contains the aggregated topology of the set of 
+/// \p clipLayers. This process will merge prims and properties, save for time 
 /// varying properties, those will be accessed from the original
 /// clip files.
 ///
@@ -102,8 +104,12 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// and a second layer with /World/fx/foo.baz. Our aggregate topology layer
 /// will contain both /World/fx/foo.bar, /World/fx/foo.baz.
 ///
-/// The \p resultLayer will contain clip meta data: clipTimes, clipPrimPath 
-/// clipManifestAssetPath, clipActive etc. at the specified \p clipPath.
+/// The manifest layer contains declarations for all attributes that exist
+/// under \p clipPath and descendants in the clip layers with authored time
+/// samples. Any default values authored into the topology layer for these
+/// time sampled attributes will also be authored into the manifest.
+///
+/// The \p resultLayer will contain clip metadata at the specified \p clipPath.
 /// The resultLayer will also have timeCode range data, such as start and end 
 /// timeCodes written to it, with the starting position being provided by 
 /// \p startTimeCode and the ending provided by \p endTimeCode.
@@ -140,6 +146,28 @@ bool
 UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer, 
                             const std::vector<std::string>& clipLayerFiles);
 
+/// A function which creates a clip manifest from the set of \p clipLayerFiles
+/// for use in USD's Value Clips system. This manifest will contain
+/// declarations for attributes with authored time samples in the clip layers.
+/// If a time sampled attribute has a default value authored in the given 
+/// \p topologyLayer, that value will also be authored as its default in the
+/// manifest.
+///
+/// \p manifestLayer          The layer where manifest data will be inserted.
+///
+/// \p topologyLayer          The topology layer for \p clipLayerFiles.
+///
+/// \p clipLayerFiles         The files containing the time varying data.
+/// 
+/// \p clipPrimPath           The manifest will contain attributes from this
+///                           prim and its descendants in \p clipLayerFiles.
+USDUTILS_API
+bool
+UsdUtilsStitchClipsManifest(const SdfLayerHandle& manifestLayer,
+                            const SdfLayerHandle& topologyLayer,
+                            const std::vector<std::string>& clipLayerFiles,
+                            const SdfPath& clipPath);
+
 /// A function which authors clip template metadata on a particular prim in a 
 /// result layer, as well as adding the topologyLayer to the list of subLayers
 /// on the \p resultLayer. It will clear the \p resultLayer and create 
@@ -151,6 +179,9 @@ UsdUtilsStitchClipsTopology(const SdfLayerHandle& topologyLayer,
 ///
 /// \p topologyLayer          The layer containing the aggregate topology of 
 ///                           the clipLayers which the metadata refers to.
+///
+/// \p manifestLayer          The layer containing manifest for the attributes
+///                           in the clipLayers.
 ///
 /// \p clipPath               The path at which to author the metadata in 
 ///                           \p resultLayer
@@ -189,6 +220,7 @@ USDUTILS_API
 bool
 UsdUtilsStitchClipsTemplate(const SdfLayerHandle& resultLayer,
                             const SdfLayerHandle& topologyLayer,
+                            const SdfLayerHandle& manifestLayer,
                             const SdfPath& clipPath,
                             const std::string& templatePath,
                             const double startTime,
@@ -214,6 +246,18 @@ USDUTILS_API
 std::string
 UsdUtilsGenerateClipTopologyName(const std::string& rootLayerName);
 
+/// Generates a manifest file name based on an input file name
+/// 
+/// For example, if given 'foo.usd', it generates 'foo.manifest.usd'
+/// 
+/// Note: this will not strip preceding paths off of a file name
+/// so /bar/baz/foo.usd will produce /bar/baz/foo.manifest.usd
+///
+/// \p rootLayerName      The filepath used as a basis for generating
+///                       our manifest layer name.
+USDUTILS_API
+std::string
+UsdUtilsGenerateClipManifestName(const std::string& rootLayerName);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

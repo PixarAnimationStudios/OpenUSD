@@ -29,7 +29,7 @@
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 #include "pxr/imaging/hd/unitTestDelegate.h"
-#include "pxr/imaging/hdSt/glConversions.h"
+#include "pxr/imaging/hdSt/hioConversions.h"
 
 #include "pxr/imaging/hdx/renderTask.h"
 
@@ -399,7 +399,7 @@ void HdEmbree_TestGLDrawing::OffscreenTest()
         HioImage::StorageSpec storage;
         storage.width = rb->GetWidth();
         storage.height = rb->GetHeight();
-        storage.format = HdStGLConversions::GetHioFormat(rb->GetFormat());
+        storage.format = HdStHioConversions::GetHioFormat(rb->GetFormat());
         storage.flipped = true;
         storage.data = rb->Map();
 

@@ -565,8 +565,6 @@ HdxFullscreenShader::_Draw(
         fragDesc.debugName = _shaderName.GetString();
         fragDesc.shaderStage = HgiShaderStageFragment;
         HgiShaderFunctionAddStageInput(
-            &fragDesc, "hd_Position", "vec4", "position");
-        HgiShaderFunctionAddStageInput(
             &fragDesc, "uvOut", "vec2");
         HgiShaderFunctionAddStageOutput(
             &fragDesc, "hd_FragColor", "vec4", "color");

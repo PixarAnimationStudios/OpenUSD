@@ -24,9 +24,15 @@
 #include "pxr/usdImaging/usdImaging/materialParamUtils.h"
 
 #include "pxr/base/tf/pathUtils.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/sdf/layerUtils.h"
+#include "pxr/usd/sdr/registry.h"
+#include "pxr/usd/sdr/shaderNode.h"
+#include "pxr/usd/sdr/shaderProperty.h"
+#include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usdShade/connectableAPI.h"
+#include "pxr/usd/usdShade/nodeDefAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -217,5 +223,269 @@ UsdImaging_ResolveMaterialParamValue(
         _ResolveAssetAttribute(
             value.UncheckedGet<SdfAssetPath>(), attr, time));
 }
+
+static TfToken
+_GetPrimvarNameAttributeValue(
+    SdrShaderNodeConstPtr const& sdrNode,
+    HdMaterialNode const& node,
+    TfToken const& propName)
+{
+    VtValue vtName;
+
+    // If the name of the primvar was authored in parameters list.
+    // The authored value is the strongest opinion
+
+    auto const& paramIt = node.parameters.find(propName);
+    if (paramIt != node.parameters.end()) {
+        vtName = paramIt->second;
+    }
+
+    // If we didn't find an authored value consult Sdr for the default value.
+
+    if (vtName.IsEmpty() && sdrNode) {
+        if (SdrShaderPropertyConstPtr sdrPrimvarInput = 
+                sdrNode->GetShaderInput(propName)) {
+            vtName = sdrPrimvarInput->GetDefaultValue();
+        }
+    }
+
+    if (vtName.IsHolding<TfToken>()) {
+        return vtName.UncheckedGet<TfToken>();
+    } else if (vtName.IsHolding<std::string>()) {
+        return TfToken(vtName.UncheckedGet<std::string>());
+    }
+
+    return TfToken();
+}
+
+static void
+_ExtractPrimvarsFromNode(
+    HdMaterialNode const& node,
+    HdMaterialNetwork *materialNetwork,
+    TfTokenVector const & shaderSourceTypes)
+{
+    SdrRegistry &shaderReg = SdrRegistry::GetInstance();
+    SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(
+        node.identifier, shaderSourceTypes);
+
+    if (sdrNode) {
+        // GetPrimvars and GetAdditionalPrimvarProperties together give us the
+        // complete set of primvars needed by this shader node.
+        NdrTokenVec const& primvars = sdrNode->GetPrimvars();
+        materialNetwork->primvars.insert( 
+            materialNetwork->primvars.end(), primvars.begin(), primvars.end());
+
+        for (TfToken const& p : sdrNode->GetAdditionalPrimvarProperties()) {
+            TfToken name = _GetPrimvarNameAttributeValue(sdrNode, node, p);
+            materialNetwork->primvars.push_back(name);
+        }
+    }
+}
+
+static
+TfToken _GetNodeId(UsdShadeConnectableAPI const &shadeNode,
+                   TfTokenVector const & shaderSourceTypes)
+{
+    UsdShadeNodeDefAPI nodeDef(shadeNode.GetPrim());
+    if (nodeDef) {
+        // Extract the identifier of the node.
+        // GetShaderNodeForSourceType will try to find/create an Sdr node for 
+        // all three info cases: info:id, info:sourceAsset and info:sourceCode.
+        TfToken id;
+        if (!nodeDef.GetShaderId(&id)) {
+            for (auto const& sourceType : shaderSourceTypes) {
+                if (SdrShaderNodeConstPtr sdrNode = 
+                        nodeDef.GetShaderNodeForSourceType(sourceType)) {
+                    return sdrNode->GetIdentifier();
+                }
+            }
+        }
+        return id;
+    }
+
+    // Otherwise for connectable nodes that don't implement NodeDefAPI (such
+    // UsdLux lights and light filters) the type name of the prim is used as
+    // the node's identifier.
+    return shadeNode.GetPrim().GetTypeName();
+}
+
+// Walk the shader graph and emit nodes in topological order to avoid
+// forward-references.
+// This current implementation of _WalkGraph flattens the shading network into
+// a single graph with connectivity and values. It does not try to identify
+// NodeGraphs that can be processed once and shared, or even look for a
+// pre-baked implementation. Currently neither the material processing in Hydra
+// nor any of the back-ends (like HdPrman) can make use of this anyway.
+using _PathSet = std::unordered_set<SdfPath, SdfPath::Hash>;
+
+static
+void _WalkGraph(
+    UsdShadeConnectableAPI const & shadeNode,
+    HdMaterialNetwork* materialNetwork,
+    _PathSet* visitedNodes,
+    TfTokenVector const & shaderSourceTypes,
+    UsdTimeCode time)
+{
+    // Store the path of the node
+    HdMaterialNode node;
+    node.path = shadeNode.GetPath();
+    if (!TF_VERIFY(node.path != SdfPath::EmptyPath())) {
+        return;
+    }
+
+    // If this node has already been found via another path, we do
+    // not need to add it again.
+    if (!visitedNodes->insert(shadeNode.GetPath()).second) {
+        return;
+    }
+
+    // Visit the inputs of this node to ensure they are emitted first.
+    const std::vector<UsdShadeInput> shadeNodeInputs = shadeNode.GetInputs();
+    for (UsdShadeInput input: shadeNodeInputs) {
+
+        TfToken inputName = input.GetBaseName();
+
+        // Find the attribute this input is getting its value from, which might
+        // be an output or an input, including possibly itself if not connected
+        UsdShadeAttributeType attrType;
+        UsdAttribute attr = input.GetValueProducingAttribute(&attrType);
+
+        if (attrType == UsdShadeAttributeType::Output) {
+            // If it is an output on a shading node we visit the node and also
+            // create a relationship in the network
+            _WalkGraph(UsdShadeConnectableAPI(
+                attr.GetPrim()),
+                materialNetwork,
+                visitedNodes,
+                shaderSourceTypes,
+                time);
+
+            HdMaterialRelationship relationship;
+            relationship.outputId = node.path;
+            relationship.outputName = inputName;
+            relationship.inputId = attr.GetPrim().GetPath();
+            relationship.inputName = UsdShadeOutput(attr).GetBaseName();
+            materialNetwork->relationships.push_back(relationship);
+        } else if (attrType == UsdShadeAttributeType::Input) {
+            // If it is an input attribute we get the authored value.
+            //
+            // If its type is asset and contains <UDIM>,
+            // we resolve the asset path with the udim pattern to a file
+            // path with a udim pattern, e.g.,
+            // //SHOW/myImage.<UDIM>.exr to /filePath/myImage.<UDIM>.exr.
+            const VtValue value =
+                UsdImaging_ResolveMaterialParamValue(attr, time);
+            if (!value.IsEmpty()) {
+                node.parameters[inputName] = value;
+            }
+        }
+    }
+
+    // Extract the identifier of the node.
+    // GetShaderNodeForSourceType will try to find/create an Sdr node for all
+    // three info cases: info:id, info:sourceAsset and info:sourceCode.
+    TfToken id = _GetNodeId(shadeNode, shaderSourceTypes);
+
+    if (!id.IsEmpty()) {
+        node.identifier = id;
+
+        // GprimAdapter can filter-out primvars not used by a material to reduce
+        // the number of primvars send to the render delegate. We extract the
+        // primvar names from the material node to ensure these primvars are
+        // not filtered-out by GprimAdapter.
+        _ExtractPrimvarsFromNode(node, materialNetwork, shaderSourceTypes);
+    }
+
+    materialNetwork->nodes.push_back(node);
+}
+
+void
+UsdImaging_BuildHdMaterialNetworkFromTerminal(
+    UsdPrim const& usdTerminal,
+    TfToken const& terminalIdentifier,
+    TfTokenVector const& shaderSourceTypes,
+    HdMaterialNetworkMap *materialNetworkMap,
+    UsdTimeCode time)
+{
+    HdMaterialNetwork& network = materialNetworkMap->map[terminalIdentifier];
+    std::vector<HdMaterialNode>& nodes = network.nodes;
+    _PathSet visitedNodes;
+
+    _WalkGraph(
+        UsdShadeConnectableAPI(usdTerminal),
+        &network,
+        &visitedNodes, 
+        shaderSourceTypes,
+        time);
+
+    if (!TF_VERIFY(!nodes.empty())) return;
+
+    // _WalkGraph() inserts the terminal last in the nodes list.
+    HdMaterialNode& terminalNode = nodes.back();
+    
+    // Store terminals on material so backend can easily access them.
+    materialNetworkMap->terminals.push_back(terminalNode.path);
+
+    // Validate that idenfitier (info:id) is known to Sdr.
+    // Return empty network if it fails so backend can use fallback material.
+    SdrRegistry &shaderReg = SdrRegistry::GetInstance();
+    if (!shaderReg.GetNodeByIdentifier(terminalNode.identifier)) {
+        TF_WARN("Invalid info:id %s node: %s", 
+                terminalNode.identifier.GetText(),
+                terminalNode.path.GetText());
+        *materialNetworkMap = HdMaterialNetworkMap();
+    }
+};
+
+static
+bool _IsGraphTimeVarying(UsdShadeConnectableAPI const & shadeNode,
+                         _PathSet* visitedNodes)
+{
+    // Store the path of the node
+    if (!TF_VERIFY(shadeNode.GetPath() != SdfPath::EmptyPath())) {
+        return false;
+    }
+
+    // If this node has already been found via another path, we do
+    // not need to add it again.
+    if (!visitedNodes->insert(shadeNode.GetPath()).second) {
+        return false;
+    }
+
+    // Visit the inputs of this node to ensure they are emitted first.
+    const std::vector<UsdShadeInput> shadeNodeInputs = shadeNode.GetInputs();
+    for (UsdShadeInput input: shadeNodeInputs) {
+
+        // Find the attribute this input is getting its value from, which might
+        // be an output or an input, including possibly itself if not connected
+        UsdShadeAttributeType attrType;
+        UsdAttribute attr = input.GetValueProducingAttribute(&attrType);
+
+        if (attrType == UsdShadeAttributeType::Output) {
+            // If it is an output on a shading node we visit the node and also
+            // create a relationship in the network
+            if (_IsGraphTimeVarying(
+                    UsdShadeConnectableAPI(attr.GetPrim()), visitedNodes)) {
+                return true;
+            }
+        } else if (attrType == UsdShadeAttributeType::Input) {
+            // If it is an input attribute we get the authored value.
+            if (attr.ValueMightBeTimeVarying()) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool
+UsdImaging_IsHdMaterialNetworkTimeVarying(
+    UsdPrim const& usdTerminal)
+{
+    _PathSet visitedNodes;
+    return _IsGraphTimeVarying(
+        UsdShadeConnectableAPI(usdTerminal), &visitedNodes);
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE

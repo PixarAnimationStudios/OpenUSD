@@ -143,7 +143,7 @@ public:
                                      HdRprim const& rprim);
 
     HD_API
-    TfTokenVector const & GetBuiltinPrimvarNames() const;
+    static TfTokenVector const & GetBuiltinPrimvarNames();
 
     HD_API
     virtual void Sync(HdSceneDelegate *sceneDelegate,

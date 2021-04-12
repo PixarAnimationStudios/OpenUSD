@@ -47,35 +47,6 @@
 
 #include <algorithm>
 
-// If defined this macro causes default values on shader inputs
-// (parameters and inputs in MaterialX-speak) to get written to each
-// USD shader definition.  Note that this information is available in
-// the corresponding NdrProperty for each input on the NdrNode for the
-// shader.  There are pros and cons for including the defaults:
-//   include:
-//     + Final value visible in naive clients
-//     - Redundant, could be out of sync
-//     - Must compare value to detect default
-//   exclude:
-//     + Fewer opinions
-//     + Default iff no opinion
-//     - Naive clients (e.g. usdview) don't know default
-#define ADD_NODE_INPUT_DEFAULTS_TO_USD
-
-// MaterialX 1.35 lacks these.
-namespace MaterialX {
-using ConstParameterPtr = std::shared_ptr<const class Parameter>;
-using ConstPortElementPtr = std::shared_ptr<const class PortElement>;
-using ConstInputPtr = std::shared_ptr<const class Input>;
-using ConstOutputPtr = std::shared_ptr<const class Output>;
-using ConstInterfaceElementPtr = std::shared_ptr<const class InterfaceElement>;
-using ConstShaderRefPtr = shared_ptr<const class ShaderRef>;
-using ConstBindInputPtr = shared_ptr<const class BindInput>;
-using ConstCollectionPtr = shared_ptr<const class Collection>;
-using ConstGeomElementPtr = shared_ptr<const class GeomElement>;
-using ConstLookPtr = shared_ptr<const class Look>;
-using ConstMaterialAssignPtr = shared_ptr<const class MaterialAssign>;
-}
 
 namespace mx = MaterialX;
 
@@ -89,7 +60,6 @@ struct _AttributeNames {
 
     _AttributeNames() { }
 
-    Name bindtoken        {"bindtoken"};
     Name channels         {"channels"};
     Name cms              {"cms"};
     Name cmsconfig        {"cmsconfig"};
@@ -97,6 +67,8 @@ struct _AttributeNames {
     Name context          {"context"};
     Name default_         {"default"};
     Name doc              {"doc"};
+    Name enum_            {"enum"};
+    Name enumvalues       {"enumvalues"};
     Name excludegeom      {"excludegeom"};
     Name geom             {"geom"};
     Name helptext         {"helptext"};
@@ -114,12 +86,9 @@ struct _AttributeNames {
     Name node             {"node"};
     Name output           {"output"};
     Name semantic         {"semantic"};
-    Name shaderref        {"shaderref"};
     Name token            {"token"};
     Name type             {"type"};
     Name uicolor          {"uicolor"};
-    Name uienum           {"uienum"};
-    Name uienumvalues     {"uienumvalues"};
     Name uifolder         {"uifolder"};
     Name uimax            {"uimax"};
     Name uimin            {"uimin"};
@@ -137,9 +106,10 @@ struct _AttributeNames {
 static const _AttributeNames names;
 
 TF_DEFINE_PRIVATE_TOKENS(
-    tokens,
+    _tokens,
 
     ((light, "light"))
+    ((mtlxRenderContext, "mtlx"))
 );
 
 // Returns the name of an element.
@@ -319,7 +289,7 @@ _FindMatchingNodeDef(
         }
 
         // Filter by types.
-        if (!mtlxInterface->isTypeCompatible(mtlxNodeDef)) {
+        if (mtlxInterface && !mtlxInterface->isTypeCompatible(mtlxNodeDef)) {
             continue;
         }
 
@@ -349,24 +319,25 @@ _FindMatchingNodeDef(
     return result;
 }
 
-// Return the nodedef with node=family, that's type compatible with
-// mtlxInterface, and has a compatible version.  If target isn't empty
+// Return the shader nodedef with node=family that has a compatible version.
+// If target isn't empty
 // then it must also match.  Returns null if there's no such nodedef.
 // If the nodedef is not found in the document then the standard
 // library is also checked.
 static
 mx::ConstNodeDefPtr
 _FindMatchingNodeDef(
-    const mx::ConstInterfaceElementPtr& mtlxInterface,
+    const mx::ConstNodePtr& mtlxShaderNode,
     const std::string& family,
     const NdrVersion& version,
-    const std::string& target)
+    const std::string& target,
+    const mx::ConstInterfaceElementPtr& mtlxInterface = mx::NodeDefPtr())
 {
-    auto nodeDef = _FindMatchingNodeDef(mtlxInterface->getDocument(),
+    auto nodeDef = _FindMatchingNodeDef(mtlxShaderNode->getDocument(),
                                         mtlxInterface,
-                                        mtlxInterface->getCategory(),
-                                        UsdMtlxGetVersion(mtlxInterface),
-                                        mtlxInterface->getTarget());
+                                        mtlxShaderNode->getCategory(),
+                                        UsdMtlxGetVersion(mtlxShaderNode),
+                                        mtlxShaderNode->getTarget());
     if (nodeDef) {
         return nodeDef;
     }
@@ -375,9 +346,9 @@ _FindMatchingNodeDef(
     static auto standardLibraryDocument = UsdMtlxGetDocument("");
     return _FindMatchingNodeDef(standardLibraryDocument,
                                 mtlxInterface,
-                                mtlxInterface->getCategory(),
-                                UsdMtlxGetVersion(mtlxInterface),
-                                mtlxInterface->getTarget());
+                                mtlxShaderNode->getCategory(),
+                                UsdMtlxGetVersion(mtlxShaderNode),
+                                mtlxShaderNode->getTarget());
 }
 
 // Get the nodeDef either from the mtlxNode itself or get it from the stdlib.
@@ -394,9 +365,20 @@ _GetNodeDef(const mx::ConstNodePtr& mtlxNode)
         return mtlxNodeDef;
     }
 
-    return _FindMatchingNodeDef(mtlxNode, mtlxNode->getCategory(), 
-                                UsdMtlxGetVersion(mtlxNode),
-                                mtlxNode->getTarget());
+    auto mtlxType = mtlxNode->getType();
+    if (mtlxType == mx::SURFACE_SHADER_TYPE_STRING ||
+        mtlxType == mx::DISPLACEMENT_SHADER_TYPE_STRING ||
+        mtlxType == mx::VOLUME_SHADER_TYPE_STRING ||
+        mtlxType == mx::LIGHT_SHADER_TYPE_STRING) {
+        return _FindMatchingNodeDef(mtlxNode, mtlxNode->getCategory(), 
+                                    UsdMtlxGetVersion(mtlxNode),
+                                    mtlxNode->getTarget());
+    }
+    else {
+        return _FindMatchingNodeDef(mtlxNode, mtlxNode->getCategory(), 
+                                    UsdMtlxGetVersion(mtlxNode),
+                                    mtlxNode->getTarget(), mtlxNode);
+    }
 }
 
 // Get the shader id for a MaterialX nodedef.
@@ -528,8 +510,8 @@ _SetUIAttributes(const UsdShadeInput& usd, const mx::ConstElementPtr& mtlx)
         usd.SetDocumentation(helptext);
     }
 
-    mx::StringVec uienum;
-    if (_Value(&uienum, mtlx, names.uienum) && !uienum.empty()) {
+    mx::StringVec enums;
+    if (_Value(&enums, mtlx, names.enum_) && !enums.empty()) {
         // We can't write this directly via Usd API except through
         // SetMetadata() with a hard-coded key.  We'll use the Sdf
         // API instead.
@@ -537,13 +519,13 @@ _SetUIAttributes(const UsdShadeInput& usd, const mx::ConstElementPtr& mtlx)
             TfStatic_cast<SdfAttributeSpecHandle>(
                 usd.GetAttr().GetPropertyStack().front());
         VtTokenArray allowedTokens;
-        allowedTokens.reserve(uienum.size());
-        for (const auto& tokenString: uienum) {
+        allowedTokens.reserve(enums.size());
+        for (const auto& tokenString: enums) {
             allowedTokens.push_back(TfToken(tokenString));
         }
         attr->SetAllowedTokens(allowedTokens);
 
-        // XXX -- uienumvalues has no USD counterpart
+        // XXX -- enumvalues has no USD counterpart
     }
 
     // XXX -- uimin, uimax have no USD counterparts.
@@ -611,9 +593,6 @@ private:
     void _CreateInterface(const mx::ConstInterfaceElementPtr& iface,
                           const UsdShadeConnectableAPI& connectable);
     void _AddNode(const mx::ConstNodePtr& mtlxNode, const UsdPrim& usdParent);
-    UsdShadeInput _AddParameter(const mx::ConstParameterPtr& mtlxParameter,
-                                const UsdShadeConnectableAPI& connectable,
-                                bool isInterface = false);
     UsdShadeInput _AddInput(const mx::ConstInputPtr& mtlxInput,
                             const UsdShadeConnectableAPI& connectable,
                             bool isInterface = false);
@@ -699,7 +678,7 @@ _NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
         // Create the interface.
         if (_mtlxNodeDef) {
             for (auto& i: _GetInheritanceStack(_mtlxNodeDef)) {
-                _CreateInterface(i, usdNodeGraph);
+                _CreateInterface(i, usdNodeGraph.ConnectableAPI());
             }
         }
     }
@@ -714,7 +693,7 @@ _NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
     _ConnectNodes();
 
     if (isInsideNodeGraph) {
-        _ConnectTerminals(_mtlxContainer,  UsdShadeNodeGraph(usdPrim));
+        _ConnectTerminals(_mtlxContainer, UsdShadeConnectableAPI(usdPrim));
     }
     else if (outputs) {
         // Collect the outputs on the existing shader nodes.
@@ -736,9 +715,6 @@ _NodeGraphBuilder::_CreateInterface(
 {
     static constexpr bool isInterface = true;
 
-    for (auto mtlxInput: iface->getParameters()) {
-        _AddParameter(mtlxInput, connectable, isInterface);
-    }
     for (auto mtlxInput: iface->getInputs()) {
         _AddInput(mtlxInput, connectable, isInterface);
     }
@@ -767,11 +743,6 @@ _NodeGraphBuilder::_AddNode(
     auto connectable = usdShader.ConnectableAPI();
     _SetCoreUIAttributes(usdShader.GetPrim(), mtlxNode);
 
-    // Add the parameters.
-    for (auto mtlxInput: mtlxNode->getParameters()) {
-        _AddParameter(mtlxInput, connectable);
-    }
-
     // Add the inputs.
     for (auto mtlxInput: mtlxNode->getInputs()) {
         _AddInput(mtlxInput, connectable);
@@ -791,17 +762,6 @@ _NodeGraphBuilder::_AddNode(
         // Do not add any (default) output to the usd node if the mtlxNode
         // is missing a corresponding mtlxNodeDef.
     }
-}
-
-UsdShadeInput
-_NodeGraphBuilder::_AddParameter(
-    const mx::ConstParameterPtr& mtlxParameter,
-    const UsdShadeConnectableAPI& connectable,
-    bool isInterface)
-{
-    auto result = _AddInputCommon(mtlxParameter, connectable, isInterface);
-    result.SetConnectability(UsdShadeTokens->interfaceOnly);
-    return result;
 }
 
 UsdShadeInput
@@ -874,9 +834,9 @@ _NodeGraphBuilder::_AddOutput(
             context == "volume" ||
             context == "light" ||
             mtlxType == mx::SURFACE_SHADER_TYPE_STRING ||
-            mtlxType == "displacementshader" ||
+            mtlxType == mx::DISPLACEMENT_SHADER_TYPE_STRING ||
             mtlxType == mx::VOLUME_SHADER_TYPE_STRING ||
-            mtlxType == "lightshader") {
+            mtlxType == mx::LIGHT_SHADER_TYPE_STRING) {
         usdType = SdfValueTypeNames->Token;
     }
     else if (shaderOnly || !context.empty()) {
@@ -1091,7 +1051,6 @@ public:
     using VariantName = std::string;
     using VariantSetName = std::string;
     using VariantSetOrder = std::vector<VariantSetName>;
-    using VariantShaderSet = std::vector<std::string>;
 
     _Context(const UsdStagePtr& stage, const SdfPath& internalPath);
 
@@ -1099,14 +1058,12 @@ public:
     _NodeGraph AddNodeGraph(const mx::ConstNodeGraphPtr& mtlxNodeGraph);
     _NodeGraph AddImplicitNodeGraph(const mx::ConstDocumentPtr& mtlxDocument);
     _NodeGraph AddNodeGraphWithDef(const mx::ConstNodeGraphPtr& mtlxNodeGraph);
-    UsdShadeMaterial BeginMaterial(const mx::ConstMaterialPtr& mtlxMaterial);
+    UsdShadeMaterial BeginMaterial(const mx::ConstNodePtr& mtlxMaterial);
     void EndMaterial();
-    UsdShadeShader AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef);
+    UsdShadeShader AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode);
     void AddMaterialVariant(const std::string& mtlxMaterialName,
                             const VariantSetName& variantSetName,
-                            const VariantName& variantName,
-                            const VariantName& uniqueVariantName,
-                            const VariantShaderSet* shaders = nullptr) const;
+                            const VariantName& variantName) const;
     UsdCollectionAPI AddCollection(const mx::ConstCollectionPtr&);
     UsdCollectionAPI AddGeometryReference(const mx::ConstGeomElementPtr&);
 
@@ -1130,13 +1087,10 @@ private:
 
     _NodeGraph _AddNodeGraph(const mx::ConstNodeGraphPtr& mtlxNodeGraph,
                              const mx::ConstDocumentPtr& mtlxDocument);
-    void _BindNodeGraph(const mx::ConstBindInputPtr& mtlxBindInput,
+    void _BindNodeGraph(const mx::ConstInputPtr& mtlxInput,
                         const SdfPath& referencingPathParent,
                         const UsdShadeConnectableAPI& connectable,
                         const _NodeGraph& usdNodeGraph);
-    bool _AddShaderVariant(const std::string& mtlxMaterialName,
-                           const std::string& mtlxShaderRefName,
-                           const Variant& variant);
     static
     UsdShadeInput _AddInput(const mx::ConstValueElementPtr& mtlxValue,
                             const UsdShadeConnectableAPI& connectable);
@@ -1172,15 +1126,15 @@ private:
     std::map<_CollectionKey, UsdCollectionAPI> _collections;
     std::map<_GeomKey, UsdCollectionAPI> _geomSets;
     std::map<mx::ConstGeomElementPtr, UsdCollectionAPI> _collectionMapping;
-    // Mapping of MaterialX material name to mapping of shaderref name to
-    // the corresponding UsdShadeShader.  If the shaderref name is empty
+    // Mapping of MaterialX material name to mapping of shaderNode name to
+    // the corresponding UsdShadeShader.  If the shaderNode name is empty
     // this maps to the UsdShadeMaterial.
     std::map<std::string,
              std::map<std::string, UsdShadeConnectableAPI>> _shaders;
     int _nextGeomIndex = 1;
 
     // Active state.
-    mx::ConstMaterialPtr _mtlxMaterial;
+    mx::ConstNodePtr _mtlxMaterial;
     UsdShadeMaterial _usdMaterial;
 };
 
@@ -1289,7 +1243,7 @@ _Context::AddNodeGraphWithDef(const mx::ConstNodeGraphPtr& mtlxNodeGraph)
 }
 
 UsdShadeMaterial
-_Context::BeginMaterial(const mx::ConstMaterialPtr& mtlxMaterial)
+_Context::BeginMaterial(const mx::ConstNodePtr& mtlxMaterial)
 {
     if (TF_VERIFY(!_usdMaterial)) {
         auto materialPath =
@@ -1298,7 +1252,8 @@ _Context::BeginMaterial(const mx::ConstMaterialPtr& mtlxMaterial)
             _SetCoreUIAttributes(usdMaterial.GetPrim(), mtlxMaterial);
 
             // Record the material for later variants.
-            _shaders[_Name(mtlxMaterial)][""] = usdMaterial;
+            _shaders[_Name(mtlxMaterial)][""] =
+                UsdShadeConnectableAPI(usdMaterial);
 
             // Cut over.
             _mtlxMaterial = mtlxMaterial;
@@ -1321,23 +1276,22 @@ _Context::EndMaterial()
 }
 
 UsdShadeShader
-_Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
+_Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
 {
     if (!TF_VERIFY(_usdMaterial)) {
         return UsdShadeShader();
     }
 
-    // Get the nodeDef for this shaderRef.
-    mx::ConstNodeDefPtr mtlxNodeDef = mtlxShaderRef->getNodeDef();
-    if (mtlxShaderRef->getNodeDefString().empty()) {
-        // The shaderref specified a node instead of a nodeDef. Find
+    // Get the nodeDef for this shaderNode.
+    mx::ConstNodeDefPtr mtlxNodeDef = mtlxShaderNode->getNodeDef();
+    if (mtlxShaderNode->getNodeDefString().empty()) {
+        // The shaderNode specified a node instead of a nodeDef. Find
         // the best matching nodedef since the MaterialX API doesn't.
         mtlxNodeDef =
-            _FindMatchingNodeDef(mtlxNodeDef->getDocument(),
-                                 mtlxNodeDef,
-                                 mtlxShaderRef->getNodeString(),
-                                 UsdMtlxGetVersion(mtlxShaderRef),
-                                 mtlxShaderRef->getTarget());
+            _FindMatchingNodeDef(mtlxShaderNode,
+                                 mtlxShaderNode->getCategory(),
+                                 UsdMtlxGetVersion(mtlxShaderNode),
+                                 mtlxShaderNode->getTarget());
     }
     auto shaderId = _GetShaderId(mtlxNodeDef);
     if (shaderId.IsEmpty()) {
@@ -1360,16 +1314,13 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
     //        that implements the nodedef here.
 
     // Choose the name of the shader.  In MaterialX this is just
-    // mtlxShaderRef->getName() and has no meaning other than to uniquely
+    // mtlxShaderNode->getName() and has no meaning other than to uniquely
     // identify the shader.  In USD to support materialinherit we must
     // ensure that shaders have the same name if one should compose over
-    // the other.  MaterialX composes over if a shaderref refers to the
+    // the other.  MaterialX composes over if a shader node refers to the
     // same nodedef so in USD we use the nodedef's name.  This name isn't
     // ideal since it's just an arbitrary unique name;  the nodedef's
-    // node name is more meaningful.  But the MaterialX spec says that
-    // composing over happens if the shaderrefs refer to the same
-    // nodedef element, not the same nodedef node name, and more than one
-    // nodedef can overload a node name.
+    // node name is more meaningful.
     const auto name = _MakeName(mtlxNodeDef);
 
     // Create the shader if it doesn't exist and copy node def values.
@@ -1383,20 +1334,9 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
                                      name.GetString().c_str());
         usdShaderImpl.CreateIdAttr(VtValue(TfToken(shaderId)));
         auto connectable = usdShaderImpl.ConnectableAPI();
-        _SetCoreUIAttributes(usdShaderImpl.GetPrim(), mtlxShaderRef);
+        _SetCoreUIAttributes(usdShaderImpl.GetPrim(), mtlxShaderNode);
 
         for (auto& i: _GetInheritanceStack(mtlxNodeDef)) {
-#ifdef ADD_NODE_INPUT_DEFAULTS_TO_USD
-            // Copy the nodedef parameters/inputs.
-            for (auto mtlxValue: i->getParameters()) {
-                _CopyValue(_MakeInput(usdShaderImpl, mtlxValue), mtlxValue);
-            }
-            for (auto mtlxValue: i->getInputs()) {
-                _CopyValue(_MakeInput(usdShaderImpl, mtlxValue), mtlxValue);
-            }
-            // We deliberately ignore tokens here.
-#endif
-
             // Create USD output(s) for each MaterialX output with
             // semantic="shader".
             for (auto mtlxOutput: i->getOutputs()) {
@@ -1412,17 +1352,11 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
     usdShader.GetPrim().GetReferences().AddInternalReference(shaderImplPath);
 
     // Record the referencing shader for later variants.
-    _shaders[_Name(_mtlxMaterial)][_Name(mtlxShaderRef)] = usdShader;
+    _shaders[_Name(_mtlxMaterial)][_Name(mtlxShaderNode)] =
+        UsdShadeConnectableAPI(usdShader);
 
     // Connect to material interface.
     for (auto& i: _GetInheritanceStack(mtlxNodeDef)) {
-        for (auto mtlxValue: i->getParameters()) {
-            auto shaderInput   = _MakeInput(usdShader, mtlxValue);
-            auto materialInput = _MakeInput(_usdMaterial, mtlxValue);
-            shaderInput.SetConnectability(UsdShadeTokens->interfaceOnly);
-            materialInput.SetConnectability(UsdShadeTokens->interfaceOnly);
-            shaderInput.ConnectToSource(materialInput);
-        }
         for (auto mtlxValue: i->getInputs()) {
             auto shaderInput   = _MakeInput(usdShader, mtlxValue);
             auto materialInput = _MakeInput(_usdMaterial, mtlxValue);
@@ -1432,14 +1366,9 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
     }
 
     // Translate bindings.
-    for (auto mtlxParam: mtlxShaderRef->getBindParams()) {
-        if (auto input = _AddInputWithValue(mtlxParam, _usdMaterial)) {
-            input.SetConnectability(UsdShadeTokens->interfaceOnly);
-        }
-    }
-    for (auto mtlxInput: mtlxShaderRef->getBindInputs()) {
+    for (auto mtlxInput: mtlxShaderNode->getInputs()) {
         // Simple binding.
-        _AddInputWithValue(mtlxInput, _usdMaterial);
+        _AddInputWithValue(mtlxInput, UsdShadeConnectableAPI(_usdMaterial));
 
         // Check if this input references an output.
         if (auto outputName = _Attr(mtlxInput, names.output)) {
@@ -1454,13 +1383,14 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
                         ? AddNodeGraph(mtlxNodeGraph)
                         : AddImplicitNodeGraph(mtlxInput->getDocument())) {
                 _BindNodeGraph(mtlxInput, _usdMaterial.GetPath(),
-                               usdShader, usdNodeGraph);
+                               UsdShadeConnectableAPI(usdShader),
+                               usdNodeGraph);
             }
         }
     }
     if (auto primvars = UsdGeomPrimvarsAPI(_usdMaterial)) {
-        for (auto mtlxToken: mtlxShaderRef->getChildren()) {
-            if (mtlxToken->getCategory() == names.bindtoken) {
+        for (auto mtlxToken: mtlxShaderNode->getChildren()) {
+            if (mtlxToken->getCategory() == names.token) {
                 // Always use the string type for MaterialX tokens.
                 auto primvar =
                     UsdGeomPrimvarsAPI(_usdMaterial)
@@ -1474,23 +1404,23 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
     // Connect the shader's outputs to the material.
     if (auto output = usdShader.GetOutput(UsdShadeTokens->surface)) {
         UsdShadeConnectableAPI::ConnectToSource(
-            _usdMaterial.CreateSurfaceOutput(),
+            _usdMaterial.CreateSurfaceOutput(_tokens->mtlxRenderContext),
             output);
     }
     if (auto output = usdShader.GetOutput(UsdShadeTokens->displacement)) {
         UsdShadeConnectableAPI::ConnectToSource(
-            _usdMaterial.CreateDisplacementOutput(),
+            _usdMaterial.CreateDisplacementOutput(_tokens->mtlxRenderContext),
             output);
     }
     if (auto output = usdShader.GetOutput(UsdShadeTokens->volume)) {
         UsdShadeConnectableAPI::ConnectToSource(
-            _usdMaterial.CreateVolumeOutput(),
+            _usdMaterial.CreateVolumeOutput(_tokens->mtlxRenderContext),
             output);
     }
-    if (auto output = usdShader.GetOutput(tokens->light)) {
+    if (auto output = usdShader.GetOutput(_tokens->light)) {
         // USD doesn't support this type.
         UsdShadeConnectableAPI::ConnectToSource(
-            _usdMaterial.CreateOutput(tokens->light, SdfValueTypeNames->Token),
+            _usdMaterial.CreateOutput(_tokens->light, SdfValueTypeNames->Token),
             output);
     }
 
@@ -1500,7 +1430,7 @@ _Context::AddShaderRef(const mx::ConstShaderRefPtr& mtlxShaderRef)
         if (name != UsdShadeTokens->surface &&
             name != UsdShadeTokens->displacement &&
             name != UsdShadeTokens->volume &&
-            name != tokens->light) {
+            name != _tokens->light) {
             UsdShadeConnectableAPI::ConnectToSource(
                 _usdMaterial.CreateOutput(name, SdfValueTypeNames->Token),
                 output);
@@ -1514,12 +1444,10 @@ void
 _Context::AddMaterialVariant(
     const std::string& mtlxMaterialName,
     const VariantSetName& variantSetName,
-    const VariantName& variantName,
-    const VariantName& uniqueVariantName,
-    const VariantShaderSet* shaders) const
+    const VariantName& variantName) const
 {
-    auto i = _shaders.find(mtlxMaterialName);
-    if (i == _shaders.end()) {
+    auto mtlxMaterial = _shaders.find(mtlxMaterialName);
+    if (mtlxMaterial == _shaders.end()) {
         // Unknown material.
         return;
     }
@@ -1531,37 +1459,25 @@ _Context::AddMaterialVariant(
 
     // Create the variant set on the material.
     auto usdMaterial = GetMaterial(mtlxMaterialName);
-    auto usdVariantSet =
-        usdMaterial.GetPrim().GetVariantSet(variantSetName);
+    auto usdVariantSet = usdMaterial.GetPrim().GetVariantSet(variantSetName);
 
     // Create the variant on the material.
-    if (!usdVariantSet.AddVariant(uniqueVariantName)) {
+    if (!usdVariantSet.AddVariant(variantName)) {
         TF_CODING_ERROR("Failed to author material variant '%s' "
                         "in variant set '%s' on <%s>",
-                        uniqueVariantName.c_str(),
+                        variantName.c_str(),
                         variantSetName.c_str(),
                         usdMaterial.GetPath().GetText());
         return;
     }
 
-    usdVariantSet.SetVariantSelection(uniqueVariantName);
+    usdVariantSet.SetVariantSelection(variantName);
     {
         UsdEditContext ctx(usdVariantSet.GetVariantEditContext());
-        if (shaders) {
-            // Copy to given shaderrefs.
-            for (auto& mtlxShaderRefName: *shaders) {
-                auto j = i->second.find(mtlxShaderRefName);
-                if (j != i->second.end()) {
-                    _CopyVariant(j->second, *variant);
-                }
-            }
-        }
-        else {
-            // Copy to the material.
-            auto j = i->second.find("");
-            if (j != i->second.end()) {
-                _CopyVariant(j->second, *variant);
-            }
+        // Copy variant to the material.
+        auto mtlxShaderNodeName = mtlxMaterial->second.find("");
+        if (mtlxShaderNodeName != mtlxMaterial->second.end()) {
+            _CopyVariant(mtlxShaderNodeName->second, *variant);
         }
     }
     usdVariantSet.ClearVariantSelection();
@@ -1721,19 +1637,6 @@ _Context::GetVariantSetOrder() const
     return _variantSetGlobalOrder;
 }
 
-std::set<_Context::VariantName>
-_Context::GetVariants(const VariantSetName& variantSetName) const
-{
-    std::set<VariantName> result;
-    auto i = _variantSets.find(variantSetName);
-    if (i != _variantSets.end()) {
-        for (auto& j: i->second) {
-            result.insert(j.first);
-        }
-    }
-    return result;
-}
-
 UsdShadeMaterial
 _Context::GetMaterial(const std::string& mtlxMaterialName) const
 {
@@ -1771,7 +1674,7 @@ _Context::GetCollection(
 
 void
 _Context::_BindNodeGraph(
-    const mx::ConstBindInputPtr& mtlxBindInput,
+    const mx::ConstInputPtr& mtlxInput,
     const SdfPath& referencingPathParent,
     const UsdShadeConnectableAPI& connectable,
     const _NodeGraph& usdNodeGraph)
@@ -1781,7 +1684,7 @@ _Context::_BindNodeGraph(
         referencingPathParent.AppendChild(
             usdNodeGraph.GetOwnerPrim().GetPath().GetNameToken());
     TF_DEBUG(USDMTLX_READER).Msg("_BindNodeGraph %s %s\n",
-                                 mtlxBindInput->getName().c_str(),
+                                 mtlxInput->getName().c_str(),
                                  referencingPath.GetString().c_str());
     auto refNodeGraph = usdNodeGraph.AddReference(referencingPath);
     if (!refNodeGraph) {
@@ -1790,15 +1693,15 @@ _Context::_BindNodeGraph(
 
     // Connect the input to the nodegraph's output.
     if (auto output =
-            refNodeGraph.GetOutputByName(_Attr(mtlxBindInput, names.output))) {
+            refNodeGraph.GetOutputByName(_Attr(mtlxInput, names.output))) {
         UsdShadeConnectableAPI::ConnectToSource(
-            _AddInput(mtlxBindInput, connectable),
+            _AddInput(mtlxInput, connectable),
             output);
     }
     else {
         TF_WARN("No output \"%s\" for input \"%s\" on <%s>",
-                _Attr(mtlxBindInput, names.output).c_str(),
-                _Name(mtlxBindInput).c_str(),
+                _Attr(mtlxInput, names.output).c_str(),
+                _Name(mtlxInput).c_str(),
                 connectable.GetPath().GetText());
     }
 }
@@ -1848,7 +1751,7 @@ _Context::_AddShaderOutput(
         return connectable.CreateOutput(UsdShadeTokens->surface,
                                         SdfValueTypeNames->Token);
     }
-    else if (context == "displacement" || type == "displacementshader") {
+    else if (context == "displacement" || type == mx::DISPLACEMENT_SHADER_TYPE_STRING) {
         return connectable.CreateOutput(UsdShadeTokens->displacement,
                                         SdfValueTypeNames->Token);
     }
@@ -1856,9 +1759,9 @@ _Context::_AddShaderOutput(
         return connectable.CreateOutput(UsdShadeTokens->volume,
                                         SdfValueTypeNames->Token);
     }
-    else if (context == "light" || type == "lightshader") {
+    else if (context == "light" || type == mx::LIGHT_SHADER_TYPE_STRING) {
         // USD doesn't support this.
-        return connectable.CreateOutput(tokens->light,
+        return connectable.CreateOutput(_tokens->light,
                                         SdfValueTypeNames->Token);
     }
     else if (!context.empty()) {
@@ -1895,9 +1798,8 @@ _Context::_CopyVariant(
     }
 }
 
-/// This class tracks variant selections on materialassigns and any
-/// shaderrefs the variant selection is limited to.  Objects are
-/// created using the VariantAssignmentsBuilder helper.
+/// This class tracks variant selections on materialassigns.  Objects
+/// are created using the VariantAssignmentsBuilder helper.
 class VariantAssignments {
 public:
     using VariantName = _Context::VariantName;
@@ -1908,21 +1810,16 @@ public:
     using MaterialAssignPtr = mx::ConstMaterialAssignPtr;
     using MaterialAssigns = std::vector<MaterialAssignPtr>;
 
-    using ShaderName = std::string;
-    using VariantShaderSet = std::vector<ShaderName>;
-    struct VariantAndShaders {
-        VariantAndShaders(VariantName&& originalName,
-                          VariantName&& uniqueName,
-                          VariantShaderSet&& shaderRefSet)
-            : originalName(std::move(originalName))
-            , uniqueName(std::move(uniqueName))
-            , shaderRefSet(std::move(shaderRefSet)) { }
+    /// Add the variant assignments from \p mtlx to this object.
+    void Add(const mx::ConstElementPtr& mtlx);
 
-        VariantName originalName;
-        VariantName uniqueName;
-        VariantShaderSet shaderRefSet;
-    };
-    using VariantAndShadersBag = std::vector<VariantAndShaders>;
+    /// Add the variant assignments from \p mtlxLook and all inherited
+    /// looks to this object.
+    void AddInherited(const mx::ConstLookPtr& mtlxLook);
+
+    /// Compose variant assignments in this object over assignments in
+    /// \p weaker and store the result in this object.
+    void Compose(const VariantAssignments& weaker);
 
     /// Returns all material assigns.
     const MaterialAssigns& GetMaterialAssigns() const;
@@ -1930,29 +1827,60 @@ public:
     /// Returns the variant set order for the material assign.
     VariantSetOrder GetVariantSetOrder(const MaterialAssignPtr&) const;
 
-    /// Returns the variants for the given variant set on the given
-    /// material assign.  Each variant is accompanied by the shaderrefs
-    /// that it applies to.
-    const VariantAndShadersBag&
-    GetVariants(const MaterialAssignPtr&, const VariantSetName&) const;
-
     /// Returns the variant selections on the given material assign.
     const VariantSelectionSet&
     GetVariantSelections(const MaterialAssignPtr&) const;
 
+    using iterator = std::vector<VariantSelection>::iterator;
+    iterator begin() { return _assignments.begin(); }
+    iterator end() { return _assignments.end(); }
+
 private:
-    VariantAssignments() = default;
+    using _Assignments = std::vector<VariantSelection>;
+
+    _Assignments _Get(const mx::ConstElementPtr& mtlx);
+    void _Compose(const _Assignments& weaker);
 
 private:
     VariantSetOrder _globalVariantSetOrder;
     MaterialAssigns _materialAssigns;
-    std::map<MaterialAssignPtr,
-             std::map<VariantSetName,
-                      VariantAndShadersBag>> _materialInfo;
     std::map<MaterialAssignPtr, VariantSelectionSet> _selections;
+    _Assignments _assignments;
 
+    // Variant sets that have been handled already.
+    std::set<VariantSetName> _seen;
+    
     friend class VariantAssignmentsBuilder;
 };
+
+void
+VariantAssignments::Add(const mx::ConstElementPtr& mtlx)
+{
+    auto&& assignments = _Get(mtlx);
+    _assignments.insert(_assignments.end(),
+                        std::make_move_iterator(assignments.begin()),
+                        std::make_move_iterator(assignments.end()));
+}
+
+void
+VariantAssignments::AddInherited(const mx::ConstLookPtr& mtlxLook)
+{
+    // Compose the look's variant assignments as weaker.
+    _Compose(_Get(mtlxLook));
+
+    // Compose inherited assignments as weaker.
+    if (auto inherited = mtlxLook->getInheritsFrom()) {
+        if (auto inheritedLook = inherited->asA<mx::Look>()) {
+            AddInherited(inheritedLook);
+        }
+    }
+}
+
+void
+VariantAssignments::Compose(const VariantAssignments& weaker)
+{
+    _Compose(weaker._assignments);
+}
 
 const VariantAssignments::MaterialAssigns&
 VariantAssignments::GetMaterialAssigns() const
@@ -1968,125 +1896,20 @@ VariantAssignments::GetVariantSetOrder(
     return _globalVariantSetOrder;
 }
 
-const VariantAssignments::VariantAndShadersBag&
-VariantAssignments::GetVariants(
-    const MaterialAssignPtr& mtlxMaterialAssign,
-    const VariantSetName& variantSetName) const
-{
-    auto i = _materialInfo.find(mtlxMaterialAssign);
-    if (i != _materialInfo.end()) {
-        auto j = i->second.find(variantSetName);
-        if (j != i->second.end()) {
-            return j->second;
-        }
-    }
-    static const VariantAndShadersBag empty;
-    return empty;
-}
-
 const VariantAssignments::VariantSelectionSet&
 VariantAssignments::GetVariantSelections(
     const MaterialAssignPtr& mtlxMaterialAssign) const
 {
-    auto i = _selections.find(mtlxMaterialAssign);
-    if (i != _selections.end()) {
-        return i->second;
+    auto mtlxMaterial = _selections.find(mtlxMaterialAssign);
+    if (mtlxMaterial != _selections.end()) {
+        return mtlxMaterial->second;
     }
     static const VariantSelectionSet empty;
     return empty;
 }
 
-/// This class collects variant assignments and their associated shaderrefs.
-class ShadersForVariantAssignments {
-public:
-    using VariantName      = VariantAssignments::VariantName;
-    using VariantSetName   = VariantAssignments::VariantSetName;
-    using VariantShaderSet = VariantAssignments::VariantShaderSet;
-
-    struct ShadersForVariantAssignment {
-        ShadersForVariantAssignment(const VariantSetName& variantSetName,
-                                    const VariantName& variantName,
-                                    VariantShaderSet&& shaderSet)
-            : variantSetName(variantSetName)
-            , variantName(variantName)
-            , shaderSet(std::move(shaderSet)) { }
-
-        VariantSetName   variantSetName;
-        VariantName      variantName;
-        VariantShaderSet shaderSet;
-    };
-    using iterator = std::vector<ShadersForVariantAssignment>::iterator;
-
-    /// Add the variant assignments from \p mtlx to this object.
-    void Add(const mx::ConstElementPtr& mtlx);
-
-    /// Add the variant assignments from \p mtlxLook and all inherited
-    /// looks to this object.
-    void AddInherited(const mx::ConstLookPtr& mtlxLook);
-
-    /// Compose variant assignments in this object over assignments in
-    /// \p weaker and store the result in this object.
-    void Compose(const ShadersForVariantAssignments& weaker);
-
-    iterator begin() { return _assignments.begin(); }
-    iterator end() { return _assignments.end(); }
-
-private:
-    using _Assignments = std::vector<ShadersForVariantAssignment>;
-
-    VariantShaderSet _GetShaders(const mx::ConstElementPtr& mtlx);
-    _Assignments _Get(const mx::ConstElementPtr& mtlx);
-    void _Compose(const _Assignments& weaker);
-
-private:
-    _Assignments _assignments;
-
-    // Variant sets that have been handled already.
-    std::set<VariantSetName> _seen;
-};
-
-void
-ShadersForVariantAssignments::Add(const mx::ConstElementPtr& mtlx)
-{
-    auto&& assignments = _Get(mtlx);
-    _assignments.insert(_assignments.end(),
-                        std::make_move_iterator(assignments.begin()),
-                        std::make_move_iterator(assignments.end()));
-}
-
-void
-ShadersForVariantAssignments::AddInherited(const mx::ConstLookPtr& mtlxLook)
-{
-    // Compose the look's variant assignments as weaker.
-    _Compose(_Get(mtlxLook));
-
-    // Compose inherited assignments as weaker.
-    if (auto inherited = mtlxLook->getInheritsFrom()) {
-        if (auto inheritedLook = inherited->asA<mx::Look>()) {
-            AddInherited(inheritedLook);
-        }
-    }
-}
-
-void
-ShadersForVariantAssignments::Compose(
-    const ShadersForVariantAssignments& weaker)
-{
-    _Compose(weaker._assignments);
-}
-
-ShadersForVariantAssignments::VariantShaderSet
-ShadersForVariantAssignments::_GetShaders(const mx::ConstElementPtr& mtlx)
-{
-    VariantShaderSet shaders;
-    if (_Value(&shaders, mtlx, names.shaderref)) {
-        std::sort(shaders.begin(), shaders.end());
-    }
-    return shaders;
-}
-
-ShadersForVariantAssignments::_Assignments
-ShadersForVariantAssignments::_Get(const mx::ConstElementPtr& mtlx)
+VariantAssignments::_Assignments
+VariantAssignments::_Get(const mx::ConstElementPtr& mtlx)
 {
     _Assignments result;
 
@@ -2101,8 +1924,7 @@ ShadersForVariantAssignments::_Get(const mx::ConstElementPtr& mtlx)
         _Attr variant(mtlxVariantAssign, names.variant);
         // Ignore assignments to a variant set we've already seen.
         if (_seen.insert(variantset).second) {
-            result.emplace_back(variantset, variant,
-                                _GetShaders(mtlxVariantAssign));
+            result.emplace_back(variantset, variant);
         }
     }
 
@@ -2113,12 +1935,12 @@ ShadersForVariantAssignments::_Get(const mx::ConstElementPtr& mtlx)
 }
 
 void
-ShadersForVariantAssignments::_Compose(const _Assignments& weaker)
+VariantAssignments::_Compose(const _Assignments& weaker)
 {
     // Apply weaker to stronger.  That means we ignore any variantsets
     // already in stronger.
     for (const auto& assignment: weaker) {
-        if (_seen.insert(assignment.variantSetName).second) {
+        if (_seen.insert(assignment.first).second) {
             _assignments.emplace_back(assignment);
         }
     }
@@ -2129,22 +1951,21 @@ class VariantAssignmentsBuilder {
 public:
     using MaterialAssignPtr = VariantAssignments::MaterialAssignPtr;
 
-    /// Add variant assignments (with associated shaders) on a material
-    /// assign to the builder.
-    void Add(const MaterialAssignPtr&, ShadersForVariantAssignments&&);
+    /// Add variant assignments on a material assign to the builder.
+    void Add(const MaterialAssignPtr&, VariantAssignments&&);
 
     /// Build and return a VariantAssignments using the added data.
     /// This also resets the builder.
     VariantAssignments Build(const _Context&);
 
 private:
-    std::map<MaterialAssignPtr, ShadersForVariantAssignments> _data;
+    std::map<MaterialAssignPtr, VariantAssignments> _data;
 };
 
 void
 VariantAssignmentsBuilder::Add(
     const MaterialAssignPtr& mtlxMaterialAssign,
-    ShadersForVariantAssignments&& selection)
+    VariantAssignments&& selection)
 {
     // We don't expect duplicate keys but we use the last data added.
     _data[mtlxMaterialAssign] = std::move(selection);
@@ -2161,44 +1982,16 @@ VariantAssignmentsBuilder::Build(const _Context& context)
     // We could scan for and discard variant assignments that don't
     // affect their material here.
 
-    // We should expand empty shaderref sets into the full set of
-    // shaderrefs on that material or replace full sets with the
-    // empty string so that they compare as identical, otherwise
-    // we'll get different variants with identical opinions for them.
-    // XXX
-
-    // Reorganize data into result, finding variants that must be made
-    // unique.  This is somewhat complicated.  A material M's variants
-    // are those assigned to it over all looks.  Since each variant is
-    // in a variantset this also determines the variantsets.  However,
-    // a variant can also have a shaderref string array which causes
-    // the variant to be applied to a subset of the material's
-    // shaderrefs.  In USD to apply a variant to different shaderref
-    // sets necessitates using different variants.  That means making
-    // up and using a new variant name.
-    // 
-    // visitedNames maps shaderref sets to unique variant names per
-    // (material,variantset,original variant name).  knownNames is
-    // used to construct unique variant names, mapping a (material,
-    // variantset) to a suffix and known variant names.  The suffix
-    // is an integer used to create unique names.
+    // Reorganize data into result, finding variants.  A material M's
+    // variants are those assigned to it over all looks.  Since each
+    // variant is in a variantset this also determines the variantsets.
     //
-    // While making variants unique we also record in the result all
-    // of the material assignments and the variant info and selection
-    // for each (materialassign,variantset).
+    // We also record in the result all of the material assignments and
+    // the variant info and selection for each (materialassign,variantset).
     //
-    using VariantName = VariantAssignments::VariantName;
-    using VariantSetName = VariantAssignments::VariantSetName;
-    using VariantShaderSet = VariantAssignments::VariantShaderSet;
-
-    std::map<std::tuple<std::string, VariantSetName, VariantName>,
-             std::map<VariantShaderSet, VariantName>> visitedNames;
-    std::map<std::pair<std::string, VariantSetName>,
-             std::pair<int, std::set<VariantName>>> knownNames;
-    for (auto& i: _data) {
-        auto& mtlxMaterialAssign         = i.first;
-        auto& variantSelectionAndShaders = i.second;
-        auto& materialInfo = result._materialInfo[mtlxMaterialAssign];
+    for (auto& i : _data) {
+        auto& mtlxMaterialAssign  = i.first;
+        auto& variantAssignments  = i.second;
         auto& selections   = result._selections[mtlxMaterialAssign];
         auto materialName  = _Attr(mtlxMaterialAssign, names.material).str();
 
@@ -2206,64 +1999,12 @@ VariantAssignmentsBuilder::Build(const _Context& context)
         result._materialAssigns.emplace_back(mtlxMaterialAssign);
 
         // Process all variants.
-        for (auto& j: variantSelectionAndShaders) {
-            auto& variantSetName    = j.variantSetName;
-            auto& variantName       = j.variantName;
-            auto& shaderSet         = j.shaderSet;
-            auto& visitedShaderSets =
-                visitedNames[std::make_tuple(materialName,
-                                             variantSetName,
-                                             variantName)];
-
-            // Look up this variantset/variant.
-            std::string uniqueVariantName;
-            if (!visitedShaderSets.empty()) {
-                auto k = visitedShaderSets.find(shaderSet);
-                if (k != visitedShaderSets.end()) {
-                    // We've seen this shader set before.
-                    uniqueVariantName = k->second;
-                }
-                else {
-                    // This variant must be made unique.
-                    auto& newVariantName = visitedShaderSets[shaderSet];
-
-                    // Get the known names, including ones we created.  If
-                    // there are no names yet then populate with the names
-                    // from the context.
-                    auto& m = 
-                        knownNames[std::make_pair(materialName,
-                                                  variantSetName)];
-                    auto& variantSetKnownNames = m.second;
-                    if (variantSetKnownNames.empty()) {
-                        variantSetKnownNames =
-                            context.GetVariants(variantSetName);
-                    }
-
-                    // Choose and save a unique variant name.
-                    int& n = m.first;
-                    auto base = variantName + "_";
-                    do {
-                        newVariantName = base + std::to_string(++n);
-                    } while (!variantSetKnownNames
-                                .emplace(newVariantName).second);
-
-                    uniqueVariantName = newVariantName;
-                }
-            }
-            else {
-                // New variantset/variant for the material.
-                uniqueVariantName =
-                visitedShaderSets[shaderSet] = variantName;
-            }
+        for (auto& variantSelection : variantAssignments) {
+            auto& variantSetName  = variantSelection.first;
+            auto& variantName     = variantSelection.second;
 
             // Note the variant selection.
-            selections.emplace(variantSetName, uniqueVariantName);
-
-            // Add the variant.
-            materialInfo[std::move(variantSetName)]
-                .emplace_back(std::move(variantName),
-                              std::move(uniqueVariantName),
-                              std::move(shaderSet));
+            selections.emplace(variantSetName, variantName);
         }
     }
 
@@ -2308,7 +2049,7 @@ ReadNodeGraphsWithoutDefs(mx::ConstDocumentPtr mtlx, _Context& context)
 }
 
 // Convert MaterialX materials to USD materials.  Each USD material has
-// child shader prims for each shaderref in the MaterialX material.  In
+// child shader prims for each shaderNode in the MaterialX material.  In
 // addition, all of the child shader inputs and outputs are connected to
 // a synthesized material interface that's the union of all of those
 // inputs and outputs.  The child shader prims reference shader prims
@@ -2317,41 +2058,65 @@ ReadNodeGraphsWithoutDefs(mx::ConstDocumentPtr mtlx, _Context& context)
 // but it also makes for a clean separation and allows sharing nodedefs
 // across materials.  Material inherits are added at the end via
 // specializes arcs.
+// Get the associated Shader Nodes for a given MaterialX Material and translate
+// them into USD equvalents
+static
+void 
+_TranslateShaderNodes(
+    _Context& context,
+    const mx::NodePtr& mtlxMaterial,
+    const std::string & mtlxShaderType)
+{
+    for (auto mtlxShaderNode: mx::getShaderNodes(mtlxMaterial, mtlxShaderType)) {
+        // Translate shader node.
+        TF_DEBUG(USDMTLX_READER).Msg("Adding shaderNode '%s' type: '%s'\n",
+                                    _Name(mtlxShaderNode).c_str(), mtlxShaderType.c_str());
+        if (auto usdShader = context.AddShaderNode(mtlxShaderNode)) {
+            // Do nothing.
+        }
+        else {
+            if (auto nodedef = _Attr(mtlxShaderNode, names.nodedef)) {
+                TF_WARN("Failed to create shaderNode '%s' "
+                        "to nodedef '%s'",
+                        _Name(mtlxShaderNode).c_str(),
+                        nodedef.c_str());
+            }
+            else if (auto node = _Attr(mtlxShaderNode, names.node)) {
+                TF_WARN("Failed to create shaderNode '%s' "
+                        "to node '%s'",
+                        _Name(mtlxShaderNode).c_str(),
+                        node.c_str());
+            }
+            else {
+                // Ignore -- no node was specified.
+            }
+        }
+    }
+}
+
+static 
+void 
+_TranslateShaderNodes(
+    _Context& context,
+    const mx::NodePtr& mtlxMaterial)
+{
+    _TranslateShaderNodes(context, mtlxMaterial, mx::SURFACE_SHADER_TYPE_STRING);
+    _TranslateShaderNodes(context, mtlxMaterial, mx::VOLUME_SHADER_TYPE_STRING);
+    _TranslateShaderNodes(context, mtlxMaterial, mx::DISPLACEMENT_SHADER_TYPE_STRING);
+    _TranslateShaderNodes(context, mtlxMaterial, mx::LIGHT_SHADER_TYPE_STRING);
+}
+
 static
 void
 ReadMaterials(mx::ConstDocumentPtr mtlx, _Context& context)
 {
-    for (auto& mtlxMaterial: mtlx->getMaterials()) {
+    for (auto& mtlxMaterial: mtlx->getMaterialNodes()) {
         // Translate material.
         TF_DEBUG(USDMTLX_READER).Msg("Adding mtlxMaterial '%s'\n",
                                      _Name(mtlxMaterial).c_str());
         if (auto usdMaterial = context.BeginMaterial(mtlxMaterial)) {
-            // Translate all shader references.
-            for (auto mtlxShaderRef: mtlxMaterial->getShaderRefs()) {
-                // Translate shader reference.
-                TF_DEBUG(USDMTLX_READER).Msg("Adding shaderref '%s'\n",
-                                             _Name(mtlxShaderRef).c_str());
-                if (auto usdShader = context.AddShaderRef(mtlxShaderRef)) {
-                    // Do nothing.
-                }
-                else {
-                    if (auto nodedef = _Attr(mtlxShaderRef, names.nodedef)) {
-                        TF_WARN("Failed to create shaderref '%s' "
-                                "to nodedef '%s'",
-                                _Name(mtlxShaderRef).c_str(),
-                                nodedef.c_str());
-                    }
-                    else if (auto node = _Attr(mtlxShaderRef, names.node)) {
-                        TF_WARN("Failed to create shaderref '%s' "
-                                "to node '%s'",
-                                _Name(mtlxShaderRef).c_str(),
-                                node.c_str());
-                    }
-                    else {
-                        // Ignore -- no node was specified.
-                    }
-                }
-            }
+            // Translate all shader nodes.
+            _TranslateShaderNodes(context, mtlxMaterial);
             context.EndMaterial();
         }
         else {
@@ -2362,7 +2127,7 @@ ReadMaterials(mx::ConstDocumentPtr mtlx, _Context& context)
 
     // Add material inherits.  We wait until now so we can be sure all
     // the materials exist.
-    for (auto& mtlxMaterial: mtlx->getMaterials()) {
+    for (auto& mtlxMaterial: mtlx->getMaterialNodes()) {
         if (auto usdMaterial = context.GetMaterial(_Name(mtlxMaterial))) {
             if (auto name = _Attr(mtlxMaterial, names.inherit)) {
                 if (auto usdInherited = context.GetMaterial(name)) {
@@ -2416,8 +2181,7 @@ ReadCollections(mx::ConstDocumentPtr mtlx, _Context& context)
 
 // Creates the variants bound to a MaterialX materialassign on the USD
 // Material and/or its shader children.  The variant opinions go on the
-// Material unless MaterialX variantassign uses the shaderref attribute
-// to apply to only certain shaders.
+// Material bound to the materialassign. 
 static
 void
 AddMaterialVariants(
@@ -2431,17 +2195,11 @@ AddMaterialVariants(
     for (const auto& variantSetName:
             assignments.GetVariantSetOrder(mtlxMaterialAssign)) {
         // Loop over all variants in the variant set on the material.
-        for (const auto& variantAndShaders:
-                assignments.GetVariants(mtlxMaterialAssign,
-                                        variantSetName)) {
-            // Add the variant to all shaderrefs in shaders or, if shaders
-            // is empty, to the material.
+        for (const auto& variantSelections :
+                assignments.GetVariantSelections(mtlxMaterialAssign)) {
+            // Add the variant to the material.
             context.AddMaterialVariant(materialName, variantSetName,
-                                       variantAndShaders.originalName,
-                                       variantAndShaders.uniqueName,
-                                       variantAndShaders.shaderRefSet.empty()
-                                           ? nullptr
-                                           : &variantAndShaders.shaderRefSet);
+                                       variantSelections.second);
         }
     }
 }
@@ -2645,12 +2403,12 @@ UsdMtlxRead(
     for (auto& mtlxLook: mtlx->getLooks()) {
         // Get the variant assigns for the look and (recursively) its
         // inherited looks.
-        ShadersForVariantAssignments lookVariantAssigns;
+        VariantAssignments lookVariantAssigns;
         lookVariantAssigns.AddInherited(mtlxLook);
 
         for (auto& mtlxMaterialAssign: mtlxLook->getMaterialAssigns()) {
             // Get the material assign's variant assigns.
-            ShadersForVariantAssignments variantAssigns;
+            VariantAssignments variantAssigns;
             variantAssigns.Add(mtlxMaterialAssign);
 
             // Compose variantAssigns over lookVariantAssigns.
@@ -2663,8 +2421,7 @@ UsdMtlxRead(
     }
 
     // Build the variant assignments object.
-    auto assignments =
-        materialVariantAssignmentsBuilder.Build(context);
+    auto assignments = materialVariantAssignmentsBuilder.Build(context);
 
     // Create the variants on each material.
     for (const auto& mtlxMaterialAssign: assignments.GetMaterialAssigns()) {

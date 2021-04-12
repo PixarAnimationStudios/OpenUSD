@@ -70,10 +70,6 @@ struct HdxShadowTaskParams
         , depthBiasSlopeFactor(1.0f)
         , depthFunc(HdCmpFuncLEqual)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
-        , camera()
-        , viewport(0.0)
-        , lightIncludePaths(1, SdfPath::AbsoluteRootPath())
-        , lightExcludePaths()
         {}
 
     // RenderPassState
@@ -88,14 +84,6 @@ struct HdxShadowTaskParams
     float depthBiasSlopeFactor;
     HdCompareFunction depthFunc;
     HdCullStyle cullStyle;
-
-    // RenderPassState index objects
-    SdfPath camera;
-    GfVec4d viewport;
-
-    // Lights/Shadows specific parameters
-    SdfPathVector lightIncludePaths;
-    SdfPathVector lightExcludePaths;
 };
 
 /// \class HdxShadowTask
@@ -132,14 +120,8 @@ public:
 
 
 private:
-    void _SetHdStRenderPassState(HdxShadowTaskParams const &params,
-        HdStRenderPassState *renderPassState);
-
     void _UpdateDirtyParams(HdStRenderPassStateSharedPtr &renderPassState, 
         HdxShadowTaskParams const &params);
-
-    static HdStShaderCodeSharedPtr _overrideShader;
-    static void _CreateOverrideShader();
 
     HdRenderPassSharedPtrVector _passes;
     HdStRenderPassStateSharedPtrVector _renderPassStates;

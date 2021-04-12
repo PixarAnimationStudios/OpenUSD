@@ -198,7 +198,8 @@ HgiVulkanBlitCmds::CopyTextureCpuToGpu(
             TF_VERIFY(dst && dstTexture->GetStagingBuffer());
 
             dst += mipInfo.byteOffset;
-            size_t size = std::min(copyOp.bufferByteSize, mipInfo.byteSize);
+            const size_t size =
+                std::min(copyOp.bufferByteSize, 1 * mipInfo.byteSizePerLayer);
             memcpy(dst, copyOp.cpuSourceBuffer, size);
         }
     }

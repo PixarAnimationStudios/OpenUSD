@@ -38,6 +38,7 @@ from functools import cmp_to_key
 from pxr import Usd, UsdGeom, UsdShade, UsdUtils, UsdImagingGL, Glf, Sdf, Tf, Ar
 from pxr import UsdAppUtils
 from pxr.UsdAppUtils.complexityArgs import RefinementComplexities
+from pxr.UsdUtils.constantsGroup import ConstantsGroup
 
 # UI Components
 from ._usdviewq import Utils
@@ -55,7 +56,6 @@ from .primViewItem import PrimViewItem
 from .variantComboBox import VariantComboBox
 from .legendUtil import ToggleLegendWithBrowser
 from . import prettyPrint, adjustClipping, adjustDefaultMaterial, preferences, settings
-from .constantGroup import ConstantGroup
 from .selectionDataModel import ALL_INSTANCES, SelectionDataModel
 
 # Common Utilities
@@ -82,7 +82,7 @@ from .pythonInterpreter import Myconsole
 
 SETTINGS_VERSION = "1"
 
-class HUDEntries(ConstantGroup):
+class HUDEntries(ConstantsGroup):
     # Upper HUD entries (declared in variables for abstraction)
     PRIM = "Prims"
     CV = "CVs"
@@ -97,10 +97,10 @@ class HUDEntries(ConstantGroup):
     # Name for prims that have no type
     NOTYPE = "Typeless"
 
-class PropertyIndex(ConstantGroup):
+class PropertyIndex(ConstantsGroup):
     VALUE, METADATA, LAYERSTACK, COMPOSITION = range(4)
 
-class UIDefaults(ConstantGroup):
+class UIDefaults(ConstantsGroup):
     STAGE_VIEW_WIDTH = 604
     PRIM_VIEW_WIDTH = 521
     ATTRIBUTE_VIEW_WIDTH = 682
@@ -2251,9 +2251,6 @@ class AppController(QtCore.QObject):
     def _resetSettings(self):
         """Reloads the UI and Sets up the initial settings for the
         _stageView object created in _reloadVaryingUI"""
-
-        # Seems like a good time to clear the texture registry
-        Glf.TextureRegistry.Reset()
 
         # RELOAD fixed and varying UI
         self._reloadFixedUI()

@@ -120,7 +120,7 @@ public:
         return _curveVertexCounts;
     }
 
-    /// Returns indicies.
+    /// Returns indices.
     VtIntArray const &GetCurveIndices() const {
         return _curveIndices;
     }

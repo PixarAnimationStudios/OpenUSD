@@ -42,7 +42,8 @@ def _bugStep1(s):
     pbrShader.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(0.0)
     pbrShader.CreateInput("metallic", Sdf.ValueTypeNames.Float).Set(0.0)
     pbrShader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).Set((0.0, 0.0, 1.0))
-    material.CreateSurfaceOutput().ConnectToSource(pbrShader, "surface")
+    material.CreateSurfaceOutput().ConnectToSource(pbrShader.ConnectableAPI(),
+            "surface")
 
     # Now bind the Material to the card
     mesh = s.GetPrimAtPath('/Scene/Geom/Plane')
@@ -58,11 +59,11 @@ def _bugStep2(s):
     diffuseTextureSampler = UsdShade.Shader.Define(s,'/Scene/Looks/NewMaterial/Texture')
     diffuseTextureSampler.CreateIdAttr('UsdUVTexture')
     diffuseTextureSampler.CreateInput('file', Sdf.ValueTypeNames.Asset).Set("test.png")
-    diffuseTextureSampler.CreateInput("st", Sdf.ValueTypeNames.Float2).ConnectToSource(stReader, 'result')
+    diffuseTextureSampler.CreateInput("st", Sdf.ValueTypeNames.Float2).ConnectToSource(stReader.ConnectableAPI(), 'result')
     diffuseTextureSampler.CreateOutput('rgb', Sdf.ValueTypeNames.Float3)
 
     pbrShader = UsdShade.ConnectableAPI(s.GetPrimAtPath('/Scene/Looks/NewMaterial/PbrPreview'))
-    pbrShader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).ConnectToSource(diffuseTextureSampler, 'rgb')
+    pbrShader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).ConnectToSource(diffuseTextureSampler.ConnectableAPI(), 'rgb')
 
 def _bugStep3(s):
     # change diffuse texture

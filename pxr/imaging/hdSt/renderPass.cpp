@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 
@@ -63,12 +64,32 @@ _ExecuteDraw(
     cmdBuffer->ExecuteDraw(stRenderPassState, resourceRegistry);
 }
 
+unsigned int
+_GetDrawBatchesVersion(HdRenderIndex *renderIndex)
+{
+    HdStRenderParam *stRenderParam = static_cast<HdStRenderParam*>(
+        renderIndex->GetRenderDelegate()->GetRenderParam());
+
+    return stRenderParam->GetDrawBatchesVersion();
+}
+
+unsigned int
+_GetMaterialTagsVersion(HdRenderIndex *renderIndex)
+{
+    HdStRenderParam *stRenderParam = static_cast<HdStRenderParam*>(
+        renderIndex->GetRenderDelegate()->GetRenderParam());
+
+    return stRenderParam->GetMaterialTagsVersion();
+}
+
+
 HdSt_RenderPass::HdSt_RenderPass(HdRenderIndex *index,
                                  HdRprimCollection const &collection)
     : HdRenderPass(index, collection)
     , _lastSettingsVersion(0)
     , _useTinyPrimCulling(false)
     , _collectionVersion(0)
+    , _materialTagsVersion(0)
     , _collectionChanged(false)
     , _drawItemCount(0)
     , _drawItemsChanged(false)
@@ -182,10 +203,11 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
         renderPassState);
     TF_VERIFY(stRenderPassState);
 
+    // Validate and update draw batches.
     _PrepareCommandBuffer(renderTags);
 
     // CPU frustum culling (if chosen)
-    _Cull(stRenderPassState);
+    _FrustumCullCPU(stRenderPassState);
 
     // Downcast the resource registry
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
@@ -217,6 +239,10 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
     HgiGLGraphicsCmds* glGfxCmds = 
         dynamic_cast<HgiGLGraphicsCmds*>(gfxCmds.get());
 
+    // XXX: The Bind/Unbind calls below set/restore GL state.
+    // This will be reworked to use Hgi.
+    stRenderPassState->Bind();
+
     if (glGfxCmds) {
         // XXX Tmp code path to allow non-hgi code to insert functions into
         // HgiGL ops-stack. Will be removed once Storms uses Hgi everywhere
@@ -232,6 +258,8 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
         gfxCmds->PopDebugGroup();
         _hgi->SubmitCmds(gfxCmds.get());
     }
+
+    stRenderPassState->Unbind();
 }
 
 void
@@ -256,20 +284,40 @@ HdSt_RenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
     const int renderTagVersion =
         tracker.GetRenderTagVersion();
 
+    const unsigned int materialTagsVersion =
+        _GetMaterialTagsVersion(GetRenderIndex());
+
     const bool collectionChanged = _collectionChanged ||
         (_collectionVersion != collectionVersion);
 
     const bool renderTagsChanged = _renderTagVersion != renderTagVersion;
 
-    if (collectionChanged || renderTagsChanged) {
+    const bool materialTagsChanged =
+        _materialTagsVersion != materialTagsVersion;
+
+    if (collectionChanged || renderTagsChanged || materialTagsChanged) {
         HD_PERF_COUNTER_INCR(HdPerfTokens->collectionsRefreshed);
-        TF_DEBUG(HD_COLLECTION_CHANGED).Msg("CollectionChanged: %s "
-                                            "(repr = %s)"
-                                            "version: %d -> %d\n",
-                                             collection.GetName().GetText(),
-                                             collection.GetReprSelector().GetText(),
-                                             _collectionVersion,
-                                             collectionVersion);
+
+        if (TfDebug::IsEnabled(HDST_DRAW_ITEM_GATHER)) {
+            if (collectionChanged) {
+                TfDebug::Helper::Msg(
+                    "CollectionChanged: %s (repr = %s, version = %d -> %d)\n",
+                        collection.GetName().GetText(),
+                        collection.GetReprSelector().GetText(),
+                        _collectionVersion,
+                        collectionVersion);
+            }
+
+            if (renderTagsChanged) {
+                TfDebug::Helper::Msg("RenderTagsChanged (version = %d -> %d)\n",
+                        _renderTagVersion, renderTagVersion);
+            }
+            if (materialTagsChanged) {
+                TfDebug::Helper::Msg(
+                    "MaterialTagsChanged (version = %d -> %d)\n",
+                    _materialTagsVersion, materialTagsVersion);
+            }
+        }
 
         _drawItems = GetRenderIndex()->GetDrawItems(collection, renderTags);
         _drawItemCount = _drawItems.size();
@@ -279,6 +327,7 @@ HdSt_RenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
         _collectionChanged = false;
 
         _renderTagVersion = renderTagVersion;
+        _materialTagsVersion = materialTagsVersion;
     }
 }
 
@@ -293,8 +342,7 @@ HdSt_RenderPass::_PrepareCommandBuffer(TfTokenVector const& renderTags)
     // We know what must be drawn and that the stream needs to be updated,
     // so iterate over each prim, cull it and schedule it to be drawn.
 
-    HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
-    const int batchVersion = tracker.GetBatchVersion();
+    const int batchVersion = _GetDrawBatchesVersion(GetRenderIndex());
 
     // It is optional for a render task to call RenderPass::Prepare() to
     // update the drawItems during the prepare phase. We ensure our drawItems
@@ -332,7 +380,7 @@ HdSt_RenderPass::_PrepareCommandBuffer(TfTokenVector const& renderTags)
 }
 
 void
-HdSt_RenderPass::_Cull(
+HdSt_RenderPass::_FrustumCullCPU(
     HdStRenderPassStateSharedPtr const &renderPassState)
 {
     // This process should be moved to HdSt_DrawBatch::PrepareDraw

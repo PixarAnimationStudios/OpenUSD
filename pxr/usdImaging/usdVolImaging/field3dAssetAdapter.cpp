@@ -45,7 +45,8 @@ UsdImagingField3DAssetAdapter::Get(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     TfToken const& key,
-    UsdTimeCode time) const
+    UsdTimeCode time,
+    VtIntArray *outIndices) const
 {
     if ( key == UsdVolTokens->filePath ||
          key == UsdVolTokens->fieldName ||
@@ -76,7 +77,8 @@ UsdImagingField3DAssetAdapter::Get(
             prim,
             cachePath,
             key,
-            time);
+            time,
+            outIndices);
 }
 
 TfToken

@@ -56,7 +56,6 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
                 HdRenderParam   *renderParam,
                 HdDirtyBits     *dirtyBits)
 {
-    // This code is similar to HdTexture::Sync.
     if (*dirtyBits & DirtyParams) {
 
         // Get asset path from scene delegate.

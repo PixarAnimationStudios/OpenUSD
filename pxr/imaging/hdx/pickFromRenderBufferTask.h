@@ -83,26 +83,26 @@ public:
     HdxPickFromRenderBufferTask(HdSceneDelegate *delegate, SdfPath const& id);
 
     HDX_API
-    virtual ~HdxPickFromRenderBufferTask();
+    ~HdxPickFromRenderBufferTask() override;
 
     /// Hooks for progressive rendering.
-    virtual bool IsConverged() const override;
+    bool IsConverged() const override;
 
     /// Prepare the pick task
     HDX_API
-    virtual void Prepare(HdTaskContext* ctx,
-                         HdRenderIndex* renderIndex) override;
+    void Prepare(HdTaskContext* ctx,
+                 HdRenderIndex* renderIndex) override;
 
     /// Execute the pick task
     HDX_API
-    virtual void Execute(HdTaskContext* ctx) override;
+    void Execute(HdTaskContext* ctx) override;
 
 protected:
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdSceneDelegate* delegate,
-                       HdTaskContext* ctx,
-                       HdDirtyBits* dirtyBits) override;
+    void _Sync(HdSceneDelegate* delegate,
+               HdTaskContext* ctx,
+               HdDirtyBits* dirtyBits) override;
 
 private:
     GfMatrix4d _ComputeProjectionMatrix() const;

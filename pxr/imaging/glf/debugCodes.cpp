@@ -43,13 +43,6 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Glf outputs shadows textures to image files");
     TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_POST_SURFACE_LIGHTING,
         "Glf post surface lighting setup");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_TEXTURE_IMAGE_PLUGINS,
-        "Glf texture image plugin registration");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_TEXTURE_PLUGINS,
-        "Glf texture plugin registration");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(GLF_DEBUG_VDB_TEXTURE,
-        "Glf Vdb texture loading");
-
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
