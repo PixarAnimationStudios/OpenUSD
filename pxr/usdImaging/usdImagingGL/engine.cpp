@@ -1071,6 +1071,39 @@ UsdImagingGLEngine::SetPresentationOutput(
 }
 
 // ---------------------------------------------------------------------
+// Command API
+// ---------------------------------------------------------------------
+
+HdCommandDescriptors 
+UsdImagingGLEngine::GetRendererCommandDescriptors() const
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return HdCommandDescriptors();
+    }
+
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
+        return HdCommandDescriptors();
+    }
+
+    return _renderDelegate->GetCommandDescriptors();
+}
+
+bool
+UsdImagingGLEngine::InvokeRendererCommand(
+    const TfToken &command, const HdCommandArgs &args) const
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return false;
+    }
+
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
+        return false;
+    }
+
+    return _renderDelegate->InvokeCommand(command, args);
+}
+
+// ---------------------------------------------------------------------
 // Control of background rendering threads.
 // ---------------------------------------------------------------------
 bool

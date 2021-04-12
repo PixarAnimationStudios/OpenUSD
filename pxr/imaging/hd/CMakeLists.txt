@@ -33,6 +33,7 @@ pxr_library(hd
         bufferSpec
         camera
         changeTracker
+        command
         compExtCompInputSource
         computation
         coordSys

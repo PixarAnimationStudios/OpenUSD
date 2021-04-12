@@ -1055,6 +1055,18 @@ class StageView(QtOpenGL.QGLWidget):
             self._renderer.SetRendererSetting(name, value)
             self.updateGL()
 
+    def GetRendererCommands(self):
+        if self._renderer:
+            return self._renderer.GetRendererCommandDescriptors()
+        else:
+            return []
+
+    def InvokeRendererCommand(self, command):
+        if self._renderer:
+            return self._renderer.InvokeRendererCommand(command.commandName)
+        else:
+            return False
+
     def SetRendererPaused(self, paused):
         if self._renderer and (not self._renderer.IsConverged()):
             if paused:
