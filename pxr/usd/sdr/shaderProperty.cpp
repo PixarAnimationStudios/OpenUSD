@@ -221,7 +221,9 @@ namespace {
         // If the conversion can't be made, it defaults to the 'Token' type
         SdfValueTypeName convertedType = SdfValueTypeNames->Token;
 
-        if (arraySize > 0) {
+        bool isDynamicArray =
+            IsTruthy(SdrPropertyMetadata->IsDynamicArray, metadata);
+        if (arraySize > 0 || isDynamicArray) {
             return _GetTypeAsSdfArrayType(type, arraySize);
         }
 
