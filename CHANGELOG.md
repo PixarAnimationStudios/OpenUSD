@@ -1,6 +1,6 @@
 # Change Log
 
-## [21.05] - 2021-04-05
+## [21.05] - 2021-04-12
 
 ### Build
 - Removed unnecessary check for Python executable in build_usd.py.
