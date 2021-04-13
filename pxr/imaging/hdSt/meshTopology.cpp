@@ -259,7 +259,8 @@ HdSt_MeshTopology::GetOsdIndexBuilderComputation()
 
 HdBufferSourceSharedPtr
 HdSt_MeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source,
-                                        bool varying)
+                                           Interpolation interpolation,
+                                           int fvarChannel)
 {
     // Make a dependency to far mesh.
     // (see comment on GetQuadrangulateComputation)
@@ -280,13 +281,15 @@ HdSt_MeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source
 
     HdBufferSourceSharedPtr topologyBuilder = _osdTopologyBuilder.lock();
 
-    return _subdivision->CreateRefineComputation(this, source, varying,
-                                                 topologyBuilder);
+    return _subdivision->CreateRefineComputation(this, source, topologyBuilder, 
+                                                 interpolation);
 }
 
 HdComputationSharedPtr
 HdSt_MeshTopology::GetOsdRefineComputationGPU(TfToken const &name,
-                                              HdType dataType)
+                                              HdType dataType,
+                                              Interpolation interpolation,
+                                              int fvarChannel)
 {
     // for empty topology, we don't need to refine anything.
     if (_topology.GetFaceVertexCounts().size() == 0) {
@@ -294,8 +297,9 @@ HdSt_MeshTopology::GetOsdRefineComputationGPU(TfToken const &name,
     }
 
     if (!TF_VERIFY(_subdivision)) return HdComputationSharedPtr();
-
-    return _subdivision->CreateRefineComputationGPU(this, name, dataType);
+    
+    return _subdivision->CreateRefineComputationGPU(this, name, dataType, 
+                                                    interpolation);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

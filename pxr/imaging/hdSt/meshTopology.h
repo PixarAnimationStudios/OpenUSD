@@ -74,6 +74,13 @@ public:
         RefineModePatches
     };
 
+    /// Specifies type of interpolation to use in refinement
+    enum Interpolation {
+        INTERPOLATE_VERTEX,
+        INTERPOLATE_VARYING,
+        INTERPOLATE_FACEVARYING,
+    };
+
     static HdSt_MeshTopologySharedPtr New(
         const HdMeshTopology &src,
         int refineLevel,
@@ -192,11 +199,25 @@ public:
 
     /// Returns the subdivision primvar refine computation on CPU.
     HdBufferSourceSharedPtr GetOsdRefineComputation(
-        HdBufferSourceSharedPtr const &source, bool varying);
+        HdBufferSourceSharedPtr const &source, 
+        Interpolation interpolation,
+        int fvarChannel = 0);
 
     /// Returns the subdivision primvar refine computation on GPU.
     HdComputationSharedPtr GetOsdRefineComputationGPU(
-        TfToken const &name, HdType dataType);
+        TfToken const &name, HdType dataType, 
+        Interpolation interpolation,
+        int fvarChannel = 0);
+
+    /// Sets the face-varying topologies.
+    void SetFvarTopologies(std::vector<VtIntArray> const &fvarTopologies) {
+        _fvarTopologies = fvarTopologies;
+    }
+
+    /// Returns the face-varying topologies.
+    std::vector<VtIntArray> const & GetFvarTopologies()  {
+        return _fvarTopologies;
+    }
 
     /// @}
 
@@ -213,6 +234,8 @@ private:
     RefineMode _refineMode;
     HdSt_Subdivision *_subdivision;
     HdBufferSourceWeakPtr _osdTopologyBuilder;
+
+    std::vector<VtIntArray> _fvarTopologies;
 
     // Must be created through factory
     explicit HdSt_MeshTopology(

@@ -32,6 +32,7 @@
 #include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
+#include "pxr/imaging/hdSt/subdivision.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -1045,6 +1046,14 @@ HdStComputeSharedPrimvarId(
         }
     }
 
+    for (const auto& computation : computations) {
+        if (std::shared_ptr<HdSt_OsdRefineComputationGPU> refinedComputation =
+            std::dynamic_pointer_cast<HdSt_OsdRefineComputationGPU>(
+                computation.first)) {
+            primvarId = TfHash::Combine(primvarId, 
+                                        refinedComputation->GetInterpolation());
+        }   
+    }
     HdBufferSpecVector bufferSpecs;
     HdStGetBufferSpecsFromCompuations(computations, &bufferSpecs);
 
