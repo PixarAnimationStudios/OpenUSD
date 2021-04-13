@@ -282,9 +282,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
     TF_FOR_ALL (bresIt, GetResources()) {
         HdStBufferResourceSharedPtr const &bres = bresIt->second;
 
-        // XXX:Arrays: We should use HdDataSizeOfTupleType() here, to
-        // add support for array types.
-        int bytesPerElement = HdDataSizeOfType(bres->GetTupleType().type);
+        size_t bytesPerElement = HdDataSizeOfTupleType(bres->GetTupleType());
         size_t bufferSize = bytesPerElement * numElements;
 
         HgiBufferHandle oldBuf = bres->GetHandle();
@@ -441,7 +439,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
         return;
     }
 
-    int bytesPerElement = HdDataSizeOfTupleType(VBO->GetTupleType());
+    size_t bytesPerElement = HdDataSizeOfTupleType(VBO->GetTupleType());
     // overrun check. for graceful handling of erroneous assets,
     // issue warning here and continue to copy for the valid range.
     size_t dstSize = _numElements * bytesPerElement;
