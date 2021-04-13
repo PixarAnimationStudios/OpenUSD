@@ -546,24 +546,23 @@ def GetFileOwner(path):
 # we will change this function to accept a prim rather than a primStack.
 def GetAssetCreationTime(primStack, assetIdentifier):
     """Finds the weakest layer in which assetInfo.identifier is set to
-    'assetIdentifier', and considers that an "asset-defining layer".  We then
-    retrieve the creation time for the asset by stat'ing the layer's
-    real path.
+    'assetIdentifier', and considers that an "asset-defining layer".
+    If assetInfo.identifier is not set in any layer, assumes the weakest
+    layer is the defining layer.  We then retrieve the creation time for
+    the asset by stat'ing the defining layer's real path.
 
     Returns a triple of strings: (fileDisplayName, creationTime, owner)"""
     definingLayer = None
     for spec in reversed(primStack):
         if spec.HasInfo('assetInfo'):
-            identifier = spec.GetInfo('assetInfo')['identifier']
-            if identifier.path == assetIdentifier.path:
+            identifier = spec.GetInfo('assetInfo').get('identifier')
+            if identifier and identifier.path == assetIdentifier.path:
                 definingLayer = spec.layer
                 break
     if definingLayer:
         definingFile = definingLayer.realPath
     else:
         definingFile = primStack[-1].layer.realPath
-        print("Warning: Could not find expected asset-defining layer for %s" %
-            assetIdentifier)
 
     if Ar.IsPackageRelativePath(definingFile):
         definingFile = Ar.SplitPackageRelativePathOuter(definingFile)[0]
