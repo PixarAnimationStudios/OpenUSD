@@ -2207,9 +2207,10 @@ HdSt_CodeGen::_GenerateElementPrimvar()
     //  Field1     | Bits | Content
     //  -----------|:----:|---------------------------------------------------
     //  level      | 4    | the subdivision level of the patch
-    //  nonquad    | 1    | whether the patch is the child of a non-quad face
-    //  unused     | 3    | unused
-    //  boundary   | 4    | boundary edge mask encoding
+    //  nonquad    | 1    | whether patch is refined from a non-quad face
+    //  regular    | 1    | whether patch is regular
+    //  unused     | 1    | unused
+    //  boundary   | 5    | boundary mask encoding
     //  v          | 10   | log2 value of u parameter at first patch corner
     //  u          | 10   | log2 value of v parameter at first patch corner
     //

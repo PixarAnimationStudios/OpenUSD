@@ -122,9 +122,9 @@ void main(void)
         for (int i = 0; i < 16; ++i) {
             cpBezier[i] = outpt[i].v;
         }
-        OsdGetTessLevelsAdaptiveLimitPoints(cpBezier, patchParam,
-                                            tessLevelOuter, tessLevelInner,
-                                            tessOuterLo, tessOuterHi);
+        OsdEvalPatchBezierTessLevels(cpBezier, patchParam,
+                                     tessLevelOuter, tessLevelInner,
+                                     tessOuterLo, tessOuterHi);
 
         gl_TessLevelOuter[0] = tessLevelOuter[0];
         gl_TessLevelOuter[1] = tessLevelOuter[1];
@@ -206,7 +206,7 @@ in VertexData
 out VertexDataTess
 {
     OsdPerPatchVertexBezier v;
-} outpt[16];
+} outpt[15];
 
 void main(void)
 {
@@ -457,26 +457,6 @@ out VertexData
 out vec4 gsPatchCoord;
 out vec2 gsTessCoord;
 
-// The OpenSubdiv implementation does not yet provide a utility
-// method to interpolate barycentric patch coordinates so we provide
-// our own implementation modeled after OsdInterpolatePatchCoord().
-// We need to interpolate only two of the three barycentric coordinates.
-vec4 InterpolatePatchCoordBarycentric(vec2 localUV, ivec3 patchParam)
-{
-    ivec4 perPrimPatchCoord = OsdGetPatchCoord(patchParam);
-    int faceId = perPrimPatchCoord.w;
-    int faceLevel = perPrimPatchCoord.z;
-    vec2 faceUV = vec2(perPrimPatchCoord.x, perPrimPatchCoord.y);
-
-    localUV = (faceUV + localUV) / faceLevel;
-    if ((faceUV.x + faceUV.y) >= faceLevel) {
-        localUV = vec2(1.0f) - localUV;
-    }
-
-    // add 0.5 to integer values for more robust interpolation
-    return vec4(localUV.x, localUV.y, faceLevel+0.5f, faceId+0.5f);
-}
-
 vec4 GetPatchCoord(int index)
 {
     vec2 uv[3];
@@ -485,7 +465,7 @@ vec4 GetPatchCoord(int index)
     uv[2] = vec2(0, 1); // (0, 1, 0);
 
     ivec3 patchParam = GetPatchParam();
-    return InterpolatePatchCoordBarycentric(uv[index], patchParam);
+    return OsdInterpolatePatchCoordTriangle(uv[index], patchParam);
 }
 
 void emit(int index, vec4 Peye, vec3 Neye,
