@@ -63,6 +63,8 @@ private:
         const HgiShaderFunctionParamDescVector &parameters);
 
     void _WriteTextures(const HgiShaderFunctionTextureDescVector& textures);
+	
+    void _WriteBuffers(const HgiShaderFunctionBufferDescVector &buffers);
 
     //For writing shader inputs and outputs who are very similarly written
     void _WriteInOuts(

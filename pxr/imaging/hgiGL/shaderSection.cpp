@@ -169,7 +169,7 @@ HgiGLBlockShaderSection::~HgiGLBlockShaderSection() = default;
 bool
 HgiGLBlockShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
 {
-    ss << "layout(binding = "
+    ss << "layout(std140, binding = "
         << _bindingNo << ") " << "uniform" << " ";
     WriteIdentifier(ss);
     ss << "\n";
@@ -276,6 +276,92 @@ HgiGLTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
     ss << ", coord, 0);\n";
     ss << "    return result;\n";
     ss << "}\n";
+
+    return true;
+}
+
+HgiGLBufferShaderSection::HgiGLBufferShaderSection(
+    const std::string &identifier,
+    const uint32_t layoutIndex,
+    const std::string &type,
+    const HgiShaderSectionAttributeVector &attributes)
+  : HgiGLShaderSection( identifier,
+                        attributes,
+                        "buffer",
+                        "")
+  , _type(type)
+{
+}
+
+HgiGLBufferShaderSection::~HgiGLBufferShaderSection() = default;
+
+void
+HgiGLBufferShaderSection::WriteType(std::ostream &ss) const
+{
+    ss << _type;
+}
+
+bool
+HgiGLBufferShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
+{
+    //If it has attributes, write them with corresponding layout
+    //identifiers and indicies
+    const HgiShaderSectionAttributeVector &attributes = GetAttributes();
+
+    if(!attributes.empty()) {
+        ss << "layout(";
+        for (size_t i = 0; i < attributes.size(); i++)
+        {
+            if (i > 0) {
+                ss << ", ";
+            }
+            const HgiShaderSectionAttribute &a = attributes[i];
+            ss << a.identifier;
+            if(!a.index.empty()) {
+                ss << " = " << a.index;
+            }
+        }
+        ss << ") ";
+    }
+    //If it has a storage qualifier, declare it
+    ss << " buffer _";
+    WriteIdentifier(ss);
+    ss << " { ";
+    WriteType(ss);
+    ss << " ";
+    WriteIdentifier(ss);
+    ss << "[]; };";
+
+    return true;
+}
+
+HgiGLKeywordShaderSection::HgiGLKeywordShaderSection(
+    const std::string &identifier,
+    const std::string &type,
+    const std::string &keyword)
+  : HgiGLShaderSection(identifier)
+  , _type(type)
+  , _keyword(keyword)
+{
+}
+
+HgiGLKeywordShaderSection::~HgiGLKeywordShaderSection() = default;
+
+void
+HgiGLKeywordShaderSection::WriteType(std::ostream &ss) const
+{
+    ss << _type;
+}
+
+bool
+HgiGLKeywordShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
+{
+    WriteType(ss);
+    ss << " ";
+    WriteIdentifier(ss);
+    ss << " = ";
+    ss << _keyword;
+    ss << ";";
 
     return true;
 }

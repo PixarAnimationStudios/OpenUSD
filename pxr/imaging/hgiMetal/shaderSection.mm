@@ -191,6 +191,63 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
     return true;
 }
 
+HgiMetalBufferShaderSection::HgiMetalBufferShaderSection(
+    const std::string &samplerSharedIdentifier,
+    const std::string &type,
+    const HgiShaderSectionAttributeVector &attributes)
+  : HgiMetalShaderSection(
+      samplerSharedIdentifier,
+      attributes,
+      "")
+  , _type(type)
+  , _samplerSharedIdentifier(samplerSharedIdentifier)
+{
+}
+
+void
+HgiMetalBufferShaderSection::WriteType(std::ostream& ss) const
+{
+    ss << _type;
+}
+
+bool
+HgiMetalBufferShaderSection::VisitScopeMemberDeclarations(std::ostream &ss)
+{
+    ss << "device ";
+    WriteType(ss);
+    ss << "* ";
+    WriteIdentifier(ss);
+    ss << ";\n";
+    return true;
+}
+
+bool
+HgiMetalBufferShaderSection::VisitEntryPointParameterDeclarations(
+    std::ostream &ss)
+{
+    ss << "device ";
+    WriteType(ss);
+    ss << "* ";
+    WriteIdentifier(ss);
+
+    WriteAttributesWithIndex(ss);
+    return true;
+}
+
+bool
+HgiMetalBufferShaderSection::VisitEntryPointFunctionExecutions(
+    std::ostream& ss,
+    const std::string &scopeInstanceName)
+{
+    ss << scopeInstanceName << ".";
+    WriteIdentifier(ss);
+    ss << " = ";
+    WriteIdentifier(ss);
+    ss << ";";
+    return true;
+}
+
+
 HgiMetalStructTypeDeclarationShaderSection::HgiMetalStructTypeDeclarationShaderSection(
     const std::string &identifier,
     const HgiMetalShaderSectionPtrVector &members)
@@ -325,6 +382,49 @@ HgiMetalArgumentBufferInputShaderSection::VisitGlobalMemberDeclarations(
 {
     GetStructTypeDeclaration()->WriteDeclaration(ss);
     ss << "\n";
+    return true;
+}
+
+HgiMetalKeywordInputShaderSection::HgiMetalKeywordInputShaderSection(
+    const std::string &identifier,
+    const std::string &type,
+    const HgiShaderSectionAttributeVector &attributes)
+  : HgiMetalShaderSection(
+      identifier,
+      attributes,
+      "")
+  , _type(type)
+{
+}
+
+void
+HgiMetalKeywordInputShaderSection::WriteType(std::ostream& ss) const
+{
+    ss << _type;
+}
+
+bool
+HgiMetalKeywordInputShaderSection::VisitEntryPointParameterDeclarations(
+    std::ostream &ss)
+{
+    WriteType(ss);
+    ss << " ";
+    WriteIdentifier(ss);
+
+    WriteAttributesWithIndex(ss);
+    return true;
+}
+
+bool
+HgiMetalKeywordInputShaderSection::VisitEntryPointFunctionExecutions(
+    std::ostream& ss,
+    const std::string &scopeInstanceName)
+{
+    ss << scopeInstanceName << ".";
+    WriteIdentifier(ss);
+    ss << " = ";
+    WriteIdentifier(ss);
+    ss << ";";
     return true;
 }
 

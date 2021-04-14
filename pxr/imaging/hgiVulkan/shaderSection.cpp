@@ -242,4 +242,90 @@ HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
     return true;
 }
 
+HgiVulkanBufferShaderSection::HgiVulkanBufferShaderSection(
+    const std::string &identifier,
+    const uint32_t layoutIndex,
+    const std::string &type,
+    const HgiShaderSectionAttributeVector &attributes)
+  : HgiVulkanShaderSection( identifier,
+                        attributes,
+                        "buffer",
+                        "")
+  , _type(type)
+{
+}
+
+HgiVulkanBufferShaderSection::~HgiVulkanBufferShaderSection() = default;
+
+void
+HgiVulkanBufferShaderSection::WriteType(std::ostream &ss) const
+{
+    ss << _type;
+}
+
+bool
+HgiVulkanBufferShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
+{
+    //If it has attributes, write them with corresponding layout
+    //identifiers and indicies
+    const HgiShaderSectionAttributeVector &attributes = GetAttributes();
+
+    if(!attributes.empty()) {
+        ss << "layout(";
+        for (size_t i = 0; i < attributes.size(); i++)
+        {
+            if (i > 0) {
+                ss << ", ";
+            }
+            const HgiShaderSectionAttribute &a = attributes[i];
+            ss << a.identifier;
+            if(!a.index.empty()) {
+                ss << " = " << a.index;
+            }
+        }
+        ss << ") ";
+    }
+    //If it has a storage qualifier, declare it
+    ss << " buffer ";
+    WriteIdentifier(ss);
+    ss << " { ";
+    WriteType(ss);
+    ss << " ";
+    WriteIdentifier(ss);
+    ss << "[]; };";
+
+    return true;
+}
+
+HgiVulkanKeywordShaderSection::HgiVulkanKeywordShaderSection(
+    const std::string &identifier,
+    const std::string &type,
+    const std::string &keyword)
+  : HgiVulkanShaderSection(identifier)
+  , _type(type)
+  , _keyword(keyword)
+{
+}
+
+HgiVulkanKeywordShaderSection::~HgiVulkanKeywordShaderSection() = default;
+
+void
+HgiVulkanKeywordShaderSection::WriteType(std::ostream &ss) const
+{
+    ss << _type;
+}
+
+bool
+HgiVulkanKeywordShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
+{
+    WriteType(ss);
+    ss << " ";
+    WriteIdentifier(ss);
+    ss << " = ";
+    ss << _keyword;
+    ss << ";";
+
+    return true;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
