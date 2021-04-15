@@ -138,6 +138,7 @@ def ValidateAndDumpUsdStage(stage):
         assert prototype.IsGroup()
         assert not prototype.IsAbstract()
         assert prototype.IsDefined()
+        assert prototype.HasDefiningSpecifier()
 
         assert prototype.IsPrototype()
         assert prototype.IsInPrototype()

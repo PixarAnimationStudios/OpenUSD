@@ -6315,15 +6315,10 @@ static bool
 _GetPrimSpecifierImpl(Usd_PrimDataConstPtr primData,
                       bool useFallbacks, Composer *composer)
 {
-    // Handle the pseudo root as a special case.
-    if (primData->GetPath().IsAbsoluteRootPath()) {
-        return false;
-    }
-
-    // Instance prototype prims are always defined -- see Usd_PrimData for
-    // details. Since the fallback for specifier is 'over', we have to
-    // handle these prims specially here.
-    if (primData->IsPrototype()) {
+    // The pseudo-root and instance prototype prims are always defined -- see
+    // Usd_PrimData for details. Since the fallback for specifier is 'over', we
+    // have to handle these prims specially here.
+    if (primData->GetPath().IsAbsoluteRootPath() || primData->IsPrototype()) {
         composer->ConsumeExplicitValue(SdfSpecifierDef);
         return true;
     }
