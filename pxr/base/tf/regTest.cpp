@@ -125,12 +125,6 @@ TfRegTest::_Main(int argc, char *argv[])
         return 2;
     }
 
-    if (argc < 2) {
-        _Usage(progName);
-        _PrintTestNames();
-        return 2;
-    }
-
     std::string testName = argv[1];
 
     if (_functionTable.find(testName) != _functionTable.end()) {
