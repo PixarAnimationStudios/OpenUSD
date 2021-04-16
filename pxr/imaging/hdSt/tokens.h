@@ -60,7 +60,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((_double, "double"))                       \
     ((_float, "float"))                         \
     ((_int, "int"))                             \
-    ((colorSpaceAuto, "auto"))
+    ((colorSpaceAuto, "auto"))                  \
+    (fvarIndices)                               \
+    (fvarPatchParam)
 
 #define HDST_LIGHT_TOKENS                       \
     (color)

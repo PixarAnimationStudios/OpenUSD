@@ -257,6 +257,14 @@ HdSt_MeshTopology::GetOsdIndexBuilderComputation()
     return _subdivision->CreateIndexComputation(this, topologyBuilder);
 }
 
+HdBufferSourceSharedPtr 
+HdSt_MeshTopology::GetOsdFvarIndexBuilderComputation(int channel)
+{
+    HdBufferSourceSharedPtr topologyBuilder = _osdTopologyBuilder.lock();
+    return _subdivision->CreateFvarIndexComputation(
+        this, topologyBuilder, channel);
+}
+
 HdBufferSourceSharedPtr
 HdSt_MeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source,
                                            Interpolation interpolation,
@@ -299,7 +307,7 @@ HdSt_MeshTopology::GetOsdRefineComputationGPU(TfToken const &name,
     if (!TF_VERIFY(_subdivision)) return HdComputationSharedPtr();
     
     return _subdivision->CreateRefineComputationGPU(this, name, dataType, 
-                                                    interpolation);
+                                                    interpolation, fvarChannel);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

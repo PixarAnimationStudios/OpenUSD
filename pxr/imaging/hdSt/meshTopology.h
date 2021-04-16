@@ -193,9 +193,14 @@ public:
     HdBufferSourceSharedPtr GetOsdTopologyComputation(SdfPath const &debugId);
 
     /// Returns the refined indices builder computation.
-    /// this just returns index and primitive buffer, and should be preceded by
+    /// This just returns index and primitive buffer, and should be preceded by
     /// topology computation.
     HdBufferSourceSharedPtr GetOsdIndexBuilderComputation();
+
+    /// Returns the refined face-varying indices builder computation.
+    /// This just returns the index and patch param buffer for a face-varying
+    /// channel, and should be preceded by topology computation.
+    HdBufferSourceSharedPtr GetOsdFvarIndexBuilderComputation(int channel);
 
     /// Returns the subdivision primvar refine computation on CPU.
     HdBufferSourceSharedPtr GetOsdRefineComputation(

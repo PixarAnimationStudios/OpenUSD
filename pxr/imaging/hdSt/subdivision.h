@@ -75,6 +75,11 @@ public:
     virtual HdBufferSourceSharedPtr CreateIndexComputation(
         HdSt_MeshTopology *topology,
         HdBufferSourceSharedPtr const &osdTopology) = 0;
+    
+    virtual HdBufferSourceSharedPtr CreateFvarIndexComputation(
+        HdSt_MeshTopology *topology,
+        HdBufferSourceSharedPtr const &osdTopology,
+        int channel) = 0;
 
     virtual HdBufferSourceSharedPtr CreateRefineComputation(
         HdSt_MeshTopology *topology,

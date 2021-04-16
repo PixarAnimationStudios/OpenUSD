@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/subdivision3.h"
 #include "pxr/imaging/hdSt/subdivision.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferResource.h"
@@ -130,6 +131,11 @@ public:
         HdSt_MeshTopology *topology,
         HdBufferSourceSharedPtr const &osdTopology) override;
 
+    HdBufferSourceSharedPtr CreateFvarIndexComputation(
+        HdSt_MeshTopology *topology,
+        HdBufferSourceSharedPtr const &osdTopology,
+        int channel) override;
+
     HdBufferSourceSharedPtr CreateRefineComputation(
         HdSt_MeshTopology *topology,
         HdBufferSourceSharedPtr const &source,
@@ -203,6 +209,36 @@ private:
         std::vector<PtexFaceInfo> *result);
 
     HdSt_Osd3Subdivision *_subdivision;
+};
+
+class HdSt_Osd3FvarIndexComputation : public HdComputedBufferSource
+{
+
+public:
+    HdSt_Osd3FvarIndexComputation(HdSt_Osd3Subdivision *subdivision,
+                                  HdSt_MeshTopology *topology,
+                                  HdBufferSourceSharedPtr const &osdTopology,
+                                  int channel);
+    /// overrides
+    bool HasChainedBuffer() const override;
+    bool Resolve() override;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    HdBufferSourceSharedPtrVector GetChainedBuffers() const override;
+
+protected:
+    bool _CheckValid() const override;
+
+private:
+    void _PopulateFvarPatchParamBuffer(
+        OpenSubdiv::Far::PatchTable const *patchTable);
+
+    HdSt_MeshTopology *_topology;
+    HdBufferSourceSharedPtr _osdTopology;
+    HdSt_Osd3Subdivision *_subdivision;
+    HdBufferSourceSharedPtr _fvarPatchParamBuffer;
+    int _channel;
+    TfToken _indicesName;
+    TfToken _patchParamName;
 };
 
 class HdSt_Osd3TopologyComputation : public HdSt_OsdTopologyComputation
@@ -372,8 +408,8 @@ HdSt_Osd3Subdivision::RefineCPU(HdBufferSourceSharedPtr const &source,
             _vertexStencils : 
         (interpolation == HdSt_MeshTopology::INTERPOLATE_VARYING) ? 
             _varyingStencils : 
-            _faceVaryingStencils[fvarChannel]; 
-    
+        _faceVaryingStencils[fvarChannel]; 
+
     if (!TF_VERIFY(stencilTable)) return;
 
     OpenSubdiv::Osd::CpuVertexBuffer *osdVertexBuffer =
@@ -441,7 +477,7 @@ HdSt_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
         (interpolation == HdSt_MeshTopology::INTERPOLATE_VERTEX) ? 
             _vertexStencils : 
         (interpolation == HdSt_MeshTopology::INTERPOLATE_VARYING) ? 
-            _varyingStencils : 
+            _varyingStencils :
         _faceVaryingStencils[fvarChannel];
 
     if (!TF_VERIFY(stencilTable)) {
@@ -512,6 +548,15 @@ HdSt_Osd3Subdivision::CreateIndexComputation(HdSt_MeshTopology *topology,
 {
     return HdBufferSourceSharedPtr(new HdSt_Osd3IndexComputation(
                                        this, topology, osdTopology));
+}
+
+/*virtual*/
+HdBufferSourceSharedPtr
+HdSt_Osd3Subdivision::CreateFvarIndexComputation(HdSt_MeshTopology *topology,
+    HdBufferSourceSharedPtr const &osdTopology, int channel)
+{
+    return HdBufferSourceSharedPtr(new HdSt_Osd3FvarIndexComputation(
+                                       this, topology, osdTopology, channel));
 }
 
 /*virtual*/
@@ -1059,6 +1104,156 @@ HdSt_Osd3IndexComputation::_PopulatePatchPrimitiveBuffer(
 
 // ---------------------------------------------------------------------------
 
+HdSt_Osd3FvarIndexComputation::HdSt_Osd3FvarIndexComputation (
+    HdSt_Osd3Subdivision *subdivision,
+    HdSt_MeshTopology *topology,
+    HdBufferSourceSharedPtr const &osdTopology,
+    int channel)
+    : _topology(topology), _osdTopology(osdTopology), _subdivision(subdivision),
+      _channel(channel)
+{
+    _indicesName = TfToken(
+        HdStTokens->fvarIndices.GetString() + std::to_string(_channel));
+    _patchParamName = TfToken(
+        HdStTokens->fvarPatchParam.GetString() + std::to_string(_channel));
+}
+
+bool
+HdSt_Osd3FvarIndexComputation::Resolve()
+{
+    using namespace OpenSubdiv;
+
+    if (_osdTopology && !_osdTopology->IsResolved()) return false;
+
+    if (!_TryLock()) return false;
+
+    HdSt_Subdivision *subdivision = _topology->GetSubdivision();
+    if (!TF_VERIFY(subdivision)) {
+        _SetResolved();
+        return true;
+    }
+
+    VtIntArray fvarIndices = _subdivision->GetRefinedFvarIndices(_channel);
+    if (!TF_VERIFY(!fvarIndices.empty())) {
+        _SetResolved();
+        return true;
+    }
+
+    Far::Index const *firstIndex = fvarIndices.cdata();
+    Far::PatchTable const *patchTable = _subdivision->GetPatchTable();
+    size_t numPatches = patchTable ? patchTable->GetNumPatchesTotal() : 0;
+
+    TfToken const& scheme = _topology->GetScheme();
+
+    if (_subdivision->IsAdaptive() &&
+        (HdSt_Subdivision::RefinesToBSplinePatches(scheme) ||
+         HdSt_Subdivision::RefinesToBoxSplineTrianglePatches(scheme))) {
+        // Bundle groups of 12 or 16 patch control vertices
+        int arraySize = patchTable ? 
+            patchTable->GetFVarPatchDescriptor(_channel).GetNumControlVertices()
+            : 0;
+
+        VtIntArray indices(arraySize * numPatches);
+        memcpy(indices.data(), firstIndex, 
+               arraySize * numPatches * sizeof(int));
+
+        HdBufferSourceSharedPtr patchIndices(
+            new HdVtBufferSource(_indicesName, VtValue(indices), arraySize));
+
+        _SetResult(patchIndices);
+        _PopulateFvarPatchParamBuffer(patchTable);
+    } else if (HdSt_Subdivision::RefinesToTriangles(scheme)) {
+        // populate refined triangle indices.
+        VtArray<GfVec3i> indices(numPatches);
+        memcpy(indices.data(), firstIndex, 3 * numPatches * sizeof(int));
+
+        HdBufferSourceSharedPtr triIndices(
+            new HdVtBufferSource(_indicesName, VtValue(indices)));
+        _SetResult(triIndices);
+    } else {
+        // populate refined quad indices.
+        VtArray<GfVec4i> indices(numPatches);
+        memcpy(indices.data(), firstIndex, 4 * numPatches * sizeof(int));
+
+        HdBufferSourceSharedPtr quadIndices(
+            new HdVtBufferSource(_indicesName, VtValue(indices)));
+        _SetResult(quadIndices);
+    }
+
+    _SetResolved();
+    return true;
+}
+
+void
+HdSt_Osd3FvarIndexComputation::_PopulateFvarPatchParamBuffer(
+    OpenSubdiv::Far::PatchTable const *patchTable)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    VtVec2iArray fvarPatchParam(0);
+
+    if (patchTable) {
+        OpenSubdiv::Far::ConstPatchParamArray patchParamArray = 
+            patchTable->GetFVarPatchParams(_channel);
+        size_t numPatches = patchParamArray.size();
+        fvarPatchParam.resize(numPatches);
+
+        for (size_t i = 0; i < numPatches; ++i) {
+            OpenSubdiv::Far::PatchParam const &patchParam = patchParamArray[i];
+            fvarPatchParam[i][0] = patchParam.field0;
+            fvarPatchParam[i][1] = patchParam.field1;
+        }
+    }
+
+    _fvarPatchParamBuffer.reset(new HdVtBufferSource(
+                                    _patchParamName, VtValue(fvarPatchParam)));
+}
+
+void
+HdSt_Osd3FvarIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
+{    
+    if (_topology->RefinesToBSplinePatches()) {
+        // bi-cubic bspline patches
+        specs->emplace_back(_indicesName, HdTupleType {HdTypeInt32, 16});
+        specs->emplace_back(_patchParamName, HdTupleType {HdTypeInt32Vec2, 1});
+    } else if (_topology->RefinesToBoxSplineTrianglePatches()) {
+        // quartic box spline triangle patches
+        specs->emplace_back(_indicesName, HdTupleType {HdTypeInt32, 12});
+        specs->emplace_back(_patchParamName, HdTupleType {HdTypeInt32Vec2, 1});
+    } else if (HdSt_Subdivision::RefinesToTriangles(_topology->GetScheme())) {
+        // triangles (loop)
+        specs->emplace_back(_indicesName, HdTupleType {HdTypeInt32Vec3, 1});
+    } else {
+        // quads (catmark, bilinear)
+        specs->emplace_back(_indicesName, HdTupleType {HdTypeInt32Vec4, 1});
+    }
+}
+
+bool
+HdSt_Osd3FvarIndexComputation::HasChainedBuffer() const
+{
+    return (_topology->RefinesToBSplinePatches() ||
+            _topology->RefinesToBoxSplineTrianglePatches());
+}
+
+HdBufferSourceSharedPtrVector
+HdSt_Osd3FvarIndexComputation::GetChainedBuffers() const
+{
+    if (_topology->RefinesToBSplinePatches() ||
+        _topology->RefinesToBoxSplineTrianglePatches()) {
+        return { _fvarPatchParamBuffer };
+    } else {
+        return {};
+    }
+}
+
+bool 
+HdSt_Osd3FvarIndexComputation::_CheckValid() const {
+    return true;
+}
+
+// ---------------------------------------------------------------------------
 HdSt_Subdivision *
 HdSt_Osd3Factory::CreateSubdivision()
 {
