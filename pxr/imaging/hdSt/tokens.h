@@ -57,6 +57,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (translation)                               \
     (sRGB)                                      \
     (raw)                                       \
+    ((_double, "double"))                       \
+    ((_float, "float"))                         \
+    ((_int, "int"))                             \
     ((colorSpaceAuto, "auto"))
 
 #define HDST_LIGHT_TOKENS                       \
