@@ -155,7 +155,9 @@ if __name__ == '__main__':
                             ]
                         }
                         "sublayers": [
-                            "usd", "usdGeom", "usdLux"
+                            "usd/schema.usda", 
+                            "usdGeom/schema.usda", 
+                            "usdLux/schema.usda"
                             ]
                 }
             '''))
