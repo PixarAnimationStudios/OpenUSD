@@ -1082,6 +1082,12 @@ UsdImagingPrimAdapter::_GetDisplayPredicate() const
     return _delegate->_GetDisplayPredicate();
 }
 
+Usd_PrimFlagsConjunction
+UsdImagingPrimAdapter::_GetDisplayPredicateForPrototypes() const
+{
+    return _delegate->_GetDisplayPredicateForPrototypes();
+}
+
 size_t
 UsdImagingPrimAdapter::SampleTransform(
     UsdPrim const& prim, 

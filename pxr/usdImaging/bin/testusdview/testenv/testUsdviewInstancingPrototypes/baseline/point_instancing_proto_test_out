@@ -1,0 +1,10 @@
+[Populate NI] prim=/World/sphereInstancer
+[Add PI] /__Prototype_1/Instancer, parentInstancerCachePath </World/sphereInstancer>
+[Instancer Inserted] /__Prototype_1/Instancer, adapter = UsdImagingInstanceAdapter
+[Add Instance PI] </__Prototype_1/Instancer>  /__Prototype_1/Instancer.proto0_ValidPrototype_id0
+[Add Instance NI] </World/sphereInstancer>  /__Prototype_1/Instancer (Instancer), adapter = UsdImagingPointInstancerAdapter
+[Instancer Inserted] /World/sphereInstancer, adapter = UsdImagingInstanceAdapter
+[Add Instance NI] </World/sphereInstancer>  /World/sphereInstancer
+[Populate NI] prim=/World/sphereInstancer_2
+[Add Instance NI] </World/sphereInstancer>  /World/sphereInstancer_2
+[PointInstancer::_UpdateInstancerVisibility] /__Prototype_1/Instancer

@@ -289,6 +289,15 @@ UsdImagingDelegate::_GetDisplayPredicate() const
             UsdPrimDefaultPredicate;
 }
 
+Usd_PrimFlagsConjunction
+UsdImagingDelegate::_GetDisplayPredicateForPrototypes() const
+{
+    return _displayUnloadedPrimsWithBounds ?
+        UsdPrimIsActive && UsdPrimHasDefiningSpecifier && !UsdPrimIsAbstract :
+        UsdPrimIsActive && UsdPrimHasDefiningSpecifier && !UsdPrimIsAbstract
+            && UsdPrimIsLoaded;
+}
+
 // -------------------------------------------------------------------------- //
 // Parallel Dispatch
 // -------------------------------------------------------------------------- //
