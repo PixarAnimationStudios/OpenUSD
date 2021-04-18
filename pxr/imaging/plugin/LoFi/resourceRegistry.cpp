@@ -202,9 +202,8 @@ LoFiResourceRegistry::_Commit()
     if(vertexArray->GetNeedUpdate())
     {
       vertexArray->Populate();
-       TF_DEBUG(LOFI_REGISTRY).Msg("Populate Vertex ARRAY !!!\n");
+      TF_DEBUG(LOFI_REGISTRY).Msg("Populate Vertex ARRAY !!!\n");
     }
-   
   }
 }
 
