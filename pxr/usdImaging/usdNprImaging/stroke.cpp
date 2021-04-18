@@ -78,7 +78,6 @@ void UsdNprStrokeChain::Build(const UsdNprStrokeGraph* graph,
   const GfVec3f* positions = mesh->GetPositionsPtr();
   const GfVec3f* normals = mesh->GetVertexNormalsPtr();
   bool edgesWeighted = (type == EDGE_SILHOUETTE);
-  //_nodes.push_back(UsdNprStrokeNode(edge, 1.0));
   while(true)
   {
     UsdNprHalfEdge* last = _nodes.back().edge;
@@ -258,11 +257,20 @@ UsdNprStrokeGraph::BuildStrokeChains(short edgeType, const GfVec3f& color)
       if(!(_allFlags[currentEdge->index] & EDGE_CHAINED)) {
         UsdNprStrokeChain stroke;
         if(edgesWeighted) {
-          float weight = _silhouetteWeights[currentEdge->index];
-          GfVec3f position, normal;
-          currentEdge->GetWeightedPositionAndNormal(positions, normals,
-            weight, position, normal);
-          stroke.Init(currentEdge, edgeType, 0.1f, position, normal, color);
+          if(_allFlags[currentEdge->index] & EDGE_TWIN) {
+            float weight = _silhouetteWeights[currentEdge->twin->index];
+            GfVec3f position, normal;
+            currentEdge->twin->GetWeightedPositionAndNormal(positions, normals,
+              weight, position, normal);
+            stroke.Init(currentEdge->twin, edgeType, 0.1f, position, normal, color);
+          } else {
+            float weight = _silhouetteWeights[currentEdge->index];
+            GfVec3f position, normal;
+            currentEdge->GetWeightedPositionAndNormal(positions, normals,
+              weight, position, normal);
+            stroke.Init(currentEdge, edgeType, 0.1f, position, normal, color);
+          }
+          
         } else {
           //currentEdge->GetVertexNormal(normals, n1);
           //currentEdge->next->GetVertexNormal(normals, n2);

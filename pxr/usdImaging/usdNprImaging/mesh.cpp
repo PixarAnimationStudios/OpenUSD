@@ -86,18 +86,16 @@ short UsdNprHalfEdge::GetFlags(const GfVec3f* positions,
   if(twin->GetPolygonIndex() < GetPolygonIndex()) return flags | EDGE_TWIN;
 
   float weight1, weight2;
-  //bool s1 = GetVertexFacing(positions, vertexNormals, viewPoint, &weight1);
-  //bool s2 = twin->GetVertexFacing(positions, vertexNormals, viewPoint, &weight2);
-  bool s1 = GetFacing(positions, polygonNormals, viewPoint, &weight1);
-  bool s2 = twin->GetFacing(positions, polygonNormals, viewPoint, &weight2);
+  bool s1 = GetVertexFacing(positions, vertexNormals, viewPoint, &weight1);
+  bool s2 = twin->GetVertexFacing(positions, vertexNormals, viewPoint, &weight2);
 
   if(s1 != s2) {
     flags |= EDGE_SILHOUETTE;
-    *weight = std::fabsf(weight1) / (std::fabsf(weight1) + std::fabsf(weight2));
-  } else {
-    *weight = 0.5f;
+    *weight = 1.f - (
+      std::fabsf(weight1) / (std::fabsf(weight1) + std::fabsf(weight2))
+    );
   }
-
+  
   if(creaseValue >= 0.0) {
     if(GfAbs(GfDot(polygonNormals[GetPolygonIndex()], 
                    polygonNormals[twin->GetPolygonIndex()])) < 1.f - creaseValue)
