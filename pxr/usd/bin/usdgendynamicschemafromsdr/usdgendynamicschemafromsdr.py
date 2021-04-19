@@ -220,7 +220,7 @@ if __name__ == '__main__':
     schemaLayer = Sdf.Layer.FindOrOpen(schemaLayerPath)
     if not schemaLayer:
         Tf.RaiseRuntimeError("Missing schema.usda at path (%s)." \
-                %schemaLayerPath)
+                %(schemaLayerPath))
 
 
     # configure schema.usda
@@ -235,7 +235,7 @@ if __name__ == '__main__':
     usdGenSchemaCmd = _GetUsdGenSchemaCmd()
     if not usdGenSchemaCmd:
         Tf.RaiseRuntimeError("%s not found. Make sure %s is in the PATH." \
-                %USD_GEN_SCHEMA)
+                %(USD_GEN_SCHEMA))
 
     call(usdGenSchemaCmd, cwd=schemaGenerationPath)
 
