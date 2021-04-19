@@ -3231,10 +3231,14 @@ SdfLayer::_ListFields(SdfSchemaBase const &schema,
             // more than one additional allocation here.
             if (mightAlloc && dataList.size() == dataList.capacity()) {
                 dataList.reserve(dataList.size() + (reqSz - reqIdx));
-                dataListBegin = dataList.begin(), dataListEnd = dataList.end();
                 mightAlloc = false;
+                dataList.push_back(reqName);
+                dataListBegin = dataList.begin();
+                dataListEnd = dataList.end();
             }
-            dataList.push_back(reqName);
+            else {
+                dataList.push_back(reqName);
+            }
         }
     }
     return dataList;
