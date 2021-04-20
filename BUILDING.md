@@ -279,8 +279,6 @@ The additional dependencies that must be supplied when invoking cmake are:
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 
-For further information see our additional documentation on the MaterialX plugins [here](http://openusd.org/docs/MaterialX-USD-Plugins.html).
-
 ##### Draco Plugin
 
 Enable the [Draco](https://github.com/google/draco) plugin in the build by specifying the cmake flag ```PXR_BUILD_DRACO_PLUGIN=TRUE```
