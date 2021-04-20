@@ -81,7 +81,7 @@ common terminology:
 \section UsdSkel_SkinnablePrims What Can Be Skinned?
 
 UsdSkel makes an attempt at encoding skinning information in a way that
-generalizes to many types of prims, rather than targetting a strict subset of
+generalizes to many types of prims, rather than targeting a strict subset of
 known types.
 
 As a general rule, if a primitive's type inherits from UsdGeomBoundable,

@@ -1458,7 +1458,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
 
     {
         HF_TRACE_FUNCTION_SCOPE("Clean Up");
-        // Give Delegate's to do any post-parrellel work,
+        // Give Delegate's to do any post-parallel work,
         // such as garbage collection.
         TF_FOR_ALL(dlgIt, syncMap) {
             HdSceneDelegate *delegate = dlgIt->first;

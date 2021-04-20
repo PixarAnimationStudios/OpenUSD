@@ -102,7 +102,7 @@ class SdfAssetPath;
 /// the behavior of cubic Bspline and Catmull-Rom curves. To evaluate or render
 /// pinned curves, a client must effectively add 'phantom points' at the 
 /// beginning and end of every curve in a batch.  These phantom points
-/// are injected to ensure that the inteprolated curve begins at P[0] and
+/// are injected to ensure that the interpolated curve begins at P[0] and
 /// ends at P[n-1].
 /// 
 /// For a curve with initial point P[0] and last point P[n-1], the phantom
