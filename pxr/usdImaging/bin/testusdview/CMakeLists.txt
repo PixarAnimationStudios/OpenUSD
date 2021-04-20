@@ -197,16 +197,6 @@ if (NOT PXR_HEADLESS_TEST_MODE)
     )
 
     pxr_install_test_dir(
-        SRC testenv/testUsdviewInstancingPrototypes
-        DEST testUsdviewPointInstancingPrototypes
-    )
-
-    pxr_install_test_dir(
-        SRC testenv/testUsdviewInstancingPrototypes
-        DEST testUsdviewNativeInstancingPrototypes
-    )
-
-    pxr_install_test_dir(
         SRC testenv/testUsdviewAnimatedBounds
         DEST testUsdviewAnimatedBounds
     )
@@ -444,27 +434,9 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         EXPECTED_RETURN_CODE 0
     )
 
-    pxr_register_test(testUsdviewPointInstancingPrototypes
+    pxr_register_test(testUsdviewAnimatedBounds
         PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewInstancingPrototypes.py ni_pi.usda"
-        ENV TF_DEBUG=USDIMAGING_INSTANCER
-        STDOUT_REDIRECT point_instancing_proto_test_out
-        DIFF_COMPARE point_instancing_proto_test_out 
-        EXPECTED_RETURN_CODE 0
-    )
-
-    pxr_register_test(testUsdviewNativeInstancingPrototypes
-        PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewInstancingPrototypes.py internal_ni.usda"
-        ENV TF_DEBUG=USDIMAGING_INSTANCER
-        STDOUT_REDIRECT native_instancing_proto_test_out
-        DIFF_COMPARE native_instancing_proto_test_out 
-        EXPECTED_RETURN_CODE 0
-    )
-
-pxr_register_test(testUsdviewAnimatedBounds
-        PYTHON
-	COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewAnimatedBounds.py test.usda"
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewAnimatedBounds.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
     

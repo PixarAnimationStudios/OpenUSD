@@ -1,8 +1,0 @@
-[Populate NI] prim=/World/Xform_01
-[Add Instance NI] </World/Xform_01>  /World/Xform_01.proto_Sphere_id0 (Sphere), adapter = UsdImagingSphereAdapter
-[Instancer Inserted] /World/Xform_01, adapter = UsdImagingInstanceAdapter
-[Add Instance NI] </World/Xform_01>  /World/Xform_01
-[Populate NI] prim=/World/Xform_02
-[Add Instance NI] </World/Xform_01>  /World/Xform_02
-[Populate NI] prim=/World/Xform_03
-[Add Instance NI] </World/Xform_01>  /World/Xform_03
