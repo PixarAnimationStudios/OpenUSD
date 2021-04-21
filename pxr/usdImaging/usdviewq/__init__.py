@@ -171,7 +171,7 @@ class Launcher(object):
 
         parser.add_argument('--timing', action='store_true',
                             dest='timing',
-                            help='Echo timing stats to console. NOTE: timings will be unreliable when the --mallocTagStats option is also in use')
+                            help='Echo timing stats to console. NOTE: timings will be unreliable when the --memstats option is also in use')
 
         parser.add_argument('--traceToFile', action='store',
                             type=str,
