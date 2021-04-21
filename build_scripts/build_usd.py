@@ -452,7 +452,8 @@ def DownloadFileWithUrllib(url, outputFilename):
     with open(outputFilename, "wb") as outfile:
         outfile.write(r.read())
 
-def DownloadURL(url, context, force, dontExtract = None):
+def DownloadURL(url, context, force, extractDir = None, 
+        dontExtract = None):
     """Download and extract the archive file at given URL to the
     source directory specified in the context. 
 
@@ -514,21 +515,28 @@ def DownloadURL(url, context, force, dontExtract = None):
 
         # Open the archive and retrieve the name of the top-most directory.
         # This assumes the archive contains a single directory with all
-        # of the contents beneath it.
+        # of the contents beneath it, unless a specific extractDir is specified,
+        # which is to be used.
         archive = None
         rootDir = None
         members = None
         try:
             if tarfile.is_tarfile(filename):
                 archive = tarfile.open(filename)
-                rootDir = archive.getnames()[0].split('/')[0]
+                if extractDir:
+                    rootDir = extractDir
+                else:
+                    rootDir = archive.getnames()[0].split('/')[0]
                 if dontExtract != None:
                     members = (m for m in archive.getmembers() 
                                if not any((fnmatch.fnmatch(m.name, p)
                                            for p in dontExtract)))
             elif zipfile.is_zipfile(filename):
                 archive = zipfile.ZipFile(filename)
-                rootDir = archive.namelist()[0].split('/')[0]
+                if extractDir:
+                    rootDir = extractDir
+                else:
+                    rootDir = archive.namelist()[0].split('/')[0]
                 if dontExtract != None:
                     members = (m for m in archive.getnames() 
                                if not any((fnmatch.fnmatch(m, p)
@@ -780,9 +788,9 @@ BOOST = Dependency("boost", InstallBoost, BOOST_VERSION_FILE)
 # Intel TBB
 
 if Windows():
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/2017_U6/tbb2017_20170412oss_win.zip"
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/2018_U6/tbb2018_20180822oss_win.zip"
 else:
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/2017_U6.tar.gz"
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/2018_U6.tar.gz"
 
 def InstallTBB(context, force, buildArgs):
     if Windows():
@@ -791,7 +799,9 @@ def InstallTBB(context, force, buildArgs):
         InstallTBB_LinuxOrMacOS(context, force, buildArgs)
 
 def InstallTBB_Windows(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force)):
+    TBB_ROOT_DIR_NAME = "tbb2018_20180822oss"
+    with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force, 
+        TBB_ROOT_DIR_NAME)):
         # On Windows, we simply copy headers and pre-built DLLs to
         # the appropriate location.
 
