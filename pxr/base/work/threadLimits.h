@@ -44,6 +44,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 WORK_API unsigned WorkGetConcurrencyLimit();
 
+/// Return true if WorkGetPhysicalConcurrencyLimit() returns 1 or if
+/// PXR_WORK_THREAD_LIMIT was set in order to limit the process to a single
+/// thread, false otherwise.
+///
+WORK_API bool WorkIsSingleThreaded();
+
 /// Return the number of physical execution cores available to the program.
 /// This is either the number of physical cores on the machine or the number of
 /// cores specified by the process's affinity mask, whichever is smaller.

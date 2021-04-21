@@ -188,4 +188,10 @@ WorkGetConcurrencyLimit()
     return _threadLimit;
 }
 
+bool
+WorkIsSingleThreaded()
+{
+    return _threadLimit == 1 || WorkGetPhysicalConcurrencyLimit() == 1;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
