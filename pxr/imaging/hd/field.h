@@ -34,7 +34,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_FIELD_TOKENS                                    \
-    (filePath)
+    (filePath)                                             \
+    (fieldName)
 
 TF_DECLARE_PUBLIC_TOKENS(HdFieldTokens, HD_API, HD_FIELD_TOKENS);
 
