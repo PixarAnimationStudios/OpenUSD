@@ -661,7 +661,7 @@ def InstallBoost_Helper(context, force, buildArgs):
     dontExtract = ["*/doc/*", "*/libs/*/doc/*"]
 
     with CurrentWorkingDirectory(DownloadURL(BOOST_URL, context, force, 
-                                             dontExtract)):
+                                             dontExtract=dontExtract)):
         bootstrap = "bootstrap.bat" if Windows() else "./bootstrap.sh"
         Run('{bootstrap} --prefix="{instDir}"'
             .format(bootstrap=bootstrap, instDir=context.instDir))
