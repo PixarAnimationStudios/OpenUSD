@@ -188,7 +188,7 @@ TfDiagnosticMgr::AppendError(TfError const &e) {
     } else {
         ErrorList &errorList = _errorList.local();
         errorList.push_back(e);
-        errorList.back()._serial = _nextSerial.fetch_and_increment();
+        errorList.back()._serial = _nextSerial.fetch_add(1);
         _AppendErrorsToLogText(std::prev(errorList.end())); 
     }
 }
@@ -203,7 +203,7 @@ TfDiagnosticMgr::_SpliceErrors(ErrorList &src)
         }
     } else {
         // Reassign new serial numbers to the errors.
-        size_t serial = _nextSerial.fetch_and_add(src.size());
+        size_t serial = _nextSerial.fetch_add(src.size());
         for (auto& error : src) {
             error._serial = serial++;
         }
