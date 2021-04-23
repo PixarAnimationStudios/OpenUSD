@@ -78,14 +78,9 @@ def GetCodeLocation(framesUp):
     return (f_back.f_globals['__name__'], f_back.f_code.co_name,
             f_back.f_code.co_filename, f_back.f_lineno)
 
-# for some strange reason, this errors out when we try to reload it,
-# which is odd since _tf is a DSO and can't be reloaded anyway:
-import sys
-if "pxr.Tf._tf" not in sys.modules:
-    from . import _tf
-    PrepareModule(_tf, locals())
-    del _tf
-del sys
+from . import _tf
+PrepareModule(_tf, locals())
+del _tf
 
 # Need to provide an exception type that tf errors will show up as.
 class ErrorException(RuntimeError):
