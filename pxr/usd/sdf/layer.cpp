@@ -3220,18 +3220,21 @@ SdfLayer::_ListFields(SdfSchemaBase const &schema,
 
     // Union them together, but retain order of dataList, since it influences
     // the output ordering in some file writers.
-    auto dataListBegin = dataList.begin(), dataListEnd = dataList.end();
+    TfToken const *dataListBegin = dataList.data();
+    TfToken const *dataListEnd = dataListBegin + dataList.size();
     bool mightAlloc = (dataList.size() + req.size()) > dataList.capacity();
     for (size_t reqIdx = 0, reqSz = req.size(); reqIdx != reqSz; ++reqIdx) {
         TfToken const &reqName = req[reqIdx];
-        auto iter = std::find(dataListBegin, dataListEnd, reqName);
+        TfToken const *iter = std::find(dataListBegin, dataListEnd, reqName);
         if (iter == dataListEnd) {
             // If the required field name is not already present, append it.
             // Make sure we have capacity for all required fields so we do no
             // more than one additional allocation here.
             if (mightAlloc && dataList.size() == dataList.capacity()) {
                 dataList.reserve(dataList.size() + (reqSz - reqIdx));
-                dataListBegin = dataList.begin(), dataListEnd = dataList.end();
+                dataListEnd =
+                    dataList.data() + std::distance(dataListBegin, dataListEnd);
+                dataListBegin = dataList.data();
                 mightAlloc = false;
             }
             dataList.push_back(reqName);
