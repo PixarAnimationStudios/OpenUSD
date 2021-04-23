@@ -70,7 +70,6 @@ class UsdResolveInfo
 public:
     UsdResolveInfo()
         : _source(UsdResolveInfoSourceNone)
-        , _layerIndex(std::numeric_limits<size_t>::max())
         , _valueIsBlocked(false)
     {
     }
@@ -145,12 +144,12 @@ private:
     /// values.
     SdfPath _primPathInLayerStack;
 
-    /// The index of the layer in \p layerStack that provides the
-    /// strongest time sample or default opinion. 
+    /// The layer in \p layerStack that provides the strongest time sample or
+    /// default opinion.
     ///
     /// This is valid only if \p source is either 
     /// \p UsdResolveInfoSourceDefault or \p UsdResolveInfoTimeSamples.
-    size_t _layerIndex;
+    SdfLayerHandle _layer;
 
     /// If \p source is \p UsdResolveInfoTimeSamples, the time 
     /// offset that maps time in the strongest resolved layer

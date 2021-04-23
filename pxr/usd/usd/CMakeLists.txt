@@ -199,6 +199,7 @@ pxr_test_scripts(
     testenv/testUsdAppliedAPISchemas.py
     testenv/testUsdAttributeBlocking.py
     testenv/testUsdAttributeConnections.py
+    testenv/testUsdAttributeQuery.py
     testenv/testUsdBugs.py
     testenv/testUsdBug119633.py
     testenv/testUsdBug141491.py
@@ -620,6 +621,12 @@ pxr_register_test(testUsdAttributeBlockingCpp
 pxr_register_test(testUsdAttributeConnections
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeConnections"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAttributeQuery
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeQuery"
     EXPECTED_RETURN_CODE 0
 )
 
