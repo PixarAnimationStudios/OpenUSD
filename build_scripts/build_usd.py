@@ -789,6 +789,11 @@ BOOST = Dependency("boost", InstallBoost, BOOST_VERSION_FILE)
 
 if Windows():
     TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/2018_U6/tbb2018_20180822oss_win.zip"
+elif MacOS():
+    # On MacOS we experience various crashes in tests during teardown
+    # starting with 2018 Update 2. Until we figure that out, we use
+    # 2018 Update 1 on this platform.
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/2018_U1.tar.gz"
 else:
     TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/2018_U6.tar.gz"
 
