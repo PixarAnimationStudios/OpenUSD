@@ -847,12 +847,22 @@ _QuadrangulateFaceVarying(SdfPath const& id,
             ++holeIndex;
         } else if (nVerts == 4) {
             // copy
-            for (int j = 0; j < 4; ++j) {
-                if (v+j >= numElements) {
-                    invalidTopology = true;
-                    results[dstIndex++] = T(0);
+            if (v+nVerts > numElements) {
+                invalidTopology = true;
+                results[dstIndex++] = T(0);
+                results[dstIndex++] = T(0);
+                results[dstIndex++] = T(0);
+                results[dstIndex++] = T(0);
+            } else {
+                results[dstIndex++] = source[v];
+                if (flip) {
+                    results[dstIndex++] = source[v+3]; 
+                    results[dstIndex++] = source[v+2]; 
+                    results[dstIndex++] = source[v+1]; 
                 } else {
-                    results[dstIndex++] = source[v+j];
+                    results[dstIndex++] = source[v+1]; 
+                    results[dstIndex++] = source[v+2]; 
+                    results[dstIndex++] = source[v+3]; 
                 }
             }
         } else {
@@ -877,17 +887,39 @@ _QuadrangulateFaceVarying(SdfPath const& id,
             }
             center /= nVerts;
 
-            // for each quadrant
-            for (int j = 0; j < nVerts; ++j) {
-                results[dstIndex++] = source[v+j];
-                // mid edge
-                results[dstIndex++]
-                    = (source[v+j] + source[v+(j+1)%nVerts]) * 0.5;
-                // center
+            // mid edges
+            T e0 = (source[v] + source[v+1]) * 0.5;
+            T e1 = (source[v] + source[v+(nVerts-1)%nVerts]) * 0.5;
+
+            results[dstIndex++] = source[v];
+            if (flip) {
+                results[dstIndex++] = e1; 
+                results[dstIndex++] = center; 
+                results[dstIndex++] = e0; 
+
+                for (int j = nVerts - 1; j > 0; --j) {
+                    e0 = (source[v+j] + source[v+(j+1)%nVerts]) * 0.5;
+                    e1 = (source[v+j] + source[v+(j+nVerts-1)%nVerts]) * 0.5;
+
+                    results[dstIndex++] = source[v+j];
+                    results[dstIndex++] = e1; 
+                    results[dstIndex++] = center; 
+                    results[dstIndex++] = e0; 
+                }
+            } else {
+                results[dstIndex++] = e0; 
                 results[dstIndex++] = center;
-                // mid edge
-                results[dstIndex++]
-                    = (source[v+j] + source[v+(j+nVerts-1)%nVerts]) * 0.5;
+                results[dstIndex++] = e1; 
+
+                for (int j = 1; j < nVerts; ++j) {
+                    e0 = (source[v+j] + source[v+(j+1)%nVerts]) * 0.5;
+                    e1 = (source[v+j] + source[v+(j+nVerts-1)%nVerts]) * 0.5;
+
+                    results[dstIndex++] = source[v+j];
+                    results[dstIndex++] = e0; 
+                    results[dstIndex++] = center;
+                    results[dstIndex++] = e1; 
+                }
             }
         }
         v += nVerts;
