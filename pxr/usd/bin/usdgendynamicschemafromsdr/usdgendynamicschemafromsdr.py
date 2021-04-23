@@ -206,10 +206,19 @@ if __name__ == '__main__':
         sdrRegistry = Sdr.Registry()
         for sourceType in config['sdrNodes'].keys():
             for nodeId in config['sdrNodes'][sourceType]:
-                sdrNodesToParse.append(sdrRegistry.GetShaderNodeByNameAndType( \
-                        nodeId, sourceType))
+                node = sdrRegistry.GetShaderNodeByNameAndType(nodeId,
+                        sourceType)
+                if node:
+                    sdrNodesToParse.append(node)
+                else:
+                    Tf.Warn("Invalid Node (%s:%s) provided." %(sourceType,
+                        nodeId))
     else:
         Tf.Warn("No sdr nodes provided to generate a dynamic schema")
+        sys.exit(1)
+
+    if not sdrNodesToParse:
+        Tf.Warn("No valid sdr nodes provided to generate a dynamic schema")
         sys.exit(1)
 
     schemaSubLayers = []
