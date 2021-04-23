@@ -22,6 +22,7 @@ pxr_library(work
 
     PUBLIC_HEADERS
         api.h
+        withScopedParallelism.h
         
     PYTHON_CPPFILES
         moduleDeps.cpp
