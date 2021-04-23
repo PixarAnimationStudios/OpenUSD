@@ -265,7 +265,7 @@ HdSt_ApplyMaterialXFilter(
         mx::FilePathVec libraryFolders = { "libraries", };
         mx::FileSearchPath searchPath;
         searchPath.append(mx::FilePath(PXR_MATERIALX_STDLIB_DIR));
-        searchPath.append(mx::FilePath(PXR_MATERIALX_RESOURCE_DIR));
+        searchPath.append(mx::FilePath(PXR_MATERIALX_BASE_DIR));
         mx::DocumentPtr stdLibraries = mx::createDocument();
         mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
 
