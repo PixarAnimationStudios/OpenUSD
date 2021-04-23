@@ -144,6 +144,7 @@ struct HdxRenderTaskParams
         , alphaThreshold(0.0)
         , enableSceneMaterials(true)
         , enableSceneLights(true)
+        , enableClipping(true)
         // Selection/Masking params
         , maskColor(1.0f, 0.0f, 0.0f, 1.0f)
         , indicatorColor(0.0f, 1.0f, 0.0f, 1.0f)
@@ -194,6 +195,7 @@ struct HdxRenderTaskParams
     float alphaThreshold;
     bool enableSceneMaterials;
     bool enableSceneLights;
+    bool enableClipping;
 
     // Selection/Masking params
     GfVec4f maskColor;
