@@ -2839,7 +2839,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
           vec4            diffuseColor;     // fallback uniform
           sampler2D       kdTexture;        // uv texture    (bindless texture)
           sampler2DArray  ptexTexels;       // ptex texels   (bindless texture)
-          isamplerBuffer  ptexLayouts;      // ptex layouts  (bindless texture)
+          usamplerBuffer  ptexLayouts;      // ptex layouts  (bindless texture)
       };
 
       // bindless buffer
@@ -2885,7 +2885,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
       <type> HdGet_<name>(int localIndex=0) {
           return GlopPtexTextureLookup(
               samplers_2darray[<offset_ptex_texels> + drawIndex * <stride>],
-              isamplerBuffers[<offset_ptex_layouts> + drawIndex * <stride>],
+              usamplerBuffers[<offset_ptex_layouts> + drawIndex * <stride>],
               GetPatchCoord()).xxx;
       }
 
@@ -2898,7 +2898,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
       <type> HdGet_<name>(vec4 patchCoord) {
           return GlopPtexTextureLookup(
               samplers_2darray[<offset_ptex_texels> + drawIndex * <stride>],
-              isamplerBuffers[<offset_ptex_layouts> + drawIndex * <stride>],
+              usamplerBuffers[<offset_ptex_layouts> + drawIndex * <stride>],
               patchCoord).xxx;
       }
 
@@ -3217,7 +3217,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "(PtexTextureLookup("
                 << "sampler2DArray(shaderData[shaderCoord]."
                 << it->second.name << "),"
-                << "isampler1DArray(shaderData[shaderCoord]."
+                << "usampler1DArray(shaderData[shaderCoord]."
                 << it->second.name << HdSt_ResourceBindingSuffixTokens->layout
                 <<"), "
                 << "GetPatchCoord(localIndex))" << swizzle << ");\n"
@@ -3232,7 +3232,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "(PtexTextureLookup("
                 << "sampler2DArray(shaderData[shaderCoord]."
                 << it->second.name << "),"
-                << "isampler1DArray(shaderData[shaderCoord]."
+                << "usampler1DArray(shaderData[shaderCoord]."
                 << it->second.name << HdSt_ResourceBindingSuffixTokens->layout
                 << "), "
                 << "patchCoord)" << swizzle << ");\n"
@@ -3254,7 +3254,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "  return " << _GetPackedTypeAccessor(it->second.dataType, false)
                 << "(PtexTextureLookup("
                 << "sampler2darray_" << it->second.name << ", "
-                << "isampler1darray_"
+                << "usampler1darray_"
                 << it->second.name << HdSt_ResourceBindingSuffixTokens->layout
                 << ", "
                 << "GetPatchCoord(localIndex))" << swizzle << ");\n"
@@ -3267,7 +3267,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "  return " << _GetPackedTypeAccessor(it->second.dataType, false)
                 << "(PtexTextureLookup("
                 << "sampler2darray_" << it->second.name << ", "
-                << "isampler1darray_"
+                << "usampler1darray_"
                 << it->second.name << HdSt_ResourceBindingSuffixTokens->layout
                 << ", "
                 << "patchCoord)" << swizzle << ");\n"
@@ -3285,7 +3285,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << LayoutQualifier(HdBinding(it->first.GetType(),
                                              it->first.GetLocation(),
                                              it->first.GetTextureUnit()))
-                << "uniform isampler1DArray isampler1darray_"
+                << "uniform usampler1DArray usampler1darray_"
                 << it->second.name << ";\n";
         } else if (bindingType == HdBinding::PRIMVAR_REDIRECT) {
             // Create an HdGet_INPUTNAME for the shader to access a primvar
