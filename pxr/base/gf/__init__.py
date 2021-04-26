@@ -27,13 +27,5 @@ This package defines classes for fundamental graphics types and operations.
 """
 
 from pxr import Tf
-from . import _gf
-Tf.PrepareModule(_gf, locals())
-del _gf, Tf
-
-try:
-    from . import __DOC
-    __DOC.Execute(locals())
-    del __DOC
-except Exception:
-    pass
+Tf.PreparePythonModule()
+del Tf
