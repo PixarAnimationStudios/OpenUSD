@@ -45,9 +45,10 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/base/trace/trace.h"
-#include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/utils.h"
+#include "pxr/base/work/withScopedParallelism.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/registryManager.h"
@@ -137,20 +138,19 @@ PcpCache::~PcpCache()
 
     // Tear down some of our datastructures in parallel, since it can take quite
     // a bit of time.
-    WorkArenaDispatcher wd;
-
-    wd.Run([this]() { _rootLayer.Reset(); });
-    wd.Run([this]() { _sessionLayer.Reset(); });
-    wd.Run([this]() { TfReset(_includedPayloads); });
-    wd.Run([this]() { TfReset(_variantFallbackMap); });
-    wd.Run([this]() { _primIndexCache.ClearInParallel(); });
-    wd.Run([this]() { TfReset(_propertyIndexCache); });
-
-    // Wait, since _primDependencies cannot be destroyed concurrently
-    // with the prim indexes, since they both hold references to
-    // layer stacks and the layer stack registry is not currently
-    // prepared to handle concurrent expiry of layer stacks.
-    wd.Wait();
+    WorkWithScopedParallelism([this]() {
+            WorkDispatcher wd;
+            wd.Run([this]() { _rootLayer.Reset(); });
+            wd.Run([this]() { _sessionLayer.Reset(); });
+            wd.Run([this]() { TfReset(_includedPayloads); });
+            wd.Run([this]() { TfReset(_variantFallbackMap); });
+            wd.Run([this]() { _primIndexCache.ClearInParallel(); });
+            wd.Run([this]() { TfReset(_propertyIndexCache); });
+            // Wait, since _primDependencies cannot be destroyed concurrently
+            // with the prim indexes, since they both hold references to
+            // layer stacks and the layer stack registry is not currently
+            // prepared to handle concurrent expiry of layer stacks.
+        });
 
     _primDependencies.reset();
     _layerStackCache.Reset();
@@ -1234,15 +1234,16 @@ struct PcpCache::_ParallelIndexer
 
     // Run the added work and wait for it to complete.
     void RunAndWait() {
-        {
-            Pcp_Dependencies::ConcurrentPopulationContext
-                populationContext(*_cache->_primDependencies);
-            TF_FOR_ALL(i, _toCompute) {
-                _dispatcher.Run(&This::_ComputeIndex, this, i->first, i->second,
-                                /*checkCache=*/true);
-            }
-            _dispatcher.Wait();
-        }
+        WorkWithScopedParallelism([this]() {
+                Pcp_Dependencies::ConcurrentPopulationContext
+                    populationContext(*_cache->_primDependencies);
+                TF_FOR_ALL(i, _toCompute) {
+                    _dispatcher.Run(&This::_ComputeIndex, this,
+                                    i->first, i->second,
+                                    /*checkCache=*/true);
+                }
+                _dispatcher.Wait();
+            });
 
         // Clear out results & working space.  If stuff is huge, dump it
         // asynchronously, otherwise clear in place to possibly reuse heap for
@@ -1381,7 +1382,7 @@ struct PcpCache::_ParallelIndexer
     // Utils.
     tbb::spin_rw_mutex _primIndexCacheMutex;
     tbb::spin_rw_mutex _includedPayloadsMutex;
-    WorkArenaDispatcher _dispatcher;
+    WorkDispatcher _dispatcher;
 
     // Varying inputs.
     _UntypedIndexingChildrenPredicate _childrenPredicate;
