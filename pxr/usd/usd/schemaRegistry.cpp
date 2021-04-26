@@ -47,6 +47,7 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/work/loops.h"
+#include "pxr/base/work/withScopedParallelism.h"
 
 #include <set>
 #include <utility>
@@ -805,9 +806,7 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
     
     // For each plugin, if it has generated schema, add it to the schematics.
     std::vector<SdfLayerRefPtr> generatedSchemas(plugins.size());
-    {
-        WorkArenaDispatcher dispatcher;
-        dispatcher.Run([&plugins, &generatedSchemas]() {
+    WorkWithScopedParallelism([&plugins, &generatedSchemas]() {
             WorkParallelForN(
                 plugins.size(), 
                 [&plugins, &generatedSchemas](size_t begin, size_t end) {
@@ -816,8 +815,7 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
                             _GetGeneratedSchema(plugins[begin]);
                     }
                 });
-            });
-    }
+        });
 
     SdfChangeBlock block;
     TfToken::HashSet appliedAPISchemaNames = _GetAppliedAPISchemaNames();
