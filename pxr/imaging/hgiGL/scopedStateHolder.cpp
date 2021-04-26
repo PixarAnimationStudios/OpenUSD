@@ -34,9 +34,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
-    : _restoreDrawFramebuffer(0)
-    , _restoreReadFramebuffer(0)
-    , _restoreRenderBuffer(0)
+    : _restoreRenderBuffer(0)
     , _restoreVao(0)
     , _restoreDepthTest(false)
     , _restoreDepthWriteMask(false)
@@ -63,8 +61,6 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     }
     #endif
 
-    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &_restoreDrawFramebuffer);
-    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &_restoreReadFramebuffer);
     glGetIntegerv(GL_RENDERBUFFER_BINDING, &_restoreRenderBuffer);
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &_restoreVao);
     glGetBooleanv(GL_DEPTH_TEST, (GLboolean*)&_restoreDepthTest);
@@ -143,8 +139,6 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
         glDisable(GL_DEPTH_TEST);
     }
     glBindVertexArray(_restoreVao);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _restoreDrawFramebuffer);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, _restoreReadFramebuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, _restoreRenderBuffer);
     glLineWidth(_lineWidth);
     if (_cullFace) {
