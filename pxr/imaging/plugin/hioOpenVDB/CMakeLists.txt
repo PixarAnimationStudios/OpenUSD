@@ -13,6 +13,7 @@ pxr_plugin(hioOpenVDB
         gf
         hio
         tf
+        usd
         ${OPENEXR_Half_LIBRARY}
         ${OPENVDB_LIBRARY}
 

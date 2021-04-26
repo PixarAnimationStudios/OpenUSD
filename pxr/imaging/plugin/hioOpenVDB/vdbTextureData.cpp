@@ -29,8 +29,14 @@
 #include "pxr/imaging/hio/fieldTextureData.h"
 
 #include "pxr/base/tf/type.h"
+#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/trace/trace.h"
 
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/resolvedPath.h"
+
+#include "openvdb/io/Stream.h"
 #include "openvdb/openvdb.h"
 #include "openvdb/tools/Dense.h"
 #include "openvdb/tools/GridTransformer.h"
@@ -394,6 +400,52 @@ _GridHolderBase::New(const openvdb::GridBase::Ptr &grid)
     return nullptr;
 }
 
+// Classes for converting a char buffer and size to an istream, similar to the
+// functionality of boost::iostreams. These are pretty generic and could be
+// moved to a lower level library if desired in the future.
+class _CharBuf : public std::basic_streambuf<char> 
+{
+public:
+    _CharBuf(const char *p, size_t l)
+    {
+        setg((char*)p, (char*)p, (char*)p + l);
+    }
+
+    pos_type seekpos(pos_type pos, std::ios_base::openmode which) override
+    {
+        return seekoff(pos - pos_type(off_type(0)), std::ios_base::beg, which);
+    }
+
+    pos_type seekoff(off_type off,
+                std::ios_base::seekdir dir,
+                std::ios_base::openmode which = std::ios_base::in) override
+    {
+        // Should use switch(dir) but that results in a compiler error due to
+        // a missing case (_S_ios_seekdir_end) which isn't actually a case.
+        if (dir == std::ios_base::cur)
+            gbump(off);
+        else if (dir == std::ios_base::end)
+            setg(eback(), egptr() + off, egptr());
+        else if (dir == std::ios_base::beg)
+            setg(eback(), eback() + off, egptr());
+        return gptr() - eback();
+    }
+};
+
+class _CharStream : public std::istream 
+{
+public:
+    _CharStream(const char *p, size_t l)
+      : std::istream(&_buffer),
+        _buffer(p, l)
+    {
+        rdbuf(&_buffer);
+    }
+
+private:
+    _CharBuf _buffer;
+};
+
 // Load the grid with given name from the OpenVDB file at given path
 _GridHolderBase*
 _LoadGrid(const std::string &filePath, std::string const &gridName)
@@ -402,40 +454,80 @@ _LoadGrid(const std::string &filePath, std::string const &gridName)
     TRACE_FUNCTION();
 
     openvdb::initialize();
-    openvdb::io::File f(filePath);
-    
-    {
-        TRACE_FUNCTION_SCOPE("Opening VDB file");
-        try {
-            f.open();
-        } catch (openvdb::IoError e) {
-            TF_WARN("Could not open OpenVDB file: %s", e.what());
-            return nullptr;
-        } catch (openvdb::LookupError e) {
-            // Occurs, e.g., when there is an unknown grid type in VDB file
-            TF_WARN("Could not parse OpenVDB file: %s", e.what());
-            return nullptr;
-        }
-    }
-        
-    if (!f.hasGrid(gridName)) {
-        TF_WARN("OpenVDB file %s has no grid %s",
-                filePath.c_str(), gridName.c_str());
-        return nullptr;
-    }
-    
     openvdb::GridBase::Ptr result;
 
-    {
-        HF_MALLOC_TAG("readGrid");
-        result = f.readGrid(gridName);
-    }
+    if (TfIsFile(filePath)) {
+        openvdb::io::File f(filePath);
+        
+        {
+            TRACE_FUNCTION_SCOPE("Opening VDB file");
+            try {
+                f.open();
+            } catch (openvdb::IoError e) {
+                TF_WARN("Could not open OpenVDB file: %s", e.what());
+                return nullptr;
+            } catch (openvdb::LookupError e) {
+                // Occurs, e.g., when there is an unknown grid type in VDB file
+                TF_WARN("Could not parse OpenVDB file: %s", e.what());
+                return nullptr;
+            }
+        }
+            
+        if (!f.hasGrid(gridName)) {
+            TF_WARN("OpenVDB file %s has no grid %s",
+                    filePath.c_str(), gridName.c_str());
+            return nullptr;
+        }
 
-    {
-        TRACE_FUNCTION_SCOPE("Closing VDB file");
-        // openvdb::io::File's d'tor is probably closing the file, but this
-        // is not explicitly specified in the documentation.
-        f.close();
+        {
+            HF_MALLOC_TAG("readGrid");
+            result = f.readGrid(gridName);
+        }
+
+        {
+            TRACE_FUNCTION_SCOPE("Closing VDB file");
+            // openvdb::io::File's d'tor is probably closing the file, but this
+            // is not explicitly specified in the documentation.
+            f.close();
+        }
+    } else {
+        // Try reading the vdb with ArAsset.
+        // XXX In the future we may want to first try to read with a vdb
+        // specific subclass of ArAsset that directly stores a GridPtrVecPtr,
+        // to avoid serializing and deserializing the vdb data.
+        std::shared_ptr<ArAsset> asset;
+        {
+            TRACE_FUNCTION_SCOPE("Opening VDB ArAsset");
+            asset = ArGetResolver().OpenAsset(ArResolvedPath(filePath));
+        }
+
+        // Use an openvdb::io::Stream to read raw bytes provided by ArAsset.
+        // ArAsset provides a char buffer and size, but Stream requires a
+        // std::istream. To bridge the gap, we use the _CharStream above to
+        // wrap the char buffer from ArAsset in a std::istream.
+        {
+            TRACE_FUNCTION_SCOPE("Streaming VDB grids from ArAsset bytes");
+            std::shared_ptr<const char> vdbBytes = asset->GetBuffer();
+            const size_t vdbNumBytes = asset->GetSize();
+            _CharStream vdbSource(vdbBytes.get(), vdbNumBytes);
+
+            openvdb::io::Stream s(vdbSource);
+            openvdb::GridPtrVecPtr grids = s.getGrids();
+
+            // Find the grid in the grid vector.
+            for (const openvdb::GridBase::Ptr grid : *grids) {
+                if (grid->getName() == gridName) {
+                    result = grid;
+                    break;
+                }
+            }
+
+            if (!result) {
+                TF_WARN("OpenVDB asset path %s has no grid %s",
+                        filePath.c_str(), gridName.c_str());
+                return nullptr;
+            }
+        }
     }
 
     return _GridHolderBase::New(result);
