@@ -45,8 +45,9 @@
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/loops.h"
+#include "pxr/base/work/withScopedParallelism.h"
 #include "pxr/base/tf/pyLock.h"
 
 #include <iostream>
@@ -1398,20 +1399,21 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
         HF_TRACE_FUNCTION_SCOPE("Pre-Sync Rprims");
 
         // Dispatch synchronization work to each delegate.
-        WorkArenaDispatcher dirtyBitDispatcher;
+        WorkWithScopedParallelism([&]() {
+            WorkDispatcher dirtyBitDispatcher;
 
-        TF_FOR_ALL(dlgIt, syncMap) {
-            HdSceneDelegate *sceneDelegate = dlgIt->first;
-            _RprimSyncRequestVector *r = &dlgIt->second;
-            dirtyBitDispatcher.Run(
-                                   std::bind(&_PreSyncRequestVector,
-                                             sceneDelegate,
-                                             &_tracker,
-                                             r,
-                                             std::cref(reprs)));
+            TF_FOR_ALL(dlgIt, syncMap) {
+                HdSceneDelegate *sceneDelegate = dlgIt->first;
+                _RprimSyncRequestVector *r = &dlgIt->second;
+                dirtyBitDispatcher.Run(
+                    std::bind(&_PreSyncRequestVector,
+                              sceneDelegate,
+                              &_tracker,
+                              r,
+                              std::cref(reprs)));
 
-        }
-        dirtyBitDispatcher.Wait();
+            }
+        });
     }
 
     {
@@ -1426,35 +1428,39 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
     }
 
     // Collect results and synchronize.
-    WorkArenaDispatcher dispatcher;
-    TF_FOR_ALL(dlgIt, syncMap) {
-        HdSceneDelegate* sceneDelegate = dlgIt->first;
-        _RprimSyncRequestVector& r = dlgIt->second;
+    WorkWithScopedParallelism([&]() {
+        WorkDispatcher dispatcher;
+        TF_FOR_ALL(dlgIt, syncMap) {
+            HdSceneDelegate* sceneDelegate = dlgIt->first;
+            _RprimSyncRequestVector& r = dlgIt->second;
+            
+            {
+                _SyncRPrims workerState(
+                    sceneDelegate, r, reprs, _tracker, renderParam);
 
-        {
-            _SyncRPrims workerState(sceneDelegate, r, reprs, _tracker, renderParam);
-
-            if (!TfDebug::IsEnabled(HD_DISABLE_MULTITHREADED_RPRIM_SYNC) &&
-                  sceneDelegate->IsEnabled(HdOptionTokens->parallelRprimSync)) {
-                TRACE_SCOPE("Parallel Rprim Sync");
-                // In the lambda below, we capture workerState by value and 
-                // incur a copy in the std::bind because the lambda execution 
-                // may be delayed (until we call Wait), resulting in
-                // workerState going out of scope.
-                dispatcher.Run([&r, workerState]() {
-                    WorkParallelForN(r.rprims.size(),
-                        std::bind(&_SyncRPrims::Sync, workerState,
-                                  std::placeholders::_1,
-                                  std::placeholders::_2));
-                });
-            } else {
-                TRACE_SCOPE("Serial Rprim Sync");
-                // Single-threaded version: Call worker directly
-                workerState.Sync(0, r.rprims.size());
+                if (!TfDebug::IsEnabled(HD_DISABLE_MULTITHREADED_RPRIM_SYNC) &&
+                    sceneDelegate->IsEnabled(
+                        HdOptionTokens->parallelRprimSync)) {
+                    TRACE_SCOPE("Parallel Rprim Sync");
+                    // In the lambda below, we capture workerState by value and
+                    // incur a copy in the std::bind because the lambda
+                    // execution may be delayed (until we call Wait), resulting
+                    // in workerState going out of scope.
+                    dispatcher.Run([&r, workerState]() {
+                        WorkParallelForN(r.rprims.size(),
+                                         std::bind(
+                                             &_SyncRPrims::Sync, workerState,
+                                             std::placeholders::_1,
+                                             std::placeholders::_2));
+                    });
+                } else {
+                    TRACE_SCOPE("Serial Rprim Sync");
+                    // Single-threaded version: Call worker directly
+                    workerState.Sync(0, r.rprims.size());
+                }
             }
         }
-    }
-    dispatcher.Wait();
+    });
 
     {
         HF_TRACE_FUNCTION_SCOPE("Clean Up");
