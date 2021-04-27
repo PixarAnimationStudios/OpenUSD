@@ -83,7 +83,7 @@ void main(void)
 --- --------------------------------------------------------------------------
 -- glsl Mesh.TessControl.BSplineQuad
 
-layout(vertices = 16) out;
+layout(vertices = HD_NUM_PATCH_EVAL_VERTS) out;
 
 patch out vec4 tessOuterLo, tessOuterHi;
 
@@ -96,12 +96,12 @@ in VertexData
 out VertexDataTess
 {
     OsdPerPatchVertexBezier v;
-} outpt[16];
+} outpt[HD_NUM_PATCH_EVAL_VERTS];
 
 void main(void)
 {
-    vec3 cv[16];
-    for (int i = 0; i < 16; ++i) {
+    vec3 cv[HD_NUM_PATCH_VERTS];
+    for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {
         cv[i] = inpt[i].Peye.xyz;
     }
 
@@ -118,8 +118,8 @@ void main(void)
         vec2 tessLevelInner = vec2(0);
 
         // Gather bezier control points to compute limit surface tess levels
-        OsdPerPatchVertexBezier cpBezier[16];
-        for (int i = 0; i < 16; ++i) {
+        OsdPerPatchVertexBezier cpBezier[HD_NUM_PATCH_EVAL_VERTS];
+        for (int i = 0; i < HD_NUM_PATCH_EVAL_VERTS; ++i) {
             cpBezier[i] = outpt[i].v;
         }
         OsdEvalPatchBezierTessLevels(cpBezier, patchParam,
@@ -193,7 +193,7 @@ void main(void)
 --- --------------------------------------------------------------------------
 -- glsl Mesh.TessControl.BoxSplineTriangle
 
-layout(vertices = 15) out;
+layout(vertices = HD_NUM_PATCH_EVAL_VERTS) out;
 
 patch out vec4 tessOuterLo, tessOuterHi;
 
@@ -206,12 +206,12 @@ in VertexData
 out VertexDataTess
 {
     OsdPerPatchVertexBezier v;
-} outpt[15];
+} outpt[HD_NUM_PATCH_EVAL_VERTS];
 
 void main(void)
 {
-    vec3 cv[12];
-    for (int i = 0; i < 12; ++i) {
+    vec3 cv[HD_NUM_PATCH_VERTS];
+    for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {
         cv[i] = inpt[i].Peye.xyz;
     }
 
@@ -228,8 +228,8 @@ void main(void)
         vec2 tessLevelInner = vec2(0);
 
         // Gather bezier control points to compute limit surface tess levels
-        vec3 cpBezier[15];
-        for (int i = 0; i < 15; ++i) {
+        vec3 cpBezier[HD_NUM_PATCH_EVAL_VERTS];
+        for (int i = 0; i < HD_NUM_PATCH_EVAL_VERTS; ++i) {
             cpBezier[i] = outpt[i].v.P;
         }
         OsdEvalPatchBezierTriangleTessLevels(cpBezier, patchParam,

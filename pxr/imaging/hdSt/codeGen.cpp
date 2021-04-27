@@ -605,6 +605,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     if (_geometricShader->IsPrimTypePatches()) {
         _genCommon << "#define HD_NUM_PATCH_VERTS "
                    << _geometricShader->GetPrimitiveIndexSize() << "\n";
+        _genCommon << "#define HD_NUM_PATCH_EVAL_VERTS "
+                   << _geometricShader->GetNumPatchEvalVerts() << "\n";
     }
     _genCommon << "#define HD_NUM_PRIMITIVE_VERTS "
                << _geometricShader->GetNumPrimitiveVertsForGeometryShader()
@@ -1872,9 +1874,9 @@ HdSt_CodeGen::_GenerateDrawingCoord()
 
     // tess control shader
     _genTCS << "flat in hd_drawingCoord vsDrawingCoord[gl_MaxPatchVertices];\n"
-            << "flat out hd_drawingCoord tcsDrawingCoord[HD_NUM_PATCH_VERTS];\n"
+            << "flat out hd_drawingCoord tcsDrawingCoord[HD_NUM_PATCH_EVAL_VERTS];\n"
             << "hd_drawingCoord GetDrawingCoord() { \n"
-            << "  hd_drawingCoord dc = vsDrawingCoord[gl_InvocationID];\n"
+            << "  hd_drawingCoord dc = vsDrawingCoord[0];\n"
             << "  dc.primitiveCoord += gl_PrimitiveID;\n"
             << "  return dc;\n"
             << "}\n";
@@ -2792,7 +2794,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS)
                 << "} inPrimvars[gl_MaxPatchVertices];\n"
                 << "out Primvars {\n"
                 << interstageVertexData.str()
-                << "} outPrimvars[HD_NUM_PATCH_VERTS];\n"
+                << "} outPrimvars[HD_NUM_PATCH_EVAL_VERTS];\n"
                 << accessorsTCS.str();
 
         _genTES << "in Primvars {\n"

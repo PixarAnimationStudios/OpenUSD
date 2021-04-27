@@ -306,6 +306,33 @@ HdSt_GeometricShader::GetPrimitiveIndexSize() const
 }
 
 int
+HdSt_GeometricShader::GetNumPatchEvalVerts() const
+{
+    int numPatchEvalVerts = 0;
+
+    switch (_primType)
+    {
+        case PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES:
+            numPatchEvalVerts = 2;
+            break;
+        case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
+            numPatchEvalVerts = 4;
+            break;
+        case PrimitiveType::PRIM_MESH_BSPLINE:
+            numPatchEvalVerts = 16;
+            break;
+        case PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
+            numPatchEvalVerts = 15;
+            break;
+        default:
+            numPatchEvalVerts = 0;
+            break;
+    }
+
+    return numPatchEvalVerts;
+}
+
+int
 HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
 {
     int numPrimVerts = 1;

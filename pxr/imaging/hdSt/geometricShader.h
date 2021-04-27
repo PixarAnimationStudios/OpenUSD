@@ -187,6 +187,11 @@ public:
     HDST_API
     int GetPrimitiveIndexSize() const;
 
+    // Returns the number of vertices output for patch evaluation,
+    // i.e. the number of tessellation control shader invocations.
+    HDST_API
+    int GetNumPatchEvalVerts() const;
+
     // Returns the primitive index size for the geometry shader shade
     // 1 for points, 2 for lines, 3 for triangles, 4 for lines_adjacency    
     HDST_API

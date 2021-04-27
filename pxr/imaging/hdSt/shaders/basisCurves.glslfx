@@ -158,7 +158,7 @@ vec2 projectToScreen(MAT4 projMat, vec4 vertex, vec2 screen_size)
 --- --------------------------------------------------------------------------
 -- glsl Curves.TessControl.Linear.Patch
 
-layout(vertices = 2) out;
+layout(vertices = HD_NUM_PATCH_EVAL_VERTS) out;
 
 in CurveVertexData
 {
@@ -170,7 +170,7 @@ out CurveVertexData
 {
     vec4 Peye;
     vec3 Neye;
-} outData[2];
+} outData[HD_NUM_PATCH_EVAL_VERTS];
 
 void determineLODSettings();
 void main(void)
@@ -245,7 +245,7 @@ void determineLODSettings()
 --- --------------------------------------------------------------------------
 -- glsl Curves.TessControl.Cubic.Wire
 
-layout(vertices = 4) out;
+layout(vertices = HD_NUM_PATCH_EVAL_VERTS) out;
 
 in CurveVertexData
 {
@@ -255,7 +255,7 @@ in CurveVertexData
 out CurveVertexData
 {
     vec4 Peye;
-} outData[4];
+} outData[HD_NUM_PATCH_EVAL_VERTS];
 
 void determineLODSettings();
 void main(void)
@@ -295,7 +295,7 @@ void determineLODSettings()
 --- --------------------------------------------------------------------------
 -- glsl Curves.TessControl.Cubic.Patch
 
-layout(vertices = 4) out;
+layout(vertices = HD_NUM_PATCH_EVAL_VERTS) out;
 
 in CurveVertexData
 {
@@ -307,7 +307,7 @@ out CurveVertexData
 {
     vec4 Peye;
     vec3 Neye;
-} outData[4];
+} outData[HD_NUM_PATCH_EVAL_VERTS];
 
 void determineLODSettings();
 void main(void)
