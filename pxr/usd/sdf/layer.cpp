@@ -262,6 +262,24 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
     return _initializationWasSuccessful.get();
 }
 
+// For the given layer, gets a dictionary of resolved external asset dependency 
+// paths to the timestamp for each asset.
+static VtDictionary
+_GetExternalAssetModificationTimes(const SdfLayer& layer)
+{
+    VtDictionary result;
+    std::set<std::string> externalAssetDependencies = 
+        layer.GetExternalAssetDependencies();
+    for (const std::string& resolvedPath : externalAssetDependencies) {
+        // Get the modification timestamp for the path. Note that external
+        // asset dependencies only returns resolved paths so pass the same
+        // path for both params.
+        result[resolvedPath] = ArGetResolver().GetModificationTimestamp(
+            resolvedPath, ArResolvedPath(resolvedPath));
+    }
+    return result;
+}
+
 SdfLayerRefPtr
 SdfLayer::CreateAnonymous(
     const string& tag, const FileFormatArguments& args)
@@ -781,8 +799,16 @@ SdfLayer::FindOrOpen(const string &identifier,
 
     // Some layers, such as anonymous layers, have identifiers but don't have
     // resolved paths.  They aren't backed by assets on disk.  If we don't find
-    // such a layer by identifier in the registry, we're done since we don't
+    // such a layer by identifier in the registry and the format doesn't specify
+    // that anonymous layers should still be read, we're done since we don't
     // have an asset to open.
+    if (layerInfo.isAnonymous) {
+        if (!layerInfo.fileFormat || 
+            !layerInfo.fileFormat->ShouldReadAnonymousLayers()) {
+            return TfNullPtr;
+        }
+    }
+
     if (layerInfo.resolvedLayerPath.empty()) {
         return TfNullPtr;
     }
@@ -869,24 +895,6 @@ SdfLayer::GetSchema() const
     return GetFileFormat()->GetSchema();
 }
 
-// For the given layer, gets a dictionary of resolved external asset dependency 
-// paths to the timestamp for each asset.
-static VtDictionary
-_GetExternalAssetModificationTimes(const SdfLayer& layer)
-{
-    VtDictionary result;
-    std::set<std::string> externalAssetDependencies = 
-        layer.GetExternalAssetDependencies();
-    for (const std::string& resolvedPath : externalAssetDependencies) {
-        // Get the modification timestamp for the path. Note that external
-        // asset dependencies only returns resolved paths so pass the same
-        // path for both params.
-        result[resolvedPath] = ArGetResolver().GetModificationTimestamp(
-            resolvedPath, ArResolvedPath(resolvedPath));
-    }
-    return result;
-}
-
 SdfLayer::_ReloadResult
 SdfLayer::_Reload(bool force)
 {
@@ -898,9 +906,10 @@ SdfLayer::_Reload(bool force)
         return _ReloadFailed;
     }
 
-    SdfChangeBlock block;
+    const bool isAnonymous = IsAnonymous();
 
-    if (IsAnonymous() && GetFileFormat()->ShouldSkipAnonymousReload()) {
+    SdfChangeBlock block;
+    if (isAnonymous && GetFileFormat()->ShouldSkipAnonymousReload()) {
         // Different file formats have different policies for reloading
         // anonymous layers.  Some want to treat it as a noop, others want to
         // treat it as 'Clear'.
@@ -910,7 +919,8 @@ SdfLayer::_Reload(bool force)
         // reload data appropriately.
         return _ReloadSkipped;
     }
-    else if (IsMuted() || IsAnonymous()) {
+    else if (IsMuted() || 
+             (isAnonymous && !GetFileFormat()->ShouldReadAnonymousLayers())) {
         // Reloading a muted layer leaves it with the initialized contents.
         SdfAbstractDataRefPtr initialData = 
             GetFileFormat()->InitData(GetFileFormatArguments());
@@ -918,6 +928,27 @@ SdfLayer::_Reload(bool force)
             return _ReloadSkipped;
         }
         _SetData(initialData);
+    }
+    else if (isAnonymous) {
+        // Ask the current external asset dependency state.
+        VtDictionary externalAssetTimestamps = 
+            _GetExternalAssetModificationTimes(*this);
+
+        // See if we can skip reloading.
+        if (!force && !IsDirty()
+            && (externalAssetTimestamps == _externalAssetModificationTimes)) {
+            return _ReloadSkipped;
+        }
+
+        std::string resolvedPath;
+        std::string args;
+        Sdf_SplitIdentifier(GetIdentifier(), &resolvedPath, &args);
+
+        if (!_Read(identifier, resolvedPath, /* metadataOnly = */ false)) {
+            return _ReloadFailed;
+        }
+
+        _externalAssetModificationTimes = std::move(externalAssetTimestamps);
     } else {
         // The physical location of the file may have changed since
         // the last load, so re-resolve the identifier.

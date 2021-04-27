@@ -159,6 +159,20 @@ public:
     /// \sa ArResolver::FetchToLocalResolvedPath
     SDF_API bool LayersAreFileBased() const;
 
+    /// Returns true if anonymous layer identifiers should be passed to Read 
+    /// when a layer is opened or reloaded.
+    /// 
+    /// Anonymous layers will not have an asset backing and thus for most
+    /// file formats there is nothing that can be read for an anonymous layer. 
+    /// However, there are file formats that use Read to generate dynamic layer 
+    /// content without reading any data from the resolved asset associated with
+    /// the layer's identifier. 
+    /// 
+    /// For these types of file formats it is useful to be able to open 
+    /// anonymous layers and allow Read to populate them to avoid requiring a
+    /// placeholder asset to exist just so Read can populate the layer.
+    SDF_API bool ShouldReadAnonymousLayers() const;
+
     /// Returns true if \p file can be read by this format.
     SDF_API
     virtual bool CanRead(
@@ -369,6 +383,13 @@ private:
     /// Default implementation returns true.
     SDF_API
     virtual bool _LayersAreFileBased() const;
+
+    /// File format subclasses may override this to specify whether
+    /// Read should be called when creating, opening, or reloading an anonymous
+    /// layer of this format.
+    /// Default implementation returns false.
+    SDF_API 
+    virtual bool _ShouldReadAnonymousLayers() const;
 
     const SdfSchemaBase& _schema;
     const TfToken _formatId;

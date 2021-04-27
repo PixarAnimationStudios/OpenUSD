@@ -67,3 +67,11 @@ assert len(dynamicLayers) == 1
 # Export the new dynamic layer as usda for baseline comparison.
 dynamicLayers[0].Export("newDynamicContents.usda")
 
+# Verify mute and unmute behavior on the dynamic layer itself. A muted layer
+# is empty (except the pseudoroot)
+premuteLayerString = dynamicLayers[0].ExportToString()
+dynamicLayers[0].SetMuted(True)
+assert dynamicLayers[0].ExportToString().rstrip() == "#usda 1.0"
+dynamicLayers[0].SetMuted(False)
+assert dynamicLayers[0].ExportToString() == premuteLayerString
+
