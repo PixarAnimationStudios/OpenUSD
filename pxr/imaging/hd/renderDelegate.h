@@ -391,7 +391,7 @@ public:
     virtual TfToken GetMaterialNetworkSelector() const;
 
     ///
-    /// Returns a list, in decending order of preference, that can be used to
+    /// Returns a list, in descending order of preference, that can be used to
     /// select among multiple material network implementations. The default 
     /// list contains an empty token.
     ///
