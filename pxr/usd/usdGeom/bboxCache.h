@@ -31,7 +31,7 @@
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/tf/hashmap.h"
-#include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/base/work/dispatcher.h"
 
 #include <boost/optional.hpp>
 #include <boost/shared_array.hpp>
@@ -540,7 +540,7 @@ private:
         return &(_bboxCache[primContext]);
     }
 
-    WorkArenaDispatcher _dispatcher;
+    WorkDispatcher _dispatcher;
     UsdTimeCode _time;
     boost::optional<UsdTimeCode> _baseTime;
     TfTokenVector _includedPurposes;
