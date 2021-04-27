@@ -337,15 +337,7 @@ void emit(int index, vec4 Peye, vec3 Neye,
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    int inEdgeFlag = 0;
-    vec2 dt01 = abs(tesTessCoord[0] - tesTessCoord[1]);
-    vec2 dt12 = abs(tesTessCoord[1] - tesTessCoord[2]);
-    vec2 dt20 = abs(tesTessCoord[2] - tesTessCoord[0]);
-    if (min(dt01.x, dt01.y) > 0.03) inEdgeFlag |= 2;
-    if (min(dt12.x, dt12.y) > 0.03) inEdgeFlag |= 4;
-    if (min(dt20.x, dt20.y) > 0.03) inEdgeFlag |= 1;
-
-    ProcessTriEdgeDistance(Peye, triPeye0, triPeye1, triPeye2, inEdgeFlag);
+    ProcessTriEdgeDistance(Peye, triPeye0, triPeye1, triPeye2);
 
     ProcessEdgeId(index, gsPatchCoord.xy);
 
@@ -480,8 +472,7 @@ void emit(int index, vec4 Peye, vec3 Neye,
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    int inEdgeFlag = 0;
-    ProcessTriEdgeDistance(Peye, triPeye0, triPeye1, triPeye2, inEdgeFlag);
+    ProcessTriEdgeDistance(Peye, triPeye0, triPeye1, triPeye2);
 
     ProcessEdgeId(index, gsPatchCoord.xy);
 

@@ -2268,7 +2268,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                         << "}\n";
                     // XXX: Is the edge flag returned actually used?
                     accessors
-                        << "int GetEdgeFlag(int localIndex) {\n"
+                        << "int GetEdgeFlag() {\n"
                         << "  return (HdGet_primitiveParam().x & 3);\n"
                         << "}\n";
                     break;
@@ -2289,8 +2289,8 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                     // (i.e., not from primitiveParam)
                     // see mesh.glslfx Mesh.Geometry.Triangle
                     accessors
-                        << "int GetEdgeFlag(int localIndex) {\n"
-                        << "  return localIndex;\n"
+                        << "int GetEdgeFlag() {\n"
+                        << "  return 0;\n"
                         << "}\n";
                     break;
                 }
@@ -2308,7 +2308,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                     // is the result of quadrangulation (1) or from the authored
                     // topology (0).
                     accessors
-                        << "int GetEdgeFlag(int localIndex) {\n"
+                        << "int GetEdgeFlag() {\n"
                         << "  return (HdGet_primitiveParam().x & 3); \n"
                         << "}\n";
                     break;
@@ -2326,7 +2326,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                         << "  return ivec3(gl_PrimitiveID, 0, 0);\n"
                         << "}\n";
                     accessors
-                        << "int GetEdgeFlag(int localIndex) {\n"
+                        << "int GetEdgeFlag() {\n"
                         << "  return HdGet_primitiveParam() & 3;\n"
                         << "}\n";
                     break;
@@ -2411,7 +2411,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
             << "  return GetElementID();\n"
             << "}\n";
         accessors
-            << "int GetEdgeFlag(int localIndex) {\n"
+            << "int GetEdgeFlag() {\n"
             << "  return 0;\n"
             << "}\n";
         accessors
