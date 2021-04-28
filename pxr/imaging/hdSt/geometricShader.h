@@ -112,6 +112,17 @@ public:
                primType == PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES;
     }
 
+    // Face-varying patch type
+    enum class FvarPatchType { 
+        PATCH_COARSE_TRIANGLES,  
+        PATCH_REFINED_TRIANGLES,
+        PATCH_COARSE_QUADS,
+        PATCH_REFINED_QUADS,
+        PATCH_BSPLINE,
+        PATCH_BOXSPLINETRIANGLE,
+        PATCH_NONE
+    }; 
+
     HDST_API
     HdSt_GeometricShader(std::string const &glslfxString,
                        PrimitiveType primType,
@@ -121,6 +132,7 @@ public:
                        bool doubleSided,
                        HdPolygonMode polygonMode,
                        bool cullingPass,
+                       FvarPatchType fvarPatchType,
                        SdfPath const &debugId = SdfPath(),
                        float lineWidth = 0);
 
@@ -178,6 +190,10 @@ public:
         return IsPrimTypePatches(_primType);
     }
 
+    FvarPatchType GetFvarPatchType() const {
+        return _fvarPatchType;
+    }
+
     /// Return the GL primitive type of the draw item based on _primType
     HDST_API
     GLenum GetPrimitiveMode() const;
@@ -213,6 +229,7 @@ private:
 
     std::unique_ptr<HioGlslfx> _glslfx;
     bool _frustumCullingPass;
+    FvarPatchType _fvarPatchType;
     ID _hash;
 
     // No copying

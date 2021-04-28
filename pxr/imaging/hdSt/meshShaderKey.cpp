@@ -36,6 +36,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // normal mixins
     ((normalsScene,            "MeshNormal.Scene"))
+    ((normalsScenePatches,     "MeshNormal.Scene.Patches"))
     ((normalsSmooth,           "MeshNormal.Smooth"))
     ((normalsFlat,             "MeshNormal.Flat"))
     ((normalsPass,             "MeshNormal.Pass"))
@@ -136,13 +137,15 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     float lineWidth,
     bool hasMirroredTransform,
     bool hasInstancer,
-    bool enableScalarOverride)
+    bool enableScalarOverride,
+    HdSt_GeometricShader::FvarPatchType fvarPatchType)
     : primType(primitiveType)
     , cullStyle(cullStyle)
     , hasMirroredTransform(hasMirroredTransform)
     , doubleSided(doubleSided)
     , polygonMode(HdPolygonModeFill)
     , lineWidth(lineWidth)
+    , fvarPatchType(fvarPatchType)
     , glslfx(_tokens->baseGLSLFX)
 {
     if (geomStyle == HdMeshGeomStyleEdgeOnly ||
@@ -228,8 +231,10 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     GS[gsIndex++] = (normalsSource == NormalSourceFlat) ?
         _tokens->normalsFlat :
-        (gsSceneNormals ? _tokens->normalsScene : _tokens->normalsPass);
-
+        (gsSceneNormals ? (isPrimTypePatches ? _tokens->normalsScenePatches : 
+            _tokens->normalsScene) : 
+        _tokens->normalsPass);
+   
     GS[gsIndex++] = (normalsSource == NormalSourceGeometryShader) ?
             _tokens->normalsGeometryFlat : _tokens->normalsGeometryNoFlat;
 

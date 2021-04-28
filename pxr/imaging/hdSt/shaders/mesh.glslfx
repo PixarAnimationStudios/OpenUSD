@@ -288,7 +288,7 @@ void main(void)
     outData.Neye = N; // normalized
 
     tesPatchCoord = OsdInterpolatePatchCoordTriangle(UV, patchParam);
-    tesTessCoord = vec2(0); // used only for hiding internal edges w/ quad tess
+    tesTessCoord = UV;
 
     // Barycentric basis
     vec4 basis = vec4(
@@ -341,7 +341,7 @@ void emit(int index, vec4 Peye, vec3 Neye,
 
     ProcessEdgeId(index, gsPatchCoord.xy);
 
-    ProcessPrimvars(index);
+    ProcessPrimvars(index, tesTessCoord[index]);
 
     EmitVertex();
 }
@@ -355,15 +355,15 @@ void main(void)
     bool isFlipped = IsFlipped(); // consider handedness AND negative-scale
 
     vec3 Neye0 = isFlipped ? -inData[0].Neye : inData[0].Neye;
-    Neye0 = GetNormal(Neye0, 0);
+    Neye0 = GetNormal(Neye0, 0, tesTessCoord[0]);
     Neye0 = GetTriGeometryNormal(Neye0, inData[0].Peye, inData[1].Peye,
         inData[2].Peye, isFlipped);
     vec3 Neye1 = isFlipped ? -inData[1].Neye : inData[1].Neye;
-    Neye1 = GetNormal(Neye1, 0);
+    Neye1 = GetNormal(Neye1, 0, tesTessCoord[1]);
     Neye1 = GetTriGeometryNormal(Neye1, inData[0].Peye, inData[1].Peye,
         inData[2].Peye, isFlipped);
     vec3 Neye2 = isFlipped ? -inData[2].Neye : inData[2].Neye;
-    Neye2 = GetNormal(Neye2, 0);
+    Neye2 = GetNormal(Neye2, 0, tesTessCoord[2]);
     Neye2 = GetTriGeometryNormal(Neye2, inData[0].Peye, inData[1].Peye,
         inData[2].Peye, isFlipped);
 

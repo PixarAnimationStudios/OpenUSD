@@ -97,6 +97,26 @@ public:
                  TfToken const &orientation=HdTokens->rightHanded,
                  bool doubleSided=false);
 
+    HD_API
+    void AddMesh(SdfPath const &id,
+                 GfMatrix4f const &transform,
+                 VtVec3fArray const &points,
+                 VtIntArray const &numVerts,
+                 VtIntArray const &verts,
+                 VtIntArray const &holes,
+                 PxOsdSubdivTags const &subdivTags,
+                 VtValue const &color,
+                 VtIntArray const &colorIndices,
+                 HdInterpolation colorInterpolation,
+                 VtValue const &opacity,
+                 VtIntArray const &opacityIndices,
+                 HdInterpolation opacityInterpolation,
+                 bool guide=false,
+                 SdfPath const &instancerId=SdfPath(),
+                 TfToken const &scheme=PxOsdOpenSubdivTokens->catmullClark,
+                 TfToken const &orientation=HdTokens->rightHanded,
+                 bool doubleSided=false);
+
     /// Add a cube
     HD_API
     void AddCube(SdfPath const &id, GfMatrix4f const &transform, bool guide=false,
@@ -144,6 +164,13 @@ public:
     void AddPolygons(SdfPath const &id, GfMatrix4f const &transform,
                      HdInterpolation colorInterp,
                      SdfPath const &instancerId=SdfPath());
+                     
+    /// Add a triangle, quad and pentagon with face-varying displayColor and
+    /// displayOpacity            
+    HD_API
+    void AddFaceVaryingPolygons(
+        SdfPath const &id, GfMatrix4f const &transform,
+        SdfPath const &instancerId=SdfPath());
 
     /// Add a subdiv with various tags
     HD_API
@@ -217,12 +244,14 @@ public:
                     TfToken const& name,
                     VtValue const& value,
                     HdInterpolation const& interp,
-                    TfToken const& role);
+                    TfToken const& role,
+                    VtIntArray const& indices=VtIntArray(0));
     
     HD_API
     void UpdatePrimvarValue(SdfPath const& id,
                             TfToken const& name,
-                            VtValue const& value);
+                            VtValue const& value,
+                            VtIntArray const& indices=VtIntArray(0));
     
     HD_API
     void RemovePrimvar(SdfPath const& id, TfToken const& name);
@@ -344,6 +373,9 @@ public:
     HD_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key) override;
     HD_API
+    virtual VtValue GetIndexedPrimvar(SdfPath const& id, TfToken const& key, 
+                                      VtIntArray *outIndices) override;
+    HD_API
     virtual HdReprSelector GetReprSelector(SdfPath const &id) override;
     HD_API
     virtual HdPrimvarDescriptorVector
@@ -456,16 +488,19 @@ private:
         _Primvar(TfToken const& _name,
                  VtValue const& _value,
                  HdInterpolation const& _interp,
-                 TfToken const& _role) :
+                 TfToken const& _role,
+                 VtIntArray const& _indices=VtIntArray(0)) :
             name(_name),
             value(_value),
             interp(_interp),
-            role(_role) {}
+            role(_role),
+            indices(_indices) {}
 
         TfToken name;
         VtValue value;
         HdInterpolation interp;
         TfToken role;
+        VtIntArray indices;
     };
     using _Primvars = std::vector<_Primvar>;
     // Given an rprim id and primvar name, looks up the primvars map (see below)
