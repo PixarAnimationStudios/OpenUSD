@@ -504,13 +504,21 @@ HdStRenderDelegate::IsSupported()
 TfTokenVector
 HdStRenderDelegate::GetShaderSourceTypes() const
 {
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
     return {HioGlslfxTokens->glslfx, _tokens->mtlx};
+#else
+    return {HioGlslfxTokens->glslfx};
+#endif
 }
 
 TfTokenVector
 HdStRenderDelegate::GetMaterialRenderContexts() const
 {
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
     return {HioGlslfxTokens->glslfx, _tokens->mtlx};
+#else
+    return {HioGlslfxTokens->glslfx};
+#endif
 }
 
 bool
