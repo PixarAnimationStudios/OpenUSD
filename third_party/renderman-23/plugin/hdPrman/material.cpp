@@ -28,6 +28,9 @@
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
 #include "hdPrman/matfiltFilterChain.h"
 #include "hdPrman/matfiltResolveVstructs.h"
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+#include "hdPrman/matfiltMaterialX.h"
+#endif
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/staticData.h"
@@ -51,7 +54,13 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 TF_MAKE_STATIC_DATA(NdrTokenVec, _sourceTypes) {
-    *_sourceTypes = { TfToken("OSL"), TfToken("RmanCpp") };
+    *_sourceTypes = { 
+        TfToken("OSL"), 
+        TfToken("RmanCpp"),    
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+        TfToken("mtlx") 
+#endif
+    };
 }
 
 TfTokenVector const&
@@ -63,7 +72,10 @@ HdPrmanMaterial::GetShaderSourceTypes()
 TF_MAKE_STATIC_DATA(MatfiltFilterChain, _filterChain) {
     *_filterChain = {
         MatfiltConvertPreviewMaterial,
-        MatfiltResolveVstructs
+        MatfiltResolveVstructs,
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+        MatfiltMaterialX
+#endif
     };
 }
 
@@ -580,7 +592,7 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
             if (!_filterChain->empty()) {
                 std::vector<std::string> errors;
                 MatfiltExecFilterChain(*_filterChain, id, matNetwork2, {},
-                                           *_sourceTypes, &errors);
+                                       *_sourceTypes, &errors);
                 if (!errors.empty()) {
                     TF_RUNTIME_ERROR("HdPrmanMaterial: %s\n",
                         TfStringJoin(errors).c_str());
