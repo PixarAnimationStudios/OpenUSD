@@ -105,6 +105,13 @@ public:
                 primType == PrimitiveType::PRIM_MESH_REFINED_QUADS);
     }
 
+    static inline bool IsPrimTypeRefinedMesh(PrimitiveType primType) {
+        return (primType == PrimitiveType::PRIM_MESH_REFINED_TRIANGLES ||
+                primType == PrimitiveType::PRIM_MESH_REFINED_QUADS ||
+                primType == PrimitiveType::PRIM_MESH_BSPLINE ||
+                primType == PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE);
+    }
+
     static inline bool IsPrimTypePatches(PrimitiveType primType) {
         return primType == PrimitiveType::PRIM_MESH_BSPLINE ||
                primType == PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE ||

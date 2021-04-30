@@ -129,9 +129,23 @@ int GetPrimitiveEdgeId()
         edgeId = 1;
     } else if (ltResult.x) {
         edgeId = 2;
+    } else {
+        return -1; // Not on a mesh edge
     }
 
-    return edgeId;
+    const int edgeFlag = GetEdgeFlag();
+    const int edgeIndex = HdGet_edgeIndices().x;
+
+    if (edgeFlag == 0) {
+        return edgeIndex + edgeId; // regular triangle face.
+    }
+
+    // There are three edge index sequences for a triangulated face.
+    const ivec3 triangulated =
+        edgeFlag == 1 ? ivec3(edgeIndex-1, edgeIndex,          -1) :
+        edgeFlag == 2 ? ivec3(         -1, edgeIndex, edgeIndex+1) :
+      /*edgeFlag == 3*/ ivec3(         -1, edgeIndex,          -1);
+    return triangulated[edgeId];
 }
 
 --- --------------------------------------------------------------------------
@@ -168,7 +182,18 @@ int GetPrimitiveEdgeId()
         edgeId = 1;
     } else if (uv.y > delHigh) {
         edgeId = 2;
+    } else {
+        return -1; // Not on a mesh edge
     }
 
-    return edgeId;
+    const int edgeFlag = GetEdgeFlag();
+    const ivec2 edgeindices = HdGet_edgeIndices();
+
+    if (edgeFlag == 0) {
+        return edgeindices[0] + edgeId; // regular quad face
+    }
+
+    // There is one edge index sequence for a quadrangulated face.
+    const ivec4 quadrangulated = ivec4(edgeindices[0], -1, -1, edgeindices[1]);
+    return quadrangulated[edgeId];
 }

@@ -2356,14 +2356,13 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                 case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
                 case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
                 {
-                    // refined quads ("uniform" subdiv) or
-                    // refined tris (loop subdiv)
+                    // refined quads (catmulClark uniform subdiv) or
+                    // refined tris (loop uniform subdiv)
                     accessors
                         << "ivec3 GetPatchParam() {\n"
                         << "  return ivec3(HdGet_primitiveParam().y, \n"
                         << "               HdGet_primitiveParam().z, 0);\n"
                         << "}\n";
-                    // XXX: Is the edge flag returned actually used?
                     accessors
                         << "int GetEdgeFlag() {\n"
                         << "  return (HdGet_primitiveParam().x & 3);\n"
@@ -2382,12 +2381,9 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                         << "               HdGet_primitiveParam().z, \n"
                         << "               HdGet_primitiveParam().w);\n"
                         << "}\n";
-                    // use the edge flag calculated in the geometry shader
-                    // (i.e., not from primitiveParam)
-                    // see mesh.glslfx Mesh.Geometry.Triangle
                     accessors
                         << "int GetEdgeFlag() {\n"
-                        << "  return 0;\n"
+                        << "  return (HdGet_primitiveParam().x & 3);\n"
                         << "}\n";
                     break;
                 }
@@ -2533,29 +2529,20 @@ HdSt_CodeGen::_GenerateElementPrimvar()
         _EmitAccessor(accessors, _metaData.edgeIndexBinding.name,
                     _metaData.edgeIndexBinding.dataType, binding,
                     "GetDrawingCoord().primitiveCoord");
+    }
 
-        // Authored EdgeID getter
-        // abs() is needed below, since both branches may get executed, and
-        // we need to guard against array oob indexing.
-        accessors
-            << "int GetAuthoredEdgeId(int primitiveEdgeID) {\n"
-            << "  if (primitiveEdgeID == -1) {\n"
-            << "    return -1;\n"
-            << "  }\n"
-            << "  "
-            << _GetUnpackedType(_metaData.edgeIndexBinding.dataType, false)
-            << " edgeIndices = HdGet_edgeIndices();\n"
-            << "  int coord = abs(primitiveEdgeID);\n"
-            << "  return edgeIndices[coord];\n"
-            << "}\n";
-
-        // Primitive EdgeID getter
-        if (_geometricShader->IsPrimTypePoints()) {
-            // we get here only if we're rendering a mesh with the edgeIndices
-            // binding and using a points repr. since there is no GS stage, we
-            // generate fallback versions.
-            // note: this scenario can't be handled in meshShaderKey, since it
-            // doesn't know whether an edgeIndices binding exists.
+    switch (_geometricShader->GetPrimitiveType()) {
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BSPLINE:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+            break;
+        default:
+            // The functions below are used in picking (id render) and/or
+            // selection highlighting, and are expected to be defined.
+            // Generate fallback versions when we aren't rendering meshes.
             accessors
                 << "int GetPrimitiveEdgeId() {\n"
                 << "  return -1;\n"
@@ -2564,39 +2551,14 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                 << "bool IsFragmentOnEdge() {\n"
                 << "  return false;\n"
                 << "}\n";
-        }
-        else if (_geometricShader->IsPrimTypeBasisCurves()) {
-            // basis curves don't have an edge indices buffer bound, so we 
-            // shouldn't ever get here.
-            TF_VERIFY(false, "edgeIndexBinding shouldn't be found on a "
-                             "basis curve");
-        }
-        else if (_geometricShader->IsPrimTypeMesh()) {
-            // nothing to do. meshShaderKey takes care of it.
-        }
-    } else {
-        // The functions below are used in picking (id render) and/or selection
-        // highlighting, and are expected to be defined. Generate fallback
-        // versions when we don't bind an edgeIndices buffer.
-        accessors
-            << "int GetAuthoredEdgeId(int primitiveEdgeID) {\n"
-            << "  return -1;\n"
-            << "}\n";
-        accessors
-            << "int GetPrimitiveEdgeId() {\n"
-            << "  return -1;\n"
-            << "}\n";
-        accessors
-            << "bool IsFragmentOnEdge() {\n"
-            << "  return false;\n"
-            << "}\n";
-        accessors
-            << "float GetSelectedEdgeOpacity() {\n"
-            << "  return 0.0;\n"
-            << "}\n";
+            accessors
+                << "float GetSelectedEdgeOpacity() {\n"
+                << "  return 0.0;\n"
+                << "}\n";
+            break;
     }
+
     declarations
-        << "int GetAuthoredEdgeId(int primitiveEdgeID);\n"
         << "int GetPrimitiveEdgeId();\n"
         << "bool IsFragmentOnEdge();\n"
         << "float GetSelectedEdgeOpacity();\n";

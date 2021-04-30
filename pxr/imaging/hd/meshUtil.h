@@ -30,13 +30,14 @@
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/meshTopology.h"
 
-#include "pxr/base/gf/vec2i.h"
 #include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec3i.h"
+#include "pxr/base/gf/vec4i.h"
+
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
-
-#include <unordered_map>
-#include <utility> // std::{min,max}, std::pair
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -108,7 +109,7 @@ public:
     HD_API
     void ComputeTriangleIndices(VtVec3iArray *indices,
                                 VtIntArray *primitiveParams,
-                                VtVec3iArray *trianglesEdgeIndices = nullptr);
+                                VtIntArray *edgeIndices = nullptr) const;
 
     /// Return a triangulation of a face-varying primvar. source is
     /// a buffer of size numElements and type corresponding to dataType
@@ -119,7 +120,7 @@ public:
     bool ComputeTriangulatedFaceVaryingPrimvar(void const* source,
                                                int numElements,
                                                HdType dataType,
-                                               VtValue *triangulated);
+                                               VtValue *triangulated) const;
 
     // --------------------------------------------------------------------
     // Quadrangulation
@@ -139,24 +140,16 @@ public:
        +-------+--------+-------+
     */
 
-    /// Return the number of quadrangulated quads.
-    /// If degenerated face is found, sets invalidFaceFound as true.
-    HD_API
-    static int ComputeNumQuads(VtIntArray const &numVerts,
-                               VtIntArray const &holeIndices,
-                               bool *invalidFaceFound=NULL);
-
-
     /// Generate a quadInfo struct for the input topology.
     HD_API
-    void ComputeQuadInfo(HdQuadInfo* quadInfo);
+    void ComputeQuadInfo(HdQuadInfo* quadInfo) const;
 
     /// Return quadrangulated indices of the input topology. indices and
     /// primitiveParams are output parameters.
     HD_API
     void ComputeQuadIndices(VtVec4iArray *indices,
                             VtVec2iArray *primitiveParams,
-                            VtVec4iArray *quadsEdgeIndices = nullptr);
+                            VtVec2iArray *edgeIndices = nullptr) const;
 
     /// Return a quadrangulation of a per-vertex primvar. source is
     /// a buffer of size numElements and type corresponding to dataType
@@ -168,7 +161,7 @@ public:
                                       void const* source,
                                       int numElements,
                                       HdType dataType,
-                                      VtValue *quadrangulated);
+                                      VtValue *quadrangulated) const;
 
     /// Return a quadrangulation of a face-varying primvar.
     /// source is a buffer of size numElements and type corresponding
@@ -179,7 +172,17 @@ public:
     bool ComputeQuadrangulatedFaceVaryingPrimvar(void const* source,
                                                  int numElements,
                                                  HdType dataType,
-                                                 VtValue *quadrangulated);
+                                                 VtValue *quadrangulated) const;
+
+    /// Return a buffer filled with face vertex index pairs corresponding
+    /// to the sequence in which edges are visited when iterating through
+    /// the mesh topology. The edges of degenerate and hole faces are
+    /// included so that this sequence will correspond with either base
+    /// face triangulation or quadrangulation (which typically skips
+    /// over hole faces) as well as for refined surfaces which take into
+    /// account faces tagged as holes as well as other non-manifold faces.
+    HD_API
+    void EnumerateEdges(std::vector<GfVec2i> * edgeVerticesOut) const;
 
     // --------------------------------------------------------------------
     // Primitive param bit encoding
@@ -195,9 +198,103 @@ public:
         return (coarseFaceParam & 3);
     }
 
-    // --------------------------------------------------------------------
-    // Authored edge id computation
-    struct EdgeHash {
+private:
+    /// Return the number of quadrangulated quads.
+    /// If degenerate face is found, sets invalidFaceFound as true.
+    int _ComputeNumQuads(VtIntArray const &numVerts,
+                         VtIntArray const &holeIndices,
+                         bool *invalidFaceFound = nullptr) const;
+
+    HdMeshTopology const* _topology;
+    SdfPath const _id;
+};
+
+/// \class Edge Indices
+///
+/// Mesh edges are described as a pair of adjacent vertices encoded
+/// as GfVec2i.
+///
+/// The encoding of mesh edge indices is derived from the enumeration
+/// of face vertex index pairs provided by HdMeshUtil::EnumerateEdges().
+///
+/// This encoding is consistent across triangulation or quadrangulation
+/// of the base mesh faces as well as for non-manifold faces on refined
+/// subdivision surface meshes.
+///
+/// There can be multiple edge indices associated with each pair of
+/// topological vertices in the mesh, e.g. one for each face incident
+/// on the edge.
+///
+/// For example, here is a typical edge index assignment for a mesh
+/// with 2 quad faces and 6 vertices:
+///
+///   faceVertexCounts: [4, 4]
+///   faceVertexIndices: [0, 1, 4, 3, 1, 2, 5, 4]
+///
+///   edgeId:(edgeVertex[0], edgeVertex[1])
+///
+///         2:(3,4)          6:(4,5)
+///   3----------------4----------------5
+///   |                |                |
+///   |     Face 0     |     Face 1     |
+///   |                |                |
+///   |3:(0,3)  1:(1,4)|7:(1,4)  5:(2,5)|
+///   |                |                |
+///   |                |                |
+///   |                |                |
+///   0----------------1----------------2
+///         0:(0,1)          4:(1,2)
+///
+/// Notice that with this assignment, there are eight edge indices even
+/// though the mesh has seven topological edges. The mesh edge between
+/// vertex 1 and vertex 4 is associated with two edgeIds (1 and 7),
+/// one for each incident face.
+///
+/// This kind of edge index assignment can be implemented efficiently
+/// on the GPU since it falls out automatically from the primitive
+/// drawing order and requires minimal additional GPU data.
+///
+///
+class HdMeshEdgeIndexTable
+{
+public:
+    explicit HdMeshEdgeIndexTable(HdMeshTopology const * topology);
+    ~HdMeshEdgeIndexTable();
+
+    bool GetVerticesForEdgeIndex(int edgeId, GfVec2i * edgeVerticesOut) const;
+
+    bool GetVerticesForEdgeIndices(
+        std::vector<int> const & edgeIndices,
+        std::vector<GfVec2i> * edgeVerticesOut) const;
+
+    bool GetEdgeIndices(GfVec2i const & edgeVertices,
+                        std::vector<int> * edgeIndicesOut) const;
+
+private:
+    struct _Edge{
+        _Edge(GfVec2i const & verts_ = GfVec2i(-1), int index_ = -1)
+            : verts(verts_)
+            , index(index_)
+        {
+            // Simplify sorting and searching by keeping the vertices ordered.
+            if (verts[0] > verts[1]) {
+                std::swap(verts[0], verts[1]);
+            }
+        }
+        GfVec2i verts;
+        int index;
+
+    };
+
+    struct _CompareEdgeVertices {
+        bool operator() (_Edge const &lhs, _Edge const & rhs) const {
+            return (lhs.verts[0] < rhs.verts[0] ||
+                    (lhs.verts[0] == rhs.verts[0] &&
+                     lhs.verts[1] < rhs.verts[1]));
+        }
+    };
+
+    struct _EdgeVerticesHash {
         // Use a custom hash so that edges (a,b) and (b,a) are equivalent
         inline size_t operator()(GfVec2i const& v) const {
             // Triangular numbers for 2-d hash.
@@ -211,51 +308,10 @@ public:
         }
     };
 
-    struct EdgeEquality {
-        inline bool operator() (GfVec2i const& v1, GfVec2i const& v2) const {
-            // The bitwise operators here give a small speedup in the generated
-            // code since we avoid the conditional jumps required by
-            // short-circuiting logical ops.
-            return
-                ((v1[0] == v2[0]) & (v1[1] == v2[1])) |
-                ((v1[0] == v2[1]) & (v1[1] == v2[0]));
-        }
-    };
-
-    using EdgeMap = std::unordered_map<GfVec2i, int, EdgeHash, EdgeEquality>;
-    using ReverseEdgeMap = std::unordered_map<int, GfVec2i>;
-    
-    // Enumerates all the edges of the authored mesh topology, and returns a map
-    // of (vertex indices pair, edge id).
-    // If skipHoles is true, unshared edges of hole faces aren't enumerated.
-    HD_API
-    static EdgeMap ComputeAuthoredEdgeMap(HdMeshTopology const* topology,
-                                          bool skipHoles = false);
-
-    // Given the map from (vertex indices pair, edge id) computed by
-    // ComputeAuthoredEdgeMap, returns the reverse map (edge id, vertex indices
-    // pair).
-    HD_API
-    static ReverseEdgeMap ComputeReverseEdgeMap(const EdgeMap &edgeMap);
-
-    // Translates an authored edge id to its vertex indices
-    // Returns a pair, with first indicating success of the look up, and
-    // second being the vertex indices for the edge.
-    HD_API
-    static std::pair<bool, GfVec2i>
-    GetVertexIndicesForEdge(const ReverseEdgeMap &rEdgeMap, int authoredEdgeId);
-
-    // Translates an edge to its authored edge id
-    // Returns a pair, with first indicating success of the look up, and
-    // second being the authored edge id
-    HD_API
-    static std::pair<bool, int>
-    GetAuthoredEdgeID(HdMeshTopology const* topology,
-                      GfVec2i edge);
-private:
-    HdMeshTopology const* _topology;
-    SdfPath const _id;
+    std::vector<GfVec2i> _edgeVertices;
+    std::vector<_Edge> _edgesByIndex;
 };
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
