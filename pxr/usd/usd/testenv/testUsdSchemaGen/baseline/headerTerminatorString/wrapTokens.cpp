@@ -182,8 +182,10 @@ void wrapUsdContrivedTokens()
     _AddToken(cls, "uintArray", UsdContrivedTokens->uintArray);
     _AddToken(cls, "variableTokenAllowed1", UsdContrivedTokens->variableTokenAllowed1);
     _AddToken(cls, "variableTokenAllowed2", UsdContrivedTokens->variableTokenAllowed2);
+    _AddToken(cls, "variableTokenAllowed3", UsdContrivedTokens->variableTokenAllowed3);
     _AddToken(cls, "variableTokenArrayAllowed1", UsdContrivedTokens->variableTokenArrayAllowed1);
     _AddToken(cls, "variableTokenArrayAllowed2", UsdContrivedTokens->variableTokenArrayAllowed2);
+    _AddToken(cls, "variableTokenArrayAllowed3", UsdContrivedTokens->variableTokenArrayAllowed3);
     _AddToken(cls, "variableTokenDefault", UsdContrivedTokens->variableTokenDefault);
     _AddToken(cls, "vector3d", UsdContrivedTokens->vector3d);
     _AddToken(cls, "vector3dArray", UsdContrivedTokens->vector3dArray);

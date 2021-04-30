@@ -243,7 +243,8 @@ def _ProperCase(aString):
         stripping out any non-alphanumeric characters.
     """
     if len(aString) > 1:
-        return ''.join([s[0].upper() + s[1:] for s in re.split(r'\W+', aString)])
+        return ''.join([s[0].upper() + s[1:] for s in re.split(r'\W+', aString) \
+            if len(s) > 0])
     else:
         return aString.upper()
 
@@ -340,6 +341,7 @@ class AttrInfo(PropInfo):
         if self.allowedTokens:
             tokenListStr = ', '.join(
                 [x if x else '""' for x in self.allowedTokens])
+            Print("tokenListStr: %s" %(tokenListStr))
             self.details.append(('\\ref ' + \
                 _GetTokensPrefix(sdfProp.layer) + \
                 'Tokens "Allowed Values"', tokenListStr))
@@ -835,6 +837,7 @@ def _AddToken(tokenDict, tokenId, val, desc):
             desc=desc + ', ' + token.desc)
     
     else:
+        Print("Add (%s) to tokenId (%s) key in the dict." %(val, tokenId))
         tokenDict[tokenId] = Token(tokenId, val, desc)
 
 
@@ -876,6 +879,7 @@ def GatherTokens(classes, libName, libTokens):
                     # but do not declare a named literal for it.
                     if val != '':
                         tokenId = _CamelCase(val)
+                        Print("tokenId: %s" %(tokenId))
                         if attr.apiName != '':
                             desc = 'Possible value for %s::Get%sAttr()' % \
                                    (cls.cppClassName, _ProperCase(attr.apiName))
@@ -883,6 +887,7 @@ def GatherTokens(classes, libName, libTokens):
                             desc = 'Possible value for %s schema attribute %s' % \
                                    (cls.cppClassName, attr.rawName)
                         cls.tokens.add(tokenId)
+                        Print("About to add val (%s) to tokenId (%s)." %(val, tokenId))
                         _AddToken(tokenDict, tokenId, val, desc)
 
         # Add tokens from relationships to the token set

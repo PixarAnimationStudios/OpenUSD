@@ -150,7 +150,7 @@ public:
     /// | Declaration | `token myVaryingToken = "VariableTokenDefault"` |
     /// | C++ Type | TfToken |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
-    /// | \ref UsdContrivedTokens "Allowed Values" | VariableTokenAllowed1, VariableTokenAllowed2, "" |
+    /// | \ref UsdContrivedTokens "Allowed Values" | VariableTokenAllowed1, VariableTokenAllowed2, VariableTokenAllowed<3>, "" |
     USDCONTRIVED_API
     UsdAttribute GetMyVaryingTokenAttr() const;
 
@@ -174,7 +174,7 @@ public:
     /// | C++ Type | VtArray<TfToken> |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TokenArray |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    /// | \ref UsdContrivedTokens "Allowed Values" | VariableTokenArrayAllowed1, VariableTokenArrayAllowed2, "" |
+    /// | \ref UsdContrivedTokens "Allowed Values" | VariableTokenArrayAllowed1, VariableTokenArrayAllowed2, VariableTokenArrayAllowed<3>, "" |
     USDCONTRIVED_API
     UsdAttribute GetMyVaryingTokenArrayAttr() const;
 
