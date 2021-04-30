@@ -607,7 +607,8 @@ def "Root"
         self.assertTrue(layer2.anonymous)
         # Since a rootName argument was provided, a root prim with the provided
         # name is generated on the layer.
-        self.assertEqual(layer2.rootPrims.keys(), ["Generated"])
+        self.assertEqual(list(layer2.rootPrims.keys()),
+                         list(["Generated"]))
 
         # Layer find does find the layer with the provided args now too and 
         # both layers are loaded.
@@ -631,14 +632,16 @@ def "Root"
                                       layerArgs)
         self.assertNotEqual(layer2, layer5)
         self.assertTrue(layer5.anonymous)
-        self.assertEqual(layer5.rootPrims.keys(), ["Generated"])
+        self.assertEqual(list(layer5.rootPrims.keys()),
+                         list(["Generated"]))
 
         # Open another anonymous layer with the same identifier but a different
         # rootName arg. This will also be a new layer
         layer6 = Sdf.Layer.FindOrOpen(layerId, {"rootName":"Other"})
         self.assertNotEqual(layer2, layer6)
         self.assertTrue(layer6.anonymous)
-        self.assertEqual(layer6.rootPrims.keys(), ["Other"])
+        self.assertEqual(list(layer6.rootPrims.keys()),
+                         list(["Other"]))
 
         self.assertEqual(set(Sdf.Layer.GetLoadedLayers()),
                          set([layer1, layer2, layer5, layer6]))
@@ -651,18 +654,21 @@ def "Root"
         # Test unmuting the layer, the generated root prim returns.
         layer2.SetMuted(False)
         self.assertFalse(layer2.IsMuted())
-        self.assertEqual(layer2.rootPrims.keys(), ["Generated"])
+        self.assertEqual(list(layer2.rootPrims.keys()),
+                         list(["Generated"]))
 
         # Test reload
         # First reload returns false since layer hasn't changed.
         self.assertFalse(layer2.Reload())
         # Edit the layer adding a prim to dirty it
         Sdf.CreatePrimInLayer(layer2, Sdf.Path("/NewPrim"))
-        self.assertEqual(layer2.rootPrims.keys(), ["Generated", "NewPrim"])
+        self.assertEqual(list(layer2.rootPrims.keys()),
+                         list(["Generated", "NewPrim"]))
         # Reload now succeeds and the layer is in the state when it was first
         # opened with its args.
         self.assertTrue(layer2.Reload())
-        self.assertEqual(layer2.rootPrims.keys(), ["Generated"])
+        self.assertEqual(list(layer2.rootPrims.keys()),
+                         list(["Generated"]))
 
         # Test CreateAnonymous for layers of this format. CreateAnonymous 
         # does NOT read any layer contents so the layer will be empty after 
@@ -702,8 +708,10 @@ def "Root"
         self.assertTrue(layer8.Reload(force=True))
         self.assertTrue(layer9.Reload(force=True))
         self.assertFalse(layer7.rootPrims)
-        self.assertEqual(layer8.rootPrims.keys(), ["Generated"])
-        self.assertEqual(layer9.rootPrims.keys(), ["Generated"])
+        self.assertEqual(list(layer8.rootPrims.keys()),
+                         list(["Generated"]))
+        self.assertEqual(list(layer9.rootPrims.keys()),
+                         list(["Generated"]))
 
 
 if __name__ == "__main__":
