@@ -40,6 +40,7 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/work/withScopedParallelism.h"
 
 #include <tbb/concurrent_vector.h>
 #include <tbb/spin_mutex.h>
@@ -136,15 +137,18 @@ PlugRegistry::_RegisterPlugins(const std::vector<std::string>& pathsToPlugInfo,
         Plug_TaskArena taskArena;
         // XXX -- Is this mutex really needed?
         std::lock_guard<std::mutex> lock(_mutex);
-        Plug_ReadPlugInfo(pathsToPlugInfo,
-                          pathsAreOrdered,
-                          std::bind(
-                              &PlugRegistry::_InsertRegisteredPluginPath,
-                              this, std::placeholders::_1),
-                          std::bind(
-                              &PlugRegistry::_RegisterPlugin<NewPluginsVec>,
-                              this, std::placeholders::_1, &newPlugins),
-                          &taskArena);
+        WorkWithScopedParallelism([&]() {
+                Plug_ReadPlugInfo(
+                    pathsToPlugInfo,
+                    pathsAreOrdered,
+                    std::bind(
+                        &PlugRegistry::_InsertRegisteredPluginPath,
+                        this, std::placeholders::_1),
+                    std::bind(
+                        &PlugRegistry::_RegisterPlugin<NewPluginsVec>,
+                        this, std::placeholders::_1, &newPlugins),
+                    &taskArena);
+            });
     }
 
     if (!newPlugins.empty()) {
