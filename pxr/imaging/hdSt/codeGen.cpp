@@ -2538,11 +2538,21 @@ HdSt_CodeGen::_GenerateElementPrimvar()
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+            // This is no longer used by Storm but is generated for backward
+            // compatibility with production shaders.
+            accessors
+                << "int GetAuthoredEdgeId(int primitiveEdgeId) {\n"
+                << "  return primitiveEdgeId;\n"
+                << "}\n";
             break;
         default:
             // The functions below are used in picking (id render) and/or
             // selection highlighting, and are expected to be defined.
             // Generate fallback versions when we aren't rendering meshes.
+            accessors
+                << "int GetAuthoredEdgeId(int primitiveEdgeId) {\n"
+                << "  return -1;\n"
+                << "}\n";
             accessors
                 << "int GetPrimitiveEdgeId() {\n"
                 << "  return -1;\n"
