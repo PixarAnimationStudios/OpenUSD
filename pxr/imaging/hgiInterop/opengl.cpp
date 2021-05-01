@@ -166,10 +166,16 @@ HgiInteropOpenGL::CompositeToInterop(
     }
 #endif
     
+    GLint restoreDrawFramebuffer = 0;
+    bool doRestoreDrawFramebuffer = false;
+
     if (!framebuffer.IsEmpty()) {
         if (framebuffer.IsHolding<uint32_t>()) {
-            const uint32_t f = framebuffer.UncheckedGet<uint32_t>();
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, f);
+            glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,
+                          &restoreDrawFramebuffer);
+            doRestoreDrawFramebuffer = true;
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER,
+                              framebuffer.UncheckedGet<uint32_t>());
         } else {
             TF_CODING_ERROR(
                 "dstFramebuffer must hold uint32_t when targeting OpenGL");
@@ -304,6 +310,11 @@ HgiInteropOpenGL::CompositeToInterop(
 #endif
 
     glActiveTexture(restoreActiveTexture);
+
+    if (doRestoreDrawFramebuffer) {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER,
+                          restoreDrawFramebuffer);
+    }
 
     TF_VERIFY(glGetError() == GL_NO_ERROR);
 }
