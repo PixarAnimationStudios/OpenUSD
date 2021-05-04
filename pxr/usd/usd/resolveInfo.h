@@ -120,7 +120,7 @@ private:
     /// 
     /// If \p source is either \p UsdResolveInfoSourceDefault
     /// or \p UsdResolveInfoTimeSamples, the source will be a layer
-    /// in this LayerStack (\sa layerIndex). 
+    /// in this LayerStack (\sa _layer). 
     ///
     /// If \p source is UsdResolveInfoSourceValueClips, the source clips 
     /// will have been introduced in this LayerStack.
