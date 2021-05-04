@@ -102,9 +102,10 @@ _GetPageShift(unsigned int mask)
     return shift;
 }
 
-static unsigned int PAGESIZE = ArchGetPageSize();
-static uint64_t PAGEMASK = ~(static_cast<uint64_t>(PAGESIZE-1));
-static unsigned int PAGESHIFT = _GetPageShift(PAGEMASK);
+static const unsigned int CRATE_PAGESIZE = ArchGetPageSize();
+static const uint64_t CRATE_PAGEMASK =
+    ~(static_cast<uint64_t>(CRATE_PAGESIZE-1));
+static const unsigned int CRATE_PAGESHIFT = _GetPageShift(CRATE_PAGEMASK);
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<Usd_CrateFile::TimeSamples>();
@@ -137,7 +138,8 @@ static int _GetMMapPrefetchKB()
 {
     auto getKB = []() {
         int setting = TfGetEnvSetting(USDC_MMAP_PREFETCH_KB);
-        int kb = ((setting * 1024 + PAGESIZE - 1) & PAGEMASK) / 1024;
+        int kb =
+            ((setting * 1024 + CRATE_PAGESIZE - 1) & CRATE_PAGEMASK) / 1024;
         if (setting != kb) {
             fprintf(stderr, "Rounded USDC_MMAP_PREFETCH_KB value %d to %d",
                     setting, kb);
@@ -250,12 +252,13 @@ static constexpr ValueRep ValueRepForArray(uint64_t payload = 0) {
 
 template <class T>
 T *RoundToPageAddr(T *addr) {
-    return reinterpret_cast<T *>(reinterpret_cast<uintptr_t>(addr) & PAGEMASK);
+    return reinterpret_cast<T *>(
+        reinterpret_cast<uintptr_t>(addr) & CRATE_PAGEMASK);
 }
 
 template <class T>
 uint64_t GetPageNumber(T *addr) {
-    return reinterpret_cast<uintptr_t>(addr) >> PAGESHIFT;
+    return reinterpret_cast<uintptr_t>(addr) >> CRATE_PAGESHIFT;
 }
 
 } // anon
@@ -486,7 +489,7 @@ TouchPages(char volatile *start, size_t numPages)
                          // (copy-on-write).  This is sometimes called a "silent
                          // store".  No current hw architecture "optimizes out"
                          // silent stores.
-        start += PAGESIZE;
+        start += CRATE_PAGESIZE;
     }
 }
 
@@ -507,10 +510,10 @@ CrateFile::_FileMapping::DetachReferencedRanges()
             // Calculate the page-aligned start address and the number of pages
             // we need to touch.
             auto addrAsInt = reinterpret_cast<uintptr_t>(zeroCopy.GetAddr());
-            int64_t pageStart = addrAsInt / PAGESIZE;
+            int64_t pageStart = addrAsInt / CRATE_PAGESIZE;
             int64_t pageEnd =
-                ((addrAsInt + zeroCopy.GetNumBytes() - 1) / PAGESIZE) + 1;
-            TouchPages(reinterpret_cast<char *>(pageStart * PAGESIZE),
+                ((addrAsInt + zeroCopy.GetNumBytes() - 1) / CRATE_PAGESIZE) + 1;
+            TouchPages(reinterpret_cast<char *>(pageStart * CRATE_PAGESIZE),
                        pageEnd - pageStart);
         }
     }
@@ -2212,7 +2215,8 @@ CrateFile::_InitMMap() {
             auto pageAlignedMapSize =
                 (_mmapSrc->GetMapStart() + mapSize) -
                 RoundToPageAddr(_mmapSrc->GetMapStart());
-            int64_t npages = (pageAlignedMapSize + PAGESIZE-1) / PAGESIZE;
+            int64_t npages =
+                (pageAlignedMapSize + CRATE_PAGESIZE-1) / CRATE_PAGESIZE;
             _debugPageMap.reset(new char[npages]);
             memset(_debugPageMap.get(), 0, npages);
         } 
@@ -2306,7 +2310,7 @@ CrateFile::~CrateFile()
         std::unique_ptr<unsigned char []> mincoreMap(new unsigned char[npages]);
         void const *p = static_cast<void const *>(RoundToPageAddr(mapStart));
         if (!ArchQueryMappedMemoryResidency(
-                p, npages*PAGESIZE, mincoreMap.get())) {
+                p, npages*CRATE_PAGESIZE, mincoreMap.get())) {
             TF_WARN("failed to obtain memory residency information");
             return;
         }
