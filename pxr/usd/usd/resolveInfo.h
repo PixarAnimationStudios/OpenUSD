@@ -116,9 +116,6 @@ public:
     }
     
 private:
-    /// The source of the associated attribute's value.
-    UsdResolveInfoSource _source;
-
     /// The LayerStack that provides the strongest value opinion. 
     /// 
     /// If \p source is either \p UsdResolveInfoSourceDefault
@@ -130,6 +127,23 @@ private:
     ///
     /// Otherwise, this LayerStack will be invalid.
     PcpLayerStackPtr _layerStack;
+
+    /// The layer in \p layerStack that provides the strongest time sample or
+    /// default opinion.
+    ///
+    /// This is valid only if \p source is either 
+    /// \p UsdResolveInfoSourceDefault or \p UsdResolveInfoTimeSamples.
+    SdfLayerHandle _layer;
+
+    /// The node within the containing PcpPrimIndex that provided
+    /// the strongest value opinion.
+    PcpNodeRef _node;
+
+    /// If \p source is \p UsdResolveInfoTimeSamples, the time 
+    /// offset that maps time in the strongest resolved layer
+    /// to the stage.
+    /// If no offset applies, this will be the identity offset.
+    SdfLayerOffset _layerToStageOffset;
 
     /// The path to the prim that owns the attribute to query in
     /// \p layerStack to retrieve the strongest value opinion.
@@ -144,27 +158,13 @@ private:
     /// values.
     SdfPath _primPathInLayerStack;
 
-    /// The layer in \p layerStack that provides the strongest time sample or
-    /// default opinion.
-    ///
-    /// This is valid only if \p source is either 
-    /// \p UsdResolveInfoSourceDefault or \p UsdResolveInfoTimeSamples.
-    SdfLayerHandle _layer;
-
-    /// If \p source is \p UsdResolveInfoTimeSamples, the time 
-    /// offset that maps time in the strongest resolved layer
-    /// to the stage.
-    /// If no offset applies, this will be the identity offset.
-    SdfLayerOffset _layerToStageOffset;
+    /// The source of the associated attribute's value.
+    UsdResolveInfoSource _source;
 
     /// If \p source is \p UsdResolveInfoSourceNone or 
     /// \p UsdResolveInfoSourceFallback, this indicates whether or not
     /// this due to the value being blocked.
     bool _valueIsBlocked;
-
-    /// The node within the containing PcpPrimIndex that provided
-    /// the strongest value opinion.
-    PcpNodeRef _node;
 
     friend class UsdAttribute;
     friend class UsdStage;
