@@ -215,6 +215,22 @@ UsdImagingMaterialAdapter::_RemovePrim(
     index->RemoveSprim(HdPrimTypeTokens->material, cachePath);
 }
 
+/* virtual */
+void
+UsdImagingMaterialAdapter::ProcessPrimResync(
+        SdfPath const& cachePath,
+        UsdImagingIndexProxy *index)
+{
+    // Since we're resyncing a material, we can use the cache path as a
+    // usd path.  We need to resync dependents to make sure rprims bound to
+    // this material are resynced; this is necessary to make sure the material
+    // is repopulated, since we don't directly populate materials.
+    SdfPath const& usdPath = cachePath;
+    _ResyncDependents(usdPath, index);
+
+    UsdImagingPrimAdapter::ProcessPrimResync(cachePath, index);
+}
+
 VtValue 
 UsdImagingMaterialAdapter::GetMaterialResource(UsdPrim const &prim,
                                                SdfPath const& cachePath, 
