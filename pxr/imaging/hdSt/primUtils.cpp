@@ -549,9 +549,9 @@ HdStPopulateConstantPrimvars(
         GfMatrix4d transform = delegate->GetTransform(id);
         sharedData->bounds.SetMatrix(transform); // for CPU frustum culling
 
-        HdBufferSourceSharedPtr source(new HdVtBufferSource(
-                                           HdTokens->transform,
-                                           transform));
+        HdBufferSourceSharedPtr source = std::make_shared<HdVtBufferSource>(
+            HdTokens->transform, transform);
+
         sources.push_back(source);
         source.reset(new HdVtBufferSource(HdTokens->transformInverse,
                                           transform.GetInverse()));
@@ -605,31 +605,31 @@ HdStPopulateConstantPrimvars(
         sharedData->bounds.SetRange(prim->GetExtent(delegate));
 
         GfVec3d const & localMin = drawItem->GetBounds().GetBox().GetMin();
-        HdBufferSourceSharedPtr sourceMin(new HdVtBufferSource(
+        HdBufferSourceSharedPtr sourceMin = std::make_shared<HdVtBufferSource>(
                                            HdTokens->bboxLocalMin,
                                            VtValue(GfVec4f(
                                                localMin[0],
                                                localMin[1],
                                                localMin[2],
-                                               1.0f))));
+                                               1.0f)));
         sources.push_back(sourceMin);
 
         GfVec3d const & localMax = drawItem->GetBounds().GetBox().GetMax();
-        HdBufferSourceSharedPtr sourceMax(new HdVtBufferSource(
+        HdBufferSourceSharedPtr sourceMax = std::make_shared<HdVtBufferSource>(
                                            HdTokens->bboxLocalMax,
                                            VtValue(GfVec4f(
                                                localMax[0],
                                                localMax[1],
                                                localMax[2],
-                                               1.0f))));
+                                               1.0f)));
         sources.push_back(sourceMax);
     }
 
     if (HdChangeTracker::IsPrimIdDirty(*dirtyBits, id)) {
         int32_t primId = prim->GetPrimId();
-        HdBufferSourceSharedPtr source(new HdVtBufferSource(
+        HdBufferSourceSharedPtr source = std::make_shared<HdVtBufferSource>(
                                            HdTokens->primID,
-                                           VtValue(primId)));
+                                           VtValue(primId));
         sources.push_back(source);
     }
 
@@ -654,9 +654,9 @@ HdStPopulateConstantPrimvars(
                     // Given that this is a constant primvar, if it is
                     // holding VtArray then use that as a single array
                     // value rather than as one value per element.
-                    HdBufferSourceSharedPtr source(
-                        new HdVtBufferSource(pv.name, value,
-                            value.IsArrayValued() ? value.GetArraySize() : 1));
+                    HdBufferSourceSharedPtr source =
+                        std::make_shared<HdVtBufferSource>(pv.name, value,
+                            value.IsArrayValued() ? value.GetArraySize() : 1);
 
                     TF_VERIFY(source->GetTupleType().type != HdTypeInvalid);
                     TF_VERIFY(source->GetTupleType().count > 0);
@@ -849,9 +849,8 @@ HdStUpdateInstancerData(
             }
 
             HdBufferSourceSharedPtrVector sources;
-            HdBufferSourceSharedPtr source(
-                new HdVtBufferSource(HdInstancerTokens->instanceIndices,
-                    VtValue(instanceIndices)));
+            HdBufferSourceSharedPtr source = std::make_shared<HdVtBufferSource>(
+                HdInstancerTokens->instanceIndices, VtValue(instanceIndices));
             sources.push_back(source);
             source.reset(
                 new HdVtBufferSource(HdInstancerTokens->culledInstanceIndices,
@@ -936,8 +935,8 @@ _GetBitmaskEncodedVisibilityBuffer(VtIntArray invisibleIndices,
         visibility[arrayIndex] &= ~(1 << bitIndex); // set bit to 0
     }
 
-    return HdBufferSourceSharedPtr(
-        new HdVtBufferSource(bufferName, VtValue(visibility), numUIntsNeeded));
+    return std::make_shared<HdVtBufferSource>(
+        bufferName, VtValue(visibility), numUIntsNeeded);
 }
 
 void HdStProcessTopologyVisibility(

@@ -62,7 +62,7 @@ HdStRenderPassShader::HdStRenderPassShader()
 HdStRenderPassShader::HdStRenderPassShader(TfToken const &glslfxFile)
     : HdStShaderCode()
     , _glslfxFile(glslfxFile)   // user-defined
-    , _glslfx(new HioGlslfx(glslfxFile))
+    , _glslfx(std::make_unique<HioGlslfx>(glslfxFile))
     , _hash(0)
     , _hashValid(false)
     , _cullStyle(HdCullStyleNothing)

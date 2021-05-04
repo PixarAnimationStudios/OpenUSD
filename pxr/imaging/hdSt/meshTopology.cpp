@@ -102,23 +102,22 @@ HdSt_MeshTopology::GetPointsIndexBuilderComputation()
     VtIntArray indices(numPoints);
     for (int i = 0; i < numPoints; ++i) indices[i] = i;
 
-    return HdBufferSourceSharedPtr(
-        new HdVtBufferSource(HdTokens->indices, VtValue(indices)));
+    return std::make_shared<HdVtBufferSource>(
+        HdTokens->indices, VtValue(indices));
 }
 
 HdBufferSourceSharedPtr
 HdSt_MeshTopology::GetTriangleIndexBuilderComputation(SdfPath const &id)
 {
-    return HdBufferSourceSharedPtr(
-        new HdSt_TriangleIndexBuilderComputation(this, id));
+    return std::make_shared<HdSt_TriangleIndexBuilderComputation>(this, id);
 }
 
 HdSt_QuadInfoBuilderComputationSharedPtr
 HdSt_MeshTopology::GetQuadInfoBuilderComputation(
     bool gpu, SdfPath const &id, HdStResourceRegistry *resourceRegistry)
 {
-    HdSt_QuadInfoBuilderComputationSharedPtr builder(
-        new HdSt_QuadInfoBuilderComputation(this, id));
+    HdSt_QuadInfoBuilderComputationSharedPtr builder =
+        std::make_shared<HdSt_QuadInfoBuilderComputation>(this, id);
 
     // store as a weak ptr.
     _quadInfoBuilder = builder;
@@ -130,8 +129,9 @@ HdSt_MeshTopology::GetQuadInfoBuilderComputation(
             return builder;
         }
 
-        HdBufferSourceSharedPtr quadrangulateTable(
-            new HdSt_QuadrangulateTableComputation(this, builder));
+        HdBufferSourceSharedPtr quadrangulateTable =
+            std::make_shared<HdSt_QuadrangulateTableComputation>(
+                this, builder);
 
         // allocate quadrangulation table on GPU
         HdBufferSpecVector bufferSpecs;
@@ -149,8 +149,8 @@ HdSt_MeshTopology::GetQuadInfoBuilderComputation(
 HdBufferSourceSharedPtr
 HdSt_MeshTopology::GetQuadIndexBuilderComputation(SdfPath const &id)
 {
-    return HdBufferSourceSharedPtr(
-        new HdSt_QuadIndexBuilderComputation(this, _quadInfoBuilder.lock(), id));
+    return std::make_shared<HdSt_QuadIndexBuilderComputation>(
+        this, _quadInfoBuilder.lock(), id);
 }
 
 HdBufferSourceSharedPtr
@@ -171,8 +171,8 @@ HdSt_MeshTopology::GetQuadrangulateComputation(
     // unregisterd computation.
     HdBufferSourceSharedPtr quadInfo = _quadInfoBuilder.lock();
 
-    return HdBufferSourceSharedPtr(
-        new HdSt_QuadrangulateComputation(this, source, quadInfo, id));
+    return std::make_shared<HdSt_QuadrangulateComputation>(
+        this, source, quadInfo, id);
 }
 
 HdComputationSharedPtr
@@ -184,24 +184,24 @@ HdSt_MeshTopology::GetQuadrangulateComputationGPU(
         // no need of quadrangulation.
         return HdComputationSharedPtr();
     }
-    return HdComputationSharedPtr(
-        new HdSt_QuadrangulateComputationGPU(this, name, dataType, id));
+    return std::make_shared<HdSt_QuadrangulateComputationGPU>(
+        this, name, dataType, id);
 }
 
 HdBufferSourceSharedPtr
 HdSt_MeshTopology::GetQuadrangulateFaceVaryingComputation(
     HdBufferSourceSharedPtr const &source, SdfPath const &id)
 {
-    return HdBufferSourceSharedPtr(
-        new HdSt_QuadrangulateFaceVaryingComputation(this, source, id));
+    return std::make_shared<HdSt_QuadrangulateFaceVaryingComputation>(
+        this, source, id);
 }
 
 HdBufferSourceSharedPtr
 HdSt_MeshTopology::GetTriangulateFaceVaryingComputation(
     HdBufferSourceSharedPtr const &source, SdfPath const &id)
 {
-    return HdBufferSourceSharedPtr(
-        new HdSt_TriangulateFaceVaryingComputation(this, source, id));
+    return std::make_shared<HdSt_TriangulateFaceVaryingComputation>(
+        this, source, id);
 }
 
 bool

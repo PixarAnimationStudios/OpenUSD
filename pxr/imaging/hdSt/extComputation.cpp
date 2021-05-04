@@ -124,8 +124,8 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
                                                 GetId(), inputName);
         size_t arraySize =
             inputValue.IsArrayValued() ? inputValue.GetArraySize() : 1;
-        HdBufferSourceSharedPtr inputSource = HdBufferSourceSharedPtr(
-                    new HdVtBufferSource(inputName, inputValue, arraySize));
+        HdBufferSourceSharedPtr inputSource = std::make_shared<HdVtBufferSource>
+            (inputName, inputValue, arraySize);
         if (inputSource->IsValid()) {
             inputs.push_back(inputSource);
         } else {

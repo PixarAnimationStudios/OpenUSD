@@ -536,8 +536,8 @@ HdSt_Osd3Subdivision::CreateTopologyComputation(HdSt_MeshTopology *topology,
                                               int level,
                                               SdfPath const &id)
 {
-    return HdBufferSourceSharedPtr(new HdSt_Osd3TopologyComputation(
-                                       this, topology, adaptive, level, id));
+    return std::make_shared<HdSt_Osd3TopologyComputation>(
+        this, topology, adaptive, level, id);
 
 }
 
@@ -546,8 +546,8 @@ HdBufferSourceSharedPtr
 HdSt_Osd3Subdivision::CreateIndexComputation(HdSt_MeshTopology *topology,
     HdBufferSourceSharedPtr const &osdTopology)
 {
-    return HdBufferSourceSharedPtr(new HdSt_Osd3IndexComputation(
-                                       this, topology, osdTopology));
+    return std::make_shared<HdSt_Osd3IndexComputation>(
+        this, topology, osdTopology);
 }
 
 /*virtual*/
@@ -555,8 +555,8 @@ HdBufferSourceSharedPtr
 HdSt_Osd3Subdivision::CreateFvarIndexComputation(HdSt_MeshTopology *topology,
     HdBufferSourceSharedPtr const &osdTopology, int channel)
 {
-    return HdBufferSourceSharedPtr(new HdSt_Osd3FvarIndexComputation(
-                                       this, topology, osdTopology, channel));
+    return std::make_shared<HdSt_Osd3FvarIndexComputation>(
+        this, topology, osdTopology, channel);
 }
 
 /*virtual*/
@@ -567,9 +567,8 @@ HdSt_Osd3Subdivision::CreateRefineComputation(HdSt_MeshTopology *topology,
     HdSt_MeshTopology::Interpolation interpolation,
     int fvarChannel)
 {
-    return HdBufferSourceSharedPtr(
-        new HdSt_OsdRefineComputation<HdSt_OsdCpuVertexBuffer>(
-            topology, source, osdTopology, interpolation, fvarChannel));
+    return std::make_shared<HdSt_OsdRefineComputation<HdSt_OsdCpuVertexBuffer>>(
+        topology, source, osdTopology, interpolation, fvarChannel);
 }
 
 /*virtual*/
@@ -580,8 +579,8 @@ HdSt_Osd3Subdivision::CreateRefineComputationGPU(HdSt_MeshTopology *topology,
     HdSt_MeshTopology::Interpolation interpolation,
     int fvarChannel)
 {
-    return HdComputationSharedPtr(new HdSt_OsdRefineComputationGPU(
-        topology, name, dataType, interpolation, fvarChannel));
+    return std::make_shared<HdSt_OsdRefineComputationGPU>(
+        topology, name, dataType, interpolation, fvarChannel);
 }
 
 #if HDST_ENABLE_GPU_SUBDIVISION
@@ -853,9 +852,9 @@ HdSt_Osd3IndexComputation::Resolve()
         VtArray<int> indices(ptableSize);
         memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
 
-        HdBufferSourceSharedPtr patchIndices(
-            new HdVtBufferSource(HdTokens->indices, VtValue(indices),
-                                 arraySize));
+        HdBufferSourceSharedPtr patchIndices =
+            std::make_shared<HdVtBufferSource>(
+                HdTokens->indices, VtValue(indices), arraySize);
 
         _SetResult(patchIndices);
 
@@ -865,8 +864,9 @@ HdSt_Osd3IndexComputation::Resolve()
         VtArray<GfVec3i> indices(ptableSize/3);
         memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
 
-        HdBufferSourceSharedPtr triIndices(
-            new HdVtBufferSource(HdTokens->indices, VtValue(indices)));
+        HdBufferSourceSharedPtr triIndices =
+            std::make_shared<HdVtBufferSource>(
+                HdTokens->indices, VtValue(indices));
         _SetResult(triIndices);
 
         _PopulateUniformPrimitiveBuffer(patchTable);
@@ -876,8 +876,9 @@ HdSt_Osd3IndexComputation::Resolve()
         memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
 
         // refined quads index buffer
-        HdBufferSourceSharedPtr quadIndices(
-            new HdVtBufferSource(HdTokens->indices, VtValue(indices)));
+        HdBufferSourceSharedPtr quadIndices =
+            std::make_shared<HdVtBufferSource>(
+                HdTokens->indices, VtValue(indices));
         _SetResult(quadIndices);
 
         _PopulateUniformPrimitiveBuffer(patchTable);
@@ -1102,8 +1103,9 @@ HdSt_Osd3FvarIndexComputation::Resolve()
         memcpy(indices.data(), firstIndex, 
                arraySize * numPatches * sizeof(int));
 
-        HdBufferSourceSharedPtr patchIndices(
-            new HdVtBufferSource(_indicesName, VtValue(indices), arraySize));
+        HdBufferSourceSharedPtr patchIndices =
+            std::make_shared<HdVtBufferSource>(
+                _indicesName, VtValue(indices), arraySize);
 
         _SetResult(patchIndices);
         _PopulateFvarPatchParamBuffer(patchTable);
@@ -1112,16 +1114,16 @@ HdSt_Osd3FvarIndexComputation::Resolve()
         VtArray<GfVec3i> indices(numPatches);
         memcpy(indices.data(), firstIndex, 3 * numPatches * sizeof(int));
 
-        HdBufferSourceSharedPtr triIndices(
-            new HdVtBufferSource(_indicesName, VtValue(indices)));
+        HdBufferSourceSharedPtr triIndices =
+            std::make_shared<HdVtBufferSource>(_indicesName, VtValue(indices));
         _SetResult(triIndices);
     } else {
         // populate refined quad indices.
         VtArray<GfVec4i> indices(numPatches);
         memcpy(indices.data(), firstIndex, 4 * numPatches * sizeof(int));
 
-        HdBufferSourceSharedPtr quadIndices(
-            new HdVtBufferSource(_indicesName, VtValue(indices)));
+        HdBufferSourceSharedPtr quadIndices =
+            std::make_shared<HdVtBufferSource>(_indicesName, VtValue(indices));
         _SetResult(quadIndices);
     }
 

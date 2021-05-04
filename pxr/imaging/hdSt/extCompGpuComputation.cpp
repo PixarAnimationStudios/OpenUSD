@@ -366,20 +366,19 @@ HdStExtCompGpuComputation::CreateGpuComputation(
 
     // There is a companion resource that requires allocation
     // and resolution.
-    HdStExtCompGpuComputationResourceSharedPtr resource(
-            new HdStExtCompGpuComputationResource(
-                outputBufferSpecs,
-                shader,
-                inputs,
-                resourceRegistry));
+    HdStExtCompGpuComputationResourceSharedPtr resource =
+        std::make_shared<HdStExtCompGpuComputationResource>(
+            outputBufferSpecs,
+            shader,
+            inputs,
+            resourceRegistry);
 
-    return HdStExtCompGpuComputationSharedPtr(
-                new HdStExtCompGpuComputation(
-                        sourceComp->GetId(),
-                        resource,
-                        compPrimvars,
-                        sourceComp->GetDispatchCount(),
-                        sourceComp->GetElementCount()));
+    return std::make_shared<HdStExtCompGpuComputation>(
+        sourceComp->GetId(),
+        resource,
+        compPrimvars,
+        sourceComp->GetDispatchCount(),
+        sourceComp->GetElementCount());
 }
 
 void
@@ -440,10 +439,10 @@ HdSt_GetExtComputationPrimvarsComputations(
                                 sourceComp,
                                 compPrimvars);
 
-                        HdBufferSourceSharedPtr gpuComputationSource(
-                                new HdStExtCompGpuComputationBufferSource(
-                                    HdBufferSourceSharedPtrVector(),
-                                    gpuComputation->GetResource()));
+                        HdBufferSourceSharedPtr gpuComputationSource =
+                        std::make_shared<HdStExtCompGpuComputationBufferSource>(
+                            HdBufferSourceSharedPtrVector(),
+                            gpuComputation->GetResource());
 
                         separateComputationSources->push_back(
                                                         gpuComputationSource);
@@ -454,12 +453,12 @@ HdSt_GetExtComputationPrimvarsComputations(
                     }
 
                     // Create a primvar buffer source for the computation
-                    HdBufferSourceSharedPtr primvarBufferSource(
-                            new HdStExtCompGpuPrimvarBufferSource(
-                                compPrimvar.name,
-                                compPrimvar.valueType,
-                                sourceComp->GetElementCount(),
-                                sourceComp->GetId()));
+                    HdBufferSourceSharedPtr primvarBufferSource =
+                        std::make_shared<HdStExtCompGpuPrimvarBufferSource>(
+                            compPrimvar.name,
+                            compPrimvar.valueType,
+                            sourceComp->GetElementCount(),
+                            sourceComp->GetId());
 
                     // Gpu primvar sources only need to reserve space
                     reserveOnlySources->push_back(primvarBufferSource);
@@ -486,12 +485,12 @@ HdSt_GetExtComputationPrimvarsComputations(
                     }
 
                     // Create a primvar buffer source for the computation
-                    HdBufferSourceSharedPtr primvarBufferSource(
-                            new HdExtCompPrimvarBufferSource(
-                                compPrimvar.name,
-                                cpuComputation,
-                                compPrimvar.sourceComputationOutputName,
-                                compPrimvar.valueType));
+                    HdBufferSourceSharedPtr primvarBufferSource =
+                        std::make_shared<HdExtCompPrimvarBufferSource>(
+                            compPrimvar.name,
+                            cpuComputation,
+                            compPrimvar.sourceComputationOutputName,
+                            compPrimvar.valueType);
 
                     // Cpu primvar sources need to allocate and commit data
                     sources->push_back(primvarBufferSource);

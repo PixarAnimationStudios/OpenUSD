@@ -70,11 +70,9 @@ _NewDrawBatch(HdStDrawItemInstance * drawItemInstance)
     GlfContextCaps const &caps = GlfContextCaps::GetInstance();
 
     if (caps.multiDrawIndirectEnabled) {
-        return HdSt_DrawBatchSharedPtr(
-            new HdSt_IndirectDrawBatch(drawItemInstance));
+        return std::make_shared<HdSt_IndirectDrawBatch>(drawItemInstance);
     } else {
-        return HdSt_DrawBatchSharedPtr(
-            new HdSt_ImmediateDrawBatch(drawItemInstance));
+        return std::make_shared<HdSt_ImmediateDrawBatch>(drawItemInstance);
     }
 }
 

@@ -336,10 +336,9 @@ HdSt_BasisCurvesIndexBuilderComputation::Resolve()
         }
     }
 
-    _SetResult(HdBufferSourceSharedPtr(
-                   new HdVtBufferSource(
-                       HdTokens->indices,
-                       VtValue(result._indices))));
+    _SetResult(std::make_shared<HdVtBufferSource>(
+                                HdTokens->indices, 
+                                VtValue(result._indices)));
 
     // the primitive param buffer is used only when the basis curve
     // has uniform primvars.

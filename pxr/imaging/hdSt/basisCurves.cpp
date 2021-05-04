@@ -665,10 +665,10 @@ AddVertexOrVaryingPrimvarSource(const TfToken &name,
     VtArray<T> array = value.Get<VtArray<T>>();
     // Empty primvar arrays are ignored, except for points
     if (!array.empty() || name == HdTokens->points) {
-        sources->push_back(HdBufferSourceSharedPtr(
+        sources->push_back(
             std::make_shared<HdSt_BasisCurvesPrimvarInterpolaterComputation<T>>(
                 topology, array, name, interpolation, fallbackValue, 
-                HdGetValueTupleType(VtValue(array)).type)));
+                HdGetValueTupleType(VtValue(array)).type));
     }
 }
 
@@ -736,8 +736,7 @@ void ProcessVertexOrVaryingPrimvar(
     } else {
         TF_WARN("Type of vertex or varying primvar %s not yet fully supported", 
                 name.GetText());
-        sources->push_back(HdBufferSourceSharedPtr(
-            std::make_shared<HdVtBufferSource>(name, value)));
+        sources->push_back(std::make_shared<HdVtBufferSource>(name, value));
     }
 }
 } // anonymous namespace
@@ -999,8 +998,8 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
 
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
         if (!value.IsEmpty()) {
-            sources.push_back(HdBufferSourceSharedPtr(
-                              new HdVtBufferSource(primvar.name, value)));
+            sources.push_back(std::make_shared<HdVtBufferSource>(
+                primvar.name, value));
                               
             if (primvar.name == HdTokens->displayOpacity) {
                 _displayOpacity = true;

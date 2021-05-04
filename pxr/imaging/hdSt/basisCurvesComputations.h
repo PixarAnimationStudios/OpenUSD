@@ -234,8 +234,8 @@ public:
             }
         }
 
-        _SetResult(HdBufferSourceSharedPtr(
-            std::make_shared<HdVtBufferSource>(_name, VtValue(primvars))));
+        _SetResult(std::make_shared<HdVtBufferSource>(
+            _name, VtValue(primvars)));
 
         _SetResolved();
         return true;

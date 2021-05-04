@@ -256,8 +256,8 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
 
         if (!value.IsEmpty()) {
-            HdBufferSourceSharedPtr source(
-                new HdVtBufferSource(primvar.name, value));
+            HdBufferSourceSharedPtr source =
+                std::make_shared<HdVtBufferSource>(primvar.name, value);
             sources.push_back(source);
 
             if (primvar.name == HdTokens->displayOpacity) {
@@ -359,7 +359,7 @@ HdStPoints::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
     // We only support smoothHull for now, everything else points to it.
     // TODO: Handle other styles
     if (!_smoothHullRepr) {
-        _smoothHullRepr = HdReprSharedPtr(new HdRepr());
+        _smoothHullRepr = std::make_shared<HdRepr>();
         *dirtyBits |= HdChangeTracker::NewRepr;
 
         _PointsReprConfig::DescArray const &descs = _GetReprDesc(reprToken);

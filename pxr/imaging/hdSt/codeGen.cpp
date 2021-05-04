@@ -475,8 +475,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     bool hasFS  = (!fragmentShader.empty());
 
     // create GLSL program.
-    HdStGLSLProgramSharedPtr glslProgram(
-        new HdStGLSLProgram(HdTokens->drawingShader, registry));
+    HdStGLSLProgramSharedPtr glslProgram =
+        std::make_shared<HdStGLSLProgram>(HdTokens->drawingShader, registry);
 
     // initialize autogen source buckets
     _genCommon.str(""); _genVS.str(""); _genTCS.str(""); _genTES.str("");
@@ -1008,8 +1008,8 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     _genCS << "}\n";
     
     // create GLSL program.
-    HdStGLSLProgramSharedPtr glslProgram(
-        new HdStGLSLProgram(HdTokens->computeShader, registry));
+    HdStGLSLProgramSharedPtr glslProgram =
+        std::make_shared<HdStGLSLProgram>(HdTokens->computeShader, registry);
     
     // compile shaders
     {

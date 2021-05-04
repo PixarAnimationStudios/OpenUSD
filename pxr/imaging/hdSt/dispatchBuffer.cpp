@@ -190,16 +190,14 @@ HdStDispatchBuffer::HdStDispatchBuffer(
     HgiBufferHandle buffer = _resourceRegistry->GetHgi()->CreateBuffer(bufDesc);
 
     // monolithic resource
-    _entireResource = HdStBufferResourceSharedPtr(
-        new HdStBufferResource(
-            role, {HdTypeInt32, 1},
-            /*offset=*/0, stride));
+    _entireResource = std::make_shared<HdStBufferResource>(
+        role, HdTupleType{HdTypeInt32, 1}, /*offset=*/0, stride);
     _entireResource->SetAllocation(buffer, dataSize);
 
     // create a buffer array range, which aggregates all views
     // (will be added by AddBufferResourceView)
-    _bar = HdStBufferArrayRangeSharedPtr(
-        new Hd_DispatchBufferArrayRange(resourceRegistry, this));
+    _bar = std::make_shared<Hd_DispatchBufferArrayRange>(
+        resourceRegistry, this);
 }
 
 HdStDispatchBuffer::~HdStDispatchBuffer()
@@ -319,9 +317,9 @@ HdStDispatchBuffer::_AddResource(TfToken const& name,
         }
     }
 
-    HdStBufferResourceSharedPtr bufferRes = HdStBufferResourceSharedPtr(
-        new HdStBufferResource(GetRole(), tupleType,
-                                 offset, stride));
+    HdStBufferResourceSharedPtr bufferRes = 
+        std::make_shared<HdStBufferResource>(
+            GetRole(), tupleType, offset, stride);
 
     _resourceList.emplace_back(name, bufferRes);
     return bufferRes;

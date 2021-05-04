@@ -44,7 +44,8 @@ HdStGLSLFXShader::~HdStGLSLFXShader()
 void
 HdStGLSLFXShader::Reload()
 {
-    HioGlslfxSharedPtr newGlslFx(new HioGlslfx(_glslfx->GetFilePath()));
+    HioGlslfxSharedPtr newGlslFx =
+        std::make_shared<HioGlslfx>(_glslfx->GetFilePath());
 
     if (newGlslFx->IsValid())
     {

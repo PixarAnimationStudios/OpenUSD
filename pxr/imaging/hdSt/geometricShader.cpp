@@ -379,19 +379,18 @@ HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
 
     if (geometricShaderInstance.IsFirstInstance()) {
         geometricShaderInstance.SetValue(
-            HdSt_GeometricShaderSharedPtr(
-                new HdSt_GeometricShader(
-                    shaderKey.GetGlslfxString(),
-                    shaderKey.GetPrimitiveType(),
-                    shaderKey.GetCullStyle(),
-                    shaderKey.UseHardwareFaceCulling(),
-                    shaderKey.HasMirroredTransform(),
-                    shaderKey.IsDoubleSided(),
-                    shaderKey.GetPolygonMode(),
-                    shaderKey.IsFrustumCullingPass(),
-                    shaderKey.GetFvarPatchType(),
-                    /*debugId=*/SdfPath(),
-                    shaderKey.GetLineWidth())));
+            std::make_shared<HdSt_GeometricShader>(
+                shaderKey.GetGlslfxString(),
+                shaderKey.GetPrimitiveType(),
+                shaderKey.GetCullStyle(),
+                shaderKey.UseHardwareFaceCulling(),
+                shaderKey.HasMirroredTransform(),
+                shaderKey.IsDoubleSided(),
+                shaderKey.GetPolygonMode(),
+                shaderKey.IsFrustumCullingPass(),
+                shaderKey.GetFvarPatchType(),
+                /*debugId=*/SdfPath(),
+                shaderKey.GetLineWidth()));
     }
     return geometricShaderInstance.GetValue();
 }

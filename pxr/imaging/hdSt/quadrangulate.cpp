@@ -182,9 +182,8 @@ HdSt_QuadIndexBuilderComputation::Resolve()
             &primitiveParam,
             &quadsEdgeIndices);
 
-    _SetResult(HdBufferSourceSharedPtr(new HdVtBufferSource(
-                                           HdTokens->indices,
-                                           VtValue(quadsFaceVertexIndices))));
+    _SetResult(std::make_shared<HdVtBufferSource>(HdTokens->indices,
+                                           VtValue(quadsFaceVertexIndices)));
 
     _primitiveParam.reset(new HdVtBufferSource(HdTokens->primitiveParam,
                                                VtValue(primitiveParam)));
@@ -276,8 +275,8 @@ HdSt_QuadrangulateTableComputation::Resolve()
                   quadInfo->numAdditionalPoints);
 
         // GPU quadrangulate table
-        HdBufferSourceSharedPtr table(new HdVtBufferSource(HdTokens->quadInfo,
-                                                           VtValue(array)));
+        HdBufferSourceSharedPtr table = std::make_shared<HdVtBufferSource>(
+            HdTokens->quadInfo, VtValue(array));
 
         _SetResult(table);
     } else {
@@ -352,10 +351,9 @@ HdSt_QuadrangulateComputation::Resolve()
         HD_PERF_COUNTER_ADD(HdPerfTokens->quadrangulatedVerts,
                 quadInfo->numAdditionalPoints);
 
-        _SetResult(HdBufferSourceSharedPtr(
-                    new HdVtBufferSource(
+        _SetResult(std::make_shared<HdVtBufferSource>(
                         _source->GetName(),
-                        result)));
+                        result));
     } else {
         _SetResult(_source);
     }
@@ -425,10 +423,9 @@ HdSt_QuadrangulateFaceVaryingComputation::Resolve()
                 _source->GetNumElements(),
                 _source->GetTupleType().type,
                 &result)) {
-        _SetResult(HdBufferSourceSharedPtr(
-                    new HdVtBufferSource(
+        _SetResult(std::make_shared<HdVtBufferSource>(
                         _source->GetName(),
-                        result)));
+                        result));
     } else {
         _SetResult(_source);
     }

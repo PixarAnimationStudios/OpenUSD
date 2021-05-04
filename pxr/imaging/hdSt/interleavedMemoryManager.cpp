@@ -333,8 +333,8 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_AddResource(
         }
     }
 
-    HdStBufferResourceSharedPtr bufferRes = HdStBufferResourceSharedPtr(
-        new HdStBufferResource(GetRole(), tupleType, offset, stride));
+    HdStBufferResourceSharedPtr bufferRes = std::make_shared<HdStBufferResource>
+        (GetRole(), tupleType, offset, stride);
 
     _resourceList.emplace_back(name, bufferRes);
     return bufferRes;

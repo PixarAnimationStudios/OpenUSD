@@ -57,7 +57,7 @@ HioGlslfx *HdStMaterial::_fallbackGlslfx = nullptr;
 
 HdStMaterial::HdStMaterial(SdfPath const &id)
  : HdMaterial(id)
- , _surfaceShader(new HdStSurfaceShader)
+ , _surfaceShader(std::make_shared<HdStSurfaceShader>())
  , _isInitialized(false)
  , _hasPtex(false)
  , _hasLimitSurfaceEvaluation(false)

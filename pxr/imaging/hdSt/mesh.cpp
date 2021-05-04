@@ -622,7 +622,8 @@ HdStMesh::_PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegist
         resourceRegistry->RegisterVertexAdjacency(_topologyId);
 
     if (adjacencyInstance.IsFirstInstance()) {
-        Hd_VertexAdjacencySharedPtr adjacency(new Hd_VertexAdjacency());
+         Hd_VertexAdjacencySharedPtr adjacency =
+             std::make_shared<Hd_VertexAdjacency>();
 
         // create adjacency table for smooth normals
         HdBufferSourceSharedPtr adjacencyComputation =
@@ -632,9 +633,8 @@ HdStMesh::_PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegist
 
         // also send adjacency table to gpu
         HdBufferSourceSharedPtr adjacencyForGpuComputation =
-            HdBufferSourceSharedPtr(
-                new Hd_AdjacencyBufferSource(
-                    adjacency.get(), adjacencyComputation));
+            std::make_shared<Hd_AdjacencyBufferSource>(
+                adjacency.get(), adjacencyComputation);
 
         HdBufferSpecVector bufferSpecs;
         adjacencyForGpuComputation->GetBufferSpecs(&bufferSpecs);
@@ -916,8 +916,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         VtValue value =  GetPrimvar(sceneDelegate, primvar.name);
 
         if (!value.IsEmpty()) {
-            HdBufferSourceSharedPtr source(
-                new HdVtBufferSource(primvar.name, value));
+            HdBufferSourceSharedPtr source =
+                std::make_shared<HdVtBufferSource>(primvar.name, value);
 
             // verify primvar length -- it is alright to have more data than we
             // index into; the inverse is when we issue a warning and skip
@@ -1013,13 +1013,13 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             // Smooth normals will compute normals as the same datatype
             // as points, unless we ask for packed normals.
             // This is unfortunate; can we force them to be float?
-            HdComputationSharedPtr smoothNormalsComputation(
-                new HdSt_SmoothNormalsComputationGPU(
+            HdComputationSharedPtr smoothNormalsComputation =
+                std::make_shared<HdSt_SmoothNormalsComputationGPU>(
                     _vertexAdjacency.get(),
                     HdTokens->points,
                     generatedNormalsName,
                     _pointsDataType,
-                    usePackedSmoothNormals));
+                    usePackedSmoothNormals);
             computations.emplace_back(
                 smoothNormalsComputation, _NormalsCompQueue);
 
@@ -1321,8 +1321,8 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
         }
         
         if (!value.IsEmpty()) {
-            HdBufferSourceSharedPtr source(
-                new HdVtBufferSource(primvar.name, value));
+            HdBufferSourceSharedPtr source =
+                std::make_shared<HdVtBufferSource>(primvar.name, value);
 
             // verify primvar length
             if ((int)source->GetNumElements() != numFaceVaryings && 
@@ -1441,8 +1441,8 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
 
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
         if (!value.IsEmpty()) {
-            HdBufferSourceSharedPtr source(
-                new HdVtBufferSource(primvar.name, value));
+            HdBufferSourceSharedPtr source =
+                std::make_shared<HdVtBufferSource>(primvar.name, value);
 
             // verify primvar length
             if ((int)source->GetNumElements() != numFaces) {
@@ -1480,15 +1480,15 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
             // Flat normals will compute normals as the same datatype
             // as points, unless we ask for packed normals.
             // This is unfortunate; can we force them to be float?
-            HdComputationSharedPtr flatNormalsComputation(
-                new HdSt_FlatNormalsComputationGPU(
+            HdComputationSharedPtr flatNormalsComputation =
+                std::make_shared<HdSt_FlatNormalsComputationGPU>(
                     drawItem->GetTopologyRange(),
                     drawItem->GetVertexPrimvarRange(),
                     numFaces,
                     HdTokens->points,
                     generatedNormalsName,
                     _pointsDataType,
-                    usePackedNormals));
+                    usePackedNormals);
             computations.emplace_back(flatNormalsComputation, _NormalsCompQueue);
         }
     }
