@@ -111,6 +111,9 @@ pxr_library(usdGeom
     DOXYGEN_FILES
         overview.dox
         snippets.dox
+        images/USDCurveBasisMatrix.png
+        images/USDCurveHydra.png
+        images/USDCurvePrimvars.png
 )
 
 pxr_test_scripts(

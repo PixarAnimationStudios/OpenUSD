@@ -42,4 +42,8 @@ pxr_library(usdRender
 
     DOXYGEN_FILES
         overview.dox
+        images/aperture.svg
+        images/dataWindow.svg
+        images/nonSquarePixels.svg
+        images/pixelAspectRatio.svg
 )
