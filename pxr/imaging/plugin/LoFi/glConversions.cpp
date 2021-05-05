@@ -37,6 +37,11 @@ static const HioFormat FORMAT_DESC[] =
     HioFormatFloat32Vec2,   // HdFormatFloat32Vec2,
     HioFormatFloat32Vec3,   // HdFormatFloat32Vec3,
     HioFormatFloat32Vec4,   // HdFormatFloat32Vec4,
+	
+	HioFormatInt16,         // HdFormatInt16,
+    HioFormatInt16Vec2,     // HdFormatInt16Vec2,
+    HioFormatInt16Vec3,     // HdFormatInt16Vec3,
+    HioFormatInt16Vec4,     // HdFormatInt16Vec4,
 
     HioFormatUInt16,        // HdFormatUInt16,
     HioFormatUInt16Vec2,    // HdFormatUInt16Vec2,
@@ -49,6 +54,7 @@ static const HioFormat FORMAT_DESC[] =
     HioFormatInt32Vec4,     // HdFormatInt32Vec4,
 
     HioFormatFloat32,       // HdFormatFloat32UInt8
+	
 };
 static_assert(TfArraySize(FORMAT_DESC) ==
         HdFormatCount, "FORMAT_DESC to HdFormat enum mismatch");
