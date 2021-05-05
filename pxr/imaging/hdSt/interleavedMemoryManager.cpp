@@ -82,7 +82,7 @@ HdStInterleavedMemoryManager::GetResourceAllocation(
     TF_FOR_ALL(resIt, bufferArray_->GetResources()) {
         HdStBufferResourceSharedPtr const & resource = resIt->second;
 
-        HgiBufferHandle buffer = resource->GetId();
+        HgiBufferHandle buffer = resource->GetHandle();
 
         // XXX avoid double counting of resources shared within a buffer
         uint64_t id = buffer ? buffer->GetRawResource() : 0;
@@ -418,16 +418,16 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     // all HdBufferSources are sharing same VBO
 
     // allocate new one
-    // curId and oldId will be different when we are adopting ranges
+    // curBuf and oldBuf will be different when we are adopting ranges
     // from another buffer array.
-    HgiBufferHandle& oldId = GetResources().begin()->second->GetId();
+    HgiBufferHandle& oldBuf = GetResources().begin()->second->GetHandle();
 
     _StripedInterleavedBufferSharedPtr curRangeOwner_ =
         std::static_pointer_cast<_StripedInterleavedBuffer> (curRangeOwner);
 
-    HgiBufferHandle const& curId = 
-        curRangeOwner_->GetResources().begin()->second->GetId();
-    HgiBufferHandle newId;
+    HgiBufferHandle const& curBuf = 
+        curRangeOwner_->GetResources().begin()->second->GetHandle();
+    HgiBufferHandle newBuf;
 
     Hgi* hgi = _resourceRegistry->GetHgi();
     
@@ -436,17 +436,17 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
         HgiBufferDesc bufDesc;
         bufDesc.byteSize = totalSize;
         bufDesc.usage = HgiBufferUsageUniform;
-        newId = hgi->CreateBuffer(bufDesc);
+        newBuf = hgi->CreateBuffer(bufDesc);
     }
 
     // if old and new buffer exist, copy unchanged data
-    if (curId && newId) {
+    if (curBuf && newBuf) {
         int index = 0;
 
         size_t rangeCount = GetRangeCount();
 
         // pre-pass to combine consecutive buffer range relocation
-        HdStBufferRelocator relocator(curId, newId);
+        HdStBufferRelocator relocator(curBuf, newBuf);
         for (size_t rangeIdx = 0; rangeIdx < rangeCount; ++rangeIdx) {
             _StripedInterleavedBufferRangeSharedPtr range = _GetRangeSharedPtr(rangeIdx);
 
@@ -489,14 +489,14 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
             index += range->GetNumElements();
         }
     }
-    if (oldId) {
+    if (oldBuf) {
         // delete old buffer
-        hgi->DestroyBuffer(&oldId);
+        hgi->DestroyBuffer(&oldBuf);
     }
 
-    // update id to all buffer resources
+    // update allocation to all buffer resources
     TF_FOR_ALL(it, GetResources()) {
-        it->second->SetAllocation(newId, totalSize);
+        it->second->SetAllocation(newBuf, totalSize);
     }
 
     blitCmds->PopDebugGroup();
@@ -513,7 +513,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_DeallocateResources()
 {
     HdStBufferResourceSharedPtr resource = GetResource();
     if (resource) {
-        _resourceRegistry->GetHgi()->DestroyBuffer(&resource->GetId());
+        _resourceRegistry->GetHgi()->DestroyBuffer(&resource->GetHandle());
     }
 }
 
@@ -542,9 +542,10 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::GetResource() const
 
     if (TfDebug::IsEnabled(HD_SAFE_MODE)) {
         // make sure this buffer array has only one resource.
-        HgiBufferHandle const& id = _resourceList.begin()->second->GetId();
+        HgiBufferHandle const& buffer =
+                _resourceList.begin()->second->GetHandle();
         TF_FOR_ALL (it, _resourceList) {
-            if (it->second->GetId() != id) {
+            if (it->second->GetHandle() != buffer) {
                 TF_CODING_ERROR("GetResource(void) called on"
                                 "HdBufferArray having multiple GL resources");
             }
@@ -727,7 +728,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     HdStBufferResourceSharedPtr VBO =
         _stripedBuffer->GetResource(bufferSource->GetName());
 
-    if (!VBO || !VBO->GetId()) {
+    if (!VBO || !VBO->GetHandle()) {
         TF_CODING_ERROR("VBO doesn't exist for %s",
                         bufferSource->GetName().GetText());
         return;
@@ -758,7 +759,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
         (const unsigned char*)bufferSource->GetData();
 
     HgiBufferCpuToGpuOp blitOp;
-    blitOp.gpuDestinationBuffer = VBO->GetId();
+    blitOp.gpuDestinationBuffer = VBO->GetHandle();
     blitOp.sourceByteOffset = 0;
     blitOp.byteSize = dataSize;
 
@@ -788,12 +789,12 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::ReadData(
 
     HdStBufferResourceSharedPtr VBO = _stripedBuffer->GetResource(name);
 
-    if (!VBO || !VBO->GetId()) {
+    if (!VBO || !VBO->GetHandle()) {
         TF_CODING_ERROR("VBO doesn't exist for %s", name.GetText());
         return result;
     }
 
-    result = HdStGLUtils::ReadBuffer(VBO->GetId()->GetRawResource(),
+    result = HdStGLUtils::ReadBuffer(VBO->GetHandle()->GetRawResource(),
                                    VBO->GetTupleType(),
                                    VBO->GetOffset() + VBO->GetStride() * _index,
                                    VBO->GetStride(),

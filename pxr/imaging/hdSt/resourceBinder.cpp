@@ -33,8 +33,10 @@
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
+#include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -158,6 +160,28 @@ _ConcatLayout(const TfToken &token)
         + HdSt_ResourceBindingSuffixTokens->layout.GetString());
 }
 
+static
+TfTokenVector
+_GetInstancerFilterNames(HdStDrawItem const * drawItem)
+{
+    TfTokenVector filterNames = HdInstancer::GetBuiltinPrimvarNames();;
+
+    HdStShaderCodeSharedPtr materialShader = drawItem->GetMaterialShader();
+    if (materialShader) {
+        TfTokenVector const & names = materialShader->GetPrimvarNames();
+        filterNames.insert(filterNames.end(), names.begin(), names.end());
+    }
+
+    return filterNames;
+}
+
+static
+bool
+_TokenContainsString(const TfToken &token, const std::string &string)
+{
+    return (token.GetString().find(string) != std::string::npos);
+}
+
 void
 HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                                    HdStShaderCodeSharedPtrVector const &shaders,
@@ -251,6 +275,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
      // constant primvars are interleaved into single struct.
     _bindingMap[_tokens->constantPrimvars] = constantPrimvarBinding;
 
+    TfTokenVector filterNames = _GetInstancerFilterNames(drawItem);
+
     // instance primvar (per-instance)
     int instancerNumLevels = drawItem->GetInstancePrimvarNumLevels();
     metaDataOut->instancerNumLevels = instancerNumLevels;
@@ -263,6 +289,12 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
 
             TF_FOR_ALL (it, instanceBar->GetResources()) {
                 TfToken const& name = it->first;
+                // skip instance primvars that are not used in this batch.
+                if (std::find(filterNames.begin(), filterNames.end(), name)
+                                                        == filterNames.end()) {
+                    continue;
+                }
+
                 TfToken glName =  HdStGLConversions::GetGLSLIdentifier(name);
                 // non-interleaved, always create new binding.
                 HdBinding instancePrimvarBinding =
@@ -349,8 +381,13 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 _bindingMap[name] = HdBinding(HdBinding::INDEX_ATTR, 0);
             } else {
                 // We expect the following additional topology based info:
-                // - primitive parameter (for all tris, quads and patches) OR
+                // - primitive parameter (for all tris, quads and patches)
                 // - edge indices (for all tris, quads and patches)
+                // - fvar indices (for refined tris, quads, and patches with
+                //   face-varying primvars)
+                // - fvar patch params (for refined tris, quads, and patches 
+                //   with face-varying primvars)
+
                 HdBinding binding =
                     locator.GetBinding(arrayBufferBindingType, name);
                 _bindingMap[name] = binding;
@@ -368,6 +405,12 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     metaDataOut->primitiveParamBinding = bindingDecl;
                 } else if (name == HdTokens->edgeIndices) {
                     metaDataOut->edgeIndexBinding = bindingDecl;
+                } else if (_TokenContainsString(name,
+                           HdStTokens->fvarIndices.GetString())) {
+                    metaDataOut->fvarIndicesBindings.push_back(bindingDecl);
+                } else if (_TokenContainsString(name, 
+                           HdStTokens->fvarPatchParam.GetString())) {
+                    metaDataOut->fvarPatchParamBindings.push_back(bindingDecl);
                 } else {
                     TF_WARN("Unexpected topological resource '%s'\n",
                     name.GetText());
@@ -436,18 +479,33 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         HdStBufferArrayRangeSharedPtr fvarBar =
             std::static_pointer_cast<HdStBufferArrayRange>(fvarBar_);
 
+        TopologyToPrimvarVector const & fvarTopoToPvMap = 
+            drawItem->GetFvarTopologyToPrimvarVector();
+        
         TF_FOR_ALL (it, fvarBar->GetResources()) {
             TfToken const& name = it->first;
             TfToken glName =  HdStGLConversions::GetGLSLIdentifier(name);
+
             HdBinding fvarPrimvarBinding =
                 locator.GetBinding(arrayBufferBindingType, name);
             _bindingMap[name] = fvarPrimvarBinding;
             HdTupleType valueType = it->second->GetTupleType();
-                TfToken glType =
-                    HdStGLConversions::GetGLSLTypename(valueType.type);
+            TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
+
+            // Fine if no channel is found, might be unrefined primvar
+            int fvarChannel = 0;
+            for (size_t i = 0; i < fvarTopoToPvMap.size(); ++i) {
+                if (std::find(fvarTopoToPvMap[i].second.begin(), 
+                              fvarTopoToPvMap[i].second.end(),
+                              name) != fvarTopoToPvMap[i].second.end()) {
+                    fvarChannel = i;
+                }
+            }
+            
             metaDataOut->fvarData[fvarPrimvarBinding] =
-                MetaData::Primvar(/*name=*/glName,
-                                  /*type=*/glType);
+                MetaData::FvarPrimvar(/*name=*/glName,
+                                      /*type=*/glType,
+                                      /*channel=*/fvarChannel);
         }
     }
 
@@ -894,7 +952,7 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
 
     // it is possible that the buffer has not been initialized when
     // the instanceIndex is empty (e.g. FX points. see bug 120354)
-    if (!buffer->GetId()) return;
+    if (!buffer->GetHandle()) return;
 
     HdBinding binding = GetBinding(name, level);
     HdBinding::Type type = binding.GetType();
@@ -907,7 +965,7 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
             static_cast<intptr_t>(offset));
     switch(type) {
     case HdBinding::VERTEX_ATTR:
-        glBindBuffer(GL_ARRAY_BUFFER, buffer->GetId()->GetRawResource());
+        glBindBuffer(GL_ARRAY_BUFFER, buffer->GetHandle()->GetRawResource());
         glVertexAttribPointer(loc,
                   _GetNumComponents(tupleType.type),
                   HdStGLConversions::GetGLAttribType(tupleType.type),
@@ -919,7 +977,7 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
         glEnableVertexAttribArray(loc);
         break;
     case HdBinding::DRAW_INDEX:
-        glBindBuffer(GL_ARRAY_BUFFER, buffer->GetId()->GetRawResource());
+        glBindBuffer(GL_ARRAY_BUFFER, buffer->GetHandle()->GetRawResource());
         glVertexAttribIPointer(loc,
                                HdGetComponentCount(tupleType.type),
                                GL_INT,
@@ -929,7 +987,7 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
         glEnableVertexAttribArray(loc);
         break;
     case HdBinding::DRAW_INDEX_INSTANCE:
-        glBindBuffer(GL_ARRAY_BUFFER, buffer->GetId()->GetRawResource());
+        glBindBuffer(GL_ARRAY_BUFFER, buffer->GetHandle()->GetRawResource());
         glVertexAttribIPointer(loc,
                                HdGetComponentCount(tupleType.type),
                                GL_INT,
@@ -944,7 +1002,7 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
         glEnableVertexAttribArray(loc);
         break;
     case HdBinding::DRAW_INDEX_INSTANCE_ARRAY:
-        glBindBuffer(GL_ARRAY_BUFFER, buffer->GetId()->GetRawResource());
+        glBindBuffer(GL_ARRAY_BUFFER, buffer->GetHandle()->GetRawResource());
         // instancerNumLevels is represented by the tuple size.
         // We unroll this to an array of int[1] attributes.
         for (size_t i = 0; i < buffer->GetTupleType().count; ++i) {
@@ -960,37 +1018,39 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         break;
     case HdBinding::INDEX_ATTR:
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,buffer->GetId()->GetRawResource());
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,
+                     buffer->GetHandle()->GetRawResource());
         break;
     case HdBinding::BINDLESS_UNIFORM:
         // at least in nvidia driver 346.59, this query call doesn't show
         // any pipeline stall.
-        if (!glIsNamedBufferResidentNV(buffer->GetId()->GetRawResource())) {
+        if (!glIsNamedBufferResidentNV(buffer->GetHandle()->GetRawResource())) {
             glMakeNamedBufferResidentNV(
-                buffer->GetId()->GetRawResource(), GL_READ_WRITE);
+                buffer->GetHandle()->GetRawResource(), GL_READ_WRITE);
         }
         glUniformui64NV(loc, buffer->GetGPUAddress());
         break;
     case HdBinding::SSBO:
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, loc,
-                         buffer->GetId()->GetRawResource());
+                         buffer->GetHandle()->GetRawResource());
         break;
     case HdBinding::BINDLESS_SSBO_RANGE:
         // at least in nvidia driver 346.59, this query call doesn't show
         // any pipeline stall.
-        if (!glIsNamedBufferResidentNV(buffer->GetId()->GetRawResource())) {
+        if (!glIsNamedBufferResidentNV(buffer->GetHandle()->GetRawResource())) {
             glMakeNamedBufferResidentNV(
-                buffer->GetId()->GetRawResource(), GL_READ_WRITE);
+                buffer->GetHandle()->GetRawResource(), GL_READ_WRITE);
         }
         glUniformui64NV(loc, buffer->GetGPUAddress()+offset);
         break;
     case HdBinding::DISPATCH:
-        glBindBuffer(GL_DRAW_INDIRECT_BUFFER,buffer->GetId()->GetRawResource());
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER,
+                     buffer->GetHandle()->GetRawResource());
         break;
     case HdBinding::UBO:
     case HdBinding::UNIFORM:
         glBindBufferRange(GL_UNIFORM_BUFFER, loc,
-                          buffer->GetId()->GetRawResource(),
+                          buffer->GetHandle()->GetRawResource(),
                           offset,
                           buffer->GetStride());
         break;
@@ -1014,7 +1074,7 @@ HdSt_ResourceBinder::UnbindBuffer(TfToken const &name,
 
     // it is possible that the buffer has not been initialized when
     // the instanceIndex is empty (e.g. FX points)
-    if (!buffer->GetId()) return;
+    if (!buffer->GetHandle()) return;
 
     HdBinding binding = GetBinding(name, level);
     HdBinding::Type type = binding.GetType();
@@ -1043,16 +1103,18 @@ HdSt_ResourceBinder::UnbindBuffer(TfToken const &name,
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         break;
     case HdBinding::BINDLESS_UNIFORM:
-        if (glIsNamedBufferResidentNV(buffer->GetId()->GetRawResource())) {
-            glMakeNamedBufferNonResidentNV(buffer->GetId()->GetRawResource());
+        if (glIsNamedBufferResidentNV(buffer->GetHandle()->GetRawResource())) {
+            glMakeNamedBufferNonResidentNV(
+                buffer->GetHandle()->GetRawResource());
         }
         break;
     case HdBinding::SSBO:
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, loc, 0);
         break;
     case HdBinding::BINDLESS_SSBO_RANGE:
-        if (glIsNamedBufferResidentNV(buffer->GetId()->GetRawResource())) {
-            glMakeNamedBufferNonResidentNV(buffer->GetId()->GetRawResource());
+        if (glIsNamedBufferResidentNV(buffer->GetHandle()->GetRawResource())) {
+            glMakeNamedBufferNonResidentNV(
+                buffer->GetHandle()->GetRawResource());
         }
         break;
     case HdBinding::DISPATCH:
@@ -1119,7 +1181,9 @@ HdSt_ResourceBinder::BindInstanceBufferArray(
     if (!bar) return;
 
     TF_FOR_ALL(it, bar->GetResources()) {
-        BindBuffer(it->first, it->second, it->second->GetOffset(), level);
+        if (HasBinding(it->first, level)) {
+            BindBuffer(it->first, it->second, it->second->GetOffset(), level);
+        }
     }
 }
 
@@ -1130,7 +1194,9 @@ HdSt_ResourceBinder::UnbindInstanceBufferArray(
     if (!bar) return;
 
     TF_FOR_ALL(it, bar->GetResources()) {
-        UnbindBuffer(it->first, it->second, level);
+        if (HasBinding(it->first, level)) {
+            UnbindBuffer(it->first, it->second, level);
+        }
     }
 }
 
@@ -1407,6 +1473,15 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     boost::hash_combine(hash, edgeIndexBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.dataType);
 
+    TF_FOR_ALL(binDecl, fvarIndicesBindings) {
+        boost::hash_combine(hash, binDecl->binding.GetValue());
+        boost::hash_combine(hash, binDecl->dataType);
+    }
+    TF_FOR_ALL(binDecl, fvarPatchParamBindings) {
+        boost::hash_combine(hash, binDecl->binding.GetValue());
+        boost::hash_combine(hash, binDecl->dataType);
+    }
+
     // separators are inserted to distinguish primvars have a same layout
     // but different interpolation.
     boost::hash_combine(hash, 0); // separator
@@ -1485,9 +1560,10 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     boost::hash_combine(hash, 0); // separator
     TF_FOR_ALL (it, fvarData) {
         boost::hash_combine(hash, (int)it->first.GetType()); // binding
-        Primvar const &primvar = it->second;
+        FvarPrimvar const &primvar = it->second;
         boost::hash_combine(hash, primvar.name.Hash());
         boost::hash_combine(hash, primvar.dataType);
+        boost::hash_combine(hash, primvar.channel);
     }
     boost::hash_combine(hash, 0); // separator
     TF_FOR_ALL (blockIt, shaderData) {

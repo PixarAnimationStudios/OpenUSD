@@ -57,9 +57,6 @@ public:
     static GLenum GetGlBlendFactor(HdBlendFactor factor);
 
     HDST_API
-    static HioFormat GetHioFormat(HdFormat inFormat);
-
-    HDST_API
     static int GetGLAttribType(HdType type);
 
     /// Return the name of the given type as represented in GLSL.

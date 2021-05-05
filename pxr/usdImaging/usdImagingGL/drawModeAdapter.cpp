@@ -481,7 +481,8 @@ VtValue
 UsdImagingGLDrawModeAdapter::Get(UsdPrim const& prim, 
                                  SdfPath const& cachePath,
                                  TfToken const& key,
-                                 UsdTimeCode time) const
+                                 UsdTimeCode time,
+                                 VtIntArray *outIndices) const
 {
     TRACE_FUNCTION();
 

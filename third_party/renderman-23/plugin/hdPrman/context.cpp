@@ -480,6 +480,7 @@ _IsMasterAttribute(TfToken const& primvarName)
         TfToken("ri:attributes:dice:minlengthspace"),
         TfToken("ri:attributes:Ri:Bound"),
         TfToken("ri:attributes:volume:dsominmax"),
+        TfToken("ri:attributes:volume:aggregate"),
         // SubdivisionMesh
         TfToken("ri:attributes:dice:pretessellate"),
         TfToken("ri:attributes:dice:watertight"),
@@ -1041,7 +1042,7 @@ HdPrman_Context::SetIntegratorParamsFromRenderSettings(
             _SetParamValue(riName, val, RtDetailType::k_constant,
                            TfToken(), params);
         }
-    }        
+    }
 }
 
 void

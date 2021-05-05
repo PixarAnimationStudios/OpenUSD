@@ -214,9 +214,29 @@ void wrapUsdLuxShapingAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usdShade/connectableAPI.h"
+
 namespace {
 
 WRAP_CUSTOM {
+    _class
+        .def(init<UsdShadeConnectableAPI>(arg("connectable")))
+        .def("ConnectableAPI", &UsdLuxShapingAPI::ConnectableAPI)
+
+        .def("CreateOutput", &UsdLuxShapingAPI::CreateOutput,
+             (arg("name"), arg("type")))
+        .def("GetOutput", &UsdLuxShapingAPI::GetOutput, arg("name"))
+        .def("GetOutputs", &UsdLuxShapingAPI::GetOutputs,
+             (arg("onlyAuthored")=true),
+             return_value_policy<TfPySequenceToList>())
+
+        .def("CreateInput", &UsdLuxShapingAPI::CreateInput,
+             (arg("name"), arg("type")))
+        .def("GetInput", &UsdLuxShapingAPI::GetInput, arg("name"))
+        .def("GetInputs", &UsdLuxShapingAPI::GetInputs,
+             (arg("onlyAuthored")=true),
+             return_value_policy<TfPySequenceToList>())
+        ;
 }
 
 }

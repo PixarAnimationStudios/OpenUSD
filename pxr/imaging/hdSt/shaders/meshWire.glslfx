@@ -39,7 +39,7 @@ void ProcessEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
 }
 
 void
-ProcessTriEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3, int inEdgeFlag)
+ProcessTriEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3)
 {
     // do nothing.
 }
@@ -95,7 +95,7 @@ void ProcessEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
         max(edgeDistance(v0.xy, v1.xy, v2.xy, v3.xy), edgeClip);
 }
 
-void ProcessTriEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3, int inEdgeFlag)
+void ProcessTriEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3)
 {
     // see hd/meshUtil.cpp
     //
@@ -117,7 +117,7 @@ void ProcessTriEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3, int 
     // i.e. to remove edge [2-0], make edgeDistance.z big in viewport pixel.
     // similary edgeDistance.x can be used for edge [0-1].
 
-    int edgeFlag = GetEdgeFlag(inEdgeFlag);
+    int edgeFlag = GetPrimitiveEdgeFlag();
     vec3 edgeClip = vec3(0);
     // it might be nice to use the viewport scale, but constant is much faster.
     edgeClip.z = ((edgeFlag & 1) != 0) ? 1000.0 : 0;
@@ -139,7 +139,7 @@ void ProcessQuadEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
     //  The first quad of a non-quad face is marked 1; the last as 2; and
     //  intermediate quads as 3.
 
-    int edgeFlag = GetEdgeFlag(0);
+    int edgeFlag = GetPrimitiveEdgeFlag();
     
     //  0---3
     //  |. 0|
@@ -163,6 +163,22 @@ void ProcessQuadEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
     }
 
     ProcessEdgeDistance(Peye0, Peye1, Peye2, Peye3, edgeClip);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Geometry.EdgeFlagMask
+
+int GetPrimitiveEdgeFlag()
+{
+    return GetEdgeFlag();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Geometry.EdgeFlagNoMask
+
+int GetPrimitiveEdgeFlag()
+{
+    return 0;
 }
 
 --- --------------------------------------------------------------------------
@@ -192,16 +208,16 @@ float GetEdgeOpacity() {
 
 // Override for subdivided faces to make the boundary of the face stand out.
 float GetEdgeOpacity(vec2 patchCoord) {
-    float d = GetMinEdgeDistance();
+    // Reduce the opacity of edges not on patch boundaries
+    float scale = 1.0;
+    if (patchCoord.x > 0.01 &&
+        patchCoord.x < 0.99 &&
+        patchCoord.y > 0.01 &&
+        patchCoord.y < 0.99) {
+        scale = 0.3;
+    }
 
-    // Is the fragment on a face boundary?
-    if (patchCoord.x < 0.01 ||
-        patchCoord.x > 0.99 ||
-        patchCoord.y < 0.01 ||
-        patchCoord.y > 0.99) d *= 0.25;
-
-    float p = exp2(-4 * d * d);
-    return p;
+    return scale * GetEdgeOpacity();
 }
 
 --- --------------------------------------------------------------------------

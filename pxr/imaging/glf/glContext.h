@@ -167,7 +167,8 @@ protected:
 /// The underlying calls to make GL contexts current can be moderately
 /// expensive.  So, this mechanism should be used carefully.
 ///
-class GlfGLContextScopeHolder {
+class GlfGLContextScopeHolder
+{
 public:
     /// Make the given context current and restore the current context
     /// when this object is destroyed.
@@ -232,7 +233,8 @@ private:
 ///     };
 /// \endcode
 ///
-class GlfSharedGLContextScopeHolder : private GlfGLContextScopeHolder {
+class GlfSharedGLContextScopeHolder final : private GlfGLContextScopeHolder
+{
 public:
     GlfSharedGLContextScopeHolder() :
         GlfGLContextScopeHolder(_GetSharedContext())
@@ -245,6 +247,73 @@ private:
     {
         if (GlfGLContext::IsInitialized() && ArchIsMainThread()) {
             return GlfGLContext::GetSharedGLContext();
+        }
+        return GlfGLContextSharedPtr();
+    }
+};
+
+#define API_GLF_HAS_ANY_GL_CONTEXT_SCOPE_HOLDER 1
+
+/// \class GlfAnyGLContextScopeHolder
+///
+/// Helper class to make the shared GL context current if there is no
+/// valid current context.
+///
+/// Example:
+///
+/// \code
+///     class MyTexture {
+///     public:
+///         MyTexture() : _textureId(0) {
+///             // Ensure we have valid GL context to allocate
+///             GlfAnyGLContextScopeHolder anyContextScopeHolder;
+///             glGenTextures(1, &_textureId);
+///         }
+///
+///         ~MyTexture() {
+///             // Ensure we have valid GL context to delete
+///             GlfAnyGLContextScopeHolder anyContextScopeHolder;
+///             glDeleteTextures(1, &_texureId);
+///             _textureId = 0;
+///         }
+///
+///         // The caller is responsible for making sure that a suitable
+///         // GL context is current before calling other methods.
+///
+///         void Bind() {
+///             glBindTexture(GL_TEXTURE_2D, _textureId);
+///         }
+///
+///         void Unbind() {
+///             glBindTexture(GL_TEXTURE_2D, 0);
+///         }
+///
+///         ...
+///
+///     private:
+///         GLuint _textureId;
+///
+///     };
+/// \endcode
+///
+class GlfAnyGLContextScopeHolder final : private GlfGLContextScopeHolder
+{
+public:
+    GlfAnyGLContextScopeHolder() :
+        GlfGLContextScopeHolder(_GetAnyContext())
+    {
+        // Do nothing
+    }
+
+private:
+    static GlfGLContextSharedPtr _GetAnyContext()
+    {
+        if (GlfGLContext::IsInitialized() && ArchIsMainThread()) {
+            GlfGLContextSharedPtr const current =
+                GlfGLContext::GetCurrentGLContext();
+            if (!(current && current->IsValid())) {
+                return GlfGLContext::GetSharedGLContext();
+            }
         }
         return GlfGLContextSharedPtr();
     }

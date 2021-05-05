@@ -26,9 +26,13 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/token.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct HdMaterialNetworkMap;
 class UsdAttribute;
+class UsdPrim;
 class UsdTimeCode;
 class VtValue;
 
@@ -44,6 +48,26 @@ class VtValue;
 VtValue
 UsdImaging_ResolveMaterialParamValue(
     const UsdAttribute& attr, const UsdTimeCode& time);
+
+/// Builds an HdMaterialNetwork for the usdTerminal prim and 
+/// populates it in the materialNetworkMap under the terminalIdentifier. 
+/// This shared implementation is usable for populating material networks for
+/// any connectable source including lights and light filters in addition to 
+/// materials.
+void 
+UsdImaging_BuildHdMaterialNetworkFromTerminal(
+    UsdPrim const& usdTerminal,
+    TfToken const& terminalIdentifier,
+    TfTokenVector const& shaderSourceTypes,
+    HdMaterialNetworkMap *materialNetworkMap,
+    UsdTimeCode time);
+
+/// Returns whether the material network built by 
+/// UsdImaging_BuildHdMaterialNetworkFromTerminal for the given usdTerminal 
+/// prim is time varying.
+bool
+UsdImaging_IsHdMaterialNetworkTimeVarying(
+    UsdPrim const& usdTerminal);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -33,6 +33,8 @@ HDPRMAN_LOADER_CREATE_DELEGATE
     std::shared_ptr<HdxPrman_InteractiveContext> context =
         std::make_shared<HdxPrman_InteractiveContext>();
     if (!context->IsValid()) {
+        TF_WARN("Failed to create HdPrman render delegate due to invalid "
+                "HdxPrman_InteractiveContext");
         // This happens when Riley failed to get created.
         return nullptr;
     }

@@ -43,9 +43,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_RESOURCE_INSTANCING, true,
                   "Enable instance registry deduplication of resource data");
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _perfTokens,
+
+    (numberOfTextureObjects)
+    (numberOfTextureHandles)
+);
 
 static void
 _CopyChainedBuffers(HdBufferSourceSharedPtr const&  src,
@@ -387,7 +393,7 @@ HdStResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
             sources[srcNum] = sources.back();
             sources.pop_back();
 
-            // Don't increament srcNum as it now points
+            // Don't increment srcNum as it now points
             // to the new item or is off the end of the vector
         }
     }
@@ -509,9 +515,9 @@ HdStResourceRegistry::RegisterBufferResource(
     HgiBufferDesc bufDesc;
     bufDesc.usage= HgiBufferUsageUniform;
     bufDesc.byteSize= byteSize;
-    HgiBufferHandle newId = _hgi->CreateBuffer(bufDesc);
+    HgiBufferHandle buffer = _hgi->CreateBuffer(bufDesc);
 
-    result->SetAllocation(newId, byteSize);
+    result->SetAllocation(buffer, byteSize);
 
     _bufferResourceRegistry.push_back(result);
 
@@ -796,7 +802,7 @@ HdStResourceRegistry::_Commit()
                         // the reallocation happens only once per BufferArray.
                         //
                         // if the range is already larger than the current one,
-                        // leave it as it is (there is a possibilty that GPU
+                        // leave it as it is (there is a possibility that GPU
                         // computation generates less data than it was).
                         int currentNumElements = dstRange->GetNumElements();
                         if (currentNumElements < numElements) {
@@ -1143,7 +1149,7 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
         gpuMemoryUsed += size;
     }
 
-    // Texture Memory
+    // Texture Memory and other texture information
     {
         HdSt_TextureObjectRegistry *const textureObjectRegistry =
             _textureHandleRegistry->GetTextureObjectRegistry();
@@ -1153,6 +1159,15 @@ HdStResourceRegistry::_TallyResourceAllocation(VtDictionary *result) const
 
         (*result)[HdPerfTokens->textureMemory] = VtValue(textureMemory);
         gpuMemoryUsed += textureMemory;
+
+        const size_t numTexObjects =
+            textureObjectRegistry->GetNumberOfTextureObjects();
+        (*result)[_perfTokens->numberOfTextureObjects] = VtValue(numTexObjects);
+
+        const size_t numTexHandles =
+            _textureHandleRegistry->GetNumberOfTextureHandles();
+        (*result)[_perfTokens->numberOfTextureHandles] = VtValue(numTexHandles);
+            
     }
 
     (*result)[HdPerfTokens->gpuMemoryUsed.GetString()] = gpuMemoryUsed;

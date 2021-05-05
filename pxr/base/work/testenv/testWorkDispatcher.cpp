@@ -23,7 +23,6 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxr/base/work/arenaDispatcher.h"
 #include "pxr/base/work/dispatcher.h"
 
 #include "pxr/base/tf/iterator.h"
@@ -419,18 +418,6 @@ main(int argc, char **argv)
         }
 
         if (!_TestDispatcherCancellation<WorkDispatcher>(graph.get())) {
-            return 1;
-        }
-    }
-
-    // Test the arena dispatcher.
-    {
-        std::cout << "Using the arena dispatcher" << std::endl;
-        if (!_TestDispatcher<WorkArenaDispatcher>(graph.get())) {
-            return 1;
-        }
-
-        if (!_TestDispatcherCancellation<WorkArenaDispatcher>(graph.get())) {
             return 1;
         }
     }

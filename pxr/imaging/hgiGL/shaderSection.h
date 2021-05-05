@@ -34,16 +34,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//struct to hold attribute definitions
-struct HgiGLShaderSectionAttribute
-{
-    std::string identifier;
-    std::string index;
-};
-
-using HgiGLShaderSectionAttributeVector =
-    std::vector<HgiGLShaderSectionAttribute>;
-
 /// \class HgiGLShaderSection
 ///
 /// Base class for OpenGL code sections. The generator holds these
@@ -54,7 +44,7 @@ public:
     HGIGL_API
     explicit HgiGLShaderSection(
         const std::string &identifier,
-        const HgiGLShaderSectionAttributeVector &attributes = {},
+        const HgiShaderSectionAttributeVector &attributes = {},
         const std::string &storageQualifier = std::string(),
         const std::string &defaultValue = std::string());
 
@@ -83,7 +73,6 @@ private:
     HgiGLShaderSection(const HgiGLShaderSection&) = delete;
 
     const std::string _storageQualifier;
-    const HgiGLShaderSectionAttributeVector _attributes;
 };
 
 /// \class HgiGLMacroShaderSection
@@ -126,7 +115,7 @@ public:
     explicit HgiGLMemberShaderSection(
         const std::string &identifier,
         const std::string &typeName,
-        const HgiGLShaderSectionAttributeVector &attributes,
+        const HgiShaderSectionAttributeVector &attributes,
         const std::string &storageQualifier = std::string(),
         const std::string &defaultValue = std::string());
 
@@ -172,7 +161,7 @@ private:
     const uint32_t _bindingNo;
 };
 
-/// \class HgiGLMemberShaderSection
+/// \class HgiGLTextureShaderSection
 ///
 /// Declares OpenGL textures, and their cross language function
 ///
@@ -184,7 +173,8 @@ public:
         const std::string &identifier,
         const uint32_t layoutIndex,
         const uint32_t dimensions,
-        const HgiGLShaderSectionAttributeVector &attributes,
+        const HgiFormat format,
+        const HgiShaderSectionAttributeVector &attributes,
         const std::string &defaultValue = std::string());
 
     HGIGL_API
@@ -203,9 +193,77 @@ private:
     HgiGLTextureShaderSection & operator=(
         const HgiGLTextureShaderSection&) = delete;
     HgiGLTextureShaderSection(const HgiGLTextureShaderSection&) = delete;
+    
+    void _WriteSamplerType(std::ostream &ss) const;
+    void _WriteSampledDataType(std::ostream &ss) const;
 
     const uint32_t _dimensions;
+    const HgiFormat _format;
     static const std::string _storageQualifier;
+};
+
+/// \class HgiGLBufferShaderSection
+///
+/// Declares OpenGL buffers, and their cross language function
+///
+class HgiGLBufferShaderSection final: public HgiGLShaderSection
+{
+public:
+    HGIGL_API
+    explicit HgiGLBufferShaderSection(
+        const std::string &identifier,
+        const uint32_t layoutIndex,
+        const std::string &type,
+        const HgiShaderSectionAttributeVector &attributes);
+
+    HGIGL_API
+    ~HgiGLBufferShaderSection() override;
+
+    HGIGL_API
+    void WriteType(std::ostream &ss) const override;
+
+    HGIGL_API
+    bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
+
+private:
+    HgiGLBufferShaderSection() = delete;
+    HgiGLBufferShaderSection & operator=(
+        const HgiGLBufferShaderSection&) = delete;
+    HgiGLBufferShaderSection(const HgiGLBufferShaderSection&) = delete;
+
+    const std::string _type;
+};
+
+/// \class HgiGLKeywordShaderSection
+///
+/// Declares reserved OpenGL shader inputs, and their cross language function
+///
+class HgiGLKeywordShaderSection final: public HgiGLShaderSection
+{
+public:
+    HGIGL_API
+    explicit HgiGLKeywordShaderSection(
+        const std::string &identifier,
+        const std::string &type,
+        const std::string &glKeyword);
+
+    HGIGL_API
+    ~HgiGLKeywordShaderSection() override;
+
+    HGIGL_API
+    void WriteType(std::ostream &ss) const override;
+
+    HGIGL_API
+    bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
+
+private:
+    HgiGLKeywordShaderSection() = delete;
+    HgiGLKeywordShaderSection & operator=(
+        const HgiGLKeywordShaderSection&) = delete;
+    HgiGLKeywordShaderSection(const HgiGLKeywordShaderSection&) = delete;
+
+    const std::string _type;
+    const std::string _keyword;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

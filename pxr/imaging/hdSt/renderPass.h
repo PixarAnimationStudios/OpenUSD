@@ -67,7 +67,7 @@ private:
     void _PrepareCommandBuffer(TfTokenVector const& renderTags);
 
     // XXX: This should really be in HdSt_DrawBatch::PrepareDraw.
-    void _Cull(HdStRenderPassStateSharedPtr const &renderPasssState);
+    void _FrustumCullCPU(HdStRenderPassStateSharedPtr const &renderPassState);
 
     // -----------------------------------------------------------------------
     // Drawing state
@@ -84,6 +84,9 @@ private:
 
     // The version number of the currently active render tags
     int _renderTagVersion;
+
+    // The version number of the material tags (of the rprims).
+    unsigned int _materialTagsVersion;
 
     // A flag indicating that the held collection changed since this renderPass
     // was last drawn.

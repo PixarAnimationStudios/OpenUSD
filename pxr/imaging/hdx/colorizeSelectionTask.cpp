@@ -23,21 +23,15 @@
 //
 #include "pxr/imaging/hdx/colorizeSelectionTask.h"
 
-#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderBuffer.h"
-#include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hdx/fullscreenShader.h"
 #include "pxr/imaging/hdx/hgiConversions.h"
 #include "pxr/imaging/hdx/package.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/tokens.h"
 
-#include "pxr/imaging/hgi/blitCmds.h"
-#include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/hgi.h"
-#include "pxr/imaging/hgi/tokens.h"
-
-#include "pxr/base/gf/vec2f.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -210,8 +204,6 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
     HgiShaderFunctionDesc fragDesc;
     fragDesc.debugName = _tokens->outlineFrag.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
-    HgiShaderFunctionAddStageInput(
-        &fragDesc, "hd_Position", "vec4", "position");
     HgiShaderFunctionAddStageInput(
         &fragDesc, "uvOut", "vec2");
     HgiShaderFunctionAddTexture(

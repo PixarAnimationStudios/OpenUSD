@@ -2351,5 +2351,20 @@ class TestUsdValueClips(unittest.TestCase):
              os.path.abspath('template/int1/p.003.usd'),
              os.path.abspath('template/int1/p.004.usd')])
 
+    def test_TemplateFileFormatArguments(self):
+        stage = Usd.Stage.Open('template/args/root.usda')
+        prim = stage.GetPrimAtPath('/World/points')
+        attr = prim.GetAttribute('extent')
+
+        self.CheckValue(attr, time=1, expected=Vt.Vec3fArray(2, (1,1,1)))
+        self.CheckValue(attr, time=2, expected=Vt.Vec3fArray(2, (2,2,2)))
+
+        layerId = Sdf.Layer.CreateIdentifier(
+                os.path.abspath("template/args/p.002.usd"), 
+                {'a': '1', 'b': 'str'})
+        layer = Sdf.Layer.Find(layerId)
+        self.assertTrue(layer)
+        self.assertEqual(layer.GetFileFormatArguments(), {'a': '1', 'b': 'str'})
+
 if __name__ == "__main__":
     unittest.main()

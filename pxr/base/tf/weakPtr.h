@@ -161,8 +161,12 @@ public:
     TfWeakPtr(std::nullptr_t) : _rawPtr(nullptr) {}
 
     /// Copy construction
-    TfWeakPtr(TfWeakPtr const &p) : _rawPtr(p._rawPtr), _remnant(p._remnant)
-    {
+    TfWeakPtr(TfWeakPtr const &p) = default;
+
+    /// Move construction
+    TfWeakPtr(TfWeakPtr &&p) noexcept
+        : _rawPtr(p._rawPtr), _remnant(std::move(p._remnant)) {
+        p._rawPtr = nullptr;
     }
 
     /// Conversion from \a RefPtr where \a U* is convertible to \a T* (this
@@ -196,6 +200,17 @@ public:
                   std::is_convertible<U*, T*>::value
               >::type *dummy = 0) : _rawPtr(p._rawPtr), _remnant(p._remnant)
     {
+    }
+
+    /// Copy assignment
+    TfWeakPtr &operator=(TfWeakPtr const &p) = default;
+
+    /// Move assignment
+    TfWeakPtr &operator=(TfWeakPtr &&p) noexcept {
+        _rawPtr = p._rawPtr;
+        _remnant = std::move(p._remnant);
+        p._rawPtr = nullptr;
+        return *this;
     }
 
     bool IsExpired() const {

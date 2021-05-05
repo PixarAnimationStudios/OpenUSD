@@ -76,12 +76,21 @@ public:
     static HdStGLSLProgramSharedPtr GetComputeProgram(
         TfToken const &shaderToken,
         HdStResourceRegistry *resourceRegistry);
-    
+
     HDST_API
     static HdStGLSLProgramSharedPtr GetComputeProgram(
         TfToken const &shaderFileName,
         TfToken const &shaderToken,
         HdStResourceRegistry *resourceRegistry);
+
+    using PopulateDescriptorCallback =
+        std::function<void(HgiShaderFunctionDesc &computeDesc)>;
+
+    HDST_API
+    static HdStGLSLProgramSharedPtr GetComputeProgram(
+        TfToken const &shaderToken,
+        HdStResourceRegistry *resourceRegistry,
+        PopulateDescriptorCallback populateDescriptor);
 
     /// Returns the role of the GPU data in this resource.
     TfToken const & GetRole() const {return _role;}

@@ -69,6 +69,10 @@ _FormatTable[HgiFormatCount][2] =
     {HgiFormatFloat32Vec2,    VK_FORMAT_R32G32_SFLOAT},
     {HgiFormatFloat32Vec3,    VK_FORMAT_R32G32B32_SFLOAT},
     {HgiFormatFloat32Vec4,    VK_FORMAT_R32G32B32A32_SFLOAT},
+    {HgiFormatInt16,          VK_FORMAT_R16_SINT},
+    {HgiFormatInt16Vec2,      VK_FORMAT_R16G16_SINT},
+    {HgiFormatInt16Vec3,      VK_FORMAT_R16G16B16_SINT},
+    {HgiFormatInt16Vec4,      VK_FORMAT_R16G16B16A16_SINT},
     {HgiFormatUInt16,         VK_FORMAT_R16_UINT},
     {HgiFormatUInt16Vec2,     VK_FORMAT_R16G16_UINT},
     {HgiFormatUInt16Vec3,     VK_FORMAT_R16G16B16_UINT},
@@ -90,13 +94,13 @@ _FormatTable[HgiFormatCount][2] =
 // A few random format validations to make sure the table above stays in sync
 // with the HgiFormat table.
 constexpr bool _CompileTimeValidateHgiFormatTable() {
-    return (HgiFormatCount==30 &&
+    return (HgiFormatCount==34 &&
             HgiFormatUNorm8 == 0 &&
             HgiFormatFloat16Vec4 == 9 &&
             HgiFormatFloat32Vec4 == 13 &&
-            HgiFormatUInt16Vec4 == 17 &&
-            HgiFormatUNorm8Vec4srgb == 22 &&
-            HgiFormatBC3UNorm8Vec4 == 28) ? true : false;
+            HgiFormatUInt16Vec4 == 21 &&
+            HgiFormatUNorm8Vec4srgb == 26 &&
+            HgiFormatBC3UNorm8Vec4 == 32) ? true : false;
 }
 
 static_assert(_CompileTimeValidateHgiFormatTable(), 
@@ -107,7 +111,9 @@ static const uint32_t
 _SampleCountTable[][2] =
 {
     {HgiSampleCount1,  VK_SAMPLE_COUNT_1_BIT},
+    {HgiSampleCount2,  VK_SAMPLE_COUNT_2_BIT},
     {HgiSampleCount4,  VK_SAMPLE_COUNT_4_BIT},
+    {HgiSampleCount8,  VK_SAMPLE_COUNT_8_BIT},
     {HgiSampleCount16, VK_SAMPLE_COUNT_16_BIT}
 };
 static_assert(HgiSampleCountEnd==17, "");

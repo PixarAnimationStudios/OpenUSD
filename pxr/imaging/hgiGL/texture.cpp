@@ -306,7 +306,7 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
                         /*offsets*/GfVec3i(0),
                         mipInfo.dimensions,
                         glInternalFormat,
-                        mipInfo.byteSize,
+                        mipInfo.byteSizePerLayer * desc.layerCount,
                         initialData + mipInfo.byteOffset);
                 } else {
                     _GlTextureSubImageND(

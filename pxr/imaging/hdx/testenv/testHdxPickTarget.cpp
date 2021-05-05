@@ -31,10 +31,12 @@
 #include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/mesh.h"
+#include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 
@@ -94,6 +96,9 @@ protected:
     HdSelectionSharedPtr _Pick(
         GfVec2i const& startPos, GfVec2i const& endPos,
         TfToken const& pickTarget);
+    using MeshEdges = std::vector<GfVec2i>;
+    MeshEdges _GetMeshEdges(SdfPath const & meshPath,
+                            VtIntArray const & edgeIndices) const;
 
 private:
     // Hgi and HdDriver should be constructed before HdEngine to ensure they
@@ -132,6 +137,23 @@ _GetTransform(GfRotation rot, GfVec3d translate)
 My_TestGLDrawing::~My_TestGLDrawing()
 {
     delete _renderIndex;
+}
+
+My_TestGLDrawing::MeshEdges
+My_TestGLDrawing::_GetMeshEdges(SdfPath const & meshPath,
+                                VtIntArray const & edgeIds) const
+{
+    HdRprim const * rprim = _renderIndex->GetRprim(meshPath);
+    HdMesh const * mesh = static_cast<HdMesh const *>(rprim);
+
+    MeshEdges result;
+
+    std::vector<int> edgeIndices(edgeIds.begin(), edgeIds.end());
+
+    HdMeshEdgeIndexTable edgeIndexTable(mesh->GetTopology().get());
+    edgeIndexTable.GetVerticesForEdgeIndices(edgeIndices, &result);
+
+    return result;
 }
 
 void
@@ -362,11 +384,13 @@ My_TestGLDrawing::OffscreenTest()
         _selTracker->SetSelection(selection);
         DrawScene();
         WriteToFile("color", "color4_tet0_pick_edge.png");
+        SdfPath meshPath("/tet0");
         HdSelection::PrimSelectionState const* selState =
-            selection->GetPrimSelectionState(mode, SdfPath("/tet0"));
+            selection->GetPrimSelectionState(mode, meshPath);
         TF_VERIFY(selState);
         TF_VERIFY(selState->edgeIndices.size() == 1);
-        VtIntArray const& edgesSelected = selState->edgeIndices[0];
+        VtIntArray const& edgeIndicesSelected = selState->edgeIndices[0];
+        MeshEdges edgesSelected = _GetMeshEdges(meshPath, edgeIndicesSelected);
         TF_VERIFY(edgesSelected.size() == 1);
     }
 
@@ -378,11 +402,13 @@ My_TestGLDrawing::OffscreenTest()
         _selTracker->SetSelection(selection);
         DrawScene();
         WriteToFile("color", "color5_cube1_pick_edges.png");
+        SdfPath meshPath("/cube1");
         HdSelection::PrimSelectionState const* selState =
-            selection->GetPrimSelectionState(mode, SdfPath("/cube1"));
+            selection->GetPrimSelectionState(mode, meshPath);
         TF_VERIFY(selState);
         TF_VERIFY(selState->edgeIndices.size() == 1);
-        VtIntArray const& edgesSelected = selState->edgeIndices[0];
+        VtIntArray const& edgeIndicesSelected = selState->edgeIndices[0];
+        MeshEdges edgesSelected = _GetMeshEdges(meshPath, edgeIndicesSelected);
         TF_VERIFY(edgesSelected.size() == 2);
     }
 

@@ -25,12 +25,53 @@
 Tf -- Tools Foundation
 """
 
+def PreparePythonModule(moduleName=None):
+    """Prepare an extension module at import time.  This will import the
+    Python module associated with the caller's module (e.g. '_tf' for 'pxr.Tf')
+    or the module with the specified moduleName and copy its contents into
+    the caller's local namespace.
+
+    Generally, this should only be called by the __init__.py script for a module
+    upon loading a boost python module (generally '_libName.so')."""
+    import importlib
+    import inspect
+    frame = inspect.currentframe().f_back
+    try:
+        f_locals = frame.f_locals
+
+        # If an explicit moduleName is not supplied, construct it from the
+        # caller's module name, like "pxr.Tf", and our naming conventions,
+        # which results in "_tf".
+        if moduleName is None:
+            moduleName = f_locals["__name__"].split(".")[-1]
+            moduleName = "_" + moduleName[0].lower() + moduleName[1:]
+
+        module = importlib.import_module("." + moduleName, f_locals["__name__"])
+        PrepareModule(module, f_locals)
+        try:
+            del f_locals[moduleName]
+        except KeyError:
+            pass
+
+        try:
+            module = importlib.import_module(".__DOC", f_locals["__name__"])
+            module.Execute(f_locals)
+            try:
+                del f_locals["__DOC"]
+            except KeyError:
+                pass
+        except Exception:
+            pass
+
+    finally:
+        del frame
+
 def PrepareModule(module, result):
     """PrepareModule(module, result) -- Prepare an extension module at import
     time.  Generally, this should only be called by the __init__.py script for a
-    module upon loading a boost python module (generally '_LibName.so')."""
+    module upon loading a boost python module (generally '_libName.so')."""
     # inject into result.
-    ignore = frozenset(['__name__', '__builtins__',
+    ignore = frozenset(['__name__', '__package__', '__builtins__',
                         '__doc__', '__file__', '__path__'])
     newModuleName = result.get('__name__')
 
@@ -78,14 +119,7 @@ def GetCodeLocation(framesUp):
     return (f_back.f_globals['__name__'], f_back.f_code.co_name,
             f_back.f_code.co_filename, f_back.f_lineno)
 
-# for some strange reason, this errors out when we try to reload it,
-# which is odd since _tf is a DSO and can't be reloaded anyway:
-import sys
-if "pxr.Tf._tf" not in sys.modules:
-    from . import _tf
-    PrepareModule(_tf, locals())
-    del _tf
-del sys
+PreparePythonModule()
 
 # Need to provide an exception type that tf errors will show up as.
 class ErrorException(RuntimeError):
@@ -96,13 +130,6 @@ class ErrorException(RuntimeError):
     def __str__(self):
         return '\n\t' + '\n\t'.join([str(e) for e in self.args])
 __SetErrorExceptionClass(ErrorException)
-
-try:
-    from . import __DOC
-    __DOC.Execute(locals())
-    del __DOC
-except Exception:
-    pass
 
 def Warn(msg, template=""):
     """Issue a warning via the TfDiagnostic system.

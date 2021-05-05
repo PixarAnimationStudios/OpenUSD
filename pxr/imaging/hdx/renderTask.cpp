@@ -24,7 +24,6 @@
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/tokens.h"
-#include "pxr/imaging/hdx/debugCodes.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderDelegate.h"
@@ -50,9 +49,7 @@ HdxRenderTask::HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
 {
 }
 
-HdxRenderTask::~HdxRenderTask()
-{
-}
+HdxRenderTask::~HdxRenderTask() = default;
 
 bool
 HdxRenderTask::IsConverged() const
@@ -112,8 +109,8 @@ HdxRenderTask::_Sync(HdSceneDelegate* delegate,
                 // use that id to look up params in the scene delegate.
                 // this setup task isn't indexed, so there's no concern
                 // about name conflicts.
-                _setupTask.reset(
-                    new HdxRenderSetupTask(delegate, GetId()));
+                _setupTask = std::make_shared<HdxRenderSetupTask>(
+                    delegate, GetId());
             }
 
             _setupTask->SyncParams(delegate, params);
@@ -161,14 +158,18 @@ HdxRenderTask::Execute(HdTaskContext* ctx)
 
     if (HdStRenderPassState* extendedState =
             dynamic_cast<HdStRenderPassState*>(renderPassState.get())) {
+
+        // Bail out early for Storm tasks that have no rendering work to submit
+        // and don't need to clear AOVs.
+        if (!_HasDrawItems() && !_NeedToClearAovs(renderPassState)) {
+            return;
+        }
         _SetHdStRenderPassState(ctx, extendedState);
     }
 
-    // Bind the render state and render geometry with the rendertags (if any)
+    // Render geometry with the rendertags (if any)
     if (_pass) {
-        renderPassState->Bind();
         _pass->Execute(renderPassState, GetRenderTags());
-        renderPassState->Unbind();
     }
 }
 
@@ -196,14 +197,16 @@ HdxRenderTask::_GetRenderPassState(HdTaskContext *ctx) const
     }
 }
 
-size_t
-HdxRenderTask::_GetDrawItemCount() const
+bool
+HdxRenderTask::_HasDrawItems() const
 {
     if (HdSt_RenderPass* hdStRenderPass =
             dynamic_cast<HdSt_RenderPass*>(_pass.get())) {
-        return hdStRenderPass->GetDrawItemCount();
+        return hdStRenderPass->GetDrawItemCount() > 0;
     } else {
-        return 0;
+        // Non-Storm backends don't typically use the draw item subsystem.
+        // Return true to signify that there is rendering work to do.
+        return true;
     }
 }
 
@@ -257,6 +260,20 @@ HdxRenderTask::_SetHdStRenderPassState(HdTaskContext *ctx,
         renderPassShader->RemoveBufferBinding(HdxTokens->selectionUniforms);
         renderPassShader->RemoveBufferBinding(HdxTokens->selectionPointColors);
     }
+}
+
+bool
+HdxRenderTask::_NeedToClearAovs(
+    HdRenderPassStateSharedPtr const &renderPassState) const
+{
+    HdRenderPassAovBindingVector const &aovBindings =
+            renderPassState->GetAovBindings();
+    for (auto const & binding : aovBindings) {
+        if (!binding.clearValue.IsEmpty()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 

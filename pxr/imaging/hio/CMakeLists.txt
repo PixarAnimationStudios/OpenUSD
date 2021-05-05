@@ -16,6 +16,7 @@ pxr_library(hio
         ${Boost_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        fieldTextureData
         glslfx
         glslfxConfig
         image

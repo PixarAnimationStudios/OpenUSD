@@ -147,6 +147,16 @@ class GfQuatf
         return GetConjugate() / _GetLengthSquared();
     }
 
+    /// Transform the GfVec3f point. If the quaternion is normalized,
+    /// the transformation is a rotation. Given a GfQuatf q, q.Transform(point)
+    /// is equivalent to:
+    ///
+    ///     (q * GfQuatf(0, point) * q.GetInverse()).GetImaginary()
+    ///
+    /// but is more efficient.
+    GF_API
+    GfVec3f Transform(const GfVec3f& point) const;
+
     /// Hash.
     friend inline size_t hash_value(const GfQuatf &q) {
         size_t h = boost::hash<ScalarType>()(q.GetReal());

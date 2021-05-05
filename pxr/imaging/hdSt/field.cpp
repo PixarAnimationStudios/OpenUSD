@@ -32,7 +32,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (fieldName)
     (fieldIndex)
     (fieldPurpose)
     (textureMemory)
@@ -56,7 +55,6 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
                 HdRenderParam   *renderParam,
                 HdDirtyBits     *dirtyBits)
 {
-    // This code is similar to HdTexture::Sync.
     if (*dirtyBits & DirtyParams) {
 
         // Get asset path from scene delegate.
@@ -72,7 +70,7 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
         const TfToken resolvedFilePath = TfToken(filePath.GetResolvedPath());
 
         const VtValue fieldNameValue = sceneDelegate->Get(
-            GetId(), _tokens->fieldName);
+            GetId(), HdFieldTokens->fieldName);
         const TfToken &fieldName = fieldNameValue.Get<TfToken>();
 
         const VtValue fieldIndexValue = sceneDelegate->Get(

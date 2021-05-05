@@ -4547,15 +4547,17 @@ _BuildInitialPrimIndexFromAncestor(
 
     // Reset the 'has payload' flag on this prim index.
     // This flag should only be set when a prim introduces a payload,
-    // not when any of its parents introduced a payload.
+    // not when any of its parents introduced a payload. 
+    // Also reset the payload state in the outputs for the same reason.
     //
     // XXX: 
-    // Updating this flag may cause a new copy of the prim index 
-    // graph to be created, which is wasteful if this graph will
+    // Updating the graph's payload flag may cause a new copy of the prim 
+    // index graph to be created, which is wasteful if this graph will
     // later set the flag back to its original value. It would be
     // better to defer setting this bit until we have the final
     // answer.
     graph->SetHasPayloads(false);
+    outputs->payloadState = PcpPrimIndexOutputs::NoPayload;
 
     PcpNodeRef rootNode = outputs->primIndex.GetRootNode();
     _ConvertNodeForChild(rootNode, inputs);

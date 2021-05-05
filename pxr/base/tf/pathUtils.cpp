@@ -66,7 +66,14 @@ _ExpandSymlinks(const std::string& path)
     // and the remaining part of the path.
     std::string::size_type i = path.find_first_of("/\\");
     while (i != std::string::npos) {
-        const std::string prefix = path.substr(0, i);
+        std::string prefix = path.substr(0, i);
+        // If the prefix is "X:", this will access the "current" directory on
+        // drive X, when what we really want is the root of drive X, so append
+        // a backslash. Also check that i>0. An i==0 value can happen if the
+        // passed in path is a non-canonical Windows path such as "/tmp/foo".
+        if (i > 0 && prefix.at(i-1) == ':') {
+            prefix.push_back('\\');
+        }
         if (TfIsLink(prefix)) {
             // Expand the link and repeat with the new path.
             return _ExpandSymlinks(TfReadLink(prefix) + path.substr(i));

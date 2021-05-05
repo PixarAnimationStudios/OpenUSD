@@ -97,6 +97,7 @@ pxr_library(tf
         pyFunction
         pyIdentity
         pyInterpreter
+        pyInvoke
         pyModule
         pyModuleNotice
         pyNoticeWrapper
@@ -228,6 +229,7 @@ pxr_library(tf
         testenv/testTfScriptModuleLoader_Other.py
         testenv/testTfScriptModuleLoader_Test.py
         testenv/testTfScriptModuleLoader_Unknown.py
+        testenv/testTfPyInvoke_callees.py
 
     DOXYGEN_FILES
         diagnosticOverview.dox
@@ -252,6 +254,13 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
             tf
         CPPFILES
             testenv/testTfPyInterpreter.cpp
+    )
+
+    pxr_build_test(testTfPyInvoke
+        LIBRARIES
+            tf
+        CPPFILES
+            testenv/testTfPyInvoke.cpp
     )
 
     pxr_build_test(testTfPyLock
@@ -636,6 +645,10 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     )
     pxr_register_test(testTfPyInterpreter
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyInterpreter"
+    )
+    pxr_register_test(testTfPyInvoke
+        REQUIRES_PYTHON_MODULES
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyInvoke"
     )
     pxr_register_test(testTfPyLock
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyLock"

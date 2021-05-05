@@ -196,6 +196,17 @@ public:
         typedef std::map<HdBinding, Primvar> PrimvarBinding;
 
         // -------------------------------------------------------------------
+        // for a face-varying primvar in non-interleaved buffer array
+        struct FvarPrimvar : Primvar {
+            FvarPrimvar() : channel(0) {}
+            FvarPrimvar(TfToken const &name, TfToken const &dataType, 
+                        int channel)
+                : Primvar(name, dataType), channel(channel) {}
+            int channel;
+        };
+        typedef std::map<HdBinding, FvarPrimvar> FvarPrimvarBinding;
+
+        // -------------------------------------------------------------------
         // for instance primvars
         struct NestedPrimvar {
             NestedPrimvar() {}
@@ -259,7 +270,7 @@ public:
         PrimvarBinding elementData;
         PrimvarBinding vertexData;
         PrimvarBinding varyingData;
-        PrimvarBinding fvarData;
+        FvarPrimvarBinding fvarData;
         PrimvarBinding computeReadWriteData;
         PrimvarBinding computeReadOnlyData;
         NestedPrimvarBinding instanceData;
@@ -276,6 +287,8 @@ public:
         BindingDeclaration instanceIndexBaseBinding;
         BindingDeclaration primitiveParamBinding;
         BindingDeclaration edgeIndexBinding;
+        std::vector<BindingDeclaration> fvarPatchParamBindings;
+        std::vector<BindingDeclaration> fvarIndicesBindings;
 
         StructBlockBinding customInterleavedBindings;
         std::vector<BindingDeclaration> customBindings;
@@ -382,6 +395,11 @@ public:
     /// bind a standalone uniform (float, vec2, vec3, vec4, mat4)
     HDST_API
     void BindUniformf(TfToken const &name, int count, const float *value) const;
+
+    /// Returns whether a binding exists.
+    bool HasBinding(TfToken const &name, int level=-1) const {
+        return _bindingMap.find(NameAndLevel(name, level)) != _bindingMap.end();
+    }
 
     /// Returns binding point.
     /// XXX: exposed temporarily for drawIndirectResult

@@ -54,6 +54,9 @@
     #define ARCH_PRAGMA_WRITE_STRINGS \
         _Pragma("GCC diagnostic ignored \"-Wwrite-strings\"")
 
+    #define ARCH_PRAGMA_UNUSED_FUNCTION \
+        _Pragma("GCC diagnostic ignored \"-Wunused-function\"")
+
 #elif defined(ARCH_COMPILER_CLANG)
 
     #define ARCH_PRAGMA_PUSH \
@@ -70,6 +73,9 @@
 
     #define ARCH_PRAGMA_WRITE_STRINGS \
         _Pragma("clang diagnostic ignored \"-Wwrite-strings\"")
+
+    #define ARCH_PRAGMA_UNUSED_FUNCTION \
+        _Pragma("clang diagnostic ignored \"-Wunused-function\"")
 
     #define ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION \
         _Pragma("clang diagnostic ignored \"-Winstantiation-after-specialization\"")
@@ -90,6 +96,9 @@
 
     #define ARCH_PRAGMA_MACRO_REDEFINITION \
         __pragma(warning(disable:4005)) 
+
+    #define ARCH_PRAGMA_UNUSED_FUNCTION \
+        __pragma(warning(disable:4505)) 
 
     #define ARCH_PRAGMA_QUALIFIER_HAS_NO_MEANING \
         __pragma(warning(disable:4180)) 
@@ -144,6 +153,10 @@
 
 #if !defined ARCH_PRAGMA_WRITE_STRINGS
     #define ARCH_PRAGMA_WRITE_STRINGS
+#endif
+
+#if !defined ARCH_PRAGMA_UNUSED_FUNCTION
+    #define ARCH_PRAGMA_UNUSED_FUNCTION
 #endif
 
 #if !defined ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS

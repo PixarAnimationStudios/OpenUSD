@@ -27,9 +27,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiShaderFunctionTextureDesc::HgiShaderFunctionTextureDesc()
   : dimensions(2)
-  , type("float")
+  , format(HgiFormatInvalid)
 {
 }
+
+HgiShaderFunctionBufferDesc::HgiShaderFunctionBufferDesc()  =  default;
 
 HgiShaderFunctionParamDesc::HgiShaderFunctionParamDesc() = default;
 
@@ -49,12 +51,27 @@ bool operator==(
 {
     return lhs.nameInShader == rhs.nameInShader &&
            lhs.dimensions == rhs.dimensions &&
-           lhs.type == rhs.type;
+           lhs.format == rhs.format;
 }
 
 bool operator!=(
     const HgiShaderFunctionTextureDesc& lhs,
     const HgiShaderFunctionTextureDesc& rhs)
+{
+    return !(lhs == rhs);
+}
+
+bool operator==(
+    const HgiShaderFunctionBufferDesc& lhs,
+    const HgiShaderFunctionBufferDesc& rhs)
+{
+    return lhs.nameInShader == rhs.nameInShader &&
+           lhs.type == rhs.type;
+}
+
+bool operator!=(
+    const HgiShaderFunctionBufferDesc& lhs,
+    const HgiShaderFunctionBufferDesc& rhs)
 {
     return !(lhs == rhs);
 }
@@ -102,15 +119,28 @@ void
 HgiShaderFunctionAddTexture(
     HgiShaderFunctionDesc * const desc,
     const std::string &nameInShader,
-    const uint32_t dimensions,
-    const std::string &type)
+    const uint32_t dimensions /* = 2 */,
+    const HgiFormat &format /* = HgiFormatFloat32Vec4*/)
 {
     HgiShaderFunctionTextureDesc texDesc;
     texDesc.nameInShader = nameInShader;
     texDesc.dimensions = dimensions;
-    texDesc.type = type;
+    texDesc.format = format;
 
     desc->textures.push_back(std::move(texDesc));
+}
+
+void
+HgiShaderFunctionAddBuffer(
+    HgiShaderFunctionDesc * const desc,
+    const std::string &nameInShader,
+    const std::string &type)
+{
+    HgiShaderFunctionBufferDesc bufDesc;
+    bufDesc.nameInShader = nameInShader;
+    bufDesc.type = type;
+
+    desc->buffers.push_back(std::move(bufDesc));
 }
 
 void

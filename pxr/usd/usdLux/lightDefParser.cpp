@@ -23,9 +23,13 @@
 //
 #include "pxr/usd/usdLux/lightDefParser.h"
 
+#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/lightFilter.h"
+
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/shaderDefUtils.h"
 #include "pxr/usd/usdShade/tokens.h"
+#include "pxr/usd/sdr/shaderNode.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,7 +39,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     /* discoveryTypes */
     ((sourceType, "USD"))
     ((discoveryType, "usd-schema-gen"))
-    ((context, "light"))
 );
 
 /*static*/
@@ -103,12 +106,25 @@ UsdLux_LightDefParserPlugin::Parse(
         return NdrParserPlugin::GetInvalidNode(discoveryResult);
     }
 
+    TfToken context;
+    if (prim.IsA<UsdLuxLight>()) {
+        context = SdrNodeContext->Light;
+    } else if (prim.IsA<UsdLuxLightFilter>()) {
+        context = SdrNodeContext->LightFilter;
+    } else {
+        TF_CODING_ERROR("Cannot parse a USD shader node for schema type '%s'; "
+                        "schema type '%s' is not a light or light filter.",
+                        discoveryResult.identifier.GetText(), 
+                        discoveryResult.identifier.GetText());
+        return nullptr;
+    }
+
     return NdrNodeUniquePtr(new SdrShaderNode(
         discoveryResult.identifier, 
         discoveryResult.version,
         discoveryResult.name,
         discoveryResult.family,
-        _tokens->context, 
+        context, 
         discoveryResult.sourceType,
         /*nodeUriAssetPath=*/ std::string(), 
         /*resolvedImplementationUri=*/ std::string(),

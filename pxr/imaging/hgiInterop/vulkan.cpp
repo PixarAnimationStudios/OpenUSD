@@ -27,7 +27,7 @@
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgiVulkan/hgi.h"
 #include "pxr/imaging/hgiInterop/vulkan.h"
-
+#include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -66,7 +66,7 @@ static const char* _fragmentDepthFullscreen =
 static uint32_t
 _CompileShader(const char* src, GLenum stage)
 {
-    uint32_t shaderId = glCreateShader(stage);
+    const uint32_t shaderId = glCreateShader(stage);
     glShaderSource(shaderId, 1, &src, nullptr);
     glCompileShader(shaderId);
     GLint status;
@@ -78,7 +78,7 @@ _CompileShader(const char* src, GLenum stage)
 static uint32_t
 _LinkProgram(uint32_t vs, uint32_t fs)
 {
-    uint32_t programId = glCreateProgram();
+    const uint32_t programId = glCreateProgram();
     glAttachShader(programId, vs);
     glAttachShader(programId, fs);
     glLinkProgram(programId);
@@ -99,7 +99,7 @@ _CreateVertexBuffer()
     uint32_t vertexBuffer = 0;
     glGenBuffers(1, &vertexBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER,sizeof(vertices),&vertices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     return vertexBuffer;
 }
@@ -116,12 +116,12 @@ _ConvertVulkanTextureToOpenGL(
     // But for now we do a CPU readback of the GPU texels and upload to GPU.
 
     HgiTextureDesc const& texDesc = src->GetDescriptor();
-    size_t byteSize = src->GetByteSizeOfResource();
+    const size_t byteSize = src->GetByteSizeOfResource();
 
     std::vector<uint8_t> texels(byteSize, 0);
     HgiTextureGpuToCpuOp readBackOp;
-    readBackOp.cpuDestinationBuffer = &texels[0];
-    readBackOp.destinationBufferByteSize= texels.size() * sizeof(texels[0]);
+    readBackOp.cpuDestinationBuffer = texels.data();
+    readBackOp.destinationBufferByteSize = byteSize;
     readBackOp.destinationByteOffset = 0;
     readBackOp.gpuSourceTexture = src;
     readBackOp.mipLevel = 0;
@@ -142,8 +142,8 @@ _ConvertVulkanTextureToOpenGL(
         glBindTexture(GL_TEXTURE_2D, *glDest);
     }
 
-    int32_t width = texDesc.dimensions[0];
-    int32_t height = texDesc.dimensions[1];
+    const int32_t width = texDesc.dimensions[0];
+    const int32_t height = texDesc.dimensions[1];
 
     if (texDesc.format == HgiFormatFloat32Vec4) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA,
@@ -205,6 +205,7 @@ void
 HgiInteropVulkan::CompositeToInterop(
     HgiTextureHandle const &color,
     HgiTextureHandle const &depth,
+    VtValue const &framebuffer,
     GfVec4i const &compRegion)
 {
     if (!ARCH_UNLIKELY(color)) {
@@ -214,6 +215,22 @@ HgiInteropVulkan::CompositeToInterop(
 
     // Verify there were no gl errors coming in.
     TF_VERIFY(glGetError() == GL_NO_ERROR);
+
+    GLint restoreDrawFramebuffer = 0;
+    bool doRestoreDrawFramebuffer = false;
+
+    if (!framebuffer.IsEmpty()) {
+        if (framebuffer.IsHolding<uint32_t>()) {
+            glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,
+                          &restoreDrawFramebuffer);
+            doRestoreDrawFramebuffer = true;
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER,
+                              framebuffer.UncheckedGet<uint32_t>());
+        } else {
+            TF_CODING_ERROR(
+                "dstFramebuffer must hold uint32_t when targeting OpenGL");
+        }
+    }
 
     // Convert textures from Vulkan to GL
     _ConvertVulkanTextureToOpenGL(_hgiVulkan, color, &_glColorTex);
@@ -234,19 +251,21 @@ HgiInteropVulkan::CompositeToInterop(
     glGetIntegerv(GL_ACTIVE_TEXTURE, &restoreActiveTexture);
 
     // Setup shader program
-    uint32_t prg = color && depth ? _prgDepth : _prgNoDepth;
+    const uint32_t prg = color && depth ? _prgDepth : _prgNoDepth;
     glUseProgram(prg);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _glColorTex);
-    GLint loc = glGetUniformLocation(prg, "colorIn");
-    glUniform1i(loc, 0);
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, _glColorTex);
+        const GLint loc = glGetUniformLocation(prg, "colorIn");
+        glUniform1i(loc, 0);
+    }
 
     // Depth is optional
     if (_glDepthTex) {
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, _glDepthTex);
-        GLint loc = glGetUniformLocation(prg, "depthIn");
+        const GLint loc = glGetUniformLocation(prg, "depthIn");
         glUniform1i(loc, 1);
     }
 
@@ -255,20 +274,20 @@ HgiInteropVulkan::CompositeToInterop(
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &restoreArrayBuffer);
 
     // Vertex attributes
-    GLint locPosition = glGetAttribLocation(prg, "position");
+    const GLint locPosition = glGetAttribLocation(prg, "position");
     glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
     glVertexAttribPointer(locPosition, 4, GL_FLOAT, GL_FALSE,
             sizeof(float)*6, 0);
     glEnableVertexAttribArray(locPosition);
 
-    GLint locUv = glGetAttribLocation(prg, "uvIn");
+    const GLint locUv = glGetAttribLocation(prg, "uvIn");
     glVertexAttribPointer(locUv, 2, GL_FLOAT, GL_FALSE,
             sizeof(float)*6, reinterpret_cast<void*>(sizeof(float)*4));
     glEnableVertexAttribArray(locUv);
 
     // Since we want to composite over the application's framebuffer contents,
     // we need to honor depth testing if we have a valid depth texture.
-    GLboolean restoreDepthEnabled = glIsEnabled(GL_DEPTH_TEST);
+    const GLboolean restoreDepthEnabled = glIsEnabled(GL_DEPTH_TEST);
     GLboolean restoreDepthMask;
     glGetBooleanv(GL_DEPTH_WRITEMASK, &restoreDepthMask);
     GLint restoreDepthFunc;
@@ -355,6 +374,11 @@ HgiInteropVulkan::CompositeToInterop(
 #endif
 
     glActiveTexture(restoreActiveTexture);
+
+    if (doRestoreDrawFramebuffer) {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER,
+                          restoreDrawFramebuffer);
+    }
 
     TF_VERIFY(glGetError() == GL_NO_ERROR);
 }

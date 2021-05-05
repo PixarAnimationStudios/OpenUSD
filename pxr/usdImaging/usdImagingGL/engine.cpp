@@ -1055,6 +1055,54 @@ UsdImagingGLEngine::SetEnablePresentation(bool enabled)
     }
 }
 
+void
+UsdImagingGLEngine::SetPresentationOutput(
+    TfToken const &api,
+    VtValue const &framebuffer)
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return;
+    }
+
+    if (TF_VERIFY(_taskController)) {
+        _userFramebuffer = framebuffer;
+        _taskController->SetPresentationOutput(api, framebuffer);
+    }
+}
+
+// ---------------------------------------------------------------------
+// Command API
+// ---------------------------------------------------------------------
+
+HdCommandDescriptors 
+UsdImagingGLEngine::GetRendererCommandDescriptors() const
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return HdCommandDescriptors();
+    }
+
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
+        return HdCommandDescriptors();
+    }
+
+    return _renderDelegate->GetCommandDescriptors();
+}
+
+bool
+UsdImagingGLEngine::InvokeRendererCommand(
+    const TfToken &command, const HdCommandArgs &args) const
+{
+    if (ARCH_UNLIKELY(_legacyImpl)) {
+        return false;
+    }
+
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
+        return false;
+    }
+
+    return _renderDelegate->InvokeCommand(command, args);
+}
+
 // ---------------------------------------------------------------------
 // Control of background rendering threads.
 // ---------------------------------------------------------------------
@@ -1210,6 +1258,18 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
 
     GLF_GROUP_FUNCTION();
 
+    GLint restoreReadFbo = 0;
+    GLint restoreDrawFbo = 0;
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &restoreReadFbo);
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &restoreDrawFbo);
+    if (_userFramebuffer.IsEmpty()) {
+        // If user supplied no framebuffer, use the currently bound
+        // framebuffer.
+        _taskController->SetPresentationOutput(
+            HgiTokens->OpenGL,
+            VtValue(static_cast<uint32_t>(restoreDrawFbo)));
+    }
+
     GLuint vao;
     if (isCoreProfileContext) {
         // We must bind a VAO (Vertex Array Object) because core profile 
@@ -1261,6 +1321,9 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
     } else {
         glPopAttrib(); // GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT
     }
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, restoreReadFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFbo);
 }
 
 bool 

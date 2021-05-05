@@ -30,5 +30,6 @@ TF_WRAP_MODULE
 {
     TF_WRAP( Engine );
     TF_WRAP( RenderParams );
+    TF_WRAP( RendererCommands );
     TF_WRAP( RendererSettings );
 }

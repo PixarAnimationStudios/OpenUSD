@@ -129,12 +129,14 @@ WRAP_CUSTOM {
              (arg("name"), arg("type")))
         .def("GetOutput", &UsdLuxLightFilter::GetOutput, arg("name"))
         .def("GetOutputs", &UsdLuxLightFilter::GetOutputs,
+             (arg("onlyAuthored")=true),
              return_value_policy<TfPySequenceToList>())
 
         .def("CreateInput", &UsdLuxLightFilter::CreateInput,
              (arg("name"), arg("type")))
         .def("GetInput", &UsdLuxLightFilter::GetInput, arg("name"))
         .def("GetInputs", &UsdLuxLightFilter::GetInputs,
+             (arg("onlyAuthored")=true),
              return_value_policy<TfPySequenceToList>())
 
         .def("GetFilterLinkCollectionAPI",

@@ -96,10 +96,10 @@ HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
         // be allocated, so the check for resource allocation has been moved
         // until after the copy size check.
 
-        if (!TF_VERIFY(srcRes->GetId())) {
+        if (!TF_VERIFY(srcRes->GetHandle())) {
             return;
         }
-        if (!TF_VERIFY(dstRes->GetId())) {
+        if (!TF_VERIFY(dstRes->GetHandle())) {
             return;
         }
 
@@ -109,8 +109,8 @@ HdStCopyComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range_,
             static_cast<HdStResourceRegistry*>(resourceRegistry);
 
         HgiBufferGpuToGpuOp blitOp;
-        blitOp.gpuSourceBuffer = srcRes->GetId();
-        blitOp.gpuDestinationBuffer = dstRes->GetId();
+        blitOp.gpuSourceBuffer = srcRes->GetHandle();
+        blitOp.gpuDestinationBuffer = dstRes->GetHandle();
         blitOp.sourceByteOffset = readOffset;
         blitOp.byteSize = copySize;
         blitOp.destinationByteOffset = writeOffset;

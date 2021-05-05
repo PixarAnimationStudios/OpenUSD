@@ -511,7 +511,7 @@ public:
     ///
     /// To facilitate authoring on sparse or unloaded stages, we do not
     /// perform any validation of this prim's purpose or the type or
-    /// purpoes of the specified prim.
+    /// purpose of the specified prim.
     ///
     /// \sa ComputeProxyPrim(), GetProxyPrimRel()
     USDGEOM_API

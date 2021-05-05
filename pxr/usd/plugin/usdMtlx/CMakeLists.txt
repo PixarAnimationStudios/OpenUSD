@@ -18,6 +18,7 @@ pxr_plugin(usdMtlx
         usdGeom
         usdShade
         usdUI
+        usdUtils
         ${MATERIALX_LIBRARIES}
 
     INCLUDE_DIRS

@@ -94,14 +94,14 @@ protected:
 
 private:
     HgiFormat _format;
-    size_t _numChannels;
-    size_t _numBytesPerPixel;
     GfVec3i _texelDimensions;
+    int _texelLayers;
+    size_t _texelDataSize;
     GfVec2i _layoutDimensions;
-    size_t _numFaces;
+    size_t _layoutDataSize;
 
     std::unique_ptr<uint8_t[]> _texelData;
-    std::unique_ptr<uint32_t[]> _layoutData;
+    std::unique_ptr<uint8_t[]> _layoutData;
 
     HgiTextureHandle _texelTexture;
     HgiTextureHandle _layoutTexture;

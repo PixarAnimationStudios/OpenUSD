@@ -193,7 +193,7 @@ GfCamera::SetFromViewAndProjectionMatrix(
         // Use !(a<b) rather than a>=b so that NaN is caught.
         if (!(fabs(projMatrix[2][3] - (-1.0)) < 1e-6)) {
             TF_WARN("GfCamera: Given projection matrix does not appear to be "
-                    "valid.");
+                    "valid perspective matrix.");
         }
 
         _projection = Perspective;
@@ -215,7 +215,7 @@ GfCamera::SetFromViewAndProjectionMatrix(
     } else {
         if (!(fabs(projMatrix[2][3]) < 1e-6)) {
             TF_WARN("GfCamera: Given projection matrix does not appear to be "
-                    "valid.");
+                    "valid orthographic matrix.");
         }
 
         _projection = Orthographic;

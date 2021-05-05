@@ -39,14 +39,26 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 
+// To avoid exporting the stb_* functions from our shared library
+// we define the STB_IMAGE_..._STATIC macros so that stb marks
+// them as static. This causes many "unused function" warnings,
+// so we use ARCH_PRAGMA_UNUSED_FUNCTION to suppress them.
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_UNUSED_FUNCTION
+
+#define STB_IMAGE_STATIC
 #define STB_IMAGE_IMPLEMENTATION
 #include "pxr/imaging/hio/stb/stb_image.h"
 
+#define STB_IMAGE_RESIZE_STATIC
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "pxr/imaging/hio/stb/stb_image_resize.h"
 
+#define STB_IMAGE_WRITE_STATIC
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "pxr/imaging/hio/stb/stb_image_write.h"
+
+ARCH_PRAGMA_POP
 
 PXR_NAMESPACE_OPEN_SCOPE
 

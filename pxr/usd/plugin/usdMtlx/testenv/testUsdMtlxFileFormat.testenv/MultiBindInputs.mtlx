@@ -1,21 +1,23 @@
 <?xml version="1.0"?>
-<materialx version="1.36">
+<materialx version="1.38">
   <ramplr name="layered_layer1_gradient" type="color3" />
   <ramplr name="layered_layer2_gradient" type="color3" />
   <ramplr name="layered_layer3_gradient" type="color3" />
   <output name="o_layered_layer1_gradient" type="color3" nodename="layered_layer1_gradient" />
   <output name="o_layered_layer2_gradient" type="color3" nodename="layered_layer2_gradient" />
   <output name="o_layered_layer3_gradient" type="color3" nodename="layered_layer3_gradient" />
-    <nodedef name="ND_layerShader" type="surfaceshader" node="layerShader">
-    <input name="weight_1" type="color3"/>
-    <input name="weight_2" type="color3"/>
-    <input name="weight_3" type="color3"/>
+  <nodedef name="ND_layerShader" node="layerShader">
+    <input name="weight_1" type="color3" />
+    <input name="weight_2" type="color3" />
+    <input name="weight_3" type="color3" />
+    <output name="out" type="surfaceshader" />
   </nodedef>
-  <material name="layered">
-    <shaderref name="layered_sr" node="layerShader">
-      <bindinput name="weight_1" type="color3" output="o_layered_layer1_gradient" />
-      <bindinput name="weight_2" type="color3" output="o_layered_layer2_gradient" />
-      <bindinput name="weight_3" type="color3" output="o_layered_layer3_gradient" />
-    </shaderref>
-  </material>
-</materialx> 
+  <layerShader name="layered_sr" type="surfaceshader">
+    <input name="weight_1" type="color3" output="o_layered_layer1_gradient" />
+    <input name="weight_2" type="color3" output="o_layered_layer2_gradient" />
+    <input name="weight_3" type="color3" output="o_layered_layer3_gradient" />
+  </layerShader>
+  <surfacematerial name="layered" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="layered_sr" />
+  </surfacematerial>
+</materialx>

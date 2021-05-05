@@ -147,13 +147,12 @@ def _GetLibMetadata(layer):
     globalPrim = layer.GetPrimAtPath('/GLOBAL')
     if not globalPrim:
         raise Exception("Code generation requires a \"/GLOBAL\" prim with "
-            "customData to define at least libraryName and libraryPath. "
-            "GLOBAL prim not found.")
+            "customData to define at least libraryName. GLOBAL prim not found.")
     
     if not globalPrim.customData:
         raise Exception("customData is either empty or not defined on /GLOBAL "
-            "prim. At least \"libraryName\" and \"libraryPath\" entries in "
-            "customData are required for code generation.")
+            "prim. At least \"libraryName\" entries in customData are required "
+            "for code generation.")
     
     # Return a copy of customData to avoid accessing an invalid map proxy during
     # template rendering.
@@ -174,10 +173,14 @@ def _GetLibName(layer):
 def _GetLibPath(layer):
     """ Return the libraryPath defined in layer."""
 
+    if _IsDynamicSchemaLayer(layer):
+        return ""
+
     libData = _GetLibMetadata(layer)
-    if 'libraryPath' not in libData:
+    if 'libraryPath' not in libData: 
         raise Exception("Code generation requires that \"libraryPath\" be "
-            "defined in customData on /GLOBAL prim.  The format for "
+            "defined in customData on /GLOBAL prim or the schema must be "
+            "declared dynamic, by specifying isDynamic=true. The format for "
             "libraryPath is \"path/to/lib\".")
 
     return libData['libraryPath']
@@ -240,7 +243,8 @@ def _ProperCase(aString):
         stripping out any non-alphanumeric characters.
     """
     if len(aString) > 1:
-        return ''.join([s[0].upper() + s[1:] for s in re.split(r'\W+', aString)])
+        return ''.join([s[0].upper() + s[1:] for s in re.split(r'\W+', aString) \
+            if len(s) > 0])
     else:
         return aString.upper()
 
@@ -337,6 +341,7 @@ class AttrInfo(PropInfo):
         if self.allowedTokens:
             tokenListStr = ', '.join(
                 [x if x else '""' for x in self.allowedTokens])
+            Print("tokenListStr: %s" %(tokenListStr))
             self.details.append(('\\ref ' + \
                 _GetTokensPrefix(sdfProp.layer) + \
                 'Tokens "Allowed Values"', tokenListStr))
@@ -832,6 +837,7 @@ def _AddToken(tokenDict, tokenId, val, desc):
             desc=desc + ', ' + token.desc)
     
     else:
+        Print("Add (%s) to tokenId (%s) key in the dict." %(val, tokenId))
         tokenDict[tokenId] = Token(tokenId, val, desc)
 
 
@@ -857,8 +863,12 @@ def GatherTokens(classes, libName, libTokens):
             # Add default value (if token type) to token set
             if attr.typeName == Sdf.ValueTypeNames.Token and attr.fallback:
                 fallbackName = _CamelCase(attr.fallback)
-                desc = 'Default value for %s::Get%sAttr()' % \
-                       (cls.cppClassName, _ProperCase(attr.name))
+                if attr.apiName != '':
+                    desc = 'Default value for %s::Get%sAttr()' % \
+                           (cls.cppClassName, _ProperCase(attr.apiName))
+                else:
+                    desc = 'Default value for %s schema attribute %s' % \
+                           (cls.cppClassName, attr.rawName)
                 cls.tokens.add(fallbackName)
                 _AddToken(tokenDict, fallbackName, attr.fallback, desc)
             
@@ -869,9 +879,15 @@ def GatherTokens(classes, libName, libTokens):
                     # but do not declare a named literal for it.
                     if val != '':
                         tokenId = _CamelCase(val)
-                        desc = 'Possible value for %s::Get%sAttr()' % \
-                               (cls.cppClassName, _ProperCase(attr.name))
+                        Print("tokenId: %s" %(tokenId))
+                        if attr.apiName != '':
+                            desc = 'Possible value for %s::Get%sAttr()' % \
+                                   (cls.cppClassName, _ProperCase(attr.apiName))
+                        else:
+                            desc = 'Possible value for %s schema attribute %s' % \
+                                   (cls.cppClassName, attr.rawName)
                         cls.tokens.add(tokenId)
+                        Print("About to add val (%s) to tokenId (%s)." %(val, tokenId))
                         _AddToken(tokenDict, tokenId, val, desc)
 
         # Add tokens from relationships to the token set
@@ -1067,7 +1083,7 @@ def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env):
                     {"apiSchemaAutoApplyTo": list(cls.apiAutoApply)})
 
             # Write out alias/primdefs for concrete IsA schemas and API schemas
-            if (cls.isConcrete or cls.isApi):
+            if (cls.isTyped or cls.isApi):
                 clsDict['alias'] = {'UsdSchemaBase': cls.usdPrimTypeName}
 
             types[cls.cppClassName] = clsDict

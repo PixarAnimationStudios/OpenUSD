@@ -89,7 +89,7 @@ UsdMtlxGetDocumentFromString(const std::string &mtlxXml);
 // default if isdefaultversion exists and is set to "true".
 USDMTLX_LOCAL
 NdrVersion
-UsdMtlxGetVersion(const MaterialX::ConstElementPtr& mtlx,
+UsdMtlxGetVersion(const MaterialX::ConstInterfaceElementPtr& mtlx,
                   bool* implicitDefault = nullptr);
 
 /// Return the source URI for a MaterialX element.  If the element

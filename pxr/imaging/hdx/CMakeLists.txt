@@ -42,6 +42,7 @@ pxr_library(hdx
         colorChannelTask
         colorCorrectionTask
         drawTargetTask
+        freeCameraSceneDelegate
         fullscreenShader
         hgiConversions
         oitBufferAccessor
@@ -62,6 +63,7 @@ pxr_library(hdx
         taskController
         tokens
         types
+        visualizeAovTask
 
     PUBLIC_HEADERS
         shadowMatrixComputation.h
@@ -80,18 +82,20 @@ pxr_library(hdx
         shaders/colorChannel.glslfx
         shaders/colorCorrection.glslfx
         shaders/fullscreen.glslfx
+        shaders/oitResolveImageShader.glslfx
+        shaders/outline.glslfx
         shaders/renderPass.glslfx
-        shaders/renderPassShader.glslfx
-        shaders/renderPassDiscardUnselectedShader.glslfx
+        shaders/renderPassColorShader.glslfx
+        shaders/renderPassColorAndSelectionShader.glslfx
+        shaders/renderPassColorWithOccludedSelectionShader.glslfx
         shaders/renderPassIdShader.glslfx
         shaders/renderPassPickingShader.glslfx
-        shaders/renderPassShadowShader.glslfx
-        shaders/selection.glslfx
         shaders/renderPassOitShader.glslfx
         shaders/renderPassOitOpaqueShader.glslfx
         shaders/renderPassOitVolumeShader.glslfx
-        shaders/oitResolveImageShader.glslfx
-        shaders/outline.glslfx
+        shaders/renderPassShadowShader.glslfx
+        shaders/selection.glslfx
+        shaders/visualize.glslfx
         textures/StinsonBeach.exr
 
     DOXYGEN_FILES

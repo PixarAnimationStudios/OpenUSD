@@ -1,0 +1,19 @@
+#usda 1.0
+(
+    startTimeCode = 1
+    endTimeCode = 2
+)
+
+def Xform "World" (
+    customData = {
+        bool zUp = 1
+    }
+    kind = "group"
+)
+{
+    def Points "points"
+    {
+        Vec3f[] extent
+    }
+}
+

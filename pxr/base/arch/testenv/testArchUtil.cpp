@@ -29,8 +29,8 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/systemInfo.h"
-#include <iostream>
 #include <thread>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
@@ -46,8 +46,8 @@
 #if defined(ARCH_OS_WINDOWS)
 static const char* crashArgument[] = {
     "--crash-raise",
-    "--crash-mem",
-    "--crash-mem-thread"
+    "--crash-invalid-read",
+    "--crash-invalid-read-thread"
 };
 #endif
 
@@ -58,72 +58,40 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace {
 
 /*
- * Arch_CorruptMemory
- *     causes the calling program to crash by doing bad malloc things, so
+ * Arch_ReadInvalidAddresses
+ *     causes the calling program to crash by reading from bad addresses, so
  *     that crash handling behavior can be tested.  If 'spawnthread'
  *     is true, it spawns a thread which is alive during the crash.  If the
- *     program fails to crash, this aborts (since memory will be trashed.)
+ *     program fails to crash, this aborts.
  */
 void
-Arch_CorruptMemory(bool spawnthread)
+Arch_ReadInvalidAddresses(bool spawnthread)
 {
-    char *overwrite, *another;
-
     std::thread t;
     if (spawnthread) {
         t = std::thread([](){ while(true) ; });
     }
 
 #if defined(ARCH_OS_WINDOWS)
-    // On Windows we simply raise SIGSEGV because we can't reliably
-    // do anything once the heap has been corrupted.  Even if we install
-    // a frame-based structured exception handler, we can't be sure some
-    // other thread won't encounter corrupted memory (and Windows 10
-    // automatically starts several threads in every process).
+    // On Windows we simply raise SIGSEGV.  Reading invalid addresses causes the
+    // program to terminate, but with a zero return code, which is not what we
+    // need for testing purposes here.  I spent a few minutes going down the
+    // Windows SEH rabbit hole, but there's no local "quick fix" that will let
+    // the pieces plug together. Frankly, if we wnat to support the kind of
+    // full-featured postmortem crash reporting we have on Linux, it's going to
+    // take a lot of work.  If we ever care to do that, we'll need to revisit
+    // this.
     raise(SIGSEGV);
 #endif
 
-    for (size_t i = 0; i < 15; ++i) {
-        overwrite = (char *)malloc(2);
-        another = (char *)malloc(7);
-
-#define STRING "this is a long string, which will overwrite a lot of memory"
-        for (size_t j = 0; j <= i; ++j)
-            strcpy(overwrite + (j * sizeof(STRING)), STRING);
-        cerr << "succeeded in overwriting buffer with sprintf\n";
-
-        free(another);
-        cerr << "succeeded in freeing another allocated buffer\n";
-
-        another = (char *)malloc(7);
-        cerr << "succeeded in allocating another buffer after overwrite\n";
-
-        another = (char *)malloc(13);
-        cerr << "succeeded in allocating a second buffer after overwrite\n";
-
-        another = (char *)malloc(7);
-        cerr << "succeeded in allocating a third buffer after overwrite\n";
-
-        free(overwrite);
-        cerr << "succeeded in freeing overwritten buffer\n";
-        free(overwrite);
-        cerr << "succeeded in freeing overwrite AGAIN\n";
+    for (size_t i = 0; i != ~0ull; ++i) {
+        // This will eventually give us NULL in a way that the compiler probably
+        // cannot prove at compile-time.
+        char const *ptr = reinterpret_cast<char const *>(rand() & 7);
+        printf("byte %p = %d\n", ptr, *ptr);
     }
 
-    // Added this to get the test to crash with SmartHeap.  
-    overwrite = (char *)malloc(1);
-    for (size_t i = 0; i < 1000000; ++i)
-    overwrite[i] = ' ';
-
-    // Boy, darwin just doesn't want to crash: ok, handle *this*...
-    for (size_t i = 0; i < 128000; i++) {
-        char* ptr = (char*) malloc(i);
-        free(ptr + i);
-        free(ptr - i);
-        free(ptr);
-    }
-
-    cerr << "FAILED to crash! Aborting.\n";
+    fprintf(stderr, "FAILED to crash! Aborting.\n");
     ArchAbort();
 }
 
@@ -135,12 +103,12 @@ Arch_TestCrash(ArchTestCrashMode mode)
         ARCH_ERROR("Testing ArchError");
         break;
 
-    case ArchTestCrashMode::CorruptMemory:
-        Arch_CorruptMemory(false);
+    case ArchTestCrashMode::ReadInvalidAddresses:
+        Arch_ReadInvalidAddresses(false);
         break;
 
-    case ArchTestCrashMode::CorruptMemoryWithThread:
-        Arch_CorruptMemory(true);
+    case ArchTestCrashMode::ReadInvalidAddressesWithThread:
+        Arch_ReadInvalidAddresses(true);
         break;
     }
 }

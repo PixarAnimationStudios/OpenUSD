@@ -31,7 +31,6 @@
 
 #include "pxr/base/tf/stringUtils.h"
 
-#include <cstdlib>
 #include <set>
 #include <string>
 #include <vector>
@@ -43,35 +42,34 @@ using std::set;
 using std::string;
 using std::vector;
 
-static set<string> *
+static set<string>
 Glf_BuildAvailableExtensions()
 {
     GlfSharedGLContextScopeHolder sharedContextScopeHolder;
 
-    static set<string> availableExtensions;
+    set<string> availableExtensions;
 
     // Get the available extensions from OpenGL if we haven't yet.
-    const char *extensions = (const char*) glGetString(GL_EXTENSIONS);
-    if ( extensions ) {
-        vector<string> extensionsList = TfStringTokenize(extensions);
+    if (const char *extensions = (const char*) glGetString(GL_EXTENSIONS)) {
+        const vector<string> extensionsList = TfStringTokenize(extensions);
         for (std::string const& extension : extensionsList) {
             availableExtensions.insert(extension);
         }
     }
-    return &availableExtensions;
+    return availableExtensions;
 }
 
 bool
 GlfHasExtensions(string const & queryExtensions)
 {
-    static set<string> *availableExtensions = Glf_BuildAvailableExtensions();
+    static set<string> availableExtensions = Glf_BuildAvailableExtensions();
 
     // Tokenize the queried extensions.
-    vector<string> extensionsList = TfStringTokenize(queryExtensions);
+    const vector<string> extensionsList = TfStringTokenize(queryExtensions);
 
     // Return false if any queried extension is not available.
     for (std::string const& extension : extensionsList) {
-        if (!availableExtensions->count(extension)) {
+        if (!availableExtensions.count(extension)) {
             return false;
         }
     }
@@ -80,19 +78,6 @@ GlfHasExtensions(string const & queryExtensions)
     return true;
 }
 
-
-bool
-GlfHasLegacyGraphics()
-{
-    GlfSharedGLContextScopeHolder sharedGLContext;
-    GarchGLApiLoad();
-
-    // if GL loader says we don't support OpenGL 2.0,
-    // then we must have very limited graphics.  In
-    // common usage, this should only be true for NX
-    // clients.
-    return !GARCH_GLAPI_HAS(VERSION_2_0);
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

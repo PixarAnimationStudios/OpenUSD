@@ -31,7 +31,6 @@
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
 #include "pxr/imaging/hdx/colorCorrectionTask.h"
-#include "pxr/imaging/hdx/colorChannelTask.h"
 
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -41,7 +40,6 @@
 #include "pxr/imaging/cameraUtil/framing.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/usd/sdf/path.h"
-#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/gf/matrix4d.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -128,9 +126,17 @@ public:
     void SetRenderOutputSettings(TfToken const& name,
                                  HdAovDescriptor const& desc);
 
-    // Get parameters for an AOV.
+    /// Get parameters for an AOV.
     HDX_API
     HdAovDescriptor GetRenderOutputSettings(TfToken const& name) const;
+
+    /// The destination API (e.g., OpenGL, see hgiInterop for details) and
+    /// framebuffer that the AOVs are presented into. The framebuffer
+    /// is a VtValue that encoding a framebuffer in a destination API
+    /// specific way.
+    /// E.g., a uint32_t (aka GLuint) for framebuffer object for OpenGL.
+    HDX_API
+    void SetPresentationOutput(TfToken const &api, VtValue const &framebuffer);
 
     /// -------------------------------------------------------
     /// Lighting API
@@ -262,7 +268,6 @@ private:
     // to the tasks, _CreateCamera() should be called first.
     void _CreateRenderGraph();
 
-    void _CreateCamera();
     void _CreateLightingTask();
     void _CreateShadowTask();
     SdfPath _CreateRenderTask(TfToken const& materialTag);
@@ -270,6 +275,7 @@ private:
     void _CreateSelectionTask();
     void _CreateColorizeSelectionTask();
     void _CreateColorCorrectionTask();
+    void _CreateVisualizeAovTask();
     void _CreatePickTask();
     void _CreatePickFromRenderBufferTask();
     void _CreateAovInputTask();
@@ -287,9 +293,9 @@ private:
     bool _SelectionEnabled() const;
     bool _ColorizeSelectionEnabled() const;
     bool _ColorCorrectionEnabled() const;
+    bool _VisualizeAovEnabled() const;
     bool _ColorizeQuantizationEnabled() const;
     bool _AovsSupported() const;
-    bool _CamerasSupported() const;
     bool _UsingAovs() const;
 
     // Helper function for renderbuffer management.
@@ -315,7 +321,7 @@ private:
                   SdfPath const& delegateID)
             : HdSceneDelegate(parentIndex, delegateID)
             {}
-        virtual ~_Delegate() = default;
+        ~_Delegate() override = default;
 
         // HdxTaskController set/get interface
         template <typename T>
@@ -343,24 +349,23 @@ private:
         }
 
         // HdSceneDelegate interface
-        virtual VtValue Get(SdfPath const& id, TfToken const& key);
-        virtual GfMatrix4d GetTransform(SdfPath const& id);
-        virtual VtValue GetCameraParamValue(SdfPath const& id, 
-                                            TfToken const& key);
-        virtual VtValue GetLightParamValue(SdfPath const& id, 
-                                            TfToken const& paramName);
-        virtual bool IsEnabled(TfToken const& option) const;
-        virtual HdRenderBufferDescriptor
-            GetRenderBufferDescriptor(SdfPath const& id);
-        virtual TfTokenVector GetTaskRenderTags(SdfPath const& taskId);
+        VtValue Get(SdfPath const& id, TfToken const& key) override;
+        GfMatrix4d GetTransform(SdfPath const& id) override;
+        VtValue GetLightParamValue(SdfPath const& id, 
+                                   TfToken const& paramName) override;
+        bool IsEnabled(TfToken const& option) const override;
+        HdRenderBufferDescriptor
+            GetRenderBufferDescriptor(SdfPath const& id) override;
+        TfTokenVector GetTaskRenderTags(SdfPath const& taskId) override;
 
 
     private:
-        typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
-        typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;
+        using _ValueCache = TfHashMap<TfToken, VtValue, TfToken::HashFunctor>;
+        using _ValueCacheMap = TfHashMap<SdfPath, _ValueCache, SdfPath::Hash>;
         _ValueCacheMap _valueCacheMap;
     };
     _Delegate _delegate;
+    std::unique_ptr<class HdxFreeCameraSceneDelegate> _freeCameraSceneDelegate;
 
     // Generated tasks.
     SdfPath _simpleLightTaskId;
@@ -371,12 +376,11 @@ private:
     SdfPath _selectionTaskId;
     SdfPath _colorizeSelectionTaskId;
     SdfPath _colorCorrectionTaskId;
+    SdfPath _visualizeAovTaskId;
     SdfPath _pickTaskId;
     SdfPath _pickFromRenderBufferTaskId;
     SdfPath _presentTaskId;
 
-    // Generated camera (for the default/free cam)
-    SdfPath _freeCamId;
     // Current active camera
     SdfPath _activeCameraId;
     

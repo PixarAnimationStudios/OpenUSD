@@ -72,6 +72,79 @@ GfQuatf::Normalize(float eps)
     return length;
 }
 
+// The derivation of this is somewhat obscure so here's how this works.
+//
+// If we call this quaternion Q, and the point P, the goal is to
+// evaluate the expression
+//
+//     (Q * GfQuatf(0, P) * Q.GetInverse()).GetImaginary()
+// which evaluates to point, rotated by the quaternion.
+// 
+// A quaternion has a scalar real part and a vector imaginary part. Call them
+// r and i. The multiplication of two quaternions A * B expands to:
+//
+//     (Ar, Ai)*(Br, Bi) = (Ar*Br-(Ai . Bi), Ar*Bi+Br*Ai+(Ai x Bi))
+//                           ^real part^       ^imaginary part^
+// 
+// where . is vector dot product and x is vector cross product.
+//
+// Let us define len2 as the quaternion length squared. If the length is 1.0
+// (which is true for quaternions representing rotations) len2 will also be 1.0.
+//
+//     len2 = Q.GetLength()^2
+//          = Qr*Qr + (Qi . Qi)
+//
+// There are a few definitions and identities that will help us out here:
+//     Q.GetInverse() == (Qr, -Qi) * s
+//     (v1 x v2) = -(v2 x v1)
+//     v1 x (v2 x v3) = (v1 . v3)*v2 - (v1 . v2)*v3
+//     v1 x (v1 x v2) = (v1 . v2)*v1 - (v1 . v1)*v2
+//
+// That last identity is a special case of the one above it and it comes up in
+// the derivation.
+//
+// Finally, let R equal the result of transforming P by Q. This gives us the
+// quaternion equation:
+//     (0, R) = (Qr, Qi) * (0, P) * (Qr, -Qi) / len2
+//
+// For sake of space, we're going to just assume that the entire right-hand side
+// gets divided by len2 and save it out of the equations until the end.
+//
+//     (0, R) = (-(Qi . P), Qr*P + (Qi x P)) * (Qr, -Qi)
+//     (0, R) = ( ..., -(Qi . P)*(-Qi) + Qr*(Qr*P + (Qi x P)) + (Qr*P + (Qi x P)) x (-Qi))
+//
+// where ... represents the real part which simplifies to 0 and will henceforth be ignored:
+//
+//     R = -(Qi . P)*(-Qi) + Qr*(Qr*P + (Qi x P)) + (Qr*P + (Qi x P)) x (-Qi)
+//       = (Qi . P)*Qi + Qr^2*P + Qr*(Qi x P) + (Qr*P x (-Qi)) + ((Qi x P) x (-Qi))
+//       = (Qi . P)*Qi + Qr^2*P + Qr*(Qi x P) + Qr*(Qi x P) + (Qi x (Qi x P))
+//       = (Qi . P)*Qi + Qr^2*P + 2*Qr*(Qi x P) + (Qi x (Qi x P))
+//       = (Qi . P)*Qi + Qr^2*P + 2*Qr*(Qi x P) + (Qi . P)*Qi - (Qi . Qi)*P
+//       = 2*(Qi . P)*Qi + (Qr^2 - (Qi . Qi))*P + 2*Qr*(Qi x P)
+//
+// now that we've arrived here, lets reintroduce len2 to get:
+//
+//     R = (2*(Qi . P)*Qi + (Qr^2 - (Qi . Qi))*P + 2*Qr*(Qi x P)) / len2
+//
+// We can further notice that Qr^2 and (Qi . Qi) both appear in the equation
+// above and in the calculation of len2, giving us:
+//
+//     tmpDot = Qi . Qi
+//     tmpSqr = Qr * Qr
+//     R = (2*(Qi . P)*Qi + (tmpSqr - tmpDot)*P + 2*Qr*(Qi x P)) / (tmpSqr + tmpDot)
+//
+// which takes 22 multiplications, 11 additions, and 1 division
+//
+GfVec3f
+GfQuatf::Transform(const GfVec3f& point) const
+{
+    float tmpDot = GfDot(_imaginary, _imaginary);
+    float tmpSqr = _real * _real;
+    return (2 * GfDot(_imaginary, point) * _imaginary +
+            (tmpSqr - tmpDot) * point +
+            2 * _real * GfCross(_imaginary, point)) / (tmpSqr + tmpDot);
+}
+
 GfQuatf &
 GfQuatf::operator *=(const GfQuatf &q)
 {

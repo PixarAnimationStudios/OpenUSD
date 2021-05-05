@@ -170,9 +170,9 @@ UsdShadeShader::GetOutput(const TfToken &name) const
 }
 
 std::vector<UsdShadeOutput>
-UsdShadeShader::GetOutputs() const
+UsdShadeShader::GetOutputs(bool onlyAuthored) const
 {
-    return UsdShadeConnectableAPI(GetPrim()).GetOutputs();
+    return UsdShadeConnectableAPI(GetPrim()).GetOutputs(onlyAuthored);
 }
 
 UsdShadeInput
@@ -189,9 +189,9 @@ UsdShadeShader::GetInput(const TfToken &name) const
 }
 
 std::vector<UsdShadeInput>
-UsdShadeShader::GetInputs() const
+UsdShadeShader::GetInputs(bool onlyAuthored) const
 {
-    return UsdShadeConnectableAPI(GetPrim()).GetInputs();
+    return UsdShadeConnectableAPI(GetPrim()).GetInputs(onlyAuthored);
 }
 
 UsdAttribute

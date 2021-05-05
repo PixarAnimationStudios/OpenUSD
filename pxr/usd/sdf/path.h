@@ -303,7 +303,11 @@ public:
     
     /// Constructs the default, empty path.
     ///
-    constexpr SdfPath() = default;
+    SdfPath() noexcept {
+        // This generates a single instruction instead of 2 on gcc 6.3.  Seems
+        // to be fixed on gcc 7+ and newer clangs.  Remove when we're there!
+        memset(this, 0, sizeof(*this));
+    }
 
     /// Creates a path from the given string.
     ///
@@ -595,7 +599,9 @@ public:
     /// ('/foo').  For a prim property path (like '/foo/bar.property'), return
     /// the prim's path ('/foo/bar').  For a target path (like
     /// '/foo/bar.property[/target]') return the property path
-    /// ('/foo/bar.property').  For a relational attribute or mapper path (like
+    /// ('/foo/bar.property').  For a mapper path (like
+    /// '/foo/bar.property.mapper[/target]') return the property path
+    /// ('/foo/bar.property).  For a relational attribute path (like
     /// '/foo/bar.property[/target].relAttr') return the relationship target's
     /// path ('/foo/bar.property[/target]').  For a prim variant selection path
     /// (like '/foo/bar{var=sel}') return the prim path ('/foo/bar').  For a

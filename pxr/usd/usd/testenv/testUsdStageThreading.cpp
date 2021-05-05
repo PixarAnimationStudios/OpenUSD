@@ -35,7 +35,8 @@
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/base/work/dispatcher.h"
+#include "pxr/base/work/withScopedParallelism.h"
 
 #include <boost/random.hpp>
 #include <boost/program_options.hpp>
@@ -243,15 +244,16 @@ int main(int argc, char const **argv)
     TfStopwatch sw;
     sw.Start();
 
-    WorkArenaDispatcher wd;
-    auto localMsecsToRun = msecsToRun;
-    auto localRunForever = runForever;
-    for (size_t i = 0; i < numThreads; ++i) {
-        wd.Run([localMsecsToRun, localRunForever]() {
-                _WorkTask(localMsecsToRun, localRunForever);
-            });
-    }
-    wd.Wait();
+    WorkWithScopedParallelism([&]() {
+            WorkDispatcher wd;
+            auto localMsecsToRun = msecsToRun;
+            auto localRunForever = runForever;
+            for (size_t i = 0; i < numThreads; ++i) {
+                wd.Run([localMsecsToRun, localRunForever]() {
+                        _WorkTask(localMsecsToRun, localRunForever);
+                    });
+            }
+        });
 
     sw.Stop();
 

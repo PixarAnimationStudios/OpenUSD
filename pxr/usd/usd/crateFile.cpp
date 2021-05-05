@@ -63,9 +63,10 @@
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/singularTask.h"
 #include "pxr/base/work/utils.h"
+#include "pxr/base/work/withScopedParallelism.h"
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
@@ -870,7 +871,7 @@ private:
     // Queue of pending write operations.
     tbb::concurrent_queue<_WriteOp> _writeQueue;
 
-    WorkArenaDispatcher _dispatcher;
+    WorkDispatcher _dispatcher;
     WorkSingularTask _writeTask;
 };
 
@@ -893,61 +894,68 @@ struct CrateFile::_PackingContext
         
         // Populate this context with everything we need from \p crate in order
         // to do deduplication, etc.
-        WorkArenaDispatcher wd;
+        WorkWithScopedParallelism([this, crate]() {
+                WorkDispatcher wd;
 
-        // Read in any unknown sections so we can rewrite them later.
-        wd.Run([this, crate]() {
-                for (auto const &sec: crate->_toc.sections) {
-                    if (!_IsKnownSection(sec.name)) {
-                        unknownSections.emplace_back(
-                            sec.name, _ReadSectionBytes(sec, crate), sec.size);
-                    }
-                }
-            });
+                // Read in any unknown sections so we can rewrite them later.
+                wd.Run([this, crate]() {
+                        for (auto const &sec: crate->_toc.sections) {
+                            if (!_IsKnownSection(sec.name)) {
+                                unknownSections.emplace_back(
+                                    sec.name, _ReadSectionBytes(sec, crate),
+                                    sec.size);
+                            }
+                        }
+                    });
+                
+                // Ensure that pathToPathIndex is correctly populated.
+                wd.Run([this, crate]() {
+                        for (size_t i = 0; i != crate->_paths.size(); ++i)
+                            pathToPathIndex[crate->_paths[i]] = PathIndex(i);
+                    });
+                
+                // Ensure that fieldToFieldIndex is correctly populated.
+                wd.Run([this, crate]() {
+                        for (size_t i = 0; i != crate->_fields.size(); ++i)
+                            fieldToFieldIndex[
+                                crate->_fields[i]] = FieldIndex(i);
+                    });
+                
+                // Ensure that fieldsToFieldSetIndex is correctly populated.
+                auto const &fsets = crate->_fieldSets;
+                wd.Run([this, &fsets]() {
+                        vector<FieldIndex> fieldIndexes;
+                        for (auto fsBegin = fsets.begin(),
+                                 fsEnd = find(
+                                     fsBegin, fsets.end(), FieldIndex());
+                             fsBegin != fsets.end();
+                             fsBegin = fsEnd + 1,
+                                 fsEnd = find(
+                                     fsBegin, fsets.end(), FieldIndex())) {
+                            fieldIndexes.assign(fsBegin, fsEnd);
+                            fieldsToFieldSetIndex[fieldIndexes] =
+                                FieldSetIndex(fsBegin - fsets.begin());
+                        }
+                    });
 
-        // Ensure that pathToPathIndex is correctly populated.
-        wd.Run([this, crate]() {
-                for (size_t i = 0; i != crate->_paths.size(); ++i)
-                    pathToPathIndex[crate->_paths[i]] = PathIndex(i);
-            });
-
-        // Ensure that fieldToFieldIndex is correctly populated.
-        wd.Run([this, crate]() {
-                for (size_t i = 0; i != crate->_fields.size(); ++i)
-                    fieldToFieldIndex[crate->_fields[i]] = FieldIndex(i);
+                // Ensure that tokenToTokenIndex is correctly populated.
+                wd.Run([this, crate]() {
+                        for (size_t i = 0; i != crate->_tokens.size(); ++i)
+                            tokenToTokenIndex[
+                                crate->_tokens[i]] = TokenIndex(i);
+                    });
+                
+                // Ensure that stringToStringIndex is correctly populated.
+                wd.Run([this, crate]() {
+                        for (size_t i = 0; i != crate->_strings.size(); ++i)
+                            stringToStringIndex[
+                                crate->GetString(StringIndex(i))] =
+                                StringIndex(i);
+                    });
             });
         
-        // Ensure that fieldsToFieldSetIndex is correctly populated.
-        auto const &fsets = crate->_fieldSets;
-        wd.Run([this, &fsets]() {
-                vector<FieldIndex> fieldIndexes;
-                for (auto fsBegin = fsets.begin(),
-                         fsEnd = find(fsBegin, fsets.end(), FieldIndex());
-                     fsBegin != fsets.end();
-                     fsBegin = fsEnd + 1,
-                         fsEnd = find(fsBegin, fsets.end(), FieldIndex())) {
-                    fieldIndexes.assign(fsBegin, fsEnd);
-                    fieldsToFieldSetIndex[fieldIndexes] =
-                        FieldSetIndex(fsBegin - fsets.begin());
-                }
-            });
-
-        // Ensure that tokenToTokenIndex is correctly populated.
-        wd.Run([this, crate]() {
-                for (size_t i = 0; i != crate->_tokens.size(); ++i)
-                    tokenToTokenIndex[crate->_tokens[i]] = TokenIndex(i);
-            });
-
-        // Ensure that stringToStringIndex is correctly populated.
-        wd.Run([this, crate]() {
-                for (size_t i = 0; i != crate->_strings.size(); ++i)
-                    stringToStringIndex[
-                        crate->GetString(StringIndex(i))] = StringIndex(i);
-            });
-
         // Set file pos to start of the structural sections in the current TOC.
         bufferedOutput.Seek(crate->_toc.GetMinimumSectionStart());
-        wd.Wait();
     }
 
     // Destructively move the output file out of this context.
@@ -3349,25 +3357,26 @@ CrateFile::_ReadTokens(Reader reader)
     _tokens.clear();
     _tokens.resize(numTokens);
 
-    WorkArenaDispatcher wd;
-    struct MakeToken {
-        void operator()() const { (*tokens)[index] = TfToken(str); }
-        vector<TfToken> *tokens;
-        size_t index;
-        char const *str;
-    };
-    size_t i = 0;
-    for (; p < charsEnd && i != numTokens; ++i) {
-        MakeToken mt { &_tokens, i, p };
-        wd.Run(mt);
-        p += strlen(p) + 1;
-    }
-    wd.Wait();
-
-    if (i != numTokens) {
-        TF_RUNTIME_ERROR("Crate file claims %zu tokens, found %zu",
-                         numTokens, i);
-    }
+    WorkWithScopedParallelism([this, &p, charsEnd, numTokens]() {
+            WorkDispatcher wd;
+            struct MakeToken {
+                void operator()() const { (*tokens)[index] = TfToken(str); }
+                vector<TfToken> *tokens;
+                size_t index;
+                char const *str;
+            };
+            size_t i = 0;
+            for (; p < charsEnd && i != numTokens; ++i) {
+                MakeToken mt { &_tokens, i, p };
+                wd.Run(mt);
+                p += strlen(p) + 1;
+            }
+            wd.Wait();
+            if (i != numTokens) {
+                TF_RUNTIME_ERROR("Crate file claims %zu tokens, found %zu",
+                                 numTokens, i);
+            }
+        });
 
     WorkSwapDestroyAsync(chars);
 }
@@ -3388,25 +3397,25 @@ CrateFile::_ReadPaths(Reader reader)
     _paths.resize(reader.template Read<uint64_t>());
     std::fill(_paths.begin(), _paths.end(), SdfPath());
 
-    WorkArenaDispatcher dispatcher;
-    // VERSIONING: PathItemHeader changes size from 0.0.1 to 0.1.0.
-    Version fileVer(_boot);
-    if (fileVer == Version(0,0,1)) {
-        _ReadPathsImpl<_PathItemHeader_0_0_1>(reader, dispatcher);
-    } else if (fileVer < Version(0,4,0)) {
-        _ReadPathsImpl<_PathItemHeader>(reader, dispatcher);
-    } else {
-        // 0.4.0 has compressed paths.
-        _ReadCompressedPaths(reader, dispatcher);
-    }
-
-    dispatcher.Wait();
+    WorkWithScopedParallelism([this, &reader]() {
+            WorkDispatcher dispatcher;
+            // VERSIONING: PathItemHeader changes size from 0.0.1 to 0.1.0.
+            Version fileVer(_boot);
+            if (fileVer == Version(0,0,1)) {
+                _ReadPathsImpl<_PathItemHeader_0_0_1>(reader, dispatcher);
+            } else if (fileVer < Version(0,4,0)) {
+                _ReadPathsImpl<_PathItemHeader>(reader, dispatcher);
+            } else {
+                // 0.4.0 has compressed paths.
+                _ReadCompressedPaths(reader, dispatcher);
+            }
+        });
 }
 
 template <class Header, class Reader>
 void
 CrateFile::_ReadPathsImpl(Reader reader,
-                          WorkArenaDispatcher &dispatcher,
+                          WorkDispatcher &dispatcher,
                           SdfPath parentPath)
 {
     bool hasChild = false, hasSibling = false;
@@ -3458,7 +3467,7 @@ CrateFile::_ReadPathsImpl(Reader reader,
 template <class Reader>
 void
 CrateFile::_ReadCompressedPaths(Reader reader,
-                                WorkArenaDispatcher &dispatcher)
+                                WorkDispatcher &dispatcher)
 {
     // Read compressed data first.
     vector<uint32_t> pathIndexes;
@@ -3496,7 +3505,7 @@ CrateFile::_BuildDecompressedPathsImpl(
     vector<int32_t> const &jumps,
     size_t curIndex,
     SdfPath parentPath,
-    WorkArenaDispatcher &dispatcher)
+    WorkDispatcher &dispatcher)
 {
     bool hasChild = false, hasSibling = false;
     do {

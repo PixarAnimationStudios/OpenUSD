@@ -151,7 +151,7 @@ HdRprim::GetDrawItems(TfToken const& reprToken) const
 
     static HdRepr::DrawItemUniquePtrVector empty;
 
-    TF_CODING_ERROR("Rprim has draw items for repr %s", reprToken.GetText());
+    TF_CODING_ERROR("Rprim has no draw items for repr %s", reprToken.GetText());
 
     return empty;
 }
@@ -172,6 +172,18 @@ HdRprim::SetPrimId(int32_t primId)
 {
     _primId = primId;
     // Don't set DirtyPrimID here, to avoid undesired variability tracking.
+}
+
+void 
+HdRprim::SetMaterialId(SdfPath const& materialId)
+{
+    _materialId = materialId;
+}
+
+void 
+HdRprim::SetMaterialTag(TfToken const& materialTag)
+{
+    _sharedData.materialTag = materialTag;
 }
 
 bool
@@ -239,19 +251,6 @@ HdRprim::_UpdateInstancer(HdSceneDelegate* delegate,
             tracker.AddInstancerRprimDependency(instancerId, GetId());
         }
         _instancerId = instancerId;
-    }
-}
-
-void 
-HdRprim::_SetMaterialId(HdChangeTracker &changeTracker,
-                        SdfPath const& materialId)
-{
-    if (_materialId != materialId) {
-        _materialId = materialId;
-
-        // The batches need to be verified and rebuilt, since a changed shader
-        // may change aggregation.
-        changeTracker.MarkBatchesDirty();
     }
 }
 

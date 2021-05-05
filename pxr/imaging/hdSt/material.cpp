@@ -24,6 +24,8 @@
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/package.h"
+#include "pxr/imaging/hdSt/primUtils.h"
+#include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
@@ -187,8 +189,6 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    TF_UNUSED(renderParam);
-
     HdStResourceRegistrySharedPtr const& resourceRegistry =
         std::static_pointer_cast<HdStResourceRegistry>(
             sceneDelegate->GetRenderIndex().GetResourceRegistry());
@@ -307,7 +307,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     _ProcessTextureDescriptors(
         sceneDelegate,
         resourceRegistry,
-                _surfaceShader,
+        _surfaceShader,
         textureDescriptors,
         &textures,
         &specs,
@@ -339,7 +339,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     if (markBatchesDirty && _isInitialized) {
         // Only invalidate batches if this isn't our first round through sync.
         // If this is the initial sync, we haven't formed batches yet.
-        sceneDelegate->GetRenderIndex().GetChangeTracker().MarkBatchesDirty();
+        HdStMarkDrawBatchesDirty(renderParam);
     }
 
     if (needsRprimMaterialStateUpdate && _isInitialized) {
@@ -355,6 +355,14 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
     _isInitialized = true;
     *dirtyBits = Clean;
+}
+
+/*virtual*/
+void
+HdStMaterial::Finalize(HdRenderParam *renderParam)
+{
+    // Flag GC to reclaim resources owned by the surface shader.
+    HdStMarkGarbageCollectionNeeded(renderParam);
 }
 
 bool

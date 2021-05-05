@@ -442,44 +442,6 @@ public:
 
     // ---------------------------------------------------------------------- //
     /// @}
-    /// \name GarbageCollection Tracking
-    /// @{
-    // ---------------------------------------------------------------------- //
-
-    /// Clears the garbageCollectionNeeded flag.
-    void ClearGarbageCollectionNeeded() {
-        _needsGarbageCollection = false;
-    }
-
-    /// Sets the garbageCollectionNeeded flag.
-    void SetGarbageCollectionNeeded() {
-        _needsGarbageCollection = true;
-    }
-
-    /// Returns true if garbage collection was flagged to be run.
-    /// Currently, this flag only gets set internally when Rprims are removed.
-    bool IsGarbageCollectionNeeded() const {
-        return _needsGarbageCollection;
-    }
-
-    void ClearBprimGarbageCollectionNeeded() {
-        _needsBprimGarbageCollection = false;
-    }
-
-    /// Sets the garbageCollectionNeeded flag.
-    void SetBprimGarbageCollectionNeeded() {
-        _needsBprimGarbageCollection = true;
-    }
-
-    /// Returns true if garbage collection was flagged to be run.
-    /// Currently, this flag only gets set internally when Rprims are removed.
-    bool IsBprimGarbageCollectionNeeded() const {
-        return _needsBprimGarbageCollection;
-    }
-
-
-    // ---------------------------------------------------------------------- //
-    /// @}
     /// \name RprimCollection Tracking
     /// @{
     // ---------------------------------------------------------------------- //
@@ -507,15 +469,6 @@ public:
     unsigned GetVaryingStateVersion() const {
         return _varyingStateVersion;
     }
-
-    /// Marks all batches dirty, meaning they need to be validated and
-    /// potentially rebuilt.
-    HD_API
-    void MarkBatchesDirty();
-
-    /// Returns the current batch version.
-    HD_API
-    unsigned GetBatchVersion() const;
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -627,8 +580,6 @@ private:
 
     // Collection versions / state.
     _CollectionStateMap _collectionState;
-    bool _needsGarbageCollection;
-    bool _needsBprimGarbageCollection;
 
     // Provides reverse-association between instancers and the child
     // instancers/rprims that use them.
@@ -665,9 +616,6 @@ private:
 
     // Used to detect changes to the set of active render tags
     unsigned _renderTagVersion;
-
-    // Used to validate draw batches.
-    std::atomic_uint _batchVersion;
 };
 
 

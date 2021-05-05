@@ -47,7 +47,7 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/base/work/dispatcher.h"
 
 #include <boost/optional.hpp>
 
@@ -123,7 +123,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// - \ref Usd_stageSerialization "Serialization" methods for "flattening" a
 /// composition (to varying degrees), and exporting a completely flattened
 /// view of the stage to a string or file.  These methods can be very useful
-/// for targetted asset optimization and debugging, though care should be 
+/// for targeted asset optimization and debugging, though care should be
 /// exercized with large scenes, as flattening defeats some of the benefits of
 /// referenced scene description, and may produce very large results, 
 /// especially in file formats that do not support data de-duplication, like
@@ -1891,7 +1891,7 @@ private:
     template <class T>
     void _Recompose(const PcpChanges &changes, T *pathsToRecompose);
     template <class T>
-    void _RecomposePrims(const PcpChanges &changes, T *pathsToRecompose);
+    void _RecomposePrims(T *pathsToRecompose);
 
     // Helper for _Recompose to find the subtrees that need to be
     // fully recomposed and to recompose the name children of the
@@ -2218,7 +2218,7 @@ private:
     _LayerAndNoticeKeyVec _layersAndNoticeKeys;
     size_t _lastChangeSerialNumber;
 
-    boost::optional<WorkArenaDispatcher> _dispatcher;
+    boost::optional<WorkDispatcher> _dispatcher;
 
     // To provide useful aggregation of malloc stats, we bill everything
     // for this stage - from all access points - to this tag.

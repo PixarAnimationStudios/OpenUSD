@@ -32,7 +32,7 @@ from .common import (RenderModes, ColorCorrectionModes, PickModes,
 
 from . import settings2
 from .settings2 import StateSource
-from .constantGroup import ConstantGroup
+from pxr.UsdUtils.constantsGroup import ConstantsGroup
 from .freeCamera import FreeCamera
 from .common import ClearColors, HighlightColors
 

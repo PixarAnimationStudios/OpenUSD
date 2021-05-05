@@ -247,12 +247,14 @@ WRAP_CUSTOM {
              (arg("name"), arg("type")))
         .def("GetOutput", &UsdShadeShader::GetOutput, arg("name"))
         .def("GetOutputs", &UsdShadeShader::GetOutputs,
+             (arg("onlyAuthored") = true),
              return_value_policy<TfPySequenceToList>())
 
         .def("CreateInput", &UsdShadeShader::CreateInput,
              (arg("name"), arg("type")))
         .def("GetInput", &UsdShadeShader::GetInput, arg("name"))
         .def("GetInputs", &UsdShadeShader::GetInputs,
+             (arg("onlyAuthored") = true),
              return_value_policy<TfPySequenceToList>())
 
         ;

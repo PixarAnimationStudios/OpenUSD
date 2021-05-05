@@ -37,7 +37,6 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/vt/array.h"
-#include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -68,6 +67,10 @@ public:
     // light
     void AddLight(SdfPath const &id, GlfSimpleLight const &light);
     void SetLight(SdfPath const &id, TfToken const &key, VtValue value);
+
+    // render buffer
+    void AddRenderBuffer(SdfPath const &id,
+                         const HdRenderBufferDescriptor &desc);
 
     // draw target
     void AddDrawTarget(SdfPath const &id);
@@ -179,6 +182,9 @@ public:
 
     TfTokenVector GetTaskRenderTags(SdfPath const& taskId) override;
 
+    bool WriteRenderBufferToFile(SdfPath const &id,
+                                 std::string const &filePath);
+
 private:
     struct _Mesh {
         _Mesh() { }
@@ -245,12 +251,12 @@ private:
     std::map<SdfPath, _DrawTarget> _drawTargets;
     int _refineLevel;
 
-    typedef std::map<SdfPath, SdfPath> SdfPathMap;
+    using SdfPathMap = std::map<SdfPath, SdfPath>;
     SdfPathMap _materialBindings;
     SdfPathMap _instancerBindings;
 
-    typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
-    typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;
+    using _ValueCache = TfHashMap<TfToken, VtValue, TfToken::HashFunctor>;
+    using _ValueCacheMap = TfHashMap<SdfPath, _ValueCache, SdfPath::Hash>;
     _ValueCacheMap _valueCacheMap;
 
     SdfPath _cameraId;

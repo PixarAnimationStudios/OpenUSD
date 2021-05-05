@@ -61,6 +61,7 @@
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/glContext.h"
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/info.h"
 
 // Mesh Topology
@@ -814,7 +815,7 @@ UsdImagingGLLegacyEngine::_ProcessGprimColor(const UsdGeomGprim *gprimSchema,
     // Get interpolation and color using UsdShadeMaterial'
     VtValue colorAsVt;
     if (UsdImagingGprimAdapter::GetColor(prim, 
-                _params.frame, interpolation, &colorAsVt)) {
+                _params.frame, interpolation, &colorAsVt, nullptr)) {
         VtVec3fArray temp = colorAsVt.Get<VtVec3fArray>();
         color->push_back(temp[0]);
     } else {
@@ -1329,17 +1330,16 @@ UsdImagingGLLegacyEngine::TestIntersection(
     const int width = 128;
     const int height = width;
 
-    if (GlfHasLegacyGraphics()) {
-        TF_RUNTIME_ERROR("framebuffer object not supported");
-        return false;
-    }
-
     // Use a separate drawTarget (framebuffer object) for each GL context
     // that uses this renderer, but the drawTargets can share attachments.
-    
     GlfGLContextSharedPtr context = GlfGLContext::GetCurrentGLContext();
     if (!TF_VERIFY(context)) {
         TF_RUNTIME_ERROR("Invalid GL context");
+        return false;
+    }
+
+    if (GlfContextCaps::GetInstance().glVersion < 200) {
+        TF_RUNTIME_ERROR("framebuffer object not supported");
         return false;
     }
 

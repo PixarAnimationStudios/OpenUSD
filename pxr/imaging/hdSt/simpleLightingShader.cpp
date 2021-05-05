@@ -271,7 +271,19 @@ _GetResolvedDomeLightEnvironmentFilePath(
     const GlfSimpleLightVector & lights = ctx->GetLights();
     for (auto it = lights.rbegin(); it != lights.rend(); ++it) {
         if (it->IsDomeLight()) {
-            return it->GetDomeLightTextureFile().GetResolvedPath();
+            const SdfAssetPath &path = it->GetDomeLightTextureFile();
+            const std::string &assetPath = path.GetAssetPath();
+            if (assetPath.empty()) {
+                TF_WARN("Dome light has no texture asset path.");
+                return empty;
+            }
+
+            const std::string &resolvedPath = path.GetResolvedPath();
+            if (resolvedPath.empty()) {
+                TF_WARN("Texture asset path '%s' for dome light could not be resolved.",
+                        assetPath.c_str());
+            }
+            return resolvedPath;
         }
     }
 
@@ -425,7 +437,26 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
             thisShader),
         HdStComputeQueueZero);
     
-    static const GLuint numPrefilterLevels = 5;
+    // Calculate the number of mips for the prefilter texture
+    // Note that the size of the prefilter texture is half the size of the 
+    // original Environment Map (srcTextureObject)
+    const HdStUvTextureObject * const srcTextureObject = 
+        dynamic_cast<HdStUvTextureObject*>(
+            _domeLightEnvironmentTextureHandle->GetTextureObject().get());
+    if (!TF_VERIFY(srcTextureObject)) {
+        return;
+    }
+    const HgiTexture * const srcTexture = srcTextureObject->GetTexture().Get();
+    if (!srcTexture) {
+        TF_WARN(
+            "Invalid texture for dome light environment map at %s",
+            srcTextureObject->GetTextureIdentifier().GetFilePath().GetText());
+        return;
+    }
+    const GfVec3i srcDim = srcTexture->GetDescriptor().dimensions;
+
+    const unsigned int numPrefilterLevels = 
+        (unsigned int) std::log2(std::max(srcDim[0], srcDim[1]));
 
     // Prefilter map computations. mipLevel = 0 allocates texture.
     for (unsigned int mipLevel = 0; mipLevel < numPrefilterLevels; ++mipLevel) {

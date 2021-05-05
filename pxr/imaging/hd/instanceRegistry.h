@@ -178,6 +178,8 @@ public:
     const_iterator begin() const { return _dictionary.begin(); }
     const_iterator end() const { return _dictionary.end(); }
 
+    size_t size() const { return _dictionary.size(); }
+
     void Invalidate();
 
 private:

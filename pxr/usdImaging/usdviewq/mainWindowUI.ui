@@ -1593,6 +1593,11 @@
       <string>Hydra AOVs</string>
      </property>
     </widget>
+    <widget class="QMenu" name="menuRendererCommands">
+     <property name="title">
+      <string>Hydra Commands</string>
+     </property>
+    </widget>
     <widget class="QMenu" name="menuComplexity">
      <property name="title">
       <string>Complexity</string>
@@ -1607,6 +1612,7 @@
     <addaction name="menuRendererPlugin"/>
     <addaction name="menuRendererSettings"/>
     <addaction name="menuRendererAovs"/>
+    <addaction name="menuRendererCommands"/>
     <addaction name="actionPause"/>
     <addaction name="actionStop"/>
     <addaction name="separator"/>

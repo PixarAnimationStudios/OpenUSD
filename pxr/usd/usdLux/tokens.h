@@ -64,11 +64,11 @@ struct UsdLuxTokensType {
     USDLUX_API UsdLuxTokensType();
     /// \brief "angular"
     /// 
-    /// Possible value for UsdLuxDomeLight::GetInputsTextureFormatAttr()
+    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
     const TfToken angular;
     /// \brief "automatic"
     /// 
-    /// Possible value for UsdLuxDomeLight::GetInputsTextureFormatAttr(), Default value for UsdLuxDomeLight::GetInputsTextureFormatAttr()
+    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr(), Default value for UsdLuxDomeLight::GetTextureFormatAttr()
     const TfToken automatic;
     /// \brief "collection:filterLink:includeRoot"
     /// 
@@ -92,7 +92,7 @@ struct UsdLuxTokensType {
     const TfToken consumeAndHalt;
     /// \brief "cubeMapVerticalCross"
     /// 
-    /// Possible value for UsdLuxDomeLight::GetInputsTextureFormatAttr()
+    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
     const TfToken cubeMapVerticalCross;
     /// \brief "filterLink"
     /// 
@@ -154,6 +154,54 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxCylinderLight, UsdLuxSphereLight, UsdLuxDiskLight
     const TfToken inputsRadius;
+    /// \brief "inputs:shadow:color"
+    /// 
+    /// UsdLuxShadowAPI
+    const TfToken inputsShadowColor;
+    /// \brief "inputs:shadow:distance"
+    /// 
+    /// UsdLuxShadowAPI
+    const TfToken inputsShadowDistance;
+    /// \brief "inputs:shadow:enable"
+    /// 
+    /// UsdLuxShadowAPI
+    const TfToken inputsShadowEnable;
+    /// \brief "inputs:shadow:falloff"
+    /// 
+    /// UsdLuxShadowAPI
+    const TfToken inputsShadowFalloff;
+    /// \brief "inputs:shadow:falloffGamma"
+    /// 
+    /// UsdLuxShadowAPI
+    const TfToken inputsShadowFalloffGamma;
+    /// \brief "inputs:shaping:cone:angle"
+    /// 
+    /// UsdLuxShapingAPI
+    const TfToken inputsShapingConeAngle;
+    /// \brief "inputs:shaping:cone:softness"
+    /// 
+    /// UsdLuxShapingAPI
+    const TfToken inputsShapingConeSoftness;
+    /// \brief "inputs:shaping:focus"
+    /// 
+    /// UsdLuxShapingAPI
+    const TfToken inputsShapingFocus;
+    /// \brief "inputs:shaping:focusTint"
+    /// 
+    /// UsdLuxShapingAPI
+    const TfToken inputsShapingFocusTint;
+    /// \brief "inputs:shaping:ies:angleScale"
+    /// 
+    /// UsdLuxShapingAPI
+    const TfToken inputsShapingIesAngleScale;
+    /// \brief "inputs:shaping:ies:file"
+    /// 
+    /// UsdLuxShapingAPI
+    const TfToken inputsShapingIesFile;
+    /// \brief "inputs:shaping:ies:normalize"
+    /// 
+    /// UsdLuxShapingAPI
+    const TfToken inputsShapingIesNormalize;
     /// \brief "inputs:specular"
     /// 
     /// UsdLuxLight
@@ -172,7 +220,7 @@ struct UsdLuxTokensType {
     const TfToken inputsWidth;
     /// \brief "latlong"
     /// 
-    /// Possible value for UsdLuxDomeLight::GetInputsTextureFormatAttr()
+    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
     const TfToken latlong;
     /// \brief "lightLink"
     /// 
@@ -188,7 +236,7 @@ struct UsdLuxTokensType {
     const TfToken lightListCacheBehavior;
     /// \brief "mirroredBall"
     /// 
-    /// Possible value for UsdLuxDomeLight::GetInputsTextureFormatAttr()
+    /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
     const TfToken mirroredBall;
     /// \brief "orientToStageUpAxis"
     /// 
@@ -198,58 +246,10 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxDomeLight
     const TfToken portals;
-    /// \brief "shadow:color"
-    /// 
-    /// UsdLuxShadowAPI
-    const TfToken shadowColor;
-    /// \brief "shadow:distance"
-    /// 
-    /// UsdLuxShadowAPI
-    const TfToken shadowDistance;
-    /// \brief "shadow:enable"
-    /// 
-    /// UsdLuxShadowAPI
-    const TfToken shadowEnable;
-    /// \brief "shadow:falloff"
-    /// 
-    /// UsdLuxShadowAPI
-    const TfToken shadowFalloff;
-    /// \brief "shadow:falloffGamma"
-    /// 
-    /// UsdLuxShadowAPI
-    const TfToken shadowFalloffGamma;
     /// \brief "shadowLink"
     /// 
     ///  This token represents the collection name to use with UsdCollectionAPI to represent shadow-linking of a UsdLuxLight prim. 
     const TfToken shadowLink;
-    /// \brief "shaping:cone:angle"
-    /// 
-    /// UsdLuxShapingAPI
-    const TfToken shapingConeAngle;
-    /// \brief "shaping:cone:softness"
-    /// 
-    /// UsdLuxShapingAPI
-    const TfToken shapingConeSoftness;
-    /// \brief "shaping:focus"
-    /// 
-    /// UsdLuxShapingAPI
-    const TfToken shapingFocus;
-    /// \brief "shaping:focusTint"
-    /// 
-    /// UsdLuxShapingAPI
-    const TfToken shapingFocusTint;
-    /// \brief "shaping:ies:angleScale"
-    /// 
-    /// UsdLuxShapingAPI
-    const TfToken shapingIesAngleScale;
-    /// \brief "shaping:ies:file"
-    /// 
-    /// UsdLuxShapingAPI
-    const TfToken shapingIesFile;
-    /// \brief "shaping:ies:normalize"
-    /// 
-    /// UsdLuxShapingAPI
-    const TfToken shapingIesNormalize;
     /// \brief "treatAsLine"
     /// 
     /// UsdLuxCylinderLight

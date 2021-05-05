@@ -45,7 +45,8 @@ UsdImagingOpenVDBAssetAdapter::Get(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     TfToken const& key,
-    UsdTimeCode time) const
+    UsdTimeCode time,
+    VtIntArray *outIndices) const
 {
     if ( key == UsdVolTokens->filePath ||
          key == UsdVolTokens->fieldName ||
@@ -77,7 +78,8 @@ UsdImagingOpenVDBAssetAdapter::Get(
             prim,
             cachePath,
             key,
-            time);
+            time,
+            outIndices);
 }
 
 TfToken

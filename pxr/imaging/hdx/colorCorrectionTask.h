@@ -53,23 +53,23 @@ public:
     HdxColorCorrectionTask(HdSceneDelegate* delegate, SdfPath const& id);
 
     HDX_API
-    virtual ~HdxColorCorrectionTask();
+    ~HdxColorCorrectionTask() override;
 
     /// Prepare the tasks resources
     HDX_API
-    virtual void Prepare(HdTaskContext* ctx,
-                         HdRenderIndex* renderIndex) override;
+    void Prepare(HdTaskContext* ctx,
+                 HdRenderIndex* renderIndex) override;
 
     /// Execute the color correction task
     HDX_API
-    virtual void Execute(HdTaskContext* ctx) override;
+    void Execute(HdTaskContext* ctx) override;
 
 protected:
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdSceneDelegate* delegate,
-                       HdTaskContext* ctx,
-                       HdDirtyBits* dirtyBits) override;
+    void _Sync(HdSceneDelegate* delegate,
+               HdTaskContext* ctx,
+               HdDirtyBits* dirtyBits) override;
 
 private:
     HdxColorCorrectionTask() = delete;

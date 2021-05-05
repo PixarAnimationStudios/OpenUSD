@@ -24,13 +24,17 @@
 #include "pxr/imaging/hdx/unitTestDelegate.h"
 
 #include "pxr/base/gf/frustum.h"
+#include "pxr/base/tf/scoped.h"
 
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/sprim.h"
-
 #include "pxr/imaging/hd/camera.h"
+#include "pxr/imaging/hd/renderBuffer.h"
+
+#include "pxr/imaging/hdSt/hioConversions.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
+#include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/light.h"
 
 #include "pxr/imaging/hdx/drawTargetTask.h"
@@ -40,6 +44,8 @@
 #include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
 #include "pxr/imaging/hdx/shadowMatrixComputation.h"
+
+#include "pxr/imaging/hio/image.h"
 
 #include "pxr/imaging/pxOsd/tokens.h"
 
@@ -84,7 +90,7 @@ public:
         frustum.SetProjectionType(GfFrustum::Orthographic);
         frustum.SetWindow(GfRange2d(GfVec2d(-10, -10), GfVec2d(10, 10)));
         frustum.SetNearFar(GfRange1d(0, 100));
-        GfVec4d pos = light.GetPosition();
+        const GfVec4d pos = light.GetPosition();
         frustum.SetPosition(GfVec3d(0, 0, 10));
         frustum.SetRotation(GfRotation(GfVec3d(0, 0, 1),
                                        GfVec3d(pos[0], pos[1], pos[2])));
@@ -93,10 +99,18 @@ public:
             frustum.ComputeViewMatrix() * frustum.ComputeProjectionMatrix();
     }
 
-    virtual std::vector<GfMatrix4d> Compute(
-        const GfVec4f &viewport, CameraUtilConformWindowPolicy policy) {
-        return std::vector<GfMatrix4d>(1, _shadowMatrix);
+    std::vector<GfMatrix4d> Compute(
+            const GfVec4f &viewport,
+            CameraUtilConformWindowPolicy policy) override {
+        return { _shadowMatrix };
     }
+
+    std::vector<GfMatrix4d> Compute(
+            const CameraUtilFraming &framing,
+            CameraUtilConformWindowPolicy policy) override {
+        return { _shadowMatrix };
+    }
+
 private:
     GfMatrix4d _shadowMatrix;
 };
@@ -214,6 +228,16 @@ Hdx_UnitTestDelegate::SetLight(SdfPath const &id, TfToken const &key,
 }
 
 void
+Hdx_UnitTestDelegate::AddRenderBuffer(SdfPath const &id,
+                                      const HdRenderBufferDescriptor &desc)
+{
+    GetRenderIndex().InsertBprim(HdPrimTypeTokens->renderBuffer, this, id);
+
+    _ValueCache &cache = _valueCacheMap[id];
+    cache[_tokens->renderBufferDescriptor] = desc;
+}
+
+void
 Hdx_UnitTestDelegate::AddDrawTarget(SdfPath const &id)
 {
     GetRenderIndex().InsertSprim(HdPrimTypeTokens->drawTarget, this, id);
@@ -225,16 +249,13 @@ Hdx_UnitTestDelegate::AddDrawTarget(SdfPath const &id)
         const TfToken attachmentName("color");
         
         const SdfPath path = id.AppendProperty(attachmentName);
-        GetRenderIndex().InsertBprim(
-            HdPrimTypeTokens->renderBuffer, this, path);
         
         HdRenderBufferDescriptor desc;
         desc.dimensions = GfVec3i(256, 256, 1);
         desc.format = HdFormatUNorm8Vec4;
         desc.multiSampled = true;
-        
-        _ValueCache &cache = _valueCacheMap[path];
-        cache[_tokens->renderBufferDescriptor] = desc;
+
+        AddRenderBuffer(path, desc);
         
         HdRenderPassAovBinding aovBinding;
         aovBinding.aovName = attachmentName;
@@ -247,16 +268,13 @@ Hdx_UnitTestDelegate::AddDrawTarget(SdfPath const &id)
         const TfToken attachmentName("depth");
         
         const SdfPath path = id.AppendProperty(attachmentName);
-        GetRenderIndex().InsertBprim(
-            HdPrimTypeTokens->renderBuffer, this, path);
         
         HdRenderBufferDescriptor desc;
         desc.dimensions = GfVec3i(256, 256, 1);
         desc.format = HdFormatFloat32;
         desc.multiSampled = true;
-        
-        _ValueCache &cache = _valueCacheMap[path];
-        cache[_tokens->renderBufferDescriptor] = desc;
+
+        AddRenderBuffer(path, desc);
         
         HdRenderPassAovBinding aovBinding;
         aovBinding.aovName = attachmentName;
@@ -350,8 +368,6 @@ Hdx_UnitTestDelegate::AddShadowTask(SdfPath const &id)
     GetRenderIndex().InsertTask<HdxShadowTask>(this, id);
     _ValueCache &cache = _valueCacheMap[id];
     HdxShadowTaskParams params;
-    params.camera = _cameraId;
-    params.viewport = GfVec4f(0,0,512,512);
     cache[HdTokens->params] = VtValue(params);
 }
 
@@ -939,6 +955,56 @@ Hdx_UnitTestDelegate::GetTaskRenderTags(SdfPath const& taskId)
     return it2->second.Get<TfTokenVector>();
 }
 
+bool
+Hdx_UnitTestDelegate::WriteRenderBufferToFile(SdfPath const &id,
+                                              std::string const &filePath)
+{
+    HdBprim * const prim = GetRenderIndex().GetBprim(
+        HdPrimTypeTokens->renderBuffer, id);
+    HdRenderBuffer * const renderBuffer = dynamic_cast<HdRenderBuffer*>(prim);
+    if (!renderBuffer) {
+        TF_CODING_ERROR("No HdRenderBuffer prim at path %s",
+                        id.GetText());
+        return false;
+    }
+
+    HioImage::StorageSpec storage;
+    storage.width = renderBuffer->GetWidth();
+    storage.height = renderBuffer->GetHeight();
+    storage.format =
+        HdStHioConversions::GetHioFormat(renderBuffer->GetFormat());
+    storage.flipped = true;
+    storage.data = renderBuffer->Map();
+    TfScoped<> scopedUnmap([renderBuffer](){ renderBuffer->Unmap(); });
+
+    if (storage.format == HioFormatInvalid) {
+        TF_CODING_ERROR("Render buffer %s has format not corresponding to a"
+                        "HioFormat",
+                        id.GetText());
+        return false;
+    }
+
+    if (!storage.data) {
+        TF_CODING_ERROR("No data for render buffer %s",
+                        id.GetText());
+        return false;
+    }
+    
+    HioImageSharedPtr const image = HioImage::OpenForWriting(filePath);
+    if (!image) {
+        TF_RUNTIME_ERROR("Failed toopen image for writing %s",
+                         filePath.c_str());
+        return false;
+    }
+
+    if (!image->Write(storage)) {
+        TF_RUNTIME_ERROR("Failed to write image to %s",
+                         filePath.c_str());
+        return false;
+    }
+
+    return true;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

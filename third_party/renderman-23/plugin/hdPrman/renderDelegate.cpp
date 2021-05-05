@@ -51,6 +51,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (openvdbAsset)
     (field3dAsset)
+    ((mtlxRenderContext, "mtlx"))
 );
 
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanIntegratorTokens,
@@ -360,12 +361,25 @@ HdPrmanRenderDelegate::GetMaterialBindingPurpose() const
     return HdTokens->full;
 }
 
+#if HD_API_VERSION < 41
 TfToken
 HdPrmanRenderDelegate::GetMaterialNetworkSelector() const
 {
     static const TfToken ri("ri");
     return ri;
 }
+#else
+TfTokenVector
+HdPrmanRenderDelegate::GetMaterialRenderContexts() const
+{
+    static const TfToken ri("ri");
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+    return {ri, _tokens->mtlxRenderContext};
+#else
+    return {ri};
+#endif
+}
+#endif  
 
 TfTokenVector
 HdPrmanRenderDelegate::GetShaderSourceTypes() const

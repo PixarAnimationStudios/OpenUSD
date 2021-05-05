@@ -179,9 +179,6 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
         NSString *err = [error localizedDescription];
         TF_WARN("Failed to created pipeline state, error %s",
             [err UTF8String]);
-        if (error) {
-            [error release];
-        }
     }
 }
 

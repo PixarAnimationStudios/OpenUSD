@@ -755,6 +755,10 @@ HioOIIO_Image::ReadCropped(int const cropTop,
     }
 
     // Read pixel data
+    if (storage.format == HioFormatInvalid) {
+        TF_CODING_ERROR("invalid storage format");
+        return false;
+    }
     TypeDesc type = _GetOIIOBaseType(storage.format);
 
 #if OIIO_VERSION > 10603

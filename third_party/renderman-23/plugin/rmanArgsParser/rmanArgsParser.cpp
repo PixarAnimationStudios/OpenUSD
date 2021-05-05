@@ -85,9 +85,9 @@ namespace {
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    // Discovery and source type
     ((discoveryType, "args"))
     ((sourceType, "RmanCpp"))
+    ((bxdfType, "bxdf"))
 );
 
 // XML attribute names (as they come from the args file). Many attributes are
@@ -574,9 +574,13 @@ RmanArgsParserPlugin::_GetTypeName(
     TfToken typeName =
         _Get(attributes, _xmlAttributeNames->typeAttr, TfToken());
 
+    // 'bxdf' typed attributes are cast to the terminal type of the Sdr library
+    if (typeName == _tokens->bxdfType) {
+        typeName = SdrPropertyTypes->Terminal;
+    }
     // If the attributes indicates the property is a terminal, then the property
     // should be SdrPropertyTypes->Terminal
-    if (IsPropertyATerminal(attributes)) {
+    else if (IsPropertyATerminal(attributes)) {
         typeName = SdrPropertyTypes->Terminal;
     }
 

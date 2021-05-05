@@ -452,7 +452,8 @@ def DownloadFileWithUrllib(url, outputFilename):
     with open(outputFilename, "wb") as outfile:
         outfile.write(r.read())
 
-def DownloadURL(url, context, force, dontExtract = None):
+def DownloadURL(url, context, force, extractDir = None, 
+        dontExtract = None):
     """Download and extract the archive file at given URL to the
     source directory specified in the context. 
 
@@ -514,21 +515,28 @@ def DownloadURL(url, context, force, dontExtract = None):
 
         # Open the archive and retrieve the name of the top-most directory.
         # This assumes the archive contains a single directory with all
-        # of the contents beneath it.
+        # of the contents beneath it, unless a specific extractDir is specified,
+        # which is to be used.
         archive = None
         rootDir = None
         members = None
         try:
             if tarfile.is_tarfile(filename):
                 archive = tarfile.open(filename)
-                rootDir = archive.getnames()[0].split('/')[0]
+                if extractDir:
+                    rootDir = extractDir
+                else:
+                    rootDir = archive.getnames()[0].split('/')[0]
                 if dontExtract != None:
                     members = (m for m in archive.getmembers() 
                                if not any((fnmatch.fnmatch(m.name, p)
                                            for p in dontExtract)))
             elif zipfile.is_zipfile(filename):
                 archive = zipfile.ZipFile(filename)
-                rootDir = archive.namelist()[0].split('/')[0]
+                if extractDir:
+                    rootDir = extractDir
+                else:
+                    rootDir = archive.namelist()[0].split('/')[0]
                 if dontExtract != None:
                     members = (m for m in archive.getnames() 
                                if not any((fnmatch.fnmatch(m, p)
@@ -630,7 +638,7 @@ elif Linux():
     if Python3():
         BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.gz"
     else:
-        BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
+        BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.66.0/boost_1_66_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Windows():
     # The default installation of boost on Windows puts headers in a versioned 
@@ -653,7 +661,7 @@ def InstallBoost_Helper(context, force, buildArgs):
     dontExtract = ["*/doc/*", "*/libs/*/doc/*"]
 
     with CurrentWorkingDirectory(DownloadURL(BOOST_URL, context, force, 
-                                             dontExtract)):
+                                             dontExtract=dontExtract)):
         bootstrap = "bootstrap.bat" if Windows() else "./bootstrap.sh"
         Run('{bootstrap} --prefix="{instDir}"'
             .format(bootstrap=bootstrap, instDir=context.instDir))
@@ -780,9 +788,14 @@ BOOST = Dependency("boost", InstallBoost, BOOST_VERSION_FILE)
 # Intel TBB
 
 if Windows():
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/2017_U6/tbb2017_20170412oss_win.zip"
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/2018_U6/tbb2018_20180822oss_win.zip"
+elif MacOS():
+    # On MacOS we experience various crashes in tests during teardown
+    # starting with 2018 Update 2. Until we figure that out, we use
+    # 2018 Update 1 on this platform.
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/2018_U1.tar.gz"
 else:
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/2017_U6.tar.gz"
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/2018_U6.tar.gz"
 
 def InstallTBB(context, force, buildArgs):
     if Windows():
@@ -791,7 +804,9 @@ def InstallTBB(context, force, buildArgs):
         InstallTBB_LinuxOrMacOS(context, force, buildArgs)
 
 def InstallTBB_Windows(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force)):
+    TBB_ROOT_DIR_NAME = "tbb2018_20180822oss"
+    with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force, 
+        TBB_ROOT_DIR_NAME)):
         # On Windows, we simply copy headers and pre-built DLLs to
         # the appropriate location.
 
@@ -906,55 +921,20 @@ PNG = Dependency("PNG", InstallPNG, "include/png.h")
 ############################################################
 # IlmBase/OpenEXR
 
-OPENEXR_URL = "https://github.com/openexr/openexr/archive/v2.2.0.zip"
+OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/v2.3.0.zip"
 
 def InstallOpenEXR(context, force, buildArgs):
-    srcDir = DownloadURL(OPENEXR_URL, context, force)
-
-    ilmbaseSrcDir = os.path.join(srcDir, "IlmBase")
-    with CurrentWorkingDirectory(ilmbaseSrcDir):
-        # openexr 2.2 has a bug with Ninja:
-        # https://github.com/openexr/openexr/issues/94
-        # https://github.com/openexr/openexr/pull/142
-        # Fix commit here:
-        # https://github.com/openexr/openexr/commit/8eed7012c10f1a835385d750fd55f228d1d35df9
-        # Merged here:
-        # https://github.com/openexr/openexr/commit/b206a243a03724650b04efcdf863c7761d5d5d5b
-        if context.cmakeGenerator == "Ninja":
-            PatchFile(
-                os.path.join('Half', 'CMakeLists.txt'),
-                [
-                    ("TARGET eLut POST_BUILD",
-                     "OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/eLut.h"),
-                    ("  COMMAND eLut > ${CMAKE_CURRENT_BINARY_DIR}/eLut.h",
-                     "  COMMAND eLut ARGS > ${CMAKE_CURRENT_BINARY_DIR}/eLut.h\n"
-                        "  DEPENDS eLut"),
-                    ("TARGET toFloat POST_BUILD",
-                     "OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/toFloat.h"),
-                    ("  COMMAND toFloat > ${CMAKE_CURRENT_BINARY_DIR}/toFloat.h",
-                     "  COMMAND toFloat ARGS > ${CMAKE_CURRENT_BINARY_DIR}/toFloat.h\n"
-                        "  DEPENDS toFloat"),
-
-                    ("  ${CMAKE_CURRENT_BINARY_DIR}/eLut.h\n"
-                         "  OBJECT_DEPENDS\n"
-                         "  ${CMAKE_CURRENT_BINARY_DIR}/toFloat.h\n",
-                     '  "${CMAKE_CURRENT_BINARY_DIR}/eLut.h;${CMAKE_CURRENT_BINARY_DIR}/toFloat.h"\n'),
-                ],
-                multiLineMatches=True)
-        RunCMake(context, force, buildArgs)
-
-    openexrSrcDir = os.path.join(srcDir, "OpenEXR")
-    with CurrentWorkingDirectory(openexrSrcDir):
-        RunCMake(context, force,
-                 ['-DILMBASE_PACKAGE_PREFIX="{instDir}"'
-                  .format(instDir=context.instDir)] + buildArgs)
+    with CurrentWorkingDirectory(DownloadURL(OPENEXR_URL, context, force)):
+        RunCMake(context, force, 
+                 ['-DOPENEXR_BUILD_PYTHON_LIBS=OFF',
+                  '-DOPENEXR_ENABLE_TESTS=OFF'] + buildArgs)
 
 OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
 
 ############################################################
 # Ptex
 
-PTEX_URL = "https://github.com/wdas/ptex/archive/v2.1.28.zip"
+PTEX_URL = "https://github.com/wdas/ptex/archive/v2.1.33.zip"
 
 def InstallPtex(context, force, buildArgs):
     if Windows():
@@ -1067,7 +1047,7 @@ def InstallOpenImageIO(context, force, buildArgs):
         # normally be picked up when we specify CMAKE_PREFIX_PATH. 
         # This may lead to undefined symbol errors at build or runtime. 
         # So, we explicitly specify the OpenEXR we want to use here.
-        extraArgs.append('-DOPENEXR_HOME="{instDir}"'
+        extraArgs.append('-DOPENEXR_ROOT="{instDir}"'
                          .format(instDir=context.instDir))
 
         # If Ptex support is disabled in USD, disable support in OpenImageIO
@@ -1092,12 +1072,7 @@ OPENIMAGEIO = Dependency("OpenImageIO", InstallOpenImageIO,
 ############################################################
 # OpenColorIO
 
-# Use v1.1.0 on MacOS and Windows since v1.0.9 doesn't build properly on
-# those platforms.
-if Linux():
-    OCIO_URL = "https://github.com/imageworks/OpenColorIO/archive/v1.0.9.zip"
-else:
-    OCIO_URL = "https://github.com/imageworks/OpenColorIO/archive/v1.1.0.zip"
+OCIO_URL = "https://github.com/imageworks/OpenColorIO/archive/v1.1.0.zip"
 
 def InstallOpenColorIO(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OCIO_URL, context, force)):
@@ -1292,14 +1267,14 @@ DRACO = Dependency("Draco", InstallDraco, "include/draco/compression/decode.h")
 ############################################################
 # MaterialX
 
-MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.37.3.zip"
+MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.0.zip"
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
-        # USD requires MaterialX to be built as a shared library on Linux
-        # Currently MaterialX does not support shared builds on Windows or MacOS
+        # USD requires MaterialX to be built as a shared library on Linux and MacOS
+        # Currently MaterialX does not support shared builds on Windows
         cmakeOptions = []
-        if Linux():
+        if Linux() or MacOS():
             cmakeOptions += ['-DMATERIALX_BUILD_SHARED_LIBS=ON']
 
         cmakeOptions += buildArgs;
@@ -1480,9 +1455,9 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_BUILD_DRACO_PLUGIN=OFF')
 
         if context.buildMaterialX:
-            extraArgs.append('-DPXR_BUILD_MATERIALX_PLUGIN=ON')
+            extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=ON')
         else:
-            extraArgs.append('-DPXR_BUILD_MATERIALX_PLUGIN=OFF')
+            extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
 
         if Windows():
             # Increase the precompiled header buffer limit.
@@ -1982,29 +1957,20 @@ if (not find_executable("g++") and
     PrintError("C++ compiler not found -- please install a compiler")
     sys.exit(1)
 
-if find_executable("python"):
-    # Error out if a 64bit version of python interpreter is not found
-    # Note: Ideally we should be checking the python binary found above, but
-    # there is an assumption (for very valid reasons) at other places in the
-    # script that the python process used to run this script will be found.
-    isPython64Bit = (ctypes.sizeof(ctypes.c_voidp) == 8)
-    if not isPython64Bit:
-        PrintError("64bit python not found -- please install it and adjust your"
-                   "PATH")
-        sys.exit(1)
-
-    # Error out on Windows with Python 3.8+. USD currently does not support
-    # these versions due to:
-    # https://docs.python.org/3.8/whatsnew/3.8.html#bpo-36085-whatsnew
-    isPython38 = (sys.version_info.major >= 3 and
-                  sys.version_info.minor >= 8)
-    if Windows() and isPython38:
-        PrintError("Python 3.8+ is not supported on Windows")
-        sys.exit(1)
-
-else:
-    PrintError("python not found -- please ensure python is included in your "
+# Error out if a 64bit version of python interpreter is not being used
+isPython64Bit = (ctypes.sizeof(ctypes.c_voidp) == 8)
+if not isPython64Bit:
+    PrintError("64bit python not found -- please install it and adjust your"
                "PATH")
+    sys.exit(1)
+
+# Error out on Windows with Python 3.8+. USD currently does not support
+# these versions due to:
+# https://docs.python.org/3.8/whatsnew/3.8.html#bpo-36085-whatsnew
+isPython38 = (sys.version_info.major >= 3 and
+              sys.version_info.minor >= 8)
+if Windows() and isPython38:
+    PrintError("Python 3.8+ is not supported on Windows")
     sys.exit(1)
 
 if find_executable("cmake"):

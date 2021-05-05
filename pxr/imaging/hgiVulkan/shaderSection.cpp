@@ -28,12 +28,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiVulkanShaderSection::HgiVulkanShaderSection(
     const std::string &identifier,
-    const HgiVulkanShaderSectionAttributeVector &attributes,
+    const HgiShaderSectionAttributeVector &attributes,
     const std::string &storageQualifier,
     const std::string &defaultValue)
-  : HgiShaderSection(identifier, std::string(), std::string(), defaultValue)
+  : HgiShaderSection(identifier, attributes, defaultValue)
   , _storageQualifier(storageQualifier)
-  , _attributes(attributes)
 {
 }
 
@@ -44,10 +43,12 @@ HgiVulkanShaderSection::WriteDeclaration(std::ostream &ss) const
 {
     //If it has attributes, write them with corresponding layout
     //identifiers and indicies
-    if(!_attributes.empty()) {
+    const HgiShaderSectionAttributeVector &attributes = GetAttributes();
+
+    if(!attributes.empty()) {
         ss << "layout(";
-        for (size_t i = 0; i < _attributes.size(); ++i) {
-            const HgiVulkanShaderSectionAttribute &a = _attributes[i];
+        for (size_t i = 0; i < attributes.size(); ++i) {
+            const HgiShaderSectionAttribute &a = attributes[i];
             if (i > 0) {
                 ss << ", ";
             }
@@ -126,7 +127,7 @@ HgiVulkanMacroShaderSection::VisitGlobalMacros(std::ostream &ss)
 HgiVulkanMemberShaderSection::HgiVulkanMemberShaderSection(
     const std::string &identifier,
     const std::string &typeName,
-    const HgiVulkanShaderSectionAttributeVector &attributes,
+    const HgiShaderSectionAttributeVector &attributes,
     const std::string &storageQualifier,
     const std::string &defaultValue)
   : HgiVulkanShaderSection(identifier,
@@ -180,7 +181,7 @@ HgiVulkanTextureShaderSection::HgiVulkanTextureShaderSection(
     const std::string &identifier,
     const unsigned int layoutIndex,
     const unsigned int dimensions,
-    const HgiVulkanShaderSectionAttributeVector &attributes,
+    const HgiShaderSectionAttributeVector &attributes,
     const std::string &defaultValue)
   : HgiVulkanShaderSection( identifier,
                             attributes,
@@ -237,6 +238,92 @@ HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
     ss << ", coord, 0);\n";
     ss << "    return result;\n";
     ss << "}\n";
+
+    return true;
+}
+
+HgiVulkanBufferShaderSection::HgiVulkanBufferShaderSection(
+    const std::string &identifier,
+    const uint32_t layoutIndex,
+    const std::string &type,
+    const HgiShaderSectionAttributeVector &attributes)
+  : HgiVulkanShaderSection( identifier,
+                        attributes,
+                        "buffer",
+                        "")
+  , _type(type)
+{
+}
+
+HgiVulkanBufferShaderSection::~HgiVulkanBufferShaderSection() = default;
+
+void
+HgiVulkanBufferShaderSection::WriteType(std::ostream &ss) const
+{
+    ss << _type;
+}
+
+bool
+HgiVulkanBufferShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
+{
+    //If it has attributes, write them with corresponding layout
+    //identifiers and indicies
+    const HgiShaderSectionAttributeVector &attributes = GetAttributes();
+
+    if(!attributes.empty()) {
+        ss << "layout(";
+        for (size_t i = 0; i < attributes.size(); i++)
+        {
+            if (i > 0) {
+                ss << ", ";
+            }
+            const HgiShaderSectionAttribute &a = attributes[i];
+            ss << a.identifier;
+            if(!a.index.empty()) {
+                ss << " = " << a.index;
+            }
+        }
+        ss << ") ";
+    }
+    //If it has a storage qualifier, declare it
+    ss << " buffer ";
+    WriteIdentifier(ss);
+    ss << " { ";
+    WriteType(ss);
+    ss << " ";
+    WriteIdentifier(ss);
+    ss << "[]; };";
+
+    return true;
+}
+
+HgiVulkanKeywordShaderSection::HgiVulkanKeywordShaderSection(
+    const std::string &identifier,
+    const std::string &type,
+    const std::string &keyword)
+  : HgiVulkanShaderSection(identifier)
+  , _type(type)
+  , _keyword(keyword)
+{
+}
+
+HgiVulkanKeywordShaderSection::~HgiVulkanKeywordShaderSection() = default;
+
+void
+HgiVulkanKeywordShaderSection::WriteType(std::ostream &ss) const
+{
+    ss << _type;
+}
+
+bool
+HgiVulkanKeywordShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
+{
+    WriteType(ss);
+    ss << " ";
+    WriteIdentifier(ss);
+    ss << " = ";
+    ss << _keyword;
+    ss << ";";
 
     return true;
 }

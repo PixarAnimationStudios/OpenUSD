@@ -34,6 +34,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void wrapThreadLimits()
 {
     def("GetConcurrencyLimit", &WorkGetConcurrencyLimit);
+    def("HasConcurrency", &WorkHasConcurrency);
     def("GetPhysicalConcurrencyLimit", &WorkGetPhysicalConcurrencyLimit);
 
     def("SetConcurrencyLimit", &WorkSetConcurrencyLimit);

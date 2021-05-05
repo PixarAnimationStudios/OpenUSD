@@ -406,7 +406,8 @@ public:
     ///
     /// \sa UsdShadeUtils::GetValueProducingAttributes
     USDSHADE_API
-    UsdShadeAttributeVector GetValueProducingAttributes() const;
+    UsdShadeAttributeVector GetValueProducingAttributes(
+        bool shaderOutputsOnly = false) const;
 
     /// @}
 

@@ -100,8 +100,12 @@ public:
                            SdfPath const& cachePath,
                            UsdImagingIndexProxy* index) override;
 
+    // ---------------------------------------------------------------------- //
+    /// \name Utilities 
+    // ---------------------------------------------------------------------- //
+
     USDIMAGING_API
-    VtValue GetMaterialResource(UsdPrim const& prim, 
+    VtValue GetMaterialResource(UsdPrim const &prim,
                                 SdfPath const& cachePath, 
                                 UsdTimeCode time) const override;
 
@@ -109,15 +113,7 @@ protected:
     USDIMAGING_API
     void _RemovePrim(SdfPath const& cachePath,
                      UsdImagingIndexProxy* index) final;
-
-private:
-    void _GetMaterialNetworkMap(UsdPrim const &prim, 
-                                TfToken const& materialNetworkSelector,
-                                HdMaterialNetworkMap *materialNetworkMap,
-                                UsdTimeCode time,
-                                bool* timeVarying) const;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

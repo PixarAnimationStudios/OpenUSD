@@ -182,6 +182,10 @@ public:
         return _sharedData->materialTag;
     }
 
+    TopologyToPrimvarVector const& GetFvarTopologyToPrimvarVector() const {
+        return _sharedData->fvarTopologyToPrimvarVector;
+    }
+
     /// Returns true if the drawItem has instancer.
     HD_API
     bool HasInstancer() const {

@@ -57,16 +57,6 @@ HdResourceRegistry::Commit()
     _Commit();
 }
 
-void
-HdResourceRegistry::GarbageCollectBprims()
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    // Prompt derived registries to collect their garbage.
-    _GarbageCollectBprims();
-}
-
 void HdResourceRegistry::InvalidateShaderRegistry()
 {
     // Derived classes that hold shaders will override this,
@@ -93,11 +83,6 @@ HdResourceRegistry::_Commit()
 
 void
 HdResourceRegistry::_GarbageCollect()
-{
-}
-
-void
-HdResourceRegistry::_GarbageCollectBprims()
 {
 }
 

@@ -22,11 +22,14 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/renderBuffer.h"
-#include "pxr/imaging/hdSt/hgiConversions.h"
+
 #include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
-#include "pxr/imaging/hdSt/subtextureIdentifier.h"
+#include "pxr/imaging/hdSt/hgiConversions.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/subtextureIdentifier.h"
+#include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hd/aov.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
@@ -53,12 +56,31 @@ HdStRenderBuffer::HdStRenderBuffer(
     : HdRenderBuffer(id)
     , _resourceRegistry(resourceRegistry)
     , _format(HdFormatInvalid)
+    , _msaaSampleCount(4)
     , _mappers(0)
     , _mappedBuffer()
 {
 }
 
 HdStRenderBuffer::~HdStRenderBuffer() = default;
+
+void
+HdStRenderBuffer::Sync(HdSceneDelegate *sceneDelegate,
+                       HdRenderParam *renderParam,
+                       HdDirtyBits *dirtyBits)
+{
+    // Invoke base class processing for the DirtyDescriptor bit after pulling
+    // the MSAA sample count, which is authored for consumption by Storm alone.
+    if (*dirtyBits & DirtyDescription) {
+        VtValue val = sceneDelegate->Get(GetId(),
+                                HdStRenderBufferTokens->stormMsaaSampleCount);
+        if (val.IsHolding<uint32_t>()) {
+            _msaaSampleCount = val.UncheckedGet<uint32_t>();
+        }
+    }
+
+    HdRenderBuffer::Sync(sceneDelegate, renderParam, dirtyBits);
+}
 
 HdStTextureIdentifier
 HdStRenderBuffer::GetTextureIdentifier(const bool multiSampled)
@@ -134,7 +156,7 @@ HdStRenderBuffer::Allocate(
     
     if (multiSampled) {
         if (!_textureMSAAObject) {
-            // Allocate texture object if necesssary
+            // Allocate texture object if necessary
             _textureMSAAObject =
                 std::dynamic_pointer_cast<HdStDynamicUvTextureObject>(
                     _resourceRegistry->AllocateTextureObject(
@@ -163,7 +185,7 @@ HdStRenderBuffer::Allocate(
 
     if (multiSampled) {
         texDesc.debugName = _GetDebugName(_textureMSAAObject);
-        texDesc.sampleCount = HgiSampleCount4;
+        texDesc.sampleCount = HgiSampleCount(_msaaSampleCount);
 
         // Allocate actual GPU resource
         _CreateTexture(_textureMSAAObject, texDesc);

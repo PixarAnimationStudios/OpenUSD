@@ -134,6 +134,8 @@ void wrapQuatd()
         .def("GetConjugate", &GfQuatd::GetConjugate)
         .def("GetInverse", &GfQuatd::GetInverse)
 
+        .def("Transform", &GfQuatd::Transform)
+
         .def(str(self))
         .def(-self)
         .def(self == self)

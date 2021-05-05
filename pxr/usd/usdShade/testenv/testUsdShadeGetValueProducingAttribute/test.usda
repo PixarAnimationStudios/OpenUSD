@@ -4,6 +4,9 @@ def Material "Material"
 {
     token inputs:topLevelValue = "TopLevelValue"
 
+    token outputs:surfaceGood.connect = </Material/Terminal.outputs:bxdfOut>
+    token outputs:surfaceBad.connect = </Material/NodeGraph.outputs:nodeGraphOut2>
+
     def Shader "Terminal"
     {
         token inputs:terminalInput1 = "__unusedValue__"
@@ -30,6 +33,8 @@ def Material "Material"
             </Material/NodeGraph.outputs:nodeGraphMultiOutput>,
             </Material/RegularNode.outputs:nodeOutput>
         ]
+
+        token outputs:bxdfOut
     }
 
     def NodeGraph "NodeGraph"

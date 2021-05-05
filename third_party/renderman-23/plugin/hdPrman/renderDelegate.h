@@ -104,7 +104,11 @@ public:
     HDPRMAN_API virtual void DestroyBprim(HdBprim *bPrim) override;
     HDPRMAN_API virtual void CommitResources(HdChangeTracker *tracker) override;
     HDPRMAN_API virtual TfToken GetMaterialBindingPurpose() const override;
+#if HD_API_VERSION < 41
     HDPRMAN_API virtual TfToken GetMaterialNetworkSelector() const override;
+#else
+    HDPRMAN_API virtual TfTokenVector GetMaterialRenderContexts() const override;
+#endif
     HDPRMAN_API virtual TfTokenVector GetShaderSourceTypes() const override;
 
     HDPRMAN_API virtual void SetRenderSetting(TfToken const &key, 

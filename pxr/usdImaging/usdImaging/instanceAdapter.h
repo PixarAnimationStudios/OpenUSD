@@ -185,6 +185,10 @@ public:
         UsdPrim const& usdPrim,
         SdfPath const& cachePath) const override;
 
+    SdfPathVector GetInstancerPrototypes(
+        UsdPrim const& usdPrim,
+        SdfPath const& cachePath) const override;
+
     size_t SampleInstancerTransform(UsdPrim const& instancerPrim,
                                     SdfPath const& instancerPath,
                                     UsdTimeCode time,
@@ -205,7 +209,8 @@ public:
                          UsdTimeCode time,
                          size_t maxNumSamples, 
                          float *sampleTimes,
-                         VtValue *sampleValues) override;
+                         VtValue *sampleValues,
+                         VtIntArray *sampleIndices) override;
 
     TfToken GetPurpose(
         UsdPrim const& usdPrim, 
@@ -288,7 +293,8 @@ public:
     VtValue Get(UsdPrim const& prim,
                 SdfPath const& cachePath,
                 TfToken const& key,
-                UsdTimeCode time) const override;
+                UsdTimeCode time,
+                VtIntArray *outIndices) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Nested instancing support

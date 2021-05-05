@@ -56,8 +56,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "MetadataTest")
 
         self.assertEqual(set(primDef.ListPropertyMetadataFields("testAttr")), 
-            set(["allowedTokens", "default", "displayGroup", "displayName", 
-                 "documentation", "hidden", "testCustomMetadata", "typeName"]))
+            set(["allowedTokens", "custom", "default", "displayGroup",
+                 "displayName", "documentation", "hidden",
+                 "testCustomMetadata", "typeName", "variability"]))
         self.assertEqual(primDef.GetPropertyMetadata("testAttr", "typeName"),
                          "string")
         self.assertEqual(primDef.GetPropertyMetadata("testAttr", "allowedTokens"),
@@ -96,8 +97,8 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "MetadataTest")
 
         self.assertEqual(set(primDef.ListPropertyMetadataFields("testRel")), 
-            set(["displayGroup", "displayName", "documentation", "hidden", 
-                 "testCustomMetadata", "variability"]))
+            set(["custom", "displayGroup", "displayName", "documentation",
+                 "hidden", "testCustomMetadata", "variability"]))
         self.assertEqual(primDef.GetPropertyMetadata("testRel", "displayGroup"), 
                          "Display Group")
         self.assertEqual(primDef.GetPropertyMetadata("testRel", "displayName"), 
@@ -126,29 +127,53 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(relDef.GetInfo("testCustomMetadata"), "garply")
 
     def test_GetUsdSchemaTypeName(self):
-        testType = Tf.Type.FindByName("TestUsdSchemaRegistryMetadataTest")
+        abstractTest = Tf.Type.FindByName("TestUsdSchemaRegistryAbstractTest")
+        concreteTest = Tf.Type.FindByName("TestUsdSchemaRegistryMetadataTest")
         modelAPI = Tf.Type.FindByName("UsdModelAPI")
         collectionAPI = Tf.Type.FindByName("UsdCollectionAPI")
 
         # Test getting a schema type name from a TfType for a concrete typed
         # schema. 
         self.assertEqual(
-            Usd.SchemaRegistry.GetSchemaTypeName(testType), 
+            Usd.SchemaRegistry.GetSchemaTypeName(concreteTest), 
             "MetadataTest")
         self.assertEqual(
-            Usd.SchemaRegistry.GetConcreteSchemaTypeName(testType),
+            Usd.SchemaRegistry.GetConcreteSchemaTypeName(concreteTest),
             "MetadataTest")
         self.assertEqual(
-            Usd.SchemaRegistry.GetAPISchemaTypeName(testType), 
+            Usd.SchemaRegistry.GetAPISchemaTypeName(concreteTest), 
             "")
 
         # Test the reverse of getting the TfType for concrete typed schema name.
         self.assertEqual(
             Usd.SchemaRegistry.GetTypeFromSchemaTypeName("MetadataTest"),
-            testType)
+            concreteTest)
         self.assertEqual(
             Usd.SchemaRegistry.GetConcreteTypeFromSchemaTypeName("MetadataTest"),
-            testType)
+            concreteTest)
+        self.assertEqual(
+            Usd.SchemaRegistry.GetAPITypeFromSchemaTypeName("MetadataTest"), 
+            Tf.Type.Unknown)
+
+        # Test getting a schema type name from a TfType for an abstract typed
+        # schema. 
+        self.assertEqual(
+            Usd.SchemaRegistry.GetSchemaTypeName(abstractTest), 
+            "AbstractTest")
+        self.assertEqual(
+            Usd.SchemaRegistry.GetConcreteSchemaTypeName(abstractTest),
+            "")
+        self.assertEqual(
+            Usd.SchemaRegistry.GetAPISchemaTypeName(abstractTest), 
+            "")
+
+        # Test the reverse of getting the TfType for abastract typed schema name.
+        self.assertEqual(
+            Usd.SchemaRegistry.GetTypeFromSchemaTypeName("AbstractTest"),
+            abstractTest)
+        self.assertEqual(
+            Usd.SchemaRegistry.GetConcreteTypeFromSchemaTypeName("AbstractTest"),
+            Tf.Type.Unknown)
         self.assertEqual(
             Usd.SchemaRegistry.GetAPITypeFromSchemaTypeName("MetadataTest"), 
             Tf.Type.Unknown)
@@ -340,6 +365,228 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(
             Usd.SchemaRegistry().GetPropertyNamespacePrefix("ClipsAPI"), "")
 
+    def test_FlattenPrimDefinition(self):
+        # Verifies that the given spec has exactly the field values enumerated
+        # in expectedFieldValues
+        def _VerifyExpectedFieldValues(spec, expectedFieldValues):
+            for (expectedField, expectedValue) in expectedFieldValues.items():
+                self.assertEqual(spec.GetInfo(expectedField), expectedValue)
+            for field in spec.ListInfoKeys():
+                self.assertIn(field, expectedFieldValues)
+
+        # Verifies that there's a prim spec at path in the layer with the
+        # given set of prim spec fields and the expected properties (with their
+        # own expected fields.
+        def _VerifyExpectedPrimData(layer, path, expectedPrimFields,
+                                    expectedProperties):
+            # Verify the prim spec and its expected fields.
+            spec = layer.GetObjectAtPath(path)
+            self.assertTrue(spec)
+            _VerifyExpectedFieldValues(spec, expectedPrimFields)
+
+            # Verify the prim spec has exactly the expected properties and 
+            # each property has the expected fields for each expected property.
+            self.assertEqual(len(spec.properties), len(expectedProperties))
+            for (propName, fieldValues) in expectedProperties.items():
+                propSpec = spec.properties[propName]
+                self.assertTrue(propSpec)
+                _VerifyExpectedFieldValues(propSpec, fieldValues)
+
+        # Create a new layer with a sublayer for authoring.
+        layer = Sdf.Layer.CreateAnonymous(".usda")
+        sublayer = Sdf.Layer.CreateAnonymous(".usda")
+        layer.subLayerPaths.append(sublayer.identifier)
+
+        # Test flattening a prim definition for a concrete schema directly 
+        # to a new path in the layer with the def specifier. A new prim spec 
+        # will be created with given specifier (as well as an over for the 
+        # not yet existent parent path).
+        concretePrimDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
+            "MetadataTest")
+        self.assertTrue(concretePrimDef.FlattenTo(
+            layer, "/PrimDefs/ConcreteSchema", Sdf.SpecifierDef))
+
+        # Expected fields and properties from the concrete schema.
+        concretePrimDefPrimFields = {
+            "apiSchemas" : Sdf.TokenListOp.CreateExplicit([]),
+            "documentation" : concretePrimDef.GetDocumentation(),
+            "hidden" : True,
+            "testCustomMetadata" : "garply",
+            "specifier" : Sdf.SpecifierDef,
+            "typeName" : "MetadataTest"
+        }
+        concretePrimDefProperties = {
+            "testAttr" : {
+                "custom" : False,
+                "default" : "foo",
+                "typeName" : Sdf.ValueTypeNames.String,
+                "allowedTokens" : ["bar", "baz"],
+                "displayGroup" : "Display Group",
+                "displayName" : "Display Name",
+                "documentation" : "Testing documentation metadata",
+                "hidden" : True,
+                "testCustomMetadata" : "garply",
+                "variability" : Sdf.VariabilityVarying
+            },
+            "testRel" : {
+                "custom" : False,
+                "displayGroup" : "Display Group",
+                "displayName" : "Display Name",
+                "documentation" : "Testing documentation metadata",
+                "hidden" : True,
+                "testCustomMetadata" : "garply",
+                "variability" : Sdf.VariabilityUniform
+            }
+        }
+
+        # Verify the new spec exists and has the correct prim fields and 
+        # property specs.
+        _VerifyExpectedPrimData(layer, "/PrimDefs/ConcreteSchema",
+                                concretePrimDefPrimFields,
+                                concretePrimDefProperties)
+
+        # Test flattening a prim definition for an API schema directly 
+        # to a new path in the layer with the fallback over specifier. A new 
+        # overprim spec will be created.
+        apiPrimDef = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
+            "CollectionAPI")
+        self.assertTrue(apiPrimDef.FlattenTo(layer, "/PrimDefs/APISchema"))
+
+        # Expected fields and properties from the CollectionAPI schema. Note
+        # that CollectionAPI is a multiple apply schema but the expected 
+        # properties have no prefix. This is because the API prim definition is
+        # for the CollectionAPI itself, not an applied instance of the API 
+        # schema.
+        apiPrimDefPrimFields = {
+            "apiSchemas" : Sdf.TokenListOp.CreateExplicit([]),
+            "documentation" : apiPrimDef.GetDocumentation(),
+            "specifier" : Sdf.SpecifierOver
+        }
+        apiPrimDefProperties = {
+            "expansionRule" : {
+                "custom" : False,
+                "default" : "expandPrims",
+                "typeName" : Sdf.ValueTypeNames.Token,
+                "allowedTokens" : ["explicitOnly", "expandPrims", "expandPrimsAndProperties"],
+                "documentation" : apiPrimDef.GetPropertyDocumentation("expansionRule"),
+                "variability" : Sdf.VariabilityUniform
+            },
+            "includeRoot" : {
+                "custom" : False,
+                "default" : None,
+                "typeName" : Sdf.ValueTypeNames.Bool,
+                "documentation" : apiPrimDef.GetPropertyDocumentation("includeRoot"),
+                "variability" : Sdf.VariabilityUniform
+            },
+            "includes" : {
+                "custom" : False,
+                "documentation" : apiPrimDef.GetPropertyDocumentation("includes"),
+                "variability" : Sdf.VariabilityUniform
+            },
+            "excludes" : {
+                "custom" : False,
+                "documentation" : apiPrimDef.GetPropertyDocumentation("excludes"),
+                "variability" : Sdf.VariabilityUniform
+            }
+        }
+
+        # Verify the new spec exists and has the correct prim fields and 
+        # property specs.
+        _VerifyExpectedPrimData(layer, "/PrimDefs/APISchema", 
+                                apiPrimDefPrimFields,
+                                apiPrimDefProperties)
+
+        # Create stage from our to test the overloads of Flatten that take 
+        # a UsdPrim parent and a child name.
+        stage = Usd.Stage.Open(layer)
+        parentPrim = stage.GetPrimAtPath("/PrimDefs")
+        self.assertTrue(parentPrim)
+
+        # Flatten the concrete prim def to a new prim under the parent using
+        # the current edit target (root layer).
+        flattenPrim = concretePrimDef.FlattenTo(parentPrim, "FlattenToNewPrim")
+        self.assertTrue(flattenPrim)
+
+        # Verify the new spec exists on the root layer and has the correct prim
+        # fields and property specs. Note that FlattenTo was called with the
+        # default over specifier.
+        concretePrimDefPrimFields["specifier"] = Sdf.SpecifierOver
+        _VerifyExpectedPrimData(layer, "/PrimDefs/FlattenToNewPrim",
+                                concretePrimDefPrimFields,
+                                concretePrimDefProperties)
+
+        # Flatten the API prim def to the prim we just created using the 
+        # sublayer edit target.
+        with Usd.EditContext(stage, sublayer):
+            flattenPrim = apiPrimDef.FlattenTo(flattenPrim)
+            self.assertTrue(flattenPrim)
+
+        # Verify the new spec exists on the sublayer with the API schema fields
+        # and properties while the root layer still has the flattened concrete
+        # schema spec.
+        _VerifyExpectedPrimData(layer, "/PrimDefs/FlattenToNewPrim",
+                                concretePrimDefPrimFields,
+                                concretePrimDefProperties)
+        _VerifyExpectedPrimData(sublayer, "/PrimDefs/FlattenToNewPrim",
+                                apiPrimDefPrimFields,
+                                apiPrimDefProperties)
+
+        # Flatten the API prim def again to the same prim but now with the 
+        # root layer edit target.
+        flattenPrim = apiPrimDef.FlattenTo(flattenPrim)
+        self.assertTrue(flattenPrim)
+
+        # Verify that the root layer specs fields and properties have been
+        # fully replaced to match the API schema prim definition.
+        _VerifyExpectedPrimData(layer, "/PrimDefs/FlattenToNewPrim",
+                                apiPrimDefPrimFields,
+                                apiPrimDefProperties)
+
+        # Build the composed prim definition that would be created for a prim
+        # of the type "MetadataTest" with a CollectionAPI named "foo" applied.
+        newPrimDef = Usd.SchemaRegistry().BuildComposedPrimDefinition(
+            "MetadataTest", ["CollectionAPI:foo"])
+
+        # Flatten the composed prim definition to the already existing root 
+        # layer spec for the parent of all the other prim's we created.
+        self.assertTrue(layer.GetPrimAtPath("/PrimDefs"))
+        self.assertTrue(newPrimDef.FlattenTo(
+            layer, "/PrimDefs", Sdf.SpecifierDef))
+
+        # The prim fields for the composed prim definition will be the same
+        # as the concrete prim definition as prim fields don't come from 
+        # applied API schemas.
+        newPrimDefPrimFields = concretePrimDefPrimFields
+        # The apiSchemas metadata will always be set to explicit list of applied
+        # API schemas.
+        newPrimDefPrimFields["apiSchemas"] = \
+            Sdf.TokenListOp.CreateExplicit(["CollectionAPI:foo"])
+        # The specifier will still be "over" even though we suggested specifier
+        # "def" because the prim spec already existed. The suggested specifier
+        # only applies to newly created specs.
+        newPrimDefPrimFields["specifier"] = Sdf.SpecifierOver
+
+        # The expected properties are the combined set of properties from the 
+        # concrete schema and the applied schemas.
+        newPrimDefProperties = {}
+        for (propName, fieldValues) in concretePrimDefProperties.items():
+            newPrimDefProperties[propName] = fieldValues
+        # In this case all the properties from the applied multiple apply 
+        # will have the "collection:foo:" prefix as the schema is applied in
+        # this prim definition.
+        for (propName, fieldValues) in apiPrimDefProperties.items():
+            newPrimDefProperties["collection:foo:" + propName] = fieldValues
+
+        # Verify the prim spec matches the prim definition.
+        _VerifyExpectedPrimData(layer, "/PrimDefs",
+                                newPrimDefPrimFields,
+                                newPrimDefProperties)
+
+        # Verify that the existing children of the prim spec as FlattenTo
+        # doesn't clear or overwrite fields that can never be schema metadata.
+        self.assertTrue(layer.GetPrimAtPath("/PrimDefs/ConcreteSchema"))
+        self.assertTrue(layer.GetPrimAtPath("/PrimDefs/APISchema"))
+        self.assertTrue(layer.GetPrimAtPath("/PrimDefs/FlattenToNewPrim"))
 
 if __name__ == "__main__":
     unittest.main()

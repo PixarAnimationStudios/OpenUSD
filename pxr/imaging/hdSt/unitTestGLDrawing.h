@@ -54,6 +54,8 @@ public:
     int GetHeight() const;
     HDST_API
     void RunTest(int argc, char *argv[]);
+    HDST_API
+    void RunOffscreenTest();
 
     virtual void InitTest() = 0;
     HDST_API virtual void UninitTest();

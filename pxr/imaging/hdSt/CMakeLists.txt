@@ -20,11 +20,11 @@ set(optionalLibs "")
 set(optionalIncludeDirs "")
 set(optionalPublicClasses "")
 set(optionalPrivateClasses "")
-if (${PXR_ENABLE_MATERIALX_IMAGING_SUPPORT})
+if (${PXR_ENABLE_MATERIALX_SUPPORT})
     add_definitions(-DPXR_MATERIALX_STDLIB_DIR="${MATERIALX_STDLIB_DIR}")
-    add_definitions(-DPXR_MATERIALX_RESOURCE_DIR="${MATERIALX_RESOURCE_DIR}")
+    add_definitions(-DPXR_MATERIALX_BASE_DIR="${MATERIALX_BASE_DIR}")
 
-    list(APPEND optionalLibs ${MATERIALX_LIBRARIES})
+    list(APPEND optionalLibs ${MATERIALX_LIBRARIES} hdMtlx)
     list(APPEND optionalIncludeDirs ${MATERIALX_INCLUDE_DIRS})
     list(APPEND optionalPrivateClasses
          materialXFilter
@@ -79,11 +79,11 @@ pxr_library(hdSt
         flatNormals
         geometricShader
         glConversions
-        glfTextureCpuData
         glslfxShader
         glslProgram
         glUtils
         hgiConversions
+        hioConversions
         imageShaderRenderPass
         instancer
         interleavedMemoryManager
@@ -95,14 +95,15 @@ pxr_library(hdSt
         mixinShader
         package
         points
+        primUtils
         ptexTextureObject
         renderBuffer
         renderDelegate
+        renderParam
         renderPass
         renderPassShader
         renderPassState
         resourceRegistry
-        rprimUtils
         samplerObject
         samplerObjectRegistry
         shaderCode
@@ -110,7 +111,6 @@ pxr_library(hdSt
         smoothNormals
         subtextureIdentifier
         surfaceShader
-        texture
         textureBinder
         textureCpuData
         textureHandle
@@ -118,6 +118,7 @@ pxr_library(hdSt
         textureIdentifier
         textureObject
         textureObjectRegistry
+        textureUtils
         tokens
         udimTextureObject
         unitTestGLDrawing
@@ -139,6 +140,7 @@ pxr_library(hdSt
         cullingShaderKey
         drawBatch
         extCompComputeShader
+        fieldTextureCpuData
         imageShaderShaderKey
         immediateDrawBatch
         indirectDrawBatch
@@ -151,7 +153,6 @@ pxr_library(hdSt
         shaderKey
         subdivision
         subdivision3
-        textureUtils
         triangulate
         unitTestHelper
         volumeShader

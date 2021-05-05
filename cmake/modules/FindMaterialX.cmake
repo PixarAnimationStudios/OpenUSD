@@ -29,7 +29,7 @@
 # MATERIALX_FOUND            Defined if MaterialX has been detected
 # MATERIALX_BASE_DIR         Path to the root of the MaterialX installation 
 # MATERIALX_INCLUDE_DIRS     Path to the MaterialX include directories
-# MATERIALX_LIB_DIRS         Path to the MaterialX libraray directories
+# MATERIALX_LIB_DIRS         Path to the MaterialX library directories
 # MATERIALX_STDLIB_DIR       Path to the MaterialX standard library directory
 # MATERIALX_LIBRARIES        List of MaterialX libraries
 
@@ -71,7 +71,11 @@ if (WIN32)
     set(MATERIALX_CORE_DYNAMIC_LIB_NAME MaterialXCore.dll)
 else()
     set(MATERIALX_CORE_STATIC_LIB_NAME libMaterialXCore.a)
-    set(MATERIALX_CORE_DYNAMIC_LIB_NAME libMaterialXCore.so)
+    if (APPLE)
+        set(MATERIALX_CORE_DYNAMIC_LIB_NAME libMaterialXCore.dylib)
+    else()
+        set(MATERIALX_CORE_DYNAMIC_LIB_NAME libMaterialXCore.so)
+    endif()
 endif()
 
 find_path(MATERIALX_LIB_DIRS 
@@ -87,16 +91,15 @@ find_path(MATERIALX_LIB_DIRS
         "MaterialX Library Path"
 )
 
-find_path(MATERIALX_STDLIB_DIR 
-    stdlib_defs.mtlx
+find_path(MATERIALX_STDLIB_DIR
+    stdlib/stdlib_defs.mtlx
     HINTS
         "${MATERIALX_ROOT}"
-        "$ENV{MATERIALX_ROOT}"        
+        "$ENV{MATERIALX_ROOT}"
         "${MATERIALX_BASE_DIR}"
         "${MATERIALX_DATA_ROOT}"
     PATH_SUFFIXES
-        documents/Libraries
-        libraries/stdlib
+        libraries
     DOC
         "MaterialX Standard Libraries Path"
 )

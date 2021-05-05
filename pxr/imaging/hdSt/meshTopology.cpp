@@ -257,9 +257,18 @@ HdSt_MeshTopology::GetOsdIndexBuilderComputation()
     return _subdivision->CreateIndexComputation(this, topologyBuilder);
 }
 
+HdBufferSourceSharedPtr 
+HdSt_MeshTopology::GetOsdFvarIndexBuilderComputation(int channel)
+{
+    HdBufferSourceSharedPtr topologyBuilder = _osdTopologyBuilder.lock();
+    return _subdivision->CreateFvarIndexComputation(
+        this, topologyBuilder, channel);
+}
+
 HdBufferSourceSharedPtr
 HdSt_MeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source,
-                                        bool varying)
+                                           Interpolation interpolation,
+                                           int fvarChannel)
 {
     // Make a dependency to far mesh.
     // (see comment on GetQuadrangulateComputation)
@@ -280,13 +289,15 @@ HdSt_MeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source
 
     HdBufferSourceSharedPtr topologyBuilder = _osdTopologyBuilder.lock();
 
-    return _subdivision->CreateRefineComputation(this, source, varying,
-                                                 topologyBuilder);
+    return _subdivision->CreateRefineComputation(this, source, topologyBuilder, 
+                                                 interpolation);
 }
 
 HdComputationSharedPtr
 HdSt_MeshTopology::GetOsdRefineComputationGPU(TfToken const &name,
-                                              HdType dataType)
+                                              HdType dataType,
+                                              Interpolation interpolation,
+                                              int fvarChannel)
 {
     // for empty topology, we don't need to refine anything.
     if (_topology.GetFaceVertexCounts().size() == 0) {
@@ -294,8 +305,9 @@ HdSt_MeshTopology::GetOsdRefineComputationGPU(TfToken const &name,
     }
 
     if (!TF_VERIFY(_subdivision)) return HdComputationSharedPtr();
-
-    return _subdivision->CreateRefineComputationGPU(this, name, dataType);
+    
+    return _subdivision->CreateRefineComputationGPU(this, name, dataType, 
+                                                    interpolation, fvarChannel);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

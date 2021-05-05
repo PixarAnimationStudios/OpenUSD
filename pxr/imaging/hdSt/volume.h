@@ -51,6 +51,9 @@ public:
               HdDirtyBits*     dirtyBits,
               TfToken const  &reprToken) override;
 
+    HDST_API
+    void Finalize(HdRenderParam *renderParam) override;
+
     /// Default step size used for raymarching
     static const float defaultStepSize;
 
@@ -68,13 +71,13 @@ protected:
     HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
 
     void _UpdateRepr(HdSceneDelegate *sceneDelegate,
+                     HdRenderParam *renderParam,
                      TfToken const &reprToken,
                      HdDirtyBits *dirtyBitsState);
 
 private:
-    const TfToken& _GetMaterialTag(const HdRenderIndex &renderIndex) const;
-
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
+                         HdRenderParam *renderParam,
                          HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits);
 

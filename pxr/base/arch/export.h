@@ -83,7 +83,9 @@
 /// and the type_info.  The type_info is especially important.  If you
 /// will dynamic_cast to the type or catch an exception using the type
 /// outside of the library, you \b must put its type_info into the API.
-/// The only way to do that is to put the whole class into the API.
+/// To export the vtable & type_info specifically, use \c ARCH_EXPORT_TYPE.
+/// However, due to compiler limitations, ARCH_EXPORT_TYPE may put the
+/// whole class into the API as if ARCH_EXPORT were used.
 ///
 /// Note that template classes do not get added to the API that way.
 /// Instead they are added when explicitly instantiated like so:
@@ -159,19 +161,27 @@
 #       define ARCH_EXPORT __attribute__((dllexport))
 #       define ARCH_IMPORT __attribute__((dllimport))
 #       define ARCH_HIDDEN
+#       define ARCH_EXPORT_TYPE
 #   else
 #       define ARCH_EXPORT __declspec(dllexport)
 #       define ARCH_IMPORT __declspec(dllimport)
 #       define ARCH_HIDDEN
+#       define ARCH_EXPORT_TYPE
 #   endif
 #elif defined(ARCH_COMPILER_GCC) && ARCH_COMPILER_GCC_MAJOR >= 4 || defined(ARCH_COMPILER_CLANG)
 #   define ARCH_EXPORT __attribute__((visibility("default")))
 #   define ARCH_IMPORT
 #   define ARCH_HIDDEN __attribute__((visibility("hidden")))
+#   if defined(ARCH_COMPILER_CLANG)
+#       define ARCH_EXPORT_TYPE __attribute__((type_visibility("default")))
+#   else
+#       define ARCH_EXPORT_TYPE __attribute__((visibility("default")))
+#   endif
 #else
 #   define ARCH_EXPORT
 #   define ARCH_IMPORT
 #   define ARCH_HIDDEN
+#   define ARCH_EXPORT_TYPE
 #endif
 #define ARCH_EXPORT_TEMPLATE(type, ...)
 #define ARCH_IMPORT_TEMPLATE(type, ...) extern template type ARCH_IMPORT __VA_ARGS__

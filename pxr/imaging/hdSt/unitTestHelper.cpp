@@ -93,9 +93,7 @@ public:
 
     void Execute(HdTaskContext* ctx) override
     {
-        _renderPassState->Bind();
         _renderPass->Execute(_renderPassState, GetRenderTags());
-        _renderPassState->Unbind();
     }
 
     const TfTokenVector &GetRenderTags() const override

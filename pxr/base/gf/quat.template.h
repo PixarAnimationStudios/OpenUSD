@@ -149,6 +149,16 @@ class {{ QUAT }}
         return GetConjugate() / _GetLengthSquared();
     }
 
+    /// Transform the GfVec3{{ SUFFIX }} point. If the quaternion is normalized,
+    /// the transformation is a rotation. Given a {{ QUAT }} q, q.Transform(point)
+    /// is equivalent to:
+    ///
+    ///     (q * {{ QUAT }}(0, point) * q.GetInverse()).GetImaginary()
+    ///
+    /// but is more efficient.
+    GF_API
+    GfVec3{{ SUFFIX }} Transform(const GfVec3{{ SUFFIX }}& point) const;
+
     /// Hash.
     friend inline size_t hash_value(const {{ QUAT }} &q) {
         size_t h = boost::hash<ScalarType>()(q.GetReal());

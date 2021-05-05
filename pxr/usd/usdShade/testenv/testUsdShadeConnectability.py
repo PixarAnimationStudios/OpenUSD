@@ -40,7 +40,9 @@ class TestUsdShadeConnectability(unittest.TestCase):
         MaterialPath = Sdf.Path("/Material")
         ShaderPath = Sdf.Path("/Material/Shader")
         NodeGraphPath = Sdf.Path("/Material/NodeGraph")
+        NodeGraphPath2 = Sdf.Path("/Material/NodeGraph2")
         NestedShaderPath = Sdf.Path("/Material/NodeGraph/NestedShader")
+        NestedShaderPath2 = Sdf.Path("/Material/NodeGraph2/NestedShader")
 
         usdStage = Usd.Stage.CreateInMemory()
         self.assertTrue(usdStage)
@@ -50,16 +52,16 @@ class TestUsdShadeConnectability(unittest.TestCase):
         self.assertTrue(UsdShade.ConnectableAPI(material).IsContainer())
 
         nodeGraph = UsdShade.NodeGraph.Define(usdStage, NodeGraphPath)
+        nodeGraph2 = UsdShade.NodeGraph.Define(usdStage, NodeGraphPath)
         self.assertTrue(nodeGraph)
         self.assertTrue(UsdShade.ConnectableAPI(nodeGraph).IsContainer())
-        self.assertTrue(UsdShade.ConnectableAPI(nodeGraph).IsNodeGraph())
 
         shader = UsdShade.Shader.Define(usdStage, ShaderPath)
         self.assertTrue(shader)
         self.assertFalse(UsdShade.ConnectableAPI(shader).IsContainer())
-        self.assertTrue(UsdShade.ConnectableAPI(shader).IsShader())
 
         nestedShader = UsdShade.Shader.Define(usdStage, NestedShaderPath)
+        nestedShader2 = UsdShade.Shader.Define(usdStage, NestedShaderPath2)
         self.assertTrue(nestedShader)
 
         # Create all inputs and connections.
@@ -68,14 +70,19 @@ class TestUsdShadeConnectability(unittest.TestCase):
         matConnectable = material.ConnectableAPI()
         floatInterfaceInput = matConnectable.CreateInput("floatInput",
                                                    Sdf.ValueTypeNames.Float)
+        floatMatOut = matConnectable.CreateOutput("fOut",
+                                                    Sdf.ValueTypeNames.Float)
+        # cannot have a passthrough on material, which is a derived node graph
+        # container type
+        self._CannotConnect(floatMatOut, floatInterfaceInput)
         # default connectability of an interface-input is 'full'
         self.assertEqual(floatInterfaceInput.GetConnectability(), 
                     UsdShade.Tokens.full)
-        # inputs on a material are not connectable
+        # inputs on a material are not connectable to attrs on itself
         xAttr = material.GetPrim().CreateAttribute("x",
                                                    Sdf.ValueTypeNames.Double,
                                                    True)
-        self._CanConnect(floatInterfaceInput, xAttr)
+        self._CannotConnect(floatInterfaceInput, xAttr)
 
         self.assertTrue(floatInterfaceInput.SetConnectability(
                 UsdShade.Tokens.interfaceOnly))
@@ -110,11 +117,11 @@ class TestUsdShadeConnectability(unittest.TestCase):
                          UsdShade.Tokens.full)
 
         # The shader inputs have full connectability by default and can be 
-        # connected to any input or output.
+        # connected to any input or output of its container
         self._CanConnect(shaderInputColor, colorInterfaceInput)
         # Make the connection.
         self.assertTrue(shaderInputColor.ConnectToSource(
-            UsdShade.ConnectionSourceInfo(material,
+            UsdShade.ConnectionSourceInfo(material.ConnectableAPI(),
                                           colorInterfaceInput.GetBaseName(),
                                           UsdShade.AttributeType.Input)))
 
@@ -135,6 +142,27 @@ class TestUsdShadeConnectability(unittest.TestCase):
         self.assertEqual(nodeGraphInputFloat.GetConnectability(),
                          UsdShade.Tokens.full)
 
+        # shader outputs should not be connectable to ANYTHING
+        self._CannotConnect(shaderOutputFloat, floatInterfaceInput)
+        self._CannotConnect(shaderOutputFloat, shaderInputFloat)
+        self._CannotConnect(shaderOutputFloat, nodeGraphInputFloat)
+
+        # should be able to connect material input with a shader output
+        self.assertTrue(floatInterfaceInput.SetConnectability(
+                UsdShade.Tokens.full))
+        self.assertTrue(colorInterfaceInput.SetConnectability(
+                UsdShade.Tokens.full))
+        self._CanConnect(floatInterfaceInput, shaderOutputFloat)
+        self._CanConnect(colorInterfaceInput, shaderOutputColor)
+
+        # Should be able to connect an input-input connection when source prim
+        # is a container and encapsulation is honored
+        self._CanConnect(nodeGraphInputFloat, floatInterfaceInput)
+        self.assertTrue(floatInterfaceInput.SetConnectedSources(
+            [UsdShade.ConnectionSourceInfo(nodeGraphInputFloat)]))
+        self.assertEqual(floatInterfaceInput.GetAttr().GetConnections(),
+                         [nodeGraphInputFloat.GetAttr().GetPath()])
+
         # NodeGraph Input with "interfaceOnly" connectability cannot be 
         # connected to an output.
         self.assertTrue(nodeGraphInputFloat.SetConnectability(
@@ -146,7 +174,7 @@ class TestUsdShadeConnectability(unittest.TestCase):
         self._CanConnect(nodeGraphInputFloat, shaderOutputFloat)
         self.assertTrue(nodeGraphInputFloat.ConnectToSource(
             UsdShade.ConnectionSourceInfo(shaderOutputFloat)))
-
+        
         nodeGraphInputColor = nodeGraph.CreateInput("nodeGraphColor", 
                                                     Sdf.ValueTypeNames.Color3f)
         self.assertTrue(nodeGraphInputColor.SetConnectability(
@@ -158,12 +186,11 @@ class TestUsdShadeConnectability(unittest.TestCase):
         # Can't connect an "interfaceOnly" input to a "full" input on a shader.
         self._CannotConnect(nodeGraphInputColor, shaderInputColor)
 
-        # Change connectability of input on shader to "interfaceOnly" to allow the 
-        # previously attempted connection.
+        # Change connectability of input on shader to "interfaceOnly" to try the 
+        # previously attempted connection, but should still not work because
+        # encapsulation rule breaks for an input connection.
         self.assertTrue(shaderInputColor.SetConnectability(UsdShade.Tokens.interfaceOnly))
-        self._CanConnect(nodeGraphInputColor, shaderInputColor)
-        self.assertTrue(nodeGraphInputColor.SetConnectedSources(
-            [UsdShade.ConnectionSourceInfo(shaderInputColor)]))
+        self._CannotConnect(nodeGraphInputColor, shaderInputColor)
 
         # Change connectability of an interface input to full, to test connection 
         # from an "interfaceOnly" to a "full" input on a nodegraph. 
@@ -175,14 +202,26 @@ class TestUsdShadeConnectability(unittest.TestCase):
                                                           Sdf.ValueTypeNames.Float)
         self.assertTrue(nestedShaderInputFloat.SetConnectability(
                             UsdShade.Tokens.interfaceOnly))
+        # should not be able to connect a nested shader input to a encapsulating 
+        # but not immediate ancestor container interface, irrespective of
+        # interface's connectivity type
         self._CannotConnect(nestedShaderInputFloat, floatInterfaceInput)
 
-        # Change connectability of interface input to "interfaceOnly". This will 
-        # allow the previously attempted connection.
         self.assertTrue(floatInterfaceInput.SetConnectability(
                             UsdShade.Tokens.interfaceOnly))
-        self._CanConnect(nestedShaderInputFloat, floatInterfaceInput)
-        self.assertTrue(nestedShaderInputFloat.ConnectToSource(floatInterfaceInput))
+        self._CannotConnect(nestedShaderInputFloat, floatInterfaceInput)
+
+        # Should not be able to connect a nodegraph's input to its immediate
+        # descendent shader's output, unlike a material's input (tested above).
+        nestedShaderOutputFloat = nestedShader.CreateOutput("fOut",
+                                                    Sdf.ValueTypeNames.Float)
+        # try both interfaceOnly and full inputs
+        self.assertEqual(nodeGraphInputFloat.GetConnectability(),
+                         UsdShade.Tokens.full)
+        self._CannotConnect(nodeGraphInputFloat, nestedShaderOutputFloat)
+        self.assertTrue(nodeGraphInputFloat.SetConnectability(
+                         UsdShade.Tokens.interfaceOnly))
+        self._CannotConnect(nodeGraphInputFloat, nestedShaderOutputFloat)
 
         # Test the ability to connect to multiple sources
         floatInterfaceInput2 = matConnectable.CreateInput("floatInput2",
@@ -231,6 +270,15 @@ class TestUsdShadeConnectability(unittest.TestCase):
         sourceInfos, invalidPaths = shaderInputColor.GetConnectedSources()
         self.assertEqual(sourceInfos, [])
         self.assertEqual(invalidPaths, [])
+
+        # Failed encapsulation, when trying to connect input of one shader to
+        # another nodegraph
+        nestedShader2InputFloat = nestedShader2.CreateInput("nestedShaderFloat", 
+                                                          Sdf.ValueTypeNames.Float)
+        self.assertEqual(nestedShader2InputFloat.GetConnectability(),
+                         UsdShade.Tokens.full)
+        self._CannotConnect(nestedShader2InputFloat, nodeGraphInputFloat)
+        
 
 if __name__ == "__main__":
     unittest.main()

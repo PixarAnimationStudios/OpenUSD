@@ -51,15 +51,12 @@ _ConvertRGBToRGBA(
     const T * const typedSrc = reinterpret_cast<const T*>(src);
     T * const typedDst = reinterpret_cast<T*>(dst);
 
-    size_t i = numTexels;
-    // Going backward so that we can convert in place.
-    do {
-        i--;
-        typedDst[4 * i + 3] = _OpaqueAlpha<T>();
-        typedDst[4 * i + 2] = typedSrc[3 * i + 2];
-        typedDst[4 * i + 1] = typedSrc[3 * i + 1];
+    for (size_t i = 0; i < numTexels; i++) {
         typedDst[4 * i + 0] = typedSrc[3 * i + 0];
-    } while(i);
+        typedDst[4 * i + 1] = typedSrc[3 * i + 1];
+        typedDst[4 * i + 2] = typedSrc[3 * i + 2];
+        typedDst[4 * i + 3] = _OpaqueAlpha<T>();
+    }
 }
 
 enum _ColorSpaceTransform
@@ -161,14 +158,10 @@ _PremultiplyAlphaFloat(
     }
 }
 
-} // anonymous namespace
-
-HgiFormat
-HdStTextureUtils::GetHgiFormat(
+std::pair<HgiFormat, HdStTextureUtils::ConversionFunction>
+_GetHgiFormatAndConversion(
     const HioFormat hioFormat,
-    const bool premultiplyAlpha,
-    const bool avoidThreeComponentFormats,
-    ConversionFunction * const conversionFunction)
+    const bool premultiplyAlpha)
 {
     // Format dispatch, mostly we can just use the CPU buffer from
     // the texture data provided.
@@ -176,82 +169,73 @@ HdStTextureUtils::GetHgiFormat(
 
         // UNorm 8.
         case HioFormatUNorm8:
-            return HgiFormatUNorm8;
+            return { HgiFormatUNorm8, nullptr };
         case HioFormatUNorm8Vec2:
-            return HgiFormatUNorm8Vec2;
+            return { HgiFormatUNorm8Vec2, nullptr };
         case HioFormatUNorm8Vec3:
             // RGB (24bit) is not supported on MTL, so we need to
             // always convert it.
-            *conversionFunction =
-                _ConvertRGBToRGBA<unsigned char>;
-            return HgiFormatUNorm8Vec4;
-        case HioFormatUNorm8Vec4: 
-            if (premultiplyAlpha) {
-                *conversionFunction =
-                    _PremultiplyAlpha<unsigned char, /* isSRGB = */ false>;
-            }
-            return HgiFormatUNorm8Vec4;
-            
+            return { HgiFormatUNorm8Vec4, _ConvertRGBToRGBA<unsigned char> };
+        case HioFormatUNorm8Vec4:
+            return {
+                HgiFormatUNorm8Vec4,
+                premultiplyAlpha
+                    ? _PremultiplyAlpha<unsigned char, /* isSRGB = */ false>
+                    : nullptr };
         // SNorm8
         case HioFormatSNorm8:
-            return HgiFormatSNorm8;
+            return { HgiFormatSNorm8, nullptr };
         case HioFormatSNorm8Vec2:
-            return HgiFormatSNorm8Vec2;
+            return { HgiFormatSNorm8Vec2, nullptr };
         case HioFormatSNorm8Vec3:
-            *conversionFunction =
-                _ConvertRGBToRGBA<signed char>;
-            return HgiFormatSNorm8Vec4;
+            return { HgiFormatSNorm8Vec4, _ConvertRGBToRGBA<signed char> };
         case HioFormatSNorm8Vec4:
-            if (premultiplyAlpha) {
-                // Pre-multiplying only makes sense for RGBA colors and
-                // the signed integers do not make sense for RGBA.
-                //
-                // However, for consistency, we do premultiply here so
-                // that one can tell from the material network topology
-                // only whether premultiplication is happening.
-                //
-                *conversionFunction =
-                    _PremultiplyAlpha<signed char, /* isSRGB = */ false>;
-            }
-            return HgiFormatSNorm8Vec4;
+            // Pre-multiplying only makes sense for RGBA colors and
+            // the signed integers do not make sense for RGBA.
+            //
+            // However, for consistency, we do premultiply here so
+            // that one can tell from the material network topology
+            // only whether premultiplication is happening.
+            //
+            return {
+                HgiFormatSNorm8Vec4,
+                    premultiplyAlpha
+                    ? _PremultiplyAlpha<signed char, /* isSRGB = */ false>
+                    : nullptr };
 
         // Float16
         case HioFormatFloat16:
-            return HgiFormatFloat16;
+            return { HgiFormatFloat16, nullptr };
         case HioFormatFloat16Vec2:
-            return HgiFormatFloat16Vec2;
+            return {HgiFormatFloat16Vec2, nullptr };
         case HioFormatFloat16Vec3:
-            if (avoidThreeComponentFormats) {
-                *conversionFunction =
-                    _ConvertRGBToRGBA<GfHalf>;
-                return HgiFormatFloat16Vec4;
-            }
-            return HgiFormatFloat16Vec3;
+            // HgiFormatFloat16Vec3 exists but maps to MTLPixelFormatInvalid
+            // on Metal because there is no corresponding pixel format in
+            // Metal.
+            return { HgiFormatFloat16Vec4, _ConvertRGBToRGBA<GfHalf> };
         case HioFormatFloat16Vec4:
-            if (premultiplyAlpha) {
-                *conversionFunction =
-                    _PremultiplyAlphaFloat<GfHalf>;
-            }
-            return HgiFormatFloat16Vec4;
+            return {
+                HgiFormatFloat16Vec4,
+                premultiplyAlpha
+                    ? _PremultiplyAlphaFloat<GfHalf>
+                    : nullptr };
 
         // Float32
         case HioFormatFloat32:
-            return HgiFormatFloat32;
+            return { HgiFormatFloat32, nullptr };
         case HioFormatFloat32Vec2:
-            return HgiFormatFloat32Vec2;
+            return { HgiFormatFloat32Vec2, nullptr };
         case HioFormatFloat32Vec3:
-            if (avoidThreeComponentFormats) {
-                *conversionFunction =
-                    _ConvertRGBToRGBA<float>;
-                return HgiFormatFloat32Vec4;
-            }
-            return HgiFormatFloat32Vec3;
+            // HgiFormatFloat32Vec3 exists but maps to MTLPixelFormatInvalid
+            // on Metal because there is no corresponding pixel format in
+            // Metal.
+            return { HgiFormatFloat32Vec4, _ConvertRGBToRGBA<float> };
         case HioFormatFloat32Vec4:
-            if (premultiplyAlpha) {
-                *conversionFunction =
-                    _PremultiplyAlphaFloat<float>;
-            }
-            return HgiFormatFloat32Vec4;
+            return {
+                HgiFormatFloat32Vec4,
+                premultiplyAlpha
+                    ? _PremultiplyAlphaFloat<float>
+                    : nullptr };
 
         // Double64
         case HioFormatDouble64:
@@ -259,33 +243,31 @@ HdStTextureUtils::GetHgiFormat(
         case HioFormatDouble64Vec3:
         case HioFormatDouble64Vec4:
             TF_WARN("Double texture formats not supported by Storm");
-            return HgiFormatInvalid;
+            return { HgiFormatInvalid, nullptr };
             
         // UInt16
         case HioFormatUInt16:
-            return HgiFormatUInt16;
+            return { HgiFormatUInt16, nullptr };
         case HioFormatUInt16Vec2:
-            return HgiFormatUInt16Vec2;
+            return { HgiFormatUInt16Vec2, nullptr };
         case HioFormatUInt16Vec3:
-            if (avoidThreeComponentFormats) {
-                *conversionFunction =
-                    _ConvertRGBToRGBA<uint16_t>;
-                return HgiFormatUInt16Vec4;
-            }
-            return HgiFormatUInt16Vec3;
+            // HgiFormatUInt16Vec3 exists but maps to MTLPixelFormatInvalid
+            // on Metal because there is no corresponding pixel format in
+            // Metal.
+            return { HgiFormatUInt16Vec4, _ConvertRGBToRGBA<uint16_t> };
         case HioFormatUInt16Vec4:
-            if (premultiplyAlpha) {
-                // Pre-multiplying only makes sense for RGBA colors and
-                // the signed integers do not make sense for RGBA.
-                //
-                // However, for consistency, we do premultiply here so
-                // that one can tell from the material network topology
-                // only whether premultiplication is happening.
-                //
-                *conversionFunction =
-                    _PremultiplyAlpha<uint16_t, /* isSRGB = */ false>;
-            }
-            return HgiFormatUInt16Vec4;
+            // Pre-multiplying only makes sense for RGBA colors and
+            // the signed integers do not make sense for RGBA.
+            //
+            // However, for consistency, we do premultiply here so
+            // that one can tell from the material network topology
+            // only whether premultiplication is happening.
+            //
+            return {
+                HgiFormatUInt16Vec4,
+                premultiplyAlpha
+                    ? _PremultiplyAlpha<uint16_t, /* isSRGB = */ false>
+                    : nullptr };
             
         // Int16
         case HioFormatInt16:
@@ -294,7 +276,7 @@ HdStTextureUtils::GetHgiFormat(
         case HioFormatInt16Vec4:
             TF_WARN("Signed 16-bit integer texture formats "
                     "not supported by Storm");
-            return HgiFormatInvalid;
+            return { HgiFormatInvalid, nullptr };
 
         // UInt32
         case HioFormatUInt32:
@@ -303,20 +285,18 @@ HdStTextureUtils::GetHgiFormat(
         case HioFormatUInt32Vec4:
             TF_WARN("Unsigned 32-bit integer texture formats "
                     "not supported by Storm");
-            return HgiFormatInvalid;
+            return { HgiFormatInvalid, nullptr };
 
         // Int32
         case HioFormatInt32:
-            return HgiFormatInt32;
+            return { HgiFormatInt32, nullptr };
         case HioFormatInt32Vec2:
-            return HgiFormatInt32Vec2;
+            return { HgiFormatInt32Vec2, nullptr };
         case HioFormatInt32Vec3:
-            if (avoidThreeComponentFormats) {
-                *conversionFunction =
-                    _ConvertRGBToRGBA<int32_t>;
-                return HgiFormatInt32Vec4;
-            }
-            return HgiFormatInt32Vec3;
+            // HgiFormatInt32Vec3 exists but maps to MTLPixelFormatInvalid
+            // on Metal because there is no corresponding pixel format in
+            // Metal.
+            return { HgiFormatInt32Vec4, _ConvertRGBToRGBA<int32_t> };
         case HioFormatInt32Vec4:
             // Pre-multiplying only makes sense for RGBA colors and
             // the signed integers do not make sense for RGBA.
@@ -325,61 +305,83 @@ HdStTextureUtils::GetHgiFormat(
             // that one can tell from the material network topology
             // only whether premultiplication is happening.
             //
-            if (premultiplyAlpha) {
-                *conversionFunction =
-                    _PremultiplyAlpha<int32_t, /* isSRGB = */ false>;
-            }
-            return HgiFormatInt32Vec4;
-
+            return {
+                HgiFormatInt32Vec4,
+                premultiplyAlpha
+                    ? _PremultiplyAlpha<int32_t, /* isSRGB = */ false>
+                    : nullptr };
+                    
         // UNorm8 SRGB
         case HioFormatUNorm8srgb:
         case HioFormatUNorm8Vec2srgb:
             TF_WARN("One and two channel srgb texture formats "
                     "not supported by Storm");
-            return HgiFormatInvalid;
+            return { HgiFormatInvalid, nullptr };
         case HioFormatUNorm8Vec3srgb:
             // RGB (24bit) is not supported on MTL, so we need to convert it.
-            *conversionFunction =
-                _ConvertRGBToRGBA<unsigned char>;
-            return HgiFormatUNorm8Vec4srgb;
+            return { HgiFormatUNorm8Vec4srgb, _ConvertRGBToRGBA<unsigned char> };
         case HioFormatUNorm8Vec4srgb:
-            if (premultiplyAlpha) {
-                *conversionFunction =
-                    _PremultiplyAlpha<unsigned char, /* isSRGB = */ true>;
-            }
-            return HgiFormatUNorm8Vec4srgb;
+            return {
+                HgiFormatUNorm8Vec4srgb,
+                premultiplyAlpha
+                    ? _PremultiplyAlpha<unsigned char, /* isSRGB = */ true>
+                    : nullptr };
 
         // BPTC compressed
         case HioFormatBC6FloatVec3:
-            return HgiFormatBC6FloatVec3;
+            return { HgiFormatBC6FloatVec3, nullptr };
         case HioFormatBC6UFloatVec3:
-            return HgiFormatBC6UFloatVec3;
+            return { HgiFormatBC6UFloatVec3, nullptr };
         case HioFormatBC7UNorm8Vec4:
-            return HgiFormatBC7UNorm8Vec4;
+            return { HgiFormatBC7UNorm8Vec4, nullptr };
         case HioFormatBC7UNorm8Vec4srgb:
             // Pre-multiplying alpha would require decompressing and
             // recompressing, so not doing it here.
-            return HgiFormatBC7UNorm8Vec4srgb;
+            return { HgiFormatBC7UNorm8Vec4srgb, nullptr };
 
         // S3TC/DXT compressed
         case HioFormatBC1UNorm8Vec4:
-            return HgiFormatBC1UNorm8Vec4;
+            return { HgiFormatBC1UNorm8Vec4, nullptr };
         case HioFormatBC3UNorm8Vec4:
             // Pre-multiplying alpha would require decompressing and
             // recompressing, so not doing it here.
-            return HgiFormatBC3UNorm8Vec4;
+            return { HgiFormatBC3UNorm8Vec4, nullptr };
 
         case HioFormatInvalid:
-            return HgiFormatInvalid;
+            return { HgiFormatInvalid, nullptr };
         case HioFormatCount:
             TF_CODING_ERROR("HioFormatCount passed to function");
-            return HgiFormatInvalid;
+            return { HgiFormatInvalid, nullptr };
     }
 
     TF_CODING_ERROR("Invalid HioFormat enum value");
-    return HgiFormatInvalid;
+    return { HgiFormatInvalid, nullptr };
 }
 
+
+} // anonymous namespace
+
+HgiFormat
+HdStTextureUtils::GetHgiFormat(
+    HioFormat hioFormat,
+    const bool premultiplyAlpha)
+{
+    return
+        _GetHgiFormatAndConversion(
+            hioFormat,
+            premultiplyAlpha).first;
+}
+
+HdStTextureUtils::ConversionFunction
+HdStTextureUtils::GetHioToHgiConversion(
+    HioFormat hioFormat,
+    const bool premultiplyAlpha)
+{
+    return
+        _GetHgiFormatAndConversion(
+            hioFormat,
+            premultiplyAlpha).second;
+}
 std::vector<HioImageSharedPtr>
 HdStTextureUtils::GetAllMipImages(
     const std::string &filePath,
@@ -475,13 +477,62 @@ HdStTextureUtils::ComputeDimensionsFromTargetMemory(
     for (const HgiMipInfo &mipInfo : mipInfos) {
         // The factor of 4/3 = 1 + 1/4 + 1/16 + ... accounts for all the
         // lower mipmaps.
-        if (mipInfo.byteSize * tileCount * 4 / 3 <= targetMemory) {
+        if (mipInfo.byteSizePerLayer * tileCount * 4 / 3 <= targetMemory) {
             return mipInfo.dimensions;
         }
     }
 
     // Last resort, should be just (1,1,1).
     return mipInfos.back().dimensions;
+}
+
+bool
+HdStTextureUtils::ReadAndConvertImage(
+    HioImageSharedPtr const &image,
+    const bool flipped,
+    const bool premultiplyAlpha,
+    const HgiMipInfo &mipInfo,
+    const size_t layer,
+    void * const bufferStart)
+{
+    TRACE_FUNCTION();
+
+    const ConversionFunction conversionFunction =
+        GetHioToHgiConversion(image->GetFormat(),
+                              premultiplyAlpha);
+
+    // Given the start of the buffer containing all mips
+    // and layers, compute where the desired mip and layer
+    // starts.
+    unsigned char * const mipLayerStart =
+        static_cast<unsigned char*>(bufferStart)
+        + mipInfo.byteOffset + layer * mipInfo.byteSizePerLayer;
+
+    HioImage::StorageSpec spec;
+    spec.width  = mipInfo.dimensions[0];
+    spec.height = mipInfo.dimensions[1];
+    spec.format = image->GetFormat();
+    spec.flipped = flipped;
+    if (conversionFunction) {
+        // This part is a bit tricky: the RGB to RGBA conversion
+        // is in place. To make sure we do not write over data
+        // that have not been read yet, we need to align the ends.
+        const size_t hioSize =
+            HioGetDataSize(image->GetFormat(), mipInfo.dimensions);
+        spec.data = mipLayerStart + mipInfo.byteSizePerLayer - hioSize;
+    } else {
+        spec.data = mipLayerStart;
+    }
+
+    if (!image->Read(spec)) {
+        return false;
+    }
+
+    if (conversionFunction) {
+        conversionFunction(spec.data, spec.width * spec.height, mipLayerStart);
+    }
+
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

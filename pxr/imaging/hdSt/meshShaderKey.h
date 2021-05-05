@@ -59,7 +59,8 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
                        float lineWidth,
                        bool hasMirroredTransform,
                        bool hasInstancer,
-                       bool enableScalarOverride);
+                       bool enableScalarOverride, 
+                       HdSt_GeometricShader::FvarPatchType fvarPatchType);
 
     // Note: it looks like gcc 4.8 has a problem issuing
     // a wrong warning as "array subscript is above array bounds"
@@ -84,6 +85,9 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const override {
         return primType; 
     }
+    HdSt_GeometricShader::FvarPatchType GetFvarPatchType() const override {
+        return fvarPatchType; 
+    }
 
     HdSt_GeometricShader::PrimitiveType primType;
     HdCullStyle cullStyle;
@@ -92,6 +96,7 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     bool doubleSided;
     HdPolygonMode polygonMode;
     float lineWidth;
+    HdSt_GeometricShader::FvarPatchType fvarPatchType;
 
     TfToken const &GetGlslfxFilename() const override { return glslfx; }
     TfToken const *GetVS()  const override { return VS; }
@@ -104,7 +109,7 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     TfToken VS[7];
     TfToken TCS[3];
     TfToken TES[4];
-    TfToken GS[11];
+    TfToken GS[12];
     TfToken FS[15];
 };
 

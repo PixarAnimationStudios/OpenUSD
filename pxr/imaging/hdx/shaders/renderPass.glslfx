@@ -139,7 +139,6 @@ vec4 IntToVec4(int id)
 
 // Fwd declare necessary methods to determine the subprim id of a fragment.
 int GetElementID(); // generated via codeGen
-int GetAuthoredEdgeId(int); // generated via codeGen
 int GetPrimitiveEdgeId(); // defined in edgeId.glslfx, or generated via codeGen
 bool IsFragmentOnEdge(); // defined in edgeId.glslfx, or generated via codeGen
 int GetPointId(); // defined in pointId.glslfx
@@ -162,7 +161,7 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     // XXX: This block should be under an #ifdef
     int edgeId = -1;
     if (IsFragmentOnEdge()) {
-        edgeId = GetAuthoredEdgeId(GetPrimitiveEdgeId());
+        edgeId = GetPrimitiveEdgeId();
     }
     edgeIdOut = IntToVec4(edgeId);
 
@@ -174,4 +173,63 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     pointIdOut = IntToVec4(pointId);
     
     neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
+}
+
+-- glsl HdxRenderPass.RenderColorAndSelection
+// Note: This mixin expects color and selected color attachments in the bound
+// FBO. It writes out the computed fragment color and whether it is selected
+// (as a float, so, 1.0 or 0.0).
+
+bool IsSelected(); // defined in selection.glslfx
+
+layout (location = 0) out vec4 colorOut;
+layout (location = 1) out float selectedOut;
+
+void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    colorOut = color;
+    selectedOut = float(IsSelected());
+}
+
+-- glsl HdxRenderPass.RenderColorWithOccludedSelection
+// Note: This mixin expects color and selected color attachments in the bound
+// FBO. The alpha component of the computed fragment color is adjusted to blend
+// the existing (destination) fragment color if it is selected.
+
+bool
+HasOccludedSelection(vec2 fragcoord)
+{
+#ifdef HD_HAS_selectedReadback
+    const float isSelected = texelFetch(HdGetSampler_selectedReadback(),
+                                        ivec2(fragcoord),
+                                        0).x;
+    return bool(isSelected);
+#endif
+    return false;
+}
+
+float
+GetShowThroughOpacity()
+{
+#ifdef HD_HAS_occludedSelectionOpacity
+    // Note: occludedSelectionOpacity flows in as a parameter to the selection
+    // setup task (HdxSelectionTask)
+    const float dstOpacity = HdGet_occludedSelectionOpacity();
+    // adjust source alpha used to blend source and dst colors.
+    return 1.0 - dstOpacity;
+#else
+    return 0.5;
+#endif
+}
+
+layout (location = 0) out vec4 colorOut;
+
+// Input AOV textures are provided by the task.
+void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    if (HasOccludedSelection(gl_FragCoord.xy)) {
+        color.a = GetShowThroughOpacity();
+    }
+
+    colorOut = color;
 }

@@ -106,7 +106,7 @@ struct HdxPickHit {
     size_t GetHash() const;
 };
 
-typedef std::vector<HdxPickHit> HdxPickHitVector;
+using HdxPickHitVector = std::vector<HdxPickHit>;
 
 /// Pick task context params.  This contains task params that can't come from
 /// the scene delegate (like resolution mode and pick location, that might
@@ -137,7 +137,7 @@ typedef std::vector<HdxPickHit> HdxPickHitVector;
 ///
 struct HdxPickTaskContextParams
 {
-    typedef std::function<void(void)> DepthMaskCallback;
+    using DepthMaskCallback = std::function<void(void)>;
 
     HdxPickTaskContextParams()
         : resolution(128, 128)
@@ -183,25 +183,25 @@ public:
     HdxPickTask(HdSceneDelegate* delegate, SdfPath const& id);
 
     HDX_API
-    virtual ~HdxPickTask();
+    ~HdxPickTask() override;
 
     /// Sync the render pass resources
     HDX_API
-    virtual void Sync(HdSceneDelegate* delegate,
-                      HdTaskContext* ctx,
-                      HdDirtyBits* dirtyBits) override;
+    void Sync(HdSceneDelegate* delegate,
+              HdTaskContext* ctx,
+              HdDirtyBits* dirtyBits) override;
 
     /// Prepare the pick task
     HDX_API
-    virtual void Prepare(HdTaskContext* ctx,
-                         HdRenderIndex* renderIndex) override;
+    void Prepare(HdTaskContext* ctx,
+                 HdRenderIndex* renderIndex) override;
 
     /// Execute the pick task
     HDX_API
-    virtual void Execute(HdTaskContext* ctx) override;
+    void Execute(HdTaskContext* ctx) override;
 
     HDX_API
-    virtual const TfTokenVector &GetRenderTags() const override;
+    const TfTokenVector &GetRenderTags() const override;
 
     /// Utility: Given a UNorm8Vec4 pixel, unpack it into an int32 ID.
     static inline int DecodeIDRenderColor(unsigned char const idColor[4]) {
@@ -220,21 +220,15 @@ private:
     // map prim ID to paths.
     HdRenderIndex *_index;
 
-    void _Init(GfVec2i const& widthHeight);
-    void _SetResolution(GfVec2i const& widthHeight);
+    void _InitIfNeeded(GfVec2i const& widthHeight);
     void _ConditionStencilWithGLCallback(
             HdxPickTaskContextParams::DepthMaskCallback maskCallback);
-    void _ConfigureSceneMaterials(
-            bool enableSceneMaterials, HdStRenderPassState *renderPassState);
 
     bool _UseOcclusionPass() const;
 
     // Create a shared render pass each for pickables and unpickables
     HdRenderPassSharedPtr _pickableRenderPass;
     HdRenderPassSharedPtr _occluderRenderPass;
-
-    // Override shader is used when scene materials are disabled
-    HdStShaderCodeSharedPtr _overrideShader;
 
     // Having separate render pass states allows us to use different
     // shader mixins if we choose to (we don't currently).

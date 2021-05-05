@@ -232,7 +232,7 @@ class SdfAssetPath;
 /// 
 /// \section UsdGeomPointInstancer_protoProcessing Processing and Not Processing Prototypes
 /// 
-/// Any prim in the scenegraph can be targetted as a prototype by the
+/// Any prim in the scenegraph can be targeted as a prototype by the
 /// \em prototypes relationship.  We do not, however, provide a specific
 /// mechanism for identifying prototypes as geometry that should not be drawn
 /// (or processed) in their own, local spaces in the scenegraph.  We

@@ -151,14 +151,14 @@ HdStExtCompGpuComputation::Execute(
 
         HdBinding const &binding = binder.GetBinding(name);
         // These should all be valid as they are required outputs
-        if (TF_VERIFY(binding.IsValid()) && TF_VERIFY(buffer->GetId())) {
+        if (TF_VERIFY(binding.IsValid()) && TF_VERIFY(buffer->GetHandle())) {
             size_t componentSize = HdDataSizeOfType(
                 HdGetComponentType(buffer->GetTupleType().type));
             _uniforms.push_back(buffer->GetOffset() / componentSize);
             // Assumes non-SSBO allocator for the stride
             _uniforms.push_back(buffer->GetStride() / componentSize);
 
-            rbHash = TfHash::Combine(rbHash, buffer->GetId().Get());
+            rbHash = TfHash::Combine(rbHash, buffer->GetHandle().Get());
         }
     }
 
@@ -191,7 +191,7 @@ HdStExtCompGpuComputation::Execute(
                         binding.GetType());
                 }
 
-                rbHash = TfHash::Combine(rbHash, buffer->GetId().Get());
+                rbHash = TfHash::Combine(rbHash, buffer->GetHandle().Get());
             }
         }
     }
@@ -232,9 +232,11 @@ HdStExtCompGpuComputation::Execute(
 
             HdBinding const &binding = binder.GetBinding(name);
             // These should all be valid as they are required outputs
-            if (TF_VERIFY(binding.IsValid()) && TF_VERIFY(buffer->GetId())) {
-                _AppendResourceBindings(
-                    &resourceDesc, buffer->GetId(), binding.GetLocation());
+            if (TF_VERIFY(binding.IsValid()) &&
+                TF_VERIFY(buffer->GetHandle())) {
+                _AppendResourceBindings(&resourceDesc,
+                                        buffer->GetHandle(),
+                                        binding.GetLocation());
             }
         }
 
@@ -250,8 +252,9 @@ HdStExtCompGpuComputation::Execute(
                 HdBinding const &binding = binder.GetBinding(name);
                 // These should all be valid as they are required inputs
                 if (TF_VERIFY(binding.IsValid())) {
-                    _AppendResourceBindings(
-                        &resourceDesc, buffer->GetId(), binding.GetLocation());
+                    _AppendResourceBindings(&resourceDesc,
+                                            buffer->GetHandle(),
+                                            binding.GetLocation());
                 }
             }
         }

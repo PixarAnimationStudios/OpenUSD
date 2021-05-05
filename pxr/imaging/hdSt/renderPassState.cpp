@@ -72,6 +72,7 @@ HdStRenderPassState::HdStRenderPassState(
     , _clipPlanesBufferSize(0)
     , _alphaThresholdCurrent(0)
     , _resolveMultiSampleAov(true)
+    , _useSceneMaterials(true)
 {
     _lightingShader = _fallbackLightingShader;
 }
@@ -328,9 +329,9 @@ HdStRenderPassState::SetRenderPassShader(HdStRenderPassShaderSharedPtr const &re
 }
 
 void 
-HdStRenderPassState::SetOverrideShader(HdStShaderCodeSharedPtr const &overrideShader)
+HdStRenderPassState::SetUseSceneMaterials(bool state)
 {
-    _overrideShader = overrideShader;
+    _useSceneMaterials = state;
 }
 
 HdStShaderCodeSharedPtrVector
@@ -372,6 +373,30 @@ _SetGLCullState(HdCullStyle cullstyle)
     }
 }
 
+void
+_SetColorMask(int drawBufferIndex, HdRenderPassState::ColorMask const& mask)
+{
+    bool colorMask[4] = {true, true, true, true};
+    switch (mask)
+    {
+        case HdStRenderPassState::ColorMaskNone:
+            colorMask[0] = colorMask[1] = colorMask[2] = colorMask[3] = false;
+            break;
+        case HdStRenderPassState::ColorMaskRGB:
+            colorMask[3] = false;
+            break;
+        default:
+            ; // no-op
+    }
+
+    if (drawBufferIndex == -1) {
+        glColorMask(colorMask[0], colorMask[1], colorMask[2], colorMask[3]);
+    } else {
+        glColorMaski((uint32_t) drawBufferIndex,
+                     colorMask[0], colorMask[1], colorMask[2], colorMask[3]);
+    }
+}
+
 } // anonymous namespace 
 
 void
@@ -394,8 +419,8 @@ HdStRenderPassState::Bind()
     // which states to be altered at the comment in the header file
 
     // Apply polygon offset to whole pass.
-    if (!_depthBiasUseDefault) {
-        if (_depthBiasEnabled) {
+    if (!GetDepthBiasUseDefault()) {
+        if (GetDepthBiasEnabled()) {
             glEnable(GL_POLYGON_OFFSET_FILL);
             glPolygonOffset(_depthBiasSlopeFactor, _depthBiasConstantFactor);
         } else {
@@ -403,11 +428,17 @@ HdStRenderPassState::Bind()
         }
     }
 
-    glDepthFunc(HdStGLConversions::GetGlDepthFunc(_depthFunc));
-    glDepthMask(_depthMaskEnabled);
+    if (GetEnableDepthTest()) {
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(HdStGLConversions::GetGlDepthFunc(_depthFunc));
+        glDepthMask(GetEnableDepthMask()); // depth writes are enabled only
+                                           // when the test is enabled.
+    } else {
+        glDisable(GL_DEPTH_TEST);
+    }
 
     // Stencil
-    if (_stencilEnabled) {
+    if (GetStencilEnabled()) {
         glEnable(GL_STENCIL_TEST);
         glStencilFunc(HdStGLConversions::GetGlStencilFunc(_stencilFunc),
                 _stencilRef, _stencilMask);
@@ -462,17 +493,17 @@ HdStRenderPassState::Bind()
         glEnable(GL_CLIP_DISTANCE0 + i);
     }
 
-    if (!_colorMaskUseDefault) {
-        switch(_colorMask) {
-            case HdStRenderPassState::ColorMaskNone:
-                glColorMask(false, false, false, false);
-                break;
-            case HdStRenderPassState::ColorMaskRGB:
-                glColorMask(true, true, true, false);
-                break;
-            case HdStRenderPassState::ColorMaskRGBA:
-                glColorMask(true, true, true, true);
-                break;
+    if (_colorMaskUseDefault) {
+        // Enable color writes for all components for all attachments.
+        _SetColorMask(-1, ColorMaskRGBA);
+    } else {
+        if (_colorMasks.size() == 1) {
+            // Use the same color mask for all attachments.
+            _SetColorMask(-1, _colorMasks[0]);
+        } else {
+            for (size_t i = 0; i < _colorMasks.size(); i++) {
+                _SetColorMask(i, _colorMasks[i]);
+            }
         }
     }
 }
@@ -492,6 +523,7 @@ HdStRenderPassState::Unbind()
     glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     glDisable(GL_SAMPLE_ALPHA_TO_ONE);
     glDisable(GL_PROGRAM_POINT_SIZE);
+    glEnable(GL_DEPTH_TEST);
     glDisable(GL_STENCIL_TEST);
     glDepthFunc(GL_LESS);
     glPolygonOffset(0, 0);

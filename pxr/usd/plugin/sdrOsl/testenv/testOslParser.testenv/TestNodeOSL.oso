@@ -1,11 +1,11 @@
 OpenShadingLanguage 1.00
-# Compiled by oslc 1.7.4.pixar38bde12
+# Compiled by oslc 1.8.2.pixar1697a56
 # options: -o TestNodeOSL.oso
 shader TestNodeOSL	%meta{string,category,"testing"} %meta{string,departments,"testDept"} %meta{string,help,"This is the test node"} %meta{string,label,"TestNodeLabel"} %meta{string,primvars,"primvar1|primvar2|primvar3|$primvarNamingProperty|$invalidPrimvarNamingProperty"} %meta{string,uncategorizedMetadata,"uncategorized"} 
 param	float	inputA	0		%meta{string,widget,"number"} %meta{string,label,"inputA label"} %meta{string,page,"inputs1"} %meta{string,help,"inputA help message"} %meta{int,uncategorized,1}  %read{2147483647,-1} %write{2147483647,-1}
 param	int	inputB	0		%meta{string,widget,"number"} %meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
 param	float	inputC	2		%meta{string,widget,"number"} %meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
-param	int[1]	inputD	1		%meta{string,widget,"dynamicArray"} %meta{string,isDynamicArray,"1"} %meta{string,arraySize,"-1"} %meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
+param	int[1]	inputD	1		%meta{string,widget,"dynamicArray"} %meta{int,isDynamicArray,1} %meta{int,arraySize,-1} %meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
 param	float[2]	inputF2	1 2		%meta{string,widget,"null"} %meta{string,page,"inputs2"} %meta{int,connectable,0}  %read{2147483647,-1} %write{2147483647,-1}
 param	float[3]	inputF3	1 2 3		%meta{string,widget,"null"} %meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}
 param	float[4]	inputF4	1 2 3 4		%meta{string,widget,"null"} %meta{string,page,"inputs2"}  %read{2147483647,-1} %write{2147483647,-1}

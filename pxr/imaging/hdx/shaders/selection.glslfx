@@ -307,6 +307,7 @@ SelectionResult GetNetSelectionResult(int elementId, int edgeId, int pointId)
 
 --- --------------------------------------------------------------------------
 -- glsl Selection.Vertex.PointSel
+// Mixin for use in the vertex shader stage.
 // Decodes the selection buffer to find out if the current vertex (point) is
 // selected. This is called from hdSt/shaders/pointId.glslfx
 bool IsPointSelected(int pointId)
@@ -331,8 +332,9 @@ bool IsPointSelected(int pointId)
 
 --- --------------------------------------------------------------------------
 --  glsl Selection.Geometry.ElementSel
-/// Helper functions to determine if the element (face) is selected for either
-/// a given selection mode, or any of the modes.
+// Mixin for use in the geometry shader stage.
+// Helper functions to determine if the element (face) is selected for either
+// a given selection mode, or any of the modes.
 
 int GetElementID(); // code gen
 
@@ -364,6 +366,8 @@ bool IsSelected()
 
 --- --------------------------------------------------------------------------
 -- glsl Selection.Geometry.WireSelOffset
+// Mixin for use in the geometry shader stage for wireframe rendering.
+// See comment below.
 
 int GetMaxNumSelectionHighlightModes();
 bool IsElementSelected(int mode);
@@ -415,21 +419,20 @@ vec4 ComputeSelectionOffset()
 }
 
 --- --------------------------------------------------------------------------
--- glsl Selection.RenderUnselected
+-- glsl Selection.Fragment
+// Mixin for use in the fragment shader stage to determine if the fragment is
+// selected.
 
-void DiscardBasedOnSelection(bool isSelected)
+int GetElementID(); // generated via codeGen
+int GetPrimitiveEdgeId(); // defined in edgeId.glslfx, or generated via codeGen
+int GetPointId(); // defined in pointId.glslfx
+
+bool IsSelected()
 {
-    // Nothing to do. 
-}
+    SelectionResult res = GetNetSelectionResult(
+        GetElementID(), GetPrimitiveEdgeId(), GetPointId());
 
---- --------------------------------------------------------------------------
--- glsl Selection.DiscardUnselected
-
-void DiscardBasedOnSelection(bool isSelected)
-{
-    if (!isSelected) {
-        discard;
-    }
+   return res.primOrInstanceSel || res.subprimSel.elementSelected;
 }
 
 --- --------------------------------------------------------------------------
@@ -469,7 +472,6 @@ vec4 GetSubprimSelectionColor(int mode, SubprimSelectionResult res)
 
 // Fwd declare necessary methods to determine the subprim id of a fragment.
 int GetElementID(); // generated via codeGen
-int GetAuthoredEdgeId(int); // generated via codeGen
 int GetPrimitiveEdgeId(); // defined in edgeId.glslfx, or generated via codeGen
 int GetPointId(); // defined in pointId.glslfx
 
@@ -480,7 +482,7 @@ vec4 ApplySelectionColor(vec4 color)
 {
 #if defined(HD_HAS_hdxSelectionBuffer)
     int elementId = GetElementID();
-    int edgeId    = GetAuthoredEdgeId(GetPrimitiveEdgeId());
+    int edgeId    = GetPrimitiveEdgeId();
     int pointId   = GetPointId();
 
     const int numSelectionModes = GetNumSelectionHighlightModes();
@@ -502,8 +504,6 @@ vec4 ApplySelectionColor(vec4 color)
         }
     } // for each highlight mode
     
-    DiscardBasedOnSelection(isSelected);
-
 #endif
     return color;
 }

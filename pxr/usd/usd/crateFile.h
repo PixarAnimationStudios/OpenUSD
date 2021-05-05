@@ -34,7 +34,7 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/base/work/dispatcher.h"
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/path.h"
@@ -802,18 +802,18 @@ private:
     template <class Reader> void _ReadPaths(Reader src);
     template <class Header, class Reader>
     void _ReadPathsImpl(Reader reader,
-                        WorkArenaDispatcher &dispatcher,
+                        WorkDispatcher &dispatcher,
                         SdfPath parentPath=SdfPath());
     template <class Reader>
     void _ReadCompressedPaths(Reader reader,
-                              WorkArenaDispatcher &dispatcher);
+                              WorkDispatcher &dispatcher);
     void _BuildDecompressedPathsImpl(
         std::vector<uint32_t> const &pathIndexes,
         std::vector<int32_t> const &elementTokenIndexes,
         std::vector<int32_t> const &jumps,
         size_t curIndex,
         SdfPath parentPath,
-        WorkArenaDispatcher &dispatcher);
+        WorkDispatcher &dispatcher);
 
     void _ReadRawBytes(int64_t start, int64_t size, char *buf) const;
 

@@ -42,7 +42,7 @@ parser = argparse.ArgumentParser( \
 
 parser.add_argument('usdFiles', nargs='+')
 parser.add_argument('-o', '--out', action='store',
-                    help='specify the filename for the top-level result file, which also serves as base-name for the topology file.')
+                    help='specify the filename for the top-level result file, which also serves as base-name for the topology and manifest files.')
 parser.add_argument('-c', '--clipPath', action='store',
                     help='specify a prim path at which to begin stitching clip data.')
 parser.add_argument('-s', '--startTimeCode', action='store',
@@ -92,6 +92,12 @@ try:
         topologyLayerGenerated = True
         topologyLayer = Sdf.Layer.CreateNew(topologyLayerName)
 
+    manifestLayerName = UsdUtils.GenerateClipManifestName(results.out)
+    manifestLayer = Sdf.Layer.FindOrOpen(manifestLayerName)
+    if not manifestLayer:
+        manifestLayerGenerated = True
+        manifestLayer = Sdf.Layer.CreateNew(manifestLayerName)
+
     if results.startTimeCode:
         results.startTimeCode = float(results.startTimeCode)
 
@@ -116,8 +122,11 @@ try:
         _checkMissingTemplateArg('stride', results.stride)
 
         UsdUtils.StitchClipsTopology(topologyLayer, results.usdFiles)
+        UsdUtils.StitchClipsManifest(manifestLayer, topologyLayer, 
+                                     results.usdFiles, results.clipPath)
         UsdUtils.StitchClipsTemplate(outLayer, 
                                      topologyLayer,
+                                     manifestLayer,
                                      results.clipPath,
                                      results.templatePath,
                                      results.startTimeCode,
@@ -153,4 +162,6 @@ except Tf.ErrorException as e:
         os.remove(results.out)
     if topologyLayerGenerated and os.path.isfile(topologyLayerName):
         os.remove(topologyLayerName)
+    if manifestLayerGenerated and os.path.isfile(manifestLayerName):
+        os.remove(manifestLayerName)
     sys.exit(e)

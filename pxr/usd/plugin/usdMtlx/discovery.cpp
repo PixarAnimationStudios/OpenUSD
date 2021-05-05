@@ -40,10 +40,7 @@ namespace {
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-
     ((discoveryType, "mtlx"))
-
-    ((defaultSourceType, "osl"))
 );
 
 // Maps a nodedef name to its NdrNode name.
@@ -125,15 +122,6 @@ _DiscoverNodes(
             continue;
         }
 
-        // Get the language.
-        auto language = impl->getLanguage();
-        if (language.empty()) {
-            language = _tokens->defaultSourceType.GetString();
-        }
-        std::transform(language.begin(), language.end(),
-                       language.begin(),
-                       [](char c) -> char { return std::toupper(c); });
-
         bool implicitDefault;
         result->emplace_back(
             NdrIdentifier(nodeDef->getName()),
@@ -141,7 +129,7 @@ _DiscoverNodes(
             _ChooseName(nodeDef->getName(), nameMapping),
             TfToken(nodeDef->getNodeString()),
             fileResult.discoveryType,
-            TfToken(language),
+            fileResult.sourceType,
             fileResult.uri,
             fileResult.resolvedUri,
             /* sourceCode */ "", 

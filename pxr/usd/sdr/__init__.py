@@ -24,14 +24,6 @@
 
 """Python bindings for libSdr"""
 
-from . import _sdr
 from pxr import Tf
-Tf.PrepareModule(_sdr, locals())
-del _sdr, Tf
-
-try:
-    from . import __DOC
-    __DOC.Execute(locals())
-    del __DOC
-except Exception:
-    pass
+Tf.PreparePythonModule()
+del Tf

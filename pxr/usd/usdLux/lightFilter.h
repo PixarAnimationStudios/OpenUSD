@@ -68,11 +68,6 @@ class SdfAssetPath;
 /// 
 /// Linking is specified as a collection (UsdCollectionAPI) which can
 /// be accessed via GetFilterLinkCollection().
-/// Note however that there are extra semantics in how UsdLuxLightFilter
-/// uses its collection: if a collection is empty, the filter is treated
-/// as linked to <i>all</i> geometry for the respective purpose.
-/// UsdCollectionAPI and UsdCollectionAPI::MembershipQuery are unaware
-/// of this filter-specific interpretation.
 /// 
 ///
 class UsdLuxLightFilter : public UsdGeomXformable
@@ -240,9 +235,11 @@ public:
     UsdShadeOutput GetOutput(const TfToken &name) const;
 
     /// Outputs are represented by attributes in the "outputs:" namespace.
+    /// If \p onlyAuthored is true (the default), then only return authored
+    /// attributes; otherwise, this also returns un-authored builtins.
     /// 
     USDLUX_API
-    std::vector<UsdShadeOutput> GetOutputs() const;
+    std::vector<UsdShadeOutput> GetOutputs(bool onlyAuthored=true) const;
 
     /// @}
 
@@ -270,9 +267,11 @@ public:
     UsdShadeInput GetInput(const TfToken &name) const;
 
     /// Inputs are represented by attributes in the "inputs:" namespace.
+    /// If \p onlyAuthored is true (the default), then only return authored
+    /// attributes; otherwise, this also returns un-authored builtins.
     /// 
     USDLUX_API
-    std::vector<UsdShadeInput> GetInputs() const;
+    std::vector<UsdShadeInput> GetInputs(bool onlyAuthored=true) const;
 
     /// @}
 

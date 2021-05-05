@@ -22,7 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 from .qt import QtCore, QtGui, QtWidgets
-from .constantGroup import ConstantGroup
+from pxr.UsdUtils.constantsGroup import ConstantsGroup
 from pxr import Sdf, Usd, UsdGeom
 from .primViewItem import PrimViewItem
 from .common import PrintWarning, Timer, UIPrimTreeColors, KeyboardShortcuts
@@ -63,10 +63,10 @@ def _GetBackgroundColor(item, option):
 
     return background
 
-class PrimViewColumnIndex(ConstantGroup):
+class PrimViewColumnIndex(ConstantsGroup):
     NAME, TYPE, VIS, DRAWMODE = range(4)
 
-class DrawModes(ConstantGroup):
+class DrawModes(ConstantsGroup):
     DEFAULT = "default"
     CARDS = "cards"
     BOUNDS = "bounds"

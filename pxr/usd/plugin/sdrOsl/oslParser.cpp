@@ -355,8 +355,15 @@ SdrOslParserPlugin::_getTypeName(
     size_t openingBracket = typeName.find('[');
 
     if (openingBracket != std::string::npos) {
-        // stoi will stop at the first non-number char, usually ']'
-        arraySize = std::stoi(typeName.substr(openingBracket + 1));
+        try {
+            // stoi will stop at the first non-number char, usually ']'
+            arraySize = std::stoi(typeName.substr(openingBracket + 1));
+        } catch (...) {
+            // It is possible we try to parse a type like `color[]`, which
+            // usually indicates a dynamic array type. This attribute NEEDS to
+            // have the `isDynamicArray` metadatum set to 1, otherwise the Sdr
+            // will not recognize it as an actual array type
+        }
 
         // grab the part before the first bracket and turn it into the typeName
         typeName = typeName.substr(0, openingBracket);

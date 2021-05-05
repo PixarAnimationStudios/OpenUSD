@@ -40,12 +40,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 GLF_API
 bool GlfHasExtensions(std::string const & extensions);
 
-/// Tests whether the current GL context only has minimal graphics support.
-/// This is true for NX clients at least.
-GLF_API
-bool GlfHasLegacyGraphics();
-
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

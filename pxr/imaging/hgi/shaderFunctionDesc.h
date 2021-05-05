@@ -45,8 +45,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   The name written from the codegen into shader file for the texture.</li>
 /// <li>dimensions:
 ///   1d, 2d or 3d texture declaration.</li>
-/// <li>type:
-///   if it's a texture of floats, ints or any allowed type.</li>
+/// <li>format
+///   Format of the texture. This is required in APIs where sampler types depend
+///   on the texture (e.g., GL) </li>
 /// </ul>
 ///
 struct HgiShaderFunctionTextureDesc
@@ -56,7 +57,7 @@ struct HgiShaderFunctionTextureDesc
 
     std::string nameInShader;
     uint32_t dimensions;
-    std::string type;
+    HgiFormat format;
 };
 
 using HgiShaderFunctionTextureDescVector =
@@ -71,6 +72,39 @@ HGI_API
 bool operator!=(
     const HgiShaderFunctionTextureDesc& lhs,
     const HgiShaderFunctionTextureDesc& rhs);
+
+/// \struct HgiShaderFunctionBufferDesc
+///
+/// Describes a buffer to be passed into a shader
+///
+/// <ul>
+/// <li>nameInShader:
+///   The name written from the codegen into shader file for the texture.</li>
+/// <li>type:
+///   Type of the param within the shader file.</li>
+/// </ul>
+///
+struct HgiShaderFunctionBufferDesc
+{
+    HGI_API
+    HgiShaderFunctionBufferDesc();
+
+    std::string nameInShader;
+    std::string type;
+};
+
+using HgiShaderFunctionBufferDescVector =
+    std::vector<HgiShaderFunctionBufferDesc>;
+
+HGI_API
+bool operator==(
+    const HgiShaderFunctionBufferDesc& lhs,
+    const HgiShaderFunctionBufferDesc& rhs);
+
+HGI_API
+bool operator!=(
+    const HgiShaderFunctionBufferDesc& lhs,
+    const HgiShaderFunctionBufferDesc& rhs);
 
 /// \struct HgiShaderFunctionParamDesc
 ///
@@ -127,6 +161,8 @@ bool operator!=(
 ///   The ascii shader code used to compile the shader.</li>
 /// <li>textures:
 ///   List of texture descriptions to be passed into a shader.</li>
+/// <li>buffers:
+///   List of buffer descriptions to be passed into a shader.</li>
 /// <li>constantParams:
 ///   List of descriptions of constant params passed into a shader.</li>
 /// <li>stageInputs:
@@ -143,6 +179,7 @@ struct HgiShaderFunctionDesc
     HgiShaderStage shaderStage;
     const char*  shaderCode;
     std::vector<HgiShaderFunctionTextureDesc> textures;
+    std::vector<HgiShaderFunctionBufferDesc> buffers;
     std::vector<HgiShaderFunctionParamDesc> constantParams;
     std::vector<HgiShaderFunctionParamDesc> stageInputs;
     std::vector<HgiShaderFunctionParamDesc> stageOutputs;
@@ -168,7 +205,15 @@ HgiShaderFunctionAddTexture(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     uint32_t dimensions = 2,
-    const std::string &type = "float");
+    const HgiFormat &format = HgiFormatFloat32Vec4);
+
+/// Adds buffer descriptor to given shader function descriptor.
+HGI_API
+void
+HgiShaderFunctionAddBuffer(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    const std::string &type);
 
 /// Adds constant function param descriptor to given shader function
 /// descriptor.

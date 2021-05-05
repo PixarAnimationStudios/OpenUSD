@@ -83,7 +83,7 @@ void main(void)
 --- --------------------------------------------------------------------------
 -- glsl Mesh.TessControl.BSplineQuad
 
-layout(vertices = 16) out;
+layout(vertices = HD_NUM_PATCH_EVAL_VERTS) out;
 
 patch out vec4 tessOuterLo, tessOuterHi;
 
@@ -96,12 +96,12 @@ in VertexData
 out VertexDataTess
 {
     OsdPerPatchVertexBezier v;
-} outpt[16];
+} outpt[HD_NUM_PATCH_EVAL_VERTS];
 
 void main(void)
 {
-    vec3 cv[16];
-    for (int i = 0; i < 16; ++i) {
+    vec3 cv[HD_NUM_PATCH_VERTS];
+    for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {
         cv[i] = inpt[i].Peye.xyz;
     }
 
@@ -118,13 +118,13 @@ void main(void)
         vec2 tessLevelInner = vec2(0);
 
         // Gather bezier control points to compute limit surface tess levels
-        OsdPerPatchVertexBezier cpBezier[16];
-        for (int i = 0; i < 16; ++i) {
+        OsdPerPatchVertexBezier cpBezier[HD_NUM_PATCH_EVAL_VERTS];
+        for (int i = 0; i < HD_NUM_PATCH_EVAL_VERTS; ++i) {
             cpBezier[i] = outpt[i].v;
         }
-        OsdGetTessLevelsAdaptiveLimitPoints(cpBezier, patchParam,
-                                            tessLevelOuter, tessLevelInner,
-                                            tessOuterLo, tessOuterHi);
+        OsdEvalPatchBezierTessLevels(cpBezier, patchParam,
+                                     tessLevelOuter, tessLevelInner,
+                                     tessOuterLo, tessOuterHi);
 
         gl_TessLevelOuter[0] = tessLevelOuter[0];
         gl_TessLevelOuter[1] = tessLevelOuter[1];
@@ -193,7 +193,7 @@ void main(void)
 --- --------------------------------------------------------------------------
 -- glsl Mesh.TessControl.BoxSplineTriangle
 
-layout(vertices = 15) out;
+layout(vertices = HD_NUM_PATCH_EVAL_VERTS) out;
 
 patch out vec4 tessOuterLo, tessOuterHi;
 
@@ -206,12 +206,12 @@ in VertexData
 out VertexDataTess
 {
     OsdPerPatchVertexBezier v;
-} outpt[16];
+} outpt[HD_NUM_PATCH_EVAL_VERTS];
 
 void main(void)
 {
-    vec3 cv[12];
-    for (int i = 0; i < 12; ++i) {
+    vec3 cv[HD_NUM_PATCH_VERTS];
+    for (int i = 0; i < HD_NUM_PATCH_VERTS; ++i) {
         cv[i] = inpt[i].Peye.xyz;
     }
 
@@ -228,8 +228,8 @@ void main(void)
         vec2 tessLevelInner = vec2(0);
 
         // Gather bezier control points to compute limit surface tess levels
-        vec3 cpBezier[15];
-        for (int i = 0; i < 15; ++i) {
+        vec3 cpBezier[HD_NUM_PATCH_EVAL_VERTS];
+        for (int i = 0; i < HD_NUM_PATCH_EVAL_VERTS; ++i) {
             cpBezier[i] = outpt[i].v.P;
         }
         OsdEvalPatchBezierTriangleTessLevels(cpBezier, patchParam,
@@ -288,7 +288,7 @@ void main(void)
     outData.Neye = N; // normalized
 
     tesPatchCoord = OsdInterpolatePatchCoordTriangle(UV, patchParam);
-    tesTessCoord = vec2(0); // used only for hiding internal edges w/ quad tess
+    tesTessCoord = UV;
 
     // Barycentric basis
     vec4 basis = vec4(
@@ -337,19 +337,11 @@ void emit(int index, vec4 Peye, vec3 Neye,
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    int inEdgeFlag = 0;
-    vec2 dt01 = abs(tesTessCoord[0] - tesTessCoord[1]);
-    vec2 dt12 = abs(tesTessCoord[1] - tesTessCoord[2]);
-    vec2 dt20 = abs(tesTessCoord[2] - tesTessCoord[0]);
-    if (min(dt01.x, dt01.y) > 0.03) inEdgeFlag |= 2;
-    if (min(dt12.x, dt12.y) > 0.03) inEdgeFlag |= 4;
-    if (min(dt20.x, dt20.y) > 0.03) inEdgeFlag |= 1;
-
-    ProcessTriEdgeDistance(Peye, triPeye0, triPeye1, triPeye2, inEdgeFlag);
+    ProcessTriEdgeDistance(Peye, triPeye0, triPeye1, triPeye2);
 
     ProcessEdgeId(index, gsPatchCoord.xy);
 
-    ProcessPrimvars(index);
+    ProcessPrimvars(index, tesTessCoord[index]);
 
     EmitVertex();
 }
@@ -363,15 +355,15 @@ void main(void)
     bool isFlipped = IsFlipped(); // consider handedness AND negative-scale
 
     vec3 Neye0 = isFlipped ? -inData[0].Neye : inData[0].Neye;
-    Neye0 = GetNormal(Neye0, 0);
+    Neye0 = GetNormal(Neye0, 0, tesTessCoord[0]);
     Neye0 = GetTriGeometryNormal(Neye0, inData[0].Peye, inData[1].Peye,
         inData[2].Peye, isFlipped);
     vec3 Neye1 = isFlipped ? -inData[1].Neye : inData[1].Neye;
-    Neye1 = GetNormal(Neye1, 0);
+    Neye1 = GetNormal(Neye1, 0, tesTessCoord[1]);
     Neye1 = GetTriGeometryNormal(Neye1, inData[0].Peye, inData[1].Peye,
         inData[2].Peye, isFlipped);
     vec3 Neye2 = isFlipped ? -inData[2].Neye : inData[2].Neye;
-    Neye2 = GetNormal(Neye2, 0);
+    Neye2 = GetNormal(Neye2, 0, tesTessCoord[2]);
     Neye2 = GetTriGeometryNormal(Neye2, inData[0].Peye, inData[1].Peye,
         inData[2].Peye, isFlipped);
 
@@ -457,26 +449,6 @@ out VertexData
 out vec4 gsPatchCoord;
 out vec2 gsTessCoord;
 
-// The OpenSubdiv implementation does not yet provide a utility
-// method to interpolate barycentric patch coordinates so we provide
-// our own implementation modeled after OsdInterpolatePatchCoord().
-// We need to interpolate only two of the three barycentric coordinates.
-vec4 InterpolatePatchCoordBarycentric(vec2 localUV, ivec3 patchParam)
-{
-    ivec4 perPrimPatchCoord = OsdGetPatchCoord(patchParam);
-    int faceId = perPrimPatchCoord.w;
-    int faceLevel = perPrimPatchCoord.z;
-    vec2 faceUV = vec2(perPrimPatchCoord.x, perPrimPatchCoord.y);
-
-    localUV = (faceUV + localUV) / faceLevel;
-    if ((faceUV.x + faceUV.y) >= faceLevel) {
-        localUV = vec2(1.0f) - localUV;
-    }
-
-    // add 0.5 to integer values for more robust interpolation
-    return vec4(localUV.x, localUV.y, faceLevel+0.5f, faceId+0.5f);
-}
-
 vec4 GetPatchCoord(int index)
 {
     vec2 uv[3];
@@ -485,7 +457,7 @@ vec4 GetPatchCoord(int index)
     uv[2] = vec2(0, 1); // (0, 1, 0);
 
     ivec3 patchParam = GetPatchParam();
-    return InterpolatePatchCoordBarycentric(uv[index], patchParam);
+    return OsdInterpolatePatchCoordTriangle(uv[index], patchParam);
 }
 
 void emit(int index, vec4 Peye, vec3 Neye,
@@ -500,8 +472,7 @@ void emit(int index, vec4 Peye, vec3 Neye,
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    int inEdgeFlag = 0;
-    ProcessTriEdgeDistance(Peye, triPeye0, triPeye1, triPeye2, inEdgeFlag);
+    ProcessTriEdgeDistance(Peye, triPeye0, triPeye1, triPeye2);
 
     ProcessEdgeId(index, gsPatchCoord.xy);
 

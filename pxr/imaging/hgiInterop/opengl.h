@@ -32,6 +32,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class VtValue;
 
 /// \class HgiInteropOpenGL
 ///
@@ -52,6 +53,7 @@ public:
     void CompositeToInterop(
         HgiTextureHandle const &color,
         HgiTextureHandle const &depth,
+        VtValue const &framebuffer,
         GfVec4i const& viewport);
 
 private:

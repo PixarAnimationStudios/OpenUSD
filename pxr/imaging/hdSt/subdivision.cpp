@@ -98,7 +98,7 @@ HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
         specs->emplace_back(HdTokens->primitiveParam,
                             HdTupleType {HdTypeInt32Vec4, 1});
         specs->emplace_back(HdTokens->edgeIndices,
-                            HdTupleType {HdTypeInt32Vec4, 1});
+                            HdTupleType {HdTypeInt32Vec2, 1});
     } else if (_topology->RefinesToBoxSplineTrianglePatches()) {
         // quartic box spline triangle patches
         specs->emplace_back(HdTokens->indices,
@@ -106,17 +106,18 @@ HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
         // 3+1 (includes sharpness)
         specs->emplace_back(HdTokens->primitiveParam,
                             HdTupleType {HdTypeInt32Vec4, 1});
+        // int will suffice, but this unifies it for all the cases
         specs->emplace_back(HdTokens->edgeIndices,
-                            HdTupleType {HdTypeInt32Vec4, 1});
+                            HdTupleType {HdTypeInt32Vec2, 1});
     } else if (HdSt_Subdivision::RefinesToTriangles(_topology->GetScheme())) {
         // triangles (loop)
         specs->emplace_back(HdTokens->indices,
                             HdTupleType {HdTypeInt32Vec3, 1});
         specs->emplace_back(HdTokens->primitiveParam,
                             HdTupleType {HdTypeInt32Vec3, 1});
-        // vec3 will suffice, but this unifies it for all the cases
+        // int will suffice, but this unifies it for all the cases
         specs->emplace_back(HdTokens->edgeIndices,
-                            HdTupleType {HdTypeInt32Vec4, 1});
+                            HdTupleType {HdTypeInt32Vec2, 1});
     } else {
         // quads (catmark, bilinear)
         specs->emplace_back(HdTokens->indices,
@@ -124,7 +125,7 @@ HdSt_OsdIndexComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
         specs->emplace_back(HdTokens->primitiveParam,
                             HdTupleType {HdTypeInt32Vec3, 1});
         specs->emplace_back(HdTokens->edgeIndices,
-                            HdTupleType {HdTypeInt32Vec4, 1});
+                            HdTupleType {HdTypeInt32Vec2, 1});
     }
 }
 
@@ -155,10 +156,13 @@ HdSt_OsdIndexComputation::_CheckValid() const
 ///
 ///
 HdSt_OsdRefineComputationGPU::HdSt_OsdRefineComputationGPU(
-                                                    HdSt_MeshTopology *topology,
-                                                    TfToken const &name,
-                                                    HdType type)
-    : _topology(topology), _name(name)
+    HdSt_MeshTopology *topology,
+    TfToken const &name,
+    HdType type,
+    HdSt_MeshTopology::Interpolation interpolation,
+    int fvarChannel)
+    : _topology(topology), _name(name), _interpolation(interpolation),
+      _fvarChannel(fvarChannel)
 {
 }
 
@@ -181,7 +185,7 @@ HdSt_OsdRefineComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range,
     HdSt_Subdivision *subdivision = _topology->GetSubdivision();
     if (!TF_VERIFY(subdivision)) return;
 
-    subdivision->RefineGPU(range, _name);
+    subdivision->RefineGPU(range, _name, _interpolation, _fvarChannel);
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->subdivisionRefineGPU);
 }
@@ -189,10 +193,22 @@ HdSt_OsdRefineComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range,
 int
 HdSt_OsdRefineComputationGPU::GetNumOutputElements() const
 {
-    // returns the total number of vertices, including coarse and refined ones.
+    // returns the total number of vertices, including coarse and refined ones
     HdSt_Subdivision const *subdivision = _topology->GetSubdivision();
     if (!TF_VERIFY(subdivision)) return 0;
-    return subdivision->GetNumVertices();
+    if (_interpolation == HdSt_MeshTopology::INTERPOLATE_VERTEX) {
+        return subdivision->GetNumVertices();
+    } else if (_interpolation == HdSt_MeshTopology::INTERPOLATE_VARYING) {
+        return subdivision->GetNumVarying();
+    } else {
+        return subdivision->GetMaxNumFaceVarying();
+    }
+}
+
+HdSt_MeshTopology::Interpolation 
+HdSt_OsdRefineComputationGPU::GetInterpolation() const
+{
+    return _interpolation;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

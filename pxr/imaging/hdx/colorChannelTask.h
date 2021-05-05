@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hdx/fullscreenShader.h"
 #include "pxr/imaging/hdx/task.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hgi/graphicsCmds.h"
@@ -45,23 +44,23 @@ public:
     HdxColorChannelTask(HdSceneDelegate* delegate, SdfPath const& id);
 
     HDX_API
-    virtual ~HdxColorChannelTask();
+    ~HdxColorChannelTask() override;
 
     /// Prepare the tasks resources
     HDX_API
-    virtual void Prepare(HdTaskContext* ctx,
-                         HdRenderIndex* renderIndex) override;
+    void Prepare(HdTaskContext* ctx,
+                 HdRenderIndex* renderIndex) override;
 
     /// Execute the color channel task
     HDX_API
-    virtual void Execute(HdTaskContext* ctx) override;
+    void Execute(HdTaskContext* ctx) override;
 
 protected:
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdSceneDelegate* delegate,
-                       HdTaskContext* ctx,
-                       HdDirtyBits* dirtyBits) override;
+    void _Sync(HdSceneDelegate* delegate,
+               HdTaskContext* ctx,
+               HdDirtyBits* dirtyBits) override;
 
 private:
     HdxColorChannelTask() = delete;
@@ -88,7 +87,7 @@ private:
         }
     };
 
-    std::unique_ptr<HdxFullscreenShader> _compositor;
+    std::unique_ptr<class HdxFullscreenShader> _compositor;
     _ParameterBuffer _parameterData;
 
     // The color channel to be rendered (see HdxColorChannelTokens for the

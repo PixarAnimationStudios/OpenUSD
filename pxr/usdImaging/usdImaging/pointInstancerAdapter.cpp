@@ -255,7 +255,8 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
     size_t instantiatedPrimCount = 0;
 
     std::vector<UsdPrimRange> treeStack;
-    treeStack.push_back(UsdPrimRange(protoRootPrim, _GetDisplayPredicate()));
+    treeStack.push_back(
+        UsdPrimRange(protoRootPrim, _GetDisplayPredicateForPrototypes()));
     while (!treeStack.empty()) {
         if (!treeStack.back()) {
             treeStack.pop_back();
@@ -277,7 +278,8 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
         // XXX: Should we delegate to instanceAdapter here?
         if (iter->IsInstance()) {
             UsdPrim prototype = iter->GetPrototype();
-            UsdPrimRange prototypeRange(prototype, _GetDisplayPredicate());
+            UsdPrimRange prototypeRange(
+                prototype, _GetDisplayPredicateForPrototypes());
             treeStack.push_back(prototypeRange);
 
             // Make sure to register a dependency on this instancer with the
@@ -385,7 +387,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                     populatePrim = _GetPrim(instancerChain.at(1));
                 }
 
-                SdfPath const& materialId = GetMaterialUsdPath(populatePrim);
+                SdfPath const& materialId = GetMaterialUsdPath(instanceProxyPrim);
                 TfToken const& drawMode = GetModelDrawMode(instanceProxyPrim);
                 TfToken const& inheritablePurpose = 
                     GetInheritablePurpose(instanceProxyPrim);
@@ -679,13 +681,23 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
             return HdChangeTracker::Clean;
         }
 
+        UsdPrim protoUsdPrim = _GetProtoUsdPrim(proto);
+        if (!protoUsdPrim) {
+            // It's possible that we will get a property change that was
+            // actually directed at a parent primitive for an inherited
+            // primvar. We need to verify that the prototype UsdPrim still
+            // exists, as it may have been deactivated or otherwise removed,
+            // in which case we can return clean (no-work).
+            return HdChangeTracker::Clean;
+        }
+
         // XXX: Specifically disallow visibility and transform updates: in
         // these cases, it's hard to tell which prims we should dirty but
         // probably we need to dirty both prototype & instancer. This is a
         // project for later. In the meantime, returning AllDirty causes
         // a re-sync.
         HdDirtyBits dirtyBits = proto.adapter->ProcessPropertyChange(
-            _GetProtoUsdPrim(proto), cachePath, propertyName);
+            protoUsdPrim, cachePath, propertyName);
 
         if (dirtyBits & (HdChangeTracker::DirtyTransform |
                          HdChangeTracker::DirtyVisibility)) {
@@ -1037,7 +1049,7 @@ UsdImagingPointInstancerAdapter::_GetProtoUsdPrim(
     //   /Instance
     // ... in which case, we want to return /Instance since prototypes drop all
     // attributes.
-    if (prim.IsPrototype() && TF_VERIFY(proto.paths.size() > 1)) {
+    if (prim && prim.IsPrototype() && TF_VERIFY(proto.paths.size() > 1)) {
         prim = _GetPrim(proto.paths.at(1));
     }
     return prim;
@@ -1447,6 +1459,32 @@ UsdImagingPointInstancerAdapter::GetInstancerId(
 }
 
 /*virtual*/
+SdfPathVector
+UsdImagingPointInstancerAdapter::GetInstancerPrototypes(
+        UsdPrim const& usdPrim,
+        SdfPath const& cachePath) const
+{
+    HD_TRACE_FUNCTION();
+
+    if (IsChildPath(cachePath)) {
+        _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(), cachePath);
+        UsdPrim protoPrim = _GetProtoUsdPrim(proto);
+        return proto.adapter->GetInstancerPrototypes(protoPrim, cachePath);
+    } else {
+        SdfPathVector prototypes;
+        if (const _InstancerData* instancerData =
+                TfMapLookupPtr(_instancerData, cachePath)) {
+            for (_ProtoPrimMap::const_iterator i =
+                    instancerData->protoPrimMap.cbegin();
+                    i != instancerData->protoPrimMap.cend(); ++i) {
+                prototypes.push_back(i->first);
+            }
+        }
+        return prototypes;
+    }
+}
+
+/*virtual*/
 size_t
 UsdImagingPointInstancerAdapter::SampleInstancerTransform(
     UsdPrim const& instancerPrim,
@@ -1594,7 +1632,8 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
     UsdTimeCode time, 
     size_t maxNumSamples, 
     float *sampleTimes, 
-    VtValue *sampleValues)
+    VtValue *sampleValues,
+    VtIntArray *sampleIndices)
 {
     HD_TRACE_FUNCTION();
 
@@ -1609,7 +1648,7 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
         UsdPrim protoPrim = _GetProtoUsdPrim(proto);
         return proto.adapter->SamplePrimvar(
             protoPrim, cachePath, key, time,
-            maxNumSamples, sampleTimes, sampleValues);
+            maxNumSamples, sampleTimes, sampleValues, sampleIndices);
     } else {
         // Map Hydra-PI transform keys to their USD equivalents.
         TfToken usdKey = key;
@@ -1622,7 +1661,7 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
         }
         return UsdImagingPrimAdapter::SamplePrimvar(
             usdPrim, cachePath, usdKey, time,
-            maxNumSamples, sampleTimes, sampleValues);
+            maxNumSamples, sampleTimes, sampleValues, sampleIndices);
     }
 }
 
@@ -1798,7 +1837,16 @@ UsdImagingPointInstancerAdapter::GetMaterialId(UsdPrim const& usdPrim,
         // Delegate to prototype adapter and USD prim.
         _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(), cachePath);
         UsdPrim protoPrim = _GetProtoUsdPrim(proto);
-        return proto.adapter->GetMaterialId(protoPrim, cachePath, time);
+        SdfPath materialId =
+            proto.adapter->GetMaterialId(protoPrim, cachePath, time);
+        if (!materialId.IsEmpty()) {
+            return materialId;
+        }
+        // If the child prim doesn't have a material ID, see if there's
+        // an instancer material path...
+        UsdPrim instanceProxyPrim = _GetPrim(_GetPrimPathFromInstancerChain(
+                    proto.paths));
+        return GetMaterialUsdPath(instanceProxyPrim);
     }
     return BaseAdapter::GetMaterialId(usdPrim, cachePath, time);
 }
@@ -1808,7 +1856,8 @@ VtValue
 UsdImagingPointInstancerAdapter::Get(UsdPrim const& usdPrim,
                                      SdfPath const& cachePath,
                                      TfToken const& key,
-                                     UsdTimeCode time) const
+                                     UsdTimeCode time,
+                                     VtIntArray *outIndices) const
 {
     TRACE_FUNCTION();
 
@@ -1816,7 +1865,7 @@ UsdImagingPointInstancerAdapter::Get(UsdPrim const& usdPrim,
         // Delegate to prototype adapter and USD prim.
         _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(), cachePath);
         UsdPrim protoPrim = _GetProtoUsdPrim(proto);
-        return proto.adapter->Get(protoPrim, cachePath, key, time);
+        return proto.adapter->Get(protoPrim, cachePath, key, time, outIndices);
 
     } else  if (_InstancerData const* instrData =
                 TfMapLookupPtr(_instancerData, cachePath)) {
@@ -1857,18 +1906,22 @@ UsdImagingPointInstancerAdapter::Get(UsdPrim const& usdPrim,
             }
 
         } else {
-            UsdGeomPointInstancer instancer(usdPrim);
-            UsdGeomPrimvarsAPI primvars(instancer);
-            UsdGeomPrimvar pv = primvars.GetPrimvar(key);
-            VtValue value;
-            if (pv) {
-                pv.ComputeFlattened(&value, time);
+            UsdGeomPrimvarsAPI primvars(usdPrim);
+            if (UsdGeomPrimvar pv = primvars.GetPrimvar(key)) {
+                VtValue value;
+                if (outIndices) {
+                    if (pv && pv.Get(&value, time)) {
+                        pv.GetIndices(outIndices, time);
+                        return value;
+                    }
+                } else if (pv && pv.ComputeFlattened(&value, time)) {
+                    return value;
+                }
             }
-            return value;
         }
     }
 
-    return BaseAdapter::Get(usdPrim, cachePath, key, time);
+    return BaseAdapter::Get(usdPrim, cachePath, key, time, outIndices);
 }
 
 /*virtual*/

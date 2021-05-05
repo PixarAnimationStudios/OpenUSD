@@ -93,12 +93,16 @@ public:
     ///
     /// An UsdShadeOutput on a container can get its value from the same
     /// type of sources as a UsdShadeInput on either a UsdShadeShader or
-    /// UsdShadeNodeGraph. Outputs non-containers (UsdShadeShaders) cannot be
+    /// UsdShadeNodeGraph. Outputs on non-containers (UsdShadeShaders) cannot be
     /// connected.
     ///
     /// This function returns a vector of UsdAttributes. The vector is empty if
     /// no valid attribute was found. The type of each attribute can be
     /// determined with the \p UsdShadeUtils::GetType function.
+    ///
+    /// If \p shaderOutputsOnly is true, it will only report attributes that are
+    /// outputs of non-containers (UsdShadeShaders). This is a bit faster and
+    /// what is need when determining the connections for Material terminals.
     ///
     /// \note This will return the last attribute along the connection chain
     /// that has an authored value, which might not be the last attribute in the
@@ -111,11 +115,13 @@ public:
     /// process such a mixture.
     USDSHADE_API
     static UsdShadeAttributeVector GetValueProducingAttributes(
-        UsdShadeInput const &input);
+        UsdShadeInput const &input,
+        bool shaderOutputsOnly = false);
     /// \overload
     USDSHADE_API
     static UsdShadeAttributeVector GetValueProducingAttributes(
-        UsdShadeOutput const &output);
+        UsdShadeOutput const &output,
+        bool shaderOutputsOnly = false);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,0 +1,27 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "TestSdfNoAssetFileFormat": {
+                        "bases": [
+                            "SdfTextFileFormat"
+                        ],
+                        "displayName": "Dynamic file format plugin example for testing",
+                        "extensions": [
+                            "testsdfnoasset"
+                        ],
+                        "formatId": "TestSdfNoAssetFileFormat",
+                        "primary": true,
+                        "target": "sdf"
+                    }
+                }
+            },
+            "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@",
+            "Name": "TestSdfNoAssetFileFormat",
+            "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@TEST_PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

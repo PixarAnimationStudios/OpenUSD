@@ -72,6 +72,12 @@ enum HgiFormat : int
     HgiFormatFloat32Vec3,
     HgiFormatFloat32Vec4,
 
+    // Int16 - a 2-byte signed integer
+    HgiFormatInt16,
+    HgiFormatInt16Vec2,
+    HgiFormatInt16Vec3,
+    HgiFormatInt16Vec4,
+
     // UInt16 - a 2-byte unsigned integer
     HgiFormatUInt16,
     HgiFormatUInt16Vec2,
@@ -129,8 +135,8 @@ struct HgiMipInfo
     size_t byteOffset;
     /// Dimension of mip GfVec3i.
     GfVec3i dimensions;
-    /// size of mip map in bytes.
-    size_t byteSize;
+    /// size of (one layer if array of) mip map in bytes.
+    size_t byteSizePerLayer;
 };
 
 /// Return the count of components in the given format.

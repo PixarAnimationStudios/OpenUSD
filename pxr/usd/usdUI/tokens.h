@@ -64,15 +64,15 @@ struct UsdUITokensType {
     USDUI_API UsdUITokensType();
     /// \brief "closed"
     /// 
-    /// Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
+    /// Possible value for UsdUINodeGraphNodeAPI::GetExpansionStateAttr()
     const TfToken closed;
     /// \brief "minimized"
     /// 
-    /// Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
+    /// Possible value for UsdUINodeGraphNodeAPI::GetExpansionStateAttr()
     const TfToken minimized;
     /// \brief "open"
     /// 
-    /// Possible value for UsdUINodeGraphNodeAPI::GetUiNodegraphNodeExpansionStateAttr()
+    /// Possible value for UsdUINodeGraphNodeAPI::GetExpansionStateAttr()
     const TfToken open;
     /// \brief "ui:description"
     /// 

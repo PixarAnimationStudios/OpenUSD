@@ -39,7 +39,6 @@
 #include "pxr/imaging/hd/coordSys.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/selection.h"
-#include "pxr/imaging/hd/texture.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/pxOsd/subdivTags.h"
@@ -107,7 +106,7 @@ public:
     void SyncAll(bool includeUnvarying);
 
     /// Opportunity for the delegate to clean itself up after
-    /// performing parrellel work during sync phase
+    /// performing parallel work during sync phase
     USDIMAGING_API
     virtual void PostSyncCleanup() override;
 
@@ -198,7 +197,7 @@ public:
     void SetCullStyleFallback(HdCullStyle cullStyle);
 
     /// Sets the root transform for the entire delegate, which is applied to all
-    /// render prims generated. Settting this value will immediately invalidate
+    /// render prims generated. Setting this value will immediately invalidate
     /// existing rprim transforms.
     USDIMAGING_API
     void SetRootTransform(GfMatrix4d const& xf);
@@ -207,7 +206,7 @@ public:
     const GfMatrix4d &GetRootTransform() const { return _rootXf; }
 
     /// Sets the root visibility for the entire delegate, which is applied to
-    /// all render prims generated. Settting this value will immediately
+    /// all render prims generated. Setting this value will immediately
     /// invalidate existing rprim visibility.
     USDIMAGING_API
     void SetRootVisibility(bool isVisible);
@@ -328,6 +327,10 @@ public:
     USDIMAGING_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key) override;
     USDIMAGING_API
+    virtual VtValue GetIndexedPrimvar(SdfPath const& id, 
+                                      TfToken const& key, 
+                                      VtIntArray *outIndices) override;
+    USDIMAGING_API
     HdIdVectorSharedPtr
     virtual GetCoordSysBindings(SdfPath const& id) override;
     USDIMAGING_API
@@ -351,6 +354,9 @@ public:
     USDIMAGING_API
     virtual SdfPath GetInstancerId(SdfPath const &primId) override;
 
+    USDIMAGING_API
+    virtual SdfPathVector GetInstancerPrototypes(SdfPath const &instancerId) override;
+
     // Motion samples
     USDIMAGING_API
     virtual size_t
@@ -366,6 +372,12 @@ public:
     SamplePrimvar(SdfPath const& id, TfToken const& key,
                   size_t maxNumSamples, float *times,
                   VtValue *samples) override;
+
+    USDIMAGING_API
+    virtual size_t
+    SampleIndexedPrimvar(SdfPath const& id, TfToken const& key,
+                         size_t maxNumSamples, float *times,
+                         VtValue *samples, VtIntArray *indices) override;
 
     // Material Support
     USDIMAGING_API
@@ -425,6 +437,13 @@ public:
     USDIMAGING_API
     VtValue GetExtComputationInput(SdfPath const& computationId,
                                    TfToken const& input) override;
+
+    USDIMAGING_API
+    size_t SampleExtComputationInput(SdfPath const& computationId,
+                                     TfToken const& input,
+                                     size_t maxSampleCount,
+                                     float *sampleTimes,
+                                     VtValue *sampleValues) override;
 
     USDIMAGING_API
     std::string GetExtComputationKernel(SdfPath const& computationId) override;
@@ -501,6 +520,13 @@ public:
     bool IsInInvisedPaths(const SdfPath &usdPath) const;
 
 private:
+    // Internal Get and SamplePrimvar
+    VtValue _Get(SdfPath const& id, TfToken const& key, VtIntArray *outIndices);
+
+    size_t _SamplePrimvar(SdfPath const& id, TfToken const& key,
+                          size_t maxNumSamples, float *times, VtValue *samples, 
+                          VtIntArray *indices);
+
     // Internal friend class.
     class _Worker;
     friend class UsdImagingIndexProxy;
@@ -658,6 +684,7 @@ private:
     _HdPrimInfo *_GetHdPrimInfo(const SdfPath &cachePath);
 
     Usd_PrimFlagsConjunction _GetDisplayPredicate() const;
+    Usd_PrimFlagsConjunction _GetDisplayPredicateForPrototypes() const;
 
     // Mark render tags dirty for all prims.
     // This is done in response to toggling the purpose-based display settings.

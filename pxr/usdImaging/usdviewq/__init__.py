@@ -73,7 +73,10 @@ class Launcher(object):
             if arg_parse_result.traceToFile:
                 from pxr import Trace
                 traceCollector = Trace.Collector()
-                traceCollector.pythonTracingEnabled = True
+            
+                if arg_parse_result.tracePython:
+                    traceCollector.pythonTracingEnabled = True
+
                 traceCollector.enabled = True
 
             self.__LaunchProcess(arg_parse_result)
@@ -168,7 +171,7 @@ class Launcher(object):
 
         parser.add_argument('--timing', action='store_true',
                             dest='timing',
-                            help='Echo timing stats to console. NOTE: timings will be unreliable when the --mallocTagStats option is also in use')
+                            help='Echo timing stats to console. NOTE: timings will be unreliable when the --memstats option is also in use')
 
         parser.add_argument('--traceToFile', action='store',
                             type=str,
@@ -187,6 +190,11 @@ class Launcher(object):
                             '--traceToFile. \'chrome\' files can be read in '
                             'chrome, \'trace\' files are simple text reports. '
                             '(default=%(default)s)')
+
+        parser.add_argument('--tracePython', action='store_true',
+                            dest='tracePython',
+                            help='Enable python trace collection, '
+                            'requires --traceToFile to be set.')
 
         parser.add_argument('--memstats', action='store', default='none',
                             dest='mallocTagStats', type=str,

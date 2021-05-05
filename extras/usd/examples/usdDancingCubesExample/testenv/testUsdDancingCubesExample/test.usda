@@ -18,7 +18,7 @@ def "Root" (
     }
     # Payload to the dynamic file. The file must exist but its contents are
     # irrelevant as everything is generated from parameters above.
-    payload = @./empty.usddancingcubesexample@
+    payload = @anon:dummy:e.usddancingcubesexample@
 )
 {
 }

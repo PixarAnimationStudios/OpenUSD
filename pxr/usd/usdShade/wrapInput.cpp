@@ -169,7 +169,9 @@ void wrapUsdShadeInput()
         .def("GetConnectability", &Input::GetConnectability)
         .def("ClearConnectability", &Input::ClearConnectability)
 
-        .def("GetValueProducingAttributes", &Input::GetValueProducingAttributes)
+        .def("GetValueProducingAttributes",
+            &Input::GetValueProducingAttributes,
+            (arg("shaderOutputsOnly")=false))
         .def("GetValueProducingAttribute", _GetValueProducingAttribute)
 
         .def("GetAttr", &Input::GetAttr,

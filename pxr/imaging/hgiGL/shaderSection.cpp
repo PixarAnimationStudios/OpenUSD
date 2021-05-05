@@ -28,12 +28,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGLShaderSection::HgiGLShaderSection(
     const std::string &identifier,
-    const HgiGLShaderSectionAttributeVector &attributes,
+    const HgiShaderSectionAttributeVector &attributes,
     const std::string &storageQualifier,
     const std::string &defaultValue)
-  : HgiShaderSection(identifier, std::string(), std::string(), defaultValue)
+  : HgiShaderSection(identifier, attributes, defaultValue)
   , _storageQualifier(storageQualifier)
-  , _attributes(attributes)
 {
 }
 
@@ -44,14 +43,16 @@ HgiGLShaderSection::WriteDeclaration(std::ostream &ss) const
 {
     //If it has attributes, write them with corresponding layout
     //identifiers and indicies
-    if(!_attributes.empty()) {
+    const HgiShaderSectionAttributeVector &attributes = GetAttributes();
+
+    if(!attributes.empty()) {
         ss << "layout(";
-        for (size_t i = 0; i < _attributes.size(); i++)
+        for (size_t i = 0; i < attributes.size(); i++)
         {
             if (i > 0) {
                 ss << ", ";
             }
-            const HgiGLShaderSectionAttribute &a = _attributes[i];
+            const HgiShaderSectionAttribute &a = attributes[i];
             ss << a.identifier;
             if(!a.index.empty()) {
                 ss << " = " << a.index;
@@ -127,7 +128,7 @@ HgiGLMacroShaderSection::VisitGlobalMacros(std::ostream &ss)
 HgiGLMemberShaderSection::HgiGLMemberShaderSection(
     const std::string &identifier,
     const std::string &typeName,
-    const HgiGLShaderSectionAttributeVector &attributes,
+    const HgiShaderSectionAttributeVector &attributes,
     const std::string &storageQualifier,
     const std::string &defaultValue)
   : HgiGLShaderSection(identifier,
@@ -168,7 +169,7 @@ HgiGLBlockShaderSection::~HgiGLBlockShaderSection() = default;
 bool
 HgiGLBlockShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
 {
-    ss << "layout(binding = "
+    ss << "layout(std140, binding = "
         << _bindingNo << ") " << "uniform" << " ";
     WriteIdentifier(ss);
     ss << "\n";
@@ -186,17 +187,43 @@ HgiGLTextureShaderSection::HgiGLTextureShaderSection(
     const std::string &identifier,
     const unsigned int layoutIndex,
     const unsigned int dimensions,
-    const HgiGLShaderSectionAttributeVector &attributes,
+    const HgiFormat format,
+    const HgiShaderSectionAttributeVector &attributes,
     const std::string &defaultValue)
   : HgiGLShaderSection( identifier,
                         attributes,
                         _storageQualifier,
                         defaultValue)
   , _dimensions(dimensions)
+  , _format(format)
 {
 }
 
 HgiGLTextureShaderSection::~HgiGLTextureShaderSection() = default;
+
+static std::string
+_GetTextureTypePrefix(HgiFormat const &format)
+{
+    if (format >= HgiFormatUInt16 && format <= HgiFormatUInt16Vec4) {
+        return "u"; // e.g., usampler, uvec4
+    }
+    if (format >= HgiFormatInt32 && format <= HgiFormatInt32Vec4) {
+        return "i"; // e.g., isampler, ivec4
+    }
+    return ""; // e.g., sampler, vec4
+}
+
+void
+HgiGLTextureShaderSection::_WriteSamplerType(std::ostream &ss) const
+{
+    ss << _GetTextureTypePrefix(_format) << "sampler" << _dimensions << "D";
+}
+
+void
+HgiGLTextureShaderSection::_WriteSampledDataType(std::ostream &ss) const
+{
+    ss << _GetTextureTypePrefix(_format) << "vec4";
+}
 
 void
 HgiGLTextureShaderSection::WriteType(std::ostream &ss) const
@@ -204,7 +231,7 @@ HgiGLTextureShaderSection::WriteType(std::ostream &ss) const
     if(_dimensions < 1 || _dimensions > 3) {
         TF_CODING_ERROR("Invalid texture dimension");
     }
-    ss << "sampler" << _dimensions << "D";
+    _WriteSamplerType(ss); // e.g. sampler<N>D, isampler<N>D, usampler<N>D
 }
 
 bool
@@ -217,14 +244,17 @@ HgiGLTextureShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
 bool
 HgiGLTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
 {
-    //Write a function that let's you query the texture with HDGet_texName(uv)
+    //Write a function that let's you query the texture with HdGet_texName(uv)
     //Used to unify texture sampling across platforms that depend on samplers
     //and don't store textures in global space
-    ss << "vec4 HdGet_";
+    _WriteSampledDataType(ss); // e.g., vec4, ivec4, uvec4
+    ss << " HdGet_";
     WriteIdentifier(ss);
     ss << "(vec" << _dimensions
              << " uv) {\n";
-    ss << "    vec4 result = texture(";
+    ss << "    ";
+    _WriteSampledDataType(ss);
+    ss << " result = texture(";
     WriteIdentifier(ss);
     ss << ", uv);\n";
     ss << "    return result;\n";
@@ -235,14 +265,103 @@ HgiGLTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
         return true;
     }
     
-    ss << "vec4 HdTexelFetch_";
+    _WriteSampledDataType(ss);
+    ss << " HdTexelFetch_";
     WriteIdentifier(ss);
     ss << "(ivec2 coord) {\n";
-    ss << "    vec4 result = texelFetch(";
+    ss << "    ";
+    _WriteSampledDataType(ss);
+    ss << " result = texelFetch(";
     WriteIdentifier(ss);
     ss << ", coord, 0);\n";
     ss << "    return result;\n";
     ss << "}\n";
+
+    return true;
+}
+
+HgiGLBufferShaderSection::HgiGLBufferShaderSection(
+    const std::string &identifier,
+    const uint32_t layoutIndex,
+    const std::string &type,
+    const HgiShaderSectionAttributeVector &attributes)
+  : HgiGLShaderSection( identifier,
+                        attributes,
+                        "buffer",
+                        "")
+  , _type(type)
+{
+}
+
+HgiGLBufferShaderSection::~HgiGLBufferShaderSection() = default;
+
+void
+HgiGLBufferShaderSection::WriteType(std::ostream &ss) const
+{
+    ss << _type;
+}
+
+bool
+HgiGLBufferShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
+{
+    //If it has attributes, write them with corresponding layout
+    //identifiers and indicies
+    const HgiShaderSectionAttributeVector &attributes = GetAttributes();
+
+    if(!attributes.empty()) {
+        ss << "layout(";
+        for (size_t i = 0; i < attributes.size(); i++)
+        {
+            if (i > 0) {
+                ss << ", ";
+            }
+            const HgiShaderSectionAttribute &a = attributes[i];
+            ss << a.identifier;
+            if(!a.index.empty()) {
+                ss << " = " << a.index;
+            }
+        }
+        ss << ") ";
+    }
+    //If it has a storage qualifier, declare it
+    ss << " buffer _";
+    WriteIdentifier(ss);
+    ss << " { ";
+    WriteType(ss);
+    ss << " ";
+    WriteIdentifier(ss);
+    ss << "[]; };";
+
+    return true;
+}
+
+HgiGLKeywordShaderSection::HgiGLKeywordShaderSection(
+    const std::string &identifier,
+    const std::string &type,
+    const std::string &keyword)
+  : HgiGLShaderSection(identifier)
+  , _type(type)
+  , _keyword(keyword)
+{
+}
+
+HgiGLKeywordShaderSection::~HgiGLKeywordShaderSection() = default;
+
+void
+HgiGLKeywordShaderSection::WriteType(std::ostream &ss) const
+{
+    ss << _type;
+}
+
+bool
+HgiGLKeywordShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
+{
+    WriteType(ss);
+    ss << " ";
+    WriteIdentifier(ss);
+    ss << " = ";
+    ss << _keyword;
+    ss << ";";
 
     return true;
 }

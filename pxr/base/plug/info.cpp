@@ -32,9 +32,8 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/stopwatch.h"
+#include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/threadLimits.h"
-#include <tbb/task_arena.h>
-#include <tbb/task_group.h>
 #include <fstream>
 #include <regex>
 #include <set>
@@ -435,26 +434,6 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
         });
 }
 
-// Helper for running tasks.
-template <class Fn>
-struct _Run {
-    _Run(tbb::task_group *group, const Fn &fn) : group(group), fn(fn) {}
-    void operator()() const { group->run(fn); }
-    tbb::task_group *group;
-    Fn fn;
-};
-
-template <class Fn>
-_Run<Fn>
-_MakeRun(tbb::task_group *group, const Fn& fn)
-{
-    return _Run<Fn>(group, fn);
-}
-
-// A helper dispatcher object that runs tasks in a tbb::task_group inside a
-// tbb::task_arena, to ensure that when we wait, we only wait for our own tasks.
-// Otherwise if we run an unrelated task in the thread that holds our lock that
-// winds up trying to take the lock we get deadlock.
 class _TaskArenaImpl {
     _TaskArenaImpl(_TaskArenaImpl const &) = delete;
     _TaskArenaImpl &operator=(_TaskArenaImpl const &) = delete;
@@ -470,31 +449,30 @@ public:
     void Wait();
 
 private:
-    tbb::task_arena _arena;
-    tbb::task_group _group;
+    WorkDispatcher _dispatcher;
 };
 
-_TaskArenaImpl::_TaskArenaImpl() : _arena(WorkGetConcurrencyLimit()) 
+_TaskArenaImpl::_TaskArenaImpl()
 {
     // Do nothing
 }
 
 _TaskArenaImpl::~_TaskArenaImpl()
 {
-    Wait();
+    // Implicit _dispatcher.Wait();
 }
 
 template <class Fn>
 void
 _TaskArenaImpl::Run(Fn const &fn)
 {
-    _arena.execute(_MakeRun(&_group, fn));
+    _dispatcher.Run(fn);
 }
 
 void
 _TaskArenaImpl::Wait()
 {
-    _arena.execute([this]() { _group.wait(); });
+    _dispatcher.Wait();
 }
 
 } // anonymous namespace

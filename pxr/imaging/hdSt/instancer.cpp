@@ -24,8 +24,8 @@
 #include "pxr/imaging/hdSt/instancer.h"
 
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/primUtils.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hdSt/rprimUtils.h"
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/rprimSharedData.h"
 #include "pxr/imaging/hd/sceneDelegate.h"

@@ -27,10 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/imaging/hdx/api.h"
-#include "pxr/imaging/hdx/fullscreenShader.h"
 #include "pxr/imaging/hdx/task.h"
 
-#include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/texture.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -78,26 +76,26 @@ public:
     HdxColorizeSelectionTask(HdSceneDelegate* delegate, SdfPath const& id);
 
     HDX_API
-    virtual ~HdxColorizeSelectionTask();
+    ~HdxColorizeSelectionTask() override;
 
     /// Hooks for progressive rendering.
-    virtual bool IsConverged() const override;
+    bool IsConverged() const override;
 
     /// Prepare the render pass resources
     HDX_API
-    virtual void Prepare(HdTaskContext* ctx,
-                         HdRenderIndex* renderIndex) override;
+    void Prepare(HdTaskContext* ctx,
+                 HdRenderIndex* renderIndex) override;
 
     /// Execute the task
     HDX_API
-    virtual void Execute(HdTaskContext* ctx) override;
+    void Execute(HdTaskContext* ctx) override;
 
 protected:
     /// Sync the render pass resources
     HDX_API
-    virtual void _Sync(HdSceneDelegate* delegate,
-                       HdTaskContext* ctx,
-                       HdDirtyBits* dirtyBits) override;
+    void _Sync(HdSceneDelegate* delegate,
+               HdTaskContext* ctx,
+               HdDirtyBits* dirtyBits) override;
 
 private:
     // The core colorizing logic of this task: given the ID buffers and the
@@ -151,7 +149,7 @@ private:
     size_t _outputBufferSize;
     bool _converged;
 
-    std::unique_ptr<HdxFullscreenShader> _compositor;
+    std::unique_ptr<class HdxFullscreenShader> _compositor;
 
     _ParameterBuffer _parameterData;
     HgiTextureHandle _texture;

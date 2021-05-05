@@ -36,17 +36,14 @@
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/types.h"
 
-#include "pxr/imaging/hdSt/glslfxShader.h"
-#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
-#include "pxr/imaging/hdSt/shaderCode.h"
 
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/glContext.h"
-#include "pxr/imaging/glf/info.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -95,9 +92,25 @@ HdxPickTask::HdxPickTask(HdSceneDelegate* delegate, SdfPath const& id)
 
 HdxPickTask::~HdxPickTask() = default;
 
+// Assumes that there is a valid OpenGL 2.0 or later context.
+//
+// Uses _drawTarget and _drawTarget->GetSize() to determine whether
+// initialization is necessary.
+//
 void
-HdxPickTask::_Init(GfVec2i const& size)
+HdxPickTask::_InitIfNeeded(GfVec2i const& size)
 {
+    if (_drawTarget) {
+        if (size != _drawTarget->GetSize()) {
+            GlfSharedGLContextScopeHolder sharedContextHolder;
+
+            _drawTarget->Bind();
+            _drawTarget->SetSize(size);
+            _drawTarget->Unbind();
+        }
+        return;
+    }
+
     // The collection created below is purely for satisfying the HdRenderPass
     // constructor. The collections for the render passes are set in Query(..)
     HdRprimCollection col(HdTokens->geometry, 
@@ -115,12 +128,13 @@ HdxPickTask::_Init(GfVec2i const& size)
     // XXX: This is a hacky alternative to using a different shader mixin to
     // accomplish the same thing.
     _occluderRenderPassState->SetColorMaskUseDefault(false);
-    _occluderRenderPassState->SetColorMask(HdRenderPassState::ColorMaskNone);
+    _occluderRenderPassState->SetColorMasks({HdRenderPassState::ColorMaskNone});
 
     // Make sure master draw target is always modified on the shared context,
     // so we access it consistently.
-    GlfSharedGLContextScopeHolder sharedContextHolder;
     {
+        GlfSharedGLContextScopeHolder sharedContextHolder;
+
         // TODO: determine this size from the incoming projection, we need two
         // different sizes, one for ray picking and one for marquee picking. we
         // could perhaps just use the large size for both.
@@ -152,54 +166,6 @@ HdxPickTask::_Init(GfVec2i const& size)
             "depth", GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH24_STENCIL8);
             //"depth", GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F);
 
-        _drawTarget->Unbind();
-    }
-}
-
-void
-HdxPickTask::_ConfigureSceneMaterials(bool enableSceneMaterials,
-    HdStRenderPassState *renderPassState)
-{
-    if (enableSceneMaterials) {
-        renderPassState->SetOverrideShader(HdStShaderCodeSharedPtr());
-    } else {
-        if (!_overrideShader) {
-            _overrideShader = HdStShaderCodeSharedPtr(new HdStGLSLFXShader(
-                HioGlslfxSharedPtr(new HioGlslfx(
-                    HdStPackageFallbackSurfaceShader()))));
-        }
-        renderPassState->SetOverrideShader(_overrideShader);
-    }
-}
-
-void
-HdxPickTask::_SetResolution(GfVec2i const& widthHeight)
-{
-    TRACE_FUNCTION();
-
-    // Make sure we're in a sane GL state before attempting anything.
-    if (GlfHasLegacyGraphics()) {
-        TF_RUNTIME_ERROR("framebuffer object not supported");
-        return;
-    }
-
-    if (!_drawTarget) {
-        // Initialize the shared draw target late to ensure there is a valid GL
-        // context, which may not be the case at constructon time.
-        _Init(widthHeight);
-        return;
-    }
-
-    if (widthHeight == _drawTarget->GetSize()){
-        return;
-    }
-
-    // Make sure master draw target is always modified on the shared context,
-    // so we access it consistently.
-    GlfSharedGLContextScopeHolder sharedContextHolder;
-    {
-        _drawTarget->Bind();
-        _drawTarget->SetSize(widthHeight);
         _drawTarget->Unbind();
     }
 }
@@ -271,23 +237,21 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     _index = &(delegate->GetRenderIndex());
 
     // Make sure we're in a sane GL state before attempting anything.
-    if (GlfHasLegacyGraphics()) {
-        TF_RUNTIME_ERROR("framebuffer object not supported");
-        return;
-    }
     GlfGLContextSharedPtr context = GlfGLContext::GetCurrentGLContext();
     if (!TF_VERIFY(context)) {
         TF_RUNTIME_ERROR("Invalid GL context");
         return;
     }
 
-    if (!_drawTarget) {
-        // Initialize the shared draw target late to ensure there is a valid GL
-        // context, which may not be the case at constructon time.
-        _Init(_contextParams.resolution);
-    } else {
-        _SetResolution(_contextParams.resolution);
+    // Make sure the GL context is at least OpenGL 2.0.
+    if (GlfContextCaps::GetInstance().glVersion < 200) {
+        TF_RUNTIME_ERROR("framebuffer object not supported");
+        return;
     }
+
+    // Uses _drawTarget and _drawTarget->GetSize() to determine whether
+    // initialization is necessary.
+    _InitIfNeeded(_contextParams.resolution);
 
     if (!TF_VERIFY(_pickableRenderPass) || 
         !TF_VERIFY(_occluderRenderPass)) {
@@ -318,8 +282,15 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         } else {
             state->SetStencilEnabled(false);
         }
+
+        state->SetEnableDepthTest(true);
+        state->SetEnableDepthMask(true);
+        state->SetDepthFunc(HdCmpFuncLEqual);
+
         // Make sure translucent pixels can be picked by not discarding them
         state->SetAlphaThreshold(0.0f);
+        state->SetAlphaToCoverageEnabled(false);
+        state->SetBlendEnabled(false);
         state->SetCullStyle(_params.cullStyle);
         state->SetLightingEnabled(false);
 
@@ -332,7 +303,7 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
                 _contextParams.projectionMatrix,
                 viewport,
                 _contextParams.clipPlanes);
-            _ConfigureSceneMaterials(_params.enableSceneMaterials, extState);
+            extState->SetUseSceneMaterials(_params.enableSceneMaterials);
         }
     }
 
@@ -411,13 +382,6 @@ HdxPickTask::Execute(HdTaskContext* ctx)
                               GL_COLOR_ATTACHMENT4,
                               GL_COLOR_ATTACHMENT5};
     glDrawBuffers(6, drawBuffers);
-    
-    glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-    glDisable(GL_BLEND);
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-    glDepthFunc(GL_LEQUAL);
 
     // Clear all color channels to 1, so when cast as int, an unwritten pixel
     // is encoded as -1.
@@ -449,15 +413,11 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     }
 
     if (_UseOcclusionPass()) {
-        _occluderRenderPassState->Bind();
         _occluderRenderPass->Execute(_occluderRenderPassState,
                                      GetRenderTags());
-        _occluderRenderPassState->Unbind();
     }
-    _pickableRenderPassState->Bind();
     _pickableRenderPass->Execute(_pickableRenderPassState,
                                  GetRenderTags());
-    _pickableRenderPassState->Unbind();
 
     glDisable(GL_STENCIL_TEST);
 
@@ -956,7 +916,7 @@ bool
 operator==(HdxPickTaskContextParams const& lhs,
            HdxPickTaskContextParams const& rhs)
 {
-    typedef void (*RawDepthMaskCallback)(void);
+    using RawDepthMaskCallback = void (*) ();
     const RawDepthMaskCallback *lhsDepthMaskPtr =
         lhs.depthMaskCallback.target<RawDepthMaskCallback>();
     const RawDepthMaskCallback *rhsDepthMaskPtr =
@@ -988,7 +948,7 @@ operator!=(HdxPickTaskContextParams const& lhs,
 std::ostream&
 operator<<(std::ostream& out, HdxPickTaskContextParams const& p)
 {
-    typedef void (*RawDepthMaskCallback)(void);
+    using RawDepthMaskCallback = void (*) ();
     const RawDepthMaskCallback *depthMaskPtr =
         p.depthMaskCallback.target<RawDepthMaskCallback>();
     const RawDepthMaskCallback depthMask =

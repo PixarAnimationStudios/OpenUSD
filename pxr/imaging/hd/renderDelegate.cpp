@@ -93,10 +93,19 @@ HdRenderDelegate::GetShaderSourceTypes() const
     return TfTokenVector();
 }
 
+// deprecated
 TfToken 
 HdRenderDelegate::GetMaterialNetworkSelector() const
 {
     return TfToken();
+}
+
+TfTokenVector
+HdRenderDelegate::GetMaterialRenderContexts() const
+{
+    // To support RenderDelegates that have not yet updated 
+    // GetMaterialNetworkSelector()
+    return {GetMaterialNetworkSelector()};
 }
 
 bool
@@ -153,6 +162,21 @@ unsigned int
 HdRenderDelegate::GetRenderSettingsVersion() const
 {
     return _settingsVersion;
+}
+
+HdCommandDescriptors 
+HdRenderDelegate::GetCommandDescriptors() const
+{
+    return HdCommandDescriptors();
+}
+
+bool 
+HdRenderDelegate::InvokeCommand(
+    const TfToken &command,
+    const HdCommandArgs &args)
+{
+    // Fail all commands that get here.
+    return false;
 }
 
 VtDictionary 

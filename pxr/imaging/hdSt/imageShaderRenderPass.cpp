@@ -169,6 +169,10 @@ HdSt_ImageShaderRenderPass::_Execute(
         gfxCmds->PushDebugGroup(__ARCH_PRETTY_FUNCTION__);
     }
 
+    // XXX: The Bind/Unbind calls below set/restore GL state.
+    // This will be reworked to use Hgi.
+    stRenderPassState->Bind();
+
     // Draw
     HdSt_DrawBatchSharedPtr const& batch = _immediateBatch;
     HgiGLGraphicsCmds* glGfxCmds = 
@@ -189,6 +193,8 @@ HdSt_ImageShaderRenderPass::_Execute(
         gfxCmds->PopDebugGroup();
         _hgi->SubmitCmds(gfxCmds.get());
     }
+
+    stRenderPassState->Unbind();
 }
 
 void

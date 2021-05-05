@@ -208,6 +208,17 @@ pxr_test_scripts(
     testenv/testSdfTypes.py
 )
 
+pxr_build_test_shared_lib(TestSdfNoAssetFileFormat
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX SdfPlugins
+    LIBRARIES
+        sdf
+        tf
+
+    CPPFILES
+        testenv/TestSdfNoAssetFileFormat.cpp
+)
+
 pxr_build_test(testSdfAttributeBlocking_Cpp
     LIBRARIES
         sdf
