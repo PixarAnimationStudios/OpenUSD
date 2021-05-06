@@ -360,7 +360,7 @@ public:
     /// \deprecated Use the form that takes a TfTokenVector or renderContexts.
     USDSHADE_API
     UsdShadeShader ComputeSurfaceSource(
-        const TfToken &renderContext=UsdShadeTokens->universalRenderContext,
+        const TfToken &renderContext,
         TfToken *sourceName=nullptr, 
         UsdShadeAttributeType *sourceType=nullptr) const;
 
@@ -417,7 +417,7 @@ public:
     /// \deprecated Use the form that takes a TfTokenVector or renderContexts 
     USDSHADE_API
     UsdShadeShader ComputeDisplacementSource(
-        const TfToken &renderContext=UsdShadeTokens->universalRenderContext,
+        const TfToken &renderContext,
         TfToken *sourceName=nullptr, 
         UsdShadeAttributeType *sourceType=nullptr) const;
 
@@ -473,7 +473,7 @@ public:
     /// \deprecated Use the form that takes a TfTokenVector or renderContexts 
     USDSHADE_API
     UsdShadeShader ComputeVolumeSource(
-        const TfToken &renderContext=UsdShadeTokens->universalRenderContext,
+        const TfToken &renderContext,
         TfToken *sourceName=nullptr, 
         UsdShadeAttributeType *sourceType=nullptr) const;
 
