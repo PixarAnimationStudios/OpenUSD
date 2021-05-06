@@ -75,7 +75,7 @@ TF_DEFINE_ENV_SETTING(
     "Issue warnings for all unsupported values encountered.");
 
 TF_DEFINE_ENV_SETTING(
-    USD_ABC_NUM_OGAWA_STREAMS, 4,
+    USD_ABC_NUM_OGAWA_STREAMS, 1,
     "The number of threads available for reading ogawa-backed files via UsdAbc.");
 
 TF_DEFINE_ENV_SETTING(
