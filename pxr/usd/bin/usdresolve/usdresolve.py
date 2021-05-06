@@ -27,6 +27,11 @@ from __future__ import print_function
 
 import argparse, sys, os
 
+from pxr import Ar
+
+def _HasCreateIdentifier():
+    return hasattr(Ar.Resolver, "CreateIdentifier")
+
 def _Msg(msg):
     sys.stdout.write(msg + '\n')
 
@@ -39,8 +44,12 @@ def _ConfigureAssetResolver(args, resolver):
     return resolver.CreateDefaultContextForAsset(configurePath)
 
 def _AnchorRelativePath(args, resolver):
-    if args.anchorPath and resolver.IsRelativePath(args.inputPath):
-       return resolver.AnchorRelativePath(args.anchorPath, args.inputPath)
+    if args.anchorPath:
+        if _HasCreateIdentifier():
+            return resolver.CreateIdentifier(
+                args.inputPath, Ar.ResolvedPath(args.anchorPath))
+        elif resolver.IsRelativePath(args.inputPath):
+            return resolver.AnchorRelativePath(args.anchorPath, args.inputPath)
     return args.inputPath
 
 
@@ -53,15 +62,22 @@ def main():
     parser.add_argument(
         '--configureAssetPath',
         help="Run ConfigureResolverForAsset on the given asset path.")
-    parser.add_argument(
-        '--anchorPath',
-        help="Run AnchorRelativePath on the given asset path.")
+
+    if _HasCreateIdentifier():
+        parser.add_argument(
+            '--anchorPath',
+            help=("Run CreateIdentifier with the input path and this anchor "
+                  "asset path and resolve the result.\n\n"
+                  "ex: usdresolve --anchorPath /asset/asset.usd sublayer.usd"))
+    else:
+        parser.add_argument(
+            '--anchorPath',
+            help="Run AnchorRelativePath on the given asset path.")
+        
 
     args = parser.parse_args()
     
     exitCode = 0
-
-    from pxr import Ar, Usd
 
     resolver = Ar.GetResolver()
 
