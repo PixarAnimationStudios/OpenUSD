@@ -318,8 +318,12 @@ _GatherUpstreamNodes(
 
             // Connect mxCurrNode to the mxUpstreamNode
             mx::NodePtr mxNextNode = *mxUpstreamNode;
-            mx::InputPtr mxInput = mxCurrNode->addInput(connName,
-                                                        mxNextNode->getType());
+
+            // Make sure to not add the same input twice 
+            mx::InputPtr mxInput = mxCurrNode->getInput(connName);
+            if (!mxInput){
+                mxInput = mxCurrNode->addInput(connName, mxNextNode->getType());
+            }
             mxInput->setConnectedNode(mxNextNode);
         }
     }
