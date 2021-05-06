@@ -28,6 +28,11 @@ if (${PXR_ENABLE_MATERIALX_SUPPORT})
     list(APPEND optionalLibs ${MATERIALX_LIBRARIES} hdMtlx)
     list(APPEND optionalIncludeDirs ${MATERIALX_INCLUDE_DIRS})
     list(APPEND optionalPublicClasses matfiltMaterialX)
+
+    if (${PXR_ENABLE_OSL_SUPPORT})
+        list(APPEND optionalLibs ${OSL_COMP_LIBRARY})
+        list(APPEND optionalIncludeDirs ${OSL_INCLUDE_DIR})
+    endif()
 endif()
 
 pxr_shared_library(${PXR_PACKAGE}
