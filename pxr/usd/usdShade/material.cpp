@@ -422,9 +422,9 @@ UsdShadeMaterial::GetBaseMaterialPath() const
     if (parentMaterialPath != SdfPath::EmptyPath()) {
         UsdPrim p = GetPrim().GetStage()->GetPrimAtPath(parentMaterialPath);
         if (p.IsInstanceProxy()) {
-            // this looks like an instance but it's acting as the master path.
-            // Return the master path
-            parentMaterialPath = p.GetPrimInMaster().GetPath();
+            // this looks like an instance but it's acting as the prototype path
+            // Return the prototype path
+            parentMaterialPath = p.GetPrimInPrototype().GetPath();
         }
     }
     return parentMaterialPath;
