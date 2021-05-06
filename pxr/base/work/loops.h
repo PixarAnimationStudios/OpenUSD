@@ -78,7 +78,7 @@ WorkParallelForN(size_t n, Fn &&callback, size_t grainSize)
         return;
 
     // Don't bother with parallel_for, if concurrency is limited to 1.
-    if (WorkGetConcurrencyLimit() > 1) {
+    if (WorkHasConcurrency()) {
 
         class Work_ParallelForN_TBB 
         {
