@@ -272,6 +272,11 @@ public:
     PcpLayerStackPtr
     FindLayerStack(const PcpLayerStackIdentifier &identifier) const;
 
+    /// Return true if \p layerStack is used by this cache in its composition,
+    /// false otherwise.
+    PCP_API
+    bool UsesLayerStack(const PcpLayerStackPtr &layerStack) const;
+
     /// Compute and return a reference to the cached result for the
     /// prim index for the given path. \p allErrors will contain any errors 
     /// encountered while performing this operation.
@@ -419,6 +424,14 @@ public:
     /// Returns set of all layers used by this cache. 
     PCP_API
     SdfLayerHandleSet GetUsedLayers() const;
+
+    /// Return a number that can be used to determine whether or not the set of
+    /// layers used by this cache may have changed or not.  For example, if one
+    /// calls GetUsedLayers() and saves the GetUsedLayersRevision(), and then
+    /// later calls GetUsedLayersRevision() again, if the number is unchanged,
+    /// then GetUsedLayers() is guaranteed to be unchanged as well.
+    PCP_API
+    size_t GetUsedLayersRevision() const;
 
     /// Returns set of all root layers used by this cache.
     PCP_API

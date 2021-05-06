@@ -1181,6 +1181,7 @@ PcpChanges::DidChange(const TfSpan<const PcpCache*>& caches,
         }
 
         _DidChangeLayerStack(
+            caches,
             layerStack,
             layerStackChanges & LayerStackLayersChange,
             layerStackChanges & LayerStackOffsetsChange,
@@ -1303,10 +1304,11 @@ PcpChanges::_DidChangeSublayerAndLayerStacks(
     if (sublayer) {
         // Layer was loaded.  The layer stacks are changed.
         TF_FOR_ALL(layerStack, layerStacks) {
-            _DidChangeLayerStack(*layerStack,
+            _DidChangeLayerStack(TfSpan<const PcpCache*>(&cache, 1),
+                                 *layerStack,
                                  requiresLayerStackChange,
                                  requiresLayerStackOffsetsChange,
-                                 requiresSignificantChange );
+                                 requiresSignificantChange);
         }
     }
 }
@@ -1869,6 +1871,7 @@ PcpChanges::_DidChangeSublayer(
 
 void
 PcpChanges::_DidChangeLayerStack(
+    const TfSpan<const PcpCache*>& caches,
     const PcpLayerStackPtr& layerStack,
     bool requiresLayerStackChange,
     bool requiresLayerStackOffsetsChange,
@@ -1882,6 +1885,14 @@ PcpChanges::_DidChangeLayerStack(
     // didChangeLayers subsumes didChangeLayerOffsets.
     if (changes.didChangeLayers) {
         changes.didChangeLayerOffsets = false;
+    }
+
+    if (requiresLayerStackChange || requiresSignificantChange) {
+        for (const PcpCache *cache: caches) {
+            if (cache->UsesLayerStack(layerStack)) {
+                _GetCacheChanges(cache).didMaybeChangeLayers = true;
+            }
+        }
     }
 }
 

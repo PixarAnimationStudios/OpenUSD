@@ -465,6 +465,7 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
                           /*usdMode=*/true))
     , _clipCache(new Usd_ClipCache)
     , _instanceCache(new Usd_InstanceCache)
+    , _usedLayersRevision(0)
     , _interpolationType(UsdInterpolationTypeLinear)
     , _lastChangeSerialNumber(0)
     , _initialLoadSet(load)
@@ -4093,19 +4094,11 @@ UsdStage::_Recompose(const PcpChanges &changes,
     const PcpChanges::LayerStackChanges &layerStackChanges = 
         changes.GetLayerStackChanges();
 
-    // Some changes may cause the stage's used layers to change so we track
-    // them to see if we may need to update layer notices.
-    bool changedUsedLayers = false;
-
     for (const auto& layerStackChange : layerStackChanges) {
         const PcpLayerStackPtr& layerStack = layerStackChange.first;
         const PcpErrorVector& errors = layerStack->GetLocalErrors();
         if (!errors.empty()) {
             _ReportPcpErrors(errors, "Recomposing stage");
-        }
-        if (layerStackChange.second.didChangeLayers ||
-            layerStackChange.second.didChangeSignificantly) {
-            changedUsedLayers = true;
         }
     }
 
@@ -4116,16 +4109,13 @@ UsdStage::_Recompose(const PcpChanges &changes,
 
         for (const auto& path : ourChanges.didChangeSignificantly) {
             (*pathsToRecompose)[path];
-            changedUsedLayers = true;
             TF_DEBUG(USD_CHANGES).Msg("Did Change Significantly: %s\n",
                                       path.GetText());
         }
 
         for (const auto& path : ourChanges.didChangePrims) {
             (*pathsToRecompose)[path];
-            changedUsedLayers = true;
-            TF_DEBUG(USD_CHANGES).Msg("Did Change Prim: %s\n",
-                                      path.GetText());
+            TF_DEBUG(USD_CHANGES).Msg("Did Change Prim: %s\n", path.GetText());
         }
 
     } else {
@@ -4137,9 +4127,7 @@ UsdStage::_Recompose(const PcpChanges &changes,
     // Update layer change notice listeners if changes may affect
     // the set of used layers. This is potentially expensive which is why we
     // try to make sure the changes require it.
-    if (changedUsedLayers) {
-        _RegisterPerLayerNotices();
-    }
+    _RegisterPerLayerNotices();
 }
 
 template <class T>
@@ -4471,7 +4459,16 @@ UsdStage::_RegisterPerLayerNotices()
     // works because the PcpCache::GetUsedLayers() returns a std::set, so we
     // always retain things in a stable order.
 
+    // Check to see if the set of used layers hasn't changed, and skip all this
+    // if so.
+    size_t currentUsedLayersRevision = _cache->GetUsedLayersRevision();
+    if (_usedLayersRevision &&
+        _usedLayersRevision == currentUsedLayersRevision) {
+        return;
+    }
+
     SdfLayerHandleSet usedLayers = _cache->GetUsedLayers();
+    _usedLayersRevision = currentUsedLayersRevision;
 
     SdfLayerHandleSet::const_iterator
         usedLayersIter = usedLayers.begin(),

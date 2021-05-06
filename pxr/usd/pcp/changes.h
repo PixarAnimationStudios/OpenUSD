@@ -122,6 +122,9 @@ public:
     /// indicates the order in which the namespace edits occur.
     std::vector<std::pair<SdfPath, SdfPath>> didChangePath;
 
+    /// Layers used in the composition may have changed.
+    bool didMaybeChangeLayers = false;
+
 private:
     friend class PcpCache;
     friend class PcpChanges;
@@ -367,10 +370,12 @@ private:
                             bool *significant);
 
     // Mark the layer stack as having changed.
-    void _DidChangeLayerStack(const PcpLayerStackPtr& layerStack,
-                               bool requiresLayerStackChange,
-                               bool requiresLayerStackOffsetsChange,
-                               bool requiresSignificantChange);
+    void _DidChangeLayerStack(
+        const TfSpan<const PcpCache*>& caches,
+        const PcpLayerStackPtr& layerStack,
+        bool requiresLayerStackChange,
+        bool requiresLayerStackOffsetsChange,
+        bool requiresSignificantChange);
 
     // Mark the layer stack's relocations as having changed.
     // Recompute the new relocations, storing the result in the Changes,

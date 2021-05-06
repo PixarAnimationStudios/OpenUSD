@@ -89,6 +89,12 @@ public:
     /// added to \p lifeboat, if not \c NULL.
     void RemoveAll(PcpLifeboat* lifeboat);
 
+    /// Inform this dependencies object that layer stacks it observes may have
+    /// changed.
+    void LayerStacksChanged() {
+        ++_layerStacksRevision;
+    }
+
     /// \struct ConcurrentPopulationContext
     ///
     /// Structure for enabling cache population via concurrent calls to Add().
@@ -168,6 +174,16 @@ public:
     /// against them.
     SdfLayerHandleSet GetUsedLayers() const;
 
+    /// Return a number that can be used to determine whether or not layer
+    /// stacks that are observed by this set of dependencies may have changed or
+    /// not.  For example, if one calls GetUsedLayers() and saves the
+    /// GetLayerStacksRevision(), and then later calls GetLayerStacksRevision()
+    /// again, if the number is unchanged, then GetUsedLayers() is guaranteed to
+    /// be unchanged as well.
+    size_t GetLayerStacksRevision() const {
+        return _layerStacksRevision;
+    }
+
     /// Returns the root layers of all layer stacks with dependencies
     /// recorded against them.
     SdfLayerHandleSet GetUsedRootLayers() const;
@@ -208,6 +224,14 @@ private:
     using _LayerStackDepMap = 
         std::unordered_map<PcpLayerStackRefPtr, _SiteDepMap, TfHash>;
     _LayerStackDepMap _deps;
+
+    // A revision number that's incremented when the set of layer stacks that
+    // this dependencies object observes changes.  That includes both when a
+    // layer stack enters or leaves this dependencies object, *and* when the
+    // contents of any of the observed layer stacks changes.  This is generally
+    // used to help determine whether the set of layers reached by a pcp cache
+    // has changed or not.
+    size_t _layerStacksRevision;
 
     // Map of prim index paths to the dynamic file format dependency info for 
     // the prim index.

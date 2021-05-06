@@ -177,6 +177,12 @@ PcpCache::FindLayerStack(const PcpLayerStackIdentifier &id) const
     return _layerStackCache->Find(id);
 }
 
+bool
+PcpCache::UsesLayerStack(const PcpLayerStackPtr &layerStack) const
+{
+    return _layerStackCache->Contains(layerStack);
+}
+
 const PcpLayerStackPtrVector&
 PcpCache::FindAllLayerStacksUsingLayer(const SdfLayerHandle& layer) const
 {
@@ -480,6 +486,12 @@ PcpCache::GetUsedLayers() const
         rval.insert(localLayers.begin(), localLayers.end());
     }
     return rval;
+}
+
+size_t
+PcpCache::GetUsedLayersRevision() const
+{
+    return _primDependencies->GetLayerStacksRevision();
 }
 
 SdfLayerHandleSet
@@ -888,6 +900,11 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
         _primDependencies->RemoveAll(lifeboat);
     }
     else {
+        // If layers may have changed, inform _primDependencies.
+        if (changes.didMaybeChangeLayers) {
+            _primDependencies->LayerStacksChanged();
+        }
+
         // Blow prim and property indexes due to prim graph changes.
         TF_FOR_ALL(i, changes.didChangeSignificantly) {
             const SdfPath& path = *i;

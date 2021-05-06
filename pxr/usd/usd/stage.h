@@ -2204,6 +2204,8 @@ private:
 
     TfHashMap<TfToken, TfToken, TfHash> _invalidPrimTypeToFallbackMap;
 
+    size_t _usedLayersRevision;
+
     // A map from Path to Prim, for fast random access.
     typedef TfHashMap<
         SdfPath, Usd_PrimDataIPtr, SdfPath::Hash> PathToNodeMap;
