@@ -75,6 +75,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Hydra SourceTypes
     (OSL)       // Adapter Node
     (RmanCpp)   // PxrSurface Node
+
+    // MaterialX Texture Node input and type
+    (file)
+    (filename)
+
+    // Wrap Modes
+    (black)
+    (clamp)
+    (repeat)
 );
 
 
@@ -181,6 +190,8 @@ _FindConnectedNode(
 
     // Make sure we don't process the node again if we already visited it
     if (visitedNodes->count(connectionPath) > 0) {
+        *hdNode = hdNetwork.nodes.find(connectionPath)->second;
+        *hdNodePath = connectionPath;
         return false;
     }
     visitedNodes->insert(connectionPath);
@@ -229,6 +240,11 @@ static std::string
 _CompileOslSource(std::string const& name, std::string const& oslSource)
 {
 #ifdef PXR_OSL_SUPPORT_ENABLED
+
+    TF_DEBUG(HDPRMAN_DUMP_MATERIALX_OSL_SHADER)
+        .Msg("--------- MaterialX Generated Shader '%s' ----------\n%s"
+             "---------------------------\n\n", name.c_str(), oslSource.c_str());
+
     // Compile oslSource
     std::string oslCompiledSource;
     OSL::OSLCompiler oslCompiler;
@@ -250,8 +266,8 @@ _CompileOslSource(std::string const& name, std::string const& oslSource)
         return compiledFilePath;
     }
 #else        
-    TF_WARN("Unable to compile MaterialX Osl shader without OSL support "
-            "enabled.\n");
+    TF_WARN("Unable to compile MaterialX generated Osl shader, enable OSL "
+            "support for full MaterialX support in HdPrman.\n");
     return mx::EMPTY_STRING;
 #endif
 }
@@ -284,9 +300,28 @@ _UpdateNetwork(
 
             SdfPath level1NodePath;
             HdMaterialNode2 level1Node;
-            bool found = _FindConnectedNode(*hdNetwork, currConnection, 
+            bool newNode = _FindConnectedNode(*hdNetwork, currConnection, 
                                 &level1Node, &level1NodePath, &visitedNodes);
-            if (!found) {
+            // If we did not find the node
+            if (level1Node == HdMaterialNode2()) {
+                continue;
+            }
+            // if we are connected to a node we have already processed (ie. we
+            // are re-using a nodegraph output)
+            if (!newNode) {
+                // Get the sdrNode for this nodegraph output. 
+                SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
+                SdrShaderNodeConstPtr sdrNode = 
+                    sdrRegistry.GetShaderNodeByIdentifier(
+                        hdNetwork->nodes[level1NodePath].nodeTypeId);
+
+                // Update the connection into the terminal node so that the
+                // nodegraph output makes it into the closure
+                // Note: MaterialX nodes only have one output
+                TfToken inputName = TfToken(mxNodeGraphOutput);
+                TfToken outputName = sdrNode->GetOutputNames().at(0);
+                hdNetwork->nodes[terminalNodePath].inputConnections[inputName] 
+                    = { {level1NodePath, outputName} };
                 continue;
             }
             // collect nodes further removed from the terminal in nodesToRemove
@@ -338,6 +373,8 @@ _UpdateNetwork(
 
             // Clear inputConnections since they will be removed (nodesToRemove)
             hdNetwork->nodes[level1NodePath].inputConnections.clear();
+            // Clear parameters since they are already used in the generated shader
+            hdNetwork->nodes[level1NodePath].parameters.clear();
         }
     }
 
@@ -437,6 +474,95 @@ _UpdateTerminal(
                         { pxrSurfacePath, TfToken() };
 }
 
+// Get the Hydra equivalent for the given MaterialX input value
+static std::string
+_GetHdWrapString(
+    mx::NodePtr const& mxTextureNode,
+    std::string const& mxInputValue)
+{
+    if (mxInputValue == "constant") {
+        TF_WARN("RtxHioImagePlugin: Texture %s has unsupported wrap mode "
+            "'constant' using 'black' instead.",
+            mxTextureNode->getName().c_str());
+        return _tokens->black.GetText();
+    }
+    if (mxInputValue == "clamp") {
+        return _tokens->clamp.GetText();
+    }
+    if (mxInputValue == "mirror") {
+        TF_WARN("RtxHioImagePlugin: Texture %s has unsupported wrap mode "
+            "'mirror' using 'repeat' instead.",
+            mxTextureNode->getName().c_str());
+        return _tokens->repeat.GetText();
+    }
+    return _tokens->repeat.GetText();
+}
+
+static void
+_GetWrapModes(
+    mx::NodePtr const& mxTextureNode,
+    std::string * uWrap,
+    std::string * vWrap)
+{
+    // For <tiledimage> nodes want to always use "repeat"
+    *uWrap = "repeat";
+    *vWrap = "repeat";
+
+    // For <image> nodes:
+    if (auto uWrapInput = mxTextureNode->getInput("uaddressmode")) {
+        *uWrap = _GetHdWrapString(mxTextureNode,
+                                  uWrapInput->getValue()->getValueString());
+    }
+    if (auto vWrapInput = mxTextureNode->getInput("vaddressmode")) {
+        *vWrap = _GetHdWrapString(mxTextureNode, 
+                                  vWrapInput->getValue()->getValueString());
+    }
+}
+
+static void 
+_UpdateTextureNodes(
+    HdMaterialNetwork2 * hdNetwork,
+    std::set<SdfPath> const& hdTextureNodes,
+    mx::DocumentPtr const& mxDoc)
+{
+    for (SdfPath const& texturePath : hdTextureNodes) {
+
+        // Get the MaterialX Texture Node from the mxDoc
+        const mx::NodeGraphPtr mxNodeGraph = 
+                mxDoc->getNodeGraph(texturePath.GetParentPath().GetName());
+        const mx::NodePtr mxTextureNode = 
+                mxNodeGraph->getNode(texturePath.GetName());
+
+        // Get the filepath from the hdNetwork
+        VtValue const& pathValue = 
+            hdNetwork->nodes[texturePath].parameters[_tokens->file];
+        if (pathValue.IsHolding<SdfAssetPath>()) {
+            std::string path = pathValue.Get<SdfAssetPath>().GetResolvedPath();
+            std::string ext = ArGetResolver().GetExtension(path);
+
+            // Update texture nodes that use non-native texture formats
+            // to read them via a Renderman texture plugin.
+            if (!ext.empty() && ext != "tex") {
+
+                // Get WrapModes
+                std::string uWrap, vWrap;
+                _GetWrapModes(mxTextureNode, &uWrap, &vWrap);
+                
+                // Update the input value to use the Renderman texture plugin
+                std::string pluginName = 
+                    std::string("RtxHioImage") + ARCH_LIBRARY_SUFFIX;
+                std::string const& mxInputValue = 
+                    TfStringPrintf("rtxplugin:%s?filename=%s&wrapS=%s&wrapT=%s", 
+                                    pluginName.c_str(), path.c_str(), 
+                                    uWrap.c_str(), vWrap.c_str());
+                mxTextureNode->setInputValue(_tokens->file.GetText(), // name
+                                             mxInputValue,            // value
+                                             _tokens->filename.GetText());//type
+            }
+        }
+    }
+}
+
 void
 MatfiltMaterialX(
     const SdfPath & materialPath,
@@ -480,6 +606,8 @@ MatfiltMaterialX(
                                         hdNetwork, *terminalNode, 
                                         materialPath, stdLibraries, 
                                         &hdTextureNodes, &mxHdTextureMap);
+
+            _UpdateTextureNodes(&hdNetwork, hdTextureNodes, mxDoc);
 
             // Remove the material and shader nodes from the MaterialX Document
             // (since we need to use PxrSurface as the closure instead of the 
