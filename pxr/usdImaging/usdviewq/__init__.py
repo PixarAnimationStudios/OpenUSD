@@ -24,13 +24,16 @@
 
 from __future__ import print_function
 
+from pxr import Tf
+Tf.PreparePythonModule()
+
 import sys, argparse, os
 
 from .qt import QtWidgets, QtCore
 from .common import Timer
 from .appController import AppController
 
-from pxr import UsdAppUtils, Tf
+from pxr import UsdAppUtils
 
 
 class InvalidUsdviewOption(Exception):
