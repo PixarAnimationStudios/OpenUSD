@@ -35,6 +35,9 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ndr/debugCodes.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
@@ -155,6 +158,7 @@ RmanArgsParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
     xml_document doc;
 
     if (!discoveryResult.resolvedUri.empty()) {
+#if AR_VERSION == 1
         // Get the resolved URI to a location that it can be read by the Args
         // parser
         bool localFetchSuccessful = ArGetResolver().FetchToLocalResolvedPath(
@@ -169,9 +173,25 @@ RmanArgsParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 
             return NdrParserPlugin::GetInvalidNode(discoveryResult);
         }
+#endif
+        std::shared_ptr<const char> buffer;
+        std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
+            ArResolvedPath(discoveryResult.resolvedUri));
+        if (asset) {
+            buffer = asset->GetBuffer();
+        }
 
-        const xml_parse_result result = 
-            doc.load_file(discoveryResult.resolvedUri.c_str());
+        if (!buffer) {
+            TF_WARN("Could not open the args file at URI [%s] (%s). "
+                    "An invalid Sdr node definition will be created.",
+                    discoveryResult.uri.c_str(),
+                    discoveryResult.resolvedUri.c_str());
+                
+            return NdrParserPlugin::GetInvalidNode(discoveryResult);
+        }
+            
+        const xml_parse_result result =
+            doc.load_buffer(buffer.get(), asset->GetSize());
 
         if (!result) {
             TF_WARN("Could not parse args file at URI [%s] because the file "

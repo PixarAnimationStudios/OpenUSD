@@ -22,14 +22,21 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/scoped.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ndr/debugCodes.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
@@ -101,6 +108,29 @@ RmanOslParserPlugin::~RmanOslParserPlugin()
     // Nothing yet
 }
 
+static std::string
+_WriteOSLToTempFile(
+    const std::shared_ptr<const char>& buffer, size_t numBytes)
+{
+    // Note that the OSL libraries require files to have a .oso extension.
+    std::string tmpFilePath = ArchMakeTmpFileName("rmanOslParser", ".oso");
+    FILE* f = fopen(tmpFilePath.c_str(), "w");
+
+    if (!f) {
+        TF_WARN("Failed to open temp file %s for writing", tmpFilePath.c_str());
+        return std::string();
+    }
+
+    TfScoped<> fcloser([f]() { fclose(f); });
+
+    if (fwrite(buffer.get(), sizeof(char), numBytes, f) != numBytes) {
+        TF_WARN("Failed to write OSL to temp file %s", tmpFilePath.c_str());
+        return std::string();
+    }
+
+    return tmpFilePath;
+}
+
 NdrNodeUniquePtr
 RmanOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 {
@@ -114,6 +144,7 @@ RmanOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
     bool hasErrors = false;
 
     if (!discoveryResult.uri.empty()) {
+#if AR_VERSION == 1
         // Get the resolved URI to a location that it can be read by the OSL
         // parser    
         bool localFetchSuccessful = ArGetResolver().FetchToLocalResolvedPath(
@@ -128,9 +159,41 @@ RmanOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 
             return NdrParserPlugin::GetInvalidNode(discoveryResult);
         }
+#endif
+        if (TfIsFile(discoveryResult.resolvedUri.c_str())) {
+            // Attempt to parse the node
+            hasErrors = sq->Open(discoveryResult.resolvedUri.c_str(), ""); 
+        }
+        else {
+            std::shared_ptr<const char> buffer;
+            std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
+                ArResolvedPath(discoveryResult.resolvedUri));
+            if (asset) {
+                buffer = asset->GetBuffer();
+            }
 
-       // Attempt to parse the node
-        hasErrors = sq->Open(discoveryResult.resolvedUri.c_str(), ""); 
+            if (!buffer) {
+                TF_WARN("Could not open the OSL file at URI [%s] (%s). "
+                        "An invalid Sdr node definition will be created.",
+                        discoveryResult.uri.c_str(),
+                        discoveryResult.resolvedUri.c_str());
+                
+                return NdrParserPlugin::GetInvalidNode(discoveryResult);
+            }
+
+            // RixShaderQuery currently does not have API to read from
+            // a buffer, so we need to write the OSL to a temporary file.
+            const std::string tmpFile =
+                _WriteOSLToTempFile(buffer, asset->GetSize());
+            hasErrors = tmpFile.empty() || sq->Open(tmpFile.c_str(), "");
+
+            // Attempt to delete the temporary file to avoid accumulation.
+            // Since these are just temporary files we'll ignore errors if
+            // we can't clean them up to avoid spewage and disrupting things.
+            TfErrorMark m;
+            TfDeleteFile(tmpFile);
+            m.Clear();
+        }
 
     }
     else {
