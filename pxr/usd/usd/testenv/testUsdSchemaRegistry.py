@@ -339,18 +339,18 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertTrue(Usd.SchemaRegistry.IsMultipleApplyAPISchema(
                             collectionAPI))
 
-    def test_GetTypeAndInstance(self):
+    def test_GetTypeNameAndInstance(self):
         # test multiplyapply api schema token
-        typeAndInstance = Usd.SchemaRegistry.GetTypeAndInstance(
+        typeNameAndInstance = Usd.SchemaRegistry.GetTypeNameAndInstance(
                 "CollectionAPI:lightlink")
-        self.assertEqual(typeAndInstance[0], 'CollectionAPI')
-        self.assertEqual(typeAndInstance[1], 'lightlink')
+        self.assertEqual(typeNameAndInstance[0], 'CollectionAPI')
+        self.assertEqual(typeNameAndInstance[1], 'lightlink')
 
         # test singleapply api schema token
-        typeAndInstance = Usd.SchemaRegistry.GetTypeAndInstance(
+        typeNameAndInstance = Usd.SchemaRegistry.GetTypeNameAndInstance(
                 "SingleApplyAPI")
-        self.assertEqual(typeAndInstance[0], "SingleApplyAPI")
-        self.assertEqual(typeAndInstance[1], "")
+        self.assertEqual(typeNameAndInstance[0], "SingleApplyAPI")
+        self.assertEqual(typeNameAndInstance[1], "")
 
     def test_GetPropertyNamespacePrefix(self):
         # CollectionAPI is a multiple apply API so it must have a property

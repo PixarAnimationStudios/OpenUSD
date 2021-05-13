@@ -1087,7 +1087,7 @@ UsdSchemaRegistry::GetTypeFromName(const TfToken& typeName){
 }
 
 std::pair<TfToken, TfToken>
-UsdSchemaRegistry::GetTypeAndInstance(const TfToken &apiSchemaName)
+UsdSchemaRegistry::GetTypeNameAndInstance(const TfToken &apiSchemaName)
 {
     // Try to split the string at the first namespace delimiter. We always use
     // the first as type names can not have embedded namespaces but instances 
@@ -1170,17 +1170,17 @@ void UsdSchemaRegistry::_ApplyAPISchemasToPrimDefinition(
 
         // Applied schemas may be single or multiple apply so we have to parse
         // the schema name into a type and possibly an instance name.
-        auto typeAndInstance = GetTypeAndInstance(schema);
+        auto typeNameAndInstance = GetTypeNameAndInstance(schema);
 
         // From the type we should able to find an existing prim definition for
         // the API schema type if it is valid.
         const UsdPrimDefinition *apiSchemaTypeDef = 
-            FindAppliedAPIPrimDefinition(typeAndInstance.first);
+            FindAppliedAPIPrimDefinition(typeNameAndInstance.first);
         if (!apiSchemaTypeDef) {
             continue;
         }
 
-        if (typeAndInstance.second.IsEmpty()) {
+        if (typeNameAndInstance.second.IsEmpty()) {
             // An empty instance name indicates a single apply schema. Just 
             // copy its properties into the new prim definition.
             primDef->_ApplyPropertiesFromPrimDef(*apiSchemaTypeDef);
@@ -1189,7 +1189,7 @@ void UsdSchemaRegistry::_ApplyAPISchemasToPrimDefinition(
             // instance name and the property prefix to map and add the correct
             // properties for this instance.
             auto it = _multipleApplyAPISchemaNamespaces.find(
-                typeAndInstance.first);
+                typeNameAndInstance.first);
             if (it == _multipleApplyAPISchemaNamespaces.end()) {
                 // Warn that this not actually a multiple apply schema type?
                 continue;
@@ -1201,7 +1201,7 @@ void UsdSchemaRegistry::_ApplyAPISchemasToPrimDefinition(
                 // this instance and apply it to each property name and map the
                 // prefix name to the definition's property.
                 const std::string propPrefix = 
-                    SdfPath::JoinIdentifier(prefix, typeAndInstance.second);
+                    SdfPath::JoinIdentifier(prefix, typeNameAndInstance.second);
                 primDef->_ApplyPropertiesFromPrimDef(
                     *apiSchemaTypeDef, propPrefix);
             }

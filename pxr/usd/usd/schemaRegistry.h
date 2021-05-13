@@ -199,12 +199,16 @@ public:
     ///
     /// This function returns the separated schema type name and instance name 
     /// component tokens if possible, otherwise it returns the \p apiSchemaName 
-    /// as the type name and an empty instance name.
+    /// as the type name and an empty instance name. 
+    ///
+    /// Note that no validation is done on the returned tokens. Clients are
+    /// advised to use GetTypeFromSchemaTypeName() to validate the typeName 
+    /// token.
     ///
     /// \sa UsdPrim::AddAppliedSchema(const TfToken&) const
     /// \sa UsdPrim::GetAppliedSchemas() const
     USD_API
-    static std::pair<TfToken, TfToken> GetTypeAndInstance(
+    static std::pair<TfToken, TfToken> GetTypeNameAndInstance(
             const TfToken &apiSchemaName);
 
     /// Returns a map of the names of all registered auto apply API schemas

@@ -127,9 +127,9 @@ void wrapUsdSchemaRegistry()
             (arg("typeName")))
         .staticmethod("GetTypeFromName")
 
-        .def("GetTypeAndInstance", &This::GetTypeAndInstance,
+        .def("GetTypeNameAndInstance", &This::GetTypeNameAndInstance,
             (arg("typeName")), return_value_policy<TfPyPairToTuple>())
-        .staticmethod("GetTypeAndInstance")
+        .staticmethod("GetTypeNameAndInstance")
 
         .def("GetAutoApplyAPISchemas", &This::GetAutoApplyAPISchemas,
              return_value_policy<TfPyMapToDictionary>())
