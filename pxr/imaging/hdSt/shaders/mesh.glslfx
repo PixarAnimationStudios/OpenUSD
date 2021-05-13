@@ -327,8 +327,7 @@ vec4 GetPatchCoord(int index)
     return tesPatchCoord[index];
 }
 
-void emit(int index, vec4 Peye, vec3 Neye,
-          vec4 triPeye0, vec4 triPeye1, vec4 triPeye2)
+void emit(int index, vec4 Peye, vec3 Neye)
 {
     outData.Peye = Peye;
     outData.Neye = Neye;
@@ -337,9 +336,9 @@ void emit(int index, vec4 Peye, vec3 Neye,
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    ProcessTriEdgeDistance(Peye, triPeye0, triPeye1, triPeye2);
+    ProcessBarycentricCoordTriangle(index);
 
-    ProcessEdgeId(index, gsPatchCoord.xy);
+    ProcessEdgeId(gsPatchCoord.xy);
 
     ProcessPrimvars(index, tesTessCoord[index]);
 
@@ -382,9 +381,9 @@ void main(void)
     Peye2 += selOffset;
 
     // triangle 0: vertices (0,1,2)
-    emit(0, Peye0, Neye0, Peye0, Peye1, Peye2);
-    emit(1, Peye1, Neye1, Peye0, Peye1, Peye2);
-    emit(2, Peye2, Neye2, Peye0, Peye1, Peye2);
+    emit(0, Peye0, Neye0);
+    emit(1, Peye1, Neye1);
+    emit(2, Peye2, Neye2);
 
     EndPrimitive();
 }
@@ -460,8 +459,7 @@ vec4 GetPatchCoord(int index)
     return OsdInterpolatePatchCoordTriangle(uv[index], patchParam);
 }
 
-void emit(int index, vec4 Peye, vec3 Neye,
-          vec4 triPeye0, vec4 triPeye1, vec4 triPeye2)
+void emit(int index, vec4 Peye, vec3 Neye)
 {
     outData.Peye = Peye;
     outData.Neye = Neye;
@@ -472,9 +470,9 @@ void emit(int index, vec4 Peye, vec3 Neye,
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    ProcessTriEdgeDistance(Peye, triPeye0, triPeye1, triPeye2);
+    ProcessBarycentricCoordTriangle(index);
 
-    ProcessEdgeId(index, gsPatchCoord.xy);
+    ProcessEdgeId(gsPatchCoord.xy);
 
     ProcessPrimvars(index);
 
@@ -514,9 +512,9 @@ void main(void)
     Peye2 += selOffset;
 
     // triangle 0: vertices (0,1,2)
-    emit(0, Peye0, Neye0, Peye0, Peye1, Peye2);
-    emit(1, Peye1, Neye1, Peye0, Peye1, Peye2);
-    emit(2, Peye2, Neye2, Peye0, Peye1, Peye2);
+    emit(0, Peye0, Neye0);
+    emit(1, Peye1, Neye1);
+    emit(2, Peye2, Neye2);
 
     EndPrimitive();
 }
@@ -554,8 +552,7 @@ vec4 GetPatchCoord(int index)
     return OsdInterpolatePatchCoord(uv[index], patchParam);
 }
 
-void emit(int triCounter, int index, vec4 Peye, vec3 Neye,
-          vec4 triPeye0, vec4 triPeye1, vec4 triPeye2)
+void emit(int index, vec4 Peye, vec3 Neye)
 {
     outData.Peye = Peye;
     outData.Neye = Neye;
@@ -566,9 +563,9 @@ void emit(int triCounter, int index, vec4 Peye, vec3 Neye,
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    ProcessQuadEdgeDistance(Peye, triPeye0, triPeye1, triPeye2, triCounter);
+    ProcessBarycentricCoordQuad(index);
 
-    ProcessEdgeId(index, gsPatchCoord.xy);
+    ProcessEdgeId(gsPatchCoord.xy);
 
     ProcessPrimvars(index);
 
@@ -605,20 +602,20 @@ void main(void)
     vec4 Peye3 = DisplacementTerminal(
         3, inData[3].Peye, Neye3, GetPatchCoord(3));
 
-    // Generate triangles (3,0,2) and (2,0,1)
-    //  0---3
-    //  |.  |
-    //  | . |
+    // Generate triangles (3,0,2) and (1,2,0)
+    //  3---2
     //  |  .|
-    //  1---2
+    //  | . |
+    //  |.  |
+    //  0---1
     // The indices post-quadrangulation/subdivision follow the convention:
     // 0   -> original (hull) vertex
     // 1,3 -> edge vertices
     // 2   -> center vertex
-    // 
+    //
     // By having index 2 in both the triangles, we ensure the pre-quadrangulated
     // face's normal (at the center) is part of the rasterizer interpolation,
-    // which matters when we use smooth/limit normals. 
+    // which matters when we use smooth/limit normals.
     // In the case of flat normals, we use the vertex positions, so it doesn't
     // matter.
 
@@ -631,15 +628,15 @@ void main(void)
     Peye3 += selOffset;
 
     // triangle 0: vertices (3,0,2)
-    emit(0, 3, Peye3, Neye3, Peye3, Peye0, Peye2);
-    emit(0, 0, Peye0, Neye0, Peye3, Peye0, Peye2);
-    emit(0, 2, Peye2, Neye2, Peye3, Peye0, Peye2);
+    emit(3, Peye3, Neye3);
+    emit(0, Peye0, Neye0);
+    emit(2, Peye2, Neye2);
     EndPrimitive();
 
-    // triangle 1: vertices (2,0,1)
-    emit(1, 2, Peye2, Neye2, Peye2, Peye0, Peye1);
-    emit(1, 0, Peye0, Neye0, Peye2, Peye0, Peye1);
-    emit(1, 1, Peye1, Neye1, Peye2, Peye0, Peye1);
+    // triangle 1: vertices (1,2,0)
+    emit(1, Peye1, Neye1);
+    emit(2, Peye2, Neye2);
+    emit(0, Peye0, Neye0);
     EndPrimitive();
 }
 
