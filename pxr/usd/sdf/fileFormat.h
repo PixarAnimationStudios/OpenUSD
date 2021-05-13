@@ -364,7 +364,7 @@ protected:
     SDF_API
     static SdfAbstractDataConstPtr _GetLayerData(const SdfLayer& layer);
 
-private:
+protected:
     SDF_API
     virtual SdfLayer *_InstantiateNewLayer(
         const SdfFileFormatConstPtr &fileFormat,
@@ -391,6 +391,7 @@ private:
     SDF_API 
     virtual bool _ShouldReadAnonymousLayers() const;
 
+private:
     const SdfSchemaBase& _schema;
     const TfToken _formatId;
     const TfToken _target;
