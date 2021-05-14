@@ -1964,15 +1964,6 @@ if not isPython64Bit:
                "PATH")
     sys.exit(1)
 
-# Error out on Windows with Python 3.8+. USD currently does not support
-# these versions due to:
-# https://docs.python.org/3.8/whatsnew/3.8.html#bpo-36085-whatsnew
-isPython38 = (sys.version_info.major >= 3 and
-              sys.version_info.minor >= 8)
-if Windows() and isPython38:
-    PrintError("Python 3.8+ is not supported on Windows")
-    sys.exit(1)
-
 if find_executable("cmake"):
     # Check cmake requirements
     if Windows():
