@@ -230,11 +230,7 @@ float GetMinEdgeDistance()
 
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
-    // Skip the selection filter since the line rasterization draw order issue 
-    // isn't relevant.
-    // XXX: We don't use the patchCoord below to make the face boundary
-    // stand out. Should we?
-    float p = GetEdgeOpacity(/*patchCoord.xy*/);
+    float p = GetEdgeOpacity(patchCoord.xy);
     
     vec4 wireColor = GetWireframeColor();
     
@@ -282,8 +278,6 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
-    // Skip the selection filter since the line rasterization draw order issue
-    // isn't relevant.
     float p = GetEdgeOpacity(patchCoord.xy);
     
     vec4 wireColor = GetWireframeColor();

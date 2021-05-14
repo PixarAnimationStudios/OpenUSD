@@ -363,12 +363,12 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             FS[fsIndex++] = _tokens->edgeMaskQuadFS;
         }
         FS[fsIndex++] = _tokens->edgeCommonFS;
+        if (isPrimTypeTris || isPrimTypePatchesBoxSplineTriangle) {
+            FS[fsIndex++] = _tokens->patchEdgeTriangleFS;
+        } else {
+            FS[fsIndex++] = _tokens->patchEdgeQuadFS;
+        }
         if (isPrimTypePatches) {
-            if (isPrimTypePatchesBSpline) {
-                FS[fsIndex++] = _tokens->patchEdgeQuadFS;
-            } else {
-                FS[fsIndex++] = _tokens->patchEdgeTriangleFS;
-            }
             FS[fsIndex++] = _tokens->patchEdgeOnSurfFS;
         } else {
             FS[fsIndex++] = _tokens->edgeOnSurfFS;
