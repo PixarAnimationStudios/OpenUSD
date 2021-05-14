@@ -37,11 +37,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdStMaterialXShaderGen : public MaterialX::GlslShaderGenerator
 {
 public:
-    HdStMaterialXShaderGen(MaterialX::StringMap const& mxHdTextureMap);
+    HdStMaterialXShaderGen(MaterialX::StringMap const& mxHdTextureMap,
+                           MaterialX::StringMap const& mxHdPrimvarMap,
+                           std::string const& defaultTexcoordName);
 
     static MaterialX::ShaderGeneratorPtr create(
-            MaterialX::StringMap const& mxHdTextureMap=MaterialX::StringMap()) {
-        return std::make_shared<HdStMaterialXShaderGen>(mxHdTextureMap); 
+            MaterialX::StringMap const& mxHdTextureMap=MaterialX::StringMap(),
+            MaterialX::StringMap const& mxHdPrimvarMap=MaterialX::StringMap(),
+            std::string const& defaultTexcoordName=std::string("st")) {
+        return std::make_shared<HdStMaterialXShaderGen>(mxHdTextureMap, 
+                                    mxHdPrimvarMap, defaultTexcoordName); 
     }
 
     MaterialX::ShaderPtr generate(const std::string& shaderName,
@@ -92,6 +97,8 @@ private:
     // Store MaterialX texture node names and their Hydra counterparts to 
     // initialize the texture sampler values 
     MaterialX::StringMap _mxHdTextureMap;
+    MaterialX::StringMap _mxHdPrimvarMap;
+    std::string _defaultTexcoordName;
 };
 
 

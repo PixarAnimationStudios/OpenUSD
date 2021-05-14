@@ -44,7 +44,9 @@ void HdSt_ApplyMaterialXFilter(
 std::string HdSt_GenMaterialXShaderCode(
     MaterialX::DocumentPtr const& mxDoc,
     MaterialX::FileSearchPath const& searchPath,
-    MaterialX::StringMap const& mxHdTextureMap); // Mx-Hd texture counterparts 
+    MaterialX::StringMap const& mxHdTextureMap=MaterialX::StringMap(),
+    MaterialX::StringMap const& mxHdPrimvarMap=MaterialX::StringMap(),
+    std::string const& defaultTextureCoordName=std::string("st"));
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

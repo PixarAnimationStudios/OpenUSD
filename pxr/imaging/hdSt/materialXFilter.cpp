@@ -51,6 +51,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Default Texture Coordinate Token
     (st)
+    (texcoord)
+    (geomprop)
 );
 
 
@@ -98,10 +100,13 @@ std::string
 HdSt_GenMaterialXShaderCode(
     mx::DocumentPtr const& mxDoc,
     mx::FileSearchPath const& searchPath,
-    mx::StringMap const& mxHdTextureMap)
+    mx::StringMap const& mxHdTextureMap,
+    mx::StringMap const& mxHdPrimvarMap,
+    std::string const& defaultTexcoordName)
 {
     // Initialize the Context for shaderGen. 
-    mx::GenContext mxContext = HdStMaterialXShaderGen::create(mxHdTextureMap);
+    mx::GenContext mxContext = HdStMaterialXShaderGen::create(mxHdTextureMap, 
+                                    mxHdPrimvarMap, defaultTexcoordName);
     mxContext.registerSourceCodeSearchPath(searchPath);
     
     // Add the Direct Light mtlx file to the mxDoc 
@@ -165,7 +170,10 @@ _GetHdFilterValue(std::string const& mxInputValue)
 static VtValue
 _GetHdSamplerValue(std::string const& mxInputValue)
 {
-    if (mxInputValue == "constant" || mxInputValue == "clamp") {
+    if (mxInputValue == "constant") {
+        return VtValue(HdStTextureTokens->black);
+    }
+    if (mxInputValue == "clamp") {
         return VtValue(HdStTextureTokens->clamp);
     }
     if (mxInputValue == "mirror") {
@@ -184,12 +192,7 @@ _GetHdTextureParameters(
     // MaterialX has two texture2d node types <image> and <tiledimage>
 
     // Properties common to both <image> and <tiledimage> texture nodes:
-    if (mxInputName == "file") {
-        // Add 'st' as a parameter for texture nodes, the mesh itself will
-        // still need texture coordinate primvars to work correctly
-        (*hdTextureParams)[_tokens->st] = VtValue(_tokens->st);
-    }
-    else if (mxInputName == "filtertype") {
+    if (mxInputName == "filtertype") {
         (*hdTextureParams)[HdStTextureTokens->minFilter] = 
             _GetHdFilterValue(mxInputValue);
         (*hdTextureParams)[HdStTextureTokens->magFilter] = 
@@ -217,18 +220,125 @@ _GetHdTextureParameters(
     }
 }
 
+// Find the HdNode and its corresponding NodePath in the given HdNetwork 
+// based on the given HdConnection
+static bool 
+_FindConnectedNode(
+    HdMaterialNetwork2 const& hdNetwork,
+    HdMaterialConnection2 const& hdConnection,
+    HdMaterialNode2 * hdNode,
+    SdfPath * hdNodePath)
+{
+    // Get the path to the connected node
+    const SdfPath & connectionPath = hdConnection.upstreamNode;
+
+    // If this path is not in the network raise a warning
+    auto hdNodeIt = hdNetwork.nodes.find(connectionPath);
+    if (hdNodeIt == hdNetwork.nodes.end()) {
+        TF_WARN("Unknown material node '%s'", connectionPath.GetText());
+        return false;
+    }
+
+    // Otherwise return the HdNode and corresponding NodePath
+    *hdNode = hdNodeIt->second;
+    *hdNodePath = connectionPath;
+    return true;
+}
+
+// Get the Texture coordinate name if specified, otherwise get the default name 
+static void
+_GetTextureCoordinateName(
+    HdMaterialNetwork2 * hdNetwork,
+    HdMaterialNode2 * hdTextureNode,
+    SdfPath const& hdTextureNodePath,
+    mx::StringMap * mxHdPrimvarMap,
+    std::string * defaultTexcoordName)
+{
+    // Get the Texture Coordinate name through the connected node
+    bool textureCoordSet = false;
+    for (auto& inputConnections : hdTextureNode->inputConnections) {
+
+        // Texture Coordinates are connected through the 'texcoord' input
+        if ( inputConnections.first != _tokens->texcoord) {
+            continue;
+        }
+
+        for (auto& currConnection : inputConnections.second) {
+
+            // Get the connected Texture Coordinate node
+            SdfPath hdCoordNodePath;
+            HdMaterialNode2 hdCoordNode;
+            const bool found = _FindConnectedNode(*hdNetwork, currConnection,
+                                            &hdCoordNode, &hdCoordNodePath);
+            if (!found) {
+                continue;
+            }
+            
+            // Get the texture coordinate name from the 'geomprop' parameter
+            auto coordNameIt = hdCoordNode.parameters.find(_tokens->geomprop);
+            if (coordNameIt != hdCoordNode.parameters.end()) {
+
+                std::string const& texcoordName = 
+                    HdMtlxConvertToString(coordNameIt->second);
+                
+                // Set the 'st' parameter as a TfToken
+                // hdTextureNode->parameters[_tokens->st] = 
+                hdNetwork->nodes[hdTextureNodePath].parameters[_tokens->st] = 
+                                TfToken(texcoordName.c_str());
+
+                // Save texture coordinate primvar name for the glslfx header
+                (*mxHdPrimvarMap)[texcoordName] = "vec2";
+                textureCoordSet = true;
+                break;
+            }
+        }
+    }
+    
+    // If we did not have a connected node, and the 'st' parameter is not set
+    // get the default texture cordinate name from the textureNodes sdr metadata 
+    if ( !textureCoordSet && hdTextureNode->parameters.find(_tokens->st) == 
+                             hdTextureNode->parameters.end()) {
+
+        // Get the sdr node for the mxTexture node
+        SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
+        const SdrShaderNodeConstPtr sdrTextureNode = 
+            sdrRegistry.GetShaderNodeByIdentifierAndType(
+                hdTextureNode->nodeTypeId, _tokens->mtlx);
+
+        if (sdrTextureNode) {
+
+            // Get the primvarname from the sdrTextureNode metadata
+            auto metadata = sdrTextureNode->GetMetadata();
+            auto primvarName = metadata[SdrNodeMetadata->Primvars];
+
+            // Set the 'st' parameter as a TfToken
+            hdNetwork->nodes[hdTextureNodePath].parameters[_tokens->st] = 
+                            TfToken(primvarName.c_str());
+
+            // Save the default texture coordinate name for the glslfx header
+            *defaultTexcoordName = primvarName;
+        }
+        
+    }
+}
+
 // Add the Hydra texture node parameters to the texture nodes
 static void 
 _AddHdTextureNodeParameters(
     HdMaterialNetwork2 * hdNetwork,
-    std::set<SdfPath> const& hdTextureNodes)
+    std::set<SdfPath> const& hdTextureNodes,
+    mx::StringMap * mxHdPrimvarMap,
+    std::string * defaultTexcoordName)
 {
-    for (auto texturePath : hdTextureNodes) {
-        auto & textureNode = hdNetwork->nodes[texturePath];
+    for (auto const& texturePath : hdTextureNodes) {
+        HdMaterialNode2 hdTextureNode = hdNetwork->nodes[texturePath];
+
+        _GetTextureCoordinateName(hdNetwork, &hdTextureNode, texturePath, 
+                                  mxHdPrimvarMap, defaultTexcoordName);
 
         // Gather the Hydra Texture Parameters
         std::map<TfToken, VtValue> hdParameters;
-        for (auto const& currParam : textureNode.parameters) {
+        for (auto const& currParam : hdTextureNode.parameters) {
         
             // Get the MaterialX Input Value string
             std::string mxInputValue = HdMtlxConvertToString(currParam.second);
@@ -240,8 +350,8 @@ _AddHdTextureNodeParameters(
 
         // Add the Hydra Texture Parameters to the Texture Node
         for (auto param : hdParameters) {
-            textureNode.parameters[param.first] = param.second;
-        }    
+            hdNetwork->nodes[texturePath].parameters[param.first] = param.second;
+        }
     }
 }
 
@@ -281,11 +391,15 @@ HdSt_ApplyMaterialXFilter(
                                         &mxHdTextureMap);
 
         // Add Hydra parameters for each of the Texture nodes
-        _AddHdTextureNodeParameters(hdNetwork, hdTextureNodes);
+        mx::StringMap mxHdPrimvarMap; // Primvar name and type
+        std::string defaultTexcoordName;
+        _AddHdTextureNodeParameters(hdNetwork, hdTextureNodes, 
+                                    &mxHdPrimvarMap, &defaultTexcoordName);
 
         // Load MaterialX Document and generate the glslfxSource
         std::string glslfxSource = HdSt_GenMaterialXShaderCode(mtlxDoc, 
-                                        searchPath, mxHdTextureMap);
+                                    searchPath, mxHdTextureMap, 
+                                    mxHdPrimvarMap, defaultTexcoordName);
 
         // Create a new terminal node with the new glslfxSource
         SdrShaderNodeConstPtr sdrNode = 
