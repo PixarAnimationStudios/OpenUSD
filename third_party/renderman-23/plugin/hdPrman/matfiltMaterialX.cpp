@@ -235,6 +235,21 @@ _GatherNodeGraphNodes(
     }
 }
 
+// XXX MaterialX uses getattribute() to get primvars in the shader, however 
+// Prman 23.0 is unable to find the primvar in the osl shader without the
+// additional "primvar" object argument.
+static void
+_UpdateGetAttributeCall( std::string * oslSource)
+{
+    const std::string originalFnCall = "getattribute(geomprop";
+    const std::string updatedFnCall  = "getattribute(\"primvar\", geomprop";
+    const size_t pos = oslSource->find(originalFnCall);
+    if (pos != std::string::npos) {
+        *oslSource = oslSource->replace(pos, originalFnCall.size(), 
+                                        updatedFnCall);
+    }
+}
+
 // Compile the given oslSource returning the path to the compiled oso code 
 static std::string 
 _CompileOslSource(std::string const& name, std::string const& oslSource)
@@ -340,6 +355,7 @@ _UpdateNetwork(
             }
 
             // Compile the oslSource
+            _UpdateGetAttributeCall(&oslSource);
             std::string compiledShaderPath = _CompileOslSource(shaderName, 
                                                                oslSource);
             if (compiledShaderPath.empty()) {

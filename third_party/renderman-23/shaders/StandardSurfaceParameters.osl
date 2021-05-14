@@ -202,9 +202,9 @@ shader StandardSurfaceParameters
     output float iridescenceEdgeGainOut = 0.0
         [[ string widget = "null" ]],
     output float iridescenceThicknessOut = 0.0
+        [[ string widget = "null" ]],
 )
 {
-    float base_out = base;
     color base_color_out = base_color;
     color specular_color_out = specular_color;
     color subsurface_color_out = subsurface_color;
@@ -226,8 +226,7 @@ shader StandardSurfaceParameters
         // StandardSurface applies coat_attenuation to the base/specular layers
         // and emission
         base_color_out *= coat_attenuation;
-        // specular_color_out *= coat_attenuation;
-        emission_color_out = emission_color * coat_attenuation;
+        emission_color_out *= coat_attenuation;
 
         // Optional Parameters
         clearcoatAnisotropyOut = coat_anisotropy;
@@ -253,26 +252,28 @@ shader StandardSurfaceParameters
     }
 
     // Emission 
-    if (emission_value > 0.0 && (emission_color[0] > 0.0 ||
-                                 emission_color[1] > 0.0 ||
-                                 emission_color[2] > 0.0))
+    if (emission_value > 0.0 && (emission_color_out[0] > 0.0 ||
+                                 emission_color_out[1] > 0.0 ||
+                                 emission_color_out[2] > 0.0))
     {
         glowGainOut = emission_value;
         glowColorOut = emission_color_out;
     }
 
     // Diffuse
-    if (base_color[0] > 0.0 || base_color[1] > 0.0 || base_color[2] > 0.0)
+    if (base_color_out[0] > 0.0 || 
+        base_color_out[1] > 0.0 || 
+        base_color_out[2] > 0.0)
     {
-        diffuseGainOut = base_out;
+        diffuseGainOut = base;
         diffuseColorOut = base_color_out;
         diffuseRoughnessOut = diffuse_roughness;
     }
 
     // Specular
-    if ((specular > 0) && (specular_color[0] > 0.0 ||
-                           specular_color[1] > 0.0 ||
-                           specular_color[2] > 0.0)) 
+    if (specular_color_out[0] > 0.0 ||
+        specular_color_out[1] > 0.0 ||
+        specular_color_out[2] > 0.0) 
     {
         float metal = clamp(metalness, 0.0, 1.0);
         float r = (1.0 - specular_IOR_out) / (1.0 + specular_IOR_out);
@@ -289,12 +290,13 @@ shader StandardSurfaceParameters
         // Specular Ior and Extinction
         color artistic_ior_ior = color(0.0);
         color artistic_ior_extinction = color(0.0);
-        mx_artistic_to_complex_ior(base_color * base, 
-                                   specular_color * specular,
+        mx_artistic_to_complex_ior(base_color_out * base, 
+                                   specular_color_out * specular,
                                    artistic_ior_ior, artistic_ior_extinction);
         specularIorOut = mix( color(specular_IOR_out), 
                               artistic_ior_ior, 
                               metal);
+        specular_IOR_out = specularIorOut[0];
         specularExtinctionCoeffOut = mix( color(0.0),
                                           artistic_ior_extinction, 
                                           metal);
@@ -308,19 +310,19 @@ shader StandardSurfaceParameters
     }
 
     // Subsurface
-    if (subsurface_value > 0 && (subsurface_color[0] > 0.0 ||
-                                 subsurface_color[1] > 0.0 ||
-                                 subsurface_color[2] > 0.0)) 
+    if (subsurface_value > 0 && (subsurface_color_out[0] > 0.0 ||
+                                 subsurface_color_out[1] > 0.0 ||
+                                 subsurface_color_out[2] > 0.0)) 
     {
         // Diffuse Transmission 
         diffuseDoubleSidedOut = 1;
         diffuseTransmitGainOut = subsurface_value;
-        diffuseTransmitColorOut = subsurface_color;
+        diffuseTransmitColorOut = subsurface_color_out;
 
         // Subsurface Scattering when thin_walled is off 
         if (!thin_walled) {
             subsurfaceGainOut = subsurface_value;
-            subsurfaceColorOut = subsurface_color;
+            subsurfaceColorOut = subsurface_color_out;
             subsurfaceDmfpColorOut = subsurface_radius;
             subsurfaceDmfpOut = subsurface_scale;
             subsurfaceDirectionalityOut = subsurface_anisotropy;
@@ -361,7 +363,7 @@ shader StandardSurfaceParameters
         refractionColorOut = transmission_color_out;
 
         // Glass Parameters
-        glassRoughnessOut = specular_roughness;
+        glassRoughnessOut = specular_roughness_out;
         glassIorOut = specular_IOR_out;
         glassAnisotropyOut = specular_anisotropy;
         thinGlassOut = thin_walled;
