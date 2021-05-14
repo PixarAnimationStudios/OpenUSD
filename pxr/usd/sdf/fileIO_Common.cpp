@@ -681,8 +681,40 @@ Sdf_FileIOUtility::WriteLayerOffset(
 string
 Sdf_FileIOUtility::Quote(const string &str)
 {
-    static const char* hexdigit = "0123456789abcdef";
-    static const bool allowTripleQuotes = true;
+    const char* hexdigit = "0123456789abcdef";
+    const bool allowTripleQuotes = true;
+
+    // Check if cp points to a valid UTF-8 multibyte sequence.  If so, return
+    // its length (either 2, 3, or 4).  If not return 0.
+    auto isUTF8MultiByte = [](char const *cp) {
+
+        // Return a byte with the high `n` bits set, rest clear.
+        auto highBits = [](int n) {
+            return static_cast<unsigned char>(((1 << n) - 1) << (8 - n));
+        }; 
+
+        // Return true if `ch` is a continuation byte.
+        auto isContinuation = [&highBits](unsigned char ch) {
+            return (ch & highBits(2)) == highBits(1);
+        };
+
+        // Check for 2, 3, or 4-byte code.
+        for (int i = 2; i <= 4; ++i) {
+            // This is an N-byte code if the high-order N+1 bytes are N 1s
+            // followed by a single 0.
+            if ((*cp & highBits(i + 1)) == highBits(i)) {
+                // If that's the case then the following N-1 bytes must be
+                // "continuation bytes".
+                for (int j = 1; j != i; ++j) {
+                    if (!isContinuation(cp[j])) {
+                        return 0;
+                    }
+                }
+                return i;
+            }
+        }
+        return 0;
+    };
 
     string result;
 
@@ -703,48 +735,62 @@ Sdf_FileIOUtility::Quote(const string &str)
     }
     result += quote;
 
-    // Escape string.
-    TF_FOR_ALL(i, str) {
-        switch (*i) {
+    // Write `ch` as a regular ascii character, an escaped control character
+    // (like \n, \t, etc.) or a hex byte code (\xa8).
+    auto writeASCIIorHex = [&result, &hexdigit, quote, tripleQuotes](char ch) {
+        switch (ch) {
         case '\n':
             // Pass newline as-is if using triple quotes, otherwise escape.
             if (tripleQuotes) {
-                result += *i;
+                result += ch;
             }
             else {
                 result += "\\n";
             }
             break;
-
+        
         case '\r':
             result += "\\r";
             break;
-
+        
         case '\t':
             result += "\\t";
             break;
-
+        
         case '\\':
             result += "\\\\";
             break;
-
+                
         default:
-            if (*i == quote) {
+            if (ch == quote) {
                 // Always escape the character we're using for quoting.
                 result += '\\';
                 result += quote;
             }
-            else if (!std::isprint(*i)) {
+            else if (!std::isprint(ch)) {
                 // Non-printable;  use two digit hex form.
                 result += "\\x";
-                result += hexdigit[(*i >> 4) & 15];
-                result += hexdigit[*i & 15];
+                result += hexdigit[(ch >> 4) & 15];
+                result += hexdigit[ch & 15];
             }
             else {
                 // Printable, non-special.
-                result += *i;
+                result += ch;
             }
             break;
+        }
+    };
+
+    // Escape string.
+    for (char const *i = str.c_str(); *i; ++i) {
+        // Check UTF-8 sequence.
+        int nBytes = isUTF8MultiByte(i);
+        if (nBytes) {
+            result.insert(result.end(), i, i + nBytes);
+            i += nBytes - 1; // account for next loop increment.
+        }
+        else {
+            writeASCIIorHex(*i);
         }
     }
 
