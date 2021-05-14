@@ -2389,38 +2389,20 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                 }
 
                 case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
-                {
-                    // coarse quads (for ptex)
-                    // put ptexIndex into the first element of PatchParam.
-                    // (transition flags in MSB can be left as 0)
-                    accessors
-                        << "ivec3 GetPatchParam() {\n"
-                        << "  return ivec3(HdGet_primitiveParam().y, 0, 0);\n"
-                        << "}\n";
-                    // the edge flag for coarse quads tells us if the quad face
-                    // is the result of quadrangulation (1) or from the authored
-                    // topology (0).
-                    accessors
-                        << "int GetEdgeFlag() {\n"
-                        << "  return (HdGet_primitiveParam().x & 3); \n"
-                        << "}\n";
-                    break;
-                }
-
                 case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
                 {
-                    // coarse triangles                
-                    // note that triangulated meshes don't have ptexIndex.
-                    // Here we're passing primitiveID as ptexIndex PatchParam
-                    // since Hd_TriangulateFaceVaryingComputation unrolls facevaring
-                    // primvars for each triangles.
+                    // coarse quads or coarse triangles
+                    // ptexId matches the primitiveID for quadrangulated or
+                    // triangulated meshes, the other fields can be left as 0
                     accessors
                         << "ivec3 GetPatchParam() {\n"
                         << "  return ivec3(gl_PrimitiveID, 0, 0);\n"
                         << "}\n";
+                    // edge flag encodes edges which have been
+                    // introduced by quadrangulation or triangulation
                     accessors
                         << "int GetEdgeFlag() {\n"
-                        << "  return HdGet_primitiveParam() & 3;\n"
+                        << "  return (HdGet_primitiveParam() & 3);\n"
                         << "}\n";
                     break;
                 }

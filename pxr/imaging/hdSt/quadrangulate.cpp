@@ -154,7 +154,7 @@ HdSt_QuadIndexBuilderComputation::GetBufferSpecs(HdBufferSpecVector *specs) cons
                         HdTupleType{HdTypeInt32Vec4, 1});
     // coarse-quads uses int2 as primitive param.
     specs->emplace_back(HdTokens->primitiveParam,
-                        HdTupleType{HdTypeInt32Vec2, 1});
+                        HdTupleType{HdTypeInt32, 1});
     // 2 edge indices per quad
     specs->emplace_back(HdTokens->edgeIndices,
          		HdTupleType{HdTypeInt32Vec2, 1});
@@ -174,7 +174,7 @@ HdSt_QuadIndexBuilderComputation::Resolve()
 
     // generate quad index buffer
     VtVec4iArray quadsFaceVertexIndices;
-    VtVec2iArray primitiveParam;
+    VtIntArray primitiveParam;
     VtVec2iArray quadsEdgeIndices;
     HdMeshUtil meshUtil(_topology, _id);
     meshUtil.ComputeQuadIndices(

@@ -148,7 +148,7 @@ public:
     /// primitiveParams are output parameters.
     HD_API
     void ComputeQuadIndices(VtVec4iArray *indices,
-                            VtVec2iArray *primitiveParams,
+                            VtIntArray *primitiveParams,
                             VtVec2iArray *edgeIndices = nullptr) const;
 
     /// Return a quadrangulation of a per-vertex primvar. source is

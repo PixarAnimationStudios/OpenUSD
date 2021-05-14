@@ -477,7 +477,7 @@ HdMeshUtil::ComputeQuadInfo(HdQuadInfo* quadInfo) const
 
 void
 HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
-                               VtVec2iArray *primitiveParams,
+                               VtIntArray *primitiveParams,
                                VtVec2iArray *edgeIndices/*=nullptr*/) const
 {
     HD_TRACE_FUNCTION();
@@ -491,8 +491,6 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
         TF_CODING_ERROR("No output buffer provided for quadrangulation");
         return;
     }
-
-    // TODO: create ptex id remapping buffer here.
 
     int const * numVertsPtr = _topology->GetFaceVertexCounts().cdata();
     int const * vertsPtr = _topology->GetFaceVertexIndices().cdata();
@@ -525,9 +523,6 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
     bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
     int vertIndex = numPoints;
 
-    // TODO: We need to support ptex index in addition to coarse indices.
-    //int ptexIndex = 0;
-    
     // i  -> authored face index [0, numFaces)
     // qv -> quadrangulated face index [0, numQuads)
     // v  -> index to the first vertex (index) for face i
@@ -586,8 +581,7 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
             //  The first quad of a non-quad face is marked 1; the last as 2; and
             //  intermediate quads as 3.
 
-            (*primitiveParams)[qv] = GfVec2i(
-                EncodeCoarseFaceParam(i, /*edgeFlag=*/0), qv);
+            (*primitiveParams)[qv] = EncodeCoarseFaceParam(i, /*edgeFlag=*/0);
 
             if (edgeIndices) {
                 (*edgeIndices)[qv][0] = edgeIndex;
@@ -638,8 +632,7 @@ HdMeshUtil::ComputeQuadIndices(VtVec4iArray *indices,
                 } else {
                     edgeFlag = 3;
                 }
-                (*primitiveParams)[qv] = GfVec2i(
-                    EncodeCoarseFaceParam(i, edgeFlag), qv);
+                (*primitiveParams)[qv] = EncodeCoarseFaceParam(i, edgeFlag);
 
                 if (edgeIndices) {
                     if (flip) {
