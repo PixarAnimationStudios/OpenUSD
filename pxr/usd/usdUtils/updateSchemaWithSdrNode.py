@@ -40,13 +40,13 @@ class SchemaDefiningMiscConstants(ConstantsGroup):
     SINGLE_APPLY_SCHEMA = "singleApply"
     TYPED_SCHEMA = "Typed"
     USD_SOURCE_TYPE = "USD"
+    NodeDefAPI = "NodeDefAPI"
 
 class PropertyDefiningKeys(ConstantsGroup):
     USD_VARIABILITY = "usdVariability"
     USD_SUPPRESS_PROPERTY = "usdSuppressProperty"
     SDF_VARIABILITY_UNIFORM_STRING = "Uniform"
     CONNECTABILITY = "connectability"
-
 
 def _CreateAttrSpecFromNodeAttribute(primSpec, prop, usdSchemaNode, 
         isInput=True):
@@ -265,7 +265,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
         reg = Sdr.Registry()
         usdSchemaNode = reg.GetNodeByIdentifierAndType(usdSchemaClass, 
                 SchemaDefiningMiscConstants.USD_SOURCE_TYPE)
-    
+
     # Create attrSpecs from input parameters
     for propName in sdrNode.GetInputNames():
         _CreateAttrSpecFromNodeAttribute(primSpec, sdrNode.GetInput(propName), 
@@ -275,5 +275,16 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
     for propName in sdrNode.GetOutputNames():
         _CreateAttrSpecFromNodeAttribute(primSpec, sdrNode.GetOutput(propName), 
                 usdSchemaNode, False)
+
+    # Extra attrSpec
+    schemaBasePrimDefinition = \
+        Usd.SchemaRegistry().FindConcretePrimDefinition(schemaBase)
+    if schemaBasePrimDefinition and \
+        SchemaDefiningMiscConstants.NodeDefAPI in \
+        schemaBasePrimDefinition.GetAppliedAPISchemas():
+            infoIdAttrSpec = Sdf.AttributeSpec(primSpec, \
+                    UsdShade.Tokens.infoId, Sdf.ValueTypeNames.Token, \
+                    Sdf.VariabilityUniform)
+            infoIdAttrSpec.default = sdrNode.GetIdentifier()
 
     schemaLayer.Save()
