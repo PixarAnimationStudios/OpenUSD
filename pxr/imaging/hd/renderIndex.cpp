@@ -1193,51 +1193,56 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
     // These tasks will call Sync() adding dirty lists to _syncQueue for
     // processing below.
     //
-    size_t numTasks = tasks->size();
-    for (size_t taskNum = 0; taskNum < numTasks; ++taskNum) {
-        HdTaskSharedPtr &task = (*tasks)[taskNum];
+    {
+        TRACE_FUNCTION_SCOPE("Task Sync");
 
-        if (!TF_VERIFY(task)) {
-            TF_CODING_ERROR("Null Task in task list.  Entry Num: %zu", taskNum);
-            continue;
-        }
+        size_t numTasks = tasks->size();
+        for (size_t taskNum = 0; taskNum < numTasks; ++taskNum) {
+            HdTaskSharedPtr &task = (*tasks)[taskNum];
 
-        SdfPath taskId = task->GetId();
+            if (!TF_VERIFY(task)) {
+                TF_CODING_ERROR("Null Task in task list.  Entry Num: %zu",
+                                taskNum);
+                continue;
+            }
 
-        // Is this a tracked task?
-        _TaskMap::iterator taskMapIt = _taskMap.find(taskId);
-        if (taskMapIt != _taskMap.end()) {
-            _TaskInfo &taskInfo = taskMapIt->second;
+            SdfPath taskId = task->GetId();
 
-            // If the task is in the render index, then we have the
-            // possibility that the task passed in points to a
-            // different instance than the one stored in the render index
-            // even though they have the same id.
-            //
-            // For consistency, we always use the registered task in the
-            // render index for a given id, as that is the one the state is
-            // tracked for.
-            //
-            // However, this is still a weird situation, so report the
-            // issue as a verify so it can be addressed.
-            TF_VERIFY(taskInfo.task == task);
+            // Is this a tracked task?
+            _TaskMap::iterator taskMapIt = _taskMap.find(taskId);
+            if (taskMapIt != _taskMap.end()) {
+                _TaskInfo &taskInfo = taskMapIt->second;
 
-            HdDirtyBits taskDirtyBits = _tracker.GetTaskDirtyBits(taskId);
+                // If the task is in the render index, then we have the
+                // possibility that the task passed in points to a
+                // different instance than the one stored in the render index
+                // even though they have the same id.
+                //
+                // For consistency, we always use the registered task in the
+                // render index for a given id, as that is the one the state is
+                // tracked for.
+                //
+                // However, this is still a weird situation, so report the
+                // issue as a verify so it can be addressed.
+                TF_VERIFY(taskInfo.task == task);
 
-            taskInfo.task->Sync(taskInfo.sceneDelegate,
-                                taskContext,
-                                &taskDirtyBits);
+                HdDirtyBits taskDirtyBits = _tracker.GetTaskDirtyBits(taskId);
 
-            _tracker.MarkTaskClean(taskId, taskDirtyBits);
+                taskInfo.task->Sync(taskInfo.sceneDelegate,
+                                    taskContext,
+                                    &taskDirtyBits);
 
-        } else {
-            // Dummy dirty bits
-            HdDirtyBits taskDirtyBits = 0;
+                _tracker.MarkTaskClean(taskId, taskDirtyBits);
 
-            // This is an untracked task, never added to the render index.
-            task->Sync(nullptr,
-                       taskContext,
-                       &taskDirtyBits);
+            } else {
+                // Dummy dirty bits
+                HdDirtyBits taskDirtyBits = 0;
+
+                // This is an untracked task, never added to the render index.
+                task->Sync(nullptr,
+                           taskContext,
+                           &taskDirtyBits);
+            }
         }
     }
 
