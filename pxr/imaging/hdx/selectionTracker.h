@@ -105,7 +105,7 @@ public:
     virtual ~HdxSelectionTracker();
 
     /// Optional override to update the HdSelection during
-    /// HdxSelectionTask::Sync.
+    /// HdxSelectionTask::Prepare.
     HDX_API
     virtual void UpdateSelection(HdRenderIndex *index);
 
