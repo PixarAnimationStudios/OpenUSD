@@ -57,8 +57,6 @@ private:
     HgiGL_ScopedStateHolder& operator=(const HgiGL_ScopedStateHolder&) = delete;
     HgiGL_ScopedStateHolder(const HgiGL_ScopedStateHolder&) = delete;
 
-    int32_t _restoreDrawFramebuffer;
-    int32_t _restoreReadFramebuffer;
     int32_t _restoreRenderBuffer;
     int32_t _restoreVao;
     bool _restoreDepthTest;
