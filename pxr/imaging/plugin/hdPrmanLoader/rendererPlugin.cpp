@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/plugin/hdPrmanLoader/rendererPlugin.h"
 
 #include "pxr/base/arch/library.h"
 #include "pxr/base/plug/plugin.h"
@@ -28,7 +29,6 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/setenv.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
-#include "pxr/imaging/plugin/hdPrmanLoader/rendererPlugin.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -43,19 +43,21 @@ static const std::string k_PATH("PATH");
 #endif
 
 // This holds the OS specific plugin info data
-static struct HdPrmanLoader {
+static struct HdPrmanLoader
+{
     static void Load();
     ~HdPrmanLoader();
 #if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
     void* libprman = nullptr;
 #endif
-    void* hdxPrman = nullptr;
+    void* hdPrman = nullptr;
     CreateDelegateFunc createFunc = nullptr;
     DeleteDelegateFunc deleteFunc = nullptr;
     bool valid = false;
 } _hdPrman;
 
-void HdPrmanLoader::Load()
+void 
+HdPrmanLoader::Load()
 {
     static bool inited = false;
     if (inited) {
@@ -73,12 +75,14 @@ void HdPrmanLoader::Load()
     // Open $RMANTREE/lib/libprman.so into the global namespace
     const std::string libprmanPath =
         TfStringCatPaths(rmantree, "lib/libprman" ARCH_LIBRARY_SUFFIX);
-    _hdPrman.libprman = ArchLibraryOpen(libprmanPath,
-                                ARCH_LIBRARY_NOW | ARCH_LIBRARY_GLOBAL);
+    _hdPrman.libprman = ArchLibraryOpen(
+        libprmanPath,
+        ARCH_LIBRARY_NOW | ARCH_LIBRARY_GLOBAL);
     if (!_hdPrman.libprman) {
         TF_WARN("Could not load libprman.");
         return;
     }
+
 #elif defined(ARCH_OS_WINDOWS)
     // Append PATH environment with %RMANTREE%\bin and %RMANTREE%\lib
     std::string path = TfGetenv(k_PATH);
@@ -87,25 +91,35 @@ void HdPrmanLoader::Load()
     TfSetenv(k_PATH, path.c_str());
 #endif
 
-    // hdxPrman is assumed to be next to hdPrmanLoader (this plugin)
+    // HdPrman is assumed to be next to hdPrmanLoader (this plugin)
     PlugPluginPtr plugin =
-        PlugRegistry::GetInstance().GetPluginWithName("hdxPrman");
-    if (plugin) {
-        _hdPrman.hdxPrman = ArchLibraryOpen(plugin->GetPath(),
-                                         ARCH_LIBRARY_NOW | ARCH_LIBRARY_LOCAL);
+        PlugRegistry::GetInstance().GetPluginWithName("hdPrman");
+
+    // Backwards compatibility for hdxPrman.
+    // hdxPrman is deprecated, since it's been merged into hdPrman now.
+    if (!plugin) {
+        plugin = PlugRegistry::GetInstance().GetPluginWithName("hdxPrman");
     }
-    if (!_hdPrman.hdxPrman) {
+
+    if (plugin) {
+        _hdPrman.hdPrman = ArchLibraryOpen(
+            plugin->GetPath(),
+            ARCH_LIBRARY_NOW | ARCH_LIBRARY_LOCAL);
+    }
+
+    if (!_hdPrman.hdPrman) {
         TF_WARN("Could not load versioned hdPrman backend: %s",
                 ArchLibraryError().c_str());
         return;
     }
 
     _hdPrman.createFunc = reinterpret_cast<CreateDelegateFunc>(
-        ArchLibraryGetSymbolAddress(_hdPrman.hdxPrman,
+        ArchLibraryGetSymbolAddress(_hdPrman.hdPrman,
                                     "HdPrmanLoaderCreateDelegate"));
     _hdPrman.deleteFunc = reinterpret_cast<DeleteDelegateFunc>(
-        ArchLibraryGetSymbolAddress(_hdPrman.hdxPrman,
+        ArchLibraryGetSymbolAddress(_hdPrman.hdPrman,
                                     "HdPrmanLoaderDeleteDelegate"));
+
     if (!_hdPrman.createFunc || !_hdPrman.deleteFunc) {
         TF_WARN("hdPrmanLoader factory methods could not be found.");
         return;
@@ -116,10 +130,10 @@ void HdPrmanLoader::Load()
 
 HdPrmanLoader::~HdPrmanLoader()
 {
-    if (hdxPrman) {
-        // Note: OSX does not support clean unloading of hdxPrman.dylib symbols
-        ArchLibraryClose(hdxPrman);
-        hdxPrman = nullptr;
+    if (hdPrman) {
+        // Note: OSX does not support clean unloading of hdPrman.dylib symbols
+        ArchLibraryClose(hdPrman);
+        hdPrman = nullptr;
     }
 #if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
     if (libprman) {

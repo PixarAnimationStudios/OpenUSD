@@ -346,7 +346,9 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (convergedVariance)                               \
     (convergedSamplesPerPixel)                        \
     /* thread limit settings */                       \
-    (threadLimit)
+    (threadLimit)                                     \
+    /* interactive vs offline */                      \
+    (enableInteractive)
 
 #define HD_RESOURCE_TYPE_TOKENS                       \
     (texture)                                         \
