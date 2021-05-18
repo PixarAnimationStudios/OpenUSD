@@ -322,11 +322,14 @@ _GetTextureCoordinateName(
     }
 }
 
-// Add the Hydra texture node parameters to the texture nodes
+// Add the Hydra texture node parameters to the texture nodes and connect the 
+// texture nodes to the terminal node
 static void 
-_AddHdTextureNodeParameters(
+_UpdateTextureNodes(
     HdMaterialNetwork2 * hdNetwork,
+    SdfPath const& hdTerminalNodePath,
     std::set<SdfPath> const& hdTextureNodes,
+    mx::StringMap * mxHdTextureMap,
     mx::StringMap * mxHdPrimvarMap,
     std::string * defaultTexcoordName)
 {
@@ -352,6 +355,21 @@ _AddHdTextureNodeParameters(
         for (auto param : hdParameters) {
             hdNetwork->nodes[texturePath].parameters[param.first] = param.second;
         }
+
+        // Connect the texture node to the terminal node for HdStMaterialNetwork
+        // Create a unique name for the new connection, and update the
+        // mxHdTextureMap with this connection name so Hydra's codegen and 
+        // HdStMaterialXShaderGen match up correctly
+        std::string newConnName = texturePath.GetName() + "_" + 
+                                (*mxHdTextureMap)[texturePath.GetName()];;
+        (*mxHdTextureMap)[texturePath.GetName()] = newConnName;
+
+        // Make and add a new connection to the terminal node
+        HdMaterialConnection2 textureConn;
+        textureConn.upstreamNode = texturePath;
+        textureConn.upstreamOutputName = TfToken(newConnName);
+        hdNetwork->nodes[hdTerminalNodePath].
+                    inputConnections[TfToken(newConnName)] = {textureConn};
     }
 }
 
@@ -393,8 +411,9 @@ HdSt_ApplyMaterialXFilter(
         // Add Hydra parameters for each of the Texture nodes
         mx::StringMap mxHdPrimvarMap; // Primvar name and type
         std::string defaultTexcoordName;
-        _AddHdTextureNodeParameters(hdNetwork, hdTextureNodes, 
-                                    &mxHdPrimvarMap, &defaultTexcoordName);
+        _UpdateTextureNodes(hdNetwork, terminalNodePath,
+                            hdTextureNodes, &mxHdTextureMap,
+                            &mxHdPrimvarMap, &defaultTexcoordName);
 
         // Load MaterialX Document and generate the glslfxSource
         std::string glslfxSource = HdSt_GenMaterialXShaderCode(mtlxDoc, 
