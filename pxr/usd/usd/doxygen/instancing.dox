@@ -248,7 +248,7 @@ is part of a shared prototype.
 | UsdPrim::IsInPrototype | Check if this prim is in a subtree rooted at a prototype prim. | Returns true for prims /__Prototype_1, /__Prototype_1/Body, and /__Prototype_1/Door, false for all other prims. |
 
 Prototype prims do not have metadata or properties, only children prims.
-Prototype prims have root prim paths (e.g., /__Master_1) that can be used
+Prototype prims have root prim paths (e.g., /__Prototype_1) that can be used
 with UsdStage::GetPrimAtPath.  However, they are considered siblings to the 
 pseudo-root in the scenegraph.  Because of this, they will not be returned when 
 using UsdStage::Traverse or when calling UsdPrim::GetChildren on the 

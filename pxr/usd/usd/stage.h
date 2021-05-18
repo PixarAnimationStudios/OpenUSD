@@ -1591,11 +1591,6 @@ public:
     // --------------------------------------------------------------------- //
 
     /// Returns all native instancing prototype prims.
-    /// \deprecated Use UsdStage::GetPrototypes instead.
-    USD_API
-    std::vector<UsdPrim> GetMasters() const;
-
-    /// Returns all native instancing prototype prims.
     USD_API
     std::vector<UsdPrim> GetPrototypes() const;
 

@@ -1167,24 +1167,6 @@ UsdPrim::IsPathInPrototype(const SdfPath& path)
     return Usd_InstanceCache::IsPathInPrototype(path);
 }
 
-bool
-UsdPrim::IsMasterPath(const SdfPath& path)
-{
-    return IsPrototypePath(path);
-}
-
-bool
-UsdPrim::IsPathInMaster(const SdfPath& path)
-{
-    return IsPathInPrototype(path);
-}
-
-UsdPrim
-UsdPrim::GetMaster() const
-{
-    return GetPrototype();
-}
-
 UsdPrim
 UsdPrim::GetPrototype() const
 {

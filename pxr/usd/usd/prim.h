@@ -1491,53 +1491,6 @@ public:
         return UsdPrim();
     }
 
-    /// Return true if the given \p path identifies a prototype prim,
-    /// false otherwise.
-    ///
-    /// This function will return false for prim and property paths
-    /// that are descendants of a prototype prim path.
-    ///
-    /// \deprecated Use UsdPrim::IsPrototypePath instead
-    USD_API
-    static bool IsMasterPath(const SdfPath& path);
-
-    /// Return true if the given \p path identifies a prototype prim or
-    /// a prim or property descendant of a prototype prim, false otherwise.
-    ///
-    /// \deprecated Use UsdPrim::IsPathInPrototype instead
-    USD_API
-    static bool IsPathInMaster(const SdfPath& path);
-
-    /// Return true if this prim is an instancing prototype prim,
-    /// false otherwise.
-    ///
-    /// \deprecated Use UsdPrim::IsPrototype instead.
-    bool IsMaster() const { return IsPrototype(); }
-
-    /// Return true if this prim is a prototype prim or a descendant
-    /// of a prototype prim, false otherwise.
-    ///
-    /// \deprecated Use UsdPrim::IsInPrototype instead.
-    bool IsInMaster() const { 
-        return IsInPrototype();
-    }
-
-    /// If this prim is an instance, return the UsdPrim for the corresponding
-    /// prototype. Otherwise, return an invalid UsdPrim.
-    ///
-    /// \deprecated Use UsdPrim::GetPrototype instead.
-    USD_API
-    UsdPrim GetMaster() const;
-
-    /// If this prim is an instance proxy, return the UsdPrim for the
-    /// corresponding prim in the instance's prototype. Otherwise, return an
-    /// invalid UsdPrim.
-    ///
-    /// \deprecated Use UsdPrim::GetPrimInPrototype instead.
-    UsdPrim GetPrimInMaster() const {
-        return GetPrimInPrototype();
-    }
-
     /// If this prim is a prototype prim, returns all prims that are instances
     /// of this prototype. Otherwise, returns an empty vector.
     ///

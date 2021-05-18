@@ -2333,12 +2333,6 @@ UsdStage::ExpandPopulationMask(
 // ------------------------------------------------------------------------- //
 
 vector<UsdPrim>
-UsdStage::GetMasters() const
-{
-    return GetPrototypes();
-}
-
-vector<UsdPrim>
 UsdStage::GetPrototypes() const
 {
     // Sort the instance prototype paths to provide a stable ordering for

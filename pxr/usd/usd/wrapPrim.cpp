@@ -380,21 +380,12 @@ void wrapUsdPrim()
         .def("IsPathInPrototype", &UsdPrim::IsPathInPrototype, arg("path"))
         .staticmethod("IsPathInPrototype")
 
-        .def("IsMasterPath", &UsdPrim::IsMasterPath, arg("path"))
-        .staticmethod("IsMasterPath")
-        .def("IsPathInMaster", &UsdPrim::IsPathInMaster, arg("path"))
-        .staticmethod("IsPathInMaster")
-
         .def("IsInstance", &UsdPrim::IsInstance)
-        .def("IsMaster", &UsdPrim::IsMaster)
-        .def("IsInMaster", &UsdPrim::IsInMaster)
-        .def("GetMaster", &UsdPrim::GetMaster)
         .def("IsPrototype", &UsdPrim::IsPrototype)
         .def("IsInPrototype", &UsdPrim::IsInPrototype)
         .def("GetPrototype", &UsdPrim::GetPrototype)
 
         .def("IsInstanceProxy", &UsdPrim::IsInstanceProxy)
-        .def("GetPrimInMaster", &UsdPrim::GetPrimInMaster)
         .def("GetPrimInPrototype", &UsdPrim::GetPrimInPrototype)
 
         .def("GetPrimAtPath", &UsdPrim::GetPrimAtPath, arg("path"))
