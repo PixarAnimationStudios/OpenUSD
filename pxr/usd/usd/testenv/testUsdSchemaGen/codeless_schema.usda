@@ -19,7 +19,7 @@ over "GLOBAL" (
                 string doc = """libraryToken2 doc"""
             }
         }
-        bool isDynamic = true
+        bool skipCodeGeneration = true
     }
 )
 {

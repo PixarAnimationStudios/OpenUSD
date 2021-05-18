@@ -173,15 +173,15 @@ def _GetLibName(layer):
 def _GetLibPath(layer):
     """ Return the libraryPath defined in layer."""
 
-    if _IsDynamicSchemaLayer(layer):
+    if _SkipCodeGenForLayer(layer):
         return ""
 
     libData = _GetLibMetadata(layer)
     if 'libraryPath' not in libData: 
         raise Exception("Code generation requires that \"libraryPath\" be "
             "defined in customData on /GLOBAL prim or the schema must be "
-            "declared dynamic, by specifying isDynamic=true. The format for "
-            "libraryPath is \"path/to/lib\".")
+            "declared codeless, by specifying skipCodeGeneration=true. "
+            "The format for libraryPath is \"path/to/lib\".")
 
     return libData['libraryPath']
 
@@ -211,22 +211,24 @@ def _GetUseExportAPI(layer):
 
     return _GetLibMetadata(layer).get('useExportAPI', True)
 
-def _IsDynamicSchemaLayer(layer):
-    """ Return whether the layer is defined as a dynamic schema layer."""
+def _SkipCodeGenForLayer(layer):
+    """ Return whether the layer specifies that code generation should 
+    be skipped for its schemas."""
 
     # This can be called on sublayers which may not necessarily have lib 
     # metadata so we can ignore exceptions and return false.
     try:
-        return _GetLibMetadata(layer).get('isDynamic', False)
+        return _GetLibMetadata(layer).get('skipCodeGeneration', False)
     except:
         return False
 
-def _IsDynamicSchemaLib(stage):
-    """ Return whether the given stage has a dynamic schema layer that makes 
-    the schema library itself dynamic"""
+def _SkipCodeGenForSchemaLib(stage):
+    """ Return whether the stage has a layer that specifies that code generation
+    should be skipped for its schemas and therefore for the the entire schema
+    library."""
 
     for layer in stage.GetLayerStack():
-        if _IsDynamicSchemaLayer(layer):
+        if _SkipCodeGenForLayer(layer):
             return True
     return False
     
@@ -719,7 +721,7 @@ def ParseUsd(usdFilePath):
             _GetTokensPrefix(sdfLayer),
             _GetUseExportAPI(sdfLayer),
             _GetLibTokens(sdfLayer),
-            _IsDynamicSchemaLib(stage),
+            _SkipCodeGenForSchemaLib(stage),
             classes)
 
 
@@ -1363,7 +1365,7 @@ if __name__ == '__main__':
         tokensPrefix, \
         useExportAPI, \
         libTokens, \
-        isDynamicSchemaLib, \
+        skipCodeGen, \
         classes = ParseUsd(schemaPath)
         tokenData = GatherTokens(classes, libName, libTokens)
         
@@ -1394,8 +1396,8 @@ if __name__ == '__main__':
                               tokensPrefix=tokensPrefix,
                               useExportAPI=useExportAPI)
 
-        # Don't generate code for dynamic schema libraries
-        if not isDynamicSchemaLib:
+        # Generate code for schema libraries that aren't specified as codeless.
+        if not skipCodeGen:
             GenerateCode(templatePath, codeGenPath, tokenData, classes, 
                          args.validate,
                          namespaceOpen, namespaceClose, namespaceUsing,

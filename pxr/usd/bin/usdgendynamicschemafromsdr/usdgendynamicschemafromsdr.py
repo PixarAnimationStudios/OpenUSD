@@ -82,7 +82,7 @@ def _GetUsdGenSchemaCmd():
 
 def _ConfigureSchemaLayer(schemaLayer, schemaSubLayers):
     # - add sublayers
-    # - set isDynamic  customData to true
+    # - set skipCodeGeneration  customData to true
     subLayers = schemaLayer.subLayerPaths
     subLayersList = list(subLayers)
     subLayersList.extend(schemaSubLayers)
@@ -99,7 +99,7 @@ def _ConfigureSchemaLayer(schemaLayer, schemaSubLayers):
     if 'libraryName' not in customDataDict:
         Tf.RaiseRuntimeError("customData on /GLOBAL prim must provide a " \
             "libraryName.")
-    customDataDict['isDynamic'] = True
+    customDataDict['skipCodeGeneration'] = True
     globalPrim.customData = customDataDict
 
     schemaLayer.Save()
@@ -128,8 +128,8 @@ if __name__ == '__main__':
     This script will run usdGenSchema on the auto populated schema.usda.
     
     The schema.usda populated specifications from the provided sdrNodes using
-    UsdUtils.UpdateSchemaWithSdrNode and isDynamic metadata will be set to true 
-    for this schema.usda.
+    UsdUtils.UpdateSchemaWithSdrNode and skipCodeGeneration metadata will be 
+    set to true for this schema.usda.
 
     UsdUtils.UpdateSchemaWithSdrNode is responsible for:
     %s
@@ -234,7 +234,7 @@ if __name__ == '__main__':
 
     # configure schema.usda
     # fill in sublayers
-    # set isDynamic metadata to true
+    # set skipCodeGeneration metadata to true
     _ConfigureSchemaLayer(schemaLayer, schemaSubLayers)
 
     # for each sdrNode call updateSchemaFromSdrNode with schema.usda
