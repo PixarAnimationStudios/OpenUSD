@@ -190,11 +190,18 @@ if __name__ == '__main__':
             When specified a README.md will not be created in the schemaGenerationPath
             explaining the source of the contents of this directory.
             '''))
+    parser.add_argument('-v', '--validate',
+            action='store_true',
+            help=dedent('''
+            This is passed to usdGenSchem to verify that the source files are 
+            unchanged.
+            '''))
 
     args = parser.parse_args()
     schemaGenerationPath = os.path.abspath(args.schemaGenerationPath)
     schemaConfig = os.path.abspath(args.schemaConfig)
     writeReadme = not args.noreadme
+    validate = args.validate
 
     if not os.path.isfile(schemaConfig):
         Tf.RaiseRuntimeError("(%s) json config does not exist" %(schemaConfig))
@@ -258,11 +265,12 @@ if __name__ == '__main__':
         UsdUtils.UpdateSchemaWithSdrNode(schemaLayer, sdrNode)
 
     usdGenSchemaCmd = _GetUsdGenSchemaCmd()
+    usdGenSchemaArgs = ["--validate"] if validate else []
     if not usdGenSchemaCmd:
         Tf.RaiseRuntimeError("%s not found. Make sure %s is in the PATH." \
                 %(USD_GEN_SCHEMA))
 
-    call(usdGenSchemaCmd, cwd=schemaGenerationPath)
+    call([usdGenSchemaCmd] + usdGenSchemaArgs, cwd=schemaGenerationPath)
 
     if writeReadme:
         readMeFile = os.path.join(schemaGenerationPath, "README.md")
