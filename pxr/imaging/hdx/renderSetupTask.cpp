@@ -188,6 +188,10 @@ HdxRenderSetupTask::_PrepareAovBindings(HdTaskContext* ctx,
 {
     // Walk the aov bindings, resolving the render index references as they're
     // encountered.
+    //
+    // This is somewhat fragile. One of the clients is _BindTexture in
+    // hdSt/renderPassShader.cpp.
+    //
     for (size_t i = 0; i < _aovBindings.size(); ++i) {
         if (_aovBindings[i].renderBuffer == nullptr) {
             _aovBindings[i].renderBuffer = static_cast<HdRenderBuffer*>(
@@ -199,14 +203,6 @@ HdxRenderSetupTask::_PrepareAovBindings(HdTaskContext* ctx,
     HdRenderPassStateSharedPtr &renderPassState =
             _GetRenderPassState(renderIndex);
     renderPassState->SetAovBindings(_aovBindings);
-
-    if (!_aovBindings.empty()) {
-        // XXX Tasks that are not RenderTasks (OIT, ColorCorrection etc) also
-        // need access to AOVs, but cannot access SetupTask or RenderPassState.
-        // One option is to let them know about the aovs directly (as task
-        // parameters), but instead we do so via the task context.
-        (*ctx)[HdxTokens->aovBindings] = VtValue(_aovBindings);
-    }
 }
 
 void
