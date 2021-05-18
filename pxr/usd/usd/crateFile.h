@@ -392,15 +392,12 @@ private:
             , _start(_mapping.get() + offset)
             , _length(length == -1 ?
                       ArchGetFileMappingLength(_mapping) : length) {}
+
+        ~_FileMapping();
         
         // Add an an externally referenced page range.
         ZeroCopySource *
         AddRangeReference(void *addr, size_t numBytes);
-
-        // "Silent-store" to touch outstanding page ranges to detach them in the
-        // copy-on-write sense from their file backing and make them
-        // swap-backed.  No new page ranges can be added once this is invoked.
-        void DetachReferencedRanges();
 
         // Return the start address of the mapped file content.  Note that due
         // to having usdc files embedded into other files (like usdz files) the
@@ -412,6 +409,11 @@ private:
 
     private:
         friend class CrateFile;
+
+        // "Silent-store" to touch outstanding page ranges to detach them in the
+        // copy-on-write sense from their file backing and make them
+        // swap-backed.  No new page ranges can be added once this is invoked.
+        void _DetachReferencedRanges();
 
         // This class is managed by a combination of boost::intrusive_ptr and
         // manual reference counting -- see explicit calls to

@@ -465,6 +465,11 @@ CrateFile::_FileRange::~_FileRange()
     }
 }
 
+CrateFile::_FileMapping::~_FileMapping()
+{
+    _DetachReferencedRanges();
+}
+
 CrateFile::_FileMapping::ZeroCopySource *
 CrateFile::_FileMapping::AddRangeReference(void *addr, size_t numBytes)
 {
@@ -494,13 +499,12 @@ TouchPages(char volatile *start, size_t numPages)
 }
 
 void
-CrateFile::_FileMapping::DetachReferencedRanges()
+CrateFile::_FileMapping::_DetachReferencedRanges()
 {
-    // At this moment, we're guaranteed that this _FileMapping object won't be
-    // destroyed because the calling CrateFile object owns a reference.  We're
-    // also guaranteed that no ZeroCopySource objects' reference counts will
-    // increase (and in particular go from 0 to 1) since the layer is being
-    // destroyed.  Similarly no new _outstandingRanges can be created.
+    // At this moment, we're guaranteed that no ZeroCopySource objects'
+    // reference counts will increase (and in particular go from 0 to 1) since
+    // the mapping is being destroyed.  Similarly no new _outstandingRanges
+    // can be created.
     for (auto const &zeroCopy: _outstandingRanges) {
         // This is racy, but benign.  If we see a nonzero count that's
         // concurrently being zeroed, we just do possibly unneeded work.  The
@@ -2366,7 +2370,6 @@ CrateFile::~CrateFile()
 
     // If we have zero copy ranges to detach, do it now.
     if (_useMmap && _mmapSrc) {
-        _mmapSrc->DetachReferencedRanges();
         _mmapSrc.reset();
     }
 
