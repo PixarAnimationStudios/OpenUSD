@@ -172,7 +172,9 @@ HdStRenderPassShader::BindResources(const int program,
     // Loop over all AOVs for which a read back was requested.
     for (const HdRenderPassAovBinding &aovBinding : state.GetAovBindings()) {
         const TfToken &aovName = aovBinding.aovName;
-        if (_aovReadbackRequests.count(aovName) > 0) {
+        if (std::count(_aovReadbacks.begin(),
+                       _aovReadbacks.end(),
+                       aovName) > 0) {
             // Bind the texture.
             _BindTexture(aovBinding,
                          binder.GetBinding(_GetReadbackName(aovName)));
@@ -181,7 +183,7 @@ HdStRenderPassShader::BindResources(const int program,
         }
     }
 
-    if (numFulfilled != _aovReadbackRequests.size()) {
+    if (numFulfilled != _aovReadbacks.size()) {
         TF_CODING_ERROR("AOV bindings missing for requested readbacks.");
     }
 }
@@ -216,7 +218,9 @@ HdStRenderPassShader::UnbindResources(const int program,
     // Unbind all textures that were requested for AOV read back
     for (const HdRenderPassAovBinding &aovBinding : state.GetAovBindings()) {
         const TfToken &aovName = aovBinding.aovName;
-        if (_aovReadbackRequests.count(aovName) > 0) {
+        if (std::count(_aovReadbacks.begin(),
+                       _aovReadbacks.end(),
+                       aovName) > 0) {
             _UnbindTexture(binder.GetBinding(_GetReadbackName(aovName)));
         }
     }    
@@ -291,39 +295,36 @@ HdStRenderPassShader::AddBindings(HdBindingRequestVector *customBindings)
 }
 
 void
-HdStRenderPassShader::AddAovReadback(TfToken const &name)
+HdStRenderPassShader::SetAovReadbacks(const TfTokenVector &aovNames)
 {
-    if (_aovReadbackRequests.count(name) > 0) {
-        // Record readback request only once.
+    if (_aovReadbacks == aovNames) {
         return;
     }
 
-    // Add request.
-    _aovReadbackRequests.insert(name);
+    for (const TfToken &oldAovName : _aovReadbacks) {
+        // And the corresponding material param.
+        const TfToken accessorName = _GetReadbackName(oldAovName);
+        _params.erase(std::remove_if(
+                          _params.begin(), _params.end(),
+                          [&accessorName](const HdSt_MaterialParam &p) {
+                              return p.name == accessorName; }));
+    }
 
-    // Add read back name to material params so that binding resolution
-    // allocated a sampler unit and codegen generates an accessor
-    // HdGet_NAMEReadback().
-    _params.emplace_back(
-        HdSt_MaterialParam::ParamTypeTexture,
-        _GetReadbackName(name),
-        VtValue(GfVec4f(0.0)),
-        TfTokenVector(),
-        HdTextureType::Uv);
-}
+    _aovReadbacks = aovNames;
 
-void
-HdStRenderPassShader::RemoveAovReadback(TfToken const &name)
-{
-    // Remove request.
-    _aovReadbackRequests.erase(name);
+    for (const TfToken &aovName : _aovReadbacks) {
+        const TfToken accessorName = _GetReadbackName(aovName);
 
-    // And the corresponding material param.
-    const TfToken accessorName = _GetReadbackName(name);
-    std::remove_if(
-        _params.begin(), _params.end(),
-        [&accessorName](const HdSt_MaterialParam &p) {
-            return p.name == accessorName; });
+        // Add read back name to material params so that binding resolution
+        // allocated a sampler unit and codegen generates an accessor
+        // HdGet_NAMEReadback().
+        _params.emplace_back(
+            HdSt_MaterialParam::ParamTypeTexture,
+            accessorName,
+            VtValue(GfVec4f(0.0)),
+            TfTokenVector(),
+            HdTextureType::Uv);
+    }
 }
 
 HdSt_MaterialParamVector const &

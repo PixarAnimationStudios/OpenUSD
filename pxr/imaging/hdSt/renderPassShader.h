@@ -84,14 +84,10 @@ public:
     HDST_API
     void ClearBufferBindings();
 
-    /// Add a request to read an AOV back in the shader. The shader can
-    /// access the requested AOV as HdGet_NAMEReadback().
+    /// Sets the AOVs requested to be read back in the shader. The shader
+    /// can access the requested AOVs as HdGet_AOVNAMEReadback().
     HDST_API
-    void AddAovReadback(TfToken const &name);
-
-    /// Remove \p name from requests to read AOVs.
-    HDST_API
-    void RemoveAovReadback(TfToken const &name);
+    void SetAovReadbacks(const TfTokenVector &aovNames);
 
     HdCullStyle GetCullStyle() const {
         return _cullStyle;
@@ -110,7 +106,7 @@ private:
     TfHashMap<TfToken, HdBindingRequest, TfToken::HashFunctor> _customBuffers;
     HdCullStyle _cullStyle;
 
-    TfHashSet<TfToken, TfToken::HashFunctor> _aovReadbackRequests;
+    TfTokenVector _aovReadbacks;
     HdSt_MaterialParamVector _params;
 
     // No copying

@@ -47,7 +47,7 @@ HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
 {
     // Raymarching shader needs to stop when hitting opaque geometry,
     // so allow shader to read the depth buffer.
-    _oitVolumeRenderPassShader->AddAovReadback(HdAovTokens->depth);
+    _oitVolumeRenderPassShader->SetAovReadbacks({HdAovTokens->depth});
 }
 
 HdxOitVolumeRenderTask::~HdxOitVolumeRenderTask() = default;
