@@ -167,7 +167,8 @@ _GetUpdatedInputToken(TfToken const& currInputName)
 {
     // { currentInputNname , updatedInputName }
     static const mx::StringMap conflicts = {{"emission",   "emission_value"},
-                                            {"subsurface", "subsurface_value"}};
+                                            {"subsurface", "subsurface_value"},
+                                            {"normal", "input_normal"}};
     auto it = conflicts.find(currInputName.GetString());
     if (it != conflicts.end()) {
         return TfToken(it->second);

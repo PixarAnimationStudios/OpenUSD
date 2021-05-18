@@ -101,6 +101,7 @@ shader StandardSurfaceParameters
     float emission_value = 0.0,
     color emission_color = color(1.0, 1.0, 1.0),
 
+    normal input_normal = normal(0.0, 0.0, 0.0),
 
     // Diffuse outputs
     output float diffuseGainOut = 0.0
@@ -202,6 +203,10 @@ shader StandardSurfaceParameters
     output float iridescenceEdgeGainOut = 0.0
         [[ string widget = "null" ]],
     output float iridescenceThicknessOut = 0.0
+        [[ string widget = "null" ]],
+
+    // Normal outputs
+    output normal bumpNormalOut = normal(0.0,0.0,0.0)
         [[ string widget = "null" ]],
 )
 {
@@ -385,5 +390,27 @@ shader StandardSurfaceParameters
         float opacity_weight = clamp(opacity_luminance_out[0], 0.0, 1.0);
         diffuseGainOut *= (1.0 - opacity_weight);
         refractionGainOut *= opacity_weight;
+    }
+
+    // Normal map
+    {
+        // Get the geometric normal
+        normal Ngn = N;
+        getattribute("builtin", "Ngn", Ngn);
+
+        // If we do not have a valid input_normal set the bumpNormal to the 
+        // geometric normal
+        if (dot(input_normal, input_normal) <= 0.0) {
+            bumpNormalOut = Ngn;
+        }
+        // Otherwise use the given input_normal
+        else {
+	        bumpNormalOut = normalize(input_normal);
+
+            // Is it backwards from the geometric normal
+            if (dot(Ngn, bumpNormalOut) < 0.0) {
+                bumpNormalOut = -bumpNormalOut;
+            }
+        }
     }
 }
