@@ -42,9 +42,11 @@ def _SetupOpenGLContext(width=100, height=100):
     try:
         from PySide2 import QtOpenGL
         from PySide2.QtWidgets import QApplication
+        from PySide2 import QtCore
     except ImportError:
         from PySide import QtOpenGL
         from PySide.QtGui import QApplication
+        from PySide import QtCore
 
     application = QApplication(sys.argv)
 
@@ -54,6 +56,7 @@ def _SetupOpenGLContext(width=100, height=100):
 
     glWidget = QtOpenGL.QGLWidget(glFormat)
     glWidget.setFixedSize(width, height)
+    glWidget.setAttribute(QtCore.Qt.WA_DontShowOnScreen)
     glWidget.show()
     glWidget.setHidden(True)
 
