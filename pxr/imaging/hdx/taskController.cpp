@@ -240,13 +240,13 @@ HdxTaskController::_CreateRenderGraph()
         _CreateLightingTask();
         _CreateShadowTask();
         _renderTaskIds.push_back(_CreateRenderTask(
-            HdMaterialTagTokens->defaultMaterialTag));
+            HdStMaterialTagTokens->defaultMaterialTag));
         _renderTaskIds.push_back(_CreateRenderTask(
             HdStMaterialTagTokens->masked));
         _renderTaskIds.push_back(_CreateRenderTask(
-            HdxMaterialTagTokens->additive));
+            HdStMaterialTagTokens->additive));
         _renderTaskIds.push_back(_CreateRenderTask(
-            HdxMaterialTagTokens->translucent));
+            HdStMaterialTagTokens->translucent));
         _renderTaskIds.push_back(_CreateRenderTask(
             HdStMaterialTagTokens->volume));
 
@@ -316,12 +316,12 @@ HdxTaskController::_CreateRenderTask(TfToken const& materialTag)
                                  materialTag);
     collection.SetRootPath(SdfPath::AbsoluteRootPath());
 
-    if (materialTag == HdMaterialTagTokens->defaultMaterialTag || 
-        materialTag == HdxMaterialTagTokens->additive ||
+    if (materialTag == HdStMaterialTagTokens->defaultMaterialTag || 
+        materialTag == HdStMaterialTagTokens->additive ||
         materialTag == HdStMaterialTagTokens->masked ||
         materialTag.IsEmpty()) {
         GetRenderIndex()->InsertTask<HdxRenderTask>(&_delegate, taskId);
-    } else if (materialTag == HdxMaterialTagTokens->translucent) {
+    } else if (materialTag == HdStMaterialTagTokens->translucent) {
         GetRenderIndex()->InsertTask<HdxOitRenderTask>(&_delegate, taskId);
         // OIT is using its own buffers which are only per pixel and not per
         // sample. Thus, we resolve the AOVs before starting to render any
@@ -351,7 +351,7 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
         return;
     }
 
-    if (materialTag == HdxMaterialTagTokens->additive) {
+    if (materialTag == HdStMaterialTagTokens->additive) {
         // Additive blend -- so no sorting of drawItems is needed
         renderParams->blendEnable = true;
         // For color, we are setting all factors to ONE.
@@ -381,7 +381,7 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
         // Since we are using alpha blending, we disable screen door
         // transparency for this renderpass.
         renderParams->enableAlphaToCoverage = false;
-    } else if (materialTag == HdxMaterialTagTokens->translucent ||
+    } else if (materialTag == HdStMaterialTagTokens->translucent ||
                materialTag == HdStMaterialTagTokens->volume) {
         // Order Independent Transparency blend state or its first render pass.
         renderParams->blendEnable = false;

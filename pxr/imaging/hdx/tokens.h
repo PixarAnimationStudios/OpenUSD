@@ -105,13 +105,6 @@ TF_DECLARE_PUBLIC_TOKENS(HdxPrimitiveTokens, HDX_API, HDX_PRIMITIVE_TOKENS);
 
 TF_DECLARE_PUBLIC_TOKENS(HdxRenderTagTokens, HDX_API, HDX_RENDERTAG_TOKENS);
 
-// XXX Deprecated Use: HdStMaterialTagTokens
-#define HDX_MATERIALTAG_TOKENS   \
-    (additive)                   \
-    (translucent)
-
-TF_DECLARE_PUBLIC_TOKENS(HdxMaterialTagTokens, HDX_API, HDX_MATERIALTAG_TOKENS);
-
 #define HDX_COLOR_CORRECTION_TOKENS             \
     (disabled)                                  \
     (sRGB)                                      \
