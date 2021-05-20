@@ -98,17 +98,17 @@ _FixupStringNames(string* name)
 
 #if defined(ARCH_OS_WINDOWS)
     pos = 0;
-    while ((pos = name->find("class", pos)) != string::npos) {
+    while ((pos = name->find("class ", pos)) != string::npos) {
         name->erase(pos, 6);
     }
 
     pos = 0;
-    while ((pos = name->find("struct", pos)) != string::npos) {
+    while ((pos = name->find("struct ", pos)) != string::npos) {
         name->erase(pos, 7);
     }
 
     pos = 0;
-    while ((pos = name->find("enum", pos)) != string::npos) {
+    while ((pos = name->find("enum ", pos)) != string::npos) {
         name->erase(pos, 5);
     }
 #endif
