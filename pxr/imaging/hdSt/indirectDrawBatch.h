@@ -132,12 +132,16 @@ private:
 
     void _CompileBatch(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _GPUFrustumInstanceCulling(HdStDrawItem const *item,
-        HdStRenderPassStateSharedPtr const &renderPassState,
+    void _GPUFrustumInstanceCulling(
+        HdStDrawItem const *item,
+        GfMatrix4f const &cullMatrix,
+        GfVec2f const &drawRangeNdc,
         HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _GPUFrustumNonInstanceCulling(HdStDrawItem const *item,
-        HdStRenderPassStateSharedPtr const &renderPassState,
+    void _GPUFrustumNonInstanceCulling(
+        HdStDrawItem const *item,
+        GfMatrix4f const &cullMatrix,
+        GfVec2f const &drawRangeNdc,
         HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     void _BeginGPUCountVisibleInstances(

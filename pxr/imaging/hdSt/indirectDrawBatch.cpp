@@ -1049,10 +1049,12 @@ HdSt_IndirectDrawBatch::PrepareDraw(
     if (gpuCulling && !freezeCulling) {
         if (_useGpuInstanceCulling) {
             _GPUFrustumInstanceCulling(
-                batchItem, renderPassState, resourceRegistry);
+                batchItem, GfMatrix4f(renderPassState->GetCullMatrix()),
+                renderPassState->GetDrawingRangeNDC(), resourceRegistry);
         } else {
             _GPUFrustumNonInstanceCulling(
-                batchItem, renderPassState, resourceRegistry);
+                batchItem, GfMatrix4f(renderPassState->GetCullMatrix()),
+                renderPassState->GetDrawingRangeNDC(), resourceRegistry);
         }
 
         if (IsEnabledGPUCountVisibleInstances()) {
@@ -1317,7 +1319,8 @@ _GetCullPipeline(
 void
 HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
     HdStDrawItem const *batchItem,
-    HdStRenderPassStateSharedPtr const &renderPassState,
+    GfMatrix4f const &cullMatrix,
+    GfVec2f const &drawRangeNdc,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HdBufferArrayRangeSharedPtr constantBar_ =
@@ -1394,8 +1397,8 @@ HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
 
     // set cull parameters
     cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
-    cullParams.cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
-    cullParams.drawRangeNDC = renderPassState->GetDrawingRangeNDC();
+    cullParams.cullMatrix = cullMatrix;
+    cullParams.drawRangeNDC = drawRangeNdc;
     cullParams.resetPass = 1;
 
     // run culling shader
@@ -1490,7 +1493,8 @@ HdSt_IndirectDrawBatch::_GPUFrustumInstanceCulling(
 void
 HdSt_IndirectDrawBatch::_GPUFrustumNonInstanceCulling(
     HdStDrawItem const *batchItem,
-    HdStRenderPassStateSharedPtr const &renderPassState,
+    GfMatrix4f const &cullMatrix,
+    GfVec2f const &drawRangeNdc,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HdBufferArrayRangeSharedPtr constantBar_ =
@@ -1538,8 +1542,8 @@ HdSt_IndirectDrawBatch::_GPUFrustumNonInstanceCulling(
 
     // set cull parameters
     cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
-    cullParams.cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
-    cullParams.drawRangeNDC = renderPassState->GetDrawingRangeNDC();
+    cullParams.cullMatrix = cullMatrix;
+    cullParams.drawRangeNDC = drawRangeNdc;
 
     // bind destination buffer (using entire buffer bind to start from offset=0)
     binder.BindBuffer(_tokens->dispatchBuffer,
