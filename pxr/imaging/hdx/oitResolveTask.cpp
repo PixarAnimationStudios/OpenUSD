@@ -349,6 +349,8 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
         _renderPassState = std::make_shared<HdStRenderPassState>();
         _renderPassState->SetEnableDepthTest(false);
         _renderPassState->SetEnableDepthMask(false);
+        _renderPassState->SetAlphaThreshold(0.0f);
+        _renderPassState->SetAlphaToCoverageEnabled(false);
         _renderPassState->SetColorMasks({HdRenderPassState::ColorMaskRGBA});
         _renderPassState->SetBlendEnabled(true);
         // We expect pre-multiplied color as input into the OIT resolve shader

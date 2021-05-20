@@ -381,13 +381,8 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
         // Since we are using alpha blending, we disable screen door
         // transparency for this renderpass.
         renderParams->enableAlphaToCoverage = false;
-    } else if (materialTag == HdStMaterialTagTokens->translucent ||
-               materialTag == HdStMaterialTagTokens->volume) {
-        // Order Independent Transparency blend state or its first render pass.
-        renderParams->blendEnable = false;
-        renderParams->enableAlphaToCoverage = false;
-        renderParams->depthMaskEnable = false;
-    } else {
+    } else if (materialTag == HdStMaterialTagTokens->defaultMaterialTag ||
+               materialTag == HdStMaterialTagTokens->masked) {
         // The default and masked material tags share the same blend state, but 
         // we classify them as separate because in the general case, masked 
         // materials use fragment shader discards while the defaultMaterialTag 
