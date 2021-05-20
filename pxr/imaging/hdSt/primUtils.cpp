@@ -28,7 +28,6 @@
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/material.h"
-#include "pxr/imaging/hdSt/mixinShader.h"
 #include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
@@ -227,8 +226,7 @@ HdStSetMaterialTag(HdSceneDelegate *delegate,
 HdStShaderCodeSharedPtr
 HdStGetMaterialShader(
     HdRprim const * prim,
-    HdSceneDelegate * delegate,
-    std::string const & mixinSource)
+    HdSceneDelegate * delegate)
 {
     SdfPath const & materialId = prim->GetMaterialId();
 
@@ -244,13 +242,7 @@ HdStGetMaterialShader(
                 renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
     }
 
-    // Augment the shader source if mixinSource is provided.
-    HdStShaderCodeSharedPtr shaderCode = material->GetShaderCode();
-    if (!mixinSource.empty()) {
-        shaderCode.reset(new HdStMixinShader(mixinSource, shaderCode));
-    }
-
-    return shaderCode;
+    return material->GetShaderCode();
 }
 
 // -----------------------------------------------------------------------------

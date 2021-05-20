@@ -101,13 +101,12 @@ void HdStSetMaterialTag(HdSceneDelegate *delegate,
                         bool hasDisplayOpacityPrimvar,
                         bool occludedSelectionShowsThrough);
 // Resolves the material shader for the given prim (using a fallback
-// material as necessary), including optional mixin shader source code.
+// material as necessary).
 HDST_API
 HdStShaderCodeSharedPtr
 HdStGetMaterialShader(
     HdRprim const * prim,
-    HdSceneDelegate * delegate,
-    std::string const & mixinSource = std::string());
+    HdSceneDelegate * delegate);
 
 // -----------------------------------------------------------------------------
 // Primvar processing and BAR allocation utilities

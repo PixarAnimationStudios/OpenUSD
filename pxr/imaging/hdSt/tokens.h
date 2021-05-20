@@ -47,6 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (quadrangulateDouble)
 
 #define HDST_TOKENS                             \
+    (constantLighting)                          \
     (packedSmoothNormals)                       \
     (smoothNormals)                             \
     (packedFlatNormals)                         \

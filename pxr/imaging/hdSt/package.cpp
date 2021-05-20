@@ -93,13 +93,6 @@ HdStPackageFallbackVolumeShader()
 }
 
 TfToken
-HdStPackageLightingIntegrationShader()
-{
-    static TfToken s = _GetShaderPath("lightingIntegrationShader.glslfx");
-    return s;
-}
-
-TfToken
 HdStPackageImageShader()
 {
     static TfToken s = _GetShaderPath("imageShader.glslfx");

@@ -92,7 +92,6 @@ pxr_library(hdSt
         material
         materialNetwork
         mesh
-        mixinShader
         package
         points
         primUtils
@@ -172,8 +171,6 @@ pxr_library(hdSt
         shaders/frustumCull.glslfx
         shaders/imageShader.glslfx
         shaders/instancing.glslfx
-        shaders/lighting.glslfx
-        shaders/lightingIntegrationShader.glslfx
         shaders/mesh.glslfx
         shaders/meshFaceCull.glslfx
         shaders/meshNormal.glslfx

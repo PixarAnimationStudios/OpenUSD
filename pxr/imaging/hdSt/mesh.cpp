@@ -35,7 +35,6 @@
 #include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/meshShaderKey.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
-#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/primUtils.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -1615,37 +1614,6 @@ HdStMesh::_UseFlatNormals(const HdMeshReprDesc &desc) const
     return true;
 }
 
-static std::string
-_GetMixinShaderSource(TfToken const &shaderStageKey)
-{
-    if (shaderStageKey.IsEmpty()) {
-        return std::string("");
-    }
-
-    // TODO: each delegate should provide their own package of mixin shaders
-    // the lighting mixins are fallback only.
-    static std::once_flag firstUse;
-    static std::unique_ptr<HioGlslfx> mixinFX;
-   
-    std::call_once(firstUse, [](){
-        std::string filePath = HdStPackageLightingIntegrationShader();
-        mixinFX.reset(new HioGlslfx(filePath));
-    });
-
-    return mixinFX->GetSource(shaderStageKey);
-}
-
-static HdStShaderCodeSharedPtr
-_GetMaterialShader(
-    HdStMesh const * mesh,
-    HdSceneDelegate * sceneDelegate)
-{
-    TfToken mixinKey = 
-        mesh->GetShadingStyle(sceneDelegate).GetWithDefault<TfToken>();
-    std::string mixinSource = _GetMixinShaderSource(mixinKey);
-    return HdStGetMaterialShader(mesh, sceneDelegate, mixinSource);
-}
-
 HdBufferArrayRangeSharedPtr
 HdStMesh::_GetSharedPrimvarRange(uint64_t primvarId,
     HdBufferSpecVector const &updatedOrAddedSpecs,
@@ -1702,7 +1670,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* MATERIAL SHADER (may affect subsequent primvar population) */
     if ((*dirtyBits & HdChangeTracker::NewRepr) ||
         HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        drawItem->SetMaterialShader(_GetMaterialShader(this, sceneDelegate));
+        drawItem->SetMaterialShader(HdStGetMaterialShader(this, sceneDelegate));
     }
 
     /* TOPOLOGY */
@@ -1979,9 +1947,19 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
 
     bool hasInstancer = !GetInstancerId().IsEmpty();
 
+    // Process shadingTerminal (including shadingStyle)
+    TfToken shadingTerminal = desc.shadingTerminal;
+    if (shadingTerminal == HdMeshReprDescTokens->surfaceShader) {
+        TfToken shadingStyle =
+                    GetShadingStyle(sceneDelegate).GetWithDefault<TfToken>();
+        if (shadingStyle == HdStTokens->constantLighting) {
+            shadingTerminal = HdMeshReprDescTokens->surfaceShaderUnlit;
+        }
+    }
+
     // create a shaderKey and set to the geometric shader.
     HdSt_MeshShaderKey shaderKey(primType,
-                                 desc.shadingTerminal,
+                                 shadingTerminal,
                                  useCustomDisplacement,
                                  normalsSource,
                                  normalsInterpolation,
@@ -2229,7 +2207,7 @@ HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
     // snippet, to be mixed into the surface shader.
     HdStShaderCodeSharedPtr materialShader;
     if (updateMaterialShader) {
-        materialShader = _GetMaterialShader(this, sceneDelegate);
+        materialShader = HdStGetMaterialShader(this, sceneDelegate);
     }
 
     for (auto const& reprPair : _reprs) {
