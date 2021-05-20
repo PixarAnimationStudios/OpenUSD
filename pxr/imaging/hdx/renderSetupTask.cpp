@@ -216,7 +216,12 @@ HdxRenderSetupTask::PrepareCamera(HdRenderIndex* renderIndex)
 
     const HdCamera *camera = static_cast<const HdCamera *>(
         renderIndex->GetSprim(HdPrimTypeTokens->camera, _cameraId));
-    TF_VERIFY(camera);
+    if (!camera) {
+        // We don't require a valid camera to accommodate setup tasks used
+        // solely for specifying the AOV bindings for clearing or resolving the
+        // AOVs. The viewport transform is irrelevant in this scenario as well.
+        return;
+    }
 
     HdRenderPassStateSharedPtr const &renderPassState =
             _GetRenderPassState(renderIndex);
