@@ -191,18 +191,18 @@ int GetPrimitiveEdgeId()
     }
 
     const int edgeFlag = GetEdgeFlag();
-    const int edgeIndex = HdGet_edgeIndices().x;
+    const int meshEdgeIndex = HdGet_edgeIndices().x;
 
+    // Translate face-edge to authored mesh-edge
     if (edgeFlag == 0) {
-        return edgeIndex + edgeId; // regular triangle face.
+        edgeId = meshEdgeIndex + edgeId; // regular triangle face.
+    } else if ((bool(edgeFlag & 1) && edgeId == 2) ||
+               (bool(edgeFlag & 2) && edgeId == 0)) {
+        edgeId = -1; // Not an authored mesh edge
+    } else {
+        edgeId = meshEdgeIndex + edgeId - 1;
     }
-
-    // There are three edge index sequences for a triangulated face.
-    const ivec3 triangulated =
-        edgeFlag == 1 ? ivec3(edgeIndex-1, edgeIndex,          -1) :
-        edgeFlag == 2 ? ivec3(         -1, edgeIndex, edgeIndex+1) :
-      /*edgeFlag == 3*/ ivec3(         -1, edgeIndex,          -1);
-    return triangulated[edgeId];
+    return edgeId;
 }
 
 --- --------------------------------------------------------------------------
@@ -276,13 +276,17 @@ int GetPrimitiveEdgeId()
     }
 
     const int edgeFlag = GetEdgeFlag();
-    const ivec2 edgeindices = HdGet_edgeIndices();
+    const ivec2 meshEdgeIndices = HdGet_edgeIndices();
 
+    // Translate face-edge to authored mesh-edge
     if (edgeFlag == 0) {
-        return edgeindices[0] + edgeId; // regular quad face
+        edgeId = meshEdgeIndices[0] + edgeId; // regular quad face
+    } else if (edgeId == 0) {
+        edgeId = meshEdgeIndices[0];
+    } else if (edgeId == 3) {
+        edgeId = meshEdgeIndices[1];
+    } else {
+        edgeId = -1; // Not an authored mesh edge
     }
-
-    // There is one edge index sequence for a quadrangulated face.
-    const ivec4 quadrangulated = ivec4(edgeindices[0], -1, -1, edgeindices[1]);
-    return quadrangulated[edgeId];
+    return edgeId;
 }

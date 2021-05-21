@@ -90,13 +90,7 @@ vec3 GetPrimitiveEdgeMask()
     //    C       3        hide [0-1] and [2-0]
 
     // A value of one in this mask hides the corresponding edge.
-    vec3 edgeMask[4] = vec3[](
-        vec3(0,0,0),
-        vec3(0,1,0),
-        vec3(0,0,1),
-        vec3(0,1,1)
-    );
-    return edgeMask[GetEdgeFlag()];
+    return vec3(0, GetEdgeFlag() & 1, GetEdgeFlag() & 2);
 }
 
 --- --------------------------------------------------------------------------
@@ -121,13 +115,7 @@ vec3 GetPrimitiveEdgeMask()
     //
 
     // A value of one in this mask hides the corresponding edge.
-    vec3 edgeMask[4] = vec3[](
-        vec3(1,0,0),
-        vec3(1,0,1),
-        vec3(1,0,1),
-        vec3(1,0,1)
-    );
-    return edgeMask[GetEdgeFlag()];
+    return vec3(1, 0, GetEdgeFlag() != 0);
 }
 
 --- --------------------------------------------------------------------------
