@@ -71,15 +71,23 @@ Sdf_CanCreateNewLayerWithIdentifier(
     string* whyNot)
 {
     if (identifier.empty()) {
-        if (whyNot)
-            *whyNot = "cannot create a new layer with an empty identifier.";
+        if (whyNot) {
+            *whyNot = "cannot use empty identifier.";
+        }
+        return false;
+    }
+
+    if (Sdf_IsAnonLayerIdentifier(identifier)) {
+        if (whyNot) {
+            *whyNot = "cannot use anonymous layer identifier.";
+        }
         return false;
     }
 
     if (Sdf_IdentifierContainsArguments(identifier)) {
-        if (whyNot)
-            *whyNot = "cannot create a new layer with arguments in the "
-                "identifier";
+        if (whyNot) {
+            *whyNot = "cannot use arguments in the identifier.";
+        }
         return false;
     }
 

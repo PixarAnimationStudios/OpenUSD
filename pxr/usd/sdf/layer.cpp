@@ -390,12 +390,6 @@ SdfLayer::_CreateNew(
     const string& identifier,
     const FileFormatArguments &args)
 {
-    if (Sdf_IsAnonLayerIdentifier(identifier)) {
-        TF_CODING_ERROR("Cannot create a new layer with anonymous "
-            "layer identifier '%s'.", identifier.c_str());
-        return TfNullPtr;
-    }
-
     string whyNot;
     if (!Sdf_CanCreateNewLayerWithIdentifier(identifier, &whyNot)) {
         TF_CODING_ERROR("Cannot create new layer '%s': %s",
@@ -1105,6 +1099,17 @@ SdfLayer::Find(const string &identifier,
 {
     TRACE_FUNCTION();
 
+    tbb::queuing_rw_mutex::scoped_lock lock;
+    return _Find(identifier, args, lock, /* retryAsWriter = */ false);
+}
+
+template <class ScopedLock>
+SdfLayerRefPtr
+SdfLayer::_Find(const string &identifier,
+                const FileFormatArguments &args,
+                ScopedLock& lock,
+                bool retryAsWriter)
+{
     // We don't need to drop the GIL here, since _TryToFindLayer() doesn't
     // invoke any plugin code, and if we do wind up calling
     // _WaitForInitializationAndCheckIfSuccessful() then we'll drop the GIL in
@@ -1116,11 +1121,10 @@ SdfLayer::Find(const string &identifier,
     }
 
     // First see if this layer is already present.
-    tbb::queuing_rw_mutex::scoped_lock
-        lock(_GetLayerRegistryMutex(), /*write=*/false);
+    lock.acquire(_GetLayerRegistryMutex(), /*write=*/false);
     if (SdfLayerRefPtr layer = _TryToFindLayer(
             layerInfo.identifier, layerInfo.resolvedLayerPath,
-            lock, /*retryAsWriter=*/false)) {
+            lock, retryAsWriter)) {
         return layer->_WaitForInitializationAndCheckIfSuccessful() ?
             layer : TfNullPtr;
     }
@@ -2406,13 +2410,15 @@ SdfLayer::SetIdentifier(const string &identifier)
         "SdfLayer::SetIdentifier('%s')\n",
         identifier.c_str());
 
-    string oldLayerPath, oldArguments;
+    string oldLayerPath;
+    SdfLayer::FileFormatArguments oldArguments;
     if (!TF_VERIFY(Sdf_SplitIdentifier(
             GetIdentifier(), &oldLayerPath, &oldArguments))) {
         return;
     }
 
-    string newLayerPath, newArguments;
+    string newLayerPath;
+    SdfLayer::FileFormatArguments newArguments;
     if (!Sdf_SplitIdentifier(identifier, &newLayerPath, &newArguments)) {
         TF_CODING_ERROR("Invalid identifier '%s'", identifier.c_str());
         return;
@@ -2426,6 +2432,13 @@ SdfLayer::SetIdentifier(const string &identifier)
         return;
     }
 
+    string whyNot;
+    if (!Sdf_CanCreateNewLayerWithIdentifier(newLayerPath, &whyNot)) {
+        TF_CODING_ERROR("Cannot change identifier to '%s': %s", 
+            identifier.c_str(), whyNot.c_str());
+        return;
+    }
+
 #if AR_VERSION == 1
     // When changing a layer's identifier, assume that relative identifiers are
     // relative to the current working directory.
@@ -2435,17 +2448,43 @@ SdfLayer::SetIdentifier(const string &identifier)
     // Create an identifier for the layer based on the desired identifier
     // that was passed in. Since this may identifier may point to an asset
     // that doesn't exist yet, use CreateIdentifierForNewAsset.
-    const string absIdentifier =
-        ArGetResolver().CreateIdentifierForNewAsset(identifier);
+    const string absIdentifier = Sdf_CreateIdentifier(
+        ArGetResolver().CreateIdentifierForNewAsset(newLayerPath),
+        newArguments);
 #endif
-
     const ArResolvedPath oldResolvedPath = GetResolvedPath();
 
     // Hold open a change block to defer identifier-did-change
     // notification until the mutex is unlocked.
     SdfChangeBlock block;
+
     {
-        tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
+        tbb::queuing_rw_mutex::scoped_lock lock;
+
+        // See if another layer with the same identifier exists in the registry.
+        // If it doesn't, we will be updating the registry so we need to ensure
+        // our lock is upgraded to a write lock by setting retryAsWriter = true.
+        //
+        // It is possible that the call to _Find returns the same layer we're 
+        // modifying. For example, if a layer was originally opened using some
+        // path and we're now trying to set its identifier to something that
+        // resolves to that same path. In this case, we don't want to error
+        // out.
+        const bool retryAsWriter = true;
+        SdfLayerRefPtr existingLayer = _Find(
+            absIdentifier, FileFormatArguments(), lock, retryAsWriter);
+        if (existingLayer) {
+            if (get_pointer(existingLayer) != this) {
+                TF_CODING_ERROR(
+                    "Layer with identifier '%s' and resolved path '%s' exists.",
+                    existingLayer->GetIdentifier().c_str(),
+                    existingLayer->GetResolvedPath().GetPathString().c_str());
+                return;
+            }
+        }
+
+        // We should have acquired a write lock on the layer registry by this
+        // point, so it's safe to call _InitializeFromIdentifier.
         _InitializeFromIdentifier(absIdentifier);
     }
 

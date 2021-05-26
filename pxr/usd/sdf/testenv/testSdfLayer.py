@@ -70,6 +70,44 @@ class TestSdfLayer(unittest.TestCase):
             joinedIdentifier = Sdf.Layer.CreateIdentifier(splitPath, splitArgs)
             self.assertEqual(identifier, joinedIdentifier)
 
+    def test_SetIdentifier(self):
+        layer = Sdf.Layer.CreateAnonymous()
+
+        # Can't change a layer's identifier if another layer with the same
+        # identifier and resolved path exists.
+        existingLayer = Sdf.Layer.CreateNew("testSetIdentifier.sdf")
+        with self.assertRaises(Tf.ErrorException):
+            layer.identifier = existingLayer.identifier
+
+        # Can't change a layer's identifier to the empty string.
+        with self.assertRaises(Tf.ErrorException):
+            layer.identifier = ""
+
+        # Can't change a layer's identifier to an anonymous layer identifier.
+        with self.assertRaises(Tf.ErrorException):
+            layer.identifier = "anon:testing"
+
+    def test_SetIdentifierWithArgs(self):
+        layer = Sdf.Layer.CreateAnonymous()
+        layer.Export("testSetIdentifierWithArgs.sdf")
+
+        layer = Sdf.Layer.FindOrOpen(
+            "testSetIdentifierWithArgs.sdf", args={"a":"b"})
+        self.assertTrue(layer)
+
+        # Can't change arguments when setting a new identifier
+        with self.assertRaises(Tf.ErrorException):
+            layer.identifier = Sdf.Layer.CreateIdentifier(
+                "testSetIdentifierWithArgs.sdf", {"a":"c"})
+
+        with self.assertRaises(Tf.ErrorException):
+            layer.identifier = Sdf.Layer.CreateIdentifier(
+                "testSetIdentifierWithArgs.sdf", {"b":"d"})
+
+        # Can change the identifier if we leave the args the same.
+        layer.identifier = Sdf.Layer.CreateIdentifier(
+            "testSetIdentifierWithArgsNew.sdf", {"a":"b"})
+
     def test_OpenWithInvalidFormat(self):
         l = Sdf.Layer.FindOrOpen('foo.invalid')
         self.assertIsNone(l)
