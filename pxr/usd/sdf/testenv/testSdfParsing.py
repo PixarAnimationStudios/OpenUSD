@@ -33,8 +33,19 @@
 # escaping errors.
 
 from __future__ import print_function
-import sys, os, difflib, unittest
+import sys, os, difflib, unittest, platform
 from pxr import Tf, Sdf
+
+# Default encoding on Windows in python 3+ is not UTF-8, but it is on Linux &
+# Mac.  Provide a wrapper here so we specify that in that case.  Python 2.x does
+# not support an 'encoding' argument.
+def _open(*args, **kw):
+    if sys.version_info.major >= 3 and platform.system() == "Windows":
+        kw['encoding'] = 'utf8'
+        return open(*args, **kw)
+    else:
+        return open(*args, **kw)
+
 
 def removeFiles(*filenames):
     """Removes the given files (if one of the args is itself a tuple or list, "unwrap" it.)"""
@@ -319,7 +330,7 @@ class TestSdfParsing(unittest.TestCase):
 
                 # Use Sdf.Layer.ExportToString and write out the returned layer
                 # string to a file.
-                with open(layerFileOut2.name, 'w') as f:
+                with _open(layerFileOut2.name, 'w') as f:
                     f.write(layer.ExportToString())
 
                 self.assertTrue(metadataOnlyLayer.Export(layerFileOut3.name))
@@ -343,10 +354,10 @@ class TestSdfParsing(unittest.TestCase):
 
             def doDiff(testFile, expectedFile, metadataOnly=False):
 
-                fd = open(testFile, "r")
+                fd = _open(testFile, "r")
                 layerData = fd.readlines()
                 fd.close()
-                fd = open(expectedFile, "r")
+                fd = _open(expectedFile, "r")
                 expectedLayerData = fd.readlines()
                 fd.close()
 
