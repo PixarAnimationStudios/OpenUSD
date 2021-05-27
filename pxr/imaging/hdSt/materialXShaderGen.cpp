@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/materialXShaderGen.h"
+#include "pxr/imaging/hdSt/materialXFilter.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <MaterialXCore/Value.h>
@@ -89,15 +90,14 @@ R"(#if NUM_LIGHTS > 0
 )";
 
 HdStMaterialXShaderGen::HdStMaterialXShaderGen(
-    mx::StringMap const& mxHdTextureMap, 
-    mx::StringMap const& mxHdPrimvarMap,
-    std::string const& defaultTexcoordName)
+    MxHdInfo const& mxHdInfo)
     : GlslShaderGenerator(), 
-      _mxHdTextureMap(mxHdTextureMap),
-      _mxHdPrimvarMap(mxHdPrimvarMap)
+      _mxHdTextureMap(mxHdInfo.textureMap),
+      _mxHdPrimvarMap(mxHdInfo.primvarMap),
+      _materialTag(mxHdInfo.materialTag)
 {
-    _defaultTexcoordName = (defaultTexcoordName == mx::EMPTY_STRING) ? 
-                            "st" : defaultTexcoordName;
+    _defaultTexcoordName = (mxHdInfo.defaultTexcoordName == mx::EMPTY_STRING) ?
+                            "st" : mxHdInfo.defaultTexcoordName;
 }
 
 // Based on GlslShaderGenerator::generate()
@@ -145,6 +145,15 @@ HdStMaterialXShaderGen::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
     emitString(
         R"(-- configuration)" "\n"
         R"({)" "\n", mxStage);
+
+    // insert materialTag metadata
+    {
+        emitString(R"(    "metadata": {)" "\n", mxStage);
+        std::string line;
+        line += "        \"materialTag\": \"" + _materialTag + "\"\n";
+        emitString(line, mxStage);
+        emitString(R"(    }, )""\n", mxStage);
+    }
 
     // insert primvar information if needed
     if (!_mxHdPrimvarMap.empty()) {

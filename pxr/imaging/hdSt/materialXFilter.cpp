@@ -23,7 +23,6 @@
 //
 #include "pxr/imaging/hdSt/materialXFilter.h"
 #include "pxr/imaging/hdSt/materialXShaderGen.h"
-#include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdMtlx/hdMtlx.h"
 
 #include "pxr/usd/sdr/registry.h"
@@ -53,6 +52,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     (st)
     (texcoord)
     (geomprop)
+
+    // Opacity Parameters
+    (opacity)
+    (opacityThreshold)
+    (transmission)
 );
 
 
@@ -62,8 +66,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 // Generate the Glsl Pixel Shader based on the given mxContext and mxElement
 // Based on MaterialXViewer Material::generateShader()
 static std::string
-_GenPixelShader(mx::GenContext & mxContext, 
-                mx::ElementPtr const& mxElem)
+_GenPixelShader(mx::GenContext & mxContext, mx::ElementPtr const& mxElem)
 {
     bool hasTransparency = mx::isTransparentSurface(mxElem, 
                                 mxContext.getShaderGenerator());
@@ -100,13 +103,10 @@ std::string
 HdSt_GenMaterialXShaderCode(
     mx::DocumentPtr const& mxDoc,
     mx::FileSearchPath const& searchPath,
-    mx::StringMap const& mxHdTextureMap,
-    mx::StringMap const& mxHdPrimvarMap,
-    std::string const& defaultTexcoordName)
+    MxHdInfo const& mxHdInfo)
 {
     // Initialize the Context for shaderGen. 
-    mx::GenContext mxContext = HdStMaterialXShaderGen::create(mxHdTextureMap, 
-                                    mxHdPrimvarMap, defaultTexcoordName);
+    mx::GenContext mxContext = HdStMaterialXShaderGen::create(mxHdInfo);
     mxContext.registerSourceCodeSearchPath(searchPath);
     
     // Add the Direct Light mtlx file to the mxDoc 
@@ -187,7 +187,7 @@ static void
 _GetHdTextureParameters(
     std::string const& mxInputName,
     std::string const& mxInputValue,
-    std::map<TfToken, VtValue> * hdTextureParams)
+    std::map<TfToken, VtValue>* hdTextureParams)
 {
     // MaterialX has two texture2d node types <image> and <tiledimage>
 
@@ -226,8 +226,8 @@ static bool
 _FindConnectedNode(
     HdMaterialNetwork2 const& hdNetwork,
     HdMaterialConnection2 const& hdConnection,
-    HdMaterialNode2 * hdNode,
-    SdfPath * hdNodePath)
+    HdMaterialNode2* hdNode,
+    SdfPath* hdNodePath)
 {
     // Get the path to the connected node
     const SdfPath & connectionPath = hdConnection.upstreamNode;
@@ -248,11 +248,11 @@ _FindConnectedNode(
 // Get the Texture coordinate name if specified, otherwise get the default name 
 static void
 _GetTextureCoordinateName(
-    HdMaterialNetwork2 * hdNetwork,
-    HdMaterialNode2 * hdTextureNode,
+    HdMaterialNetwork2* hdNetwork,
+    HdMaterialNode2* hdTextureNode,
     SdfPath const& hdTextureNodePath,
-    mx::StringMap * mxHdPrimvarMap,
-    std::string * defaultTexcoordName)
+    mx::StringMap* mxHdPrimvarMap,
+    std::string* defaultTexcoordName)
 {
     // Get the Texture Coordinate name through the connected node
     bool textureCoordSet = false;
@@ -326,12 +326,12 @@ _GetTextureCoordinateName(
 // texture nodes to the terminal node
 static void 
 _UpdateTextureNodes(
-    HdMaterialNetwork2 * hdNetwork,
+    HdMaterialNetwork2* hdNetwork,
     SdfPath const& hdTerminalNodePath,
     std::set<SdfPath> const& hdTextureNodes,
-    mx::StringMap * mxHdTextureMap,
-    mx::StringMap * mxHdPrimvarMap,
-    std::string * defaultTexcoordName)
+    mx::StringMap* mxHdTextureMap,
+    mx::StringMap* mxHdPrimvarMap,
+    std::string* defaultTexcoordName)
 {
     for (auto const& texturePath : hdTextureNodes) {
         HdMaterialNode2 hdTextureNode = hdNetwork->nodes[texturePath];
@@ -373,10 +373,78 @@ _UpdateTextureNodes(
     }
 }
 
+static std::string const&
+_GetMaterialTag(HdMaterialNode2 const& terminal)
+{
+    // Masked MaterialTag:
+    // UsdPreviewSurface: terminal.opacityThreshold value > 0
+    // StandardSurface materials do not have an opacityThreshold parameter
+    // so we StandardSurface will not use the Masked materialTag.
+    for (auto const& currParam : terminal.parameters) {
+        if (currParam.first != _tokens->opacityThreshold) continue;
+
+        if (currParam.second.Get<float>() > 0.0f) {
+            return HdStMaterialTagTokens->masked.GetString();
+        }
+    }
+
+    // Translucent MaterialTag
+    bool isTranslucent = false;
+
+    // UsdPreviewSurface uses the opacity parameter to indicate the transparency
+    // when 1.0 the material is fully opaque, the smaller the value the more 
+    // translucent the material, with a default value of 1.0 
+    // StandardSurface indicates material transparency through two different 
+    // parameters; the transmission parameter (float) where the greater the 
+    // value the more transparent the material and a default value of 0.0,
+    // the opacity parameter (color3) indicating the opacity of the entire 
+    // material, where the default value of (1,1,1) is fully opaque.
+
+    // First check the opacity and transmission connections
+    auto const& opacityConnIt = terminal.inputConnections.find(_tokens->opacity);
+    if (opacityConnIt != terminal.inputConnections.end()) {
+        return HdStMaterialTagTokens->translucent.GetString();
+    }
+
+    auto const& transmissionConnIt = terminal.inputConnections.find(
+                                                _tokens->transmission);
+    isTranslucent = (transmissionConnIt != terminal.inputConnections.end());
+
+    // Then check the opacity and transmission parameter value
+    if (!isTranslucent) {
+        for (auto const& currParam : terminal.parameters) {
+
+            // UsdPreviewSurface
+            if (currParam.first == _tokens->opacity && 
+                currParam.second.IsHolding<float>()) {
+                isTranslucent = currParam.second.Get<float>() < 1.0f;
+                break;
+            }
+            // StandardSurface
+            if (currParam.first == _tokens->opacity && 
+                currParam.second.IsHolding<GfVec3f>()) {
+                GfVec3f opacityColor = currParam.second.Get<GfVec3f>();
+                isTranslucent |= ( opacityColor[0] < 1.0f 
+                                || opacityColor[1] < 1.0f
+                                || opacityColor[2] < 1.0f );
+            }
+            if (currParam.first == _tokens->transmission && 
+                currParam.second.IsHolding<float>()) {
+                isTranslucent |= currParam.second.Get<float>() > 0.0f;
+            }
+        }
+    }
+
+    if (isTranslucent) {
+        return HdStMaterialTagTokens->translucent.GetString();
+    }
+    return HdStMaterialTagTokens->defaultMaterialTag.GetString();
+}
+
 
 void
 HdSt_ApplyMaterialXFilter(
-    HdMaterialNetwork2 * hdNetwork,
+    HdMaterialNetwork2* hdNetwork,
     SdfPath const& materialPath,
     HdMaterialNode2 const& terminalNode,
     SdfPath const& terminalNodePath)
@@ -398,27 +466,26 @@ HdSt_ApplyMaterialXFilter(
         mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
 
         // Create the MaterialX Document from the HdMaterialNetwork
+        MxHdInfo mxHdInfo; // Hydra information for MaterialX glslfx shaderGen 
         std::set<SdfPath> hdTextureNodes;
-        mx::StringMap mxHdTextureMap; // Mx-Hd texture name counterparts 
         mx::DocumentPtr mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
                                         *hdNetwork,
                                         terminalNode,   // MaterialX HdNode
                                         materialPath,
                                         stdLibraries,
                                         &hdTextureNodes,
-                                        &mxHdTextureMap);
+                                        &mxHdInfo.textureMap);
 
         // Add Hydra parameters for each of the Texture nodes
-        mx::StringMap mxHdPrimvarMap; // Primvar name and type
-        std::string defaultTexcoordName;
-        _UpdateTextureNodes(hdNetwork, terminalNodePath,
-                            hdTextureNodes, &mxHdTextureMap,
-                            &mxHdPrimvarMap, &defaultTexcoordName);
+        _UpdateTextureNodes(hdNetwork, terminalNodePath, hdTextureNodes, 
+                            &mxHdInfo.textureMap, &mxHdInfo.primvarMap, 
+                            &mxHdInfo.defaultTexcoordName);
+
+        mxHdInfo.materialTag = _GetMaterialTag(terminalNode);
 
         // Load MaterialX Document and generate the glslfxSource
         std::string glslfxSource = HdSt_GenMaterialXShaderCode(mtlxDoc, 
-                                    searchPath, mxHdTextureMap, 
-                                    mxHdPrimvarMap, defaultTexcoordName);
+                                    searchPath, mxHdInfo);
 
         // Create a new terminal node with the new glslfxSource
         SdrShaderNodeConstPtr sdrNode = 
@@ -428,6 +495,7 @@ HdSt_ApplyMaterialXFilter(
         HdMaterialNode2 newTerminalNode;
         newTerminalNode.nodeTypeId = sdrNode->GetIdentifier();
         newTerminalNode.inputConnections = terminalNode.inputConnections;
+        newTerminalNode.parameters = terminalNode.parameters;
 
         // Replace the original terminalNode with this newTerminalNode
         hdNetwork->nodes[terminalNodePath] = newTerminalNode;
