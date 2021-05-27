@@ -463,6 +463,11 @@ pxr_install_test_dir(
 
 pxr_install_test_dir(
     SRC testenv/testUsdFileFormats
+    DEST testUsdFileFormats_asset
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdFileFormats
     DEST testUsdFileFormats_pread
 )
 
@@ -584,6 +589,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdUsdzFileFormat
     DEST testUsdUsdzFileFormat
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUsdzFileFormat
+    DEST testUsdUsdzFileFormat_asset
 )
 
 pxr_install_test_dir(
@@ -794,6 +804,19 @@ pxr_register_test(testUsdFileFormats
     EXPECTED_RETURN_CODE 0
 )
 
+# XXX:
+# Temporarily disable this test on Windows; the ArAsset-based
+# codepath in the .usdc file format code has issues.
+if (NOT WIN32)
+    pxr_register_test(testUsdFileFormats_asset
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdFileFormats"
+        ENV
+            USDC_USE_ASSET=1
+        EXPECTED_RETURN_CODE 0
+    )
+endif()
+
 pxr_register_test(testUsdFileFormats_pread
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdFileFormats"
@@ -991,6 +1014,14 @@ pxr_register_test(testUsdTimeValueAuthoringCpp
 pxr_register_test(testUsdUsdzFileFormat
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUsdzFileFormat"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUsdzFileFormat_asset
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUsdzFileFormat"
+    ENV
+        USDC_USE_ASSET=1
     EXPECTED_RETURN_CODE 0
 )
 

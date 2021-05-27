@@ -134,6 +134,13 @@ TF_DEFINE_ENV_SETTING(
     "optimization, we create VtArrays that point directly into the memory "
     "mapped region rather than copying the data to heap buffers.");
 
+TF_DEFINE_ENV_SETTING(
+    USDC_USE_ASSET, false,
+    "If set, data for Crate files will be read using ArAsset::Read. Crate "
+    "will not use system I/O functions like mmap or pread directly for Crate "
+    "files on disk, but these functions may be used indirectly by ArAsset "
+    "implementations.");
+
 static int _GetMMapPrefetchKB()
 {
     auto getKB = []() {
@@ -150,9 +157,10 @@ static int _GetMMapPrefetchKB()
     return kb;
 }
 
+#if AR_VERSION == 1
 // Write nbytes bytes to fd at pos.
 static inline int64_t
-WriteToFd(FILE *file, void const *bytes, int64_t nbytes, int64_t pos) {
+WriteToAsset(FILE *file, void const *bytes, int64_t nbytes, int64_t pos) {
     int64_t nwritten = ArchPWrite(file, bytes, nbytes, pos);
     if (ARCH_UNLIKELY(nwritten < 0)) {
         TF_RUNTIME_ERROR("Failed writing usdc data: %s",
@@ -161,6 +169,33 @@ WriteToFd(FILE *file, void const *bytes, int64_t nbytes, int64_t pos) {
     }
     return nwritten;
 }
+#else
+// Write nbytes bytes to asset at pos.
+static inline int64_t
+WriteToAsset(ArWritableAsset* asset,
+             void const *bytes, int64_t nbytes, int64_t pos)
+{
+    TfErrorMark m;
+
+    int64_t nwritten = asset->Write(bytes, nbytes, pos);
+    if (ARCH_UNLIKELY(nwritten != nbytes)) {
+        // Aggregate error messages into a single runtime error for brevity
+        std::string errMsg;
+        if (!m.IsClean()) {
+            std::vector<std::string> errs;
+            for (const TfError& e : m) {
+                errs.push_back(e.GetCommentary());
+            }
+            errMsg = ": ";
+            errMsg += TfStringJoin(errs, "; ");
+        }
+
+        TF_RUNTIME_ERROR("Failed writing usdc data%s", errMsg.c_str());
+        nwritten = 0;
+    }
+    return nwritten;
+}
+#endif
 
 namespace Usd_CrateFile
 {
@@ -736,6 +771,12 @@ CrateFile::_TableOfContents::GetMinimumSectionStart() const
 class CrateFile::_BufferedOutput
 {
 public:
+#if AR_VERSION == 1
+    using OutputType = FILE*;
+#else
+    using OutputType = ArWritableAsset*;
+#endif
+
     // Current buffer size is 512k.
     static const size_t BufferCap = 512*1024;
 
@@ -751,7 +792,7 @@ public:
         int64_t size = 0;
     };
 
-    explicit _BufferedOutput(FILE *file)
+    explicit _BufferedOutput(OutputType file)
         : _filePos(0)
         , _file(file)
         , _bufferPos(0)
@@ -858,7 +899,7 @@ private:
         _WriteOp op;
         while (_writeQueue.try_pop(op)) {
             // Write the bytes.
-            WriteToFd(_file, op.buf.bytes.get(), op.buf.size, op.pos);
+            WriteToAsset(_file, op.buf.bytes.get(), op.buf.size, op.pos);
             // Add the buffer back to _freeBuffers for reuse.
             op.buf.size = 0;
             _freeBuffers.push(std::move(op.buf));
@@ -867,7 +908,7 @@ private:
     
     // Write head in the file.  Always inside the buffer region.
     int64_t _filePos;
-    FILE *_file;
+    OutputType _file;
 
     // Start of current buffer is at this file offset.
     int64_t _bufferPos;
@@ -886,18 +927,27 @@ private:
 // _PackingContext
 struct CrateFile::_PackingContext
 {
+#if AR_VERSION == 1
+    using OutputType = TfSafeOutputFile;
+    static FILE* _Get(OutputType& out) { return out.Get(); }
+#else
+    using OutputType = ArWritableAssetSharedPtr;
+    static ArWritableAsset* _Get(OutputType& out) { return out.get(); }
+#endif
+
     _PackingContext() = delete;
     _PackingContext(_PackingContext const &) = delete;
     _PackingContext &operator=(_PackingContext const &) = delete;
 
-    _PackingContext(CrateFile *crate, TfSafeOutputFile &&outFile,
+    _PackingContext(CrateFile *crate, 
+                    OutputType &&outAsset,
                     std::string const &fileName)
         : fileName(fileName)
         , writeVersion(crate->_assetPath.empty() ?
                        GetVersionForNewlyCreatedFiles() :
                        Version(crate->_boot))
-        , bufferedOutput(outFile.Get())
-        , safeOutputFile(std::move(outFile)) {
+        , bufferedOutput(_Get(outAsset))
+        , outputAsset(std::move(outAsset)) {
         
         // Populate this context with everything we need from \p crate in order
         // to do deduplication, etc.
@@ -965,11 +1015,18 @@ struct CrateFile::_PackingContext
         bufferedOutput.Seek(crate->_toc.GetMinimumSectionStart());
     }
 
+#if AR_VERSION == 1
     // Destructively move the output file out of this context.
     TfSafeOutputFile ExtractOutputFile() {
-        return std::move(safeOutputFile);
+        return std::move(outputAsset);
     }
-        
+#else
+    // Close output asset.  No further writes may be done.
+    bool CloseOutputAsset() {
+        return outputAsset->Close();
+    }
+#endif     
+   
     // Inform the writer that the output stream requires the given version
     // (or newer) to be read back.  This allows the writer to start with
     // a conservative version assumption and promote to newer versions
@@ -1017,7 +1074,7 @@ struct CrateFile::_PackingContext
     // BufferedOutput helper.
     _BufferedOutput bufferedOutput;
     // Output destination.
-    TfSafeOutputFile safeOutputFile;
+    OutputType outputAsset;
 };
 
 /////////////////////////////////////////////////////////////////////////
@@ -2080,7 +2137,9 @@ CrateFile::CanRead(string const &assetPath) {
 std::unique_ptr<CrateFile>
 CrateFile::CreateNew()
 {
-    bool useMmap = !TfGetenvBool("USDC_USE_PREAD", false);
+    const bool useMmap = 
+        !TfGetEnvSetting(USDC_USE_ASSET) &&
+        !TfGetenvBool("USDC_USE_PREAD", false);
     return std::unique_ptr<CrateFile>(new CrateFile(useMmap));
 }
 
@@ -2134,27 +2193,30 @@ CrateFile::Open(string const &assetPath)
         return result;
     }
 
-    // See if we can get an underlying FILE * for the asset.
-    FILE *file; size_t offset;
-    std::tie(file, offset) = asset->GetFileUnsafe();
-    if (file) {
-        // If so, then we'll either mmap it or use pread() on it.
-        if (!TfGetenvBool("USDC_USE_PREAD", false)) {
-            // Try to memory-map the file.
-            auto mapping = _MmapAsset(assetPath.c_str(), asset);
-            result.reset(new CrateFile(assetPath, ArchGetFileName(file),
-                                       std::move(mapping), asset));
-        } else {
-            // Use pread with the asset's file.
-            result.reset(new CrateFile(
-                             assetPath, ArchGetFileName(file),
-                             _FileRange(
-                                 file, offset, asset->GetSize(),
-                                 /*hasOwnership=*/ false),
-                             asset));
+    if (!TfGetEnvSetting(USDC_USE_ASSET)) {
+        // See if we can get an underlying FILE * for the asset.
+        FILE *file; size_t offset;
+        std::tie(file, offset) = asset->GetFileUnsafe();
+        if (file) {
+            // If so, then we'll either mmap it or use pread() on it.
+            if (!TfGetenvBool("USDC_USE_PREAD", false)) {
+                // Try to memory-map the file.
+                auto mapping = _MmapAsset(assetPath.c_str(), asset);
+                result.reset(new CrateFile(assetPath, ArchGetFileName(file),
+                                           std::move(mapping), asset));
+            } else {
+                // Use pread with the asset's file.
+                result.reset(new CrateFile(
+                                 assetPath, ArchGetFileName(file),
+                                 _FileRange(
+                                     file, offset, asset->GetSize(),
+                                     /*hasOwnership=*/ false),
+                                 asset));
+            }
         }
     }
-    else {
+
+    if (!result) {
         // With no underlying FILE *, we'll go through ArAsset::Read() directly.
         result.reset(new CrateFile(assetPath, asset));
     }
@@ -2396,6 +2458,7 @@ CrateFile::CanPackTo(string const &fileName) const
 CrateFile::Packer
 CrateFile::StartPacking(string const &fileName)
 {
+#if AR_VERSION == 1
     // We open the file using the TfSafeOutputFile helper so that we can avoid
     // stomping on the file for other processes currently observing it, in the
     // case that we're replacing it.  In the case where we're actually updating
@@ -2404,7 +2467,20 @@ CrateFile::StartPacking(string const &fileName)
     auto out = _assetPath.empty() ?
         TfSafeOutputFile::Replace(fileName) :
         TfSafeOutputFile::Update(fileName);
-    if (m.IsClean()) {
+    if (!m.IsClean()) {
+        // Error will be emitted when TfErrorMark goes out of scope
+    }
+#else
+    auto out = ArGetResolver().OpenAssetForWrite(
+        ArResolvedPath(fileName), 
+        _assetPath.empty() ? 
+            ArResolver::WriteMode::Replace :
+            ArResolver::WriteMode::Update);
+    if (!out) {
+        TF_RUNTIME_ERROR("Unable to open %s for write", fileName.c_str());
+    }
+#endif
+    else {
         // Create a packing context so we can start writing.
         _packCtx.reset(new _PackingContext(this, std::move(out), fileName));
         // Get rid of our local list of specs, if we have one -- the client is
@@ -2427,6 +2503,7 @@ CrateFile::Packer::operator bool() const {
     return _crate && _crate->_packCtx;
 }
 
+#if AR_VERSION == 1
 bool
 CrateFile::Packer::Close()
 {
@@ -2485,6 +2562,69 @@ CrateFile::Packer::Close()
         
     return true;
 }
+#else
+bool
+CrateFile::Packer::Close()
+{
+    if (!TF_VERIFY(_crate && _crate->_packCtx))
+        return false;
+
+    // Write contents. Always close the output asset even if writing failed.
+    bool writeResult = _crate->_Write();
+    writeResult &= _crate->_packCtx->CloseOutputAsset();
+    
+    // If we wrote successfully, store the fileName.
+    if (writeResult) {
+        _crate->_assetPath = _crate->_packCtx->fileName;
+    }
+
+    _crate->_packCtx.reset();
+
+    if (!writeResult)
+        return false;
+
+    // Reset so we can read values from the newly written asset.
+    // See CrateFile::Open.
+    auto asset = ArGetResolver().OpenAsset(ArResolvedPath(_crate->_assetPath));
+    if (!asset) {
+        return false;
+    }
+
+    if (!TfGetEnvSetting(USDC_USE_ASSET)) {
+        FILE *file; size_t offset;
+        std::tie(file, offset) = asset->GetFileUnsafe();
+        if (file) {
+            // Reset the filename we've read content from.
+            _crate->_fileReadFrom = ArchGetFileName(file);
+
+            if (_crate->_useMmap) {
+                // Must remap the file.
+                _crate->_mmapSrc = _MmapFile(_crate->_assetPath.c_str(), file);
+                if (!_crate->_mmapSrc) {
+                    return false;
+                }
+                _crate->_assetSrc.reset();
+                _crate->_InitMMap();
+            }
+            else {
+                _crate->_preadSrc = _FileRange(
+                    file, offset, asset->GetSize(), /*hasOwnership=*/false);
+                _crate->_assetSrc = asset;
+                _crate->_InitPread();
+            }
+
+            return true;
+        }
+    }
+
+    _crate->_mmapSrc.reset();
+    _crate->_preadSrc = _FileRange();
+    _crate->_assetSrc = asset;
+    _crate->_InitAsset();
+        
+    return true;
+}
+#endif
 
 CrateFile::Packer::Packer(Packer &&other) : _crate(other._crate)
 {
