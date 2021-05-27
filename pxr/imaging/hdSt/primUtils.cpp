@@ -538,16 +538,16 @@ HdStPopulateConstantPrimvars(
     // Update uniforms
     HdBufferSourceSharedPtrVector sources;
     if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
-        GfMatrix4d transform = delegate->GetTransform(id);
+        const GfMatrix4d transform = delegate->GetTransform(id);
         sharedData->bounds.SetMatrix(transform); // for CPU frustum culling
 
-        HdBufferSourceSharedPtr source = std::make_shared<HdVtBufferSource>(
-            HdTokens->transform, transform);
+        sources.push_back(
+            std::make_shared<HdVtBufferSource>(
+                HdTokens->transform, transform));
 
-        sources.push_back(source);
-        source.reset(new HdVtBufferSource(HdTokens->transformInverse,
-                                          transform.GetInverse()));
-        sources.push_back(source);
+        sources.push_back(
+            std::make_shared<HdVtBufferSource>(
+                HdTokens->transformInverse, transform.GetInverse()));
 
         bool leftHanded = transform.IsLeftHanded();
 
@@ -555,7 +555,7 @@ HdStPopulateConstantPrimvars(
         // also push the instancer transform separately.
         if (!instancerId.IsEmpty()) {
             // Gather all instancer transforms in the instancing hierarchy
-            VtMatrix4dArray rootTransforms = 
+            const VtMatrix4dArray rootTransforms = 
                 prim->GetInstancerTransforms(delegate);
             VtMatrix4dArray rootInverseTransforms(rootTransforms.size());
             for (size_t i = 0; i < rootTransforms.size(); ++i) {
@@ -564,16 +564,16 @@ HdStPopulateConstantPrimvars(
                 leftHanded ^= rootTransforms[i].IsLeftHanded();
             }
 
-            source.reset(new HdVtBufferSource(
-                             HdInstancerTokens->instancerTransform,
-                             rootTransforms,
-                             rootTransforms.size()));
-            sources.push_back(source);
-            source.reset(new HdVtBufferSource(
-                             HdInstancerTokens->instancerTransformInverse,
-                             rootInverseTransforms,
-                             rootInverseTransforms.size()));
-            sources.push_back(source);
+            sources.push_back(
+                std::make_shared<HdVtBufferSource>(
+                    HdInstancerTokens->instancerTransform,
+                    rootTransforms,
+                    rootTransforms.size()));
+            sources.push_back(
+                std::make_shared<HdVtBufferSource>(
+                    HdInstancerTokens->instancerTransformInverse,
+                    rootInverseTransforms,
+                    rootInverseTransforms.size()));
 
             // XXX: It might be worth to consider to have isFlipped
             // for non-instanced prims as well. It can improve
@@ -581,9 +581,10 @@ HdStPopulateConstantPrimvars(
             // fragment shader cost, although it needs more GPU memory.
 
             // Set as int (GLSL needs 32-bit align for bool)
-            source.reset(new HdVtBufferSource(
-                             HdTokens->isFlipped, VtValue(int(leftHanded))));
-            sources.push_back(source);
+            sources.push_back(
+                std::make_shared<HdVtBufferSource>(
+                    HdTokens->isFlipped,
+                    VtValue(int(leftHanded))));
         }
 
         if (hasMirroredTransform) {
@@ -757,12 +758,12 @@ HdStUpdateInstancerData(
     int level = 0;
     SdfPath parentId = prim->GetInstancerId();
     while (!parentId.IsEmpty()) {
-        HdInstancer *instancer = renderIndex.GetInstancer(parentId);
+        HdInstancer * const instancer = renderIndex.GetInstancer(parentId);
         if(!TF_VERIFY(instancer)) {
             return;
         }
-        int drawCoordIndex = drawingCoord->GetInstancePrimvarIndex(level);
-        HdBufferArrayRangeSharedPtr instancerRange =
+        const int drawCoordIndex = drawingCoord->GetInstancePrimvarIndex(level);
+        HdBufferArrayRangeSharedPtr const instancerRange =
             static_cast<HdStInstancer*>(instancer)->GetInstancePrimvarRange();
 
         // If we need to update the BAR, that indicates an instancing topology
@@ -791,7 +792,7 @@ HdStUpdateInstancerData(
         forceIndexRebuild) {
         parentId = prim->GetInstancerId();
         if (!parentId.IsEmpty()) {
-            HdInstancer *instancer = renderIndex.GetInstancer(parentId);
+            HdInstancer * const instancer = renderIndex.GetInstancer(parentId);
             if (!TF_VERIFY(instancer)) {
                 return;
             }
@@ -801,9 +802,9 @@ HdStUpdateInstancerData(
                 static_cast<HdStInstancer*>(instancer)->
                 GetInstanceIndices(prim->GetId());
 
-            HdStResourceRegistrySharedPtr const& resourceRegistry =
-                std::static_pointer_cast<HdStResourceRegistry>(
-                    renderIndex.GetResourceRegistry());
+            HdStResourceRegistry* const resourceRegistry =
+                static_cast<HdStResourceRegistry*>(
+                    renderIndex.GetResourceRegistry().get());
 
             // Create the bar if needed.
             if (!drawItem->GetInstanceIndexRange()) {
@@ -812,14 +813,18 @@ HdStUpdateInstancerData(
                 // culling can compute culledInstanceIndices as instanceIndices
                 // masked by visibility.
                 HdBufferSpecVector bufferSpecs;
-                bufferSpecs.emplace_back(HdInstancerTokens->instanceIndices,
+                bufferSpecs.emplace_back(
+                    HdInstancerTokens->instanceIndices,
                     HdTupleType {HdTypeInt32, 1});
-                bufferSpecs.emplace_back(HdInstancerTokens->culledInstanceIndices,
+                bufferSpecs.emplace_back(
+                    HdInstancerTokens->culledInstanceIndices,
                     HdTupleType {HdTypeInt32, 1});
 
-                HdBufferArrayRangeSharedPtr range =
+                HdBufferArrayRangeSharedPtr const range =
                     resourceRegistry->AllocateNonUniformBufferArrayRange(
-                    HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
+                        HdTokens->topology,
+                        bufferSpecs,
+                        HdBufferArrayUsageHint());
 
                 HdStUpdateDrawItemBAR(
                     range,
@@ -841,13 +846,14 @@ HdStUpdateInstancerData(
             }
 
             HdBufferSourceSharedPtrVector sources;
-            HdBufferSourceSharedPtr source = std::make_shared<HdVtBufferSource>(
-                HdInstancerTokens->instanceIndices, VtValue(instanceIndices));
-            sources.push_back(source);
-            source.reset(
-                new HdVtBufferSource(HdInstancerTokens->culledInstanceIndices,
+            sources.push_back(
+                std::make_shared<HdVtBufferSource>(
+                    HdInstancerTokens->instanceIndices,
                     VtValue(instanceIndices)));
-            sources.push_back(source);
+            sources.push_back(
+                std::make_shared<HdVtBufferSource>(
+                    HdInstancerTokens->culledInstanceIndices,
+                    VtValue(instanceIndices)));
 
             resourceRegistry->AddSources(
                 drawItem->GetInstanceIndexRange(), std::move(sources));
@@ -862,12 +868,12 @@ bool HdStIsInstancePrimvarExistentAndValid(
 {
     SdfPath parentId = rprim->GetInstancerId();
     while (!parentId.IsEmpty()) {
-        HdInstancer *instancer = renderIndex.GetInstancer(parentId);
+        HdInstancer * const instancer = renderIndex.GetInstancer(parentId);
         if (!TF_VERIFY(instancer)) {
             return false;
         }
 
-        HdPrimvarDescriptorVector primvars =
+        HdPrimvarDescriptorVector const primvars =
             instancer->GetDelegate()->GetPrimvarDescriptors(instancer->GetId(),
                 HdInterpolationInstance);
         
@@ -876,7 +882,7 @@ bool HdStIsInstancePrimvarExistentAndValid(
             // (since instance primvars aggregate).  Note: the value check here
             // must match HdStIsPrimvarExistentAndValid.
             if (pv.name == primvarName) {
-                VtValue value =
+                const VtValue value =
                     instancer->GetDelegate()->Get(instancer->GetId(), pv.name);
                 if (value.IsHolding<std::string>() ||
                     value.IsHolding<VtStringArray>()) {
@@ -922,8 +928,8 @@ _GetBitmaskEncodedVisibilityBuffer(VtIntArray invisibleIndices,
                 ".", *i, numTotalIndices);
             continue;
         }
-        size_t arrayIndex = *i/numBitsPerUInt;
-        size_t bitIndex   = *i % numBitsPerUInt;
+        const size_t arrayIndex = *i/numBitsPerUInt;
+        const size_t bitIndex   = *i % numBitsPerUInt;
         visibility[arrayIndex] &= ~(1 << bitIndex); // set bit to 0
     }
 
