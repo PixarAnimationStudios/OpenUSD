@@ -1123,6 +1123,10 @@ public:
     ///
     /// Edits through the proxy changes the sublayers.  If this layer does
     /// not have any sublayers the proxy is empty.
+    ///
+    /// Sub-layer paths are asset paths, and thus must contain valid asset path
+    /// characters (UTF-8 without C0 and C1 controls).  See SdfAssetPath for
+    /// more details.
     SDF_API
     SdfSubLayerProxy GetSubLayerPaths() const;
 

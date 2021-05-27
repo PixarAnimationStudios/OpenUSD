@@ -74,5 +74,15 @@ class TestSdfPayload(unittest.TestCase):
         for payload in payloads:
             self.assertEqual(payload, eval(repr(payload)))
 
+        # Test invalid asset paths.
+        with self.assertRaises(Tf.ErrorException):
+            p = Sdf.Payload('\x01\x02\x03')
+
+        with self.assertRaises(Tf.ErrorException):
+            p = Sdf.AssetPath('\x01\x02\x03')
+            p = Sdf.AssetPath('foobar', '\x01\x02\x03')
+            
+
+
 if __name__ == "__main__":
     unittest.main()

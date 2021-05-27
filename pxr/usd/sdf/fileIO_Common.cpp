@@ -41,36 +41,101 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static const char *_IndentString = "    ";
 
-// Helper for creating string representation of an asset path
+// Check if 'cp' points to a valid UTF-8 multibyte sequence.  If so, return its
+// length (either 2, 3, or 4).  If not return 0.
+static inline int
+_IsUTF8MultiByte(char const *cp) {
+    // Return a byte with the high `n` bits set, rest clear.
+    auto highBits = [](int n) {
+        return static_cast<unsigned char>(((1 << n) - 1) << (8 - n));
+    }; 
+    
+    // Return true if `ch` is a continuation byte.
+    auto isContinuation = [&highBits](unsigned char ch) {
+        return (ch & highBits(2)) == highBits(1);
+    };
+    
+    // Check for 2, 3, or 4-byte code.
+    for (int i = 2; i <= 4; ++i) {
+        // This is an N-byte code if the high-order N+1 bytes are N 1s
+        // followed by a single 0.
+        if ((*cp & highBits(i + 1)) == highBits(i)) {
+            // If that's the case then the following N-1 bytes must be
+            // "continuation bytes".
+            for (int j = 1; j != i; ++j) {
+                if (!isContinuation(cp[j])) {
+                    return 0;
+                }
+            }
+            return i;
+        }
+    }
+    return 0;
+}
+
+// Return true if 'ch' is a printable ASCII character, independent of the
+// current locale.
+static inline bool
+_IsASCIIPrintable(unsigned char ch)
+{
+    // Locale-independent ascii printable is 32-126.
+    return 32 <= ch && ch <= 126;
+}
+
+// Append 'ch' to 'out' as an escaped 2-digit hex code (e.g. \x3f).
+static inline void
+_WriteHexEscape(unsigned char ch, string *out)
+{
+    const char* hexdigit = "0123456789abcdef";
+    char buf[] = "\\x__";
+    buf[2] = hexdigit[(ch >> 4) & 15];
+    buf[3] = hexdigit[ch & 15];
+    out->append(buf);
+}
+
+// Helper for creating string representation of an asset path.  Caller is
+// assumed to have validated \p assetPath (e.g. by having obtained it from an
+// SdfAssetPath, SdfReference, or SdfPayload).
 static string
 _StringFromAssetPath(const string& assetPath)
 {
     // See Sdf_EvalAssetPath for the code that reads asset paths at parse time.
 
-    // We want to avoid writing asset paths with escape sequences in them
-    // so that it's easy for users to copy and paste these paths into other
-    // apps without having to clean up those escape sequences.
+    // We want to avoid writing asset paths with escape sequences in them so
+    // that it's easy for users to copy and paste these paths into other apps
+    // without having to clean up those escape sequences, and so that asset
+    // resolvers are as free as possible to determine their own syntax.
     //
     // We use "@"s as delimiters so that asset paths are easily identifiable.
     // but use "@@@" if the path already has an "@" in it rather than escaping
     // it. If the path has a "@@@", then we'll escape that, but hopefully that's
-    // a rarer case. We'll also strip out non-printable characters. so we don't
-    // have to escape those.
-    static const string singleDelim = "@";
-    static const string tripleDelim = "@@@";
-    const string* delim = (assetPath.find('@') == std::string::npos) ? 
-        &singleDelim : &tripleDelim;
+    // a rarer case.
+    const char delim = '@';
+    bool useTripleDelim = assetPath.find(delim) != std::string::npos;
 
-    string s = assetPath;
-    s.erase(std::remove_if(s.begin(), s.end(), 
-                           [](char s) { return !std::isprint(s); }),
-            s.end());
+    string s;
+    s.reserve(assetPath.size() + (useTripleDelim ? 6 : 2));
+    s.append(useTripleDelim ? 3 : 1, delim);
 
-    if (delim == &tripleDelim) {
-        s = TfStringReplace(s, tripleDelim, "\\@@@");
+    for (char const *cp = assetPath.c_str(); *cp; ++cp) {
+        // If we're using triple delimiters and we encounter a triple delimiter
+        // in the asset path, we must escape it.
+        if (useTripleDelim && 
+            cp[0] == delim && cp[1] == delim && cp[2] == delim) {
+            s.push_back('\\');
+            s.append(3, delim);
+            cp += 2; // account for next loop increment.
+            continue;
+        }
+        // Otherwise we can just emit the bytes since callers are required to
+        // have validated the asset path content.
+        s.push_back(*cp);
     }
 
-    return *delim + s + *delim;
+    // Tack on the final delimiter.
+    s.append(useTripleDelim ? 3 : 1, delim);
+
+    return s;
 }
 
 static string
@@ -681,40 +746,7 @@ Sdf_FileIOUtility::WriteLayerOffset(
 string
 Sdf_FileIOUtility::Quote(const string &str)
 {
-    const char* hexdigit = "0123456789abcdef";
     const bool allowTripleQuotes = true;
-
-    // Check if cp points to a valid UTF-8 multibyte sequence.  If so, return
-    // its length (either 2, 3, or 4).  If not return 0.
-    auto isUTF8MultiByte = [](char const *cp) {
-
-        // Return a byte with the high `n` bits set, rest clear.
-        auto highBits = [](int n) {
-            return static_cast<unsigned char>(((1 << n) - 1) << (8 - n));
-        }; 
-
-        // Return true if `ch` is a continuation byte.
-        auto isContinuation = [&highBits](unsigned char ch) {
-            return (ch & highBits(2)) == highBits(1);
-        };
-
-        // Check for 2, 3, or 4-byte code.
-        for (int i = 2; i <= 4; ++i) {
-            // This is an N-byte code if the high-order N+1 bytes are N 1s
-            // followed by a single 0.
-            if ((*cp & highBits(i + 1)) == highBits(i)) {
-                // If that's the case then the following N-1 bytes must be
-                // "continuation bytes".
-                for (int j = 1; j != i; ++j) {
-                    if (!isContinuation(cp[j])) {
-                        return 0;
-                    }
-                }
-                return i;
-            }
-        }
-        return 0;
-    };
 
     string result;
 
@@ -737,7 +769,7 @@ Sdf_FileIOUtility::Quote(const string &str)
 
     // Write `ch` as a regular ascii character, an escaped control character
     // (like \n, \t, etc.) or a hex byte code (\xa8).
-    auto writeASCIIorHex = [&result, &hexdigit, quote, tripleQuotes](char ch) {
+    auto writeASCIIorHex = [&result, quote, tripleQuotes](char ch) {
         switch (ch) {
         case '\n':
             // Pass newline as-is if using triple quotes, otherwise escape.
@@ -767,11 +799,9 @@ Sdf_FileIOUtility::Quote(const string &str)
                 result += '\\';
                 result += quote;
             }
-            else if (!std::isprint(ch)) {
+            else if (!_IsASCIIPrintable(ch)) {
                 // Non-printable;  use two digit hex form.
-                result += "\\x";
-                result += hexdigit[(ch >> 4) & 15];
-                result += hexdigit[ch & 15];
+                _WriteHexEscape(ch, &result);
             }
             else {
                 // Printable, non-special.
@@ -784,9 +814,9 @@ Sdf_FileIOUtility::Quote(const string &str)
     // Escape string.
     for (char const *i = str.c_str(); *i; ++i) {
         // Check UTF-8 sequence.
-        int nBytes = isUTF8MultiByte(i);
+        int nBytes = _IsUTF8MultiByte(i);
         if (nBytes) {
-            result.insert(result.end(), i, i + nBytes);
+            result.append(i, i + nBytes);
             i += nBytes - 1; // account for next loop increment.
         }
         else {
@@ -795,11 +825,7 @@ Sdf_FileIOUtility::Quote(const string &str)
     }
 
     // End quote.
-    result += quote;
-    if (tripleQuotes) {
-        result += quote;
-        result += quote;
-    }
+    result.append(tripleQuotes ? 3 : 1, quote);
 
     return result;
 }

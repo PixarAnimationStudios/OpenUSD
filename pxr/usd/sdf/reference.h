@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
+#include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/dictionary.h"
@@ -74,8 +75,11 @@ typedef std::vector<SdfReference> SdfReferenceVector;
 ///
 class SdfReference : boost::totally_ordered<SdfReference> {
 public:
-    /// Creates a reference with all its meta data.  The default
-    /// reference is an internal reference to the default prim.
+    /// Creates a reference with all its meta data.  The default reference is an
+    /// internal reference to the default prim.  See SdfAssetPath for what
+    /// characters are valid in \p assetPath.  If \p assetPath contains invalid
+    /// characters, issue an error and set this reference's asset path to the
+    /// empty asset path.
     ///
     SDF_API SdfReference(
         const std::string &assetPath = std::string(),
@@ -90,11 +94,15 @@ public:
         return _assetPath;
     }
 
-    /// Sets the asset path for the root layer of the referenced layer stack.  
+    /// Sets the asset path for the root layer of the referenced layer stack.
     /// This may be set to an empty string to specify an internal reference.
-    ///
+    /// See SdfAssetPath for what characters are valid in \p assetPath.  If \p
+    /// assetPath contains invalid characters, issue an error and set this
+    /// reference's asset path to the empty asset path.
     void SetAssetPath(const std::string &assetPath) {
-        _assetPath = assetPath;
+        // Go through SdfAssetPath() to raise an error if \p assetPath contains
+        // illegal characters (i.e. control characters).
+        _assetPath = SdfAssetPath(assetPath).GetAssetPath();
     }
 
     /// Returns the path of the referenced prim.
