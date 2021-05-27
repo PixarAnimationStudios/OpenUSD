@@ -1446,7 +1446,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
             // verify primvar length
             if ((int)source->GetNumElements() != numFaces) {
                 HF_VALIDATION_WARN(id,
-                    "# of faces mismatch (%d != %d) for primvar %s",
+                    "# of faces mismatch (%d != %d) for uniform primvar %s",
                     (int)source->GetNumElements(), numFaces, 
                     primvar.name.GetText());
                 continue;
