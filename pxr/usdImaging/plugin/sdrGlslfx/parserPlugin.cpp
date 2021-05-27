@@ -194,6 +194,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
     std::unique_ptr<HioGlslfx> glslfx;
 
     if (!discoveryResult.uri.empty()) {
+#if AR_VERSION == 1
         // Get the resolved URI to a location that can be read 
         // by the glslfx parser.
         bool localFetchSuccessful = ArGetResolver().FetchToLocalResolvedPath(
@@ -208,6 +209,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
                     discoveryResult.uri.c_str());
             return NdrParserPlugin::GetInvalidNode(discoveryResult);
         }
+#endif
 
         glslfx.reset( new HioGlslfx(discoveryResult.resolvedUri));
 
