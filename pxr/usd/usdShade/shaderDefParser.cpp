@@ -125,7 +125,7 @@ UsdShadeShaderDefParserPlugin::Parse(
         discoveryResult.family,
         discoveryResult.discoveryType, /* discoveryType */
         discoveryResult.sourceType, /* sourceType */
-        nodeUriAssetPath.GetResolvedPath(),
+        rootLayerPath,
         resolvedImplementationUri,
         UsdShadeShaderDefUtils::GetShaderProperties(
             shaderDef.ConnectableAPI()),

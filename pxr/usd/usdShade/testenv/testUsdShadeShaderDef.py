@@ -175,6 +175,12 @@ class TestUsdShadeShaderDef(unittest.TestCase):
         node = UsdShade.ShaderDefParserPlugin().Parse(discoveryResult)
         assert node is not None
 
+        self.assertEqual(node.GetResolvedImplementationURI().split('/')[-1],
+                "TestShaderPropertiesNode.glslfx")
+        self.assertEqual(node.GetResolvedDefinitionURI().split('/')[-1],
+                "shaderDefs.usda")
+
+
         utils.TestShaderPropertiesNode(node)
 
     def test_GetShaderNodeFromAsset(self):
