@@ -167,6 +167,14 @@ class TestFileFormat(unittest.TestCase):
         self.assertTrue(input)
         self.assertEqual(input.GetFullName(),"inputs:specularColor")
 
+    def test_EmbedInUSDZ(self):
+        """
+        Verify that a MaterialX file can be read from within a .usdz file.
+        """
+
+        stage = UsdMtlx._TestFile(
+            'usd_preview_surface_gold.usdz[usd_preview_surface_gold.mtlx]')
+        stage.GetRootLayer().Export('usd_preview_surface_gold.usda')
 
 if __name__ == '__main__':
     unittest.main()

@@ -23,6 +23,9 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/plugin/usdMtlx/utils.h"
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ndr/debugCodes.h"
 #include "pxr/usd/ndr/filesystemDiscoveryHelpers.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -35,6 +38,7 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/array.h"
@@ -211,6 +215,54 @@ UsdMtlxStandardFileExtensions()
     return extensions;
 }
 
+mx::DocumentPtr
+UsdMtlxReadDocument(const std::string& resolvedPath)
+{
+    try {
+        mx::DocumentPtr doc = mx::createDocument();
+
+        // If resolvedPath points to a file on disk read from it directly
+        // otherwise use the ArAsset API to read it from whatever backing store
+        // it points to.
+        //
+        // The latter requires a string copy since the buffer returned by
+        // ArAsset may not end in a NULL byte.  MaterialX does have a
+        // std::istream based API so we could try to use that if the string copy
+        // becomes a burden.
+        if (TfIsFile(resolvedPath)) {
+            mx::readFromXmlFile(doc, resolvedPath);
+            return doc;
+        }
+        else {
+            if (const std::shared_ptr<ArAsset> asset = 
+                ArGetResolver().OpenAsset(ArResolvedPath(resolvedPath))) {
+
+                const std::shared_ptr<const char> buffer = asset->GetBuffer();
+                if (buffer) {
+                    std::string s(buffer.get(), asset->GetSize());
+                    mx::readFromXmlString(doc, s);
+                    return doc;
+                }
+            }
+
+            TF_RUNTIME_ERROR("Unable to open MaterialX document '%s'",
+                             resolvedPath.c_str());
+        }
+    }
+    catch (mx::ExceptionFoundCycle& x) {
+        TF_RUNTIME_ERROR("MaterialX cycle found reading '%s': %s", 
+                         resolvedPath.c_str(), x.what());
+        return nullptr;
+    }
+    catch (mx::Exception& x) {
+        TF_RUNTIME_ERROR("MaterialX error reading '%s': %s",
+                         resolvedPath.c_str(), x.what());
+        return nullptr;
+    }
+
+    return nullptr;
+}
+
 mx::ConstDocumentPtr 
 UsdMtlxGetDocumentFromString(const std::string &mtlxXml)
 {
@@ -245,6 +297,8 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
         return document;
     }
 
+    TfErrorMark m;
+
     // Read the file or the standard library files.
     if (resolvedUri.empty()) {
         document = mx::createDocument();
@@ -253,11 +307,15 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
                     UsdMtlxStandardLibraryPaths(),
                     UsdMtlxStandardFileExtensions(),
                     false)) {
-            try {
-                // Read the file.
-                auto doc = mx::createDocument();
-                mx::readFromXmlFile(doc, fileResult.resolvedUri);
 
+            // Read the file. If this fails due to an exception, a runtime
+            // error will be raised so we can just skip to the next file.
+            auto doc = UsdMtlxReadDocument(fileResult.resolvedUri);
+            if (!doc) {
+                continue;
+            }
+
+            try {
                 // Set the source URI on all (immediate) children of
                 // the root so we can find the source later.  We
                 // can't use the source URI on the document element
@@ -270,24 +328,21 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
                 _CopyContent(document, doc);
             }
             catch (mx::Exception& x) {
-                TF_DEBUG(NDR_PARSING).Msg("MaterialX error reading '%s': %s",
-                                          fileResult.resolvedUri.c_str(),
-                                          x.what());
-                continue;
+                TF_RUNTIME_ERROR("MaterialX error reading '%s': %s",
+                                 fileResult.resolvedUri.c_str(),
+                                 x.what());
             }
         }
     }
     else {
-        try {
-            mx::DocumentPtr doc = mx::createDocument();
-            mx::readFromXmlFile(doc, resolvedUri);
-            document = doc;
+        document = UsdMtlxReadDocument(resolvedUri);
+    }
+
+    if (!m.IsClean()) {
+        for (const auto& error : m) {
+            TF_DEBUG(NDR_PARSING).Msg("%s\n", error.GetCommentary().c_str());
         }
-        catch (mx::Exception& x) {
-            TF_DEBUG(NDR_PARSING).Msg("MaterialX error reading '%s': %s",
-                                      resolvedUri.c_str(),
-                                      x.what());
-        }
+        m.Clear();
     }
 
     return document;
