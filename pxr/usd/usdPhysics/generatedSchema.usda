@@ -16,13 +16,13 @@ class PhysicsScene "PhysicsScene" (
 {
     vector3f physics:gravityDirection = (0, 0, 0) (
         displayName = "Gravity Direction"
-        doc = """Gravity direction vector in simulation word space. Will be
+        doc = """Gravity direction vector in simulation world space. Will be
         normalized before use. A zero vector is a request to use the negative 
         upAxis. Unitless."""
     )
     float physics:gravityMagnitude = -inf (
         displayName = "Gravity Magnitude"
-        doc = """Gravity acceleration magnitude in simulation word space. 
+        doc = """Gravity acceleration magnitude in simulation world space. 
         A negative value is a request to use a value equivalent to earth 
         gravity regardless of the metersPerUnit scaling used by this scene. 
         Units: distance/time/time."""
@@ -238,13 +238,11 @@ class PhysicsJoint "PhysicsJoint" (
 {
     rel physics:body0 (
         displayName = "Body 0"
-        doc = """Relationship to first rigid body (or empty string if to 
-        world)."""
+        doc = "Relationship to any UsdGeomXformable."
     )
     rel physics:body1 (
         displayName = "Body 1"
-        doc = """Relationship to second rigid body (or empty string if to 
-        world)."""
+        doc = "Relationship to any UsdGeomXformable."
     )
     float physics:breakForce = inf (
         displayName = "Break Force"
@@ -260,7 +258,7 @@ class PhysicsJoint "PhysicsJoint" (
     )
     bool physics:collisionEnabled = 0 (
         displayName = "Collision Enabled"
-        doc = "Determines if the jointed bodies should collide or not."
+        doc = "Determines if the jointed subtrees should collide or not."
     )
     uniform bool physics:excludeFromArticulation = 0 (
         displayName = "Exclude From Articulation"
@@ -340,13 +338,11 @@ class PhysicsRevoluteJoint "PhysicsRevoluteJoint" (
     )
     rel physics:body0 (
         displayName = "Body 0"
-        doc = """Relationship to first rigid body (or empty string if to 
-        world)."""
+        doc = "Relationship to any UsdGeomXformable."
     )
     rel physics:body1 (
         displayName = "Body 1"
-        doc = """Relationship to second rigid body (or empty string if to 
-        world)."""
+        doc = "Relationship to any UsdGeomXformable."
     )
     float physics:breakForce = inf (
         displayName = "Break Force"
@@ -362,7 +358,7 @@ class PhysicsRevoluteJoint "PhysicsRevoluteJoint" (
     )
     bool physics:collisionEnabled = 0 (
         displayName = "Collision Enabled"
-        doc = "Determines if the jointed bodies should collide or not."
+        doc = "Determines if the jointed subtrees should collide or not."
     )
     uniform bool physics:excludeFromArticulation = 0 (
         displayName = "Exclude From Articulation"
@@ -452,13 +448,11 @@ class PhysicsPrismaticJoint "PhysicsPrismaticJoint" (
     )
     rel physics:body0 (
         displayName = "Body 0"
-        doc = """Relationship to first rigid body (or empty string if to 
-        world)."""
+        doc = "Relationship to any UsdGeomXformable."
     )
     rel physics:body1 (
         displayName = "Body 1"
-        doc = """Relationship to second rigid body (or empty string if to 
-        world)."""
+        doc = "Relationship to any UsdGeomXformable."
     )
     float physics:breakForce = inf (
         displayName = "Break Force"
@@ -474,7 +468,7 @@ class PhysicsPrismaticJoint "PhysicsPrismaticJoint" (
     )
     bool physics:collisionEnabled = 0 (
         displayName = "Collision Enabled"
-        doc = "Determines if the jointed bodies should collide or not."
+        doc = "Determines if the jointed subtrees should collide or not."
     )
     uniform bool physics:excludeFromArticulation = 0 (
         displayName = "Exclude From Articulation"
@@ -566,13 +560,11 @@ class PhysicsSphericalJoint "PhysicsSphericalJoint" (
     )
     rel physics:body0 (
         displayName = "Body 0"
-        doc = """Relationship to first rigid body (or empty string if to 
-        world)."""
+        doc = "Relationship to any UsdGeomXformable."
     )
     rel physics:body1 (
         displayName = "Body 1"
-        doc = """Relationship to second rigid body (or empty string if to 
-        world)."""
+        doc = "Relationship to any UsdGeomXformable."
     )
     float physics:breakForce = inf (
         displayName = "Break Force"
@@ -588,7 +580,7 @@ class PhysicsSphericalJoint "PhysicsSphericalJoint" (
     )
     bool physics:collisionEnabled = 0 (
         displayName = "Collision Enabled"
-        doc = "Determines if the jointed bodies should collide or not."
+        doc = "Determines if the jointed subtrees should collide or not."
     )
     float physics:coneAngle0Limit = -1 (
         displayName = "Cone Angle0 Limit"
@@ -675,13 +667,11 @@ class PhysicsDistanceJoint "PhysicsDistanceJoint" (
 {
     rel physics:body0 (
         displayName = "Body 0"
-        doc = """Relationship to first rigid body (or empty string if to 
-        world)."""
+        doc = "Relationship to any UsdGeomXformable."
     )
     rel physics:body1 (
         displayName = "Body 1"
-        doc = """Relationship to second rigid body (or empty string if to 
-        world)."""
+        doc = "Relationship to any UsdGeomXformable."
     )
     float physics:breakForce = inf (
         displayName = "Break Force"
@@ -697,7 +687,7 @@ class PhysicsDistanceJoint "PhysicsDistanceJoint" (
     )
     bool physics:collisionEnabled = 0 (
         displayName = "Collision Enabled"
-        doc = "Determines if the jointed bodies should collide or not."
+        doc = "Determines if the jointed subtrees should collide or not."
     )
     uniform bool physics:excludeFromArticulation = 0 (
         displayName = "Exclude From Articulation"
@@ -782,13 +772,11 @@ class PhysicsFixedJoint "PhysicsFixedJoint" (
 {
     rel physics:body0 (
         displayName = "Body 0"
-        doc = """Relationship to first rigid body (or empty string if to 
-        world)."""
+        doc = "Relationship to any UsdGeomXformable."
     )
     rel physics:body1 (
         displayName = "Body 1"
-        doc = """Relationship to second rigid body (or empty string if to 
-        world)."""
+        doc = "Relationship to any UsdGeomXformable."
     )
     float physics:breakForce = inf (
         displayName = "Break Force"
@@ -804,7 +792,7 @@ class PhysicsFixedJoint "PhysicsFixedJoint" (
     )
     bool physics:collisionEnabled = 0 (
         displayName = "Collision Enabled"
-        doc = "Determines if the jointed bodies should collide or not."
+        doc = "Determines if the jointed subtrees should collide or not."
     )
     uniform bool physics:excludeFromArticulation = 0 (
         displayName = "Exclude From Articulation"
@@ -898,7 +886,8 @@ class "PhysicsDriveAPI" (
     doc = '''The PhysicsDriveAPI when applied to any joint primitive will drive
     the joint towards a given target.  The PhysicsDriveAPI is a multipleApply 
     schema: drive can be set per axis "transX", "transY", "transZ", "rotX", 
-    "rotY", "rotZ". Setting these as a multipleApply schema TfToken name will 
+    "rotY", "rotZ" or its "linear" for prismatic joint or "angular" for revolute 
+    joints. Setting these as a multipleApply schema TfToken name will 
     define the degree of freedom the DriveAPI is applied to. Each drive is an 
     implicit force-limited damped spring: 
     Force or acceleration = stiffness * (targetPosition - position) 
@@ -944,8 +933,10 @@ class "PhysicsArticulationRootAPI" (
     doc = """PhysicsArticulationRootAPI can be applied to a scene graph node, 
     and marks the subtree rooted here for inclusion in one or more reduced 
     coordinate articulations. For floating articulations, this should be on
-    the root body.  For fixed articulations, this can be somewhere above the 
-    root joint, which is connected to the world."""
+    the root body. For fixed articulations (robotics jargon for e.g. a robot 
+    arm for welding that is bolted to the floor), this API can be on a direct 
+    or indirect parent of the root joint which is connected to the world, or 
+    on the joint itself.."""
 )
 {
 }

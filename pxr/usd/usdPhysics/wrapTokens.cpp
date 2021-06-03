@@ -65,14 +65,17 @@ void wrapUsdPhysicsTokens()
     boost::python::class_<UsdPhysicsTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
     _AddToken(cls, "acceleration", UsdPhysicsTokens->acceleration);
+    _AddToken(cls, "angular", UsdPhysicsTokens->angular);
     _AddToken(cls, "boundingCube", UsdPhysicsTokens->boundingCube);
     _AddToken(cls, "boundingSphere", UsdPhysicsTokens->boundingSphere);
     _AddToken(cls, "colliders", UsdPhysicsTokens->colliders);
     _AddToken(cls, "convexDecomposition", UsdPhysicsTokens->convexDecomposition);
     _AddToken(cls, "convexHull", UsdPhysicsTokens->convexHull);
+    _AddToken(cls, "distance", UsdPhysicsTokens->distance);
     _AddToken(cls, "drive", UsdPhysicsTokens->drive);
     _AddToken(cls, "force", UsdPhysicsTokens->force);
     _AddToken(cls, "limit", UsdPhysicsTokens->limit);
+    _AddToken(cls, "linear", UsdPhysicsTokens->linear);
     _AddToken(cls, "meshSimplification", UsdPhysicsTokens->meshSimplification);
     _AddToken(cls, "none", UsdPhysicsTokens->none);
     _AddToken(cls, "physicsAngularVelocity", UsdPhysicsTokens->physicsAngularVelocity);
@@ -120,6 +123,12 @@ void wrapUsdPhysicsTokens()
     _AddToken(cls, "physicsType", UsdPhysicsTokens->physicsType);
     _AddToken(cls, "physicsUpperLimit", UsdPhysicsTokens->physicsUpperLimit);
     _AddToken(cls, "physicsVelocity", UsdPhysicsTokens->physicsVelocity);
+    _AddToken(cls, "rotX", UsdPhysicsTokens->rotX);
+    _AddToken(cls, "rotY", UsdPhysicsTokens->rotY);
+    _AddToken(cls, "rotZ", UsdPhysicsTokens->rotZ);
+    _AddToken(cls, "transX", UsdPhysicsTokens->transX);
+    _AddToken(cls, "transY", UsdPhysicsTokens->transY);
+    _AddToken(cls, "transZ", UsdPhysicsTokens->transZ);
     _AddToken(cls, "x", UsdPhysicsTokens->x);
     _AddToken(cls, "y", UsdPhysicsTokens->y);
     _AddToken(cls, "z", UsdPhysicsTokens->z);

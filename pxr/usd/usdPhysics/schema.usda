@@ -17,6 +17,60 @@ over "GLOBAL" (
             of a CollisionGroup prim.
             """
             }
+        dictionary transX = {
+            string doc = """
+            This token represents the translate around X axis degree of freedom
+            used in Joint Limits and Drives.
+            """
+            }
+        dictionary transY = {
+            string doc = """
+            This token represents the translate around Y axis degree of freedom
+            used in Joint Limits and Drives.
+            """
+            }
+        dictionary transZ = {
+            string doc = """
+            This token represents the translate around Z axis degree of freedom
+            used in Joint Limits and Drives.
+            """
+            }
+        dictionary rotX = {
+            string doc = """
+            This token represents the rotate around X axis degree of freedom
+            used in Joint Limits and Drives.
+            """
+            }
+        dictionary rotY = {
+            string doc = """
+            This token represents the rotate around Y axis degree of freedom
+            used in Joint Limits and Drives.
+            """
+            }
+        dictionary rotZ = {
+            string doc = """
+            This token represents the rotate around Z axis degree of freedom
+            used in Joint Limits and Drives.
+            """
+            }
+        dictionary linear = {
+            string doc = """
+            This token represents the linear degree of freedom
+            used in Prismatic Joint Drive.
+            """
+            }
+        dictionary angular = {
+            string doc = """
+            This token represents the angular degree of freedom
+            used in Revolute Joint Drive.
+            """
+            }
+        dictionary distance = {
+            string doc = """
+            This token represents the distance limit used for generic D6 joint.
+            """
+            }
+
         }
 	}
 )
@@ -40,7 +94,7 @@ class PhysicsScene "PhysicsScene"
             string apiName = "gravityDirection"
         }
         displayName = "Gravity Direction"
-        doc = """Gravity direction vector in simulation word space. Will be
+        doc = """Gravity direction vector in simulation world space. Will be
         normalized before use. A zero vector is a request to use the negative 
         upAxis. Unitless."""
     )
@@ -50,7 +104,7 @@ class PhysicsScene "PhysicsScene"
             string apiName = "gravityMagnitude"
         }
         displayName = "Gravity Magnitude"
-        doc = """Gravity acceleration magnitude in simulation word space. 
+        doc = """Gravity acceleration magnitude in simulation world space. 
         A negative value is a request to use a value equivalent to earth 
         gravity regardless of the metersPerUnit scaling used by this scene. 
         Units: distance/time/time."""
@@ -425,8 +479,7 @@ class PhysicsJoint "PhysicsJoint"
         }
 
         displayName = "Body 0"
-        doc = """Relationship to first rigid body (or empty string if to 
-        world)."""
+        doc = """Relationship to any UsdGeomXformable."""
     )
 
     rel physics:body1 (
@@ -435,8 +488,7 @@ class PhysicsJoint "PhysicsJoint"
         }
 
         displayName = "Body 1"
-        doc = """Relationship to second rigid body (or empty string if to 
-        world)."""
+        doc = """Relationship to any UsdGeomXformable."""
     )
 
     point3f physics:localPos0 = (0.0, 0.0, 0.0) (
@@ -490,7 +542,7 @@ class PhysicsJoint "PhysicsJoint"
         }
 
         displayName = "Collision Enabled"
-        doc = """Determines if the jointed bodies should collide or not."""
+        doc = """Determines if the jointed subtrees should collide or not."""
     )
 
     uniform bool physics:excludeFromArticulation = false (
@@ -756,7 +808,8 @@ class "PhysicsDriveAPI"
     doc = """The PhysicsDriveAPI when applied to any joint primitive will drive
     the joint towards a given target.  The PhysicsDriveAPI is a multipleApply 
     schema: drive can be set per axis "transX", "transY", "transZ", "rotX", 
-    "rotY", "rotZ". Setting these as a multipleApply schema TfToken name will 
+    "rotY", "rotZ" or its "linear" for prismatic joint or "angular" for revolute 
+    joints. Setting these as a multipleApply schema TfToken name will 
     define the degree of freedom the DriveAPI is applied to. Each drive is an 
     implicit force-limited damped spring: 
     Force or acceleration = stiffness * (targetPosition - position) 
@@ -839,8 +892,10 @@ class "PhysicsArticulationRootAPI"
     doc = """PhysicsArticulationRootAPI can be applied to a scene graph node, 
     and marks the subtree rooted here for inclusion in one or more reduced 
     coordinate articulations. For floating articulations, this should be on
-    the root body.  For fixed articulations, this can be somewhere above the 
-    root joint, which is connected to the world."""
+    the root body. For fixed articulations (robotics jargon for e.g. a robot 
+    arm for welding that is bolted to the floor), this API can be on a direct 
+    or indirect parent of the root joint which is connected to the world, or 
+    on the joint itself.."""
 
     inherits = </APISchemaBase>
 )

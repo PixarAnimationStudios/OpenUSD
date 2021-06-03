@@ -66,6 +66,10 @@ struct UsdPhysicsTokensType {
     /// 
     /// Possible value for UsdPhysicsDriveAPI::GetPhysicsTypeAttr()
     const TfToken acceleration;
+    /// \brief "angular"
+    /// 
+    ///  This token represents the angular degree of freedom used in Revolute Joint Drive. 
+    const TfToken angular;
     /// \brief "boundingCube"
     /// 
     /// Possible value for UsdPhysicsMeshCollisionAPI::GetPhysicsApproximationAttr()
@@ -86,6 +90,10 @@ struct UsdPhysicsTokensType {
     /// 
     /// Possible value for UsdPhysicsMeshCollisionAPI::GetPhysicsApproximationAttr()
     const TfToken convexHull;
+    /// \brief "distance"
+    /// 
+    ///  This token represents the distance limit used for generic D6 joint. 
+    const TfToken distance;
     /// \brief "drive"
     /// 
     /// Property namespace prefix for the UsdPhysicsDriveAPI schema.
@@ -98,6 +106,10 @@ struct UsdPhysicsTokensType {
     /// 
     /// Property namespace prefix for the UsdPhysicsLimitAPI schema.
     const TfToken limit;
+    /// \brief "linear"
+    /// 
+    ///  This token represents the linear degree of freedom used in Prismatic Joint Drive. 
+    const TfToken linear;
     /// \brief "meshSimplification"
     /// 
     /// Possible value for UsdPhysicsMeshCollisionAPI::GetPhysicsApproximationAttr()
@@ -286,6 +298,30 @@ struct UsdPhysicsTokensType {
     /// 
     /// UsdPhysicsRigidBodyAPI
     const TfToken physicsVelocity;
+    /// \brief "rotX"
+    /// 
+    ///  This token represents the rotate around X axis degree of freedom used in Joint Limits and Drives. 
+    const TfToken rotX;
+    /// \brief "rotY"
+    /// 
+    ///  This token represents the rotate around Y axis degree of freedom used in Joint Limits and Drives. 
+    const TfToken rotY;
+    /// \brief "rotZ"
+    /// 
+    ///  This token represents the rotate around Z axis degree of freedom used in Joint Limits and Drives. 
+    const TfToken rotZ;
+    /// \brief "transX"
+    /// 
+    ///  This token represents the translate around X axis degree of freedom used in Joint Limits and Drives. 
+    const TfToken transX;
+    /// \brief "transY"
+    /// 
+    ///  This token represents the translate around Y axis degree of freedom used in Joint Limits and Drives. 
+    const TfToken transY;
+    /// \brief "transZ"
+    /// 
+    ///  This token represents the translate around Z axis degree of freedom used in Joint Limits and Drives. 
+    const TfToken transZ;
     /// \brief "X"
     /// 
     /// Possible value for UsdPhysicsSphericalJoint::GetPhysicsAxisAttr(), Default value for UsdPhysicsSphericalJoint::GetPhysicsAxisAttr(), Possible value for UsdPhysicsPrismaticJoint::GetPhysicsAxisAttr(), Default value for UsdPhysicsPrismaticJoint::GetPhysicsAxisAttr(), Possible value for UsdPhysicsRevoluteJoint::GetPhysicsAxisAttr(), Default value for UsdPhysicsRevoluteJoint::GetPhysicsAxisAttr()

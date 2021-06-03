@@ -267,7 +267,7 @@ public:
     // --------------------------------------------------------------------- //
     // COLLISIONENABLED 
     // --------------------------------------------------------------------- //
-    /// Determines if the jointed bodies should collide or not.
+    /// Determines if the jointed subtrees should collide or not.
     ///
     /// | ||
     /// | -- | -- |
@@ -360,8 +360,7 @@ public:
     // --------------------------------------------------------------------- //
     // BODY0 
     // --------------------------------------------------------------------- //
-    /// Relationship to first rigid body (or empty string if to 
-    /// world).
+    /// Relationship to any UsdGeomXformable.
     ///
     USDPHYSICS_API
     UsdRelationship GetBody0Rel() const;
@@ -375,8 +374,7 @@ public:
     // --------------------------------------------------------------------- //
     // BODY1 
     // --------------------------------------------------------------------- //
-    /// Relationship to second rigid body (or empty string if to 
-    /// world).
+    /// Relationship to any UsdGeomXformable.
     ///
     USDPHYSICS_API
     UsdRelationship GetBody1Rel() const;
