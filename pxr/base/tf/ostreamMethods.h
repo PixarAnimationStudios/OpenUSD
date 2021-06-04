@@ -40,6 +40,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/hashmap.h"
+#include "pxr/base/tf/smallVector.h"
 
 #include <ostream>
 #include <vector>
@@ -56,6 +57,20 @@ template <class T>
 constexpr bool Tf_IsOstreamable() {
     return boost::has_left_shift<
         std::ostream &, /* << */ T, /* -> */ std::ostream &>::value;
+}
+
+/// Output a TfSmallVector using [ ] as delimiters.
+/// \ingroup group_tf_DebuggingOutput
+template <class T, uint32_t N>
+typename std::enable_if<PXR_NS::Tf_IsOstreamable<T>(), std::ostream &>::type
+operator<<(std::ostream &out, const TfSmallVector<T, N> &v)
+{
+    out << "[ ";
+    for (auto const &obj: v)
+        out << obj << " ";
+    out << "]";
+
+    return out;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
