@@ -107,10 +107,6 @@ public:
     AR_API
     virtual bool IsSearchPath(const std::string& path) override;
 
-    AR_API
-    virtual bool CreatePathForLayer(
-        const std::string& path) override;
-
 protected:
     AR_API
     virtual std::string _CreateIdentifier(

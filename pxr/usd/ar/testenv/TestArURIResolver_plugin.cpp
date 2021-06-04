@@ -164,13 +164,6 @@ public:
         return nullptr;
     }
 
-    virtual bool CreatePathForLayer(
-        const std::string& path) final
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), _uriScheme));
-        return false;
-    }
-
     virtual void _BeginCacheScope(
         VtValue* cacheScopeData) final
     {

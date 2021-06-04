@@ -4573,12 +4573,14 @@ SdfLayer::_WriteToFile(const string & newFileName,
         return false;
     }
 
+#if AR_VERSION == 1
     if (!ArGetResolver().CreatePathForLayer(newFileName)) {
         TF_RUNTIME_ERROR(
             "Cannot create path to write '%s'",
             newFileName.c_str());
         return false;
     }
+#endif
 
     // XXX Check for schema compatibility here...
 

@@ -803,17 +803,6 @@ public:
         return resolver.OpenAssetForWrite(resolvedPath, mode);
     }
 
-    virtual bool CreatePathForLayer(
-        const std::string& path) override
-    {
-        ArResolver& resolver = _GetResolver(path);
-        if (ArIsPackageRelativePath(path)) {
-            return resolver.CreatePathForLayer(
-                ArSplitPackageRelativePathOuter(path).first);
-        }
-        return resolver.CreatePathForLayer(path);
-    }
-
     virtual bool CanWriteLayerToPath(
         const std::string& path,
         std::string* whyNot) override

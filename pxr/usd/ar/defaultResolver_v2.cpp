@@ -326,14 +326,6 @@ ArDefaultResolver::_IsContextDependentPath(
     return IsSearchPath(assetPath);
 }
 
-bool
-ArDefaultResolver::CreatePathForLayer(
-    const std::string& path)
-{
-    const std::string layerDir = TfGetPathName(path);
-    return layerDir.empty() || TfIsDir(layerDir) || TfMakeDirs(layerDir);
-}
-
 ArResolverContext 
 ArDefaultResolver::_CreateDefaultContext()
 {
