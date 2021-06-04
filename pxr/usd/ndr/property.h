@@ -156,7 +156,7 @@ public:
     /// perform this mapping reliably, thus it will always fall into the second
     /// scenario. It is up to specialized properties to perform the mapping.
     NDR_API
-    virtual const SdfTypeIndicator GetTypeAsSdfType() const;
+    virtual const NdrSdfTypeIndicator GetTypeAsSdfType() const;
 
     /// @}
 
