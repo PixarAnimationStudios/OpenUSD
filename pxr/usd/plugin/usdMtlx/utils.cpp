@@ -41,6 +41,7 @@
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/array.h"
 #include <MaterialXCore/Util.h>
@@ -267,9 +268,9 @@ _ReadFromAsset(mx::DocumentPtr doc, const ArResolvedPath& resolvedPath,
                     ArSplitPackageRelativePathInner(resolvedPath);
 
                 std::string newPackagedPath = TfGetPathName(packagedPath);
-                newPackagedPath = newPackagedPath.empty() ? 
+                newPackagedPath = TfNormPath(newPackagedPath.empty() ? 
                     newFilename.asString() : 
-                    TfStringCatPaths(newPackagedPath, newFilename);
+                    TfStringCatPaths(newPackagedPath, newFilename));
 
                 newFilePath = ArJoinPackageRelativePath(
                     packagePath, newPackagedPath);
