@@ -42,7 +42,7 @@ HdSceneDelegate::HdSceneDelegate(HdRenderIndex *parentIndex,
                         delegateID.GetText());
 
 
-        _delegateID.MakeAbsolutePath(SdfPath::AbsoluteRootPath());
+        _delegateID = _delegateID.MakeAbsolutePath(SdfPath::AbsoluteRootPath());
     }
 }
 
