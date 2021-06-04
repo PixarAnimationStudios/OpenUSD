@@ -27,6 +27,7 @@
 /// \file sdf/fileFormat.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/ar.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/base/tf/declarePtrs.h"
@@ -143,6 +144,7 @@ public:
     /// layers.
     SDF_API bool ShouldSkipAnonymousReload() const;
 
+#if AR_VERSION == 1
     /// Return true if layers produced by this file format are based
     /// on physical files on disk. If so, this file format requires
     /// layers to be serialized to and read from files on disk.
@@ -158,6 +160,7 @@ public:
     /// \sa ArResolver::Resolve
     /// \sa ArResolver::FetchToLocalResolvedPath
     SDF_API bool LayersAreFileBased() const;
+#endif
 
     /// Returns true if anonymous layer identifiers should be passed to Read 
     /// when a layer is opened or reloaded.
@@ -378,11 +381,13 @@ private:
     SDF_API
     virtual bool _ShouldSkipAnonymousReload() const;
 
+#if AR_VERSION == 1
     /// File format subclasses may override this to specify whether
     /// their layers are backed by physical files on disk.
     /// Default implementation returns true.
     SDF_API
     virtual bool _LayersAreFileBased() const;
+#endif
 
     /// File format subclasses may override this to specify whether
     /// Read should be called when creating, opening, or reloading an anonymous

@@ -1074,6 +1074,7 @@ SdfLayer::_Read(
         TfStringify(metadataOnly).c_str());
 
     SdfFileFormatConstPtr format = GetFileFormat();
+#if AR_VERSION == 1
     if (format->LayersAreFileBased()) {
         if (!ArGetResolver().FetchToLocalResolvedPath(
                 identifier, resolvedPath)) {
@@ -1088,7 +1089,7 @@ SdfLayer::_Read(
             "SdfLayer::_Read - fetched '%s' to local path '%s'\n",
             identifier.c_str(), resolvedPath.c_str());
     }
-
+#endif
     return format->Read(this, resolvedPath, metadataOnly);
 }
 
