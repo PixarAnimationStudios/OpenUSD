@@ -139,7 +139,9 @@ def main():
 
     frameRecorder = UsdAppUtils.FrameRecorder()
     if args.rendererPlugin:
-        frameRecorder.SetRendererPlugin(args.rendererPlugin.id)
+        frameRecorder.SetRendererPlugin(
+            UsdAppUtils.rendererArgs.GetPluginIdFromArgument(
+                args.rendererPlugin))
     frameRecorder.SetImageWidth(args.imageWidth)
     frameRecorder.SetComplexity(args.complexity.value)
     frameRecorder.SetColorCorrectionMode(args.colorCorrectionMode)

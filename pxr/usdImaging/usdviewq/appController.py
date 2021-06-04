@@ -277,8 +277,6 @@ class MainWindow(QtWidgets.QMainWindow):
         
 class AppController(QtCore.QObject):
 
-    HYDRA_DISABLED_OPTION_STRING = "HydraDisabled"
-
     ###########
     # Signals #
     ###########
@@ -397,14 +395,11 @@ class AppController(QtCore.QObject):
             # be restored later.
             self._viewerModeEscapeSizes = None
 
-            self._rendererNameOpt = parserData.renderer
-
-            if self._rendererNameOpt:
-                if self._rendererNameOpt == \
-                            AppController.HYDRA_DISABLED_OPTION_STRING:
-                    os.environ['HD_ENABLED'] = '0'
-                else:
-                    os.environ['HD_DEFAULT_RENDERER'] = self._rendererNameOpt
+            if parserData.rendererPlugin == \
+                  UsdAppUtils.rendererArgs.HYDRA_DISABLED_OPTION_STRING:
+                os.environ['HD_ENABLED'] = '0'
+            elif parserData.rendererPlugin:
+                os.environ['HD_DEFAULT_RENDERER'] = parserData.rendererPlugin
 
             self._openSettings2(parserData.defaultSettings)
 
@@ -1362,19 +1357,6 @@ class AppController(QtCore.QObject):
         self._dataModel._clearCaches()
 
         self._refreshCameraListAndMenu(preserveCurrCamera = preserveCamera)
-
-    @staticmethod
-    def GetRendererOptionChoices():
-        ids = UsdImagingGL.Engine.GetRendererPlugins()
-        choices = []
-        if ids:
-            choices = [UsdImagingGL.Engine.GetRendererDisplayName(x) 
-                        for x in ids]
-            choices.append(AppController.HYDRA_DISABLED_OPTION_STRING)
-        else:
-            choices = [AppController.HYDRA_DISABLED_OPTION_STRING]
-
-        return choices
 
     # Render plugin support
     def _rendererPluginChanged(self, plugin):

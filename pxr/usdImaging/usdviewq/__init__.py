@@ -121,14 +121,13 @@ class Launcher(object):
         '''
         from pxr import UsdUtils
 
-        parser.add_argument('--renderer', action='store',
-                            type=str, dest='renderer',
-                            choices=AppController.GetRendererOptionChoices(),
-                            help="Which render backend to use (named as it "
+        UsdAppUtils.rendererArgs.AddCmdlineArgs(parser,
+                altHelpText=("Which render backend to use (named as it "
                             "appears in the menu).  Use '%s' to "
                             "turn off Hydra renderers." %
-                            AppController.HYDRA_DISABLED_OPTION_STRING,
-                            default='')
+                        UsdAppUtils.rendererArgs.HYDRA_DISABLED_OPTION_STRING
+                            ),
+                allowHydraDisabled=True)
         
         parser.add_argument('--select', action='store', default='/',
                             dest='primPath', type=str,
