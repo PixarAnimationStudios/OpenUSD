@@ -759,19 +759,6 @@ public:
         return resolver.GetModificationTimestamp(path, resolvedPath);
     }
 
-    virtual bool FetchToLocalResolvedPath(
-        const std::string& path,
-        const std::string& resolvedPath) override
-    {
-        ArResolver& resolver = _GetResolver(path);
-        if (ArIsPackageRelativePath(path)) {
-            return resolver.FetchToLocalResolvedPath(
-                ArSplitPackageRelativePathOuter(path).first,
-                ArSplitPackageRelativePathOuter(resolvedPath).first);
-        }
-        return resolver.FetchToLocalResolvedPath(path, resolvedPath);
-    }
-
     virtual std::shared_ptr<ArAsset> _OpenAsset(
         const ArResolvedPath& resolvedPath) override
     { 
@@ -1477,14 +1464,6 @@ ArResolver::_BindContext(
     const ArResolverContext& context,
     VtValue* bindingData)
 {
-}
-
-bool
-ArResolver::FetchToLocalResolvedPath(
-    const std::string& path,
-    const std::string& resolvedPath)
-{
-    return true;
 }
 
 bool
