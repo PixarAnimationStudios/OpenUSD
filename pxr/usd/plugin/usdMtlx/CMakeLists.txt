@@ -83,12 +83,21 @@ pxr_register_test(testUsdMtlxDiscovery
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdMtlxFileFormat
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMtlxFileFormat"
-    DIFF_COMPARE Looks.usda NodeGraphs.usda usd_preview_surface_gold.usda
-    EXPECTED_RETURN_CODE 0
-)
+if (PXR_USE_AR_2)
+    pxr_register_test(testUsdMtlxFileFormat
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMtlxFileFormat"
+        DIFF_COMPARE Looks.usda NodeGraphs.usda usd_preview_surface_gold.usda Include.usda Include_From_Usdz.usda
+        EXPECTED_RETURN_CODE 0
+    )
+else()
+    pxr_register_test(testUsdMtlxFileFormat
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMtlxFileFormat"
+        DIFF_COMPARE Looks.usda NodeGraphs.usda
+        EXPECTED_RETURN_CODE 0
+    )
+endif()
 
 pxr_register_test(testUsdMtlxParser
     PYTHON

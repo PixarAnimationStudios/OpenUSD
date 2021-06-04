@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/plugin/usdMtlx/utils.h"
 #include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ndr/debugCodes.h"
@@ -215,39 +216,112 @@ UsdMtlxStandardFileExtensions()
     return extensions;
 }
 
+#if AR_VERSION > 1
+static void
+_ReadFromAsset(mx::DocumentPtr doc, const ArResolvedPath& resolvedPath,
+               const mx::FileSearchPath& searchPath = mx::FileSearchPath(),
+               const mx::XmlReadOptions* readOptionsIn = nullptr)
+{
+    std::shared_ptr<const char> buffer;
+    size_t bufferSize = 0;
+
+    std::tie(buffer, bufferSize) = [&resolvedPath]() {
+        const std::shared_ptr<ArAsset> asset = 
+            ArGetResolver().OpenAsset(resolvedPath);
+        return asset ?
+            std::make_pair(asset->GetBuffer(), asset->GetSize()) :
+            std::make_pair(std::shared_ptr<const char>(), 0ul);
+    }();
+
+    if (!buffer) {
+        TF_RUNTIME_ERROR("Unable to open MaterialX document '%s'",
+                         resolvedPath.GetPathString().c_str());
+        return;
+    }
+
+    // Copy contents of file into a string to pass to MaterialX. 
+    // MaterialX does have a std::istream-based API so we could try to use that
+    // if the string copy becomes a burden.
+    const std::string s(buffer.get(), bufferSize);
+
+    // Set up an XmlReadOptions with a callback to this function so that we
+    // can also handle any XInclude paths using the ArAsset API.
+    mx::XmlReadOptions readOptions =
+        readOptionsIn ? *readOptionsIn : mx::XmlReadOptions();
+    readOptions.readXIncludeFunction = 
+        [&resolvedPath](mx::DocumentPtr newDoc, 
+                        const mx::FilePath& newFilename,
+                        const mx::FileSearchPath& newSearchPath, 
+                        const mx::XmlReadOptions* newReadOptions)
+        {
+            // MaterialX does not anchor XInclude'd file paths to the source
+            // document's path, so we need to do that ourselves to pass to Ar.
+            std::string newFilePath;
+
+            if (ArIsPackageRelativePath(resolvedPath)) {
+                // If the source file is a package like foo.usdz[a/b/doc.mx],
+                // we want to anchor the new filename to the packaged path, so
+                // we'd wind up with foo.usdz[a/b/included.mx].
+                std::string packagePath, packagedPath;
+                std::tie(packagePath, packagedPath) = 
+                    ArSplitPackageRelativePathInner(resolvedPath);
+
+                std::string newPackagedPath = TfGetPathName(packagedPath);
+                newPackagedPath = newPackagedPath.empty() ? 
+                    newFilename.asString() : 
+                    TfStringCatPaths(newPackagedPath, newFilename);
+
+                newFilePath = ArJoinPackageRelativePath(
+                    packagePath, newPackagedPath);
+            }
+            else {
+                // Otherwise use ArResolver to anchor newFilename to the
+                // source file.
+                newFilePath = ArGetResolver().CreateIdentifier(
+                    newFilename, resolvedPath);
+            }
+
+            const ArResolvedPath newResolvedPath = ArGetResolver().Resolve(
+                newFilePath);
+            if (!newResolvedPath) {
+                TF_RUNTIME_ERROR("Unable to open MaterialX document '%s'",
+                                 newFilePath.c_str());
+                return;
+            }
+
+            _ReadFromAsset(newDoc, newResolvedPath, newSearchPath,
+                           newReadOptions);
+        };
+
+    mx::readFromXmlString(doc, s, &readOptions);
+}
+#endif
+
 mx::DocumentPtr
 UsdMtlxReadDocument(const std::string& resolvedPath)
 {
     try {
         mx::DocumentPtr doc = mx::createDocument();
 
+#if AR_VERSION == 1
+        mx::readFromXmlFile(doc, resolvedPath);
+        return doc;
+#else
         // If resolvedPath points to a file on disk read from it directly
-        // otherwise use the ArAsset API to read it from whatever backing store
-        // it points to.
-        //
-        // The latter requires a string copy since the buffer returned by
-        // ArAsset may not end in a NULL byte.  MaterialX does have a
-        // std::istream based API so we could try to use that if the string copy
-        // becomes a burden.
+        // otherwise use the more general ArAsset API to read it from
+        // whatever backing store it points to.
         if (TfIsFile(resolvedPath)) {
             mx::readFromXmlFile(doc, resolvedPath);
             return doc;
         }
         else {
-            if (const std::shared_ptr<ArAsset> asset = 
-                ArGetResolver().OpenAsset(ArResolvedPath(resolvedPath))) {
-
-                const std::shared_ptr<const char> buffer = asset->GetBuffer();
-                if (buffer) {
-                    std::string s(buffer.get(), asset->GetSize());
-                    mx::readFromXmlString(doc, s);
-                    return doc;
-                }
+            TfErrorMark m;
+            _ReadFromAsset(doc, ArResolvedPath(resolvedPath));
+            if (m.IsClean()) {
+                return doc;
             }
-
-            TF_RUNTIME_ERROR("Unable to open MaterialX document '%s'",
-                             resolvedPath.c_str());
         }
+#endif
     }
     catch (mx::ExceptionFoundCycle& x) {
         TF_RUNTIME_ERROR("MaterialX cycle found reading '%s': %s", 
