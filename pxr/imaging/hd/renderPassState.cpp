@@ -280,6 +280,19 @@ HdRenderPassState::GetAovBindings() const
 }
 
 void
+HdRenderPassState::SetAovInputBindings(
+        HdRenderPassAovBindingVector const& aovBindings)
+{
+    _aovInputBindings= aovBindings;
+}
+
+HdRenderPassAovBindingVector const&
+HdRenderPassState::GetAovInputBindings() const
+{
+    return _aovInputBindings;
+}
+
+void
 HdRenderPassState::SetUseAovMultiSample(bool state)
 {
     _useMultiSampleAov = state;

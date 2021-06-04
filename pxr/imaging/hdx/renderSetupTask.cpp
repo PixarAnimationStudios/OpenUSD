@@ -180,6 +180,7 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
     _overrideWindowPolicy = params.overrideWindowPolicy;
     _cameraId = params.camera;
     _aovBindings = params.aovBindings;
+    _aovInputBindings = params.aovInputBindings;
 }
 
 void
@@ -203,6 +204,7 @@ HdxRenderSetupTask::_PrepareAovBindings(HdTaskContext* ctx,
     HdRenderPassStateSharedPtr &renderPassState =
             _GetRenderPassState(renderIndex);
     renderPassState->SetAovBindings(_aovBindings);
+    renderPassState->SetAovInputBindings(_aovInputBindings);
 }
 
 void
@@ -302,6 +304,9 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
     for (auto const& a : pv.aovBindings) {
         out << a << " ";
     }
+    for (auto const& a : pv.aovInputBindings) {
+        out << a << " (input) ";
+    }
     return out;
 }
 
@@ -322,6 +327,7 @@ bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
            lhs.pointSelectedSize        == rhs.pointSelectedSize        &&
  
            lhs.aovBindings              == rhs.aovBindings              &&
+           lhs.aovInputBindings         == rhs.aovInputBindings         &&
            
            lhs.depthBiasUseDefault      == rhs.depthBiasUseDefault      &&
            lhs.depthBiasEnable          == rhs.depthBiasEnable          &&

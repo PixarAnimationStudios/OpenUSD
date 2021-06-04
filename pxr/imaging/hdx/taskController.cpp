@@ -914,6 +914,7 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
     // that specifies no clear color for the remaining render tasks.
     HdRenderPassAovBindingVector aovBindingsClear;
     HdRenderPassAovBindingVector aovBindingsNoClear;
+    HdRenderPassAovBindingVector aovInputBindings;
     aovBindingsClear.resize(localOutputs.size());
     aovBindingsNoClear.resize(aovBindingsClear.size());
 
@@ -925,7 +926,13 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
 
         aovBindingsNoClear[i] = aovBindingsClear[i];
         aovBindingsNoClear[i].clearValue = VtValue();
+
+        if (localOutputs[i] == HdAovTokens->depth) {
+            aovInputBindings.push_back(aovBindingsNoClear[i]);
+        }
     }
+
+    const SdfPath volumeId = _GetRenderTaskPath(HdStMaterialTagTokens->volume);
 
     // Set AOV bindings on render tasks
     for (SdfPath const& renderTaskId : _renderTaskIds) {
@@ -941,6 +948,9 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
                 HdTokens->params);
 
         rParams.aovBindings = aovBindings;
+        if (renderTaskId == volumeId) {
+            rParams.aovInputBindings = aovInputBindings;
+        }
 
         _delegate.SetParameter(renderTaskId, HdTokens->params, rParams);
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
@@ -1237,6 +1247,7 @@ HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
         mergedParams.framing = oldParams.framing;
         mergedParams.overrideWindowPolicy = oldParams.overrideWindowPolicy;
         mergedParams.aovBindings = oldParams.aovBindings;
+        mergedParams.aovInputBindings = oldParams.aovInputBindings;
 
         // We also explicitly manage blend params, based on the material tag.
         // XXX: Note: if params.enableIdRender is set, we want to use default

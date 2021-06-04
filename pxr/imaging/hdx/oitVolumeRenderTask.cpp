@@ -45,9 +45,6 @@ HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
             HdxPackageRenderPassOitVolumeShader()))
     , _isOitEnabled(HdxOitBufferAccessor::IsOitEnabled())
 {
-    // Raymarching shader needs to stop when hitting opaque geometry,
-    // so allow shader to read the depth buffer.
-    _oitVolumeRenderPassShader->SetAovReadbacks({HdAovTokens->depth});
 }
 
 HdxOitVolumeRenderTask::~HdxOitVolumeRenderTask() = default;
@@ -80,6 +77,12 @@ HdxOitVolumeRenderTask::Prepare(HdTaskContext* ctx,
         // oit draw items (i.e. no translucent or volumetric draw items)
         if (HdxRenderTask::_HasDrawItems()) {
             HdxOitBufferAccessor(ctx).RequestOitBuffers();
+        }
+
+        if (HdRenderPassStateSharedPtr const state = _GetRenderPassState(ctx)) {
+            _oitVolumeRenderPassShader->UpdateAovInputTextures(
+                state->GetAovInputBindings(),
+                renderIndex);
         }
     }
 }

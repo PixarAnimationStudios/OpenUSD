@@ -40,6 +40,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using HdStRenderPassShaderSharedPtr =
     std::shared_ptr<class HdStRenderPassShader>;
+class HdRenderIndex;
+using HdRenderPassAovBindingVector =
+    std::vector<struct HdRenderPassAovBinding>;
 
 /// \class HdStRenderPassShader
 ///
@@ -52,25 +55,28 @@ public:
     HDST_API
     HdStRenderPassShader(TfToken const &glslfxFile);
     HDST_API
-    virtual ~HdStRenderPassShader() override;
+    ~HdStRenderPassShader() override;
 
     /// HdShader overrides
     HDST_API
-    virtual ID ComputeHash() const override;
+    ID ComputeHash() const override;
     HDST_API
-    virtual std::string GetSource(TfToken const &shaderStageKey) const override;
+    std::string GetSource(TfToken const &shaderStageKey) const override;
     HDST_API
-    virtual void BindResources(int program,
+    void BindResources(int program,
                                HdSt_ResourceBinder const &binder,
                                HdRenderPassState const &state) override;
     HDST_API
-    virtual void UnbindResources(int program,
+    void UnbindResources(int program,
                                  HdSt_ResourceBinder const &binder,
                                  HdRenderPassState const &state) override;
     HDST_API
-    virtual void AddBindings(HdBindingRequestVector *customBindings) override;
+    void AddBindings(HdBindingRequestVector *customBindings) override;
     HDST_API
-    virtual HdSt_MaterialParamVector const& GetParams() const override;
+    HdSt_MaterialParamVector const& GetParams() const override;
+
+    HDST_API
+    NamedTextureHandleVector const & GetNamedTextureHandles() const override;
 
     /// Add a custom binding request for use when this shader executes.
     HDST_API
@@ -84,11 +90,6 @@ public:
     HDST_API
     void ClearBufferBindings();
 
-    /// Sets the AOVs requested to be read back in the shader. The shader
-    /// can access the requested AOVs as HdGet_AOVNAMEReadback().
-    HDST_API
-    void SetAovReadbacks(const TfTokenVector &aovNames);
-
     HdCullStyle GetCullStyle() const {
         return _cullStyle;
     }
@@ -96,6 +97,17 @@ public:
     void SetCullStyle(HdCullStyle cullStyle) {
         _cullStyle = cullStyle;
     }
+
+    // Sets the textures and params such that the shader can access
+    // the requested aovs with HdGet_AOVNAMEReadback().
+    //
+    // Needs to be called in task prepare or sync since it is
+    // allocating texture handles.
+    //
+    HDST_API
+    void UpdateAovInputTextures(
+        HdRenderPassAovBindingVector const &aovInputBindings,
+        HdRenderIndex * const renderIndex);
 
 private:
     TfToken _glslfxFile;
@@ -106,7 +118,8 @@ private:
     TfHashMap<TfToken, HdBindingRequest, TfToken::HashFunctor> _customBuffers;
     HdCullStyle _cullStyle;
 
-    TfTokenVector _aovReadbacks;
+    NamedTextureHandleVector _namedTextureHandles;
+
     HdSt_MaterialParamVector _params;
 
     // No copying

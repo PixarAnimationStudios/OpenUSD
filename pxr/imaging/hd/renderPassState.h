@@ -218,6 +218,12 @@ public:
     HD_API
     HdRenderPassAovBindingVector const& GetAovBindings() const;
 
+    /// Set the AOVs that this renderpass needs to read from.
+    HD_API
+    void SetAovInputBindings(HdRenderPassAovBindingVector const &aovBindings);
+    HD_API
+    HdRenderPassAovBindingVector const& GetAovInputBindings() const;
+
     /// Returns true if the render pass wants to render into the multi-sample
     /// aovs. Returns false if the render wants to render into the resolve aovs.
     HD_API
@@ -406,6 +412,7 @@ protected:
     std::vector<ColorMask> _colorMasks;
 
     HdRenderPassAovBindingVector _aovBindings;
+    HdRenderPassAovBindingVector _aovInputBindings;
     bool _useMultiSampleAov;
 };
 

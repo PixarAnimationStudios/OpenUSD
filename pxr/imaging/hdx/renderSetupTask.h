@@ -112,6 +112,7 @@ private:
     // and preferred).
     GfVec4d _viewport;
     HdRenderPassAovBindingVector _aovBindings;
+    HdRenderPassAovBindingVector _aovInputBindings;
 
     void _SetRenderpassShadersForStorm(
         HdxRenderTaskParams const& params,
@@ -206,6 +207,7 @@ struct HdxRenderTaskParams
     // XXX: As a transitional API, if this is empty it indicates the renderer
     // should write color and depth to the GL framebuffer.
     HdRenderPassAovBindingVector aovBindings;
+    HdRenderPassAovBindingVector aovInputBindings;
 
     // ---------------------------------------------------------------------- //
     // Render pipeline state for rasterizers.
