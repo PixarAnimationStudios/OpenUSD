@@ -38,6 +38,10 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleApplyAPI")
         cls.MultiApplyAPIType = \
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestMultiApplyAPI")
+        cls.SingleCanApplyAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleCanApplyAPI")
+        cls.MultiCanApplyAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestMultiCanApplyAPI")
     
     def test_SimpleTypedSchemaPrimDefinition(self):
         """
@@ -888,6 +892,245 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
                       deleted = ["TestSingleApplyAPI", "TestMultiApplyAPI:bar",
                                  "BogusTypeName", "TestMultiApplyAPI"])
 
+    def test_CanApplyAPI(self):
+        """
+        Tests the details of the Usd.Prim.CanApplyAPI.
+        """
+        stage = Usd.Stage.CreateInMemory()
+        rootLayer = stage.GetRootLayer()
+        sessionLayer = stage.GetSessionLayer()
+        self.assertTrue(rootLayer)
+        self.assertTrue(sessionLayer)
+
+        # Add prims of various types to test CanApplyAPI.
+        prim = stage.DefinePrim(
+            "/Prim")
+        prim2 = stage.DefinePrim(
+            "/Prim2", "TestTypedSchema")
+        prim3 = stage.DefinePrim(
+            "/Prim3", "TestTypedSchemaForAutoApply")
+        prim4 = stage.DefinePrim(
+            "/Prim4", "TestDerivedTypedSchemaForAutoApplyConcreteBase")
+        prim5 = stage.DefinePrim(
+            "/Prim5", "TestDerivedTypedSchemaForAutoApplyAbstractBase")
+
+        # Single apply schema with no specified "apiSchemaCanOnlyApplyTo" 
+        # metadata. Can apply to all prims.
+        self.assertEqual(Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+            "TestSingleApplyAPI"), [])
+        self.assertTrue(prim.CanApplyAPI(self.SingleApplyAPIType))
+        self.assertTrue(prim2.CanApplyAPI(self.SingleApplyAPIType))
+        self.assertTrue(prim3.CanApplyAPI(self.SingleApplyAPIType))
+        self.assertTrue(prim4.CanApplyAPI(self.SingleApplyAPIType))
+        self.assertTrue(prim5.CanApplyAPI(self.SingleApplyAPIType))
+
+        # Multiple apply schema with no specified "apiSchemaCanOnlyApplyTo" 
+        # metadata and no "allowedInstanceNames". Can apply to all prims with 
+        # all instance names (with the notable exception of instance names that
+        # match a property name from the schema).
+        self.assertEqual(Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+            "TestMultiApplyAPI", "foo"), [])
+        self.assertTrue(Usd.SchemaRegistry.IsAllowedAPISchemaInstanceName(
+            "TestMultiApplyAPI", "foo"))
+        self.assertTrue(prim.CanApplyAPI(self.MultiApplyAPIType, "foo"))
+        self.assertTrue(prim2.CanApplyAPI(self.MultiApplyAPIType, "foo"))
+        self.assertTrue(prim3.CanApplyAPI(self.MultiApplyAPIType, "foo"))
+        self.assertTrue(prim4.CanApplyAPI(self.MultiApplyAPIType, "foo"))
+        self.assertTrue(prim5.CanApplyAPI(self.MultiApplyAPIType, "foo"))
+
+        self.assertEqual(Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+            "TestMultiApplyAPI", "bar"), [])
+        self.assertTrue(Usd.SchemaRegistry.IsAllowedAPISchemaInstanceName(
+            "TestMultiApplyAPI", "bar"))
+        self.assertTrue(prim.CanApplyAPI(self.MultiApplyAPIType, "bar"))
+        self.assertTrue(prim2.CanApplyAPI(self.MultiApplyAPIType, "bar"))
+        self.assertTrue(prim3.CanApplyAPI(self.MultiApplyAPIType, "bar"))
+        self.assertTrue(prim4.CanApplyAPI(self.MultiApplyAPIType, "bar"))
+        self.assertTrue(prim5.CanApplyAPI(self.MultiApplyAPIType, "bar"))
+
+        self.assertEqual(Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+            "TestMultiApplyAPI", "baz"), [])
+        self.assertTrue(Usd.SchemaRegistry.IsAllowedAPISchemaInstanceName(
+            "TestMultiApplyAPI", "baz"))
+        self.assertTrue(prim.CanApplyAPI(self.MultiApplyAPIType, "baz"))
+        self.assertTrue(prim2.CanApplyAPI(self.MultiApplyAPIType, "baz"))
+        self.assertTrue(prim3.CanApplyAPI(self.MultiApplyAPIType, "baz"))
+        self.assertTrue(prim4.CanApplyAPI(self.MultiApplyAPIType, "baz"))
+        self.assertTrue(prim5.CanApplyAPI(self.MultiApplyAPIType, "baz"))
+
+        self.assertEqual(Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+            "TestMultiApplyAPI", "Bar"), [])
+        self.assertTrue(Usd.SchemaRegistry.IsAllowedAPISchemaInstanceName(
+            "TestMultiApplyAPI", "Bar"))
+        self.assertTrue(prim.CanApplyAPI(self.MultiApplyAPIType, "Bar"))
+        self.assertTrue(prim2.CanApplyAPI(self.MultiApplyAPIType, "Bar"))
+        self.assertTrue(prim3.CanApplyAPI(self.MultiApplyAPIType, "Bar"))
+        self.assertTrue(prim4.CanApplyAPI(self.MultiApplyAPIType, "Bar"))
+        self.assertTrue(prim5.CanApplyAPI(self.MultiApplyAPIType, "Bar"))
+
+        self.assertEqual(Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+            "TestMultiApplyAPI", "qux"), [])
+        self.assertTrue(Usd.SchemaRegistry.IsAllowedAPISchemaInstanceName(
+            "TestMultiApplyAPI", "qux"))
+        self.assertTrue(prim.CanApplyAPI(self.MultiApplyAPIType, "qux"))
+        self.assertTrue(prim2.CanApplyAPI(self.MultiApplyAPIType, "qux"))
+        self.assertTrue(prim3.CanApplyAPI(self.MultiApplyAPIType, "qux"))
+        self.assertTrue(prim4.CanApplyAPI(self.MultiApplyAPIType, "qux"))
+        self.assertTrue(prim5.CanApplyAPI(self.MultiApplyAPIType, "qux"))
+
+        # As mentioned above, property names of the API schema are not valid
+        # instance names and will return false for CanApplyAPI
+        self.assertFalse(Usd.SchemaRegistry.IsAllowedAPISchemaInstanceName(
+            "TestMultiApplyAPI", "bool_attr"))
+        self.assertFalse(prim.CanApplyAPI(self.MultiApplyAPIType, "bool_attr"))
+        self.assertFalse(prim2.CanApplyAPI(self.MultiApplyAPIType, "bool_attr"))
+        self.assertFalse(prim3.CanApplyAPI(self.MultiApplyAPIType, "bool_attr"))
+        self.assertFalse(prim4.CanApplyAPI(self.MultiApplyAPIType, "bool_attr"))
+        self.assertFalse(prim5.CanApplyAPI(self.MultiApplyAPIType, "bool_attr"))
+
+        self.assertFalse(Usd.SchemaRegistry.IsAllowedAPISchemaInstanceName(
+            "TestMultiApplyAPI", "relationship"))
+        self.assertFalse(prim.CanApplyAPI(self.MultiApplyAPIType, "relationship"))
+        self.assertFalse(prim2.CanApplyAPI(self.MultiApplyAPIType, "relationship"))
+        self.assertFalse(prim3.CanApplyAPI(self.MultiApplyAPIType, "relationship"))
+        self.assertFalse(prim4.CanApplyAPI(self.MultiApplyAPIType, "relationship"))
+        self.assertFalse(prim5.CanApplyAPI(self.MultiApplyAPIType, "relationship"))
+
+        # Single apply API schema that does specify an "apiSchemaCanOnlyApplyTo"
+        # list. prim3 is a type in the list and prim4 derives from a type in the
+        # list so only these return true.
+        self.assertEqual(Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+            "TestSingleCanApplyAPI"), 
+            ["TestTypedSchemaForAutoApply", 
+             "TestTypedSchemaForAutoApplyConcreteBase"])
+        self.assertFalse(prim.CanApplyAPI(self.SingleCanApplyAPIType))
+        self.assertFalse(prim2.CanApplyAPI(self.SingleCanApplyAPIType))
+        self.assertTrue(prim3.CanApplyAPI(self.SingleCanApplyAPIType))
+        self.assertTrue(prim4.CanApplyAPI(self.SingleCanApplyAPIType))
+        self.assertFalse(prim5.CanApplyAPI(self.SingleCanApplyAPIType))
+
+        # Multiple apply API schema that specifies allow instance names 
+        # "foo", "bar", and "baz". All other instance names aren't allowed 
+        # and will return false.
+        self.assertFalse(Usd.SchemaRegistry.IsAllowedAPISchemaInstanceName(
+            "TestMultiCanApplyAPI", "Bar"))
+        self.assertFalse(prim.CanApplyAPI(self.MultiCanApplyAPIType, "Bar"))
+        self.assertFalse(prim2.CanApplyAPI(self.MultiCanApplyAPIType, "Bar"))
+        self.assertFalse(prim3.CanApplyAPI(self.MultiCanApplyAPIType, "Bar"))
+        self.assertFalse(prim4.CanApplyAPI(self.MultiCanApplyAPIType, "Bar"))
+        self.assertFalse(prim5.CanApplyAPI(self.MultiCanApplyAPIType, "Bar"))
+
+        self.assertFalse(Usd.SchemaRegistry.IsAllowedAPISchemaInstanceName(
+            "TestMultiCanApplyAPI", "qux"))
+        self.assertFalse(prim.CanApplyAPI(self.MultiCanApplyAPIType, "qux"))
+        self.assertFalse(prim2.CanApplyAPI(self.MultiCanApplyAPIType, "qux"))
+        self.assertFalse(prim3.CanApplyAPI(self.MultiCanApplyAPIType, "qux"))
+        self.assertFalse(prim4.CanApplyAPI(self.MultiCanApplyAPIType, "qux"))
+        self.assertFalse(prim5.CanApplyAPI(self.MultiCanApplyAPIType, "qux"))
+
+        # Same multiple apply API schema with allowed instance name "baz". 
+        # The API schema type specifies an "apiSchemaCanOnlyApplyTo" list so 
+        # this instance can only be applied to those types. prim3 is a type in 
+        # the list and prim5 derives from a type in the list so only these 
+        # return true.
+        self.assertEqual(Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+            "TestMultiCanApplyAPI", "baz"), 
+            ["TestTypedSchemaForAutoApply", 
+             "TestTypedSchemaForAutoApplyAbstractBase"])
+        self.assertEqual(
+            Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+                "TestMultiCanApplyAPI", "baz"), 
+            Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+                "TestMultiCanApplyAPI"))
+        self.assertTrue(Usd.SchemaRegistry.IsAllowedAPISchemaInstanceName(
+            "TestMultiCanApplyAPI", "baz"))
+        self.assertFalse(prim.CanApplyAPI(self.MultiCanApplyAPIType, "baz"))
+        self.assertFalse(prim2.CanApplyAPI(self.MultiCanApplyAPIType, "baz"))
+        self.assertTrue(prim3.CanApplyAPI(self.MultiCanApplyAPIType, "baz"))
+        self.assertFalse(prim4.CanApplyAPI(self.MultiCanApplyAPIType, "baz"))
+        self.assertTrue(prim5.CanApplyAPI(self.MultiCanApplyAPIType, "baz"))
+
+        # Same multiple apply API schema with allowed instance name "foo". 
+        # The API schema type specifies an "apiSchemaCanOnlyApplyTo" list 
+        # specifically for "foo" so this instance can only be applied to those 
+        # types. prim3 is a type in the list and prim4 derives from a type in 
+        # the list so only these return true.
+        self.assertEqual(Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+            "TestMultiCanApplyAPI", "foo"), 
+            ["TestTypedSchemaForAutoApply", 
+             "TestTypedSchemaForAutoApplyConcreteBase"])
+        self.assertNotEqual(
+            Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+                "TestMultiCanApplyAPI", "foo"), 
+            Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+                "TestMultiCanApplyAPI"))
+        self.assertTrue(Usd.SchemaRegistry.IsAllowedAPISchemaInstanceName(
+            "TestMultiCanApplyAPI", "foo"))
+        self.assertFalse(prim.CanApplyAPI(self.MultiCanApplyAPIType, "foo"))
+        self.assertFalse(prim2.CanApplyAPI(self.MultiCanApplyAPIType, "foo"))
+        self.assertTrue(prim3.CanApplyAPI(self.MultiCanApplyAPIType, "foo"))
+        self.assertTrue(prim4.CanApplyAPI(self.MultiCanApplyAPIType, "foo"))
+        self.assertFalse(prim5.CanApplyAPI(self.MultiCanApplyAPIType, "foo"))
+
+        # Same multiple apply API schema with allowed instance name "bar". 
+        # The API schema type specifies yet another "apiSchemaCanOnlyApplyTo" 
+        # list specifically for "bar" so this instance can only be applied to 
+        # those types. prim4 and prim5 each derive from a different type in 
+        # the list so only these return true.
+        self.assertEqual(Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+            "TestMultiCanApplyAPI", "bar"), 
+            ["TestTypedSchemaForAutoApplyAbstractBase", 
+             "TestTypedSchemaForAutoApplyConcreteBase"])
+        self.assertNotEqual(
+            Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+                "TestMultiCanApplyAPI", "bar"), 
+            Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
+                "TestMultiCanApplyAPI"))
+        self.assertTrue(Usd.SchemaRegistry.IsAllowedAPISchemaInstanceName(
+            "TestMultiCanApplyAPI", "bar"))
+        self.assertFalse(prim.CanApplyAPI(self.MultiCanApplyAPIType, "bar"))
+        self.assertFalse(prim2.CanApplyAPI(self.MultiCanApplyAPIType, "bar"))
+        self.assertFalse(prim3.CanApplyAPI(self.MultiCanApplyAPIType, "bar"))
+        self.assertTrue(prim4.CanApplyAPI(self.MultiCanApplyAPIType, "bar"))
+        self.assertTrue(prim5.CanApplyAPI(self.MultiCanApplyAPIType, "bar"))
+
+        # Error conditions
+        # Coding error if called on single apply schema with an instance name.
+        with self.assertRaises(Tf.ErrorException):
+            self.assertFalse(prim.CanApplyAPI(self.SingleApplyAPIType, "foo"))
+        # Coding error if called on multiple apply schema without an instance 
+        # name.
+        with self.assertRaises(Tf.ErrorException):
+            self.assertFalse(prim.CanApplyAPI(self.MultiApplyAPIType))
+        # Coding error if called on multiple apply schema with an empty instance 
+        # name.
+        with self.assertRaises(Tf.ErrorException):
+            self.assertFalse(prim.CanApplyAPI(self.MultiApplyAPIType, ""))
+
+        # Verify whyNot annotations when CanApplyAPI is false.
+        result = prim4.CanApplyAPI(self.MultiCanApplyAPIType, "bar")
+        self.assertTrue(result)
+        self.assertEqual(result.whyNot, "")
+
+        result = prim.CanApplyAPI(self.MultiCanApplyAPIType, "qux")
+        self.assertFalse(result)
+        self.assertEqual(result.whyNot, 
+                         "'qux' is not an allowed instance name for multiple "
+                         "apply API schema 'TestMultiCanApplyAPI'.")
+
+        result = prim.CanApplyAPI(self.MultiCanApplyAPIType, "bar")
+        self.assertFalse(result)
+        self.assertEqual(result.whyNot, 
+                         "API schema 'TestMultiCanApplyAPI:bar' can only be "
+                         "applied to prims of the following types: "
+                         "TestTypedSchemaForAutoApplyAbstractBase, "
+                         "TestTypedSchemaForAutoApplyConcreteBase.")
+
+        result = prim.CanApplyAPI(self.MultiApplyAPIType, "bool_attr")
+        self.assertFalse(result)
+        self.assertEqual(result.whyNot, 
+                         "'bool_attr' is not an allowed instance name for "
+                         "multiple apply API schema 'TestMultiApplyAPI'.")
 
 if __name__ == "__main__":
     unittest.main()

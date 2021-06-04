@@ -211,6 +211,37 @@ public:
     static std::pair<TfToken, TfToken> GetTypeNameAndInstance(
             const TfToken &apiSchemaName);
 
+    /// Returns true if the given \p instanceName is an allowed instance name
+    /// for the multiple apply API schema named \p apiSchemaName. 
+    /// 
+    /// Any instance name that matches the name of a property provided by the 
+    /// API schema is disallowed and will return false. If the schema type
+    /// has plugin metadata that specifies allowed instance names, then only
+    /// those specified names are allowed for the schema type.
+    /// If the instance name is empty or the API is not a multiple apply schema,
+    /// this will return false.
+    USD_API
+    static bool IsAllowedAPISchemaInstanceName(
+        const TfToken &apiSchemaName,
+        const TfToken &instanceName);
+
+    /// Returns a list of prim type names that the given \p apiSchemaName can
+    /// only be applied to. 
+    /// 
+    /// A non-empty list indicates that the API schema can only be applied to 
+    /// prim that are or derive from prim type names in the list. If the list
+    /// is empty, the API schema can be applied to prims of any type.
+    /// 
+    /// If a non-empty \p instanceName is provided, this will first look for
+    /// a list of "can only apply to" names specific to that instance of the API
+    /// schema and return that if found. If a list is not found for the specific
+    /// instance, it will fall back to looking for a "can only apply to" list
+    /// for just the schema name itself.
+    USD_API
+    static const TfTokenVector &GetAPISchemaCanOnlyApplyToTypeNames(
+        const TfToken &apiSchemaName, 
+        const TfToken &instanceName = TfToken());
+
     /// Returns a map of the names of all registered auto apply API schemas
     /// to the list of type names each is registered to be auto applied to.
     ///
@@ -325,6 +356,17 @@ private:
 };
 
 USD_API_TEMPLATE_CLASS(TfSingleton<UsdSchemaRegistry>);
+
+// Utility function for extracting the metadata about applying API schemas from
+// the plugin metadata for the schema's type. It is useful for certain clients
+// to be able to access this plugin data in the same way that the 
+// UsdSchemaRegistry does.
+void Usd_GetAPISchemaPluginApplyToInfoForType(
+    const TfType &apiSchemaType,
+    const TfToken &apiSchemaName,
+    std::map<TfToken, TfTokenVector> *autoApplyAPISchemasMap,
+    TfHashMap<TfToken, TfTokenVector, TfHash> *canOnlyApplyAPISchemasMap,
+    TfHashMap<TfToken, TfToken::Set, TfHash> *allowedInstanceNamesMap);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -10,6 +10,7 @@ def "GLOBAL" (
     customData = {
         string libraryName      = "testUsdAppliedAPISchemas"
         string libraryPath      = "pxr/usd/usd"
+        bool skipCodeGeneration = true
     }
 )
 {
@@ -44,7 +45,6 @@ class "TestSingleApplyAPI"
     customData = {
         string className = "SingleApplyAPI"
         token[] apiSchemaAutoApplyTo = [
-            "TestTypedSchemaForAutoApply", 
             "TestTypedSchemaForAutoApplyConcreteBase", 
             "TestTypedSchemaForAutoApplyAbstractBase"
         ] 
@@ -60,6 +60,73 @@ class "TestSingleApplyAPI"
         doc = """Boolean attribute"""
     )
     rel single:relationship (
+        doc = """Relationship"""
+    )
+}
+
+class "TestSingleCanApplyAPI"
+(
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "SingleCanApplyAPI"
+        token[] apiSchemaCanOnlyApplyTo = [
+            "TestTypedSchemaForAutoApply", 
+            "TestTypedSchemaForAutoApplyConcreteBase", 
+        ] 
+    }
+    doc = """Test single apply API schema with canOnlyApplyTo restrictions"""
+)
+{
+    uniform token singleCan:token_attr = "bar" (
+        allowedTokens = ["foo", "bar", "baz"]
+        doc = """Token attribute"""
+    )
+    uniform bool singleCan:bool_attr = true (
+        doc = """Boolean attribute"""
+    )
+    rel singleCan:relationship (
+        doc = """Relationship"""
+    )
+}
+
+class "TestMultiCanApplyAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """Test multi-apply API schema with instance name and canOnlyApplyTo restrictions"""
+
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "multi"
+        token[] apiSchemaAllowedInstanceNames = ["foo", "bar", "baz"]
+        token[] apiSchemaCanOnlyApplyTo = [
+            "TestTypedSchemaForAutoApply", 
+            "TestTypedSchemaForAutoApplyAbstractBase"
+        ] 
+        dictionary apiSchemaInstances = {
+            dictionary foo = {
+                token[] apiSchemaCanOnlyApplyTo = [
+                    "TestTypedSchemaForAutoApply", 
+                    "TestTypedSchemaForAutoApplyConcreteBase"
+                ] 
+            }
+            dictionary bar = {
+                token[] apiSchemaCanOnlyApplyTo = [
+                    "TestTypedSchemaForAutoApplyAbstractBase", 
+                    "TestTypedSchemaForAutoApplyConcreteBase"
+                ] 
+            }
+        }
+    }
+)
+{
+    uniform token token_attr = "foo" (
+        allowedTokens = ["foo", "bar", "baz"]
+        doc = """Token attribute"""
+    )
+    uniform bool bool_attr = true (
+        doc = """Boolean attribute"""
+    )
+    rel relationship (
         doc = """Relationship"""
     )
 }
