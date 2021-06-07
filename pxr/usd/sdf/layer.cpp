@@ -533,13 +533,6 @@ SdfLayer::New(
     return layer;
 }
 
-/* static */
-string
-SdfLayer::ComputeRealPath(const string &layerPath)
-{
-    return Sdf_ComputeFilePath(layerPath);
-}
-
 static SdfLayer::FileFormatArguments&
 _CanonicalizeFileFormatArguments(const std::string& filePath,
                                  const SdfFileFormatConstPtr& fileFormat,

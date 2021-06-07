@@ -301,10 +301,6 @@ public:
     /// \name File I/O
     /// @{
 
-    /// Converts \e layerPath to a file system path.
-    SDF_API
-    static std::string ComputeRealPath(const std::string &layerPath);
-
     /// Returns \c true if successful, \c false if an error occurred.
     /// Returns \c false if the layer has no remembered file name or the 
     /// layer type cannot be saved. The layer will not be overwritten if the 
