@@ -1272,6 +1272,12 @@ UsdImagingInstanceAdapter::ProcessPropertyChange(UsdPrim const& prim,
         return dirtyBits;
     }
 
+    // Purpose changes to instances mean we need to resync everything, since
+    // purpose is part of the native instance population state.
+    if (propertyName == UsdGeomTokens->purpose) {
+        return HdChangeTracker::AllDirty;
+    }
+
     // Transform changes to instance prims end up getting folded into the
     // "instanceTransform" instance-rate primvar.
     if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(propertyName)) {
