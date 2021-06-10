@@ -63,16 +63,10 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
     // Calculate the final color of the light
     GfVec4f c(hdc[0]*intensity, hdc[1]*intensity, hdc[2]*intensity, 1.0f); 
 
-    // Get the transform of the light
-    GfMatrix4d transform = _params[HdTokens->transform].Get<GfMatrix4d>();
-    GfVec3d hdp = transform.ExtractTranslation();
-    GfVec4f p = GfVec4f(hdp[0], hdp[1], hdp[2], 1.0f);
-
     // Create the Glf Simple Light object that will be used by the rest
     // of the pipeline. No support for shadows for this translated light.
     GlfSimpleLight l;
     l.SetHasIntensity(intensity != 0.0f);
-    l.SetPosition(p);
     l.SetDiffuse(c);
     l.SetSpecular(l.GetSpecular() * intensity);
     l.SetHasShadow(false);
@@ -89,9 +83,6 @@ HdStLight::_PrepareDomeLight(
     GlfSimpleLight l;
     l.SetHasShadow(false);
     l.SetIsDomeLight(true);
-
-    GfMatrix4d m = sceneDelegate->GetTransform(id);
-    l.SetTransform(m);
 
     {
         const VtValue v = sceneDelegate->GetLightParamValue(
@@ -152,6 +143,27 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
         else {
             _params[HdLightTokens->params] =
                 _ApproximateAreaLight(id, sceneDelegate);
+        }
+    }
+
+    if (bits & (DirtyTransform | DirtyParams)) {
+        GfMatrix4d transform =
+            Get(HdTokens->transform).GetWithDefault<GfMatrix4d>();
+        // Update cached light objects.  Note that simpleLight ignores
+        // scene-delegate transform, in favor of the transform passed in by
+        // params...
+        if (_lightType == HdPrimTypeTokens->domeLight) {
+            GlfSimpleLight light =
+                Get(HdLightTokens->params).GetWithDefault<GlfSimpleLight>();
+            light.SetTransform(transform);
+            _params[HdLightTokens->params] = light;
+        } else if (_lightType != HdPrimTypeTokens->simpleLight) {
+            // e.g. area light
+            GlfSimpleLight light =
+                Get(HdLightTokens->params).GetWithDefault<GlfSimpleLight>();
+            GfVec3d p = transform.ExtractTranslation();
+            light.SetPosition(GfVec4f(p[0], p[1], p[2], 1.0f));
+            _params[HdLightTokens->params] = light;
         }
     }
 
