@@ -92,7 +92,7 @@ _ResolveAssetSymlinks(const SdfAssetPath& assetPath)
     }
 }
 
-// Given the prefix (e.g., //SHOW/myImage.) and suffix (e.g., .exr),
+// Given the prefix (e.g., /someDir/myImage.) and suffix (e.g., .exr),
 // add integer between them and try to resolve. Iterate until
 // resolution succeeded.
 static
@@ -113,17 +113,12 @@ _ResolvedPathForFirstTile(
             // Deal with layer-relative paths.
             path = SdfComputeAssetPathRelativeToLayer(layer, path);
         }
-        // Resolve
-        path = resolver.Resolve(path);
-        if (!path.empty()) {
-            // Attempt to resolve symlinks
-            std::string realPath;
-            if (_ResolveSymlinks(path, &realPath)) {
-                return realPath;
-            } else {
-                return path;
-            }
-        }
+        // Resolve. Unlike the non-UDIM case, we do not resolve symlinks
+        // here to handle the case where the symlinks follow the UDIM
+        // naming pattern but the files that are linked do not. We'll
+        // let whoever consumes the pattern determine if they want to
+        // resolve symlinks themselves.
+        return resolver.Resolve(path);
     }
     return std::string();
 }
@@ -372,7 +367,7 @@ void _WalkGraph(
             // If its type is asset and contains <UDIM>,
             // we resolve the asset path with the udim pattern to a file
             // path with a udim pattern, e.g.,
-            // //SHOW/myImage.<UDIM>.exr to /filePath/myImage.<UDIM>.exr.
+            // /someDir/myImage.<UDIM>.exr to /filePath/myImage.<UDIM>.exr.
             const VtValue value =
                 UsdImaging_ResolveMaterialParamValue(attr, time);
             if (!value.IsEmpty()) {
