@@ -54,8 +54,7 @@ def _SetupOpenGLContext(width=100, height=100):
 
     glWidget = QtOpenGL.QGLWidget(glFormat)
     glWidget.setFixedSize(width, height)
-    glWidget.show()
-    glWidget.setHidden(True)
+    glWidget.makeCurrent()
 
     return glWidget
 
