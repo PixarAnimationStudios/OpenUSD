@@ -147,10 +147,11 @@ accumulatedTransmittance(vec3 rayStartEye, vec3 rayDirectionEye)
     int i = 1;
     
     float totalExtinction = 0.0;
-    
+
+    const vec3 rayStepEye = resolvedStepSizeEyeLighting * rayDirectionEye;
+
     while(i < maxNumSteps) {
-        const vec3 rayPointEye =
-            rayStartEye + resolvedStepSizeEyeLighting * i * rayDirectionEye;
+        const vec3 rayPointEye = rayStartEye + i * rayStepEye;
         const vec3 rayPoint = eyeToLocal(rayPointEye);
 
         if (!inBoundingBox(rayPoint)) {
@@ -234,13 +235,14 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayLength)
     result.color = vec3(0.0);
     result.transmittance = 1.0;
 
+    const vec3 rayStepEye = resolvedStepSizeEye * rayDirectionEye;
+
     const int numSteps =
         int(floor(min(maxNumSteps, rayLength / resolvedStepSizeEye)));
 
     // integrate transmittance and light along ray for bounding box
     while(i < numSteps) {
-        const vec3 rayPointEye =
-            rayStartEye + resolvedStepSizeEye * i * rayDirectionEye;
+        const vec3 rayPointEye = rayStartEye + i * rayStepEye;
         const vec3 rayPoint = eyeToLocal(rayPointEye);
 
         // Evaluate volume shader functions to determine extinction,
@@ -421,12 +423,10 @@ computeRayDirectionEye(vec3 rayPointEye)
     return normalize(dir.xyz - rayPointEye * dir.w);
 }
 
-// Given a ray in eye space, compute the time when it entered the volume
-// (assuming rayDirectionEye is normalized).
-// Note that it is assumed that the ray point is in the volume and the result
-// is negative.
+// Given a ray in eye space starting inside a volume, compute the time when it
+// exists the volume (assuming rayDirectionEye is normalized).
 float
-timeRayEntersVolume(vec3 rayEndEye, vec3 rayDirectionEye)
+timeRayExitsVolume(vec3 rayStartEye, vec3 rayDirectionEye)
 {
     // Eye space to volume bounding box space
 
@@ -434,14 +434,26 @@ timeRayEntersVolume(vec3 rayEndEye, vec3 rayDirectionEye)
         MAT4(HdGet_volumeBBoxInverseTransform()) * instanceModelViewInverse;
 
     // Transform ray to volume bounding box space
-    const vec3 rayEndBBox       = transformPoint(eyeToBBox, rayEndEye);
+    const vec3 rayStartBBox     = transformPoint(eyeToBBox, rayStartEye);
     const vec3 rayDirectionBBox = transformDir  (eyeToBBox, rayDirectionEye);
 
-    // Compute when reversed ray is leaving the volume bounding box
-    return - timeRayExitsBox(rayEndBBox,
-                             -rayDirectionBBox,
-                             vec3(HdGet_volumeBBoxLocalMin().xyz),
-                             vec3(HdGet_volumeBBoxLocalMax().xyz));
+    // Compute when ray is leaving the volume bounding box
+    return timeRayExitsBox(rayStartBBox,
+                           rayDirectionBBox,
+                           vec3(HdGet_volumeBBoxLocalMin().xyz),
+                           vec3(HdGet_volumeBBoxLocalMax().xyz));
+ 
+}
+
+// Given a ray in eye space, compute the time when it entered the volume
+// (assuming rayDirectionEye is normalized).
+// Note that it is assumed that the ray point is in the volume and that the
+// result will be negative.
+float
+timeRayEnteredVolume(vec3 rayEndEye, vec3 rayDirectionEye)
+{
+    // Compute when reversed ray is exiting the volume bounding box
+    return - timeRayExitsVolume(rayEndEye, -rayDirectionEye);
 }
 
 // Given where the ray is about to leave the volume, compute where we
@@ -453,7 +465,7 @@ vec3
 computeRayStartEye(vec3 rayEndEye, vec3 rayDirectionEye)
 {
     // Time where ray would have entered volume (negative).
-    const float startTime = timeRayEntersVolume(rayEndEye, rayDirectionEye);
+    const float startTime = timeRayEnteredVolume(rayEndEye, rayDirectionEye);
 
     if (isCameraOrthographic()) {
         // Time where ray would have intersected near plane
@@ -515,7 +527,7 @@ sampleZBuffer(vec2 fragcoord)
 // - the eye space coordinates of this fragment which is part of the back-faces
 //   of the volume.
 // - the z-Value of the opaque geometry (since we want to stop raymarching
-//   one the ray has hit opaque geometry)
+//   once the ray has hit opaque geometry)
 float
 computeRayLength(vec3 rayStartEye, vec3 rayDirectionEye, vec3 rayEndEye,
                  float opaqueZ)
