@@ -54,6 +54,9 @@ def _SetupOpenGLContext(width=100, height=100):
 
     glWidget = QtOpenGL.QGLWidget(glFormat)
     glWidget.setFixedSize(width, height)
+    # note that we need to bind the gl context here, instead of explicitly
+    # showing the glWidget. Binding the gl context will make sure framebuffer is
+    # ready for gl operations.
     glWidget.makeCurrent()
 
     return glWidget
