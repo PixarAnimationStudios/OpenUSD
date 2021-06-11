@@ -84,6 +84,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (black)
     (clamp)
     (repeat)
+    (uaddressmode)
+    (vaddressmode)
 );
 
 
@@ -492,67 +494,79 @@ _UpdateTerminal(
 }
 
 // Get the Hydra equivalent for the given MaterialX input value
-static std::string
+static TfToken
 _GetHdWrapString(
-    mx::NodePtr const& mxTextureNode,
+    SdfPath const& hdTextureNodePath,
     std::string const& mxInputValue)
 {
     if (mxInputValue == "constant") {
-        TF_WARN("RtxHioImagePlugin: Texture %s has unsupported wrap mode "
+        TF_WARN("RtxHioImagePlugin: Texture '%s' has unsupported wrap mode "
             "'constant' using 'black' instead.",
-            mxTextureNode->getName().c_str());
-        return _tokens->black.GetText();
+            hdTextureNodePath.GetName().c_str());
+        return _tokens->black;
     }
     if (mxInputValue == "clamp") {
-        return _tokens->clamp.GetText();
+        return _tokens->clamp;
     }
     if (mxInputValue == "mirror") {
-        TF_WARN("RtxHioImagePlugin: Texture %s has unsupported wrap mode "
+        TF_WARN("RtxHioImagePlugin: Texture '%s' has unsupported wrap mode "
             "'mirror' using 'repeat' instead.",
-            mxTextureNode->getName().c_str());
-        return _tokens->repeat.GetText();
+            hdTextureNodePath.GetName().c_str());
+        return _tokens->repeat;
     }
-    return _tokens->repeat.GetText();
+    return _tokens->repeat;
 }
 
 static void
 _GetWrapModes(
-    mx::NodePtr const& mxTextureNode,
-    std::string * uWrap,
-    std::string * vWrap)
+    HdMaterialNode2 const& hdTextureNode,
+    SdfPath const& hdTextureNodePath,
+    TfToken * uWrap,
+    TfToken * vWrap)
 {
     // For <tiledimage> nodes want to always use "repeat"
-    *uWrap = "repeat";
-    *vWrap = "repeat";
+    *uWrap = _tokens->repeat;
+    *vWrap = _tokens->repeat;
 
     // For <image> nodes:
-    if (auto uWrapInput = mxTextureNode->getInput("uaddressmode")) {
-        *uWrap = _GetHdWrapString(mxTextureNode,
-                                  uWrapInput->getValue()->getValueString());
+    const auto uWapIt = hdTextureNode.parameters.find(_tokens->uaddressmode);
+    if (uWapIt != hdTextureNode.parameters.end()) {
+        *uWrap = _GetHdWrapString(hdTextureNodePath, 
+                                  uWapIt->second.UncheckedGet<std::string>());
     }
-    if (auto vWrapInput = mxTextureNode->getInput("vaddressmode")) {
-        *vWrap = _GetHdWrapString(mxTextureNode, 
-                                  vWrapInput->getValue()->getValueString());
+    const auto vWrapIt = hdTextureNode.parameters.find(_tokens->vaddressmode);
+    if (vWrapIt != hdTextureNode.parameters.end()) {
+        *vWrap = _GetHdWrapString(hdTextureNodePath, 
+                                  vWrapIt->second.UncheckedGet<std::string>());
     }
 }
 
 static void 
 _UpdateTextureNodes(
-    HdMaterialNetwork2 * hdNetwork,
+    HdMaterialNetwork2 const& hdNetwork,
     std::set<SdfPath> const& hdTextureNodes,
     mx::DocumentPtr const& mxDoc)
 {
     for (SdfPath const& texturePath : hdTextureNodes) {
 
-        // Get the MaterialX Texture Node from the mxDoc
-        const mx::NodeGraphPtr mxNodeGraph = 
-                mxDoc->getNodeGraph(texturePath.GetParentPath().GetName());
-        const mx::NodePtr mxTextureNode = 
-                mxNodeGraph->getNode(texturePath.GetName());
+        // Get the hdTextureNode from the hdNetwork
+        const auto textureNodeIt = hdNetwork.nodes.find(texturePath);
+        if (textureNodeIt == hdNetwork.nodes.end()) {
+            TF_WARN("Connot find texture node '%s' in HdMaterialNetwork.",
+                    texturePath.GetText());
+            continue;
+        }
+        const HdMaterialNode2& hdTextureNode = textureNodeIt->second;
 
-        // Get the filepath from the hdNetwork
-        VtValue const& pathValue = 
-            hdNetwork->nodes[texturePath].parameters[_tokens->file];
+        // Get the filepath 
+        const auto fileIt = hdTextureNode.parameters.find(_tokens->file);
+        if (fileIt == hdTextureNode.parameters.end()) {
+            TF_WARN("File path missing for texture node '%s'.",
+                    texturePath.GetText());
+            continue;
+        }
+        VtValue const& pathValue = fileIt->second;
+
         if (pathValue.IsHolding<SdfAssetPath>()) {
             std::string path = pathValue.Get<SdfAssetPath>().GetResolvedPath();
             std::string ext = ArGetResolver().GetExtension(path);
@@ -561,17 +575,23 @@ _UpdateTextureNodes(
             // to read them via a Renderman texture plugin.
             if (!ext.empty() && ext != "tex") {
 
-                // Get WrapModes
-                std::string uWrap, vWrap;
-                _GetWrapModes(mxTextureNode, &uWrap, &vWrap);
-                
                 // Update the input value to use the Renderman texture plugin
-                std::string pluginName = 
+                const std::string pluginName = 
                     std::string("RtxHioImage") + ARCH_LIBRARY_SUFFIX;
+
+                TfToken uWrap, vWrap;
+                _GetWrapModes(hdTextureNode, texturePath, &uWrap, &vWrap);
+                
                 std::string const& mxInputValue = 
                     TfStringPrintf("rtxplugin:%s?filename=%s&wrapS=%s&wrapT=%s", 
                                     pluginName.c_str(), path.c_str(), 
-                                    uWrap.c_str(), vWrap.c_str());
+                                    uWrap.GetText(), vWrap.GetText());
+                
+                // Update the MaterialX Texture Node with the new mxInputValue
+                const mx::NodeGraphPtr mxNodeGraph = 
+                    mxDoc->getNodeGraph(texturePath.GetParentPath().GetName());
+                const mx::NodePtr mxTextureNode = 
+                    mxNodeGraph->getNode(texturePath.GetName());
                 mxTextureNode->setInputValue(_tokens->file.GetText(), // name
                                              mxInputValue,            // value
                                              _tokens->filename.GetText());//type
@@ -624,7 +644,7 @@ MatfiltMaterialX(
                                         materialPath, stdLibraries, 
                                         &hdTextureNodes, &mxHdTextureMap);
 
-            _UpdateTextureNodes(&hdNetwork, hdTextureNodes, mxDoc);
+            _UpdateTextureNodes(hdNetwork, hdTextureNodes, mxDoc);
 
             // Remove the material and shader nodes from the MaterialX Document
             // (since we need to use PxrSurface as the closure instead of the 
