@@ -525,11 +525,23 @@ public:
     SDF_API
     const VtValue& GetAssetInfo() const;
 
-    /// Make the given \p relativePath absolute using the identifier of this
-    /// layer.  If this layer does not have an identifier, or if the layer
-    /// identifier is itself relative, \p relativePath is returned unmodified.
+    /// Returns the path to the asset specified by \p assetPath using this layer
+    /// to anchor the path if necessary. Returns \p assetPath if it's empty or
+    /// an anonymous layer identifier.
+    ///
+    /// This method can be used on asset paths that are authored in this layer
+    /// to create new asset paths that can be copied to other layers.  These new
+    /// asset paths should refer to the same assets as the original asset
+    /// paths. For example, if the underlying ArResolver is filesystem-based and
+    /// \p assetPath is a relative filesystem path, this method might return the
+    /// absolute filesystem path using this layer's location as the anchor.
+    ///
+    /// The returned path should in general not be assumed to be an absolute
+    /// filesystem path or any other specific form. It is "absolute" in that it
+    /// should resolve to the same asset regardless of what layer it's authored
+    /// in.
     SDF_API
-    std::string ComputeAbsolutePath(const std::string &relativePath);
+    std::string ComputeAbsolutePath(const std::string& assetPath) const;
 
     /// @}
 

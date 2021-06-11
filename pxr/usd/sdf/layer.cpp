@@ -2642,18 +2642,23 @@ SdfLayer::GetMetadata() const
 }
 
 string
-SdfLayer::ComputeAbsolutePath(const string &relativePath)
+SdfLayer::ComputeAbsolutePath(const string& assetPath) const
 {
-    if (relativePath.empty()
-        || Sdf_IsAnonLayerIdentifier(relativePath)){
-        return relativePath;
+    if (assetPath.empty()
+        || Sdf_IsAnonLayerIdentifier(assetPath)) {
+        return assetPath;
     }
 
+#if AR_VERSION == 1
     // Make it relative to the repository path, if available, so that path
     // resolution will work for references.
     const string relativeToPath = GetRepositoryPath().empty() ?
         GetRealPath() : GetRepositoryPath();
-    return ArGetResolver().AnchorRelativePath(relativeToPath, relativePath);
+    return ArGetResolver().AnchorRelativePath(relativeToPath, assetPath);
+#else
+    return SdfComputeAssetPathRelativeToLayer(
+        SdfCreateNonConstHandle(this), assetPath);
+#endif
 }
 
 string
