@@ -3715,12 +3715,17 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
     // of Sd.  Do all this in a single changeblock.
     SdfChangeBlock block;
 
-    // If this layer streams its data on demand, we cannot perform 
-    // fine-grained change notification because that would cause all of 
-    // the data in the layer to be streamed in from disk.
-    // So, all we can do is move the new data into place and
-    // notify the world that this layer may have changed arbitrarily.
-    if (_data->StreamsData()) {
+    // If we're transferring from one schema to a different schema, we will go
+    // through the fine-grained update in order to do cross-schema field
+    // validation.
+    const bool differentSchema = newDataSchema && newDataSchema != &GetSchema();
+
+    // If this layer streams its data on demand, we avoid the fine-grained
+    // change code path (unless it's to a different schema) because that would
+    // cause all of the data in the layer to be streamed in from disk.  So we
+    // move the new data into place and notify the world that this layer may
+    // have changed arbitrarily.
+    if (!differentSchema && _data->StreamsData()) {
         _data = newData;
         Sdf_ChangeManager::Get().DidReplaceLayerContent(_self);
         return;
@@ -3803,7 +3808,6 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
         _SpecsToCreate specsToCreate(*boost::get_pointer(_data));
         newData->VisitSpecs(&specsToCreate);
 
-        bool differentSchema = newDataSchema && newDataSchema != &GetSchema();
         SdfPath unrecognizedSpecTypePaths[SdfNumSpecTypes];
 
         // Create specs top-down to provide optimal diffs.
@@ -3887,7 +3891,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
 
                 const SdfSchemaBase &thisLayerSchema = layer->GetSchema();
 
-                bool differentSchema = &thisLayerSchema != &newDataSchema;
+                const bool differentSchema = &thisLayerSchema != &newDataSchema;
 
                 // If this layer has a different schema from newDataSchema, then
                 // it's possible there is no corresponding spec for the path, in
@@ -4581,13 +4585,32 @@ SdfLayer::_WriteToFile(const string & newFileName,
     }
 #endif
 
-    // XXX Check for schema compatibility here...
+    // If the output file format has a different schema, then transfer content
+    // to an in-memory layer first just to validate schema compatibility.
+    const bool differentSchema = &fileFormat->GetSchema() != &GetSchema();
+    if (differentSchema) {
+        SdfLayerRefPtr tmpLayer =
+            CreateAnonymous("cross-schema-write-test", fileFormat, args);
+        TfErrorMark m;
+        tmpLayer->TransferContent(
+            SdfLayerHandle(const_cast<SdfLayer *>(this)));
+        if (!m.IsClean()) {
+            TF_RUNTIME_ERROR("Failed attempting to write '%s' under a "
+                             "different schema.  If this is intended, "
+                             "TransferContent() to a temporary anonymous "
+                             "layer with the desired schema and handle "
+                             "the errors, then export that temporary layer",
+                             newFileName.c_str());
+            return false;
+        }
+    }    
 
     bool ok = fileFormat->WriteToFile(*this, newFileName, comment, args);
 
     // If we wrote to the backing file then we're now clean.
-    if (ok && newFileName == GetRealPath())
+    if (ok && newFileName == GetRealPath()) {
        _MarkCurrentStateAsClean();
+    }
 
     return ok;
 }
@@ -4596,7 +4619,15 @@ bool
 SdfLayer::Export(const string& newFileName, const string& comment,
                  const FileFormatArguments& args) const
 {
-    return _WriteToFile(newFileName, comment, TfNullPtr, args);
+    return _WriteToFile(
+        newFileName,
+        comment,
+        // If the layer's current format supports the extension, use it,
+        // otherwise pass TfNullPtr, which instructs the callee to use the
+        // primary format for the output's extension.
+        GetFileFormat()->IsSupportedExtension(newFileName)
+            ? GetFileFormat() : TfNullPtr,
+        args);
 }
 
 bool
