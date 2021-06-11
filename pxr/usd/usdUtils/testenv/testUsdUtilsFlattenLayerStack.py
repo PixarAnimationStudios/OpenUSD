@@ -203,16 +203,14 @@ class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
         for time_sample in time_samples:
             time_sample_array_value = attr.Get(Usd.TimeCode(time_sample))
             for time_sample_value in time_sample_array_value:
-                self.assertFalse(Ar.GetResolver().IsRelativePath(
-                    time_sample_value.path))
+                self.assertTrue(os.path.isabs(time_sample_value.path))
 
         prim = result_stage.GetPrimAtPath('/volume/density')
         attr = prim.GetAttribute('filePath')
         time_samples = attr.GetTimeSamples()
         for time_sample in time_samples:
             time_sample_value = attr.Get(Usd.TimeCode(time_sample))
-            self.assertFalse(Ar.GetResolver().IsRelativePath(
-                time_sample_value.path))
+            self.assertTrue(os.path.isabs(time_sample_value.path))
 
 if __name__=="__main__":
     unittest.main()
