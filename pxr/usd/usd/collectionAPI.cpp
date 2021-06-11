@@ -129,6 +129,14 @@ UsdSchemaKind UsdCollectionAPI::_GetSchemaType() const {
 }
 
 /* static */
+bool
+UsdCollectionAPI::CanApply(
+    const UsdPrim &prim, const TfToken &name, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdCollectionAPI>(name, whyNot);
+}
+
+/* static */
 UsdCollectionAPI
 UsdCollectionAPI::Apply(const UsdPrim &prim, const TfToken &name)
 {

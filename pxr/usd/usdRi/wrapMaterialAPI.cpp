@@ -27,6 +27,7 @@
 #include "pxr/usd/sdf/primSpec.h"
 
 #include "pxr/usd/usd/pyConversions.h"
+#include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -79,11 +80,29 @@ _Repr(const UsdRiMaterialAPI &self)
         primRepr.c_str());
 }
 
+struct UsdRiMaterialAPI_CanApplyResult : 
+    public TfPyAnnotatedBoolResult<std::string>
+{
+    UsdRiMaterialAPI_CanApplyResult(bool val, std::string const &msg) :
+        TfPyAnnotatedBoolResult<std::string>(val, msg) {}
+};
+
+static UsdRiMaterialAPI_CanApplyResult
+_WrapCanApply(const UsdPrim& prim)
+{
+    std::string whyNot;
+    bool result = UsdRiMaterialAPI::CanApply(prim, &whyNot);
+    return UsdRiMaterialAPI_CanApplyResult(result, whyNot);
+}
+
 } // anonymous namespace
 
 void wrapUsdRiMaterialAPI()
 {
     typedef UsdRiMaterialAPI This;
+
+    UsdRiMaterialAPI_CanApplyResult::Wrap<UsdRiMaterialAPI_CanApplyResult>(
+        "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
         cls("MaterialAPI");
@@ -95,6 +114,9 @@ void wrapUsdRiMaterialAPI()
 
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
+
+        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (arg("prim")))
         .staticmethod("Apply")

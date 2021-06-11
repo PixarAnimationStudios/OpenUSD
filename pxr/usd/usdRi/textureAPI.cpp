@@ -72,6 +72,14 @@ UsdSchemaKind UsdRiTextureAPI::_GetSchemaType() const {
 }
 
 /* static */
+bool
+UsdRiTextureAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdRiTextureAPI>(whyNot);
+}
+
+/* static */
 UsdRiTextureAPI
 UsdRiTextureAPI::Apply(const UsdPrim &prim)
 {

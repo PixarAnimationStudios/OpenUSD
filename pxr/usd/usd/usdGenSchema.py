@@ -96,6 +96,9 @@ PROPERTY_NAMESPACE_PREFIX = "propertyNamespacePrefix"
 # in the schema definition to define a list of typed schemas that the API 
 # schema will be automatically applied to in the schema registry. 
 API_AUTO_APPLY = "apiSchemaAutoApplyTo"
+API_CAN_ONLY_APPLY = "apiSchemaCanOnlyApplyTo"
+API_ALLOWED_INSTANCE_NAMES = "apiSchemaAllowedInstanceNames"
+API_SCHEMA_INSTANCES = "apiSchemaInstances"
 
 # Custom-data key authored on a concrete typed schema class prim in the schema
 # definition, to define fallbacks for the type that can be saved in root layer
@@ -472,12 +475,29 @@ class ClassInfo(object):
         self.propertyNamespacePrefix = \
             self.customData.get(PROPERTY_NAMESPACE_PREFIX)
         self.apiAutoApply = self.customData.get(API_AUTO_APPLY)
+        self.apiCanOnlyApply = self.customData.get(API_CAN_ONLY_APPLY)
+        self.apiAllowedInstanceNames = self.customData.get(
+            API_ALLOWED_INSTANCE_NAMES)
+        self.apiSchemaInstances = self.customData.get(API_SCHEMA_INSTANCES)
+                               
+        if self.apiSchemaType != MULTIPLE_APPLY:
+            if self.propertyNamespacePrefix:
+                raise _GetSchemaDefException(
+                    "%s should only be used as a customData field on "
+                    "multiple-apply API schemas." % PROPERTY_NAMESPACE_PREFIX,
+                    sdfPrim.path)
 
-        if not self.apiSchemaType == MULTIPLE_APPLY and \
-            self.propertyNamespacePrefix:
-            raise _GetSchemaDefException("propertyNamespacePrefix should only "
-                "be used as a customData field on multiple-apply API schemas",
-                sdfPrim.path)
+            if self.apiAllowedInstanceNames:
+                raise _GetSchemaDefException(
+                    "%s should only be used as a customData field on "
+                    "multiple-apply API schemas." % API_ALLOWED_INSTANCE_NAMES,
+                    sdfPrim.path)
+
+            if self.apiSchemaInstances:
+                raise _GetSchemaDefException(
+                    "%s should only be used as a customData field on "
+                    "multiple-apply API schemas." % API_SCHEMA_INSTANCES,
+                    sdfPrim.path)
 
         if self.isApi and \
            self.apiSchemaType not in API_SCHEMA_TYPE_TOKENS:
@@ -488,12 +508,17 @@ class ClassInfo(object):
 
         if self.apiAutoApply and self.apiSchemaType != SINGLE_APPLY:
             raise _GetSchemaDefException("%s should only be used as a "
-                "customData field on single-apply API schemas" % API_AUTO_APPLY,
+                "customData field on single-apply API schemas." % API_AUTO_APPLY,
                 sdfPrim.path)
 
         self.isAppliedAPISchema = \
             self.apiSchemaType in [SINGLE_APPLY, MULTIPLE_APPLY]
         self.isMultipleApply = self.apiSchemaType == MULTIPLE_APPLY
+
+        if self.apiCanOnlyApply and not self.isAppliedAPISchema:
+            raise _GetSchemaDefException("%s should only be used as a "
+                "customData field on applied API schemas." % API_CAN_ONLY_APPLY,
+                sdfPrim.path)
 
         if self.isApi and not self.isAppliedAPISchema:
             self.schemaKind = "nonAppliedAPI";
@@ -1008,6 +1033,41 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
         _WriteFile(clsWrapFilePath,
                    wrapTemplate.render(cls=cls) + customCode, validate)
 
+# Updates the plugInfo class metadata clsDict with the API schema application
+# metadata from the class
+def _UpdatePlugInfoWithAPISchemaApplyInfo(clsDict, cls):
+
+    if not cls.isAppliedAPISchema:
+        return
+
+    # List any auto apply to entries for the applied API schema.
+    if cls.apiAutoApply:
+        clsDict.update({API_AUTO_APPLY: list(cls.apiAutoApply)})
+
+    # List any can only apply to entries for applied API schemas.
+    if cls.apiCanOnlyApply:
+        clsDict.update({API_CAN_ONLY_APPLY: list(cls.apiCanOnlyApply)})
+
+    # List any allowed instance names for multiple apply schemas.
+    if cls.apiAllowedInstanceNames:
+        clsDict.update(
+            {API_ALLOWED_INSTANCE_NAMES: list(cls.apiAllowedInstanceNames)})
+
+    # Add any per instance name apply metadata in another dicitionary for 
+    # multiple apply schemas.
+    if cls.apiSchemaInstances:
+        instancesDict = {}
+        for k, v in cls.apiSchemaInstances.items():
+            instance = {}
+            # There can be canOnlyApplyTo metadata on a per isntance basis.
+            if v.get(API_CAN_ONLY_APPLY):
+                instance.update(
+                    {API_CAN_ONLY_APPLY: list(v.get(API_CAN_ONLY_APPLY))})
+            if instance:
+                instancesDict.update({k : instance})
+        if instancesDict:
+            clsDict.update({API_SCHEMA_INSTANCES: instancesDict})
+
 def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env):
 
     #
@@ -1075,10 +1135,10 @@ def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env):
 
             clsDict.update({"schemaKind": cls.schemaKind})
 
-            # List any auto apply to entries for single apply schemas.
-            if cls.apiSchemaType == SINGLE_APPLY and cls.apiAutoApply:
-                clsDict.update(
-                    {"apiSchemaAutoApplyTo": list(cls.apiAutoApply)})
+            # Add all the API schema apply info fields to to the plugInfo. 
+            # This may include auto-apply, can-only-apply, and allowed names 
+            # for multiple apply schemas.
+            _UpdatePlugInfoWithAPISchemaApplyInfo(clsDict, cls)
 
             # Write out alias/primdefs for concrete IsA schemas and API schemas
             if (cls.isTyped or cls.isApi):

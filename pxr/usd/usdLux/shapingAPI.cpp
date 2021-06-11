@@ -72,6 +72,14 @@ UsdSchemaKind UsdLuxShapingAPI::_GetSchemaType() const {
 }
 
 /* static */
+bool
+UsdLuxShapingAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdLuxShapingAPI>(whyNot);
+}
+
+/* static */
 UsdLuxShapingAPI
 UsdLuxShapingAPI::Apply(const UsdPrim &prim)
 {

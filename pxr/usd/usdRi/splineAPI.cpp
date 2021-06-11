@@ -72,6 +72,14 @@ UsdSchemaKind UsdRiSplineAPI::_GetSchemaType() const {
 }
 
 /* static */
+bool
+UsdRiSplineAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdRiSplineAPI>(whyNot);
+}
+
+/* static */
 UsdRiSplineAPI
 UsdRiSplineAPI::Apply(const UsdPrim &prim)
 {

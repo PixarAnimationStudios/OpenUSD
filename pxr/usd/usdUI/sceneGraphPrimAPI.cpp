@@ -72,6 +72,14 @@ UsdSchemaKind UsdUISceneGraphPrimAPI::_GetSchemaType() const {
 }
 
 /* static */
+bool
+UsdUISceneGraphPrimAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdUISceneGraphPrimAPI>(whyNot);
+}
+
+/* static */
 UsdUISceneGraphPrimAPI
 UsdUISceneGraphPrimAPI::Apply(const UsdPrim &prim)
 {

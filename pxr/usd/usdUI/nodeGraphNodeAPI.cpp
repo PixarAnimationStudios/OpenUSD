@@ -72,6 +72,14 @@ UsdSchemaKind UsdUINodeGraphNodeAPI::_GetSchemaType() const {
 }
 
 /* static */
+bool
+UsdUINodeGraphNodeAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdUINodeGraphNodeAPI>(whyNot);
+}
+
+/* static */
 UsdUINodeGraphNodeAPI
 UsdUINodeGraphNodeAPI::Apply(const UsdPrim &prim)
 {

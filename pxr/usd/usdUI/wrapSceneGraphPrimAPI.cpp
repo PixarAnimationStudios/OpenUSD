@@ -27,6 +27,7 @@
 #include "pxr/usd/sdf/primSpec.h"
 
 #include "pxr/usd/usd/pyConversions.h"
+#include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -72,11 +73,29 @@ _Repr(const UsdUISceneGraphPrimAPI &self)
         primRepr.c_str());
 }
 
+struct UsdUISceneGraphPrimAPI_CanApplyResult : 
+    public TfPyAnnotatedBoolResult<std::string>
+{
+    UsdUISceneGraphPrimAPI_CanApplyResult(bool val, std::string const &msg) :
+        TfPyAnnotatedBoolResult<std::string>(val, msg) {}
+};
+
+static UsdUISceneGraphPrimAPI_CanApplyResult
+_WrapCanApply(const UsdPrim& prim)
+{
+    std::string whyNot;
+    bool result = UsdUISceneGraphPrimAPI::CanApply(prim, &whyNot);
+    return UsdUISceneGraphPrimAPI_CanApplyResult(result, whyNot);
+}
+
 } // anonymous namespace
 
 void wrapUsdUISceneGraphPrimAPI()
 {
     typedef UsdUISceneGraphPrimAPI This;
+
+    UsdUISceneGraphPrimAPI_CanApplyResult::Wrap<UsdUISceneGraphPrimAPI_CanApplyResult>(
+        "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
         cls("SceneGraphPrimAPI");
@@ -88,6 +107,9 @@ void wrapUsdUISceneGraphPrimAPI()
 
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
+
+        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (arg("prim")))
         .staticmethod("Apply")

@@ -27,6 +27,7 @@
 #include "pxr/usd/sdf/primSpec.h"
 
 #include "pxr/usd/usd/pyConversions.h"
+#include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -58,11 +59,29 @@ _Repr(const UsdContrivedSingleApplyAPI &self)
         primRepr.c_str());
 }
 
+struct UsdContrivedSingleApplyAPI_CanApplyResult : 
+    public TfPyAnnotatedBoolResult<std::string>
+{
+    UsdContrivedSingleApplyAPI_CanApplyResult(bool val, std::string const &msg) :
+        TfPyAnnotatedBoolResult<std::string>(val, msg) {}
+};
+
+static UsdContrivedSingleApplyAPI_CanApplyResult
+_WrapCanApply(const UsdPrim& prim)
+{
+    std::string whyNot;
+    bool result = UsdContrivedSingleApplyAPI::CanApply(prim, &whyNot);
+    return UsdContrivedSingleApplyAPI_CanApplyResult(result, whyNot);
+}
+
 } // anonymous namespace
 
 void wrapUsdContrivedSingleApplyAPI()
 {
     typedef UsdContrivedSingleApplyAPI This;
+
+    UsdContrivedSingleApplyAPI_CanApplyResult::Wrap<UsdContrivedSingleApplyAPI_CanApplyResult>(
+        "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
         cls("SingleApplyAPI");
@@ -74,6 +93,9 @@ void wrapUsdContrivedSingleApplyAPI()
 
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
+
+        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (arg("prim")))
         .staticmethod("Apply")

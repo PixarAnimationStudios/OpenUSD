@@ -72,6 +72,14 @@ UsdSchemaKind UsdShadeNodeDefAPI::_GetSchemaType() const {
 }
 
 /* static */
+bool
+UsdShadeNodeDefAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdShadeNodeDefAPI>(whyNot);
+}
+
+/* static */
 UsdShadeNodeDefAPI
 UsdShadeNodeDefAPI::Apply(const UsdPrim &prim)
 {

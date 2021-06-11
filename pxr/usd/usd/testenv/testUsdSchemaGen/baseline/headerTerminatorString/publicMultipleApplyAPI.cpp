@@ -127,6 +127,14 @@ UsdSchemaKind UsdContrivedPublicMultipleApplyAPI::_GetSchemaType() const {
 }
 
 /* static */
+bool
+UsdContrivedPublicMultipleApplyAPI::CanApply(
+    const UsdPrim &prim, const TfToken &name, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdContrivedPublicMultipleApplyAPI>(name, whyNot);
+}
+
+/* static */
 UsdContrivedPublicMultipleApplyAPI
 UsdContrivedPublicMultipleApplyAPI::Apply(const UsdPrim &prim, const TfToken &name)
 {

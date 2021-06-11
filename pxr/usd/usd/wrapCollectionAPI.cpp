@@ -27,6 +27,7 @@
 #include "pxr/usd/sdf/primSpec.h"
 
 #include "pxr/usd/usd/pyConversions.h"
+#include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -79,11 +80,29 @@ _Repr(const UsdCollectionAPI &self)
         primRepr.c_str(), instanceName.c_str());
 }
 
+struct UsdCollectionAPI_CanApplyResult : 
+    public TfPyAnnotatedBoolResult<std::string>
+{
+    UsdCollectionAPI_CanApplyResult(bool val, std::string const &msg) :
+        TfPyAnnotatedBoolResult<std::string>(val, msg) {}
+};
+
+static UsdCollectionAPI_CanApplyResult
+_WrapCanApply(const UsdPrim& prim, const TfToken& name)
+{
+    std::string whyNot;
+    bool result = UsdCollectionAPI::CanApply(prim, name, &whyNot);
+    return UsdCollectionAPI_CanApplyResult(result, whyNot);
+}
+
 } // anonymous namespace
 
 void wrapUsdCollectionAPI()
 {
     typedef UsdCollectionAPI This;
+
+    UsdCollectionAPI_CanApplyResult::Wrap<UsdCollectionAPI_CanApplyResult>(
+        "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
         cls("CollectionAPI");
@@ -104,6 +123,9 @@ void wrapUsdCollectionAPI()
                &This::Get,
             (arg("prim"), arg("name")))
         .staticmethod("Get")
+
+        .def("CanApply", &_WrapCanApply, (arg("prim"), arg("name")))
+        .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (arg("prim"), arg("name")))
         .staticmethod("Apply")

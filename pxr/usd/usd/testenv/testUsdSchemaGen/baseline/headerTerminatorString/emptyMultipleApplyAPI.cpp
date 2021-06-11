@@ -78,6 +78,14 @@ UsdSchemaKind UsdContrivedEmptyMultipleApplyAPI::_GetSchemaType() const {
 }
 
 /* static */
+bool
+UsdContrivedEmptyMultipleApplyAPI::CanApply(
+    const UsdPrim &prim, const TfToken &name, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdContrivedEmptyMultipleApplyAPI>(name, whyNot);
+}
+
+/* static */
 UsdContrivedEmptyMultipleApplyAPI
 UsdContrivedEmptyMultipleApplyAPI::Apply(const UsdPrim &prim, const TfToken &name)
 {

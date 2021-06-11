@@ -72,6 +72,14 @@ UsdSchemaKind UsdRiLightFilterAPI::_GetSchemaType() const {
 }
 
 /* static */
+bool
+UsdRiLightFilterAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdRiLightFilterAPI>(whyNot);
+}
+
+/* static */
 UsdRiLightFilterAPI
 UsdRiLightFilterAPI::Apply(const UsdPrim &prim)
 {

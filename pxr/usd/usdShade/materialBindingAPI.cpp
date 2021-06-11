@@ -72,6 +72,14 @@ UsdSchemaKind UsdShadeMaterialBindingAPI::_GetSchemaType() const {
 }
 
 /* static */
+bool
+UsdShadeMaterialBindingAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdShadeMaterialBindingAPI>(whyNot);
+}
+
+/* static */
 UsdShadeMaterialBindingAPI
 UsdShadeMaterialBindingAPI::Apply(const UsdPrim &prim)
 {

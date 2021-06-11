@@ -175,6 +175,23 @@ UsdSchemaKind {{ cls.cppClassName }}::_GetSchemaType() const {
 {% if cls.isAppliedAPISchema %}
 
 /* static */
+bool
+{% if not cls.isMultipleApply %}
+{{ cls.cppClassName }}::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{% else %}
+{{ cls.cppClassName }}::CanApply(
+    const UsdPrim &prim, const TfToken &name, std::string *whyNot)
+{% endif %}
+{
+{% if cls.isMultipleApply %}
+    return prim.CanApplyAPI<{{ cls.cppClassName }}>(name, whyNot);
+{% else %}
+    return prim.CanApplyAPI<{{ cls.cppClassName }}>(whyNot);
+{% endif %}
+}
+
+/* static */
 {{ cls.cppClassName }}
 {% if not cls.isMultipleApply %}
 {{ cls.cppClassName }}::Apply(const UsdPrim &prim)

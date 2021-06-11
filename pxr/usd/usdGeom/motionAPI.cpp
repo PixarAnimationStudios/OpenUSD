@@ -72,6 +72,14 @@ UsdSchemaKind UsdGeomMotionAPI::_GetSchemaType() const {
 }
 
 /* static */
+bool
+UsdGeomMotionAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdGeomMotionAPI>(whyNot);
+}
+
+/* static */
 UsdGeomMotionAPI
 UsdGeomMotionAPI::Apply(const UsdPrim &prim)
 {

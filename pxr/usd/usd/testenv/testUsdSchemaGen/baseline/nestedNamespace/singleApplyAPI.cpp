@@ -72,6 +72,14 @@ UsdSchemaKind UsdContrivedSingleApplyAPI::_GetSchemaType() const {
 }
 
 /* static */
+bool
+UsdContrivedSingleApplyAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdContrivedSingleApplyAPI>(whyNot);
+}
+
+/* static */
 UsdContrivedSingleApplyAPI
 UsdContrivedSingleApplyAPI::Apply(const UsdPrim &prim)
 {

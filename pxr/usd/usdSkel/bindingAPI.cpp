@@ -72,6 +72,14 @@ UsdSchemaKind UsdSkelBindingAPI::_GetSchemaType() const {
 }
 
 /* static */
+bool
+UsdSkelBindingAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdSkelBindingAPI>(whyNot);
+}
+
+/* static */
 UsdSkelBindingAPI
 UsdSkelBindingAPI::Apply(const UsdPrim &prim)
 {
