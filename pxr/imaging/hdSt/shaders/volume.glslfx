@@ -78,11 +78,13 @@ in VertexData
     vec3 Peye;
 } inData;
 
-// Matrix to go from eye space to local space.
+// Eye space to local space.
 // Used frequently per ray-marching step in both volumeIntegrator
 // and accumulatedTransmittance, so computed only once in main.
 //
 MAT4 instanceModelViewInverse;
+// Eye space to volume bounding box space
+mat4 eyeToBBox;
 float resolvedStepSizeEye;
 float resolvedStepSizeEyeLighting;
 float resolvedStepSizeWorld;
@@ -90,7 +92,14 @@ float resolvedStepSizeWorldLighting;
 
 // Transform a point by a 4x4 matrix
 vec3
-transformPoint(MAT4 m, vec3 point)
+transformPoint(mat4 m, vec3 point)
+{
+    const vec4 result = vec4(m * vec4(point, 1.0));
+    return result.xyz / result.w;
+}
+
+vec3
+transformPoint(dmat4 m, vec3 point)
 {
     const vec4 result = vec4(m * vec4(point, 1.0));
     return result.xyz / result.w;
@@ -98,7 +107,14 @@ transformPoint(MAT4 m, vec3 point)
 
 // Transform a direction by a 4x4 matrix
 vec3
-transformDir(MAT4 m, vec3 dir)
+transformDir(mat4 m, vec3 dir)
+{
+    const vec4 result = vec4(m * vec4(dir, 0.0));
+    return result.xyz;
+}
+
+vec3
+transformDir(dmat4 m, vec3 dir)
 {
     const vec4 result = vec4(m * vec4(dir, 0.0));
     return result.xyz;
@@ -163,7 +179,7 @@ timeRayExitsBox(vec3 pos, vec3 dir, vec3 lMin, vec3 lMax)
     // Note that because dir has unit length, at least one of its entries
     // has absolute value larger 1/2 ( (1/2)^2 + (1/2)^2 + (1/2)^2 < 1^2).
 
-    vec3 abs_dir = abs(dir);
+    const vec3 abs_dir = abs(dir);
     if (abs_dir.x > 0.5) {
         return timeRayExitsBoxPreferX(
             pos    , dir    , lMin    , lMax    );
@@ -182,11 +198,6 @@ timeRayExitsBox(vec3 pos, vec3 dir, vec3 lMin, vec3 lMax)
 float
 timeRayExitsVolume(vec3 rayStartEye, vec3 rayDirectionEye)
 {
-    // Eye space to volume bounding box space
-
-    const MAT4 eyeToBBox =
-        MAT4(HdGet_volumeBBoxInverseTransform()) * instanceModelViewInverse;
-
     // Transform ray to volume bounding box space
     const vec3 rayStartBBox     = transformPoint(eyeToBBox, rayStartEye);
     const vec3 rayDirectionBBox = transformDir  (eyeToBBox, rayDirectionEye);
@@ -553,6 +564,9 @@ void main(void)
     instanceModelViewInverse =
         ApplyInstanceTransformInverse(HdGet_transformInverse()) *
         GetWorldToViewInverseMatrix();
+
+    eyeToBBox = mat4(
+        MAT4(HdGet_volumeBBoxInverseTransform()) * instanceModelViewInverse);
 
     const float halfWorldSampleDistance =
         0.5 * float(HdGet_sampleDistance())
