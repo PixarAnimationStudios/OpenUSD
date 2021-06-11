@@ -1412,17 +1412,41 @@ static void _EmitTextureAccessors(
 
     TfToken const &dataType = acc.dataType;
 
+    if (hasTextureTransform) {
+        // Declare an eye to sampling transform and define function
+        // to initialize it.
+        const std::string eyeToSamplingTransform =
+            "eyeTo" + name.GetString() + "SamplingTransform";
+
+        // Computations in eye space are done with float precision, so the
+        // eye to sampling transform is mat4.
+        // Note that the multiplication that yiels this sampling transform
+        // might be done using higher precision.
+        accessors
+            << "mat4 " << eyeToSamplingTransform << ";\n"
+            << "\n"
+            << "void Process_" << eyeToSamplingTransform
+            << "(MAT4 instanceModelViewInverse) { \n"
+            << "    int shaderCoord = GetDrawingCoord().shaderCoord; \n"
+            << "    " << eyeToSamplingTransform << " = mat4(\n"
+            << "        MAT4(shaderData[shaderCoord]."
+            << name << HdSt_ResourceBindingSuffixTokens->samplingTransform
+            << ") * instanceModelViewInverse);\n"
+            << "}\n";
+    }
+
     accessors
         << _GetUnpackedType(dataType, false)
         << " HdGet_" << name << "(vec" << dim << " coord) {\n"
         << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n";
 
     if (hasTextureTransform) {
+        const std::string eyeToSamplingTransform =
+            "eyeTo" + name.GetString() + "SamplingTransform";
+
         accessors
-            << "   vec4 c = vec4(\n"
-            << "     shaderData[shaderCoord]."
-            << name << HdSt_ResourceBindingSuffixTokens->samplingTransform
-            << " * vec4(coord, 1));\n"
+            << "   vec4 c = " << eyeToSamplingTransform
+            << " * vec4(coord, 1);\n"
             << "   vec3 sampleCoord = c.xyz / c.w;\n";
     } else {
         accessors
@@ -3538,6 +3562,29 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "}\n";
         }
     }
+
+    
+    accessors
+        << "void ProcessSamplingTransforms("
+        << "MAT4 instanceModelViewInverse) {\n";
+
+    TF_FOR_ALL (it, _metaData.shaderParameterBinding) {
+        const HdBinding::Type bindingType = it->first.GetType();
+
+        if ( bindingType == HdBinding::TEXTURE_FIELD ||
+             bindingType == HdBinding::BINDLESS_TEXTURE_FIELD) {
+
+            const std::string eyeToSamplingTransform =
+                "eyeTo" + it->second.name.GetString() + "SamplingTransform";
+            
+            accessors
+                << "    Process_" << eyeToSamplingTransform
+                << "(instanceModelViewInverse);\n";
+        }
+    }
+
+    accessors
+        << "}\n";
 
     // Field redirect accessors, need to access above field textures.
     TF_FOR_ALL (it, _metaData.shaderParameterBinding) {

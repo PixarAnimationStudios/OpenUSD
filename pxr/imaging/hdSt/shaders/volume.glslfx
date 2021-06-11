@@ -222,9 +222,9 @@ timeRayEnteredVolume(vec3 rayEndEye, vec3 rayDirectionEye)
 }
 
 vec3
-eyeToLocal(vec3 p)
+coordsToLocalVolumeSpace(vec3 coords)
 {
-    return transformPoint(instanceModelViewInverse, p);
+    return transformPoint(instanceModelViewInverse, coords);
 }
 
 #if NUM_LIGHTS == 0
@@ -258,9 +258,8 @@ accumulatedTransmittance(vec3 rayStartEye, vec3 rayDirectionEye)
 
     while(i < numSteps) {
         const vec3 rayPointEye = rayStartEye + i * rayStepEye;
-        const vec3 rayPoint = eyeToLocal(rayPointEye);
 
-        totalExtinction += extinctionFunction(rayPoint);
+        totalExtinction += extinctionFunction(rayPointEye);
 
         i+=1;
     }
@@ -345,13 +344,12 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayLength)
     // integrate transmittance and light along ray for bounding box
     while(i < numSteps) {
         const vec3 rayPointEye = rayStartEye + i * rayStepEye;
-        const vec3 rayPoint = eyeToLocal(rayPointEye);
 
         // Evaluate volume shader functions to determine extinction,
         // scattering, and emission.
-        const float extinctionValue = extinctionFunction(rayPoint);
-        const float scatteringValue = scatteringFunction(rayPoint);
-        const vec3 emissionValue = emissionFunction(rayPoint);
+        const float extinctionValue = extinctionFunction(rayPointEye);
+        const float scatteringValue = scatteringFunction(rayPointEye);
+        const vec3 emissionValue = emissionFunction(rayPointEye);
 
         // If this is the first time the ray is hitting a non-empty voxel,
         // record the coordinates.
@@ -567,6 +565,8 @@ void main(void)
 
     eyeToBBox = mat4(
         MAT4(HdGet_volumeBBoxInverseTransform()) * instanceModelViewInverse);
+
+    ProcessSamplingTransforms(instanceModelViewInverse);
 
     const float halfWorldSampleDistance =
         0.5 * float(HdGet_sampleDistance())
