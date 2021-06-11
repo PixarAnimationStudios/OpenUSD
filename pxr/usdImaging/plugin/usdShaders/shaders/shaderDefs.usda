@@ -158,11 +158,13 @@ def Shader "UsdUVTexture" (
     )
 
     token inputs:wrapS = "useMetadata" (
+        allowedTokens = ["black", "clamp", "repeat", "mirror", "useMetadata"]
         connectability = "interfaceOnly"
         doc = """<options> black, clamp, repeat, mirror, useMetadata."""
     )
 
     token inputs:wrapT = "useMetadata" (
+        allowedTokens = ["black", "clamp", "repeat", "mirror", "useMetadata"]
         connectability = "interfaceOnly"
         doc = """<options> black, clamp, repeat, mirror, useMetadata."""
     )
