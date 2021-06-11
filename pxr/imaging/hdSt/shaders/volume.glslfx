@@ -78,6 +78,16 @@ in VertexData
     vec3 Peye;
 } inData;
 
+// Matrix to go from eye space to local space.
+// Used frequently per ray-marching step in both volumeIntegrator
+// and accumulatedTransmittance, so computed only once in main.
+//
+MAT4 instanceModelViewInverse;
+float resolvedStepSizeEye;
+float resolvedStepSizeEyeLighting;
+float resolvedStepSizeWorld;
+float resolvedStepSizeWorldLighting;
+
 // Transform a point by a 4x4 matrix
 vec3
 transformPoint(MAT4 m, vec3 point)
@@ -94,31 +104,111 @@ transformDir(MAT4 m, vec3 dir)
     return result.xyz;
 }
 
-// Is point (in local coordinates) in bounding box.
-bool
-inBoundingBox(vec3 p)
+// Compute time when a ray starting at pos with direction dir
+// exits the axis-aligned box with vertices lMin and lMax.
+//
+// Assumes that dir.x isn't close to zero.
+float
+timeRayExitsBoxPreferX(vec3 pos, vec3 dir, vec3 lMin, vec3 lMax)
 {
-    const vec3 pVol = transformPoint(MAT4(HdGet_volumeBBoxInverseTransform()),
-                                     p);
+    // Compute the time when the ray exists the region
+    // R1 = [xMin, xMax] x [-inf,inf] x [-inf,inf].
 
-    // Bounding box
-    const vec3 localMin = vec3(HdGet_volumeBBoxLocalMin().xyz);
-    const vec3 localMax = vec3(HdGet_volumeBBoxLocalMax().xyz);
+    // Depending on whether the the ray is going left or right, compute
+    // the time when the ray is intersecting the plane containing the
+    // left or right face of the box.
+    float result = (((dir.x > 0.0) ? lMax.x : lMin.x) - pos.x) / dir.x;
 
-    return
-        all(lessThanEqual(localMin, pVol)) &&
-        all(lessThanEqual(pVol, localMax));
+    // Compute the time when the ray exists the region
+    // R2 = [xMin, xMax] x [yMin,yMax] x [-inf,inf].
+
+    // We can compute the intersection where the ray left R1 as
+    // pos + dir * result.
+    // If this intersection is above or below the box, we know that there
+    // is an earlier intersection of the ray with the plane containing
+    // the top or bottom face of the box, compute that intersection time.
+    const float y = pos.y + dir.y * result;
+    if (y < lMin.y) {
+        result = (lMin.y - pos.y) / dir.y;
+    }
+    if (y > lMax.y) {
+        result = (lMax.y - pos.y) / dir.y;
+    }
+
+    // Compute the time when the ray exists the region
+    // R3 = [xMin, xMax] x [yMin,yMax] x [zMin,zMax].
+    
+    // Analogous procedure to above.
+    const float z = pos.z + dir.z * result;
+    if (z < lMin.z) {
+        result = (lMin.z - pos.z) / dir.z;
+    }
+    if (z > lMax.z) {
+        result = (lMax.z - pos.z) / dir.z;
+    }
+    
+    return result;
 }
 
-// Matrix to go from eye space to local space.
-// Used frequently per ray-marching step in both volumeIntegrator
-// and accumulatedTransmittance, so computed only once in main.
+// Compute time when a ray starting at pos with direction dir
+// exits the axis-aligned box with vertices lMin and lMax.
 //
-MAT4 instanceModelViewInverse;
-float resolvedStepSizeEye;
-float resolvedStepSizeEyeLighting;
-float resolvedStepSizeWorld;
-float resolvedStepSizeWorldLighting;
+// Assumes that dir is normalized.
+float
+timeRayExitsBox(vec3 pos, vec3 dir, vec3 lMin, vec3 lMax)
+{
+    // Uses timeRayExitsBoxPreferX after permuting the coordinates
+    // to make sure that x is not close to zero.
+    //
+    // Note that because dir has unit length, at least one of its entries
+    // has absolute value larger 1/2 ( (1/2)^2 + (1/2)^2 + (1/2)^2 < 1^2).
+
+    vec3 abs_dir = abs(dir);
+    if (abs_dir.x > 0.5) {
+        return timeRayExitsBoxPreferX(
+            pos    , dir    , lMin    , lMax    );
+    }
+    if (abs_dir.y > 0.5) {
+        return timeRayExitsBoxPreferX(
+            pos.yzx, dir.yzx, lMin.yzx, lMax.yzx);
+    }
+    
+    return timeRayExitsBoxPreferX(
+            pos.zxy, dir.zxy, lMin.zxy, lMax.zxy);
+}
+
+// Given a ray in eye space starting inside a volume, compute the time when it
+// exists the volume (assuming rayDirectionEye is normalized).
+float
+timeRayExitsVolume(vec3 rayStartEye, vec3 rayDirectionEye)
+{
+    // Eye space to volume bounding box space
+
+    const MAT4 eyeToBBox =
+        MAT4(HdGet_volumeBBoxInverseTransform()) * instanceModelViewInverse;
+
+    // Transform ray to volume bounding box space
+    const vec3 rayStartBBox     = transformPoint(eyeToBBox, rayStartEye);
+    const vec3 rayDirectionBBox = transformDir  (eyeToBBox, rayDirectionEye);
+
+    // Compute when ray is leaving the volume bounding box
+    return timeRayExitsBox(rayStartBBox,
+                           rayDirectionBBox,
+                           vec3(HdGet_volumeBBoxLocalMin().xyz),
+                           vec3(HdGet_volumeBBoxLocalMax().xyz));
+ 
+}
+
+// Given a ray in eye space, compute the time when it entered the volume
+// (assuming rayDirectionEye is normalized).
+// Note that it is assumed that the ray point is in the volume and that the
+// result will be negative.
+float
+timeRayEnteredVolume(vec3 rayEndEye, vec3 rayDirectionEye)
+{
+    // Compute when reversed ray is exiting the volume bounding box
+    return - timeRayExitsVolume(rayEndEye, -rayDirectionEye);
+}
 
 vec3
 eyeToLocal(vec3 p)
@@ -150,13 +240,14 @@ accumulatedTransmittance(vec3 rayStartEye, vec3 rayDirectionEye)
 
     const vec3 rayStepEye = resolvedStepSizeEyeLighting * rayDirectionEye;
 
-    while(i < maxNumSteps) {
+    const float rayLength = timeRayExitsVolume(rayStartEye, rayDirectionEye);
+    
+    const int numSteps =
+        int(floor(min(maxNumSteps, rayLength / resolvedStepSizeEyeLighting)));
+
+    while(i < numSteps) {
         const vec3 rayPointEye = rayStartEye + i * rayStepEye;
         const vec3 rayPoint = eyeToLocal(rayPointEye);
-
-        if (!inBoundingBox(rayPoint)) {
-            break;
-        }
 
         totalExtinction += extinctionFunction(rayPoint);
 
@@ -295,79 +386,6 @@ isCameraOrthographic()
     return abs(GetProjectionMatrix()[3][3] - 1.0) < 1e-5;
 }
 
-// Compute time when a ray starting at pos with direction dir
-// exits the axis-aligned box with vertices lMin and lMax.
-//
-// Assumes that dir.x isn't close to zero.
-float
-timeRayExitsBoxPreferX(vec3 pos, vec3 dir, vec3 lMin, vec3 lMax)
-{
-    // Compute the time when the ray exists the region
-    // R1 = [xMin, xMax] x [-inf,inf] x [-inf,inf].
-
-    // Depending on whether the the ray is going left or right, compute
-    // the time when the ray is intersecting the plane containing the
-    // left or right face of the box.
-    float result = (((dir.x > 0.0) ? lMax.x : lMin.x) - pos.x) / dir.x;
-
-    // Compute the time when the ray exists the region
-    // R2 = [xMin, xMax] x [yMin,yMax] x [-inf,inf].
-
-    // We can compute the intersection where the ray left R1 as
-    // pos + dir * result.
-    // If this intersection is above or below the box, we know that there
-    // is an earlier intersection of the ray with the plane containing
-    // the top or bottom face of the box, compute that intersection time.
-    const float y = pos.y + dir.y * result;
-    if (y < lMin.y) {
-        result = (lMin.y - pos.y) / dir.y;
-    }
-    if (y > lMax.y) {
-        result = (lMax.y - pos.y) / dir.y;
-    }
-
-    // Compute the time when the ray exists the region
-    // R3 = [xMin, xMax] x [yMin,yMax] x [zMin,zMax].
-    
-    // Analogous procedure to above.
-    const float z = pos.z + dir.z * result;
-    if (z < lMin.z) {
-        result = (lMin.z - pos.z) / dir.z;
-    }
-    if (z > lMax.z) {
-        result = (lMax.z - pos.z) / dir.z;
-    }
-    
-    return result;
-}
-
-// Compute time when a ray starting at pos with direction dir
-// exits the axis-aligned box with vertices lMin and lMax.
-//
-// Assumes that dir is normalized.
-float
-timeRayExitsBox(vec3 pos, vec3 dir, vec3 lMin, vec3 lMax)
-{
-    // Uses timeRayExitsBoxPreferX after permuting the coordinates
-    // to make sure that x is not close to zero.
-    //
-    // Note that because dir has unit length, at least one of its entries
-    // has absolute value larger 1/2 ( (1/2)^2 + (1/2)^2 + (1/2)^2 < 1^2).
-
-    vec3 abs_dir = abs(dir);
-    if (abs_dir.x > 0.5) {
-        return timeRayExitsBoxPreferX(
-            pos    , dir    , lMin    , lMax    );
-    }
-    if (abs_dir.y > 0.5) {
-        return timeRayExitsBoxPreferX(
-            pos.yzx, dir.yzx, lMin.yzx, lMax.yzx);
-    }
-    
-    return timeRayExitsBoxPreferX(
-            pos.zxy, dir.zxy, lMin.zxy, lMax.zxy);
-}
-
 // Convert depth value z in [-1,1] to depth in eye space [-near, -far].
 float
 NDCtoEyeZ(float z)
@@ -421,39 +439,6 @@ computeRayDirectionEye(vec3 rayPointEye)
 
     // Normalize direction in eye space.
     return normalize(dir.xyz - rayPointEye * dir.w);
-}
-
-// Given a ray in eye space starting inside a volume, compute the time when it
-// exists the volume (assuming rayDirectionEye is normalized).
-float
-timeRayExitsVolume(vec3 rayStartEye, vec3 rayDirectionEye)
-{
-    // Eye space to volume bounding box space
-
-    const MAT4 eyeToBBox =
-        MAT4(HdGet_volumeBBoxInverseTransform()) * instanceModelViewInverse;
-
-    // Transform ray to volume bounding box space
-    const vec3 rayStartBBox     = transformPoint(eyeToBBox, rayStartEye);
-    const vec3 rayDirectionBBox = transformDir  (eyeToBBox, rayDirectionEye);
-
-    // Compute when ray is leaving the volume bounding box
-    return timeRayExitsBox(rayStartBBox,
-                           rayDirectionBBox,
-                           vec3(HdGet_volumeBBoxLocalMin().xyz),
-                           vec3(HdGet_volumeBBoxLocalMax().xyz));
- 
-}
-
-// Given a ray in eye space, compute the time when it entered the volume
-// (assuming rayDirectionEye is normalized).
-// Note that it is assumed that the ray point is in the volume and that the
-// result will be negative.
-float
-timeRayEnteredVolume(vec3 rayEndEye, vec3 rayDirectionEye)
-{
-    // Compute when reversed ray is exiting the volume bounding box
-    return - timeRayExitsVolume(rayEndEye, -rayDirectionEye);
 }
 
 // Given where the ray is about to leave the volume, compute where we
