@@ -123,7 +123,7 @@ class "PhysicsCollisionAPI" (
     doc = """Applies collision attributes to a UsdGeomXformable prim. If a 
     simulation is running this geometry is colliding with other geometries that 
     do have CollisionAPI applied. If a prim in the parent hierarchy does have 
-    the PhysicsAPI applied, this collision is a part of that body. If there is 
+    the RigidBodyAPI applied, this collision is a part of that body. If there is 
     no body in the parent hierarchy, this collision is considered to be a static
     collision."""
 )
@@ -136,7 +136,7 @@ class "PhysicsCollisionAPI" (
         displayName = "Simulation Owner"
         doc = """Single PhysicsScene that will simulate this collider. 
         By default this object belongs to the first PhysicsScene.
-        Note that if a PhysicsAPI in the hierarchy above has a different
+        Note that if a RigidBodyAPI in the hierarchy above has a different
         simulationOwner then it has a precedence over this relationship."""
     )
 }
