@@ -139,10 +139,23 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class UsdShadeShader_ConnectableAPIBehavior :
+    public UsdShadeConnectableAPIBehavior
+{
+    // UsdShadeShader outputs are not connectable!
+    bool CanConnectOutputToSource(const UsdShadeOutput &output,
+                                  const UsdAttribute &source,
+                                  std::string *reason) override
+    {
+        return false;
+    }
+};
+
 TF_REGISTRY_FUNCTION(UsdShadeConnectableAPI)
 {
     // UsdShadeShader prims are connectable, with default behavior rules.
-    UsdShadeRegisterConnectableAPIBehavior<UsdShadeShader>();
+    UsdShadeRegisterConnectableAPIBehavior<UsdShadeShader, 
+        UsdShadeShader_ConnectableAPIBehavior>();
 }
 
 UsdShadeShader::UsdShadeShader(const UsdShadeConnectableAPI &connectable)

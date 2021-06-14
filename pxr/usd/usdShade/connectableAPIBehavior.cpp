@@ -304,16 +304,11 @@ UsdShadeConnectableAPIBehavior::_CanConnectOutputToSource(
 
 bool
 UsdShadeConnectableAPIBehavior::CanConnectOutputToSource(
-    const UsdShadeOutput &,
-    const UsdAttribute &,
+    const UsdShadeOutput &output,
+    const UsdAttribute &source,
     std::string *reason)
 {
-    // Most outputs have their value defined by the node definition, and do
-    // not allow connections to override that.
-    if (reason) {
-        *reason = "Outputs for this prim type are not connectable";
-    }
-    return false;
+    return _CanConnectOutputToSource(output, source, reason);
 }
 
 bool

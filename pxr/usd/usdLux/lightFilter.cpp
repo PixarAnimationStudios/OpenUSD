@@ -182,6 +182,13 @@ class UsdLuxLightFilter_ConnectableAPIBehavior :
     // Note that LightFilter's outputs are not connectable (different from
     // UsdShadeNodeGraph default behavior) as there are no known use-case for 
     // these right now.
+    bool
+    CanConnectOutputToSource(const UsdShadeOutput &output,
+                             const UsdAttribute &source,
+                             std::string *reason) override
+    {
+        return false;
+    }
 
 };
 
