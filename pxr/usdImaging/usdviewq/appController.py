@@ -426,6 +426,7 @@ class AppController(QtCore.QObject):
             # statusBar saves considerable GUI configuration time.
             self._mainWindow.show()
             self._mainWindow.setFocus()
+            self._mainWindow.activateWindow()
             
             # Install our custom event filter.  The member assignment of the
             # filter is just for lifetime management
