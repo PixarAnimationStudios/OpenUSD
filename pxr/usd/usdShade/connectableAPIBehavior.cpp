@@ -183,15 +183,18 @@ UsdShadeConnectableAPIBehavior::_CanConnectInputToSource(
     };
 
     TfToken inputConnectability = input.GetConnectability();
+    const bool requiresEncapsulation = RequiresEncapsulation();
     if (inputConnectability == UsdShadeTokens->full) {
         if (UsdShadeInput::IsInput(source)) {
-            if (encapsulationCheckForInputSources(reason)) {
+            if (!requiresEncapsulation ||
+                    encapsulationCheckForInputSources(reason)) {
                 return true;
             }
             return false;
         }
         /* source is an output - allow connection */
-        if (encapsulationCheckForOutputSources(reason)) {
+        if (!requiresEncapsulation||
+                encapsulationCheckForOutputSources(reason)) {
             return true;
         }
         return false;
@@ -200,7 +203,8 @@ UsdShadeConnectableAPIBehavior::_CanConnectInputToSource(
             TfToken sourceConnectability = 
                 UsdShadeInput(source).GetConnectability();
             if (sourceConnectability == UsdShadeTokens->interfaceOnly) {
-                if (encapsulationCheckForInputSources(reason)) {
+                if (!requiresEncapsulation ||
+                        encapsulationCheckForInputSources(reason)) {
                     return true;
                 }
                 return false;
@@ -252,6 +256,8 @@ UsdShadeConnectableAPIBehavior::_CanConnectOutputToSource(
     const SdfPath sourcePrimPath = source.GetPrim().GetPath();
     const SdfPath outputPrimPath = output.GetPrim().GetPath();
 
+
+    const bool requiresEncapsulation = RequiresEncapsulation();
     if (UsdShadeInput::IsInput(source)) {
         // passthrough usage is not allowed for DerivedContainerNodes
         if (nodeType == ConnectableNodeTypes::DerivedContainerNodes) {
@@ -278,8 +284,10 @@ UsdShadeConnectableAPIBehavior::_CanConnectOutputToSource(
         return true;
     } else { // Source is an output
         // output can connect to other node's output directly encapsulated by
-        // it.
-        if (sourcePrimPath.GetParentPath() != outputPrimPath) {
+        // it, unless explicitly marked to ignore encapsulation rule.
+
+        if (requiresEncapsulation &&
+                sourcePrimPath.GetParentPath() != outputPrimPath) {
             if (reason) {
                 *reason = TfStringPrintf("Encapsulation check failed - prim "
                         "owning the output '%s' is not an immediate descendent "
@@ -289,6 +297,7 @@ UsdShadeConnectableAPIBehavior::_CanConnectOutputToSource(
             }
             return false;
         }
+
         return true;
     }
 }
@@ -311,6 +320,12 @@ bool
 UsdShadeConnectableAPIBehavior::IsContainer() const
 {
     return false;
+}
+
+bool
+UsdShadeConnectableAPIBehavior::RequiresEncapsulation() const
+{
+    return true;
 }
 
 ////////////////////////////////////////////////////////////////////////

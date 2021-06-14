@@ -305,14 +305,26 @@ class UsdLuxLight_ConnectableAPIBehavior : public UsdShadeConnectableAPIBehavior
                 ConnectableNodeTypes::DerivedContainerNodes);
     }
 
-    bool IsContainer() const
+    bool
+    CanConnectOutputToSource(const UsdShadeOutput &output,
+                             const UsdAttribute &source,
+                             std::string *reason) override
+    {
+        return _CanConnectOutputToSource(output, source, reason,
+                ConnectableNodeTypes::DerivedContainerNodes);
+    }
+
+    bool 
+    IsContainer() const override
     {
         return true;
     }
 
-    // Note that Light's outputs are not connectable (different from
-    // UsdShadeNodeGraph default behavior) as there are no known use-case for 
-    // these right now.
+    bool
+    RequiresEncapsulation() const override
+    {
+        return false;
+    }
 };
 
 TF_REGISTRY_FUNCTION(UsdShadeConnectableAPI)

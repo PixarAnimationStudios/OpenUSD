@@ -160,14 +160,23 @@ class UsdLuxLightFilter_ConnectableAPIBehavior :
     CanConnectInputToSource(const UsdShadeInput &input,
                             const UsdAttribute &source,
                             std::string *reason) override
-    {     
+    {   
         return _CanConnectInputToSource(input, source, reason, 
                 ConnectableNodeTypes::DerivedContainerNodes);
     }
 
-    bool IsContainer() const
+    bool 
+    IsContainer() const override
     {
         return true;
+    }
+
+    // We expect to make light filters be connected across multiple light
+    // scopes, hence ignoring encapsulation rules.
+    bool 
+    RequiresEncapsulation() const override
+    {
+        return false;
     }
 
     // Note that LightFilter's outputs are not connectable (different from
