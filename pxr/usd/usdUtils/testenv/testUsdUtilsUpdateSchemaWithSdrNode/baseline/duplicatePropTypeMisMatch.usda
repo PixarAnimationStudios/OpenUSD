@@ -1,0 +1,21 @@
+#usda 1.0
+
+class "TestDuplicatePropsAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["RectLight"]
+        string apiSchemaType = "singleApply"
+    }
+    inherits = </APISchemaBase>
+)
+{
+    uniform string inputs:colorMapGamma (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Map Gamma"
+        doc = """
+                uniform color mapping for gamma.
+                """
+    )
+    color3f outputs:resultRGB
+}
+

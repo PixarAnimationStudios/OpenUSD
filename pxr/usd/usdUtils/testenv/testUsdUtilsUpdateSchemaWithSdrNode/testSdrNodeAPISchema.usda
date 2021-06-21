@@ -1,0 +1,52 @@
+#usda 1.0
+
+# Input USD File to test basic update of usd schema from sdr node specifications
+
+def Shader "TestSchemaAPI" (
+    sdrMetadata = {
+        token schemaName = "TestSchemaAPI"
+        token schemaKind = "singleApply"
+        token schemaBase = "APISchemaBase"
+        token apiSchemaAutoApplyTo = "SomeConcreteType|SomeAbstractType"
+    }
+)
+{
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @testDummy.glslfx@
+    
+    float inputs:intensity = 1.0 (
+        connectability = "interfaceOnly"
+        sdrMetadata = {
+            token label = "Intensity"
+            token page = "Basic"
+            token help = """
+                intensity: Itensity of the flame thrower.
+                """
+        }
+    )
+    string inputs:colorMapGamma (
+        connectability = "interfaceOnly"
+        sdrMetadata = {
+            token label = "Map Gamma"
+            token page = "Basic"
+            token usdVariability = "Uniform"
+            token options = "texture"
+            token help = """
+                uniform color mapping for gamma.
+                """
+        }
+    )
+    color3f inputs:textureColor (
+        connectability = "interfaceOnly"
+        sdrMetadata = {
+            token label = "Texture Color"
+            token options = "texture"
+            token usdSuppressProperty = "True"
+            token help = """
+                uniform color mapping for gamma.
+                """
+        }
+    )
+
+    color3f outputs:resultRGB
+}

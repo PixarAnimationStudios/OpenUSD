@@ -79,6 +79,7 @@ pxr_test_scripts(
     testenv/testUsdUtilsStitch.py
     testenv/testUsdUtilsStitchClips.py
     testenv/testUsdUtilsTimeCodeRange.py
+    testenv/testUsdUtilsUpdateSchemaWithSdrNode.py
     testenv/testUsdUtilsVarSelsSessionLayer.py
 )
 
@@ -185,6 +186,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsStitchClips.testenv
     DEST testUsdUtilsStitchClips
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsUpdateSchemaWithSdrNode
+    DEST testUsdUtilsUpdateSchemaWithSdrNode
 )
 
 pxr_register_test(testUsdUtilsAuthoring
@@ -458,6 +464,18 @@ pxr_register_test(testUsdUtilsStitch
 pxr_register_test(testUsdUtilsStitchClips
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsStitchClips"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsUpdateSchemaWithSdrNode
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsUpdateSchemaWithSdrNode"
+    DIFF_COMPARE resultAPISchema.usda
+    DIFF_COMPARE resultAPIIdentifierMissing.usda
+    DIFF_COMPARE result_override.usda
+    DIFF_COMPARE duplicateProp.usda
+    DIFF_COMPARE duplicatePropTypeMisMatch.usda
+    DIFF_COMPARE schemaConcrete.usda
     EXPECTED_RETURN_CODE 0
 )
 
