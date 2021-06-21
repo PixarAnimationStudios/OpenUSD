@@ -183,7 +183,14 @@ UsdShadeConnectableAPIBehavior::_CanConnectInputToSource(
     };
 
     TfToken inputConnectability = input.GetConnectability();
-    const bool requiresEncapsulation = RequiresEncapsulation();
+
+    // Note that instead of directly calling RequiresEncapsulation(), 
+    // here we go through UsdShadeConnectableAPI::RequiresEncapsulation(). 
+    // This is because, UsdShadeConnectableAPI gives us access to the bound prim
+    // which in subsequent change(s) will be used to provide a fallback value in 
+    // cases where behavior is not found.
+    const bool requiresEncapsulation = 
+        UsdShadeConnectableAPI(input.GetPrim()).RequiresEncapsulation();
     if (inputConnectability == UsdShadeTokens->full) {
         if (UsdShadeInput::IsInput(source)) {
             if (!requiresEncapsulation ||
@@ -193,7 +200,7 @@ UsdShadeConnectableAPIBehavior::_CanConnectInputToSource(
             return false;
         }
         /* source is an output - allow connection */
-        if (!requiresEncapsulation||
+        if (!requiresEncapsulation ||
                 encapsulationCheckForOutputSources(reason)) {
             return true;
         }
@@ -257,7 +264,13 @@ UsdShadeConnectableAPIBehavior::_CanConnectOutputToSource(
     const SdfPath outputPrimPath = output.GetPrim().GetPath();
 
 
-    const bool requiresEncapsulation = RequiresEncapsulation();
+    // Note that instead of directly calling RequiresEncapsulation(), 
+    // here we go through UsdShadeConnectableAPI::RequiresEncapsulation(). 
+    // This is because, UsdShadeConnectableAPI gives us access to the bound prim
+    // which in subsequent change(s) will be used to provide a fallback value in 
+    // cases where behavior is not found.
+    const bool requiresEncapsulation = 
+        UsdShadeConnectableAPI(output.GetPrim()).RequiresEncapsulation();
     if (UsdShadeInput::IsInput(source)) {
         // passthrough usage is not allowed for DerivedContainerNodes
         if (nodeType == ConnectableNodeTypes::DerivedContainerNodes) {
@@ -574,6 +587,16 @@ UsdShadeConnectableAPI::IsContainer() const
     if (UsdShadeConnectableAPIBehavior *behavior =
         _BehaviorRegistry::GetInstance().GetBehavior(GetPrim())) {
         return behavior->IsContainer();
+    }
+    return false;
+}
+
+bool
+UsdShadeConnectableAPI::RequiresEncapsulation() const
+{
+    if (UsdShadeConnectableAPIBehavior *behavior =
+        _BehaviorRegistry::GetInstance().GetBehavior(GetPrim())) {
+        return behavior->RequiresEncapsulation();
     }
     return false;
 }

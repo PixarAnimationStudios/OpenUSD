@@ -238,6 +238,8 @@ WRAP_CUSTOM {
 
     _class
         .def("IsContainer", &UsdShadeConnectableAPI::IsContainer)
+        .def("RequiresEncapsulation", 
+                &UsdShadeConnectableAPI::RequiresEncapsulation)
 
         .def("CanConnect", CanConnect_Input,
             (arg("input"), arg("source")))

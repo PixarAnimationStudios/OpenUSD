@@ -184,6 +184,14 @@ public:
     USDSHADE_API
     bool IsContainer() const;
 
+    /// Returns true if container encapsulation rules should be respected when
+    /// evaluating connectibility behavior, false otherwise.
+    ///
+    /// The underlying prim type may provide runtime behavior that defines if
+    /// encapsulation rules are respected or not.
+    USDSHADE_API
+    bool RequiresEncapsulation() const;
+
     /// \name Connections 
     /// 
     /// Inputs and outputs on shaders and node-graphs are connectable.
