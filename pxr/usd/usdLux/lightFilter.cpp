@@ -159,7 +159,7 @@ class UsdLuxLightFilter_ConnectableAPIBehavior :
     bool
     CanConnectInputToSource(const UsdShadeInput &input,
                             const UsdAttribute &source,
-                            std::string *reason) override
+                            std::string *reason) const override
     {   
         return _CanConnectInputToSource(input, source, reason, 
                 ConnectableNodeTypes::DerivedContainerNodes);
@@ -185,7 +185,7 @@ class UsdLuxLightFilter_ConnectableAPIBehavior :
     bool
     CanConnectOutputToSource(const UsdShadeOutput &output,
                              const UsdAttribute &source,
-                             std::string *reason) override
+                             std::string *reason) const override
     {
         return false;
     }

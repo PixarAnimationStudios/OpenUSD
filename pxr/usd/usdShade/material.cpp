@@ -756,7 +756,7 @@ class UsdShadeMaterial_ConnectableAPIBehavior :
     bool
     CanConnectInputToSource(const UsdShadeInput &input,
                             const UsdAttribute &source,
-                            std::string *reason) override
+                            std::string *reason) const override
     {
         return _CanConnectInputToSource(input, source, reason, 
                 ConnectableNodeTypes::DerivedContainerNodes);
@@ -765,13 +765,13 @@ class UsdShadeMaterial_ConnectableAPIBehavior :
     bool
     CanConnectOutputToSource(const UsdShadeOutput &output,
                              const UsdAttribute &source,
-                             std::string *reason)
+                             std::string *reason) const override
     {
         return _CanConnectOutputToSource(output, source, reason,
                 ConnectableAPIBehavior::DerivedContainerNodes);
     }
 
-    bool IsContainer() const
+    bool IsContainer() const override
     {
         // Material does act as a namespace container for connected nodes
         return true;

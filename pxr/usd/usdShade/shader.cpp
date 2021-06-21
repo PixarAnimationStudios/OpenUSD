@@ -145,7 +145,7 @@ class UsdShadeShader_ConnectableAPIBehavior :
     // UsdShadeShader outputs are not connectable!
     bool CanConnectOutputToSource(const UsdShadeOutput &output,
                                   const UsdAttribute &source,
-                                  std::string *reason) override
+                                  std::string *reason) const override
     {
         return false;
     }

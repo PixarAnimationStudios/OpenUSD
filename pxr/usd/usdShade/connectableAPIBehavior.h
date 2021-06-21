@@ -77,7 +77,7 @@ public:
     virtual bool
     CanConnectInputToSource(const UsdShadeInput &,
                             const UsdAttribute &,
-                            std::string *reason);
+                            std::string *reason) const;
 
     /// The prim owning the output is guaranteed to be of the type this
     /// behavior was registered with. The function must be thread-safe.
@@ -95,7 +95,7 @@ public:
     virtual bool
     CanConnectOutputToSource(const UsdShadeOutput &,
                              const UsdAttribute &,
-                             std::string *reason);
+                             std::string *reason) const;
 
     /// The function must be thread-safe.
     ///
@@ -128,13 +128,13 @@ protected:
     bool _CanConnectInputToSource(const UsdShadeInput&, const UsdAttribute&,
                                   std::string *reason, 
                                   ConnectableNodeTypes nodeType = 
-                                    ConnectableNodeTypes::BasicNodes);
+                                    ConnectableNodeTypes::BasicNodes) const;
 
     USDSHADE_API
     bool _CanConnectOutputToSource(const UsdShadeOutput&, const UsdAttribute&,
                                    std::string *reason,
                                    ConnectableNodeTypes nodeType =
-                                     ConnectableNodeTypes::BasicNodes);
+                                     ConnectableNodeTypes::BasicNodes) const;
 
     
 };

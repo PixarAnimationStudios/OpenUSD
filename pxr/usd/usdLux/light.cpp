@@ -299,7 +299,7 @@ class UsdLuxLight_ConnectableAPIBehavior : public UsdShadeConnectableAPIBehavior
     bool
     CanConnectInputToSource(const UsdShadeInput &input,
                             const UsdAttribute &source,
-                            std::string *reason) override
+                            std::string *reason) const override
     {
         return _CanConnectInputToSource(input, source, reason, 
                 ConnectableNodeTypes::DerivedContainerNodes);
@@ -308,7 +308,7 @@ class UsdLuxLight_ConnectableAPIBehavior : public UsdShadeConnectableAPIBehavior
     bool
     CanConnectOutputToSource(const UsdShadeOutput &output,
                              const UsdAttribute &source,
-                             std::string *reason) override
+                             std::string *reason) const override
     {
         return _CanConnectOutputToSource(output, source, reason,
                 ConnectableNodeTypes::DerivedContainerNodes);

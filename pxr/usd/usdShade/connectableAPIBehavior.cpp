@@ -54,7 +54,7 @@ bool
 UsdShadeConnectableAPIBehavior::CanConnectInputToSource(
     const UsdShadeInput &input,
     const UsdAttribute &source,
-    std::string *reason)
+    std::string *reason) const
 {
     return _CanConnectInputToSource(input, source, reason);
 }
@@ -64,7 +64,7 @@ UsdShadeConnectableAPIBehavior::_CanConnectInputToSource(
     const UsdShadeInput &input,
     const UsdAttribute &source,
     std::string *reason,
-    ConnectableNodeTypes nodeType)
+    ConnectableNodeTypes nodeType) const
 {
     if (!input.IsDefined()) {
         if (reason) {
@@ -236,7 +236,7 @@ UsdShadeConnectableAPIBehavior::_CanConnectOutputToSource(
     const UsdShadeOutput &output,
     const UsdAttribute &source,
     std::string *reason,
-    ConnectableNodeTypes nodeType)
+    ConnectableNodeTypes nodeType) const
 {
     // Nodegraphs allow connections to their outputs, but only from
     // internal nodes.
@@ -306,7 +306,7 @@ bool
 UsdShadeConnectableAPIBehavior::CanConnectOutputToSource(
     const UsdShadeOutput &output,
     const UsdAttribute &source,
-    std::string *reason)
+    std::string *reason) const
 {
     return _CanConnectOutputToSource(output, source, reason);
 }

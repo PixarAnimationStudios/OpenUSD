@@ -383,7 +383,7 @@ bool
 UsdShadeNodeGraph::ConnectableAPIBehavior::CanConnectOutputToSource(
     const UsdShadeOutput &output,
     const UsdAttribute &source,
-    std::string *reason)
+    std::string *reason) const
 {
     return UsdShadeConnectableAPIBehavior::_CanConnectOutputToSource(
             output, source, reason);
