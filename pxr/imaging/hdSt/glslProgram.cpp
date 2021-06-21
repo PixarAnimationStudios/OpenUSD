@@ -213,14 +213,17 @@ HdStGLSLProgram::~HdStGLSLProgram()
 }
 
 /* static */
+static
 HdStGLSLProgram::ID
-HdStGLSLProgram::ComputeHash(TfToken const &sourceFile)
+_ComputeHash(TfToken const &sourceFile,
+             std::string const &defines = std::string())
 {
     HD_TRACE_FUNCTION();
 
     uint32_t hash = 0;
     std::string const &filename = sourceFile.GetString();
     hash = ArchHash(filename.c_str(), filename.size(), hash);
+    hash = ArchHash(defines.c_str(), defines.size(), hash);
 
     return hash;
 }
@@ -392,7 +395,7 @@ HdStGLSLProgram::GetComputeProgram(
     // Find the program from registry
     HdInstance<HdStGLSLProgramSharedPtr> programInstance =
                 resourceRegistry->RegisterGLSLProgram(
-                        HdStGLSLProgram::ComputeHash(shaderToken));
+                        _ComputeHash(shaderToken));
 
     if (programInstance.IsFirstInstance()) {
         // if not exists, create new one
@@ -429,10 +432,23 @@ HdStGLSLProgram::GetComputeProgram(
     HdStResourceRegistry *resourceRegistry,
     PopulateDescriptorCallback populateDescriptor)
 {
+    return GetComputeProgram(shaderToken,
+                             std::string(),
+                             resourceRegistry,
+                             populateDescriptor);
+}
+
+HdStGLSLProgramSharedPtr
+HdStGLSLProgram::GetComputeProgram(
+    TfToken const &shaderToken,
+    std::string const &defines,
+    HdStResourceRegistry *resourceRegistry,
+    PopulateDescriptorCallback populateDescriptor)
+{
     // Find the program from registry
     HdInstance<HdStGLSLProgramSharedPtr> programInstance =
                 resourceRegistry->RegisterGLSLProgram(
-                        HdStGLSLProgram::ComputeHash(shaderToken));
+                        _ComputeHash(shaderToken, defines));
 
     if (programInstance.IsFirstInstance()) {
         // if not exists, create new one
@@ -450,6 +466,8 @@ HdStGLSLProgram::GetComputeProgram(
         HgiShaderFunctionDesc computeDesc;
         std::string sourceCode("#version 430\n"
             "layout(local_size_x=1, local_size_y=1, local_size_z=1) in;\n");
+
+        sourceCode += defines;
 
         populateDescriptor(computeDesc);
 
