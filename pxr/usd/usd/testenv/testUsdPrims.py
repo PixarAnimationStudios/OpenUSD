@@ -569,16 +569,17 @@ class TestUsdPrim(unittest.TestCase):
             sphereRefs = sphere.GetReferences()
             s3 = Usd.Stage.CreateNew("refTest2."+fmt)
             box = s3.DefinePrim("/Box", "Cube")
-            assert s2.ResolveIdentifierToEditTarget(
-                s1.GetRootLayer().identifier) != ""
-            assert s2.ResolveIdentifierToEditTarget("./refTest2."+fmt) != ""
-            assert s2.ResolveIdentifierToEditTarget(
-                s2.GetRootLayer().realPath) != ""
+            self.assertEqual(s2.ResolveIdentifierToEditTarget(
+                s1.GetRootLayer().identifier), s1.GetRootLayer().identifier)
+            self.assertNotEqual(s2.ResolveIdentifierToEditTarget(
+                "./refTest2."+fmt), "")
+            self.assertNotEqual(s2.ResolveIdentifierToEditTarget(
+                s2.GetRootLayer().realPath), "")
             # but paths to non-existent files fail
-            assert s2.ResolveIdentifierToEditTarget("./noFile."+fmt) == ""
-            # and paths relative to in-memory layers fail (expected errors?)
-            print("bazRefs = " + s1.ResolveIdentifierToEditTarget("./refTest2."+fmt))
-            assert s1.ResolveIdentifierToEditTarget("./refTest2."+fmt) == "" 
+            self.assertEqual(s2.ResolveIdentifierToEditTarget("./noFile."+fmt), "")
+            # paths relative to in-memory layers resolve relative to the cwd
+            # (under the default resolver)
+            self.assertNotEqual(s1.ResolveIdentifierToEditTarget("./refTest2."+fmt), "")
 
             # A good reference generates no errors or exceptions
             assert bazRefs.AddReference(s2.GetRootLayer().identifier, "/Sphere")

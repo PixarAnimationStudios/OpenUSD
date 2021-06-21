@@ -8478,26 +8478,24 @@ std::string
 UsdStage::ResolveIdentifierToEditTarget(std::string const &identifier) const
 {
     const SdfLayerHandle &anchor = _editTarget.GetLayer();
-    
+        
     // This check finds anonymous layers, which we consider to always resolve
-    if (SdfLayerHandle lyr = SdfLayer::Find(identifier)){
-        if (lyr->IsAnonymous()){
-            TF_DEBUG(USD_PATH_RESOLUTION).Msg("Resolved identifier %s because "
-                                              "it was anonymous\n",
-                                              identifier.c_str());
+    if (SdfLayer::IsAnonymousLayerIdentifier(identifier)) {
+        if (SdfLayerHandle lyr = SdfLayer::Find(identifier)){
+            TF_DEBUG(USD_PATH_RESOLUTION).Msg(
+                "Resolved identifier %s because it was anonymous\n",
+                identifier.c_str());
             return identifier;
         }
-        else if (anchor->IsAnonymous() && 
-                 ArGetResolver().IsRelativePath(identifier)){
-            TF_DEBUG(USD_PATH_RESOLUTION).Msg("Cannot resolve identifier %s "
-                                              "because anchoring layer %s is"
-                                              "anonymous\n",
-                                              identifier.c_str(),
-                                              anchor->GetIdentifier().c_str());
+        else {
+            TF_DEBUG(USD_PATH_RESOLUTION).Msg(
+                "Resolved identifier %s to \"\" because it was anonymous but "
+                "no layer is open with that identifier\n",
+                identifier.c_str());
             return std::string();
         }
     }
-    
+
     ArResolverContextBinder binder(GetPathResolverContext());
 
     // Handles non-relative paths also
