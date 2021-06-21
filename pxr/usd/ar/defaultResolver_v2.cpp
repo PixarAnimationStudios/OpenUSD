@@ -55,6 +55,41 @@ _IsFileRelative(const std::string& path) {
     return path.find("./") == 0 || path.find("../") == 0;
 }
 
+static bool
+_IsRelativePath(const std::string& path)
+{
+    return (!path.empty() && TfIsRelativePath(path));
+}
+
+static bool
+_IsSearchPath(const std::string& path)
+{
+    return _IsRelativePath(path) && !_IsFileRelative(path);
+}
+
+static std::string
+_AnchorRelativePath(
+    const std::string& anchorPath, 
+    const std::string& path)
+{
+    if (TfIsRelativePath(anchorPath) ||
+        !_IsRelativePath(path)) {
+        return path;
+    }
+
+    // Ensure we are using forward slashes and not back slashes.
+    std::string forwardPath = anchorPath;
+    std::replace(forwardPath.begin(), forwardPath.end(), '\\', '/');
+
+    // If anchorPath does not end with a '/', we assume it is specifying
+    // a file, strip off the last component, and anchor the path to that
+    // directory.
+    const std::string anchoredPath = TfStringCatPaths(
+        TfStringGetBeforeSuffix(forwardPath, '/'), path);
+    return TfNormPath(anchoredPath);
+}
+
+
 static std::vector<std::string>
 _ParseSearchPaths(const std::string& pathStr)
 {
@@ -102,34 +137,6 @@ ArDefaultResolver::ConfigureResolverForAsset(const std::string& path)
     _defaultContext = CreateDefaultContextForAsset(path);
 }
 
-bool
-ArDefaultResolver::IsRelativePath(const std::string& path)
-{
-    return (!path.empty() && TfIsRelativePath(path));
-}
-
-std::string
-ArDefaultResolver::AnchorRelativePath(
-    const std::string& anchorPath, 
-    const std::string& path)
-{
-    if (TfIsRelativePath(anchorPath) ||
-        !IsRelativePath(path)) {
-        return path;
-    }
-
-    // Ensure we are using forward slashes and not back slashes.
-    std::string forwardPath = anchorPath;
-    std::replace(forwardPath.begin(), forwardPath.end(), '\\', '/');
-
-    // If anchorPath does not end with a '/', we assume it is specifying
-    // a file, strip off the last component, and anchor the path to that
-    // directory.
-    const std::string anchoredPath = TfStringCatPaths(
-        TfStringGetBeforeSuffix(forwardPath, '/'), path);
-    return TfNormPath(anchoredPath);
-}
-
 std::string
 ArDefaultResolver::_CreateIdentifier(
     const std::string& assetPath,
@@ -155,9 +162,9 @@ ArDefaultResolver::_CreateIdentifier(
     // exists there, we just return the anchored path. Otherwise, we return
     // the asset path as-is.
     const std::string anchoredAssetPath =
-        AnchorRelativePath(anchorAssetPath, assetPath);
+        _AnchorRelativePath(anchorAssetPath, assetPath);
 
-    if (IsSearchPath(assetPath) && Resolve(anchoredAssetPath).empty()) {
+    if (_IsSearchPath(assetPath) && Resolve(anchoredAssetPath).empty()) {
         return TfNormPath(assetPath);
     }
 
@@ -173,19 +180,13 @@ ArDefaultResolver::_CreateIdentifierForNewAsset(
         return assetPath;
     }
 
-    if (IsRelativePath(assetPath)) {
+    if (_IsRelativePath(assetPath)) {
         return TfNormPath(anchorAssetPath ? 
-            AnchorRelativePath(anchorAssetPath, assetPath) :
+            _AnchorRelativePath(anchorAssetPath, assetPath) :
             TfAbsPath(assetPath));
     }
 
     return TfNormPath(assetPath);
-}
-
-bool
-ArDefaultResolver::IsSearchPath(const std::string& path)
-{
-    return IsRelativePath(path) && !_IsFileRelative(path);
 }
 
 std::string
@@ -207,7 +208,7 @@ _ResolveAnchored(
         // causes consumers to break. 
         // 
         // Ultimately what we should do is specify whether anchorPath 
-        // in both Resolve and AnchorRelativePath can be files or directories 
+        // in both Resolve and _AnchorRelativePath can be files or directories 
         // and fix up all the callers to accommodate this.
         resolvedPath = TfStringCatPaths(anchorPath, path);
     }
@@ -226,7 +227,7 @@ ArDefaultResolver::_ResolveNoCache(const std::string& path)
         return ArResolvedPath();
     }
 
-    if (IsRelativePath(path)) {
+    if (_IsRelativePath(path)) {
         // First try to resolve relative paths against the current
         // working directory.
         ArResolvedPath resolvedPath = _ResolveAnchored(ArchGetCwd(), path);
@@ -236,7 +237,7 @@ ArDefaultResolver::_ResolveNoCache(const std::string& path)
 
         // If that fails and the path is a search path, try to resolve
         // against each directory in the specified search paths.
-        if (IsSearchPath(path)) {
+        if (_IsSearchPath(path)) {
             const ArDefaultResolverContext* contexts[2] =
                 {_GetCurrentContextPtr(), &_fallbackContext};
             for (const ArDefaultResolverContext* ctx : contexts) {
@@ -323,7 +324,7 @@ bool
 ArDefaultResolver::_IsContextDependentPath(
     const std::string& assetPath)
 {
-    return IsSearchPath(assetPath);
+    return _IsSearchPath(assetPath);
 }
 
 ArResolverContext 

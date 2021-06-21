@@ -405,35 +405,6 @@ public:
     AR_API
     virtual void ConfigureResolverForAsset(const std::string& path);
 
-    /// Returns the path formed by anchoring \p path to \p anchorPath.
-    ///
-    /// If \p anchorPath ends with a trailing '/', it is treated as
-    /// a directory to which \p path will be anchored. Otherwise, it
-    /// is treated as a file and \p path will be anchored to its
-    /// containing directory.
-    ///
-    /// If \p anchorPath is empty, \p path will be returned as-is.
-    ///
-    /// If \p path is empty or not a relative path, it will be 
-    /// returned as-is.
-    ///
-    /// \deprecated Planned for removal in favor of CreateIdentifier.
-    AR_API
-    virtual std::string AnchorRelativePath(
-        const std::string& anchorPath, 
-        const std::string& path) = 0; 
-
-    /// Returns true if the given path is a relative path.
-    /// \deprecated
-    AR_API
-    virtual bool IsRelativePath(const std::string& path) = 0;
-
-    /// Returns whether this path is a search path.
-    /// The default implementation returns false.
-    /// \deprecated
-    AR_API
-    virtual bool IsSearchPath(const std::string& path);
-
     /// \deprecated
     /// Returns true if the given path is a repository path.
     AR_API

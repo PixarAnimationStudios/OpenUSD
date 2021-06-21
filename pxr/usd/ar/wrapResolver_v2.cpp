@@ -93,9 +93,6 @@ wrapResolver()
 
         .def("GetCurrentContext", &This::GetCurrentContext)
 
-        .def("IsRelativePath", &This::IsRelativePath)
-        .def("AnchorRelativePath", &This::AnchorRelativePath)
-
         .def("IsContextDependentPath", &This::IsContextDependentPath,
              args("assetPath"))
 

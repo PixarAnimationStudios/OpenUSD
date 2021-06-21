@@ -49,22 +49,6 @@ public:
     {
     }
 
-    virtual std::string AnchorRelativePath(
-        const std::string& anchorPath, 
-        const std::string& path) final
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(anchorPath), _uriScheme));
-        TF_AXIOM(!TfStringStartsWith(TfStringToLower(path), _uriScheme));
-        return TfStringCatPaths(anchorPath, path);
-    }
-
-    virtual bool IsRelativePath(
-        const std::string& path) final
-    {
-        TF_AXIOM(!TfStringStartsWith(TfStringToLower(path), _uriScheme));
-        return true;
-    }
-
     virtual std::string _GetExtension(
         const std::string& path) final
     {

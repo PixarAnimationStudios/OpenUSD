@@ -406,41 +406,6 @@ public:
         resolver.ConfigureResolverForAsset(path); 
     }
 
-    virtual std::string AnchorRelativePath(
-        const std::string& anchorPath, 
-        const std::string& path) override
-    {
-        // If path has a recognized URI scheme, we assume it's an
-        // absolute URI per RFC 3986 sec 4.3 and just return it as-is.
-        // Otherwise, it's unclear whether the resolver for anchorPath
-        // or path should be responsible for handling this query.
-        //
-        // If path does not have a recognized URI scheme, we delegate
-        // to the resolver for anchorPath to do the anchoring. Although
-        // we could implement URI anchoring per RFC 3986 sec 5 here,
-        // we want to give implementations the chance to do additional
-        // manipulations during the anchoring process.
-        ArResolver* resolver = _GetURIResolver(path);
-        if (resolver) {
-            return path;
-        }
-        else {
-            resolver = &_GetResolver(anchorPath);
-        }
-
-        if (ArIsPackageRelativePath(path)) {
-            std::pair<std::string, std::string> packagePath = 
-                ArSplitPackageRelativePathOuter(path);
-
-            packagePath.first = resolver->AnchorRelativePath(
-                ArSplitPackageRelativePathOuter(anchorPath).first,
-                packagePath.first);
-
-            return ArJoinPackageRelativePath(packagePath);
-        }
-        return resolver->AnchorRelativePath(anchorPath, path);
-    }
-
     virtual std::string _CreateIdentifier(
         const std::string& assetPath,
         const ArResolvedPath& anchorAssetPath) override
@@ -508,24 +473,6 @@ public:
         return createIdentifierFn(*resolver, assetPath, anchorResolvedPath);
     }
 
-    virtual bool IsRelativePath(const std::string& path) override
-    {
-        // See AnchorRelativePath.
-        ArResolver* resolver = _GetURIResolver(path);
-        if (resolver) {
-            return false;
-        }
-        else {
-            resolver = &_GetResolver(path);
-        }
-
-        if (ArIsPackageRelativePath(path)) {
-            return resolver->IsRelativePath(
-                ArSplitPackageRelativePathOuter(path).first);
-        }
-        return resolver->IsRelativePath(path);
-    }
-
     virtual bool _IsContextDependentPath(
         const std::string& assetPath)
     {
@@ -545,16 +492,6 @@ public:
                 ArSplitPackageRelativePathOuter(path).first);
         }
         return resolver.IsRepositoryPath(path);
-    }
-
-    virtual bool IsSearchPath(const std::string& path) override
-    {
-        ArResolver& resolver = _GetResolver(path);
-        if (ArIsPackageRelativePath(path)) {
-            return resolver.IsSearchPath(
-                ArSplitPackageRelativePathOuter(path).first);
-        }
-        return resolver.IsSearchPath(path);
     }
 
     virtual std::string _GetExtension(const std::string& path) override
@@ -1453,13 +1390,6 @@ void
 ArResolver::ConfigureResolverForAsset(
     const std::string& path)
 {
-}
-
-bool
-ArResolver::IsSearchPath(
-    const std::string& path)
-{
-    return false;
 }
 
 bool

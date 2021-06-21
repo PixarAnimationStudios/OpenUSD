@@ -96,17 +96,6 @@ public:
     AR_API
     virtual void ConfigureResolverForAsset(const std::string& path) override;
 
-    AR_API
-    virtual std::string AnchorRelativePath(
-        const std::string& anchorPath, 
-        const std::string& path) override; 
-
-    AR_API
-    virtual bool IsRelativePath(const std::string& path) override;
-
-    AR_API
-    virtual bool IsSearchPath(const std::string& path) override;
-
 protected:
     AR_API
     virtual std::string _CreateIdentifier(

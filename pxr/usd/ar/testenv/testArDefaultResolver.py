@@ -58,6 +58,8 @@ class TestArDefaultResolver(unittest.TestCase):
         # Verify that the underlying resolver is an Ar.DefaultResolver.
         assert(isinstance(Ar.GetUnderlyingResolver(), Ar.DefaultResolver))
 
+    @unittest.skipIf(not hasattr(Ar.Resolver, "AnchorRelativePath"),
+                     "No AnchorRelativePath API")
     def test_AnchorRelativePath(self):
         r = Ar.GetResolver()
 
