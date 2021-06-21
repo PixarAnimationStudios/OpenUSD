@@ -298,8 +298,29 @@ Sdf_LayerRegistry::FindByRealPath(
     if (!Sdf_SplitIdentifier(layerPath, &searchPath, &arguments))
         return foundLayer;
 
-    searchPath = !resolvedPath.empty() ?
-        resolvedPath : Sdf_ComputeFilePath(searchPath);
+    // Ignore errors reported by Sdf_ComputeFilePath. These errors mean we
+    // weren't able to compute a real path from the given layerPath. However,
+    // that shouldn't be an error for this function, it just means there was
+    // nothing to find at that layerPath.
+    {
+        TfErrorMark m;
+        searchPath = !resolvedPath.empty() ?
+            resolvedPath : Sdf_ComputeFilePath(searchPath);
+
+        if (!m.IsClean()) {
+            std::vector<std::string> errors;
+            for (const TfError& e : m) {
+                errors.push_back(e.GetCommentary());
+            }
+
+            TF_DEBUG(SDF_LAYER).Msg(
+                "Sdf_LayerRegistry::FindByRealPath('%s'): "
+                "Failed to compute real path: %s\n",
+                layerPath.c_str(), TfStringJoin(errors, ", ").c_str());
+
+            m.Clear();
+        }
+    }
     searchPath = Sdf_CreateIdentifier(searchPath, arguments);
 
 #if AR_VERSION == 1

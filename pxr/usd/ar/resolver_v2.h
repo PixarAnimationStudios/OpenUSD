@@ -410,21 +410,6 @@ public:
     AR_API
     bool IsRepositoryPath(const std::string& path);
 
-    /// Returns true if a new file may be created using the given
-    /// \p identifier, false otherwise.
-    ///
-    /// If this function returns false and \p whyNot is not \c nullptr,
-    /// it will be filled in with an explanation.
-    ///
-    /// The default implementation returns true.
-    ///
-    /// \deprecated Planned for removal in favor of using ResolveForNewAsset
-    /// to determine if a new layer can be created with a given identifier.
-    AR_API
-    virtual bool CanCreateNewLayerWithIdentifier(
-        const std::string& identifier, 
-        std::string* whyNot);
-
     /// @}
 
 protected:

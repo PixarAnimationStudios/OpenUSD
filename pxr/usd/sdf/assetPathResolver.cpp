@@ -91,7 +91,11 @@ Sdf_CanCreateNewLayerWithIdentifier(
         return false;
     }
 
+#if AR_VERSION == 1
     return ArGetResolver().CanCreateNewLayerWithIdentifier(identifier, whyNot);
+#else
+    return true;
+#endif
 }
 
 ArResolvedPath

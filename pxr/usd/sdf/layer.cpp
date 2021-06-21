@@ -412,17 +412,31 @@ SdfLayer::_CreateNew(
     // Direct newly created layers to a local path.
     const string localPath = resolver.ComputeLocalPath(absIdentifier);
 #else
-    const string absIdentifier =
-        resolver.CreateIdentifierForNewAsset(identifier);
+    string absIdentifier, localPath;
+    {
+        TfErrorMark m;
+        absIdentifier = resolver.CreateIdentifierForNewAsset(identifier);
 
-    // Resolve the identifier to the path where new assets should go.
-    const string localPath = resolver.ResolveForNewAsset(absIdentifier);
+        // Resolve the identifier to the path where new assets should go.
+        localPath = resolver.ResolveForNewAsset(absIdentifier);
+
+        if (!m.IsClean()) {
+            std::vector<std::string> errors;
+            for (const TfError& error : m) {
+                errors.push_back(error.GetCommentary());
+            }
+            whyNot = TfStringJoin(errors, ", ");
+            m.Clear();
+        }
+    }
 #endif
 
     if (localPath.empty()) {
         TF_CODING_ERROR(
-            "Failed to compute path for new layer with "
-            "identifier '%s'", absIdentifier.c_str());
+            "Cannot create new layer '%s': %s",
+            absIdentifier.c_str(), 
+            (whyNot.empty() ? "failed to compute path for new layer" 
+                : whyNot.c_str()));
         return TfNullPtr;
     }
 

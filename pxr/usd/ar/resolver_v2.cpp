@@ -741,19 +741,6 @@ public:
         return resolver.CanWriteAssetToPath(resolvedPath, whyNot);
     }
 
-    virtual bool CanCreateNewLayerWithIdentifier(
-        const std::string& identifier, 
-        std::string* whyNot) override
-    {
-        ArResolver& resolver = _GetResolver(identifier);
-        if (ArIsPackageRelativePath(identifier)) {
-            return resolver.CanCreateNewLayerWithIdentifier(
-                ArSplitPackageRelativePathOuter(identifier).first, whyNot);
-        }
-        return resolver.CanCreateNewLayerWithIdentifier(
-            identifier, whyNot);
-    }
-
     // The primary resolver and the package resolvers all participate in
     // scoped caching and may have caching-related data to store away. To
     // accommodate this, _Resolver stores away a vector of VtValues where
@@ -1404,14 +1391,6 @@ ArResolver::_BindContext(
     const ArResolverContext& context,
     VtValue* bindingData)
 {
-}
-
-bool
-ArResolver::CanCreateNewLayerWithIdentifier(
-    const std::string& identifier, 
-    std::string* whyNot)
-{
-    return true;
 }
 
 void
