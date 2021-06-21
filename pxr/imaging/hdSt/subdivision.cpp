@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/subdivision.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
@@ -150,6 +151,132 @@ HdSt_OsdIndexComputation::_CheckValid() const
     return true;
 }
 
+// ---------------------------------------------------------------------------
+/// OpenSubdiv CPU Refinement
+///
+///
+HdSt_OsdRefineComputation::HdSt_OsdRefineComputation(
+    HdSt_MeshTopology *topology,
+    HdBufferSourceSharedPtr const &source,
+    HdBufferSourceSharedPtr const &osdTopology,
+    HdSt_MeshTopology::Interpolation interpolation,
+    int fvarChannel)
+    : _topology(topology)
+    , _source(source)
+    , _osdTopology(osdTopology)
+    , _interpolation(interpolation)
+    , _fvarChannel(fvarChannel)
+{
+}
+
+HdSt_OsdRefineComputation::~HdSt_OsdRefineComputation()
+{
+}
+
+TfToken const &
+HdSt_OsdRefineComputation::GetName() const
+{
+    return _source->GetName();
+}
+
+template <class HashState>
+void TfHashAppend(HashState &h,
+                  HdSt_OsdRefineComputation const &bs)
+{
+    h.Append(bs.GetInterpolation());
+}
+
+size_t
+HdSt_OsdRefineComputation::ComputeHash() const
+{
+    return TfHash()(*this);
+}
+
+void const *
+HdSt_OsdRefineComputation::GetData() const
+{
+    return _primvarBuffer.data();
+}
+
+HdTupleType
+HdSt_OsdRefineComputation::GetTupleType() const
+{
+    return _source->GetTupleType();
+}
+
+size_t
+HdSt_OsdRefineComputation::GetNumElements() const
+{
+    // Stride is measured here in components, not bytes.
+    size_t const elementStride =
+        HdGetComponentCount(_source->GetTupleType().type);
+    return _primvarBuffer.size() / elementStride;
+}
+
+HdSt_MeshTopology::Interpolation
+HdSt_OsdRefineComputation::GetInterpolation() const
+{
+    return _interpolation;
+}
+
+bool
+HdSt_OsdRefineComputation::Resolve()
+{
+    if (_source && !_source->IsResolved()) return false;
+    if (_osdTopology && !_osdTopology->IsResolved()) return false;
+
+    if (!_TryLock()) return false;
+
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    HdSt_Subdivision *subdivision = _topology->GetSubdivision();
+    if (!TF_VERIFY(subdivision)) {
+        _SetResolved();
+        return true;
+    }
+
+    // prepare cpu vertex buffer including refined vertices
+    subdivision->RefineCPU(_source,
+                           &_primvarBuffer,
+                           _interpolation,
+                           _fvarChannel);
+
+    HD_PERF_COUNTER_INCR(HdPerfTokens->subdivisionRefineCPU);
+
+    _SetResolved();
+    return true;
+}
+
+bool
+HdSt_OsdRefineComputation::_CheckValid() const
+{
+    bool valid = _source->IsValid();
+
+    // _osdTopology is optional
+    valid &= _osdTopology ? _osdTopology->IsValid() : true;
+
+    return valid;
+}
+
+void
+HdSt_OsdRefineComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
+{
+    // produces same buffer specs as source
+    _source->GetBufferSpecs(specs);
+}
+
+bool
+HdSt_OsdRefineComputation::HasPreChainedBuffer() const
+{
+    return true;
+}
+
+HdBufferSourceSharedPtr
+HdSt_OsdRefineComputation::GetPreChainedBuffer() const
+{
+    return _source;
+}
 
 // ---------------------------------------------------------------------------
 /// OpenSubdiv GPU Refinement
@@ -159,10 +286,14 @@ HdSt_OsdRefineComputationGPU::HdSt_OsdRefineComputationGPU(
     HdSt_MeshTopology *topology,
     TfToken const &name,
     HdType type,
+    HdSt_GpuStencilTableSharedPtr const & gpuStencilTable,
     HdSt_MeshTopology::Interpolation interpolation,
     int fvarChannel)
-    : _topology(topology), _name(name), _interpolation(interpolation),
-      _fvarChannel(fvarChannel)
+    : _topology(topology)
+    , _name(name)
+    , _gpuStencilTable(gpuStencilTable)
+    , _interpolation(interpolation)
+    , _fvarChannel(fvarChannel)
 {
 }
 
@@ -185,7 +316,12 @@ HdSt_OsdRefineComputationGPU::Execute(HdBufferArrayRangeSharedPtr const &range,
     HdSt_Subdivision *subdivision = _topology->GetSubdivision();
     if (!TF_VERIFY(subdivision)) return;
 
-    subdivision->RefineGPU(range, _name, _interpolation, _fvarChannel);
+    HdStResourceRegistry* hdStResourceRegistry =
+        static_cast<HdStResourceRegistry*>(resourceRegistry);
+
+    subdivision->RefineGPU(range, _name,
+                           _gpuStencilTable,
+                           hdStResourceRegistry);
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->subdivisionRefineGPU);
 }

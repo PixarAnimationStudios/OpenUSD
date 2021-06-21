@@ -210,7 +210,9 @@ public:
 
     /// Returns the subdivision primvar refine computation on GPU.
     HdComputationSharedPtr GetOsdRefineComputationGPU(
-        TfToken const &name, HdType dataType, 
+        TfToken const &name,
+        HdType dataType,
+        HdStResourceRegistry *resourceRegistry,
         Interpolation interpolation,
         int fvarChannel = 0);
 

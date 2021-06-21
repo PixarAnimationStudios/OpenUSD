@@ -106,6 +106,9 @@
             "quadrangulateDouble": {
                 "source": [ "Compute.QuadrangulateDouble",
                             "Compute.Quadrangulate" ]
+            },
+            "evalStencils": {
+                "source": [ "Compute.EvalStencils" ]
             }
         }
     }
@@ -358,5 +361,39 @@ void main()
         // center
         center /= numVert;
         primvar[(dstOffset + numVert + vertexOffset)*primvarStride + primvarOffset + j] = center;
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Compute.EvalStencils
+
+void main()
+{
+    const int pointIndex = pointIndexStart + int(hd_GlobalInvocationID.x);
+    if (pointIndex >= pointIndexEnd) {
+        return;
+    }
+
+    const int numElements = EVAL_STENCILS_NUM_ELEMENTS;
+    float result[numElements];
+    for (int element = 0; element < numElements; ++element) {
+        result[element] = 0;
+    }
+
+    const int stencilSize = sizes[pointIndex + sizesBase];
+    const int stencilOffset = offsets[pointIndex + offsetsBase];
+
+    for (int stencil = 0; stencil < stencilSize; ++stencil) {
+        const int index = indices[stencil + stencilOffset + indicesBase];
+        const float weight = weights[stencil + stencilOffset + weightsBase];
+        const int srcIndex = (index + srcBase) * srcStride;
+        for (int element = 0; element < numElements; ++element) {
+            result[element] += weight * primvar[srcIndex + element];
+        }
+    }
+
+    const int dstIndex = (pointIndex + dstBase) * dstStride;
+    for (int element = 0; element < numElements; ++element) {
+        primvar[dstIndex + element] = result[element];
     }
 }

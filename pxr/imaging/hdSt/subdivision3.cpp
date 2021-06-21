@@ -25,6 +25,8 @@
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
+#include "pxr/imaging/hdSt/glslProgram.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/subdivision3.h"
 #include "pxr/imaging/hdSt/subdivision.h"
 #include "pxr/imaging/hdSt/tokens.h"
@@ -38,66 +40,57 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/computeCmds.h"
+#include "pxr/imaging/hgi/computePipeline.h"
+#include "pxr/imaging/hgi/shaderProgram.h"
+#include "pxr/imaging/hgi/tokens.h"
+
 #include "pxr/imaging/pxOsd/refinerFactory.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/base/gf/vec4i.h"
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include <opensubdiv/version.h>
 #include <opensubdiv/far/patchTable.h>
 #include <opensubdiv/far/patchTableFactory.h>
 #include <opensubdiv/far/stencilTable.h>
 #include <opensubdiv/far/stencilTableFactory.h>
-#include <opensubdiv/osd/cpuVertexBuffer.h>
-#include <opensubdiv/osd/cpuEvaluator.h>
-#include <opensubdiv/osd/glVertexBuffer.h>
-#include <opensubdiv/osd/mesh.h>
+
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef OpenSubdiv::Osd::CpuVertexBuffer HdSt_OsdCpuVertexBuffer;
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-// There's a buffer synchronization bug in driver 331, and apparently fixed in 334.
-// Don't enable compute shader kernel until driver updates.
-
-#if OPENSUBDIV_HAS_GLSL_COMPUTE
-
-#include <opensubdiv/osd/glComputeEvaluator.h>
-#define HDST_ENABLE_GPU_SUBDIVISION 1
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-typedef OpenSubdiv::Osd::GLStencilTableSSBO HdSt_OsdGpuStencilTable;
-typedef OpenSubdiv::Osd::GLComputeEvaluator HdSt_OsdGpuEvaluator;
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#elif OPENSUBDIV_HAS_GLSL_TRANSFORM_FEEDBACK
-
-#include <opensubdiv/osd/glXFBEvaluator.h>
-
-#define HDST_ENABLE_GPU_SUBDIVISION 1
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-typedef OpenSubdiv::Osd::GLStencilTableTBO HdSt_OsdGpuStencilTable;
-typedef OpenSubdiv::Osd::GLXFBEvaluator HdSt_OsdGpuEvaluator;
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#else
-
-#define HDST_ENABLE_GPU_SUBDIVISION 0
-
-#endif
-
-PXR_NAMESPACE_OPEN_SCOPE
 
 // ---------------------------------------------------------------------------
 
-class HdSt_Osd3Subdivision : public HdSt_Subdivision {
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (evalStencils)
+    (stencilData)
+    (sizes)
+    (offsets)
+    (indices)
+    (weights)
+);
+
+// The stencil table data is managed using two buffer array ranges
+// the first containing the sizes and offsets which are perPoint for
+// each refined point, and the second containing the indices and weights
+// which are perIndex for each refined point stencil index.
+class HdSt_GpuStencilTable
+{
+public:
+    size_t numCoarsePoints;
+    size_t numRefinedPoints;
+    HdBufferArrayRangeSharedPtr perPointRange;
+    HdBufferArrayRangeSharedPtr perIndexRange;
+};
+
+class HdSt_Osd3Subdivision : public HdSt_Subdivision
+{
 public:
     /// Construct HdSt_Subdivision. It takes an ownership of farmesh.
     HdSt_Osd3Subdivision();
@@ -111,14 +104,14 @@ public:
     VtIntArray GetRefinedFvarIndices(int channel) const override;
 
     void RefineCPU(HdBufferSourceSharedPtr const &source,
-                   void *vertexBuffer, 
+                   std::vector<float> *primvarBuffer,
                    HdSt_MeshTopology::Interpolation interpolation,
                    int fvarChannel = 0) override;
 
-    void RefineGPU(HdBufferArrayRangeSharedPtr const &range,
-                   TfToken const &name,
-                   HdSt_MeshTopology::Interpolation interpolation,
-                   int fvarChannel = 0) override;
+    void RefineGPU(HdBufferArrayRangeSharedPtr const &primvarRange,
+                   TfToken const &primvarName,
+                   HdSt_GpuStencilTableSharedPtr const &gpuStencilTable,
+                   HdStResourceRegistry *resourceRegistry) override;
 
     // computation factory methods
     HdBufferSourceSharedPtr CreateTopologyComputation(
@@ -145,8 +138,10 @@ public:
 
     HdComputationSharedPtr CreateRefineComputationGPU(
         HdSt_MeshTopology *topology,
+        HdBufferSourceSharedPtr const &osdTopology,
         TfToken const &name,
         HdType dataType,
+        HdStResourceRegistry *resourceRegistry,
         HdSt_MeshTopology::Interpolation interpolation,
         int fvarChannel = 0) override;
 
@@ -165,7 +160,26 @@ public:
         return _patchTable;
     }
 
+    OpenSubdiv::Far::StencilTable const *
+    GetStencilTable(HdSt_MeshTopology::Interpolation interpolation,
+                    int fvarChannel) const;
+
 private:
+    HdSt_GpuStencilTableSharedPtr
+    _GetGpuStencilTable(
+        HdSt_MeshTopology *topology,
+        HdBufferSourceSharedPtr const & osdTopology,
+        HdStResourceRegistry * registry,
+        HdSt_MeshTopology::Interpolation interpolation,
+        int fvarChannel = 0);
+
+    HdSt_GpuStencilTableSharedPtr
+    _CreateGpuStencilTable(
+        HdBufferSourceSharedPtr const & osdTopology,
+        HdStResourceRegistry * registry,
+        HdSt_MeshTopology::Interpolation interpolation,
+        int fvarChannel = 0) const;
+
     OpenSubdiv::Far::StencilTable const *_vertexStencils;
     OpenSubdiv::Far::StencilTable const *_varyingStencils;
     std::vector<OpenSubdiv::Far::StencilTable const *> _faceVaryingStencils;
@@ -173,16 +187,10 @@ private:
     bool _adaptive;
     int _maxNumFaceVarying; // calculated during SetRefinementTables()
 
-#if HDST_ENABLE_GPU_SUBDIVISION
-    /// Returns GPU stencil table. Creates it if not existed.
-    /// A valid GL context has to be made to current before calling this method.
-    HdSt_OsdGpuStencilTable *_GetGpuVertexStencilTable();
-    HdSt_OsdGpuStencilTable *_GetGpuVaryingStencilTable();
-    HdSt_OsdGpuStencilTable *_GetGpuFaceVaryingStencilTable(int channel);
-    HdSt_OsdGpuStencilTable *_gpuVertexStencilTable;
-    HdSt_OsdGpuStencilTable *_gpuVaryingStencilTable;
-    std::vector<HdSt_OsdGpuStencilTable *> _gpuFaceVaryingStencilTables;
-#endif
+    std::mutex _gpuStencilMutex;
+    HdSt_GpuStencilTableSharedPtr _gpuVertexStencils;
+    HdSt_GpuStencilTableSharedPtr  _gpuVaryingStencils;
+    std::vector<HdSt_GpuStencilTableSharedPtr> _gpuFaceVaryingStencils;
 };
 
 class HdSt_Osd3IndexComputation : public HdSt_OsdIndexComputation
@@ -261,6 +269,237 @@ private:
     bool _adaptive;
 };
 
+/// This class isn't inherited from HdComputedBufferSource.
+/// GetData() returns the internal stencil table buffer to skip unecessary copy.
+class HdSt_Osd3StencilTableBufferSource : public HdBufferSource
+{
+public:
+    HdSt_Osd3StencilTableBufferSource(
+        HdSt_Osd3Subdivision const *subdivision,
+        HdBufferSourceSharedPtr const &osdTopology,
+        TfToken const &name,
+        HdSt_GpuStencilTableSharedPtr const &gpuStencilTable,
+        HdSt_MeshTopology::Interpolation interpolation,
+        int fvarChannel = 0);
+
+    /// overrides
+    bool Resolve() override;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+
+    TfToken const &GetName() const override {
+        return _name;
+    }
+    size_t ComputeHash() const override {
+        return 0;
+    }
+    void const* GetData() const override {
+        return _resultData;
+    }
+    HdTupleType GetTupleType() const override {
+        return _resultTupleType;
+    }
+    size_t GetNumElements() const override {
+        return _resultNumElements;
+    }
+
+protected:
+    bool _CheckValid() const override;
+
+private:
+    HdSt_Osd3Subdivision const * _subdivision;
+    HdBufferSourceSharedPtr const _osdTopology;
+    TfToken _name;
+    HdSt_GpuStencilTableSharedPtr _gpuStencilTable;
+    HdSt_MeshTopology::Interpolation const _interpolation;
+    int const _fvarChannel;
+    void const *_resultData;
+    size_t _resultNumElements;
+    HdTupleType _resultTupleType;
+};
+
+HdSt_Osd3StencilTableBufferSource::HdSt_Osd3StencilTableBufferSource(
+    HdSt_Osd3Subdivision const *subdivision,
+    HdBufferSourceSharedPtr const &osdTopology,
+    TfToken const &name,
+    HdSt_GpuStencilTableSharedPtr const &gpuStencilTable,
+    HdSt_MeshTopology::Interpolation interpolation,
+    int fvarChannel)
+    : _subdivision(subdivision)
+    , _osdTopology(osdTopology)
+    , _name(name)
+    , _gpuStencilTable(gpuStencilTable)
+    , _interpolation(interpolation)
+    , _fvarChannel(fvarChannel)
+    , _resultData(nullptr)
+    , _resultNumElements(0)
+    , _resultTupleType(HdTupleType{HdTypeInt32, 0})
+{
+}
+
+bool
+HdSt_Osd3StencilTableBufferSource::Resolve()
+{
+    if (_osdTopology && !_osdTopology->IsResolved()) return false;
+
+    if (!_TryLock()) return false;
+
+    if (!TF_VERIFY(_osdTopology)) {
+        _SetResolved();
+        return true;
+    }
+
+    OpenSubdiv::Far::StencilTable const *stencilTable =
+        _subdivision->GetStencilTable(_interpolation, _fvarChannel);
+
+    _gpuStencilTable->numCoarsePoints = stencilTable->GetNumControlVertices();
+    _gpuStencilTable->numRefinedPoints = stencilTable->GetNumStencils();
+
+    if (_name == _tokens->sizes) {
+        _resultData = stencilTable->GetSizes().data();
+        _resultNumElements = stencilTable->GetSizes().size();
+        _resultTupleType = HdTupleType{HdTypeInt32, 1};
+    } else if (_name == _tokens->offsets) {
+        _resultData = stencilTable->GetOffsets().data();
+        _resultNumElements = stencilTable->GetOffsets().size();
+        _resultTupleType = HdTupleType{HdTypeInt32, 1};
+    } else if (_name == _tokens->indices) {
+        _resultData = stencilTable->GetControlIndices().data();
+        _resultNumElements = stencilTable->GetControlIndices().size();
+        _resultTupleType = HdTupleType{HdTypeInt32, 1};
+    } else if (_name == _tokens->weights) {
+        // Note: weights table may have excess entries, so here we
+        // copy only the entries corresponding to control indices.
+        _resultData = stencilTable->GetWeights().data();
+        _resultNumElements = stencilTable->GetControlIndices().size();
+        _resultTupleType = HdTupleType{HdTypeFloat, 1};
+    }
+
+    _SetResolved();
+    return true;
+}
+
+void
+HdSt_Osd3StencilTableBufferSource::GetBufferSpecs(HdBufferSpecVector *) const
+{
+    // nothing
+}
+
+bool
+HdSt_Osd3StencilTableBufferSource::_CheckValid() const
+{
+    return true;
+}
+
+OpenSubdiv::Far::StencilTable const *
+HdSt_Osd3Subdivision::GetStencilTable(
+    HdSt_MeshTopology::Interpolation interpolation,
+    int fvarChannel) const
+{
+    if (interpolation == HdSt_MeshTopology::INTERPOLATE_FACEVARYING) {
+        if (!TF_VERIFY(fvarChannel >= 0)) {
+            return nullptr;
+        }
+
+        if (!TF_VERIFY(fvarChannel < (int)_faceVaryingStencils.size())) {
+            return nullptr;
+        }
+    }
+
+    return (interpolation == HdSt_MeshTopology::INTERPOLATE_VERTEX) ?
+               _vertexStencils :
+           (interpolation == HdSt_MeshTopology::INTERPOLATE_VARYING) ?
+               _varyingStencils :
+           _faceVaryingStencils[fvarChannel];
+}
+
+HdSt_GpuStencilTableSharedPtr
+HdSt_Osd3Subdivision::_GetGpuStencilTable(
+    HdSt_MeshTopology * topology,
+    HdBufferSourceSharedPtr const & osdTopology,
+    HdStResourceRegistry * registry,
+    HdSt_MeshTopology::Interpolation interpolation,
+    int fvarChannel)
+{
+    std::unique_lock<std::mutex> lock(_gpuStencilMutex);
+
+    if (interpolation == HdSt_MeshTopology::INTERPOLATE_VERTEX) {
+        if (!_gpuVertexStencils) {
+            _gpuVertexStencils = _CreateGpuStencilTable(
+                osdTopology, registry, interpolation);
+        }
+        return _gpuVertexStencils;
+    } else if (interpolation == HdSt_MeshTopology::INTERPOLATE_VARYING) {
+        if (!_gpuVaryingStencils) {
+            _gpuVaryingStencils = _CreateGpuStencilTable(
+                osdTopology, registry, interpolation);
+        }
+        return _gpuVaryingStencils;
+    } else {
+        if (_gpuFaceVaryingStencils.empty()) {
+            _gpuFaceVaryingStencils.resize(topology->GetFvarTopologies().size());
+        }
+        if (!_gpuFaceVaryingStencils[fvarChannel]) {
+            _gpuFaceVaryingStencils[fvarChannel] = _CreateGpuStencilTable(
+                osdTopology, registry, interpolation, fvarChannel);
+        }
+        return _gpuFaceVaryingStencils[fvarChannel];
+    }
+}
+
+HdSt_GpuStencilTableSharedPtr
+HdSt_Osd3Subdivision::_CreateGpuStencilTable(
+    HdBufferSourceSharedPtr const & osdTopology,
+    HdStResourceRegistry * registry,
+    HdSt_MeshTopology::Interpolation interpolation,
+    int fvarChannel) const
+{
+    // Allocate buffer array range for perPoint data
+    HdBufferSpecVector perPointSpecs = {
+        { _tokens->sizes, HdTupleType{HdTypeInt32, 1} },
+        { _tokens->offsets, HdTupleType{HdTypeInt32, 1} },
+    };
+    HdBufferArrayRangeSharedPtr perPointRange =
+        registry->AllocateNonUniformBufferArrayRange(
+            _tokens->stencilData, perPointSpecs, HdBufferArrayUsageHint());
+
+    // Allocate buffer array range for perIndex data
+    HdBufferSpecVector perIndexSpecs = {
+        { _tokens->indices, HdTupleType{HdTypeInt32, 1} },
+        { _tokens->weights, HdTupleType{HdTypeFloat, 1} },
+    };
+    HdBufferArrayRangeSharedPtr perIndexRange =
+        registry->AllocateNonUniformBufferArrayRange(
+            _tokens->stencilData, perIndexSpecs, HdBufferArrayUsageHint());
+
+    HdSt_GpuStencilTableSharedPtr gpuStencilTable =
+        std::make_shared<HdSt_GpuStencilTable>(
+                HdSt_GpuStencilTable{0, 0, perPointRange, perIndexRange});
+
+    // Register buffer sources for computed perPoint stencil table data
+    HdBufferSourceSharedPtrVector perPointSources{
+        std::make_shared<HdSt_Osd3StencilTableBufferSource>(
+            this, osdTopology, _tokens->sizes,
+            gpuStencilTable, interpolation, fvarChannel),
+        std::make_shared<HdSt_Osd3StencilTableBufferSource>(
+            this, osdTopology, _tokens->offsets,
+            gpuStencilTable, interpolation, fvarChannel)
+    };
+    registry->AddSources(perPointRange, std::move(perPointSources));
+
+    // Register buffer sources for computed perIndex stencil table data
+    HdBufferSourceSharedPtrVector perIndexSources{
+        std::make_shared<HdSt_Osd3StencilTableBufferSource>(
+            this, osdTopology, _tokens->indices,
+            gpuStencilTable, interpolation, fvarChannel),
+        std::make_shared<HdSt_Osd3StencilTableBufferSource>(
+            this, osdTopology, _tokens->weights,
+            gpuStencilTable, interpolation, fvarChannel)
+    };
+    registry->AddSources(perIndexRange, std::move(perIndexSources));
+
+    return gpuStencilTable;
+}
+
 // ---------------------------------------------------------------------------
 
 HdSt_Osd3Subdivision::HdSt_Osd3Subdivision()
@@ -270,10 +509,6 @@ HdSt_Osd3Subdivision::HdSt_Osd3Subdivision()
       _adaptive(false),
       _maxNumFaceVarying(0)
 {
-#if HDST_ENABLE_GPU_SUBDIVISION
-    _gpuVertexStencilTable = nullptr;
-    _gpuVaryingStencilTable = nullptr;
-#endif
 }
 
 HdSt_Osd3Subdivision::~HdSt_Osd3Subdivision()
@@ -285,14 +520,6 @@ HdSt_Osd3Subdivision::~HdSt_Osd3Subdivision()
     }
     _faceVaryingStencils.clear();
     delete _patchTable;
-#if HDST_ENABLE_GPU_SUBDIVISION
-    delete _gpuVertexStencilTable;
-    delete _gpuVaryingStencilTable;
-    for (size_t i = 0; i < _gpuFaceVaryingStencilTables.size(); ++i) {
-        delete _gpuFaceVaryingStencilTables[i];
-    }
-    _gpuFaceVaryingStencilTables.clear();
-#endif
 }
 
 void
@@ -386,147 +613,108 @@ HdSt_Osd3Subdivision::GetRefinedFvarIndices(int channel) const
     return fvarIndices;
 }
 
+namespace {
+
+void
+_EvalStencilsCPU(
+    std::vector<float> * primvarBuffer,
+    int const elementStride,
+    int const numCoarsePoints,
+    int const numRefinedPoints,
+    std::vector<int> const & sizes,
+    std::vector<int> const & offsets,
+    std::vector<int> const & indices,
+    std::vector<float> const & weights);
+
+void
+_EvalStencilsGPU(
+    HdBufferArrayRangeSharedPtr const &range_,
+    TfToken const & primvarName,
+    int const numCoarsePoints,
+    int const numRefinedPoints,
+    HdBufferArrayRangeSharedPtr const &perPointRange_,
+    HdBufferArrayRangeSharedPtr const &perIndexRange_,
+    HdResourceRegistry *resourceRegistry);
+
+};
+
 /*virtual*/
 void
-HdSt_Osd3Subdivision::RefineCPU(HdBufferSourceSharedPtr const &source,
-                                void *vertexBuffer,
+HdSt_Osd3Subdivision::RefineCPU(HdBufferSourceSharedPtr const & source,
+                                std::vector<float> * primvarBuffer,
                                 HdSt_MeshTopology::Interpolation interpolation,
                                 int fvarChannel)
 {
-    if (interpolation == HdSt_MeshTopology::INTERPOLATE_FACEVARYING) {
-        if (!TF_VERIFY(fvarChannel >= 0)) {
-            return;
-        }
-
-        if (!TF_VERIFY(fvarChannel < (int)_faceVaryingStencils.size())) {
-            return;
-        }
-    }
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     OpenSubdiv::Far::StencilTable const *stencilTable =
-        (interpolation == HdSt_MeshTopology::INTERPOLATE_VERTEX) ? 
-            _vertexStencils : 
-        (interpolation == HdSt_MeshTopology::INTERPOLATE_VARYING) ? 
-            _varyingStencils : 
-        _faceVaryingStencils[fvarChannel]; 
+        GetStencilTable(interpolation, fvarChannel);
 
     if (!TF_VERIFY(stencilTable)) return;
-
-    OpenSubdiv::Osd::CpuVertexBuffer *osdVertexBuffer =
-        static_cast<OpenSubdiv::Osd::CpuVertexBuffer*>(vertexBuffer);
-
-    size_t numElements = source->GetNumElements();
-
-    // Stride is measured here in components, not bytes.
-    size_t stride = HdGetComponentCount(source->GetTupleType().type);
-
-    // NOTE: in osd, GetNumElements() returns how many fields in a vertex
-    //          (i.e.  3 for XYZ, and 4 for RGBA)
-    //       in Storm, GetNumElements() returns how many vertices
-    //       (or faces, etc) in a buffer. We basically follow the Storm
-    //       convention in this file.
-    TF_VERIFY(stride == (size_t)osdVertexBuffer->GetNumElements(),
-              "%zu vs %i", stride, osdVertexBuffer->GetNumElements());
-
-    // if the mesh has more vertices than that in use in topology (faceIndices),
-    // we need to trim the buffer so that they won't overrun the coarse
-    // vertex buffer which we allocated using the stencil table.
-    // see HdSt_Osd3Subdivision::GetNumVertices()
-    if (numElements > (size_t)stencilTable->GetNumControlVertices()) {
-        numElements = stencilTable->GetNumControlVertices();
-    }
-
-    // filling coarse vertices
-    osdVertexBuffer->UpdateData((const float*)source->GetData(),
-                                /*offset=*/0, numElements);
 
     // if there is no stencil (e.g. torus with adaptive refinement),
     // just return here
     if (stencilTable->GetNumStencils() == 0) return;
 
-    // apply opensubdiv with CPU evaluator.
-    OpenSubdiv::Osd::BufferDescriptor srcDesc(0, stride, stride);
-    OpenSubdiv::Osd::BufferDescriptor dstDesc(numElements*stride, 
-        stride, stride);
+    // Stride is measured here in components, not bytes.
+    size_t const elementStride =
+        HdGetComponentCount(source->GetTupleType().type);
 
-    OpenSubdiv::Osd::CpuEvaluator::EvalStencils(
-        osdVertexBuffer, srcDesc,
-        osdVertexBuffer, dstDesc,
-        stencilTable);
+    size_t const numTotalElements =
+        stencilTable->GetNumControlVertices() + stencilTable->GetNumStencils();
+    primvarBuffer->resize(numTotalElements * elementStride);
+
+    // if the mesh has more vertices than that in use in topology,
+    // we need to trim the buffer so that they won't overrun the coarse
+    // vertex buffer which we allocated using the stencil table.
+    // see HdSt_Osd3Subdivision::GetNumVertices()
+    size_t numSrcElements = source->GetNumElements();
+    if (numSrcElements > (size_t)stencilTable->GetNumControlVertices()) {
+        numSrcElements = stencilTable->GetNumControlVertices();
+    }
+
+    float const * srcData = static_cast<float const *>(source->GetData());
+    std::copy(srcData, srcData + (numSrcElements * elementStride),
+              primvarBuffer->begin());
+
+    _EvalStencilsCPU(
+        primvarBuffer,
+        elementStride,
+        stencilTable->GetNumControlVertices(),
+        stencilTable->GetNumStencils(),
+        stencilTable->GetSizes(),
+        stencilTable->GetOffsets(),
+        stencilTable->GetControlIndices(),
+        stencilTable->GetWeights()
+    );
 }
 
 /*virtual*/
 void
-HdSt_Osd3Subdivision::RefineGPU(HdBufferArrayRangeSharedPtr const &range,
-                                TfToken const &name,
-                                HdSt_MeshTopology::Interpolation interpolation,
-                                int fvarChannel)
+HdSt_Osd3Subdivision::RefineGPU(
+        HdBufferArrayRangeSharedPtr const &primvarRange,
+        TfToken const &primvarName,
+        HdSt_GpuStencilTableSharedPtr const & gpuStencilTable,
+        HdStResourceRegistry * resourceRegistry)
 {
-#if HDST_ENABLE_GPU_SUBDIVISION
-    if (interpolation == HdSt_MeshTopology::INTERPOLATE_FACEVARYING) {
-        if (!TF_VERIFY(fvarChannel >= 0)) {
-            return;
-        }
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
-        if (!TF_VERIFY(fvarChannel < (int)_faceVaryingStencils.size())) {
-            return;
-        }
-    }
+    if (!TF_VERIFY(gpuStencilTable)) return;
 
-    OpenSubdiv::Far::StencilTable const *stencilTable =
-        (interpolation == HdSt_MeshTopology::INTERPOLATE_VERTEX) ? 
-            _vertexStencils : 
-        (interpolation == HdSt_MeshTopology::INTERPOLATE_VARYING) ? 
-            _varyingStencils :
-        _faceVaryingStencils[fvarChannel];
+    // if there is no stencil (e.g. torus with adaptive refinement),
+    // just return here
+    if (gpuStencilTable->numRefinedPoints == 0)  return;
 
-    if (!TF_VERIFY(stencilTable)) {
-        return;
-    }
-
-    // filling coarse vertices has been done at resource registry.
-
-    HdStBufferArrayRangeSharedPtr range_ =
-        std::static_pointer_cast<HdStBufferArrayRange> (range);
-
-    // vertex buffer wrapper for OpenSubdiv API
-    HdSt_OsdRefineComputationGPU::VertexBuffer vertexBuffer(
-        range_->GetResource(name));
-
-    // vertex buffer is not interleaved, but aggregated.
-    // we need an offset to locate the current range.
-    size_t stride = vertexBuffer.GetNumElements();
-    int numCoarseVertices = stencilTable->GetNumControlVertices();
-
-    OpenSubdiv::Osd::BufferDescriptor srcDesc(
-        /*offset=*/range->GetElementOffset() * stride,
-        /*length=*/stride,
-        /*stride=*/stride);
-    OpenSubdiv::Osd::BufferDescriptor dstDesc(
-        /*offset=*/(range->GetElementOffset() + numCoarseVertices) * stride,
-        /*length=*/stride,
-        /*stride=*/stride);
-
-    // GPU evaluator can be static, as long as it's called sequentially.
-    static OpenSubdiv::Osd::EvaluatorCacheT<HdSt_OsdGpuEvaluator> evaluatorCache;
-
-    HdSt_OsdGpuEvaluator const *instance =
-        OpenSubdiv::Osd::GetEvaluator<HdSt_OsdGpuEvaluator>(
-            &evaluatorCache, srcDesc, dstDesc, (void*)NULL /*deviceContext*/);
-
-    HdSt_OsdGpuStencilTable const *gpuStencilTable = 
-        (interpolation == HdSt_MeshTopology::INTERPOLATE_VERTEX) ? 
-            _GetGpuVertexStencilTable() : 
-        (interpolation == HdSt_MeshTopology::INTERPOLATE_VARYING) ? 
-            _GetGpuVaryingStencilTable() :
-        _GetGpuFaceVaryingStencilTable(fvarChannel);
-
-    instance->EvalStencils(&vertexBuffer, srcDesc,
-                           &vertexBuffer, dstDesc,
-                           gpuStencilTable);
-#else
-    TF_CODING_ERROR("No GPU kernel available.\n");
-#endif
+    _EvalStencilsGPU(
+        primvarRange,
+        primvarName,
+        gpuStencilTable->numCoarsePoints,
+        gpuStencilTable->numRefinedPoints,
+        gpuStencilTable->perPointRange,
+        gpuStencilTable->perIndexRange,
+        resourceRegistry);
 }
 
 /*virtual*/
@@ -567,71 +755,28 @@ HdSt_Osd3Subdivision::CreateRefineComputation(HdSt_MeshTopology *topology,
     HdSt_MeshTopology::Interpolation interpolation,
     int fvarChannel)
 {
-    return std::make_shared<HdSt_OsdRefineComputation<HdSt_OsdCpuVertexBuffer>>(
+    return std::make_shared<HdSt_OsdRefineComputation>(
         topology, source, osdTopology, interpolation, fvarChannel);
 }
 
 /*virtual*/
 HdComputationSharedPtr
-HdSt_Osd3Subdivision::CreateRefineComputationGPU(HdSt_MeshTopology *topology,
+HdSt_Osd3Subdivision::CreateRefineComputationGPU(
+    HdSt_MeshTopology *topology,
+    HdBufferSourceSharedPtr const &osdTopology,
     TfToken const &name,
     HdType dataType,
+    HdStResourceRegistry *resourceRegistry,
     HdSt_MeshTopology::Interpolation interpolation,
     int fvarChannel)
 {
+    HdSt_GpuStencilTableSharedPtr gpuStencilTable =
+        _GetGpuStencilTable(topology, osdTopology,
+                            resourceRegistry, interpolation, fvarChannel);
+
     return std::make_shared<HdSt_OsdRefineComputationGPU>(
-        topology, name, dataType, interpolation, fvarChannel);
+        topology, name, dataType, gpuStencilTable, interpolation, fvarChannel);
 }
-
-#if HDST_ENABLE_GPU_SUBDIVISION
-
-HdSt_OsdGpuStencilTable *
-HdSt_Osd3Subdivision::_GetGpuVertexStencilTable()
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    if (!_gpuVertexStencilTable) {
-        _gpuVertexStencilTable = HdSt_OsdGpuStencilTable::Create(
-            _vertexStencils, NULL);
-    }
-
-    return _gpuVertexStencilTable;
-}
-
-HdSt_OsdGpuStencilTable *
-HdSt_Osd3Subdivision::_GetGpuVaryingStencilTable()
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    if (!_gpuVaryingStencilTable) {
-        _gpuVaryingStencilTable = HdSt_OsdGpuStencilTable::Create(
-            _varyingStencils, NULL);
-    }
-
-    return _gpuVaryingStencilTable;
-}
-
-HdSt_OsdGpuStencilTable *
-HdSt_Osd3Subdivision::_GetGpuFaceVaryingStencilTable(int channel)
-{
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    if (_gpuFaceVaryingStencilTables.empty()) {
-        _gpuFaceVaryingStencilTables.resize(
-            _faceVaryingStencils.size(), nullptr);
-    }
-
-    if (!_gpuFaceVaryingStencilTables[channel]) {
-        _gpuFaceVaryingStencilTables[channel] = HdSt_OsdGpuStencilTable::Create(
-            _faceVaryingStencils[channel], NULL);
-    }
-
-    return _gpuFaceVaryingStencilTables[channel];
-}
-#endif
 
 // ---------------------------------------------------------------------------
 
@@ -1206,6 +1351,318 @@ HdSt_Osd3Factory::CreateSubdivision()
 {
     return new HdSt_Osd3Subdivision();
 }
+
+// ---------------------------------------------------------------------------
+
+namespace {
+
+void
+_EvalStencilsCPU(
+    std::vector<float> * primvarBuffer,
+    int const elementStride,
+    int const numCoarsePoints,
+    int const numRefinedPoints,
+    std::vector<int> const & sizes,
+    std::vector<int> const & offsets,
+    std::vector<int> const & indices,
+    std::vector<float> const  & weights)
+{
+    int const numElements = elementStride;
+    std::vector<float> dst(numElements);
+
+    for (int pointIndex = 0; pointIndex < numRefinedPoints; ++pointIndex) {
+        for (int element = 0; element < numElements; ++element) {
+            dst[element] = 0;
+        }
+
+        int const stencilSize = sizes[pointIndex];
+        int const stencilOffset = offsets[pointIndex];
+
+        for (int stencil = 0; stencil < stencilSize; ++stencil) {
+            int const index = indices[stencil + stencilOffset];
+            float const weight = weights[stencil + stencilOffset];
+            int const srcIndex = index * elementStride;
+            for (int element = 0; element < numElements; ++element) {
+                dst[element] += weight * (*primvarBuffer)[srcIndex + element];
+            }
+        }
+
+        int const dstIndex = (pointIndex + numCoarsePoints) * elementStride;
+        for (int element = 0; element < numElements; ++element) {
+            (*primvarBuffer)[dstIndex + element] = dst[element];
+        }
+    }
+}
+
+enum {
+    BufferBinding_Uniforms,
+    BufferBinding_Sizes,
+    BufferBinding_Offsets,
+    BufferBinding_Indices,
+    BufferBinding_Weights,
+    BufferBinding_Primvar,
+};
+
+HgiResourceBindingsSharedPtr
+_CreateResourceBindings(
+    Hgi* hgi,
+    HgiBufferHandle const & sizes,
+    HgiBufferHandle const & offsets,
+    HgiBufferHandle const & indices,
+    HgiBufferHandle const & weights,
+    HgiBufferHandle const & primvar)
+{
+    // Begin the resource set
+    HgiResourceBindingsDesc resourceDesc;
+    resourceDesc.debugName = "EvalStencils";
+
+    if (sizes) {
+        HgiBufferBindDesc bufBind0;
+        bufBind0.bindingIndex = BufferBinding_Sizes;
+        bufBind0.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind0.stageUsage = HgiShaderStageCompute;
+        bufBind0.offsets.push_back(0);
+        bufBind0.buffers.push_back(sizes);
+        resourceDesc.buffers.push_back(std::move(bufBind0));
+    }
+
+    if (offsets) {
+        HgiBufferBindDesc bufBind1;
+        bufBind1.bindingIndex = BufferBinding_Offsets;
+        bufBind1.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind1.stageUsage = HgiShaderStageCompute;
+        bufBind1.offsets.push_back(0);
+        bufBind1.buffers.push_back(offsets);
+        resourceDesc.buffers.push_back(std::move(bufBind1));
+    }
+
+    if (indices) {
+        HgiBufferBindDesc bufBind2;
+        bufBind2.bindingIndex = BufferBinding_Indices;
+        bufBind2.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind2.stageUsage = HgiShaderStageCompute;
+        bufBind2.offsets.push_back(0);
+        bufBind2.buffers.push_back(indices);
+        resourceDesc.buffers.push_back(std::move(bufBind2));
+    }
+
+    if (weights) {
+        HgiBufferBindDesc bufBind3;
+        bufBind3.bindingIndex = BufferBinding_Weights;
+        bufBind3.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind3.stageUsage = HgiShaderStageCompute;
+        bufBind3.offsets.push_back(0);
+        bufBind3.buffers.push_back(weights);
+        resourceDesc.buffers.push_back(std::move(bufBind3));
+    }
+
+    if (primvar) {
+        HgiBufferBindDesc bufBind4;
+        bufBind4.bindingIndex = BufferBinding_Primvar;
+        bufBind4.resourceType = HgiBindResourceTypeStorageBuffer;
+        bufBind4.stageUsage = HgiShaderStageCompute;
+        bufBind4.offsets.push_back(0);
+        bufBind4.buffers.push_back(primvar);
+        resourceDesc.buffers.push_back(std::move(bufBind4));
+    }
+
+    return std::make_shared<HgiResourceBindingsHandle>(
+        hgi->CreateResourceBindings(resourceDesc));
+}
+
+HgiComputePipelineSharedPtr
+_CreatePipeline(
+    Hgi * hgi,
+    uint32_t constantValuesSize,
+    HgiShaderProgramHandle const & program)
+{
+    HgiComputePipelineDesc desc;
+    desc.debugName = "EvalStencils";
+    desc.shaderProgram = program;
+    desc.shaderConstantsDesc.byteSize = constantValuesSize;
+    return std::make_shared<HgiComputePipelineHandle>(
+        hgi->CreateComputePipeline(desc));
+}
+
+void
+_EvalStencilsGPU(
+    HdBufferArrayRangeSharedPtr const & primvarRange_,
+    TfToken const & primvarName,
+    int const numCoarsePoints,
+    int const numRefinedPoints,
+    HdBufferArrayRangeSharedPtr const & perPointRange_,
+    HdBufferArrayRangeSharedPtr const & perIndexRange_,
+    HdResourceRegistry * resourceRegistry)
+{
+    // select shader by datatype
+    TfToken shaderToken = _tokens->evalStencils;
+    if (!TF_VERIFY(!shaderToken.IsEmpty())) return;
+
+    HdStBufferArrayRangeSharedPtr primvarRange =
+        std::static_pointer_cast<HdStBufferArrayRange> (primvarRange_);
+
+    HdStBufferResourceSharedPtr primvar =
+        primvarRange->GetResource(primvarName);
+    size_t const elementOffset = primvarRange->GetElementOffset();
+    size_t const elementStride =
+        HdGetComponentCount(primvar->GetTupleType().type);
+
+    struct Uniform {
+        int pointIndexStart;
+        int pointIndexEnd;
+        int srcBase;
+        int srcStride;
+        int dstBase;
+        int dstStride;
+        int sizesBase;
+        int offsetsBase;
+        int indicesBase;
+        int weightsBase;
+    } uniform;
+
+    HdStResourceRegistry* hdStResourceRegistry =
+        static_cast<HdStResourceRegistry*>(resourceRegistry);
+    std::string const defines =
+        TfStringPrintf("#define EVAL_STENCILS_NUM_ELEMENTS %zd\n",
+                       elementStride);
+    HdStGLSLProgramSharedPtr computeProgram
+        = HdStGLSLProgram::GetComputeProgram(shaderToken,
+          defines,
+          hdStResourceRegistry,
+          [&](HgiShaderFunctionDesc &computeDesc) {
+            computeDesc.debugName = shaderToken.GetString();
+            computeDesc.shaderStage = HgiShaderStageCompute;
+
+            HgiShaderFunctionAddBuffer(&computeDesc,
+                                       "sizes", HdStTokens->_int);
+            HgiShaderFunctionAddBuffer(&computeDesc,
+                                       "offsets", HdStTokens->_int);
+            HgiShaderFunctionAddBuffer(&computeDesc,
+                                       "indices", HdStTokens->_int);
+            HgiShaderFunctionAddBuffer(&computeDesc,
+                                       "weights", HdStTokens->_float);
+            HgiShaderFunctionAddBuffer(&computeDesc,
+                                       "primvar", HdStTokens->_float);
+
+            static const std::string params[] = {
+                "pointIndexStart",
+                "pointIndexEnd",
+                "srcBase",
+                "srcStride",
+                "dstBase",
+                "dstStride",
+                "sizesBase",
+                "offsetsBase",
+                "indicesBase",
+                "weightsBase",
+            };
+            static_assert((sizeof(Uniform) / sizeof(int)) ==
+                          (sizeof(params) / sizeof(params[0])), "");
+            for (std::string const & param : params) {
+                HgiShaderFunctionAddConstantParam(
+                    &computeDesc, param, HdStTokens->_int);
+            }
+            HgiShaderFunctionAddStageInput(
+                &computeDesc, "hd_GlobalInvocationID", "uvec3",
+                HgiShaderKeywordTokens->hdGlobalInvocationID);
+        });
+
+    if (!computeProgram) return;
+
+    HdStBufferArrayRangeSharedPtr perPointRange =
+        std::static_pointer_cast<HdStBufferArrayRange> (perPointRange_);
+    HdStBufferArrayRangeSharedPtr perIndexRange =
+        std::static_pointer_cast<HdStBufferArrayRange> (perIndexRange_);
+
+    // prepare uniform buffer for GPU computation
+    uniform.pointIndexStart = 0;
+    uniform.pointIndexEnd = numRefinedPoints;
+    int const numPoints = uniform.pointIndexEnd - uniform.pointIndexStart;
+
+    uniform.srcBase = elementOffset;
+    uniform.srcStride = elementStride;
+
+    uniform.dstBase = elementOffset + numCoarsePoints;
+    uniform.dstStride = elementStride;
+
+    uniform.sizesBase = perPointRange->GetElementOffset();
+    uniform.offsetsBase = perPointRange->GetElementOffset();
+    uniform.indicesBase = perIndexRange->GetElementOffset();
+    uniform.weightsBase = perIndexRange->GetElementOffset();
+
+    // buffer resources for GPU computation
+    HdStBufferResourceSharedPtr sizes = perPointRange->GetResource(
+                                                            _tokens->sizes);
+    HdStBufferResourceSharedPtr offsets = perPointRange->GetResource(
+                                                            _tokens->offsets);
+    HdStBufferResourceSharedPtr indices = perIndexRange->GetResource(
+                                                            _tokens->indices);
+    HdStBufferResourceSharedPtr weights = perIndexRange->GetResource(
+                                                            _tokens->weights);
+
+    Hgi* hgi = hdStResourceRegistry->GetHgi();
+
+    // Generate hash for resource bindings and pipeline.
+    // XXX Needs fingerprint hash to avoid collisions
+    uint64_t const rbHash = (uint64_t) TfHash::Combine(
+        sizes->GetHandle().Get(),
+        offsets->GetHandle().Get(),
+        indices->GetHandle().Get(),
+        weights->GetHandle().Get(),
+        primvar->GetHandle().Get());
+
+    uint64_t const pHash = (uint64_t) TfHash::Combine(
+        computeProgram->GetProgram().Get(),
+        sizeof(uniform));
+
+    // Get or add resource bindings in registry.
+    HdInstance<HgiResourceBindingsSharedPtr> resourceBindingsInstance =
+        hdStResourceRegistry->RegisterResourceBindings(rbHash);
+    if (resourceBindingsInstance.IsFirstInstance()) {
+        HgiResourceBindingsSharedPtr rb =
+            _CreateResourceBindings(hgi,
+                                    sizes->GetHandle(),
+                                    offsets->GetHandle(),
+                                    indices->GetHandle(),
+                                    weights->GetHandle(),
+                                    primvar->GetHandle());
+        resourceBindingsInstance.SetValue(rb);
+    }
+
+    HgiResourceBindingsSharedPtr const& resourceBindindsPtr =
+        resourceBindingsInstance.GetValue();
+    HgiResourceBindingsHandle resourceBindings = *resourceBindindsPtr.get();
+
+    // Get or add pipeline in registry.
+    HdInstance<HgiComputePipelineSharedPtr> computePipelineInstance =
+        hdStResourceRegistry->RegisterComputePipeline(pHash);
+    if (computePipelineInstance.IsFirstInstance()) {
+        HgiComputePipelineSharedPtr pipe = _CreatePipeline(
+            hgi, sizeof(uniform), computeProgram->GetProgram());
+        computePipelineInstance.SetValue(pipe);
+    }
+
+    HgiComputePipelineSharedPtr const& pipelinePtr =
+        computePipelineInstance.GetValue();
+    HgiComputePipelineHandle pipeline = *pipelinePtr.get();
+
+    HgiComputeCmds* computeCmds = hdStResourceRegistry->GetGlobalComputeCmds();
+    computeCmds->PushDebugGroup("EvalStencils Cmds");
+    computeCmds->BindResources(resourceBindings);
+    computeCmds->BindPipeline(pipeline);
+
+    // transfer uniform buffer
+    computeCmds->SetConstantValues(
+        pipeline, BufferBinding_Uniforms, sizeof(uniform), &uniform);
+
+    // dispatch compute kernel
+    computeCmds->Dispatch(numPoints, 1);
+
+    // submit the work
+    computeCmds->PopDebugGroup();
+}
+
+} // Anonymous namespace
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

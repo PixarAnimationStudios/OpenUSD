@@ -270,7 +270,7 @@ HdSt_MeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source
                                            Interpolation interpolation,
                                            int fvarChannel)
 {
-    // Make a dependency to far mesh.
+    // Make a dependency to osd topology builder computation.
     // (see comment on GetQuadrangulateComputation)
     //
     // It can be null for the second or later primvar animation.
@@ -294,19 +294,30 @@ HdSt_MeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source
 }
 
 HdComputationSharedPtr
-HdSt_MeshTopology::GetOsdRefineComputationGPU(TfToken const &name,
-                                              HdType dataType,
-                                              Interpolation interpolation,
-                                              int fvarChannel)
+HdSt_MeshTopology::GetOsdRefineComputationGPU(
+    TfToken const &name,
+    HdType dataType,
+    HdStResourceRegistry *resourceRegistry,
+    Interpolation interpolation,
+    int fvarChannel)
 {
+    // Make a dependency to osd topology builder computation.
+    // (see comment on GetOsdRefineComputation)
+
     // for empty topology, we don't need to refine anything.
-    if (_topology.GetFaceVertexCounts().size() == 0) {
-        return HdComputationSharedPtr();
+    if (_topology.GetFaceVertexCounts().size() == 0) return nullptr;
+
+    if (!TF_VERIFY(_subdivision)) {
+        TF_CODING_ERROR("GetOsdTopologyComputation should be called before "
+                        "GetOsdRefineComputationGPU.");
+        return nullptr;
     }
 
-    if (!TF_VERIFY(_subdivision)) return HdComputationSharedPtr();
+    HdBufferSourceSharedPtr topologyBuilder = _osdTopologyBuilder.lock();
     
-    return _subdivision->CreateRefineComputationGPU(this, name, dataType, 
+    return _subdivision->CreateRefineComputationGPU(this, topologyBuilder,
+                                                    name, dataType,
+                                                    resourceRegistry,
                                                     interpolation, fvarChannel);
 }
 

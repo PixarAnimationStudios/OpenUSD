@@ -35,8 +35,13 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/token.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
+
+using HdSt_GpuStencilTableSharedPtr =
+        std::shared_ptr<class HdSt_GpuStencilTable>;
 
 /// \class Hd_Subdivision
 ///
@@ -57,13 +62,13 @@ public:
     virtual VtIntArray GetRefinedFvarIndices(int channel) const = 0;
 
     virtual void RefineCPU(HdBufferSourceSharedPtr const &source,
-                           void *vertexBuffer,
+                           std::vector<float> *primvarBuffer,
                            HdSt_MeshTopology::Interpolation interpolation,
                            int fvarChannel = 0) = 0;
-    virtual void RefineGPU(HdBufferArrayRangeSharedPtr const &range,
-                           TfToken const &name,
-                           HdSt_MeshTopology::Interpolation interpolation,
-                           int fvarChannel = 0) = 0;
+    virtual void RefineGPU(HdBufferArrayRangeSharedPtr const &primvarBuffer,
+                           TfToken const &primvarName,
+                           HdSt_GpuStencilTableSharedPtr const &gpuStencilTable,
+                           HdStResourceRegistry *resourceRegistry) = 0;
 
     // computation factory methods
     virtual HdBufferSourceSharedPtr CreateTopologyComputation(
@@ -90,8 +95,10 @@ public:
 
     virtual HdComputationSharedPtr CreateRefineComputationGPU(
         HdSt_MeshTopology *topology,
+        HdBufferSourceSharedPtr const &osdTopology,
         TfToken const &name,
         HdType type,
+        HdStResourceRegistry *resourceRegistry,
         HdSt_MeshTopology::Interpolation interpolation,
         int fvarChannel = 0) = 0;
 
@@ -171,10 +178,8 @@ protected:
 ///
 /// OpenSubdiv CPU Refinement.
 /// This class isn't inherited from HdComputedBufferSource.
-/// GetData() returns the internal buffer of Hd_OsdCpuVertexBuffer,
-/// so that reducing data copy between osd buffer and HdBufferSource.
+/// GetData() returns the internal buffer to skip unecessary copy.
 ///
-template <typename VERTEX_BUFFER>
 class HdSt_OsdRefineComputation final : public HdBufferSource
 {
 public:
@@ -202,7 +207,7 @@ private:
     HdSt_MeshTopology *_topology;
     HdBufferSourceSharedPtr _source;
     HdBufferSourceSharedPtr _osdTopology;
-    VERTEX_BUFFER *_cpuVertexBuffer;
+    std::vector<float> _primvarBuffer;
     HdSt_MeshTopology::Interpolation _interpolation;
     int _fvarChannel;
 };
@@ -215,11 +220,13 @@ private:
 class HdSt_OsdRefineComputationGPU : public HdComputation
 {
 public:
-    HdSt_OsdRefineComputationGPU(HdSt_MeshTopology *topology,
-                               TfToken const &name,
-                               HdType type,
-                               HdSt_MeshTopology::Interpolation interpolation,
-                               int fvarChannel = 0);
+    HdSt_OsdRefineComputationGPU(
+        HdSt_MeshTopology *topology,
+        TfToken const &name,
+        HdType type,
+        HdSt_GpuStencilTableSharedPtr const & gpuStencilTable,
+        HdSt_MeshTopology::Interpolation interpolation,
+        int fvarChannel = 0);
 
     void Execute(HdBufferArrayRangeSharedPtr const &range,
                          HdResourceRegistry *resourceRegistry) override;
@@ -227,175 +234,13 @@ public:
     int GetNumOutputElements() const override;
     HdSt_MeshTopology::Interpolation GetInterpolation() const;
 
-    // A wrapper class to bridge between HdBufferResource and OpenSubdiv
-    // vertex buffer API.
-    //
-    class VertexBuffer
-    {
-    public:
-        VertexBuffer(HdBufferResourceSharedPtr const &resource) { 
-            _resource =
-                std::static_pointer_cast<HdStBufferResource> (resource);
-        }
-
-        // bit confusing, osd expects 'GetNumElements()' returns the num 
-        // components, in Storm sense
-        size_t GetNumElements() const {
-            return HdGetComponentCount(_resource->GetTupleType().type);
-        }
-        uint64_t BindVBO() {
-            return _resource->GetHandle()->GetRawResource();
-        }
-        HdStBufferResourceSharedPtr _resource;
-    };
-
 private:
     HdSt_MeshTopology *_topology;
     TfToken _name;
+    HdSt_GpuStencilTableSharedPtr _gpuStencilTable;
     HdSt_MeshTopology::Interpolation _interpolation;
     int _fvarChannel;
 };
-
-// ---------------------------------------------------------------------------
-// template implementations
-template <typename VERTEX_BUFFER>
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::HdSt_OsdRefineComputation(
-    HdSt_MeshTopology *topology,
-    HdBufferSourceSharedPtr const &source,
-    HdBufferSourceSharedPtr const &osdTopology,
-    HdSt_MeshTopology::Interpolation interpolation,
-    int fvarChannel)
-    : _topology(topology), _source(source), _osdTopology(osdTopology),
-      _cpuVertexBuffer(nullptr), _interpolation(interpolation), 
-      _fvarChannel(fvarChannel)
-{
-}
-
-template <typename VERTEX_BUFFER>
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::~HdSt_OsdRefineComputation()
-{
-    delete _cpuVertexBuffer;
-}
-
-template <typename VERTEX_BUFFER>
-TfToken const &
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetName() const
-{
-    return _source->GetName();
-}
-
-template <class HashState, typename VERTEX_BUFFER>
-void TfHashAppend(HashState &h, 
-                  HdSt_OsdRefineComputation<VERTEX_BUFFER> const &bs)
-{
-    h.Append(bs.GetInterpolation());
-}
-
-template <typename VERTEX_BUFFER>
-size_t
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::ComputeHash() const
-{
-    return TfHash()(*this);  
-}
-
-template <typename VERTEX_BUFFER>
-void const*
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetData() const
-{
-    return _cpuVertexBuffer->BindCpuBuffer();
-}
-
-template <typename VERTEX_BUFFER>
-HdTupleType
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetTupleType() const
-{
-    return _source->GetTupleType();
-}
-
-template <typename VERTEX_BUFFER>
-size_t
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetNumElements() const
-{
-    return _cpuVertexBuffer->GetNumVertices();
-}
-
-template <typename VERTEX_BUFFER>
-HdSt_MeshTopology::Interpolation
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetInterpolation() const
-{
-    return _interpolation;
-}
-
-template <typename VERTEX_BUFFER>
-bool
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::Resolve()
-{
-    if (_source && !_source->IsResolved()) return false;
-    if (_osdTopology && !_osdTopology->IsResolved()) return false;
-
-    if (!_TryLock()) return false;
-
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    HdSt_Subdivision *subdivision = _topology->GetSubdivision();
-    if (!TF_VERIFY(subdivision)) {
-        _SetResolved();
-        return true;
-    }
-
-    // prepare cpu vertex buffer including refined vertices
-    TF_VERIFY(!_cpuVertexBuffer);
-    _cpuVertexBuffer = VERTEX_BUFFER::Create(
-        HdGetComponentCount(_source->GetTupleType().type),
-        _interpolation == HdSt_MeshTopology::INTERPOLATE_VERTEX ? 
-            subdivision->GetNumVertices() :
-        _interpolation == HdSt_MeshTopology::INTERPOLATE_VARYING ? 
-            subdivision->GetNumVarying() :
-        subdivision->GetMaxNumFaceVarying());
-
-    subdivision->RefineCPU(_source, _cpuVertexBuffer, _interpolation, 
-                           _fvarChannel);
-
-    HD_PERF_COUNTER_INCR(HdPerfTokens->subdivisionRefineCPU);
-
-    _SetResolved();
-    return true;
-}
-
-template <typename VERTEX_BUFFER>
-bool
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::_CheckValid() const
-{
-    bool valid = _source->IsValid();
-
-    // _osdTopology is optional
-    valid &= _osdTopology ? _osdTopology->IsValid() : true;
-
-    return valid;
-}
-
-template <typename VERTEX_BUFFER>
-void
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetBufferSpecs(HdBufferSpecVector *specs) const
-{
-    // produces same spec buffer as source
-    _source->GetBufferSpecs(specs);
-}
-
-template <typename VERTEX_BUFFER>
-bool
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::HasPreChainedBuffer() const
-{
-    return true;
-}
-
-template <typename VERTEX_BUFFER>
-HdBufferSourceSharedPtr
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetPreChainedBuffer() const
-{
-    return _source;
-}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

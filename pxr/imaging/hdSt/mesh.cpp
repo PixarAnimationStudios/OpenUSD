@@ -714,6 +714,7 @@ _TriangulateFaceVaryingPrimvar(HdBufferSourceSharedPtr const &source,
 static void
 _RefinePrimvar(HdBufferSourceSharedPtr const &source,
                HdSt_MeshTopologySharedPtr const &topology,
+               HdStResourceRegistrySharedPtr const &resourceRegistry,
                HdStComputationSharedPtrVector *computations,
                HdSt_MeshTopology::Interpolation interpolation,
                int channel = 0)
@@ -726,6 +727,7 @@ _RefinePrimvar(HdBufferSourceSharedPtr const &source,
         topology->GetOsdRefineComputationGPU(
             source->GetName(),
             source->GetTupleType().type, 
+            resourceRegistry.get(),
             interpolation,
             channel);
     // computation can be null for empty mesh
@@ -741,11 +743,13 @@ _RefineOrQuadrangulateVertexAndVaryingPrimvar(
     SdfPath const &id,
     bool doRefine,
     bool doQuadrangulate,
+    HdStResourceRegistrySharedPtr const &resourceRegistry,
     HdStComputationSharedPtrVector *computations,
     HdSt_MeshTopology::Interpolation interpolation)
 {
     if (doRefine) {
-        _RefinePrimvar(source, topology, computations, interpolation);
+        _RefinePrimvar(source, topology,
+                       resourceRegistry, computations, interpolation);
     } else if (doQuadrangulate) {
         _QuadrangulatePrimvar(source, topology, id, computations);
     } 
@@ -766,7 +770,7 @@ _RefineOrQuadrangulateOrTriangulateFaceVaryingPrimvar(
     // XXX: there is a bug of quad and tris confusion. see bug 121414
     //
     if (doRefine) {
-        _RefinePrimvar(source, topology, computations, 
+        _RefinePrimvar(source, topology, resourceRegistry, computations, 
                        HdSt_MeshTopology::INTERPOLATE_FACEVARYING, channel);
     } else if (doQuadrangulate) {
         source = _QuadrangulateFaceVaryingPrimvar(source, topology, id, 
@@ -889,12 +893,14 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         for (HdBufferSourceSharedPtr const & source : reserveOnlySources) {
             _RefineOrQuadrangulateVertexAndVaryingPrimvar(
                 source, _topology, id,  doRefine, doQuadrangulate,
+                resourceRegistry,
                 &computations, HdSt_MeshTopology::INTERPOLATE_VERTEX);
         }
 
         for (HdBufferSourceSharedPtr const & source : sources) {
             _RefineOrQuadrangulateVertexAndVaryingPrimvar(
                 source, _topology, id,  doRefine, doQuadrangulate,
+                resourceRegistry,
                 &computations, HdSt_MeshTopology::INTERPOLATE_VERTEX);
         }
     }
@@ -982,6 +988,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
             _RefineOrQuadrangulateVertexAndVaryingPrimvar(
                 source, _topology, id,  doRefine, doQuadrangulate,
+                resourceRegistry,
                 &computations, isVarying ? 
                     HdSt_MeshTopology::INTERPOLATE_VARYING : 
                     HdSt_MeshTopology::INTERPOLATE_VERTEX);
@@ -1034,6 +1041,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 HdComputationSharedPtr computation =
                     _topology->GetOsdRefineComputationGPU(
                         HdStTokens->smoothNormals, _pointsDataType,
+                        resourceRegistry.get(),
                         HdSt_MeshTopology::INTERPOLATE_VERTEX);
 
                 // computation can be null for empty mesh
