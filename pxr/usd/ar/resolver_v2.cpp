@@ -790,16 +790,18 @@ public:
         return resolver.OpenAssetForWrite(resolvedPath, mode);
     }
 
-    virtual bool CanWriteLayerToPath(
-        const std::string& path,
+    virtual bool _CanWriteAssetToPath(
+        const ArResolvedPath& resolvedPath,
         std::string* whyNot) override
     {
-        ArResolver& resolver = _GetResolver(path);
-        if (ArIsPackageRelativePath(path)) {
-            return resolver.CanWriteLayerToPath(
-                ArSplitPackageRelativePathOuter(path).first, whyNot);
+        ArResolver& resolver = _GetResolver(resolvedPath);
+        if (ArIsPackageRelativePath(resolvedPath)) {
+            if (whyNot) {
+                *whyNot = "Cannot open package-relative paths for write";
+            }
+            return false;
         }
-        return resolver.CanWriteLayerToPath(path, whyNot);
+        return resolver.CanWriteAssetToPath(resolvedPath, whyNot);
     }
 
     virtual bool CanCreateNewLayerWithIdentifier(
@@ -1419,6 +1421,14 @@ ArResolver::OpenAssetForWrite(
 }
 
 bool
+ArResolver::CanWriteAssetToPath(
+    const ArResolvedPath& resolvedPath,
+    std::string* whyNot)
+{
+    return _CanWriteAssetToPath(resolvedPath, whyNot);
+}
+
+bool
 ArResolver::IsContextDependentPath(
     const std::string& assetPath)
 {
@@ -1464,14 +1474,6 @@ ArResolver::_BindContext(
     const ArResolverContext& context,
     VtValue* bindingData)
 {
-}
-
-bool
-ArResolver::CanWriteLayerToPath(
-    const std::string& path,
-    std::string* whyNot)
-{
-    return true;
 }
 
 bool
@@ -1527,6 +1529,14 @@ ArResolver::_GetAssetInfo(
     const ArResolvedPath& resolvedPath)
 {
     return ArAssetInfo();
+}
+
+bool
+ArResolver::_CanWriteAssetToPath(
+    const ArResolvedPath& resolvedPath,
+    std::string* whyNot)
+{
+    return true;
 }
 
 bool

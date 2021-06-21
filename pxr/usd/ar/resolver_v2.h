@@ -318,6 +318,14 @@ public:
         const ArResolvedPath& resolvedPath,
         WriteMode writeMode);
 
+    /// Returns true if an asset may be written to the given \p resolvedPath,
+    /// false otherwise. If this function returns false and \p whyNot is not
+    /// \c nullptr, it may be filled with an explanation.
+    AR_API
+    bool CanWriteAssetToPath(
+        const ArResolvedPath& resolvedPath,
+        std::string* whyNot = nullptr);
+
     /// @}
 
     // --------------------------------------------------------------------- //
@@ -430,25 +438,6 @@ public:
     /// Returns true if the given path is a repository path.
     AR_API
     bool IsRepositoryPath(const std::string& path);
-
-    /// Returns true if a file may be written to the given \p path, false
-    /// otherwise. 
-    ///
-    /// In practice, when writing a layer, CanWriteLayerToPath will be called
-    /// first to check if writing is permitted. If this returns true, then
-    /// CreatePathForLayer will be called before writing the layer out.
-    /// 
-    /// If this function returns false and \p whyNot is not \c nullptr,
-    /// it will be filled in with an explanation.
-    ///
-    /// The default implementation returns true.
-    ///
-    /// \deprecated Planned for removal in favor of making OpenAssetForWrite
-    /// responsible for determining if a layer can be written to a given path.
-    AR_API
-    virtual bool CanWriteLayerToPath(
-        const std::string& path,
-        std::string* whyNot);
 
     /// Returns true if a new file may be created using the given
     /// \p identifier, false otherwise.
@@ -637,6 +626,15 @@ protected:
     AR_API
     virtual std::shared_ptr<ArAsset> _OpenAsset(
         const ArResolvedPath& resolvedPath) = 0;
+
+    /// Return true if an asset may be written to the given \p resolvedPath,
+    /// false otherwise. If this function returns false and \p whyNot is not
+    /// \c nullptr, it may be filled with an explanation.  The default
+    /// implementation returns true.
+    AR_API
+    virtual bool _CanWriteAssetToPath(
+        const ArResolvedPath& resolvedPath,
+        std::string* whyNot);
 
     /// Return an ArWritableAsset object for the asset at \p resolvedPath
     /// using the specified \p writeMode. Return an invalid std::shared_ptr

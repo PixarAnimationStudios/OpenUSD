@@ -110,10 +110,15 @@ Sdf_ResolvePath(
 
 bool
 Sdf_CanWriteLayerToPath(
-    const string& layerPath)
+    const ArResolvedPath& resolvedPath)
 {
+#if AR_VERSION == 1
     return ArGetResolver().CanWriteLayerToPath(
-        layerPath, /* whyNot = */ nullptr);
+        resolvedPath, /* whyNot = */ nullptr);
+#else
+    return ArGetResolver().CanWriteAssetToPath(
+        resolvedPath, /* whyNot = */ nullptr);
+#endif
 }
 
 ArResolvedPath

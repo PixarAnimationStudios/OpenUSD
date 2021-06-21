@@ -2042,7 +2042,7 @@ SdfLayer::PermissionToSave() const
     return _permissionToSave &&
         !IsAnonymous() &&
         !IsMuted()     &&
-        Sdf_CanWriteLayerToPath(GetRealPath());
+        Sdf_CanWriteLayerToPath(GetResolvedPath());
 }
 
 void
