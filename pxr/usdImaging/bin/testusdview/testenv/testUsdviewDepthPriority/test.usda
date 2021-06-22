@@ -1,0 +1,172 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+def Scope "Scene" (
+    kind = "component"
+)
+{
+    def Xform "Geom"
+    {
+        def Mesh "Mesh01"
+        {
+            uniform bool doubleSided = 0
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-3, -3, -3), (3, -3, -3), (3, 3, -3), (-3, 3, -3)]
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+            float[] primvars:depthPriority = [0]
+            double3 xformOp:translate = (-7, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Mesh "Mesh02"
+        {
+            uniform bool doubleSided = 0
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-3, -3, -3), (3, -3, -3), (3, 3, -3), (-3, 3, -3)]
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            float[] primvars:depthPriority = [1]
+            double3 xformOp:translate = (-5, -2, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Mesh "Mesh03"
+        {
+            uniform bool doubleSided = 0
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-3, -3, -3), (3, -3, -3), (3, 3, -3), (-3, 3, -3)]
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float[] primvars:depthPriority = [2]
+            double3 xformOp:translate = (-3, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Mesh "Mesh04"
+        {
+            uniform bool doubleSided = 0
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-3, -3, -3), (3, -3, -3), (3, 3, -3), (-3, 3, -3)]
+            color3f[] primvars:displayColor = [(1, 1, 0)]
+            float[] primvars:depthPriority = [3]
+            double3 xformOp:translate = (-5, 2, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Mesh "Mesh05"
+        {
+            rel material:binding = </Scene/Red_OIT>
+            uniform bool doubleSided = 0
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-3, -3, -3), (3, -3, -3), (3, 3, -3), (-3, 3, -3)]
+            float[] primvars:depthPriority = [0]
+            double3 xformOp:translate = (3, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Mesh "Mesh06"
+        {
+            rel material:binding = </Scene/Green_OIT>
+            uniform bool doubleSided = 0
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-3, -3, -3), (3, -3, -3), (3, 3, -3), (-3, 3, -3)]
+            float[] primvars:depthPriority = [1]
+            double3 xformOp:translate = (5, -2, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Mesh "Mesh07"
+        {
+            rel material:binding = </Scene/Blue_OIT>
+            uniform bool doubleSided = 0
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-3, -3, -3), (3, -3, -3), (3, 3, -3), (-3, 3, -3)]
+            float[] primvars:depthPriority = [2]
+            double3 xformOp:translate = (7, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Mesh "Mesh08"
+        {
+            rel material:binding = </Scene/Yellow_OIT>
+            uniform bool doubleSided = 0
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-3, -3, -3), (3, -3, -3), (3, 3, -3), (-3, 3, -3)]
+            float[] primvars:depthPriority = [3]
+            double3 xformOp:translate = (5, 2, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Material "Red_OIT"
+    {
+        token outputs:surface.connect = </Scene/Red_OIT/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (1, 0, 0)
+            float inputs:opacity = 0.9
+            float inputs:metallic = 0
+            float inputs:roughness = 1
+            token outputs:surface
+        }
+    }
+
+    def Material "Green_OIT"
+    {
+        token outputs:surface.connect = </Scene/Green_OIT/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0, 1, 0)
+            float inputs:opacity = 0.9
+            float inputs:metallic = 0
+            float inputs:roughness = 1
+            token outputs:surface
+        }
+    }
+
+    def Material "Blue_OIT"
+    {
+        token outputs:surface.connect = </Scene/Blue_OIT/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0, 0, 1)
+            float inputs:opacity = 0.9
+            float inputs:metallic = 0
+            float inputs:roughness = 1
+            token outputs:surface
+        }
+    }
+
+    def Material "Yellow_OIT"
+    {
+        token outputs:surface.connect = </Scene/Yellow_OIT/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (1, 1, 0)
+            float inputs:opacity = 0.9
+            float inputs:metallic = 0
+            float inputs:roughness = 1
+            token outputs:surface
+        }
+    }
+}
+

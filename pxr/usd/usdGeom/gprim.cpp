@@ -119,6 +119,23 @@ UsdGeomGprim::CreateDisplayOpacityAttr(VtValue const &defaultValue, bool writeSp
 }
 
 UsdAttribute
+UsdGeomGprim::GetDepthPriorityAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->primvarsDepthPriority);
+}
+
+UsdAttribute
+UsdGeomGprim::CreateDepthPriorityAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->primvarsDepthPriority,
+                       SdfValueTypeNames->FloatArray,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdGeomGprim::GetDoubleSidedAttr() const
 {
     return GetPrim().GetAttribute(UsdGeomTokens->doubleSided);
@@ -171,6 +188,7 @@ UsdGeomGprim::GetSchemaAttributeNames(bool includeInherited)
     static TfTokenVector localNames = {
         UsdGeomTokens->primvarsDisplayColor,
         UsdGeomTokens->primvarsDisplayOpacity,
+        UsdGeomTokens->primvarsDepthPriority,
         UsdGeomTokens->doubleSided,
         UsdGeomTokens->orientation,
     };
@@ -225,6 +243,22 @@ UsdGeomGprim::CreateDisplayOpacityPrimvar(const TfToken& interpolation,
                                           int elementSize) const
 {
     return CreatePrimvar(UsdGeomTokens->primvarsDisplayOpacity,
+                         SdfValueTypeNames->FloatArray,
+                         interpolation,
+                         elementSize);
+}
+
+UsdGeomPrimvar
+UsdGeomGprim::GetDepthPriorityPrimvar() const
+{
+    return UsdGeomPrimvar(GetDepthPriorityAttr());
+}
+
+UsdGeomPrimvar
+UsdGeomGprim::CreateDepthPriorityPrimvar(const TfToken& interpolation,
+                                         int elementSize) const
+{
+    return CreatePrimvar(UsdGeomTokens->primvarsDepthPriority,
                          SdfValueTypeNames->FloatArray,
                          interpolation,
                          elementSize);

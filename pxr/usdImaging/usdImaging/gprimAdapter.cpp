@@ -264,7 +264,8 @@ bool
 UsdImagingGprimAdapter::_IsBuiltinPrimvar(TfToken const& primvarName) const
 {
     return (primvarName == HdTokens->displayColor ||
-            primvarName == HdTokens->displayOpacity);
+            primvarName == HdTokens->displayOpacity ||
+            primvarName == HdTokens->depthPriority);
 }
 
 void
@@ -378,6 +379,25 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         } else {
             UsdGeomPrimvar pv =
                 _GetInheritedPrimvar(prim, HdTokens->displayOpacity);
+            if (pv) {
+                _ComputeAndMergePrimvar(prim, pv, time, &vPrimvars);
+            }
+        }
+
+        TfToken depthPriorityInterp;
+        VtValue depthPriority;
+        VtIntArray depthPriorityIndices(0);
+        if (GetDepthPriority(prim, time, &depthPriorityInterp, &depthPriority,
+                             &depthPriorityIndices)) {
+            _MergePrimvar(
+                &vPrimvars,
+                HdTokens->depthPriority,
+                _UsdToHdInterpolation(depthPriorityInterp),
+                TfToken(),
+                !depthPriorityIndices.empty());
+        } else {
+            UsdGeomPrimvar pv =
+                _GetInheritedPrimvar(prim, HdTokens->depthPriority);
             if (pv) {
                 _ComputeAndMergePrimvar(prim, pv, time, &vPrimvars);
             }
@@ -664,6 +684,31 @@ UsdImagingGprimAdapter::Get(UsdPrim const& prim,
         value = VtValue(vec);
         return value;
 
+    } else if (key == HdTokens->depthPriority) {
+        // First we try to obtain depth priority from the prim, 
+        // if not present, we try to get if through inheritance,
+        // and lastly, we use a fallback value.
+        TfToken interp;
+        if (GetDepthPriority(prim, time, &interp, &value, outIndices)) {
+            return value;
+        }
+
+        // Inheritance
+        UsdGeomPrimvar pv = _GetInheritedPrimvar(prim, HdTokens->depthPriority);
+        if (outIndices) {
+            if (pv && pv.Get(&value, time)) {
+                pv.GetIndices(outIndices, time);
+                return value;
+            }
+        } else if (pv && pv.ComputeFlattened(&value, time)) {
+            return value;
+        }
+
+        // Fallback
+        VtFloatArray vec(1, 0.0f);
+        value = VtValue(vec);
+        return value;
+
     } else if (key == HdTokens->normals) {
         // Fallback
         VtVec3fArray vec(1, GfVec3f(0,0,0));
@@ -944,6 +989,118 @@ UsdImagingGprimAdapter::GetOpacity(UsdPrim const& prim,
     }
     if (opacity) {
         *opacity = VtValue(result);
+    }
+    return true;
+}
+
+/* static */
+bool
+UsdImagingGprimAdapter::GetDepthPriority(UsdPrim const& prim,
+                                         UsdTimeCode time,
+                                         TfToken* interpolation,
+                                         VtValue* depthPriority,
+                                         VtIntArray *indices)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    VtFloatArray result(1, 0.0f);
+    VtIntArray depthPriorityIndices(0);
+    TfToken depthPriorityInterp;
+    bool hasAuthoredDepthPriority = false;
+
+    // for a prim's depth priority , we use the following precedence:
+    // material rel >  local prim var(s)
+    {
+        // -- Material --        
+        // XXX: Primvar values that come from shaders should not be part of
+        // the Rprim data, it should live as part of the shader so it can be 
+        // shared, though that poses some interesting questions for vertex & 
+        // varying rate shader provided primvars.
+        UsdRelationship mat = 
+            UsdShadeMaterialBindingAPI(prim).GetDirectBindingRel();
+        SdfPathVector matTargets;
+        if (mat.GetForwardedTargets(&matTargets)) {
+            if (!matTargets.empty()) {
+                if (matTargets.size() > 1) {
+                    TF_WARN("<%s> has more than one material target; "\
+                            "using first one found: <%s>",
+                            prim.GetPath().GetText(),
+                            matTargets.front().GetText());
+                }
+                UsdPrim matPrim(
+                    prim.GetStage()->GetPrimAtPath(matTargets.front()));
+
+                if (matPrim &&
+                    matPrim.GetAttribute(HdTokens->depthPriority)
+                        .Get(&result[0], time)) {
+                    depthPriorityInterp = UsdGeomTokens->constant;
+                    hasAuthoredDepthPriority = true;
+                }
+            }
+        }
+    }
+
+    {
+        // -- Prim local prim var --
+        if (!hasAuthoredDepthPriority) { // did not get from material
+            UsdGeomGprim gprimSchema(prim);
+            const UsdGeomPrimvar& primvar = 
+                gprimSchema.GetDepthPriorityPrimvar();
+            depthPriorityInterp = primvar.GetInterpolation();
+            
+            if (indices) {
+                if (primvar.Get(&result, time)) {
+                    hasAuthoredDepthPriority = true;
+                    primvar.GetIndices(&depthPriorityIndices, time);
+
+                    if (depthPriorityInterp == UsdGeomTokens->constant &&
+                        result.size() > 1) {
+                        TF_WARN("Prim %s has %lu element(s) for %s even "
+                                "though it is marked constant.",
+                                prim.GetPath().GetText(), result.size(),
+                                primvar.GetName().GetText());
+                        result.resize(1);
+                        depthPriorityIndices = VtIntArray(1, 0);
+                    } 
+                }
+            } else if (primvar.ComputeFlattened(&result, time)) {
+                hasAuthoredDepthPriority = true;
+
+                if (depthPriorityInterp == UsdGeomTokens->constant &&
+                    result.size() > 1) {
+                    TF_WARN("Prim %s has %lu element(s) for %s even "
+                            "though it is marked constant.",
+                            prim.GetPath().GetText(), result.size(),
+                            primvar.GetName().GetText());
+                    result.resize(1);
+                } 
+            } else if (primvar.HasAuthoredValue()) {
+                // If the primvar exists and ComputeFlattened returns false, 
+                // the value authored is None, in which case, we return an empty
+                // array,
+                hasAuthoredDepthPriority = true;
+                result = VtFloatArray();
+            } else {
+                // All UsdGeomPointBased prims have the depthPriority primvar
+                // by default. Suppress unauthored ones from being
+                // published to the backend.
+            }
+        }
+    }
+
+    if (!hasAuthoredDepthPriority) {
+        return false;
+    }
+
+    if (interpolation) {
+        *interpolation = depthPriorityInterp;
+    }
+    if (indices) {
+        *indices = depthPriorityIndices;
+    }
+    if (depthPriority) {
+        *depthPriority = VtValue(result);
     }
     return true;
 }

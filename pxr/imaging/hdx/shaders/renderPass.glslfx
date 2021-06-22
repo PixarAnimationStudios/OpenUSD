@@ -85,6 +85,18 @@ void RenderOutputImpl(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
             // OIT resolve shader cannot compare depths in the OIT list
             // against the depth buffer unless it takes the perspective
             // transform into account.
+#if defined(HD_HAS_depthPriority)
+            // How much to bias it forward toward the eye. 1048576 = 2^24 / 16.
+            // Similar to 'units' parameter in glPolygonOffset.
+            // 2.0 is the depth range in NDC space. GL is [-1, +1].
+            MAT4 projMatrix = GetProjectionMatrix();
+            vec4 Pndc = projMatrix * Peye;
+            float Zndc = (Pndc.z / Pndc.w) -
+                         (2.0 * HdGet_depthPriority().x / 1048576.0);
+            float Zeye = (projMatrix[3][2] - projMatrix[3][3] * Zndc) /
+                         (projMatrix[2][3] * Zndc - projMatrix[2][2]);
+            Peye.zw = vec2(Zeye, 1.0);
+#endif
             hdxOitDepthBuffer[writeIndex] = Peye.z / Peye.w;
             hdxOitIndexBuffer[writeIndex] = prevIndex;
         }

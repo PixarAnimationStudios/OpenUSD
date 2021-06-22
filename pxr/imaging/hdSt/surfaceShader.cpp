@@ -374,6 +374,7 @@ static TfTokenVector const &
 _GetExtraIncludedShaderPrimvarNames()
 {
     static const TfTokenVector primvarNames = {
+        HdTokens->depthPriority,
         HdTokens->displayColor,
         HdTokens->displayOpacity,
 

@@ -65,8 +65,8 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
             gp_pv.CreatePrimvar("multi:aggregate:indices", Sdf.ValueTypeNames.IntArray)
 
         self.assertEqual(len( gp_pv.GetAuthoredPrimvars() ), 4)
-        # displayColor and displayOpacity are builtins, not authored
-        self.assertEqual(len( gp_pv.GetPrimvars() ), 6)
+        # displayColor, displayOpacity and depthPriority are builtins, not authored
+        self.assertEqual(len( gp_pv.GetPrimvars() ), 7)
         
         # Now add some random properties, plus a "manually" created, namespaced
         # primvar, and reverify
@@ -296,6 +296,10 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         declInfo = displayOpacity.GetDeclarationInfo()
         self.assertEqual(declInfo, ('displayOpacity', Sdf.ValueTypeNames.FloatArray, UsdGeom.Tokens.constant, 1))
 
+        depthPriority = gp.CreateDepthPriorityPrimvar(UsdGeom.Tokens.constant)
+        self.assertTrue(depthPriority)
+        declInfo = depthPriority.GetDeclarationInfo()
+        self.assertEqual(declInfo, ('depthPriority', Sdf.ValueTypeNames.FloatArray, UsdGeom.Tokens.constant, 1))
 
         # Id primvar
         notId = gp_pv.CreatePrimvar('notId', Sdf.ValueTypeNames.FloatArray)
@@ -315,7 +319,7 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         
         # This check below ensures that the "indices" attributes belonging to 
         # indexed primvars aren't considered to be primvars themselves.
-        self.assertEqual(numPrimvars, 9)
+        self.assertEqual(numPrimvars, 10)
 
         self.assertTrue(handleid.SetIdTarget(gp.GetPath()))
         # make sure we didn't increase the number of primvars (also that
@@ -539,14 +543,14 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         u4.SetInterpolation(UsdGeom.Tokens.constant)
 
         # Before setting a value on u4, let's test the various
-        # enumeration methods, since Mesh has 2 builtin primvars
-        self.assertEqual(len(s4p.GetPrimvars()), 3)
+        # enumeration methods, since Mesh has 3 builtin primvars
+        self.assertEqual(len(s4p.GetPrimvars()), 4)
         self.assertEqual(len(s4p.GetAuthoredPrimvars()), 1)
         self.assertEqual(len(s4p.GetPrimvarsWithValues()), 0)
         self.assertEqual(len(s4p.GetPrimvarsWithAuthoredValues()), 0)
         # now set value, and retest
         u4.Set(4)
-        self.assertEqual(len(s4p.GetPrimvars()), 3)
+        self.assertEqual(len(s4p.GetPrimvars()), 4)
         self.assertEqual(len(s4p.GetAuthoredPrimvars()), 1)
         self.assertEqual(len(s4p.GetPrimvarsWithValues()), 1)
         self.assertEqual(len(s4p.GetPrimvarsWithAuthoredValues()), 1)

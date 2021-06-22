@@ -185,6 +185,34 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // DEPTHPRIORITY 
+    // --------------------------------------------------------------------- //
+    /// It is useful to have a priority between 2 overlapping gprims.
+    /// The depth priority determines how much to bias the gprim forward toward
+    /// the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+    /// will win the same gprim with depthPriority=[0] in depth test in a
+    /// rasterizer. This primvar is typically used to address z-fighting between
+    /// 2 overlapping gprims. A common example is mesh decal. The bias is small
+    /// and only meaningful for perfectly overlapping gprims.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float[] primvars:depthPriority` |
+    /// | C++ Type | VtArray<float> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
+    USDGEOM_API
+    UsdAttribute GetDepthPriorityAttr() const;
+
+    /// See GetDepthPriorityAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateDepthPriorityAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // DOUBLESIDED 
     // --------------------------------------------------------------------- //
     /// Although some renderers treat all parametric or polygonal
@@ -289,6 +317,21 @@ public:
     /// \sa CreateDisplayOpacityAttr(), GetDisplayOpacityPrimvar()
     USDGEOM_API
     UsdGeomPrimvar CreateDisplayOpacityPrimvar(
+                                const TfToken& interpolation = TfToken(),
+                                int elementSize = -1) const;
+
+    /// Convenience function to get the depthPriority Attribute as a Primvar.
+    ///
+    /// \sa GetDepthPriorityAttr(), CreateDepthPriorityPrimvar()
+    USDGEOM_API
+    UsdGeomPrimvar GetDepthPriorityPrimvar() const;
+
+    /// Convenience function to create the displayOpacity primvar, optionally
+    /// specifying interpolation and elementSize
+    ///
+    /// \sa CreateDepthPriorityAttr(), GetDepthPriorityPrimvar()
+    USDGEOM_API
+    UsdGeomPrimvar CreateDepthPriorityPrimvar(
                                 const TfToken& interpolation = TfToken(),
                                 int elementSize = -1) const;
 
