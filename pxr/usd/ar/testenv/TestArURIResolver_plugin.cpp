@@ -32,8 +32,6 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <tbb/enumerable_thread_specific.h>
-
 #include <map>
 #include <vector>
 
@@ -95,23 +93,6 @@ public:
         return _Resolve(assetPath);
     }
 
-    virtual void _BindContext(
-        const ArResolverContext& context,
-        VtValue* bindingData) final
-    {
-        _ContextStack& contextStack = _threadContextStack.local();
-        contextStack.push_back(context.Get<_TestURIResolverContext>());
-    }
-
-    virtual void _UnbindContext(
-        const ArResolverContext& context,
-        VtValue* bindingData) final
-    {
-        _ContextStack& contextStack = _threadContextStack.local();
-        TF_AXIOM(!contextStack.empty());
-        contextStack.pop_back();
-    }
-
     virtual ArResolverContext _CreateDefaultContext() final
     {
         return ArResolverContext(_TestURIResolverContext());
@@ -122,15 +103,6 @@ public:
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(filePath), _uriScheme));
         return ArResolverContext(_TestURIResolverContext());
-    }
-
-    virtual ArResolverContext _GetCurrentContext() final
-    {
-        const _TestURIResolverContext* uriContext = _GetCurrentContextPtr();
-        if (uriContext) {
-            return ArResolverContext(*uriContext);
-        }
-        return ArResolverContext();
     }
 
     virtual VtValue _GetModificationTimestamp(
@@ -182,16 +154,10 @@ protected:
 private:
     const _TestURIResolverContext* _GetCurrentContextPtr()
     {
-        const _ContextStack& contextStack = _threadContextStack.local();
-        return contextStack.empty() ? nullptr : contextStack.back();
+        return _GetCurrentContextObject<_TestURIResolverContext>();
     }
 
     std::string _uriScheme;
-
-    using _ContextStack = std::vector<const _TestURIResolverContext*>;
-    using _PerThreadContextStack = 
-        tbb::enumerable_thread_specific<_ContextStack>;
-    _PerThreadContextStack _threadContextStack;
 };
 
 // Test resolver that handles asset paths of the form "test://...."

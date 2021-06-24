@@ -33,6 +33,8 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/resolvedPath.h"
+#include "pxr/usd/ar/resolverContext.h"
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -468,6 +470,14 @@ protected:
     /// Context binding is thread-specific; contexts bound in a thread must
     /// only affect other resolver calls in the same thread.
     ///
+    /// ArResolver itself manages thread-local stacks of bound contexts.
+    /// Subclasses can retrieve the most recent context object which was passed
+    /// to BindContext using _GetCurrentContextObject. Because of this,
+    /// subclasses typically do not need to implement this function unless they
+    /// need to be informed when a context object is bound. For example, this
+    /// may be needed if the context needs to be passed on to another subsystem
+    /// that manages these bindings itself.
+    ///
     /// The default implementation does nothing.
     AR_API
     virtual void _BindContext(
@@ -478,6 +488,11 @@ protected:
     ///
     /// It is an error if the context being unbound is not the currently
     /// bound context.
+    ///
+    /// Subclasses typically do not need to implement this function since
+    /// ArResolver itself keeps track of the contexts that are bound via calls
+    /// to BindContext. However, subclasses may need to implement this function
+    /// if they are managing these bindings itself.
     ///
     /// The default implementation does nothing.
     AR_API
@@ -527,6 +542,14 @@ protected:
     /// Return the currently bound context. Since context binding is 
     /// thread-specific, this should return the context that was most recently
     /// bound in this thread.
+    ///
+    /// Subclasses typically do not need to implement this function since
+    /// ArResolver itself keeps track of the contexts that are bound via calls
+    /// to BindContext. However, if a subclass is managing bound contexts itself
+    /// and allows clients to bind context objects via other API outside of
+    /// BindContext, this function should return the context object as described
+    /// above. This typically happens with subclasses that are wrappers around
+    /// other resolution subsystems. \see _BindContext for more information.
     ///
     /// The default implementation returns a default-constructed 
     /// ArResolverContext.
@@ -632,6 +655,57 @@ protected:
         const std::string& path);
 
     /// @}
+
+    // --------------------------------------------------------------------- //
+    /// \anchor ArResolver_implementationUtils
+    /// \name Implementation Utilities
+    ///
+    /// Utility functions for implementations.
+    ///
+    /// @{
+
+    /// Returns a pointer to the context object of type \p ContextObj from
+    /// the last ArResolverContext that was bound via a call to BindContext,
+    /// or \c NULL if no context object of that type exists.
+    ///
+    /// Typically, a subclass might use this in their _Resolve function to
+    /// get the currently bound context to drive their resolution behavior.
+    ///
+    /// \code
+    /// if (const MyContextObject* ctx = 
+    ///        _GetCurrentContextObject<MyContextObject>()) {
+    ///
+    ///     // Use information in ctx to resolve given path
+    /// }
+    /// else {
+    ///     // Resolve given path with no context object
+    /// }
+    /// \endcode
+    ///
+    /// This is the same as GetCurrentContext().Get<ContextObj>() but more
+    /// efficient, since it does not make a copy of the ArResolverContext.
+    /// However, it is *not* the same as _GetCurrentContext().Get<ContextObj>().
+    /// Subclasses that manage context binding themselves may have overridden
+    /// _GetCurrentContext to return a context that was bound without calling
+    /// BindContext. These subclasses should not use this function and should
+    /// retrieve the current context from their own internal data structures.
+    template <class ContextObj>
+    const ContextObj* _GetCurrentContextObject() const
+    {
+        const ArResolverContext* ctx = _GetInternallyManagedCurrentContext();
+        return ctx ? ctx->Get<ContextObj>() : nullptr;
+    }
+
+    /// @}
+
+private:
+    // Returns pointer to ArResolverContext that was most recently bound
+    // via BindContext. This is *not* the same as GetCurrentContext,
+    // since subclasses may return an ArResolverContext that hasn't
+    // been bound via BindContext in their implementations.
+    AR_API
+    const ArResolverContext* _GetInternallyManagedCurrentContext() const;
+
 };
 
 /// Returns the configured asset resolver.

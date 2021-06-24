@@ -368,6 +368,12 @@ public:
         return *_resolver;
     }
 
+    const ArResolverContext* GetInternallyManagedCurrentContext()
+    {
+        _ContextStack& contextStack = _threadContextStack.local();
+        return contextStack.empty() ? nullptr : contextStack.back();
+    }
+
     ArResolverContext CreateContextFromString(
         const std::string& uriScheme, const std::string& contextStr)
     {
@@ -540,6 +546,9 @@ public:
         }
 
         bindingData->Swap(contextData);
+
+        _ContextStack& contextStack = _threadContextStack.local();
+        contextStack.push_back(&context);
     }
 
     virtual void _UnbindContext(
@@ -566,6 +575,16 @@ public:
         }
 
         bindingData->Swap(contextData);
+
+        _ContextStack& contextStack = _threadContextStack.local();
+        if (contextStack.empty()) {
+            TF_CODING_ERROR(
+                "No context was bound, cannot unbind context: %s",
+                context.GetDebugString().c_str());
+        }
+        else {
+            contextStack.pop_back();
+        }
     }
 
     virtual ArResolverContext _CreateDefaultContext() override
@@ -612,13 +631,13 @@ public:
 
     virtual ArResolverContext _GetCurrentContext() override
     {
-        // XXX:
-        // This assumes that when binding a context, each resolver
-        // will only return an ArResolverContext containing just the
-        // context objects that are relevant. This could be cleaned
-        // up if _Resolver itself were responsible for managing the
-        // "current context" instead of making each resolver subclass
-        // responsible for that.
+        // Although we manage the stack of contexts bound via calls
+        // to BindContext, some resolver implementations may also be
+        // managing these bindings themselves and have a different
+        // idea of what the currently bound context is. So, we collect
+        // the results of calling GetCurrentContext on each resolver
+        // implementation and merge that over the contexts we're
+        // managing internally.
         std::vector<ArResolverContext> contexts;
         contexts.push_back(_resolver->GetCurrentContext());
         for (const auto& entry : _uriResolvers) {
@@ -626,6 +645,12 @@ public:
                 contexts.push_back(uriResolver->GetCurrentContext());
             }
         }
+
+        if (const ArResolverContext* ctx = 
+                GetInternallyManagedCurrentContext()) {
+            contexts.push_back(*ctx);
+        }
+
         return ArResolverContext(contexts);
     }
 
@@ -1188,6 +1213,14 @@ private:
 
     using _PackageResolverSharedPtr = std::shared_ptr<_PackageResolver>;
     std::vector<_PackageResolverSharedPtr> _packageResolvers;
+
+    // Context Management --------------------
+
+    using _ContextStack = std::vector<const ArResolverContext*>;
+    using _PerThreadContextStack = 
+        tbb::enumerable_thread_specific<_ContextStack>;
+    _PerThreadContextStack _threadContextStack;
+
 };
 
 _Resolver&
@@ -1460,6 +1493,12 @@ ArResolver::_IsRepositoryPath(
     const std::string& path)
 {
     return false;
+}
+
+const ArResolverContext*
+ArResolver::_GetInternallyManagedCurrentContext() const
+{
+    return _GetResolver().GetInternallyManagedCurrentContext();
 }
 
 // ------------------------------------------------------------

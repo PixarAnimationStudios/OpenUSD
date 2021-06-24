@@ -116,16 +116,6 @@ protected:
         const std::string& assetPath) override;
 
     AR_API
-    virtual void _BindContext(
-        const ArResolverContext& context,
-        VtValue* bindingData) override;
-
-    AR_API
-    virtual void _UnbindContext(
-        const ArResolverContext& context,
-        VtValue* bindingData) override;
-
-    AR_API
     virtual ArResolverContext _CreateDefaultContext() override;
 
     /// Creates a context that adds the directory containing \p assetPath
@@ -145,9 +135,6 @@ protected:
     AR_API
     virtual ArResolverContext _CreateContextFromString(
         const std::string& contextStr) override;
-
-    AR_API
-    virtual ArResolverContext _GetCurrentContext() override;
 
     AR_API
     virtual bool _IsContextDependentPath(
@@ -196,12 +183,6 @@ private:
     ArResolverContext _defaultContext;
 
     _PerThreadCache _threadCache;
-
-    using _ContextStack = std::vector<const ArDefaultResolverContext*>;
-    using _PerThreadContextStack = 
-        tbb::enumerable_thread_specific<_ContextStack>;
-    _PerThreadContextStack _threadContextStack;
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

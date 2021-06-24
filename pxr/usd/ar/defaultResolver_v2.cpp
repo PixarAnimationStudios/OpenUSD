@@ -354,13 +354,6 @@ ArDefaultResolver::_CreateDefaultContextForAsset(
                                  std::vector<std::string>(1, assetDir)));
 }
 
-ArResolverContext
-ArDefaultResolver::_GetCurrentContext()
-{
-    const ArDefaultResolverContext* ctx = _GetCurrentContextPtr();
-    return ctx ? ArResolverContext(*ctx) : ArResolverContext();
-}
-
 void 
 ArDefaultResolver::_BeginCacheScope(
     VtValue* cacheScopeData)
@@ -381,40 +374,10 @@ ArDefaultResolver::_GetCurrentCache()
     return _threadCache.GetCurrentCache();
 }
 
-void 
-ArDefaultResolver::_BindContext(
-    const ArResolverContext& context,
-    VtValue* bindingData)
-{
-    const ArDefaultResolverContext* ctx = 
-        context.Get<ArDefaultResolverContext>();
-
-    _ContextStack& contextStack = _threadContextStack.local();
-    contextStack.push_back(ctx);
-}
-
-void 
-ArDefaultResolver::_UnbindContext(
-    const ArResolverContext& context,
-    VtValue* bindingData)
-{
-    _ContextStack& contextStack = _threadContextStack.local();
-    if (contextStack.empty()) {
-        TF_CODING_ERROR(
-            "No context was bound, cannot unbind context: %s",
-            context.GetDebugString().c_str());
-    }
-
-    if (!contextStack.empty()) {
-        contextStack.pop_back();
-    }
-}
-
 const ArDefaultResolverContext* 
 ArDefaultResolver::_GetCurrentContextPtr()
 {
-    _ContextStack& contextStack = _threadContextStack.local();
-    return contextStack.empty() ? nullptr : contextStack.back();
+    return _GetCurrentContextObject<ArDefaultResolverContext>();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
