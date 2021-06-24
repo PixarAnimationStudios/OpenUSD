@@ -75,13 +75,9 @@ UsdLuxPluginLight::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdLuxPluginLight::_GetSchemaKind() const {
+UsdSchemaKind UsdLuxPluginLight::_GetSchemaKind() const
+{
     return UsdLuxPluginLight::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdLuxPluginLight::_GetSchemaType() const {
-    return UsdLuxPluginLight::schemaType;
 }
 
 /* static */

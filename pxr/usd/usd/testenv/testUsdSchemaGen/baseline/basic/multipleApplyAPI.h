@@ -61,11 +61,6 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::MultipleApplyAPI;
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::MultipleApplyAPI;
-
     /// Construct a UsdContrivedMultipleApplyAPI on UsdPrim \p prim with
     /// name \p name . Equivalent to
     /// UsdContrivedMultipleApplyAPI::Get(
@@ -195,12 +190,6 @@ protected:
     /// \sa UsdSchemaKind
     USDCONTRIVED_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDCONTRIVED_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.

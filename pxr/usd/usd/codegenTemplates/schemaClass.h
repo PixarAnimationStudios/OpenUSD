@@ -82,11 +82,6 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = {{cls.schemaKindEnumValue }};
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = {{cls.schemaKindEnumValue }};
-
 {% if cls.isMultipleApply %}
     /// Construct a {{ cls.cppClassName }} on UsdPrim \p prim with
     /// name \p name . Equivalent to
@@ -355,14 +350,6 @@ protected:
     {{ Upper(libraryName) }}_API
     {% endif -%}
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    {% if useExportAPI -%}
-    {{ Upper(libraryName) }}_API
-    {% endif -%}
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.

@@ -56,13 +56,9 @@ UsdGeomBoundable::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdGeomBoundable::_GetSchemaKind() const {
+UsdSchemaKind UsdGeomBoundable::_GetSchemaKind() const
+{
     return UsdGeomBoundable::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdGeomBoundable::_GetSchemaType() const {
-    return UsdGeomBoundable::schemaType;
 }
 
 /* static */

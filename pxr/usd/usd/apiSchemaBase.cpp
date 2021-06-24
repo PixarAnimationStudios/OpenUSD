@@ -45,13 +45,9 @@ UsdAPISchemaBase::~UsdAPISchemaBase()
 
 
 /* virtual */
-UsdSchemaKind UsdAPISchemaBase::_GetSchemaKind() const {
+UsdSchemaKind UsdAPISchemaBase::_GetSchemaKind() const
+{
     return UsdAPISchemaBase::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdAPISchemaBase::_GetSchemaType() const {
-    return UsdAPISchemaBase::schemaType;
 }
 
 /* static */

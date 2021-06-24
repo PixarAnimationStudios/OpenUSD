@@ -75,13 +75,9 @@ UsdRiPxrBarnLightFilter::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdRiPxrBarnLightFilter::_GetSchemaKind() const {
+UsdSchemaKind UsdRiPxrBarnLightFilter::_GetSchemaKind() const
+{
     return UsdRiPxrBarnLightFilter::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdRiPxrBarnLightFilter::_GetSchemaType() const {
-    return UsdRiPxrBarnLightFilter::schemaType;
 }
 
 /* static */

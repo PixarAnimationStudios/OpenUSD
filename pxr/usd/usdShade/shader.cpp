@@ -75,13 +75,9 @@ UsdShadeShader::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdShadeShader::_GetSchemaKind() const {
+UsdSchemaKind UsdShadeShader::_GetSchemaKind() const
+{
     return UsdShadeShader::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdShadeShader::_GetSchemaType() const {
-    return UsdShadeShader::schemaType;
 }
 
 /* static */

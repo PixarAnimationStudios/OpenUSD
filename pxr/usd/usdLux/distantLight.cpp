@@ -75,13 +75,9 @@ UsdLuxDistantLight::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdLuxDistantLight::_GetSchemaKind() const {
+UsdSchemaKind UsdLuxDistantLight::_GetSchemaKind() const
+{
     return UsdLuxDistantLight::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdLuxDistantLight::_GetSchemaType() const {
-    return UsdLuxDistantLight::schemaType;
 }
 
 /* static */

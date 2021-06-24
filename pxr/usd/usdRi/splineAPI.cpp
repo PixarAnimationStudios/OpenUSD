@@ -62,13 +62,9 @@ UsdRiSplineAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdRiSplineAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdRiSplineAPI::_GetSchemaKind() const
+{
     return UsdRiSplineAPI::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdRiSplineAPI::_GetSchemaType() const {
-    return UsdRiSplineAPI::schemaType;
 }
 
 /* static */

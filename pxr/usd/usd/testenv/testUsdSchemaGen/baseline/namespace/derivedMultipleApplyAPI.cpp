@@ -116,13 +116,9 @@ UsdContrivedDerivedMultipleApplyAPI::IsDerivedMultipleApplyAPIPath(
 }
 
 /* virtual */
-UsdSchemaKind UsdContrivedDerivedMultipleApplyAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdContrivedDerivedMultipleApplyAPI::_GetSchemaKind() const
+{
     return UsdContrivedDerivedMultipleApplyAPI::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdContrivedDerivedMultipleApplyAPI::_GetSchemaType() const {
-    return UsdContrivedDerivedMultipleApplyAPI::schemaType;
 }
 
 /* static */

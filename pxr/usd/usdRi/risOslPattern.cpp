@@ -75,13 +75,9 @@ UsdRiRisOslPattern::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdRiRisOslPattern::_GetSchemaKind() const {
+UsdSchemaKind UsdRiRisOslPattern::_GetSchemaKind() const
+{
     return UsdRiRisOslPattern::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdRiRisOslPattern::_GetSchemaType() const {
-    return UsdRiRisOslPattern::schemaType;
 }
 
 /* static */

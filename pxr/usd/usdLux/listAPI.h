@@ -185,11 +185,6 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::SingleApplyAPI;
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::SingleApplyAPI;
-
     /// Construct a UsdLuxListAPI on UsdPrim \p prim .
     /// Equivalent to UsdLuxListAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -277,12 +272,6 @@ protected:
     /// \sa UsdSchemaKind
     USDLUX_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDLUX_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.

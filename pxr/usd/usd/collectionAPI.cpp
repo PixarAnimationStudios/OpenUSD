@@ -119,13 +119,9 @@ UsdCollectionAPI::IsCollectionAPIPath(
 }
 
 /* virtual */
-UsdSchemaKind UsdCollectionAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdCollectionAPI::_GetSchemaKind() const
+{
     return UsdCollectionAPI::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdCollectionAPI::_GetSchemaType() const {
-    return UsdCollectionAPI::schemaType;
 }
 
 /* static */

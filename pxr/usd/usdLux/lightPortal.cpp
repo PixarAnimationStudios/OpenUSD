@@ -75,13 +75,9 @@ UsdLuxLightPortal::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdLuxLightPortal::_GetSchemaKind() const {
+UsdSchemaKind UsdLuxLightPortal::_GetSchemaKind() const
+{
     return UsdLuxLightPortal::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdLuxLightPortal::_GetSchemaType() const {
-    return UsdLuxLightPortal::schemaType;
 }
 
 /* static */

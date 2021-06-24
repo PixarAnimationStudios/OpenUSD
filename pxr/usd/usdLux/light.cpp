@@ -56,13 +56,9 @@ UsdLuxLight::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdLuxLight::_GetSchemaKind() const {
+UsdSchemaKind UsdLuxLight::_GetSchemaKind() const
+{
     return UsdLuxLight::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdLuxLight::_GetSchemaType() const {
-    return UsdLuxLight::schemaType;
 }
 
 /* static */

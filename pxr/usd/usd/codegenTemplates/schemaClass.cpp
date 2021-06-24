@@ -164,13 +164,9 @@ bool
 {% endif %}
 
 /* virtual */
-UsdSchemaKind {{ cls.cppClassName }}::_GetSchemaKind() const {
+UsdSchemaKind {{ cls.cppClassName }}::_GetSchemaKind() const
+{
     return {{ cls.cppClassName }}::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind {{ cls.cppClassName }}::_GetSchemaType() const {
-    return {{ cls.cppClassName }}::schemaType;
 }
 {% if cls.isAppliedAPISchema %}
 

@@ -62,13 +62,9 @@ UsdRiLightFilterAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdRiLightFilterAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdRiLightFilterAPI::_GetSchemaKind() const
+{
     return UsdRiLightFilterAPI::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdRiLightFilterAPI::_GetSchemaType() const {
-    return UsdRiLightFilterAPI::schemaType;
 }
 
 /* static */

@@ -75,13 +75,9 @@ UsdShadeNodeGraph::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdShadeNodeGraph::_GetSchemaKind() const {
+UsdSchemaKind UsdShadeNodeGraph::_GetSchemaKind() const
+{
     return UsdShadeNodeGraph::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdShadeNodeGraph::_GetSchemaType() const {
-    return UsdShadeNodeGraph::schemaType;
 }
 
 /* static */

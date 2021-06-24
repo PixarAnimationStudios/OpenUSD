@@ -75,13 +75,9 @@ UsdGeomMesh::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdGeomMesh::_GetSchemaKind() const {
+UsdSchemaKind UsdGeomMesh::_GetSchemaKind() const
+{
     return UsdGeomMesh::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdGeomMesh::_GetSchemaType() const {
-    return UsdGeomMesh::schemaType;
 }
 
 /* static */
