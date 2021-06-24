@@ -56,13 +56,9 @@ UsdSchemaExamplesSimple::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdSchemaExamplesSimple::_GetSchemaKind() const {
+UsdSchemaKind UsdSchemaExamplesSimple::_GetSchemaKind() const
+{
     return UsdSchemaExamplesSimple::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdSchemaExamplesSimple::_GetSchemaType() const {
-    return UsdSchemaExamplesSimple::schemaType;
 }
 
 /* static */
