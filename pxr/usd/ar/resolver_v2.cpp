@@ -91,16 +91,6 @@ ArSetPreferredResolver(const std::string& resolverTypeName)
 
 namespace
 {
-std::string 
-_GetTypeNames(const std::vector<TfType>& types)
-{
-    std::vector<std::string> typeNames;
-    typeNames.reserve(types.size());
-    for (const auto& type : types) {
-        typeNames.push_back(type.GetTypeName());
-    }
-    return TfStringJoin(typeNames, ", ");
-}
 
 // Global stack of resolvers being constructed used by
 // _CreateResolver / ArCreateResolver and ArGetAvailableResolvers.
@@ -126,6 +116,17 @@ public:
     // Whether this resolver can be used as a primary resolver.
     bool canBePrimaryResolver;
 };
+
+std::string 
+_GetTypeNames(const std::vector<_ResolverInfo>& resolvers)
+{
+    std::vector<std::string> typeNames;
+    typeNames.reserve(resolvers.size());
+    for (const auto& resolver : resolvers) {
+        typeNames.push_back(resolver.type.GetTypeName());
+    }
+    return TfStringJoin(typeNames, ", ");
+}
 
 std::vector<_ResolverInfo> 
 _GetAvailableResolvers()
@@ -190,13 +191,13 @@ _GetAvailableResolvers()
     return resolvers;
 }
 
-std::vector<TfType>
+std::vector<_ResolverInfo>
 _GetAvailablePrimaryResolvers(
     const std::vector<_ResolverInfo>& availableResolvers)
 {
     const TfType defaultResolverType = TfType::Find<ArDefaultResolver>();
 
-    std::vector<TfType> availablePrimaryResolvers;
+    std::vector<_ResolverInfo> availablePrimaryResolvers;
 
     const std::vector<_ResolverInfo> emptyResolverList;
     const std::vector<_ResolverInfo>* allAvailableResolvers = 
@@ -222,11 +223,19 @@ _GetAvailablePrimaryResolvers(
             continue;
         }
 
-        availablePrimaryResolvers.push_back(resolver.type);
+        availablePrimaryResolvers.push_back(resolver);
     }
 
     // The default resolver is always the last resolver to be considered.
-    availablePrimaryResolvers.push_back(defaultResolverType);
+    // This function is always called with the result of _GetAvailableResolvers,
+    // so we should always find the default resolver below.
+    for (const _ResolverInfo& resolver : availableResolvers) {
+        if (resolver.type == defaultResolverType) {
+            availablePrimaryResolvers.push_back(resolver);
+            break;
+        }
+    }
+    TF_VERIFY(availablePrimaryResolvers.back().type == defaultResolverType);
 
     return availablePrimaryResolvers;
 }
@@ -852,68 +861,72 @@ private:
         const std::vector<_ResolverInfo>& availableResolvers)
     {
         const TfType defaultResolverType = TfType::Find<ArDefaultResolver>();
+        TfType resolverType = defaultResolverType;
 
-        std::vector<TfType> resolverTypes;
+        const std::vector<_ResolverInfo> primaryResolvers =
+            _GetAvailablePrimaryResolvers(availableResolvers);
+
+        TF_DEBUG(AR_RESOLVER_INIT).Msg(
+            "ArGetResolver(): Found primary asset resolver types: [%s]\n",
+            _GetTypeNames(primaryResolvers).c_str());
+
         if (TfGetEnvSetting(PXR_AR_DISABLE_PLUGIN_RESOLVER)) {
             TF_DEBUG(AR_RESOLVER_INIT).Msg(
                 "ArGetResolver(): Plugin asset resolver disabled via "
                 "PXR_AR_DISABLE_PLUGIN_RESOLVER.\n");
         }
         else if (!_preferredResolver->empty()) {
-            const TfType resolverType = 
+            const TfType preferredResolverType = 
                 PlugRegistry::FindTypeByName(*_preferredResolver);
-            if (!resolverType) {
+            if (!preferredResolverType) {
                 TF_WARN(
                     "ArGetResolver(): Preferred resolver %s not found. "
                     "Using default resolver.",
                     _preferredResolver->c_str());
-                resolverTypes.push_back(defaultResolverType);
             }
-            else if (!resolverType.IsA<ArResolver>()) {
+            else if (!preferredResolverType.IsA<ArResolver>()) {
                 TF_WARN(
                     "ArGetResolver(): Preferred resolver %s does not derive "
                     "from ArResolver. Using default resolver.\n",
                     _preferredResolver->c_str());
-                resolverTypes.push_back(defaultResolverType);
             }
             else {
                 TF_DEBUG(AR_RESOLVER_INIT).Msg(
                     "ArGetResolver(): Using preferred resolver %s\n",
                     _preferredResolver->c_str());
-                resolverTypes.push_back(resolverType);
+                resolverType = preferredResolverType;
             }
         }
-
-        if (resolverTypes.empty()) {
-            resolverTypes = _GetAvailablePrimaryResolvers(availableResolvers);
-
-            TF_DEBUG(AR_RESOLVER_INIT).Msg(
-                "ArGetResolver(): Found primary asset resolver types: [%s]\n",
-                _GetTypeNames(resolverTypes).c_str());
-        }
-
-        std::string debugMsg;
-
-        // resolverTypes should never be empty -- _GetAvailablePrimaryResolvers
-        // should always return at least the default resolver. Because of this,
-        // if there's more than 2 elements in resolverTypes, there must have 
-        // been more than one resolver from an external plugin.
-        if (TF_VERIFY(!resolverTypes.empty())) {
-            const TfType& resolverType = resolverTypes.front();
-            if (resolverTypes.size() > 2) {
+        else if (TF_VERIFY(!primaryResolvers.empty())) {
+            // primaryResolvers should never be empty, at minimum the default
+            // resolver should be returned by _GetAvailablePrimaryResolvers.
+            // Because of this, if there's more than 2 elements in
+            // primaryResolvers, there must have been more than one resolver
+            // from an external plugin.
+            resolverType = primaryResolvers.front().type;
+            if (primaryResolvers.size() > 2) {
                 TF_DEBUG(AR_RESOLVER_INIT).Msg(
                     "ArGetResolver(): Found multiple primary asset "
                     "resolvers, using %s\n", 
                     resolverType.GetTypeName().c_str());
             }
-
-            _resolver = _CreateResolver(resolverType, &debugMsg);
-            _resolverType = resolverType;
         }
+            
+        std::string debugMsg;
+        
+        auto createResolver = [&, this](const TfType& resolverType) {
+            for (const _ResolverInfo& resolver : primaryResolvers) {
+                if (resolver.type == resolverType) { 
+                    _resolver = _CreateResolver(resolverType, &debugMsg);
+                    _resolverType = resolverType;
+                    break;
+                }
+            }            
+            return static_cast<bool>(_resolver);
+        };
 
-        if (!_resolver) {
-            _resolver = _CreateResolver(defaultResolverType, &debugMsg);
-            _resolverType = defaultResolverType;
+        if (!createResolver(resolverType)) {
+            createResolver(defaultResolverType);
         }
 
         TF_DEBUG(AR_RESOLVER_INIT).Msg(
@@ -1518,7 +1531,12 @@ ArGetUnderlyingResolver()
 std::vector<TfType>
 ArGetAvailableResolvers()
 {
-    return _GetAvailablePrimaryResolvers(_GetAvailableResolvers());
+    std::vector<TfType> resolverTypes;
+    for (const _ResolverInfo& info : 
+             _GetAvailablePrimaryResolvers(_GetAvailableResolvers())) {
+        resolverTypes.push_back(info.type);
+    }
+    return resolverTypes;
 }
 
 std::unique_ptr<ArResolver>
