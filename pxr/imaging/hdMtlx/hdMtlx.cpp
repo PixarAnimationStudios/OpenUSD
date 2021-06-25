@@ -41,33 +41,18 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // Hydra MaterialX Node Types
-    (ND_standard_surface_surfaceshader)
-    (ND_UsdPreviewSurface_surfaceshader)
-
-    // MaterialX Node Types
-    (standard_surface)
-    (UsdPreviewSurface)
-);
-
-
-// Convert the Token to the MaterialX Node Type
+// Return the MaterialX Node Type based on the corresponding NodeDef name, 
+// which is stored as the hdNodeType. 
 static TfToken
-_GetMxNodeType(TfToken const& hdNodeType)
+_GetMxNodeType(mx::DocumentPtr const& mxDoc, TfToken const& hdNodeType)
 {
-    if (hdNodeType == _tokens->ND_standard_surface_surfaceshader) {
-        return _tokens->standard_surface;
-    } 
-    else if (hdNodeType == _tokens->ND_UsdPreviewSurface_surfaceshader) {
-        return _tokens->UsdPreviewSurface;
-    } 
-    else {
-        TF_WARN("Unsupported Node Type '%s'", hdNodeType.GetText());
+    mx::NodeDefPtr mxNodeDef = mxDoc->getNodeDef(hdNodeType.GetString());
+    if (!mxNodeDef){
+        TF_WARN("Unsupported node type '%s' cannot find the associated NodeDef.",
+                hdNodeType.GetText());
         return TfToken();
     }
+    return TfToken(mxNodeDef->getNodeString());
 }
 
 // Determine if the given mxInputName is of type mx::Vector3 
@@ -348,7 +333,7 @@ HdMtlxCreateMtlxDocumentFromHdNetwork(
     
     // Create a material that instantiates the shader
     const std::string & materialName = materialPath.GetName();
-    TfToken mxType = _GetMxNodeType(hdMaterialXNode.nodeTypeId);
+    TfToken mxType = _GetMxNodeType(mxDoc, hdMaterialXNode.nodeTypeId);
     mx::NodePtr mxShaderNode = mxDoc->addNode(mxType.GetString(),
                                               "SR_" + materialName,
                                               "surfaceshader");
