@@ -38,6 +38,10 @@ using std::string;
 #define _AT_LEAST_GCC_THREE_ONE_OR_CLANG
 #endif
 
+#if defined(_AT_LEAST_GCC_THREE_ONE_OR_CLANG)
+#include <cxxabi.h>
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // This function returns a heap allocated string with the demangled RTTI
@@ -138,7 +142,6 @@ _StripPxrInternalNamespace(string* name)
 #endif
 
 #if defined(_AT_LEAST_GCC_THREE_ONE_OR_CLANG)
-#include <cxxabi.h>
 
 /*
  * This routine doesn't work when you get to gcc3.4.
