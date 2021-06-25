@@ -835,6 +835,7 @@ EXCLUDE_PATTERNS       =
 
 EXCLUDE_SYMBOLS        = Usd_* \
                          UsdGeom_* \
+                         UsdPhysics_* \
                          UsdRi_* \
                          UsdShade_* \
                          UsdHydra_* \
