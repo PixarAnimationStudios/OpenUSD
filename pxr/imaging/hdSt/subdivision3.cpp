@@ -459,7 +459,7 @@ HdSt_Osd3Subdivision::_CreateGpuStencilTable(
         { _tokens->offsets, HdTupleType{HdTypeInt32, 1} },
     };
     HdBufferArrayRangeSharedPtr perPointRange =
-        registry->AllocateNonUniformBufferArrayRange(
+        registry->AllocateSingleBufferArrayRange(
             _tokens->stencilData, perPointSpecs, HdBufferArrayUsageHint());
 
     // Allocate buffer array range for perIndex data
@@ -468,7 +468,7 @@ HdSt_Osd3Subdivision::_CreateGpuStencilTable(
         { _tokens->weights, HdTupleType{HdTypeFloat, 1} },
     };
     HdBufferArrayRangeSharedPtr perIndexRange =
-        registry->AllocateNonUniformBufferArrayRange(
+        registry->AllocateSingleBufferArrayRange(
             _tokens->stencilData, perIndexSpecs, HdBufferArrayUsageHint());
 
     HdSt_GpuStencilTableSharedPtr gpuStencilTable =
