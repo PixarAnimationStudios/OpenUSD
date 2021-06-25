@@ -284,6 +284,15 @@ _StageTag(const std::string &id)
     return "UsdStage: @" + id + "@";
 }
 
+class UsdStage::_PendingChanges
+{
+public:
+    PcpChanges pcpChanges;
+
+    using PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
+    PathsToChangesMap recomposeChanges, otherResyncChanges, otherInfoChanges;
+};
+
 // ------------------------------------------------------------------------- //
 // UsdStage implementation
 // ------------------------------------------------------------------------- //
@@ -468,6 +477,7 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
     , _usedLayersRevision(0)
     , _interpolationType(UsdInterpolationTypeLinear)
     , _lastChangeSerialNumber(0)
+    , _pendingChanges(nullptr)
     , _initialLoadSet(load)
     , _populationMask(mask)
     , _isClosingStage(false)
@@ -3123,20 +3133,33 @@ UsdStage::Reload()
 {
     TfAutoMallocTag2 tag("Usd", _mallocTagID);
 
+    // This UsdStage may receive layer change notices due to layers being
+    // reloaded below. However, we won't receive that notice for any layers
+    // that we failed to load previously but are now loadable. For example,
+    // if a prim had a reference to a non-existent layer, but then that
+    // layer was created, the only indication of that would be a prim resync
+    // in the PcpChanges object returned by Reload.
+    //
+    // We want to combine the stage changes from processing the layer changes
+    // with the stage changes indicated in the PcpChanges returned by Reload
+    // so that this stage only goes through one round of change processing
+    // and notification. So, we create a _PendingChanges object that will
+    // be filled in by _HandleLayersDidChange and the call to Reload, then
+    // process all of that information in _ProcessPendingChanges().
+    _PendingChanges localPendingChanges;
+    _pendingChanges = &localPendingChanges;
+
     ArResolverScopedCache resolverCache;
 
     // Reload layers that are reached via composition.
-    PcpChanges changes;
+    PcpChanges& changes = _pendingChanges->pcpChanges;
     _cache->Reload(&changes);
 
     // Reload all clip layers that are opened.
     _clipCache->Reload();
 
-    // Process changes.  This won't be invoked automatically if we didn't
-    // reload any layers but only loaded layers that we failed to load
-    // previously (because loading a previously unloaded layer doesn't
-    // invoke change processing).
-    _Recompose(changes);
+    // Process changes.
+    _ProcessPendingChanges();
 }
 
 /*static*/
@@ -3830,10 +3853,21 @@ UsdStage::_HandleLayersDidChange(
 
     TF_DEBUG(USD_CHANGES).Msg("\nHandleLayersDidChange received\n");
 
+    // If a function up the call stack has set up _PendingChanges, merge in
+    // all of the information from layer changes so it can be processed later.
+    // Otherwise, fill in our own _PendingChanges and process it at the end
+    // of this function.
+    _PendingChanges localPendingChanges;
+    if (!_pendingChanges) {
+        _pendingChanges = &localPendingChanges;
+    }
+
     // Keep track of paths to USD objects that need to be recomposed or
     // have otherwise changed.
     using _PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
-    _PathsToChangesMap recomposeChanges, otherResyncChanges, otherInfoChanges;
+    _PathsToChangesMap& recomposeChanges = _pendingChanges->recomposeChanges;
+    _PathsToChangesMap& otherResyncChanges = _pendingChanges->otherResyncChanges;
+    _PathsToChangesMap& otherInfoChanges = _pendingChanges->otherInfoChanges;
 
     SdfPathVector changedActivePaths;
 
@@ -3971,7 +4005,7 @@ UsdStage::_HandleLayersDidChange(
     // invalidation based on composition metadata (reference, inherits, variant
     // selections, etc).
 
-    PcpChanges changes;
+    PcpChanges& changes = _pendingChanges->pcpChanges;
     const PcpCache *cache = _cache.get();
     changes.DidChange(
         TfSpan<const PcpCache*>(&cache, 1), n.GetChangeListVec());
@@ -3984,6 +4018,26 @@ UsdStage::_HandleLayersDidChange(
     for (const SdfPath& p : changedActivePaths) {
         changes.DidChangeSignificantly(_cache.get(), p);
     }
+
+    // See comments on _pendingChanges above.
+    if (_pendingChanges == &localPendingChanges) {
+        _ProcessPendingChanges();
+    }
+}
+
+void
+UsdStage::_ProcessPendingChanges()
+{
+    if (!TF_VERIFY(_pendingChanges)) {
+        return;
+    }
+
+    PcpChanges& changes = _pendingChanges->pcpChanges;
+
+    using _PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
+    _PathsToChangesMap& recomposeChanges = _pendingChanges->recomposeChanges;
+    _PathsToChangesMap& otherResyncChanges = _pendingChanges->otherResyncChanges;
+    _PathsToChangesMap& otherInfoChanges = _pendingChanges->otherInfoChanges;
 
     _Recompose(changes, &recomposeChanges);
 
@@ -4047,14 +4101,22 @@ UsdStage::_HandleLayersDidChange(
     // prefixed by elements in recomposeChanges or beneath instances.
     _MergeAndRemoveDescendentEntries(&recomposeChanges, &otherInfoChanges);
 
-    UsdStageWeakPtr self(this);
+    // Reset _pendingChanges before sending notices so that any changes to
+    // this stage that happen in response to the notices are handled
+    // properly. The object that _pendingChanges referred to should remain
+    // alive, so the references we took above are still valid.
+    _pendingChanges = nullptr;
 
-    // Notify about changed objects.
-    UsdNotice::ObjectsChanged(
-        self, &recomposeChanges, &otherInfoChanges).Send(self);
+    if (!recomposeChanges.empty() || !otherInfoChanges.empty()) {
+        UsdStageWeakPtr self(this);
 
-    // Receivers can now refresh their caches... or just dirty them
-    UsdNotice::StageContentsChanged(self).Send(self);
+        // Notify about changed objects.
+        UsdNotice::ObjectsChanged(
+            self, &recomposeChanges, &otherInfoChanges).Send(self);
+
+        // Receivers can now refresh their caches... or just dirty them
+        UsdNotice::StageContentsChanged(self).Send(self);
+    }
 }
 
 void 

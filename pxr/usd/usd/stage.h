@@ -1866,6 +1866,10 @@ private:
     // Update stage contents in response to changes in scene description.
     void _HandleLayersDidChange(const SdfNotice::LayersDidChangeSentPerLayer &);
 
+    // Process stage change information stored in _pendingChanges.
+    // _pendingChanges will be set to nullptr by the end of the function.
+    void _ProcessPendingChanges();
+
     // Remove scene description for the prim at \p fullPath in the current edit
     // target.
     bool _RemovePrim(const SdfPath& fullPath);
@@ -2214,6 +2218,10 @@ private:
         std::pair<SdfLayerHandle, TfNotice::Key> > _LayerAndNoticeKeyVec;
     _LayerAndNoticeKeyVec _layersAndNoticeKeys;
     size_t _lastChangeSerialNumber;
+
+    // Data for pending change processing.
+    class _PendingChanges;
+    _PendingChanges* _pendingChanges;
 
     boost::optional<WorkDispatcher> _dispatcher;
 
