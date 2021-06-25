@@ -357,11 +357,11 @@ _CreateResolver(const TfType& resolverType, std::string* debugMsg = nullptr)
 // Private ArResolver implementation that owns and forwards calls to the 
 // plugin asset resolver implementation. This is used to overlay additional
 // behaviors on top of the plugin resolver.
-class _Resolver final
+class _DispatchingResolver final
     : public ArResolver
 {
 public:
-    _Resolver()
+    _DispatchingResolver()
         : _maxURISchemeLength(0)
     {
         const std::vector<_ResolverInfo> availableResolvers =
@@ -374,7 +374,7 @@ public:
 
     ArResolver& GetPrimaryResolver()
     {
-        return *_resolver;
+        return *_resolver->Get();
     }
 
     const ArResolverContext* GetInternallyManagedCurrentContext()
@@ -388,7 +388,7 @@ public:
     {
         ArResolver* resolver =
             uriScheme.empty() ?
-            _resolver.get()  : _GetURIResolverForScheme(uriScheme);
+            _resolver->Get()  : _GetURIResolverForScheme(uriScheme);
         return resolver ? 
             resolver->CreateContextFromString(contextStr) : ArResolverContext();
     }
@@ -544,7 +544,7 @@ public:
 
         size_t dataIndex = 0;
 
-        _resolver->BindContext(context, &contextData[dataIndex]);
+        _resolver->Get()->BindContext(context, &contextData[dataIndex]);
         ++dataIndex;
 
         for (const auto& entry : _uriResolvers) {
@@ -573,7 +573,7 @@ public:
 
         size_t dataIndex = 0;
 
-        _resolver->UnbindContext(context, &contextData[dataIndex]);
+        _resolver->Get()->UnbindContext(context, &contextData[dataIndex]);
         ++dataIndex;
 
         for (const auto& entry : _uriResolvers) {
@@ -600,7 +600,7 @@ public:
     {
         std::vector<ArResolverContext> contexts;
 
-        contexts.push_back(_resolver->CreateDefaultContext());
+        contexts.push_back(_resolver->Get()->CreateDefaultContext());
 
         for (const auto& entry : _uriResolvers) {
             if (ArResolver* uriResolver = entry.second->Get()) {
@@ -614,7 +614,7 @@ public:
     virtual ArResolverContext _CreateContextFromString(
         const std::string& str) override
     {
-        return _resolver->CreateContextFromString(str);
+        return _resolver->Get()->CreateContextFromString(str);
     }
 
     virtual ArResolverContext _CreateDefaultContextForAsset(
@@ -630,7 +630,7 @@ public:
 
     virtual void _RefreshContext(const ArResolverContext& context) override
     {
-        _resolver->RefreshContext(context);
+        _resolver->Get()->RefreshContext(context);
         for (const auto& entry : _uriResolvers) {
             if (ArResolver* uriResolver = entry.second->Get()) {
                 uriResolver->RefreshContext(context);
@@ -648,7 +648,7 @@ public:
         // implementation and merge that over the contexts we're
         // managing internally.
         std::vector<ArResolverContext> contexts;
-        contexts.push_back(_resolver->GetCurrentContext());
+        contexts.push_back(_resolver->Get()->GetCurrentContext());
         for (const auto& entry : _uriResolvers) {
             if (ArResolver* uriResolver = entry.second->Get()) {
                 contexts.push_back(uriResolver->GetCurrentContext());
@@ -802,7 +802,7 @@ public:
 
         size_t cacheDataIndex = 0;
 
-        _resolver->BeginCacheScope(&cacheData[cacheDataIndex]);
+        _resolver->Get()->BeginCacheScope(&cacheData[cacheDataIndex]);
         ++cacheDataIndex;
 
         for (const auto& entry : _uriResolvers) {
@@ -835,7 +835,7 @@ public:
 
         size_t cacheDataIndex = 0;
 
-        _resolver->EndCacheScope(&cacheData[cacheDataIndex]);
+        _resolver->Get()->EndCacheScope(&cacheData[cacheDataIndex]);
         ++cacheDataIndex;
 
         for (const auto& entry : _uriResolvers) {
@@ -915,14 +915,20 @@ private:
         std::string debugMsg;
         
         auto createResolver = [&, this](const TfType& resolverType) {
-            for (const _ResolverInfo& resolver : primaryResolvers) {
-                if (resolver.type == resolverType) { 
-                    _resolver = _CreateResolver(resolverType, &debugMsg);
-                    _resolverType = resolverType;
-                    break;
+            for (const _ResolverInfo& info : primaryResolvers) {
+                if (info.type != resolverType) { 
+                    continue;
+                }
+
+                std::unique_ptr<ArResolver> resolver =
+                    _CreateResolver(resolverType, &debugMsg);
+                if (resolver) {
+                    _resolver = std::make_shared<_Resolver>(
+                        info, std::shared_ptr<ArResolver>(resolver.release()));
+                    return true;
                 }
             }            
-            return static_cast<bool>(_resolver);
+            return false;
         };
 
         if (!createResolver(resolverType)) {
@@ -945,7 +951,7 @@ private:
         }
 
         size_t maxSchemeLength = 0;
-        std::unordered_map<std::string, _URIResolverSharedPtr> uriResolvers;
+        std::unordered_map<std::string, _ResolverSharedPtr> uriResolvers;
 
         for (const _ResolverInfo& resolverInfo : availableResolvers) {
             TF_DEBUG(AR_RESOLVER_INIT).Msg(
@@ -960,7 +966,7 @@ private:
                 // Force all schemes to lower-case to support this.
                 uriScheme = TfStringToLower(uriScheme);
 
-                if (const _URIResolverSharedPtr* existingResolver =
+                if (const _ResolverSharedPtr* existingResolver =
                     TfMapLookupPtr(uriResolvers, uriScheme)) {
                     TF_WARN(
                         "ArGetResolver(): %s registered to handle scheme '%s' "
@@ -986,9 +992,9 @@ private:
             // Create resolver. We only want one instance of each resolver
             // type, so make sure we reuse the primary resolver if it has
             // also been registered as handling additional URI schemes.
-            _URIResolverSharedPtr uriResolver = std::make_shared<_URIResolver>(
-                resolverInfo.plugin, resolverInfo.type, 
-                resolverInfo.type == _resolverType ? _resolver : nullptr);
+            _ResolverSharedPtr uriResolver = 
+                resolverInfo.type == _resolver->GetType() ?
+                _resolver : std::make_shared<_Resolver>(resolverInfo);
             
             for (std::string& uriScheme : uriSchemes) {
                 maxSchemeLength = std::max(uriScheme.length(), maxSchemeLength);
@@ -1067,7 +1073,7 @@ private:
     _GetResolver(const std::string& assetPath)
     {
         ArResolver* uriResolver = _GetURIResolver(assetPath);
-        return uriResolver ? *uriResolver : *_resolver;
+        return uriResolver ? *uriResolver : *_resolver->Get();
     }
 
     ArResolver*
@@ -1099,7 +1105,7 @@ private:
         // Per RFC 3986 sec 3.1 schemes are case-insensitive. The schemes
         // stored in _uriResolvers are always stored in lower-case, so
         // convert our candidate scheme to lower case as well.
-        const _URIResolverSharedPtr* uriResolver = 
+        const _ResolverSharedPtr* uriResolver = 
             TfMapLookupPtr(_uriResolvers, TfStringToLower(scheme));
         return uriResolver ? (*uriResolver)->Get() : nullptr;
     }
@@ -1171,30 +1177,29 @@ private:
         return resolveFn(path);
     }
 
-    // Primary Resolver --------------------
+    // Primary and URI Resolvers --------------------
 
-    TfType _resolverType;
-    std::shared_ptr<ArResolver> _resolver;
-
-    // URI Resolvers --------------------
-
-    class _URIResolver
+    class _Resolver
         : public _PluginResolver<ArResolver, Ar_ResolverFactoryBase>
     {
         using Base = _PluginResolver<ArResolver, Ar_ResolverFactoryBase>;
 
     public:
-        _URIResolver(
-            const PlugPluginPtr& plugin,
-            const TfType& resolverType,
+        _Resolver(
+            const _ResolverInfo& info,
             const std::shared_ptr<ArResolver>& resolver = nullptr)
-            : Base(plugin, resolverType, resolver)
+            : Base(info.plugin, info.type, resolver)
         {
         }
     };
 
-    using _URIResolverSharedPtr = std::shared_ptr<_URIResolver>;
-    std::unordered_map<std::string, _URIResolverSharedPtr> _uriResolvers;
+    using _ResolverSharedPtr = std::shared_ptr<_Resolver>;
+
+    // Primary Resolver
+    _ResolverSharedPtr _resolver;
+
+    // URI Resolvers
+    std::unordered_map<std::string, _ResolverSharedPtr> _uriResolvers;
     size_t _maxURISchemeLength;
 
     // Package Resolvers --------------------
@@ -1236,13 +1241,13 @@ private:
 
 };
 
-_Resolver&
+_DispatchingResolver&
 _GetResolver()
 {
     // If other threads enter this function while another thread is 
     // constructing the resolver, it's guaranteed that those threads
     // will wait until the resolver is constructed.
-    static _Resolver resolver;
+    static _DispatchingResolver resolver;
     return resolver;
 }
 
