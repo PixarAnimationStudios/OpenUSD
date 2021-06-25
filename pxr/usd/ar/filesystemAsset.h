@@ -35,6 +35,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class ArResolvedPath;
+
 /// \class ArFilesystemAsset
 ///
 /// ArAsset implementation for asset represented by a file on a filesystem.
@@ -42,6 +44,12 @@ class ArFilesystemAsset
     : public ArAsset
 {
 public:
+    /// Constructs a new ArFilesystemAsset for the file at \p resolvedPath.
+    /// Returns a null pointer if the file could not be opened.
+    AR_API
+    static std::shared_ptr<ArFilesystemAsset> Open(
+        const ArResolvedPath& resolvedPath);
+
     /// Constructs an ArFilesystemAsset for the given \p file. 
     /// The ArFilesystemAsset object takes ownership of \p file and will
     /// close the file handle on destruction.

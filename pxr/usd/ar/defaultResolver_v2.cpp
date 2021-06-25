@@ -304,12 +304,7 @@ std::shared_ptr<ArAsset>
 ArDefaultResolver::_OpenAsset(
     const ArResolvedPath& resolvedPath)
 {
-    FILE* f = ArchOpenFile(resolvedPath.GetPathString().c_str(), "rb");
-    if (!f) {
-        return nullptr;
-    }
-
-    return std::shared_ptr<ArAsset>(new ArFilesystemAsset(f));
+    return ArFilesystemAsset::Open(resolvedPath);
 }
 
 std::shared_ptr<ArWritableAsset>

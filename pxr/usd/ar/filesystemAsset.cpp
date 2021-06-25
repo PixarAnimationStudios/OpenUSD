@@ -23,12 +23,24 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/filesystemAsset.h"
+#include "pxr/usd/ar/resolvedPath.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/arch/errno.h"
 #include "pxr/base/arch/fileSystem.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+std::shared_ptr<ArFilesystemAsset>
+ArFilesystemAsset::Open(const ArResolvedPath& resolvedPath)
+{
+    FILE* f = ArchOpenFile(resolvedPath.GetPathString().c_str(), "rb");
+    if (!f) {
+        return nullptr;
+    }
+
+    return std::shared_ptr<ArFilesystemAsset>(new ArFilesystemAsset(f));
+}
 
 ArFilesystemAsset::ArFilesystemAsset(FILE* file) 
     : _file(file) 
