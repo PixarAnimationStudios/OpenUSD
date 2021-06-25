@@ -22,8 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/imaging/plugin/hioOpenVDB/vdbTextureData.h"
-#include "pxr/imaging/plugin/hioOpenVDB/debugCodes.h"
+#include "pxr/imaging/hioOpenVDB/vdbTextureData.h"
+#include "pxr/imaging/hioOpenVDB/debugCodes.h"
+#include "pxr/imaging/hioOpenVDB/vdbAssetInterface.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 #include "pxr/imaging/hio/fieldTextureData.h"
@@ -492,20 +493,25 @@ _LoadGrid(const std::string &filePath, std::string const &gridName)
         }
     } else {
         // Try reading the vdb with ArAsset.
-        // XXX In the future we may want to first try to read with a vdb
-        // specific subclass of ArAsset that directly stores a GridPtrVecPtr,
-        // to avoid serializing and deserializing the vdb data.
         std::shared_ptr<ArAsset> asset;
         {
             TRACE_FUNCTION_SCOPE("Opening VDB ArAsset");
             asset = ArGetResolver().OpenAsset(ArResolvedPath(filePath));
         }
 
-        // Use an openvdb::io::Stream to read raw bytes provided by ArAsset.
-        // ArAsset provides a char buffer and size, but Stream requires a
-        // std::istream. To bridge the gap, we use the _CharStream above to
-        // wrap the char buffer from ArAsset in a std::istream.
-        {
+        // Try casting asset to a HioOpenVDBArAssetInterface, which provides
+        // direct access to vdb grids, without writing them to a stream.
+        if (HioOpenVDBArAssetInterface* const vdbAsset =
+                dynamic_cast<HioOpenVDBArAssetInterface*>(asset.get())) {
+            TRACE_FUNCTION_SCOPE("Reading VDB grids from "
+                                 "HioOpenVDBArAssetInterface.");
+            result = vdbAsset->GetGrid(gridName);
+
+        } else {
+            // Use an openvdb::io::Stream to read raw bytes provided by ArAsset.
+            // ArAsset provides a char buffer and size, but Stream requires a
+            // std::istream. To bridge the gap, we use the _CharStream above to
+            // wrap the char buffer from ArAsset in a std::istream.
             TRACE_FUNCTION_SCOPE("Streaming VDB grids from ArAsset bytes");
             std::shared_ptr<const char> vdbBytes = asset->GetBuffer();
             const size_t vdbNumBytes = asset->GetSize();
@@ -521,12 +527,12 @@ _LoadGrid(const std::string &filePath, std::string const &gridName)
                     break;
                 }
             }
+        }
 
-            if (!result) {
-                TF_WARN("OpenVDB asset path %s has no grid %s",
-                        filePath.c_str(), gridName.c_str());
-                return nullptr;
-            }
+        if (!result) {
+            TF_WARN("OpenVDB asset path %s has no grid %s",
+                    filePath.c_str(), gridName.c_str());
+            return nullptr;
         }
     }
 

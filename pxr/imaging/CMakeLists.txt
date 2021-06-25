@@ -15,6 +15,10 @@ if (${PXR_ENABLE_MATERIALX_SUPPORT})
     add_subdirectory(hdMtlx)
 endif()
 
+if (${PXR_ENABLE_OPENVDB_SUPPORT})
+    add_subdirectory(hioOpenVDB)
+endif()
+
 add_subdirectory(hdSt)
 add_subdirectory(hdx)
 add_subdirectory(plugin)

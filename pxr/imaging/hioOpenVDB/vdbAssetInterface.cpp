@@ -21,21 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file debugCodes.cpp
 
-#include "pxr/imaging/plugin/hioOpenVDB/debugCodes.h"
-
-#include "pxr/base/tf/debug.h"
-#include "pxr/base/tf/registryManager.h"
+#include "pxr/imaging/hioOpenVDB/vdbAssetInterface.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_REGISTRY_FUNCTION(TfDebug)
-{
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HIOOPENVDB_DEBUG_TEXTURE,
-        "HioVDB texture loading");
-
-}
+HioOpenVDBArAssetInterface::~HioOpenVDBArAssetInterface() = default;
 
 PXR_NAMESPACE_CLOSE_SCOPE

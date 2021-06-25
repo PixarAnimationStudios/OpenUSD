@@ -7,7 +7,7 @@ if (NOT ${PXR_BUILD_GPU_SUPPORT})
     return()
 endif()
 
-pxr_plugin(hioOpenVDB
+pxr_library(hioOpenVDB
     LIBRARIES
         ar
         gf
@@ -19,6 +19,9 @@ pxr_plugin(hioOpenVDB
 
     INCLUDE_DIRS
         ${OPENVDB_INCLUDE_DIRS}
+
+    PUBLIC_CLASSES
+        vdbAssetInterface
 
     PRIVATE_CLASSES
         debugCodes
