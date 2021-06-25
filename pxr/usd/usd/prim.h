@@ -1402,9 +1402,10 @@ public:
     /// Return a UsdPayloads object that allows one to add, remove, or
     /// mutate payloads <em>at the currently set UsdEditTarget</em>.
     ///
-    /// There is currently no facility for \em listing the currently authored
-    /// payloads on a prim... the problem is somewhat ill-defined, and
-    /// requires some thought.
+    /// While the UsdPayloads object has no methods for \em listing the 
+    /// currently authored payloads on a prim, one can use a 
+    /// UsdPrimCompositionQuery to query the payload arcs that are composed 
+    /// by this prim.
     USD_API
     UsdPayloads GetPayloads() const;
 
@@ -1433,9 +1434,12 @@ public:
     /// Return a UsdReferences object that allows one to add, remove, or
     /// mutate references <em>at the currently set UsdEditTarget</em>.
     ///
-    /// There is currently no facility for \em listing the currently authored
-    /// references on a prim... the problem is somewhat ill-defined, and
-    /// requires some thought.
+    /// While the UsdReferences object has no methods for \em listing the 
+    /// currently authored references on a prim, one can use a 
+    /// UsdPrimCompositionQuery to query the reference arcs that are composed 
+    /// by this prim.
+    /// 
+    /// \sa UsdPrimCompositionQuery::GetDirectReferences
     USD_API
     UsdReferences GetReferences() const;
 
@@ -1450,9 +1454,12 @@ public:
     /// Return a UsdInherits object that allows one to add, remove, or
     /// mutate inherits <em>at the currently set UsdEditTarget</em>.
     ///
-    /// There is currently no facility for \em listing the currently authored
-    /// inherits on a prim... the problem is somewhat ill-defined, and
-    /// requires some thought.
+    /// While the UsdInherits object has no methods for \em listing the 
+    /// currently authored inherits on a prim, one can use a 
+    /// UsdPrimCompositionQuery to query the inherits arcs that are composed 
+    /// by this prim.
+    /// 
+    /// \sa UsdPrimCompositionQuery::GetDirectInherits
     USD_API
     UsdInherits GetInherits() const;
 
@@ -1467,9 +1474,10 @@ public:
     /// Return a UsdSpecializes object that allows one to add, remove, or
     /// mutate specializes <em>at the currently set UsdEditTarget</em>.
     ///
-    /// There is currently no facility for \em listing the currently authored
-    /// specializes on a prim... the problem is somewhat ill-defined, and
-    /// requires some thought.
+    /// While the UsdSpecializes object has no methods for \em listing the 
+    /// currently authored specializes on a prim, one can use a 
+    /// UsdPrimCompositionQuery to query the specializes arcs that are composed 
+    /// by this prim.
     USD_API
     UsdSpecializes GetSpecializes() const;
 
