@@ -478,6 +478,30 @@ Here's a short description of each datum in the per-class customData dictionary:
     schemas are processed by the 
     \ref Usd_OM_SchemaDefinitionRegistry "schema definition registry."
 
+  - \b apiSchemaCanOnlyApplyTo - must only be specified on single and multiple 
+    apply API schemas. This is a token array value that, when specified, is used
+    by UsdPrim::CanApplyAPI and the schema's generated CanApply function to 
+    limit the prims to which this API schema can be validly applied to only the 
+    schema types whose names are in this list.
+    
+  - \b apiSchemaAllowedInstanceNames - must only be specified on multiple apply 
+    API schemas. This is a token array value that, when specified, is used by 
+    UsdPrim::CanApplyAPI and the schema's generated CanApply function to limit 
+    the instance names that are valid to use when applying this API schema to 
+    only the instance names included in this list.
+
+  - \b apiSchemaInstances - must only be specified on multiple apply API 
+    schemas. This is a dictionary value that allows additional custom data 
+    to be specified for specific instance names of this multiple apply API 
+    schema. This dictionary can map an instance name to another dictionary value
+    containing the custom data fields that will only apply to that instance 
+    name. Currently only \em apiSchemaCanOnlyApplyTo custom data can be 
+    specified in these per instance name dictionaries and will take precedence
+    over the \em apiSchemaCanOnlyApplyTo custom data (specified for the entire 
+    schema type) for that instance name when present. The GridCrittersAPI
+    in the \ref Usd_ExampleSchema "examples section" demonstrates how this can
+    be used.
+
   - \b fallbackTypes - must only be specified for a concrete typed schema. 
     This is a token array value used to specify the preferred fallback schema 
     types that can be used instead when this schema isn't present.
@@ -640,9 +664,19 @@ class "MyParamsAPI" (
     inherits = </APISchemaBase>
     customData = {
         token apiSchemaType = "singleApply"
+
         # This is an example of specifying typed schemas that this single apply
         # schema will be automatically applied to.
-        token[] apiSchemaAutoApplyTo = ["MyCustomPrim", "OutsidePluginCustomPrim"]
+        token[] apiSchemaAutoApplyTo = ["MyCustomPrim", 
+                                        "OutsidePluginCustomPrim"]
+
+        # This is an example of specifying typed schemas that this single apply
+        # API can only be applied to. Specifying this means that the generated 
+        # MyParamsAPI::CanApply(prim) and prim.CanApplyAPI<MyParamsAPI>()
+        # will only return true if the prim is one of these listed types.
+        token[] apiSchemaCanOnlyApplyTo = ["MyCustomPrim", 
+                                           "OutsidePluginCustomPrim", 
+                                           "AnotherCustomPrim"]
     }
 )
 {
@@ -681,6 +715,28 @@ class "GridCrittersAPI" (
     customData = {
         token apiSchemaType = "multipleApply"
         token propertyNamespacePrefix  = "critter"
+
+        # This is an example of all the ways we can specify how the schema's 
+        # generated CanApply and UsdPrim::CanApplyAPI behave for this multiple
+        # apply schema. The following customData specifies that:
+        # 1. GridCrittersAPI::CanApply(prim, instanceName) will return false
+        #    if instanceName is anything but "insect" or "rodent" because of
+        #    apiSchemaAllowedInstanceNames.
+        # 2. GridCrittersAPI::CanApply(prim, "insect") will only return true
+        #    if prim.IsA<MyCustomPrim>() because this is specified in 
+        #    apiSchemaInstances
+        # 3. GridCrittersAPI::CanApply(prim, "rodent") will only return true
+        #    if prim.IsA<MyCustomPrim>() or prim.IsA<AnotherCustomPrim>() 
+        #    because this is specified in apiSchemaCanOnlyApplyTo and there is
+        #    no override in apiSchemaInstances
+        token[] apiSchemaAllowedInstanceNames = ["insect", "rodent"]
+        token[] apiSchemaCanOnlyApplyTo = ["MyCustomPrim", 
+                                           "AnotherCustomPrim"]
+        dictionary apiSchemaInstances = {
+            dictionary insect = {
+                token[] apiSchemaCanOnlyApplyTo = ["MyCustomPrim"]
+            }
+        }
     }
 )
 {
