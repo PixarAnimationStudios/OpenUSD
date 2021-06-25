@@ -144,9 +144,6 @@ enum class UsdSchemaKind {
     MultipleApplyAPI
 };
 
-/// \deprecated Backwards compatible type name mapping.
-using UsdSchemaType = UsdSchemaKind;
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

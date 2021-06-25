@@ -326,14 +326,6 @@ private:
 
     UsdSchemaRegistry();
 
-    // Functions for backwards compatibility which old generated schemas. If
-    // usdGenSchema has not been run to regenerate schemas so that the schema
-    // kind is designated in the plugInfo, these functions are used to inquire
-    // about kind through the registered prim definitions.
-    bool _HasConcretePrimDefinition(const TfToken& primType) const;
-    bool _HasAppliedAPIPrimDefinition(const TfToken& apiSchemaType) const;
-    bool _HasMultipleApplyAPIPrimDefinition(const TfToken& apiSchemaType) const;
-
     void _FindAndAddPluginSchema();
 
     void _ApplyAPISchemasToPrimDefinition(

@@ -58,7 +58,7 @@ public:
     /// Compile time constant representing what kind of schema this class is.
     ///
     /// \sa UsdSchemaKind in usd/common.h
-    static const UsdSchemaKind schemaKind = UsdSchemaType::AbstractBase;
+    static const UsdSchemaKind schemaKind = UsdSchemaKind::AbstractBase;
 
     /// Returns whether or not this class corresponds to a concrete instantiable
     /// prim type in scene description.  If this is true,

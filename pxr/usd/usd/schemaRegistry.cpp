@@ -329,166 +329,74 @@ UsdSchemaRegistry::GetAPITypeFromSchemaTypeName(const TfToken &typeName)
         it->second.type : TfType();
 }
 
-// This result struct is useful for handling the fact that we're going to 
-// support backwards compatibility (for a bit) with schemas that were generated 
-// before usdGenSchema has started putting schema kind in the plugInfo. When we
-// can't find schema kind metadata we need to know if it's because the metadata
-// doesn't exist yet or if the type is just not a schema type.
-namespace {
-struct _SchemaKindResult {
-    UsdSchemaKind schemaKind;
-    bool isSchemaType;
-};
-}
-
-static _SchemaKindResult 
-_GetSchemaKind(const TfType &schemaType)
+/*static*/
+UsdSchemaKind 
+UsdSchemaRegistry::GetSchemaKind(const TfType &schemaType)
 {
     const _TypeMapCache & typeMapCache = _GetTypeMapCache();
     auto it = typeMapCache.typeToName.find(schemaType);
     if (it == typeMapCache.typeToName.end()) {
         // No schema kind because it is not a schema type.
-        return {UsdSchemaKind::Invalid, false};
+        return UsdSchemaKind::Invalid;
     }
     // Is a valid schema type.
-    return {_GetSchemaKindFromPlugin(schemaType), true};
-}
-
-static _SchemaKindResult 
-_GetSchemaKind(const TfToken &typeName)
-{
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-    auto it = typeMapCache.nameToType.find(typeName);
-    if (it == typeMapCache.nameToType.end()) {
-        // No schema kind because it is not a schema type.
-        return {UsdSchemaKind::Invalid, false};
-    }
-    // Is a valid schema type.
-    return {_GetSchemaKindFromPlugin(it->second.type), true};
-}
-
-/*static*/
-UsdSchemaKind 
-UsdSchemaRegistry::GetSchemaKind(const TfType &schemaType)
-{
-    return _GetSchemaKind(schemaType).schemaKind;
+    return _GetSchemaKindFromPlugin(schemaType);
 }
 
 /*static*/
 UsdSchemaKind 
 UsdSchemaRegistry::GetSchemaKind(const TfToken &typeName)
 {
-    return _GetSchemaKind(typeName).schemaKind;
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    auto it = typeMapCache.nameToType.find(typeName);
+    if (it == typeMapCache.nameToType.end()) {
+        // No schema kind because it is not a schema type.
+        return UsdSchemaKind::Invalid;
+    }
+    // Is a valid schema type.
+    return _GetSchemaKindFromPlugin(it->second.type);
 }
 
 /*static*/
 bool 
 UsdSchemaRegistry::IsConcrete(const TfType& primType)
 {
-    const _SchemaKindResult result = _GetSchemaKind(primType);
-    if (!result.isSchemaType) {
-        return false;
-    }
-    // XXX: Backward compatibility with valid schema types that haven't been 
-    // regenerated since schemaKind was added to the plugInfo. We have to 
-    // instantiate the registry and look for a prim definition.
-    if (result.schemaKind == UsdSchemaKind::Invalid) {
-        return UsdSchemaRegistry::GetInstance()._HasConcretePrimDefinition(
-            GetSchemaTypeName(primType));
-    }
-    return _IsConcreteSchemaKind(result.schemaKind);
+    return _IsConcreteSchemaKind(GetSchemaKind(primType));
 }
 
 /*static*/
 bool 
 UsdSchemaRegistry::IsConcrete(const TfToken& primType)
 {
-    const _SchemaKindResult result = _GetSchemaKind(primType);
-    if (!result.isSchemaType) {
-        return false;
-    }
-    // XXX: Backward compatibility with valid schema types that haven't been 
-    // regenerated since schemaKind was added to the plugInfo. We have to 
-    // instantiate the registry and look for a prim definition.
-    if (result.schemaKind == UsdSchemaKind::Invalid) {
-        return UsdSchemaRegistry::GetInstance()._HasConcretePrimDefinition(
-            primType);
-    }
-    return _IsConcreteSchemaKind(result.schemaKind);
+    return _IsConcreteSchemaKind(GetSchemaKind(primType));
 }
 
 /*static*/
 bool 
 UsdSchemaRegistry::IsMultipleApplyAPISchema(const TfType& apiSchemaType)
 {
-    const _SchemaKindResult result = _GetSchemaKind(apiSchemaType);
-    if (!result.isSchemaType) {
-        return false;
-    }
-    // XXX: Backward compatibility with valid schema types that haven't been 
-    // regenerated since schemaKind was added to the plugInfo. We have to 
-    // instantiate the registry and look for a prim definition.
-    if (result.schemaKind == UsdSchemaKind::Invalid) {
-        return UsdSchemaRegistry::GetInstance().
-            _HasMultipleApplyAPIPrimDefinition(
-                GetSchemaTypeName(apiSchemaType));
-    }
-    return _IsMultipleApplySchemaKind(result.schemaKind);
+    return _IsMultipleApplySchemaKind(GetSchemaKind(apiSchemaType));
 }
 
 /*static*/
 bool 
 UsdSchemaRegistry::IsMultipleApplyAPISchema(const TfToken& apiSchemaType)
 {
-    const _SchemaKindResult result = _GetSchemaKind(apiSchemaType);
-    if (!result.isSchemaType) {
-        return false;
-    }
-    // XXX: Backward compatibility with valid schema types that haven't been 
-    // regenerated since schemaKind was added to the plugInfo. We have to 
-    // instantiate the registry and look for a prim definition.
-    if (result.schemaKind == UsdSchemaKind::Invalid) {
-        return UsdSchemaRegistry::GetInstance().
-            _HasMultipleApplyAPIPrimDefinition(apiSchemaType);
-    }
-    return _IsMultipleApplySchemaKind(result.schemaKind);
+    return _IsMultipleApplySchemaKind(GetSchemaKind(apiSchemaType));
 }
 
 /*static*/
 bool 
 UsdSchemaRegistry::IsAppliedAPISchema(const TfType& apiSchemaType)
 {
-    const _SchemaKindResult result = _GetSchemaKind(apiSchemaType);
-    if (!result.isSchemaType) {
-        return false;
-    }
-    // XXX: Backward compatibility with valid schema types that haven't been 
-    // regenerated since schemaKind was added to the plugInfo. We have to 
-    // instantiate the registry and look for a prim definition.
-    if (result.schemaKind == UsdSchemaKind::Invalid) {
-        return UsdSchemaRegistry::GetInstance().
-            _HasAppliedAPIPrimDefinition(
-                GetSchemaTypeName(apiSchemaType));
-    }
-    return _IsAppliedAPISchemaKind(result.schemaKind);
+    return _IsAppliedAPISchemaKind(GetSchemaKind(apiSchemaType));
 }
 
 /*static*/
 bool 
 UsdSchemaRegistry::IsAppliedAPISchema(const TfToken& apiSchemaType)
 {
-    const _SchemaKindResult result = _GetSchemaKind(apiSchemaType);
-    if (!result.isSchemaType) {
-        return false;
-    }
-    // XXX: Backward compatibility with valid schema types that haven't been 
-    // regenerated since schemaKind was added to the plugInfo. We have to 
-    // instantiate the registry and look for a prim definition.
-    if (result.schemaKind == UsdSchemaKind::Invalid) {
-        return UsdSchemaRegistry::GetInstance().
-            _HasAppliedAPIPrimDefinition(apiSchemaType);
-    }
-    return _IsAppliedAPISchemaKind(result.schemaKind);
+    return _IsAppliedAPISchemaKind(GetSchemaKind(apiSchemaType));
 }
 
 template <class T>
@@ -551,9 +459,6 @@ _GetGeneratedSchema(const PlugPluginPtr &plugin)
 }
 
 // Gets the names of all applied API schema types.
-// XXX: Note that this only gets the API schema types that have their kind set
-// in plugin metadata. This will eventually be all schemas once they've been 
-// regenerated with usdGenSchema.
 static TfToken::HashSet
 _GetAppliedAPISchemaNames()
 {
@@ -567,37 +472,11 @@ _GetAppliedAPISchemaNames()
         const TfToken &typeName = valuePair.second.name;
 
         if (!valuePair.second.isTyped &&
-            _IsAppliedAPISchemaKind(_GetSchemaKind(type).schemaKind)) {
+            _IsAppliedAPISchemaKind(_GetSchemaKindFromPlugin(type))) {
             result.insert(typeName);
         }
     }
     return result;
-}
-
-static bool
-_CollectAppliedAPISchemaNames(
-    const VtDictionary &customDataDict,
-    TfToken::HashSet *appliedAPISchemaNames)
-{
-    auto it = customDataDict.find(_tokens->appliedAPISchemas);
-    if (it == customDataDict.end()) {
-        return true;
-    }
-
-    if (!it->second.IsHolding<VtStringArray>()) {
-        TF_CODING_ERROR("Found an unexpected value type for layer customData "
-            "key '%s'; expected a string array. Applied API schemas may be "
-            "incorrect.",
-            _tokens->appliedAPISchemas.GetText());
-        return false;
-    }
-
-    const VtStringArray &appliedAPISchemas = 
-        it->second.UncheckedGet<VtStringArray>();
-    for (const auto &apiSchemaName : appliedAPISchemas) {
-        appliedAPISchemaNames->insert(TfToken(apiSchemaName));
-    }
-    return true;
 }
 
 static bool
@@ -831,16 +710,6 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
 
             bool hasErrors = false;
 
-            // XXX: For backwards compatibility with schemas that haven't been
-            // regenerated, we still collect API schema names from the 
-            // generated schemas if present as they won't be obtained from 
-            // _GetAppliedSchemaNames with no schema kind plugin metadata 
-            // defined.
-            if (!_CollectAppliedAPISchemaNames(
-                    customDataDict, &appliedAPISchemaNames)) {
-                hasErrors = true;
-            }
-
             if (!_CollectMultipleApplyAPISchemaNamespaces(
                     customDataDict, &_multipleApplyAPISchemaNamespaces)) {
                 hasErrors = true;
@@ -1056,30 +925,6 @@ bool
 UsdSchemaRegistry::IsTyped(const TfType& primType)
 {
     return primType.IsA<UsdTyped>();
-}
-
-bool 
-UsdSchemaRegistry::_HasConcretePrimDefinition(const TfToken& primType) const
-{
-    return _concreteTypedPrimDefinitions.find(primType) != 
-        _concreteTypedPrimDefinitions.end();
-}
-
-bool 
-UsdSchemaRegistry::_HasMultipleApplyAPIPrimDefinition(
-    const TfToken& apiSchemaType) const
-{
-    return IsAppliedAPISchema(apiSchemaType) && 
-        (_multipleApplyAPISchemaNamespaces.find(apiSchemaType) !=
-         _multipleApplyAPISchemaNamespaces.end());
-}
-
-bool 
-UsdSchemaRegistry::_HasAppliedAPIPrimDefinition(
-    const TfToken& apiSchemaType) const
-{
-    return _appliedAPIPrimDefinitions.find(apiSchemaType) != 
-        _appliedAPIPrimDefinitions.end();
 }
 
 TfType
