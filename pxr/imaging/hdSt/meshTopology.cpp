@@ -26,7 +26,6 @@
 #include "pxr/imaging/hdSt/meshTopology.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
 #include "pxr/imaging/hdSt/subdivision.h"
-#include "pxr/imaging/hdSt/subdivision3.h"
 #include "pxr/imaging/hdSt/triangulate.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
@@ -42,7 +41,6 @@
 #include "pxr/base/tf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 
 // static
@@ -71,12 +69,7 @@ HdSt_MeshTopology::HdSt_MeshTopology(
 {
 }
 
-HdSt_MeshTopology::~HdSt_MeshTopology()
-{
-    delete _quadInfo;
-    delete _subdivision;
-}
-
+HdSt_MeshTopology::~HdSt_MeshTopology() = default;
 
 bool
 HdSt_MeshTopology::operator==(HdSt_MeshTopology const &other) const {
@@ -90,8 +83,7 @@ HdSt_MeshTopology::operator==(HdSt_MeshTopology const &other) const {
 void
 HdSt_MeshTopology::SetQuadInfo(HdQuadInfo const *quadInfo)
 {
-    delete _quadInfo;
-    _quadInfo = quadInfo;
+    _quadInfo.reset(quadInfo);
 }
 
 HdBufferSourceSharedPtr
@@ -234,18 +226,17 @@ HdSt_MeshTopology::GetOsdTopologyComputation(SdfPath const &id)
     // this has to be the first instance.
     if (!TF_VERIFY(!_subdivision)) return HdBufferSourceSharedPtr();
 
+    bool const adaptive = RefinesToBSplinePatches() ||
+                          RefinesToBoxSplineTrianglePatches();
+
     // create HdSt_Subdivision
-    _subdivision = HdSt_Osd3Factory::CreateSubdivision();
+    _subdivision = std::make_unique<HdSt_Subdivision>(adaptive, _refineLevel);
 
     if (!TF_VERIFY(_subdivision)) return HdBufferSourceSharedPtr();
 
-    bool adaptive = RefinesToBSplinePatches() ||
-                    RefinesToBoxSplineTrianglePatches();
-
     // create a topology computation for HdSt_Subdivision
     HdBufferSourceSharedPtr builder =
-        _subdivision->CreateTopologyComputation(this, adaptive,
-                                                _refineLevel, id);
+        _subdivision->CreateTopologyComputation(this, id);
     _osdTopologyBuilder = builder; // retain weak ptr
     return builder;
 }
@@ -289,8 +280,9 @@ HdSt_MeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source
 
     HdBufferSourceSharedPtr topologyBuilder = _osdTopologyBuilder.lock();
 
-    return _subdivision->CreateRefineComputation(this, source, topologyBuilder, 
-                                                 interpolation);
+    return _subdivision->CreateRefineComputationCPU(this, source,
+                                                    topologyBuilder, 
+                                                    interpolation);
 }
 
 HdComputationSharedPtr

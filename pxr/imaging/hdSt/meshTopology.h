@@ -148,7 +148,7 @@ public:
 
     /// Returns the quadrangulation struct.
     HdQuadInfo const *GetQuadInfo() const {
-        return _quadInfo;
+        return _quadInfo.get();
     }
 
     /// @}
@@ -169,12 +169,12 @@ public:
 
     /// Returns the subdivision struct.
     HdSt_Subdivision const *GetSubdivision() const {
-        return _subdivision;
+        return _subdivision.get();
     }
 
     /// Returns the subdivision struct (non-const).
     HdSt_Subdivision *GetSubdivision() {
-        return _subdivision;
+        return _subdivision.get();
     }
 
     /// Returns true if the subdivision on this mesh produces
@@ -230,7 +230,7 @@ public:
 
 private:
     // quadrangulation info on CPU
-    HdQuadInfo const *_quadInfo;
+    std::unique_ptr<HdQuadInfo const> _quadInfo;
 
     // quadrangulation info on GPU
     HdBufferArrayRangeSharedPtr _quadrangulateTableRange;
@@ -239,7 +239,7 @@ private:
 
     // OpenSubdiv
     RefineMode _refineMode;
-    HdSt_Subdivision *_subdivision;
+    std::unique_ptr<HdSt_Subdivision> _subdivision;
     HdBufferSourceWeakPtr _osdTopologyBuilder;
 
     std::vector<VtIntArray> _fvarTopologies;

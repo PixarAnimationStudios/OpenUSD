@@ -151,7 +151,6 @@ pxr_library(hdSt
         resourceBinder
         shaderKey
         subdivision
-        subdivision3
         triangulate
         unitTestHelper
         volumeShader

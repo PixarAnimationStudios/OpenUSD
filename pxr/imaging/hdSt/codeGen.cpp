@@ -2309,14 +2309,14 @@ HdSt_CodeGen::_GenerateElementPrimvar()
     //     3 ints : coarse face index + edge flag
     //              Far::PatchParam::field0 (includes ptex index)
     //              Far::PatchParam::field1
-    //     (see hdSt/subdivision3.cpp)
+    //     (see hdSt/subdivision.cpp)
     //
     // d. patch adaptively refined
     //     4 ints : coarse face index + edge flag
     //              Far::PatchParam::field0 (includes ptex index)
     //              Far::PatchParam::field1
     //              sharpness (float)
-    //     (see hdSt/subdivision3.cpp)
+    //     (see hdSt/subdivision.cpp)
     // -----------------------------------------------------------------------
     // note: decoding logic of primitiveParam has to match with
     // HdMeshTopology::DecodeFaceIndexFromPrimitiveParam()
