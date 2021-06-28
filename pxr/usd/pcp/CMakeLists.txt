@@ -295,6 +295,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpRegressionBugs_USD-6755.testenv
+    DEST testPcpRegressionBugs_USD-6755
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpRegressionBugs_case1.testenv
     DEST testPcpRegressionBugs_case1
 )
@@ -1699,6 +1704,14 @@ pxr_register_test(testPcpRegressionBugs_bug92827
 pxr_register_test(testPcpRegressionBugs_bug101300
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpRegressionBugs_bug101300" 
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testPcpRegressionBugs_USD-6755
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors.txt root.sdf" 
+    STDOUT_REDIRECT compositionResults.txt
+    DIFF_COMPARE compositionResults.txt compositionErrors.txt
     EXPECTED_RETURN_CODE 0
 )
 

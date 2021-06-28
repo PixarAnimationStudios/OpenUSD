@@ -1,0 +1,25 @@
+#sdf 1.4.32
+(
+    """
+    Regression test for bug USD-6755, CVE-2020-13531.
+    This was a use-after-free bug.  Composing this layer under
+    valgrind demonstrates the memory error.
+    """
+)
+
+def "A"
+{
+}
+
+def "B"
+{
+}
+
+def "C" (
+    references = [
+        </A>,
+        </B> ( scale = 0)
+    ]
+)
+{
+}
