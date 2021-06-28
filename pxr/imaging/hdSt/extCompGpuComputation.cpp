@@ -23,7 +23,6 @@
 //
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
-#include "pxr/imaging/hdSt/extCompGpuComputationBufferSource.h"
 #include "pxr/imaging/hdSt/extCompGpuPrimvarBufferSource.h"
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/hdSt/extComputation.h"
@@ -439,13 +438,6 @@ HdSt_GetExtComputationPrimvarsComputations(
                                 sourceComp,
                                 compPrimvars);
 
-                        HdBufferSourceSharedPtr gpuComputationSource =
-                        std::make_shared<HdStExtCompGpuComputationBufferSource>(
-                            HdBufferSourceSharedPtrVector(),
-                            gpuComputation->GetResource());
-
-                        separateComputationSources->push_back(
-                                                        gpuComputationSource);
                         // Assume there are no dependencies between ExtComp so
                         // put all of them in queue zero.
                         computations->emplace_back(

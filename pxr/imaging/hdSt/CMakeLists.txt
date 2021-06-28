@@ -70,7 +70,6 @@ pxr_library(hdSt
         dynamicUvTextureObject
         extComputation
         extCompGpuComputation
-        extCompGpuComputationBufferSource
         extCompGpuComputationResource
         extCompGpuPrimvarBufferSource
         fallbackLightingShader

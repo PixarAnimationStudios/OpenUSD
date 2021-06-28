@@ -53,7 +53,7 @@ HdStExtCompGpuComputationResource::HdStExtCompGpuComputationResource(
 }
 
 bool
-HdStExtCompGpuComputationResource::Resolve()
+HdStExtCompGpuComputationResource::_Resolve()
 {
     // Non-in-place sources should have been registered as resource registry
     // sources already and Resolved. They go to an internal buffer range that
