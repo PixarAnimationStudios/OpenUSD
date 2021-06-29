@@ -152,6 +152,7 @@ public:
         return names;
     }
 
+    /// \anchor UsdSchemaBase_bool
     /// Return true if this schema object is compatible with its held prim,
     /// false otherwise.  For untyped schemas return true if the held prim is
     /// not expired, otherwise return false.  For typed schemas return true if

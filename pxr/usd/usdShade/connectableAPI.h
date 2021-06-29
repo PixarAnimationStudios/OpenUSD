@@ -162,6 +162,8 @@ public:
 protected:
     /// Returns true if the given prim is compatible with this API schema,
     /// i.e. if it is a valid shader or a node-graph.
+    /// A prim has a compatible connectableAPI if a valid behavior is registered
+    /// for it.
     USDSHADE_API
     bool _IsCompatible() const override;
     
@@ -665,8 +667,10 @@ public:
         return ClearSources(output.GetAttr());
     }
 
-    /// Return true if the \p schemaType has a connectableAPIBehavior
+    /// Return true if the \p schemaType has a valid connectableAPIBehavior
     /// registered, false otherwise.
+    /// To check if a prim's connectableAPI has a behavior defined, use
+    /// UsdSchemaBase::operator bool().
     USDSHADE_API
     static bool HasConnectableAPI(const TfType& schemaType);
 
