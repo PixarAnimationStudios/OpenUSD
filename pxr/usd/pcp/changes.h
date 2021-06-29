@@ -268,6 +268,13 @@ public:
     PCP_API
     void DidDestroyCache(const PcpCache* cache);
 
+    /// The asset resolver has changed, invalidating previously-resolved
+    /// asset paths. This function will check all prim indexes in \p cache
+    /// for composition arcs that may now refer to a different asset and
+    /// mark them as needing significant resyncs.
+    PCP_API
+    void DidChangeAssetResolver(const PcpCache* cache);
+
     /// Swap the contents of this and \p other.
     PCP_API
     void Swap(PcpChanges& other);

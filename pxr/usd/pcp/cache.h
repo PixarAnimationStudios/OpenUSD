@@ -38,6 +38,7 @@
 #include "pxr/usd/ar/ar.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/base/tf/declarePtrs.h"
+#include "pxr/base/tf/functionRef.h"
 #include "pxr/base/tf/hashset.h"
 
 #include <memory>
@@ -365,6 +366,16 @@ public:
     PCP_API
     const PcpPrimIndex *
     FindPrimIndex(const SdfPath &primPath) const;
+
+    /// Run the given \p callback on every prim index in the cache.
+    /// The callback must have the signature: void(const PcpPrimIndex&).
+    template <class Callback>
+    void
+    ForEachPrimIndex(const Callback& callback) const
+    {
+        TfFunctionRef<void(const PcpPrimIndex&)> fn(callback);
+        _ForEachPrimIndex(fn);
+    }
 
     /// Compute and return a reference to the cached result for the
     /// property index for the given path. \p allErrors will contain any
@@ -695,6 +706,10 @@ private:
     // Returns the property index for \p path if it exists, NULL otherwise.
     PcpPropertyIndex* _GetPropertyIndex(const SdfPath& path);
     const PcpPropertyIndex* _GetPropertyIndex(const SdfPath& path) const;
+
+    PCP_API
+    void _ForEachPrimIndex(
+        const TfFunctionRef<void(const PcpPrimIndex&)>& fn) const;
 
 private:
     // Fixed evaluation parameters, set when the cache is created.  Note that

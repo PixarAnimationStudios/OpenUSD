@@ -1533,6 +1533,38 @@ PcpChanges::DidDestroyCache(const PcpCache* cache)
 }
 
 void
+PcpChanges::DidChangeAssetResolver(const PcpCache* cache)
+{
+    TF_DEBUG(PCP_CHANGES).Msg(
+        "PcpChanges::DidChangeAssetResolver\n");
+
+    // Change debugging.
+    std::string summary;
+    std::string* debugSummary = TfDebug::IsEnabled(PCP_CHANGES) ? &summary : 0;
+
+    const ArResolverContextBinder binder(
+        cache->GetLayerStackIdentifier().pathResolverContext);
+
+    cache->ForEachPrimIndex(
+        [this, cache, debugSummary](const PcpPrimIndex& primIndex) {
+            if (Pcp_NeedToRecomputeDueToAssetPathChange(primIndex)) {
+                DidChangeSignificantly(cache, primIndex.GetPath());
+                PCP_APPEND_DEBUG("    %s\n", primIndex.GetPath().GetText());
+            }
+        }
+    );
+
+    if (debugSummary && !debugSummary->empty()) {
+        TfDebug::Helper().Msg(
+            "   Resync following in @%s@ significant due to layer "
+            "resolved path change:\n%s",
+            cache->GetLayerStackIdentifier().rootLayer->
+                GetIdentifier().c_str(),
+            debugSummary->c_str());
+    }
+}
+
+void
 PcpChanges::Swap(PcpChanges& other)
 {
     std::swap(_layerStackChanges, other._layerStackChanges);

@@ -1193,6 +1193,18 @@ PcpCache::_RemovePropertyCaches(const SdfPath& root, PcpLifeboat* lifeboat)
 ////////////////////////////////////////////////////////////////////////
 // Private helper methods.
 
+void
+PcpCache::_ForEachPrimIndex(
+    const TfFunctionRef<void(const PcpPrimIndex&)>& fn) const
+{
+    for (const auto& entry : _primIndexCache) {
+        const PcpPrimIndex& primIndex = entry.second;
+        if (primIndex.IsValid()) {
+            fn(primIndex);
+        }
+    }
+}
+
 PcpPrimIndex*
 PcpCache::_GetPrimIndex(const SdfPath& path)
 {
