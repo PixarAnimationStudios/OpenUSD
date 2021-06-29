@@ -22,8 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-import os, sys, unittest
-from pxr import Sdf,Usd,Tf
+import os, platform, sys, unittest
+from pxr import Ar,Sdf,Usd,Tf
 
 allFormats = ['usd' + x for x in 'ac']
 
@@ -290,6 +290,10 @@ class TestUsdNotices(unittest.TestCase):
 
             del layerMutingChanged
 
+    @unittest.skipIf(platform.system() == "Windows" and
+                     not hasattr(Ar.Resolver, "CreateIdentifier"),
+                     "This test case currently fails on Windows due to "
+                     "path canonicalization issues except with Ar 2.0.")
     def test_InvalidLayerReloadChange(self):
         s = Usd.Stage.CreateNew('LayerReloadChange.usda')
 
