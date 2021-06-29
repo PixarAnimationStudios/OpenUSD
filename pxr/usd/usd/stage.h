@@ -41,6 +41,7 @@
 #include "pxr/base/tf/weakBase.h"
 
 #include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/notice.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/notice.h"
 #include "pxr/usd/sdf/path.h"
@@ -1866,6 +1867,9 @@ private:
     // Update stage contents in response to changes in scene description.
     void _HandleLayersDidChange(const SdfNotice::LayersDidChangeSentPerLayer &);
 
+    // Update stage contents in response to changes to the asset resolver.
+    void _HandleResolverDidChange(const ArNotice::ResolverChanged &);
+
     // Process stage change information stored in _pendingChanges.
     // _pendingChanges will be set to nullptr by the end of the function.
     void _ProcessPendingChanges();
@@ -2181,6 +2185,7 @@ private:
                                                  const UsdAttribute &attr) const;
 
     void _RegisterPerLayerNotices();
+    void _RegisterResolverChangeNotice();
 
 private:
 
@@ -2218,6 +2223,8 @@ private:
         std::pair<SdfLayerHandle, TfNotice::Key> > _LayerAndNoticeKeyVec;
     _LayerAndNoticeKeyVec _layersAndNoticeKeys;
     size_t _lastChangeSerialNumber;
+
+    TfNotice::Key _resolverChangeKey;
 
     // Data for pending change processing.
     class _PendingChanges;
