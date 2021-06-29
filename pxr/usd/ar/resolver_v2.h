@@ -404,12 +404,6 @@ public:
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// Configures the resolver for a given asset path
-    /// Default implementation does nothing.
-    /// \deprecated
-    AR_API
-    virtual void ConfigureResolverForAsset(const std::string& path);
-
     /// \deprecated
     /// Returns true if the given path is a repository path.
     AR_API

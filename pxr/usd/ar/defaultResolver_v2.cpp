@@ -122,12 +122,6 @@ ArDefaultResolver::SetDefaultSearchPath(
     *_SearchPath = searchPath;
 }
 
-void
-ArDefaultResolver::ConfigureResolverForAsset(const std::string& path)
-{
-    _defaultContext = CreateDefaultContextForAsset(path);
-}
-
 std::string
 ArDefaultResolver::_CreateIdentifier(
     const std::string& assetPath,

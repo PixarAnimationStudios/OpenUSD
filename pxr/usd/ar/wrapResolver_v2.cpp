@@ -70,7 +70,6 @@ wrapResolver()
 
     class_<This, boost::noncopyable>
         ("Resolver", no_init)
-        .def("ConfigureResolverForAsset", &This::ConfigureResolverForAsset)
 
         .def("CreateDefaultContext", &This::CreateDefaultContext)
         .def("CreateDefaultContextForAsset", 

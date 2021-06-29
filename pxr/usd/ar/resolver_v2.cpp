@@ -474,17 +474,6 @@ public:
         return ArResolverContext(contexts);
     }
 
-    virtual void ConfigureResolverForAsset(const std::string& path) override
-    { 
-        ArResolver& resolver = _GetResolver(path);
-        if (ArIsPackageRelativePath(path)) {
-            resolver.ConfigureResolverForAsset(
-                ArSplitPackageRelativePathOuter(path).first);
-            return;
-        }
-        resolver.ConfigureResolverForAsset(path); 
-    }
-
     virtual std::string _CreateIdentifier(
         const std::string& assetPath,
         const ArResolvedPath& anchorAssetPath) override
@@ -1603,12 +1592,6 @@ ArResolver::EndCacheScope(
     VtValue* cacheScopeData)
 {
     _EndCacheScope(cacheScopeData);
-}
-
-void
-ArResolver::ConfigureResolverForAsset(
-    const std::string& path)
-{
 }
 
 bool

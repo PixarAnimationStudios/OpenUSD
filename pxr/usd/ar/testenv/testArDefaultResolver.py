@@ -322,11 +322,12 @@ class TestArDefaultResolver(unittest.TestCase):
         self.assertPathsEqual(resolvedPath, testFilePath)
 
         # Make sure we get the same behavior using ConfigureResolverForAsset()
-        Ar.GetResolver().ConfigureResolverForAsset(assetFileName)
-        with Ar.ResolverContextBinder(Ar.GetResolver().CreateDefaultContext()):
-            defaultResolvedPath = Ar.GetResolver().Resolve(testFileName)
+        if hasattr(Ar.Resolver, "ConfigureResolverForAsset"):
+            Ar.GetResolver().ConfigureResolverForAsset(assetFileName)
+            with Ar.ResolverContextBinder(Ar.GetResolver().CreateDefaultContext()):
+                defaultResolvedPath = Ar.GetResolver().Resolve(testFileName)
 
-        self.assertPathsEqual(defaultResolvedPath, testFilePath)
+            self.assertPathsEqual(defaultResolvedPath, testFilePath)
 
     def test_ResolverContext(self):
         emptyContext = Ar.DefaultResolverContext()

@@ -84,15 +84,6 @@ public:
     static void SetDefaultSearchPath(
         const std::vector<std::string>& searchPath);
 
-    // ArResolver overrides
-
-    /// Sets the resolver's default context (returned by CreateDefaultContext())
-    /// to the same context you would get by calling 
-    /// CreateDefaultContextForAsset(). Has no other effect on the resolver's
-    /// configuration.
-    AR_API
-    virtual void ConfigureResolverForAsset(const std::string& path) override;
-
 protected:
     AR_API
     virtual std::string _CreateIdentifier(
