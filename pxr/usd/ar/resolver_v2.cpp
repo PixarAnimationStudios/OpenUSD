@@ -68,6 +68,9 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
     
     // Plugin metadata key for resolver URI schemes.
     (uriSchemes)
+
+    // Plugin metadata keys for specifying resolver functionality.
+    (implementsContexts)
 );
 
 TF_DEFINE_ENV_SETTING(
@@ -100,10 +103,6 @@ static TfStaticData<std::vector<TfType>> _resolverStack;
 class _ResolverInfo
 {
 public:
-    _ResolverInfo()
-        : canBePrimaryResolver(false)
-    { }
-
     // Plugin for the resolver implementation.
     PlugPluginPtr plugin;
 
@@ -114,7 +113,10 @@ public:
     std::vector<std::string> uriSchemes;
 
     // Whether this resolver can be used as a primary resolver.
-    bool canBePrimaryResolver;
+    bool canBePrimaryResolver = false;
+
+    // Whether this resolver implements any context-related operations.
+    bool implementsContexts = false;
 };
 
 std::string 
@@ -126,6 +128,55 @@ _GetTypeNames(const std::vector<_ResolverInfo>& resolvers)
         typeNames.push_back(resolver.type.GetTypeName());
     }
     return TfStringJoin(typeNames, ", ");
+}
+
+PlugPluginPtr
+_GetPluginForType(const TfType& t)
+{
+    const PlugPluginPtr p = PlugRegistry::GetInstance().GetPluginForType(t);
+    if (!p) {
+        TF_CODING_ERROR(
+            "Failed to find plugin for %s", t.GetTypeName().c_str());
+    }
+    return p;
+}
+
+template <class T>
+JsOptionalValue
+_FindMetadataValueOnTypeOrBase(const TfToken& metadata, const TfType& t)
+{
+    if (t.IsRoot()) {
+        return JsOptionalValue();
+    }
+
+    const PlugPluginPtr plugin = _GetPluginForType(t);
+    if (!plugin) {
+        return JsOptionalValue();
+    }
+
+    JsOptionalValue value = JsFindValue(
+        plugin->GetMetadataForType(t), metadata);
+
+    if (value) {
+        if (value->Is<T>()) {
+            return value;
+        }
+        else {
+            TF_CODING_ERROR(
+                "'%s' metadata for %s must be a %s.",
+                metadata.GetText(), t.GetTypeName().c_str(), 
+                JsValue(T()).GetTypeName().c_str());
+        }
+    }
+
+    for (const TfType& base : t.GetBaseTypes()) {
+        value = _FindMetadataValueOnTypeOrBase<T>(metadata, base);
+        if (value) {
+            return value;
+        }
+    }
+
+    return JsOptionalValue();
 }
 
 std::vector<_ResolverInfo> 
@@ -152,13 +203,9 @@ _GetAvailableResolvers()
     resolvers.reserve(sortedResolverTypes.size());
 
     // Fill in the URI schemes associated with each available resolver.
-    const PlugRegistry& plugRegistry = PlugRegistry::GetInstance();
     for (const TfType& resolverType : sortedResolverTypes) {
-        PlugPluginPtr plugin = plugRegistry.GetPluginForType(resolverType);
+        const PlugPluginPtr plugin = _GetPluginForType(resolverType);
         if (!plugin) {
-            TF_CODING_ERROR(
-                "Failed to find plugin for %s", 
-                resolverType.GetTypeName().c_str());
             continue;
         }
 
@@ -179,11 +226,18 @@ _GetAvailableResolvers()
             }
         }
 
+        const JsOptionalValue implementsContextsVal = 
+            _FindMetadataValueOnTypeOrBase<bool>(
+                _tokens->implementsContexts, resolverType);
+
         _ResolverInfo info;
         info.plugin = plugin;
         info.type = resolverType;
         info.uriSchemes = std::move(uriSchemes);
         info.canBePrimaryResolver = info.uriSchemes.empty();
+        if (implementsContextsVal) {
+            info.implementsContexts = implementsContextsVal->GetBool();
+        }
 
         resolvers.push_back(std::move(info));
     }
@@ -325,21 +379,17 @@ _CreateResolver(const TfType& resolverType, std::string* debugMsg = nullptr)
             resolverType.GetTypeName().c_str());
     }
     else if (resolverType != defaultResolverType) {
-        PlugPluginPtr plugin = PlugRegistry::GetInstance()
-            .GetPluginForType(resolverType);
-        if (!plugin) {
-            TF_CODING_ERROR("Failed to find plugin for %s", 
-                resolverType.GetTypeName().c_str());
-        }
+        const PlugPluginPtr plugin = _GetPluginForType(resolverType);
+        if (plugin) {
+            tmpResolver = _PluginResolver<ArResolver, Ar_ResolverFactoryBase>(
+                plugin, resolverType).Create();
 
-        tmpResolver = _PluginResolver<ArResolver, Ar_ResolverFactoryBase>(
-            plugin, resolverType).Create();
-
-        if (tmpResolver && debugMsg) {
-            *debugMsg = TfStringPrintf(
-                "Using asset resolver %s from plugin %s",
-                resolverType.GetTypeName().c_str(),
-                plugin->GetPath().c_str());
+            if (tmpResolver && debugMsg) {
+                *debugMsg = TfStringPrintf(
+                    "Using asset resolver %s from plugin %s",
+                    resolverType.GetTypeName().c_str(),
+                    plugin->GetPath().c_str());
+            }
         }
     }
 
@@ -491,7 +541,13 @@ public:
     virtual bool _IsContextDependentPath(
         const std::string& assetPath)
     {
-        ArResolver& resolver = _GetResolver(assetPath);
+        const _ResolverInfo* info = nullptr;
+        ArResolver& resolver = _GetResolver(assetPath, &info);
+
+        if (!info->implementsContexts) {
+            return false;
+        }
+
         if (ArIsPackageRelativePath(assetPath)) {
             return resolver.IsContextDependentPath(
                 ArSplitPackageRelativePathOuter(assetPath).first);
@@ -544,10 +600,16 @@ public:
 
         size_t dataIndex = 0;
 
-        _resolver->Get()->BindContext(context, &contextData[dataIndex]);
-        ++dataIndex;
+        if (_resolver->info.implementsContexts) {
+            _resolver->Get()->BindContext(context, &contextData[dataIndex]);
+            ++dataIndex;
+        }
 
         for (const auto& entry : _uriResolvers) {
+            if (!entry.second->info.implementsContexts) {
+                continue;
+            }
+
             if (ArResolver* uriResolver = entry.second->Get()) {
                 uriResolver->BindContext(context, &contextData[dataIndex]);
             }
@@ -573,10 +635,16 @@ public:
 
         size_t dataIndex = 0;
 
-        _resolver->Get()->UnbindContext(context, &contextData[dataIndex]);
-        ++dataIndex;
+        if (_resolver->info.implementsContexts) {
+            _resolver->Get()->UnbindContext(context, &contextData[dataIndex]);
+            ++dataIndex;
+        }
 
         for (const auto& entry : _uriResolvers) {
+            if (!entry.second->info.implementsContexts) {
+                continue;
+            }
+
             if (ArResolver* uriResolver = entry.second->Get()) {
                 uriResolver->UnbindContext(context, &contextData[dataIndex]);
             }
@@ -600,9 +668,15 @@ public:
     {
         std::vector<ArResolverContext> contexts;
 
-        contexts.push_back(_resolver->Get()->CreateDefaultContext());
+        if (_resolver->info.implementsContexts) {
+            contexts.push_back(_resolver->Get()->CreateDefaultContext());
+        }
 
         for (const auto& entry : _uriResolvers) {
+            if (!entry.second->info.implementsContexts) {
+                continue;
+            }
+
             if (ArResolver* uriResolver = entry.second->Get()) {
                 contexts.push_back(uriResolver->CreateDefaultContext());
             }
@@ -614,13 +688,23 @@ public:
     virtual ArResolverContext _CreateContextFromString(
         const std::string& str) override
     {
+        if (!_resolver->info.implementsContexts) {
+            return ArResolverContext();
+        }
+
         return _resolver->Get()->CreateContextFromString(str);
     }
 
     virtual ArResolverContext _CreateDefaultContextForAsset(
         const std::string& filePath) override
     {
-        ArResolver& resolver = _GetResolver(filePath);
+        const _ResolverInfo* info = nullptr;
+        ArResolver& resolver = _GetResolver(filePath, &info);
+
+        if (!info->implementsContexts) {
+            return ArResolverContext();
+        }
+
         if (ArIsPackageRelativePath(filePath)) {
             return resolver.CreateDefaultContextForAsset(
                 ArSplitPackageRelativePathOuter(filePath).first);
@@ -630,8 +714,15 @@ public:
 
     virtual void _RefreshContext(const ArResolverContext& context) override
     {
-        _resolver->Get()->RefreshContext(context);
+        if (_resolver->info.implementsContexts) {
+            _resolver->Get()->RefreshContext(context);
+        }
+
         for (const auto& entry : _uriResolvers) {
+            if (!entry.second->info.implementsContexts) {
+                continue;
+            }
+
             if (ArResolver* uriResolver = entry.second->Get()) {
                 uriResolver->RefreshContext(context);
             }
@@ -648,8 +739,16 @@ public:
         // implementation and merge that over the contexts we're
         // managing internally.
         std::vector<ArResolverContext> contexts;
-        contexts.push_back(_resolver->Get()->GetCurrentContext());
+
+        if (_resolver->info.implementsContexts) {
+            contexts.push_back(_resolver->Get()->GetCurrentContext());
+        }
+
         for (const auto& entry : _uriResolvers) {
+            if (!entry.second->info.implementsContexts) {
+                continue;
+            }
+
             if (ArResolver* uriResolver = entry.second->Get()) {
                 contexts.push_back(uriResolver->GetCurrentContext());
             }
@@ -1070,14 +1169,25 @@ private:
     }
 
     ArResolver&
-    _GetResolver(const std::string& assetPath)
+    _GetResolver(
+        const std::string& assetPath,
+        const _ResolverInfo** info = nullptr)
     {
-        ArResolver* uriResolver = _GetURIResolver(assetPath);
-        return uriResolver ? *uriResolver : *_resolver->Get();
+        ArResolver* uriResolver = _GetURIResolver(assetPath, info);
+        if (uriResolver) {
+            return *uriResolver;
+        }
+        
+        if (info) {
+            *info = &_resolver->info;
+        }
+        return *(_resolver->Get());
     }
 
     ArResolver*
-    _GetURIResolver(const std::string& assetPath)
+    _GetURIResolver(
+        const std::string& assetPath,
+        const _ResolverInfo** info = nullptr)
     {
         if (_uriResolvers.empty()) {
             return nullptr;
@@ -1096,18 +1206,27 @@ private:
         }
 
         return _GetURIResolverForScheme(
-            std::string(assetPath.begin(), delimIt));
+            std::string(assetPath.begin(), delimIt), info);
     }
 
     ArResolver*
-    _GetURIResolverForScheme(const std::string& scheme)
+    _GetURIResolverForScheme(
+        const std::string& scheme,
+        const _ResolverInfo** info = nullptr)
     {
         // Per RFC 3986 sec 3.1 schemes are case-insensitive. The schemes
         // stored in _uriResolvers are always stored in lower-case, so
         // convert our candidate scheme to lower case as well.
         const _ResolverSharedPtr* uriResolver = 
             TfMapLookupPtr(_uriResolvers, TfStringToLower(scheme));
-        return uriResolver ? (*uriResolver)->Get() : nullptr;
+        if (uriResolver) {
+            if (info) { 
+                *info = &((*uriResolver)->info);
+            }
+            return (*uriResolver)->Get();
+        }
+
+        return nullptr;
     }
 
     ArPackageResolver*
@@ -1186,11 +1305,14 @@ private:
 
     public:
         _Resolver(
-            const _ResolverInfo& info,
+            const _ResolverInfo& info_,
             const std::shared_ptr<ArResolver>& resolver = nullptr)
-            : Base(info.plugin, info.type, resolver)
+            : Base(info_.plugin, info_.type, resolver)
+            , info(info_)
         {
         }
+
+        _ResolverInfo info;
     };
 
     using _ResolverSharedPtr = std::shared_ptr<_Resolver>;

@@ -179,6 +179,56 @@ pxr_build_test_shared_lib(TestArPackageResolver
 ) 
 
 if (AR_VERSION EQUAL 2)
+    pxr_build_test_shared_lib(TestArOptionalImplementation
+        CREATE_FRAMEWORK
+        INSTALL_PREFIX ArPlugins
+        LIBRARIES
+            tf
+            ar
+        CPPFILES
+            testenv/TestArOptionalImplementation_plugin.cpp
+    ) 
+
+    pxr_test_scripts(
+        testenv/testArOptionalImplementation.py
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testArOptionalImplementation
+        DEST testArOptionalImplementation_1
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testArOptionalImplementation
+        DEST testArOptionalImplementation_2
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testArOptionalImplementation
+        DEST testArOptionalImplementation_3
+    )
+
+    pxr_register_test(testArOptionalImplementation_1
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestResolver"
+        STDOUT_REDIRECT base.txt
+        DIFF_COMPARE base.txt
+    )
+
+    pxr_register_test(testArOptionalImplementation_2
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestResolverWithContextMethods"
+        STDOUT_REDIRECT resolver_with_context.txt
+        DIFF_COMPARE resolver_with_context.txt
+    )
+
+    pxr_register_test(testArOptionalImplementation_3
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestDerivedResolverWithContextMethods"
+        STDOUT_REDIRECT derived_resolver_with_context.txt
+        DIFF_COMPARE derived_resolver_with_context.txt
+    )
+
     pxr_build_test_shared_lib(TestArURIResolver
         CREATE_FRAMEWORK
         INSTALL_PREFIX ArPlugins

@@ -458,6 +458,26 @@ protected:
     virtual ArResolvedPath _ResolveForNewAsset(
         const std::string& assetPath) = 0;
 
+    /// @}
+
+    // --------------------------------------------------------------------- //
+    /// \anchor ArResolver_contextImplementation
+    /// \name Context Operations Implementation
+    ///
+    /// If any of these functions are implemented in a subclass, the plugin
+    /// metadata for that subclass in the plugin library's plugInfo.json 
+    /// must specify:
+    /// \code
+    /// "implementsContexts" : true.
+    /// \endcode
+    ///
+    /// If a subclass indicates that it implements any of these functions,
+    /// its plugin library will be loaded and these functions will be called
+    /// when the corresponding public ArResolver API is called. Otherwise,
+    /// these functions will not be called.
+    ///
+    /// @{
+
     /// Bind the given \p context to this resolver. \p bindingData may be
     /// populated with additional information that will be kept alive while
     /// \p context is bound. Both \p context and \p bindingData will be
@@ -565,6 +585,14 @@ protected:
     virtual bool _IsContextDependentPath(
         const std::string& assetPath);
 
+    /// @}
+
+    // --------------------------------------------------------------------- //
+    /// \anchor ArResolver_assetImplementation
+    /// \name Asset Operations Implementation
+    ///
+    /// @{
+
     /// Return the file extension for the given \p assetPath. This extension
     /// should not include a "." at the beginning of the string.
     virtual std::string _GetExtension(
@@ -630,6 +658,14 @@ protected:
         const ArResolvedPath& resolvedPath,
         WriteMode writeMode) = 0;
 
+    /// @}
+
+    // --------------------------------------------------------------------- //
+    /// \anchor ArResolver_scopedCacheImplementation
+    /// \name Scoped Resolution Cache Implementation
+    ///
+    /// @{
+
     /// Mark the start of a resolution caching scope. 
     ///
     /// Resolvers may fill \p cacheScopeData with arbitrary data. Clients may
@@ -647,14 +683,14 @@ protected:
     virtual void _EndCacheScope(
         VtValue* cacheScopeData) = 0;
 
+    /// @}
+
     /// \deprecated
     /// Return true if the given path is a repository path, false otherwise.
     /// Default implementation returns false.
     AR_API
     virtual bool _IsRepositoryPath(
         const std::string& path);
-
-    /// @}
 
     // --------------------------------------------------------------------- //
     /// \anchor ArResolver_implementationUtils
