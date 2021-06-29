@@ -226,6 +226,49 @@ class TestArDefaultResolver(unittest.TestCase):
             os.path.abspath('test1/test2/test_ResolveWithContext.txt'),
             resolver.Resolve('test_ResolveWithContext.txt'))
 
+    def test_ResolveWithCache(self):
+        testDir = os.path.abspath('testResolveWithCache/sub')
+        if os.path.isdir(testDir):
+            shutil.rmtree(testDir)
+        os.makedirs(testDir)
+
+        with open('testResolveWithCache/test.txt', 'w') as ofp:
+            print('Test 1', file=ofp)
+
+        with open('testResolveWithCache/sub/test.txt', 'w') as ofp:
+            print('Test 2', file=ofp)
+            
+        resolver = Ar.GetResolver()
+
+        # Set up a context that will search in the test root directory
+        # first, then the subdirectory.
+        context = Ar.DefaultResolverContext([
+            os.path.abspath('testResolveWithCache'),
+            os.path.abspath('testResolveWithCache/sub')])
+
+        with Ar.ResolverContextBinder(context):
+            with Ar.ResolverScopedCache():
+                # Resolve should initially find the file in the test root
+                # directory.
+                self.assertPathsEqual(
+                    os.path.abspath('testResolveWithCache/test.txt'),
+                    resolver.Resolve('test.txt'))
+
+                os.remove('testResolveWithCache/test.txt')
+
+                # After removing the file from the test root directory,
+                # Calling Resolve again will still return the same result
+                # as before since a scoped cache is active.
+                self.assertPathsEqual(
+                    os.path.abspath('testResolveWithCache/test.txt'),
+                    resolver.Resolve('test.txt'))
+
+            # Once the caching scope is closed, Resolve should now return
+            # the file from the subdirectory.
+            self.assertPathsEqual(
+                os.path.abspath('testResolveWithCache/sub/test.txt'),
+                resolver.Resolve('test.txt'))
+
     def test_ResolveWithContext(self):
         testDir = os.path.abspath('test3/test4')
         if os.path.isdir(testDir):

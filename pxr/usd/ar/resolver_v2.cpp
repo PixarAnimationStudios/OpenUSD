@@ -32,6 +32,7 @@
 #include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/threadLocalScopedCache.h"
 
 #include "pxr/base/vt/value.h"
 #include "pxr/base/plug/plugin.h"
@@ -47,6 +48,8 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
+
+#include <tbb/concurrent_hash_map.h>
 
 #include <memory>
 #include <mutex>
@@ -71,6 +74,7 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
 
     // Plugin metadata keys for specifying resolver functionality.
     (implementsContexts)
+    (implementsScopedCaches)
 );
 
 TF_DEFINE_ENV_SETTING(
@@ -117,6 +121,9 @@ public:
 
     // Whether this resolver implements any context-related operations.
     bool implementsContexts = false;
+
+    // Whether this resolver implements any scoped cache-related opereations.
+    bool implementsScopedCaches = false;
 };
 
 std::string 
@@ -230,6 +237,10 @@ _GetAvailableResolvers()
             _FindMetadataValueOnTypeOrBase<bool>(
                 _tokens->implementsContexts, resolverType);
 
+        const JsOptionalValue implementsScopedCachesVal =
+            _FindMetadataValueOnTypeOrBase<bool>(
+                _tokens->implementsScopedCaches, resolverType);
+
         _ResolverInfo info;
         info.plugin = plugin;
         info.type = resolverType;
@@ -237,6 +248,9 @@ _GetAvailableResolvers()
         info.canBePrimaryResolver = info.uriSchemes.empty();
         if (implementsContextsVal) {
             info.implementsContexts = implementsContextsVal->GetBool();
+        }
+        if (implementsScopedCachesVal) {
+            info.implementsScopedCaches = implementsScopedCachesVal->GetBool();
         }
 
         resolvers.push_back(std::move(info));
@@ -765,11 +779,25 @@ public:
     virtual ArResolvedPath _Resolve(
         const std::string& assetPath) override
     {
-        return _ResolveHelper(
-            assetPath, 
-            [this](const std::string& path) {
-                return _GetResolver(path).Resolve(path);
-            });
+        auto resolveFn = [this](const std::string& path) {
+            const _ResolverInfo* info = nullptr;
+            ArResolver& resolver = _GetResolver(path, &info);
+
+            if (!info->implementsScopedCaches) {
+                if (_CachePtr currentCache = _threadCache.GetCurrentCache()) {
+                    _Cache::_PathToResolvedPathMap::accessor accessor;
+                    if (currentCache->_pathToResolvedPathMap.insert(
+                            accessor, std::make_pair(path, ArResolvedPath()))) {
+                        accessor->second = resolver.Resolve(path);
+                    }
+                    return accessor->second;
+                }
+            }
+
+            return resolver.Resolve(path);
+        };
+
+        return _ResolveHelper(assetPath, resolveFn);
     }
 
     virtual ArResolvedPath _ResolveForNewAsset(
@@ -893,18 +921,24 @@ public:
         }
         else {
             cacheData.resize(
-                1 + _packageResolvers.size() + _uriResolvers.size());
+                2 + _packageResolvers.size() + _uriResolvers.size());
         }
 
         TF_VERIFY(cacheData.size() == 
-            1 + _packageResolvers.size() + _uriResolvers.size());
+            2 + _packageResolvers.size() + _uriResolvers.size());
 
         size_t cacheDataIndex = 0;
 
-        _resolver->Get()->BeginCacheScope(&cacheData[cacheDataIndex]);
-        ++cacheDataIndex;
+        if (_resolver->info.implementsScopedCaches) {
+            _resolver->Get()->BeginCacheScope(&cacheData[cacheDataIndex]);
+            ++cacheDataIndex;
+        }
 
         for (const auto& entry : _uriResolvers) {
+            if (!entry.second->info.implementsScopedCaches) {
+                continue;
+            }
+
             if (ArResolver* uriResolver = entry.second->Get()) {
                 uriResolver->BeginCacheScope(&cacheData[cacheDataIndex]);
             }
@@ -918,6 +952,9 @@ public:
                 packageResolver->BeginCacheScope(&cacheData[cacheDataIndex]);
             }
         }
+
+        _threadCache.BeginCacheScope(&cacheData[cacheDataIndex]);
+        ++cacheDataIndex;
 
         cacheScopeData->Swap(cacheData);
     }
@@ -934,10 +971,16 @@ public:
 
         size_t cacheDataIndex = 0;
 
-        _resolver->Get()->EndCacheScope(&cacheData[cacheDataIndex]);
-        ++cacheDataIndex;
+        if (_resolver->info.implementsScopedCaches) {
+            _resolver->Get()->EndCacheScope(&cacheData[cacheDataIndex]);
+            ++cacheDataIndex;
+        }
 
         for (const auto& entry : _uriResolvers) {
+            if (!entry.second->info.implementsScopedCaches) {
+                continue;
+            }
+
             if (ArResolver* uriResolver = entry.second->Get()) {
                 uriResolver->EndCacheScope(&cacheData[cacheDataIndex]);
             }
@@ -951,6 +994,9 @@ public:
                 packageResolver->EndCacheScope(&cacheData[cacheDataIndex]);
             }
         }
+
+        _threadCache.EndCacheScope(&cacheData[cacheDataIndex]);
+        ++cacheDataIndex;
 
         cacheScopeData->Swap(cacheData);
     }
@@ -1361,6 +1407,19 @@ private:
         tbb::enumerable_thread_specific<_ContextStack>;
     _PerThreadContextStack _threadContextStack;
 
+    // Scoped Cache --------------------
+
+    struct _Cache
+    {
+        using _PathToResolvedPathMap = 
+            tbb::concurrent_hash_map<std::string, ArResolvedPath>;
+        _PathToResolvedPathMap _pathToResolvedPathMap;
+    };
+
+    using _PerThreadCache = ArThreadLocalScopedCache<_Cache>;
+    using _CachePtr = _PerThreadCache::CachePtr;
+    _PerThreadCache _threadCache;
+
 };
 
 _DispatchingResolver&
@@ -1570,6 +1629,18 @@ void
 ArResolver::_UnbindContext(
     const ArResolverContext& context,
     VtValue* bindingData)
+{
+}
+
+void
+ArResolver::_BeginCacheScope(
+    VtValue* cacheScopeData)
+{
+}
+
+void
+ArResolver::_EndCacheScope(
+    VtValue* cacheScopeData)
 {
 }
 

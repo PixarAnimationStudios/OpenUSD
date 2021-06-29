@@ -211,6 +211,16 @@ if (AR_VERSION EQUAL 2)
         DEST testArOptionalImplementation_3
     )
 
+    pxr_install_test_dir(
+        SRC testenv/testArOptionalImplementation
+        DEST testArOptionalImplementation_4
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testArOptionalImplementation
+        DEST testArOptionalImplementation_5
+    )
+
     pxr_register_test(testArOptionalImplementation_1
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestResolver"
@@ -230,6 +240,20 @@ if (AR_VERSION EQUAL 2)
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestDerivedResolverWithContextMethods"
         STDOUT_REDIRECT derived_resolver_with_context.txt
         DIFF_COMPARE derived_resolver_with_context.txt
+    )
+
+    pxr_register_test(testArOptionalImplementation_4
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestResolverWithCacheMethods"
+        STDOUT_REDIRECT resolver_with_cache.txt
+        DIFF_COMPARE resolver_with_cache.txt
+    )
+
+    pxr_register_test(testArOptionalImplementation_5
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestDerivedResolverWithCacheMethods"
+        STDOUT_REDIRECT derived_resolver_with_cache.txt
+        DIFF_COMPARE derived_resolver_with_cache.txt
     )
 
     pxr_build_test_shared_lib(TestArURIResolver

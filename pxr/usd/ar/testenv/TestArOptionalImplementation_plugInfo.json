@@ -17,6 +17,13 @@
                     },
                     "_TestDerivedResolverWithContextMethods": {
                         "bases": ["_TestResolverWithContextMethods"]
+                    },
+                    "_TestResolverWithCacheMethods": {
+                        "bases": ["_TestResolver"],
+                        "implementsScopedCaches": true
+                    },
+                    "_TestDerivedResolverWithCacheMethods": {
+                        "bases": ["_TestResolverWithCacheMethods"]
                     }
                 }
             }

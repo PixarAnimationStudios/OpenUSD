@@ -44,8 +44,6 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/value.h"
 
-#include <tbb/concurrent_hash_map.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 AR_DEFINE_RESOLVER(ArDefaultResolver, ArResolver);
@@ -97,13 +95,6 @@ _ParseSearchPaths(const std::string& pathStr)
 }
 
 static TfStaticData<std::vector<std::string>> _SearchPath;
-
-struct ArDefaultResolver::_Cache
-{
-    using _PathToResolvedPathMap = 
-        tbb::concurrent_hash_map<std::string, ArResolvedPath>;
-    _PathToResolvedPathMap _pathToResolvedPathMap;
-};
 
 ArDefaultResolver::ArDefaultResolver()
 {
@@ -221,7 +212,7 @@ _ResolveAnchored(
 }
 
 ArResolvedPath
-ArDefaultResolver::_ResolveNoCache(const std::string& path)
+ArDefaultResolver::_Resolve(const std::string& path)
 {
     if (path.empty()) {
         return ArResolvedPath();
@@ -256,26 +247,6 @@ ArDefaultResolver::_ResolveNoCache(const std::string& path)
     }
 
     return _ResolveAnchored(std::string(), path);
-}
-
-ArResolvedPath
-ArDefaultResolver::_Resolve(
-    const std::string& assetPath)
-{
-    if (assetPath.empty()) {
-        return ArResolvedPath();
-    }
-
-    if (_CachePtr currentCache = _GetCurrentCache()) {
-        _Cache::_PathToResolvedPathMap::accessor accessor;
-        if (currentCache->_pathToResolvedPathMap.insert(
-                accessor, std::make_pair(assetPath, ArResolvedPath()))) {
-            accessor->second = _ResolveNoCache(assetPath);
-        }
-        return accessor->second;
-    }
-
-    return _ResolveNoCache(assetPath);
 }
 
 ArResolvedPath
@@ -347,26 +318,6 @@ ArDefaultResolver::_CreateDefaultContextForAsset(
     
     return ArResolverContext(ArDefaultResolverContext(
                                  std::vector<std::string>(1, assetDir)));
-}
-
-void 
-ArDefaultResolver::_BeginCacheScope(
-    VtValue* cacheScopeData)
-{
-    _threadCache.BeginCacheScope(cacheScopeData);
-}
-
-void 
-ArDefaultResolver::_EndCacheScope(
-    VtValue* cacheScopeData)
-{
-    _threadCache.EndCacheScope(cacheScopeData);
-}
-
-ArDefaultResolver::_CachePtr 
-ArDefaultResolver::_GetCurrentCache()
-{
-    return _threadCache.GetCurrentCache();
 }
 
 const ArDefaultResolverContext* 

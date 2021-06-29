@@ -35,9 +35,6 @@
 #include "pxr/usd/ar/defaultResolverContext.h"
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/ar/threadLocalScopedCache.h"
-
-#include <tbb/enumerable_thread_specific.h>
 
 #include <memory>
 #include <string>
@@ -160,29 +157,11 @@ protected:
         const ArResolvedPath& resolvedPath,
         WriteMode writeMode) override;
 
-    AR_API
-    virtual void _BeginCacheScope(
-        VtValue* cacheScopeData) override;
-
-    AR_API
-    virtual void _EndCacheScope(
-        VtValue* cacheScopeData) override;
-
 private:
-    struct _Cache;
-    using _PerThreadCache = ArThreadLocalScopedCache<_Cache>;
-    using _CachePtr = _PerThreadCache::CachePtr;
-    _CachePtr _GetCurrentCache();
-
     const ArDefaultResolverContext* _GetCurrentContextPtr();
 
-    ArResolvedPath _ResolveNoCache(const std::string& path);
-
-private:
     ArDefaultResolverContext _fallbackContext;
     ArResolverContext _defaultContext;
-
-    _PerThreadCache _threadCache;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

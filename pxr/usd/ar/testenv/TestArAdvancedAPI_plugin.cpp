@@ -27,6 +27,8 @@
 #include "pxr/usd/ar/defineResolver.h"
 #include "pxr/usd/ar/resolver.h"
 
+#include "pxr/base/tf/diagnosticLite.h"
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 class _TestResolver1;

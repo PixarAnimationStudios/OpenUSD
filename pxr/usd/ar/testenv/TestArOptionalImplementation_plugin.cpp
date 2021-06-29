@@ -94,6 +94,18 @@ protected:
         return false;
     };
 
+    void _BeginCacheScope(
+        VtValue* cacheScopeData) final 
+    { 
+        _PrintFunctionName("_BeginCacheScope");
+    }
+
+    void _EndCacheScope(
+        VtValue* cacheScopeData) final 
+    { 
+        _PrintFunctionName("_EndCacheScope");
+    }
+
     // Dummy implementations of pure virtuals that aren't called in this
     // test.
     std::string _CreateIdentifier(
@@ -116,10 +128,6 @@ protected:
     std::shared_ptr<ArWritableAsset> _OpenAssetForWrite(
         const ArResolvedPath& resolvedPath,
         WriteMode writeMode) final { return nullptr; }
-    void _BeginCacheScope(
-        VtValue* cacheScopeData) final { }
-    void _EndCacheScope(
-        VtValue* cacheScopeData) final { }
 };
 
 AR_DEFINE_RESOLVER(_TestResolver, ArResolver);
@@ -139,3 +147,19 @@ class _TestDerivedResolverWithContextMethods
 AR_DEFINE_RESOLVER(
     _TestDerivedResolverWithContextMethods,
     _TestResolverWithContextMethods);
+
+class _TestResolverWithCacheMethods
+    : public _TestResolver
+{
+};
+
+AR_DEFINE_RESOLVER(_TestResolverWithCacheMethods, _TestResolver);
+
+class _TestDerivedResolverWithCacheMethods
+    : public _TestResolverWithCacheMethods
+{
+};
+
+AR_DEFINE_RESOLVER(
+    _TestDerivedResolverWithCacheMethods,
+    _TestResolverWithCacheMethods);

@@ -29,10 +29,13 @@
 #include "pxr/usd/ar/defineResolver.h"
 #include "pxr/usd/ar/defineResolverContext.h"
 
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/vt/value.h"
 
 #include <map>
+#include <string>
 #include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -118,16 +121,6 @@ public:
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(resolvedPath), _uriScheme));
         return nullptr;
-    }
-
-    virtual void _BeginCacheScope(
-        VtValue* cacheScopeData) final
-    {
-    }
-
-    virtual void _EndCacheScope(
-        VtValue* cacheScopeData) final
-    {
     }
 
 protected:

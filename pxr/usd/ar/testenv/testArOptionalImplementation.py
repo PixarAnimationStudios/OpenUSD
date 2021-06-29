@@ -65,3 +65,8 @@ r.CreateContextFromString('foo')
 r.RefreshContext(Ar.ResolverContext())
 r.GetCurrentContext()
 r.IsContextDependentPath('foo')
+
+# This context manager calls ArResolver::BeginCacheScope when entered
+# and ArResolver::EndCacheScope on exit.
+with Ar.ResolverScopedCache():
+    pass

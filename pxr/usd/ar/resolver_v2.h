@@ -671,6 +671,19 @@ protected:
     /// \anchor ArResolver_scopedCacheImplementation
     /// \name Scoped Resolution Cache Implementation
     ///
+    /// If any of these functions are implemented in a subclass, the plugin
+    /// metadata for that subclass in the plugin library's plugInfo.json 
+    /// must specify:
+    /// \code
+    /// "implementsScopedCaches" : true.
+    /// \endcode
+    ///
+    /// If a subclass indicates that it implements these functions, ArResolver
+    /// will assume the subclass is handling all caching of resolved paths
+    /// and will call these functions when a caching scope is opened and closed.
+    /// Otherwise, these functions will not be called. Instead, ArResolver
+    /// itself will handle caching and returning resolved paths as needed.
+    ///
     /// @{
 
     /// Mark the start of a resolution caching scope. 
@@ -678,17 +691,23 @@ protected:
     /// Resolvers may fill \p cacheScopeData with arbitrary data. Clients may
     /// also pass in a \p cacheScopeData populated by an earlier call to
     /// BeginCacheScope to allow the resolver access to that information.
+    ///
+    /// See \ref ArResolver_scopedCacheImplementation "Scoped Resolution Cache Implementation" 
+    /// for more implementation details.
     AR_API
     virtual void _BeginCacheScope(
-        VtValue* cacheScopeData) = 0;
+        VtValue* cacheScopeData);
 
     /// Mark the end of a resolution caching scope.
     ///
     /// \p cacheScopeData should contain the data that was populated by the
     /// previous corresponding call to BeginCacheScope.
+    ///
+    /// See \ref ArResolver_scopedCacheImplementation "Scoped Resolution Cache Implementation" 
+    /// for more implementation details.
     AR_API
     virtual void _EndCacheScope(
-        VtValue* cacheScopeData) = 0;
+        VtValue* cacheScopeData);
 
     /// @}
 
