@@ -28,41 +28,6 @@
 --- #import $TOOLS/hdSt/shaders/edgeId.glslfx
 
 --- --------------------------------------------------------------------------
--- glsl EdgeId.Geometry.None
-
-// called from Mesh.Geometry.*
-void ProcessEdgeId(vec2 faceUV)
-{
-    // do nothing
-}
-
---- --------------------------------------------------------------------------
--- glsl EdgeId.Geometry.EdgeParam
-
-// Interpolate linearly since we want to be able to
-// reason about the distance from the edge in fragment space.
-noperspective out vec2 gsEdgeParam;
-
-// called from Mesh.Geometry.*
-void ProcessEdgeId(vec2 faceUV)
-{
-    // The local triangular parameterization is a subset of the
-    // local rectangular parameterization, so for both cases
-    // we just record the uv parameterization at the face vertex
-    // and can reconstruct the third coordinate when necessary.
-    //
-    // Note that this parameterization matches the parameterization
-    // used by the tessellation evaluation shader i.e. (0,0,0) at the
-    // first vertex of a triangle or quad. but is different from the
-    // parameterization used for built-in barycentric coordinates,
-    // i.e. (1,0,0) for the first vertex of a triangle.
-    //
-    // We may be able to combine this with the existing interpolated
-    // patch coord.
-    gsEdgeParam = faceUV;
-}
-
---- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.Fallback
 // Mixin version to use when mesh edge selection and highlighting is inactive.
 // Note: When rendering a mesh as points, this mixin isn't used. We handle it
@@ -103,12 +68,12 @@ float SelectedEdgeFalloff(float d) {
     return exp2(-1 * d * d);
 }
 
-noperspective in vec2 gsEdgeParam;
+vec4 GetPatchCoord(int localIndex); // codeGen
 
 vec3 GetEdgeParamTriangle()
 {
     // Expand barycentric coordinates
-    vec2 param = gsEdgeParam;
+    vec2 param = GetPatchCoord(0).xy;
     vec3 barycentric = vec3(param.x, param.y, 1 - param.x - param.y);
 
     // Match triangle edge order
@@ -118,7 +83,7 @@ vec3 GetEdgeParamTriangle()
 vec4 GetEdgeParamQuad()
 {
     // Expand coordinates to opposite corners of quad
-    vec2 leftBottom = gsEdgeParam;
+    vec2 leftBottom = GetPatchCoord(0).xy;
     vec2 rightTop = vec2(1.0) - leftBottom;
 
     // Match quad edge order

@@ -338,8 +338,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
 
     ProcessBarycentricCoordTriangle(index);
 
-    ProcessEdgeId(gsPatchCoord.xy);
-
     ProcessPrimvars(index, tesTessCoord[index]);
 
     EmitVertex();
@@ -472,8 +470,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
 
     ProcessBarycentricCoordTriangle(index);
 
-    ProcessEdgeId(gsPatchCoord.xy);
-
     ProcessPrimvars(index);
 
     EmitVertex();
@@ -564,8 +560,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
     ApplyClipPlanes(outData.Peye);
 
     ProcessBarycentricCoordQuad(index);
-
-    ProcessEdgeId(gsPatchCoord.xy);
 
     ProcessPrimvars(index);
 

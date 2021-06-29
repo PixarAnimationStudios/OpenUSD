@@ -82,8 +82,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((selElementSelGS,         "Selection.Geometry.ElementSel"))
 
     // edge id mixins (for edge picking & selection)
-    ((edgeIdNoneGS,            "EdgeId.Geometry.None"))
-    ((edgeIdEdgeParamGS,       "EdgeId.Geometry.EdgeParam"))
     ((edgeIdFallbackFS,        "EdgeId.Fragment.Fallback"))
     ((edgeIdCommonFS,          "EdgeId.Fragment.Common"))
     ((edgeIdTriangleSurfFS,    "EdgeId.Fragment.TriangleSurface"))
@@ -262,11 +260,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                             ? _tokens->edgeOnSurfGS
                             : _tokens->edgeNoneGS);
 
-    // emit edge param per vertex to help compute the edgeId
-    TfToken gsEdgeIdMixin = isPrimTypePoints ? _tokens->edgeIdNoneGS
-                                             : _tokens->edgeIdEdgeParamGS;
-    GS[gsIndex++] = gsEdgeIdMixin;
-
     const bool renderWireframe = geomStyle == HdMeshGeomStyleEdgeOnly ||
                                  geomStyle == HdMeshGeomStyleHullEdgeOnly;    
     // emit "ComputeSelectionOffset" GS function.
@@ -409,7 +402,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // EdgeId mixin(s) for edge picking and selection
     if (gsStageEnabled) {
-        TF_VERIFY(gsEdgeIdMixin == _tokens->edgeIdEdgeParamGS);
         FS[fsIndex++] = _tokens->edgeIdCommonFS;
         if (isPrimTypeTris || isPrimTypePatchesBoxSplineTriangle) {
             if (polygonMode == HdPolygonModeLine) {
