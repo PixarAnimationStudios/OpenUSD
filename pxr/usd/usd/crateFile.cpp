@@ -3630,9 +3630,33 @@ CrateFile::_ReadCompressedPaths(Reader reader,
     pathIndexes.resize(numPaths);
     cr.Read(reader, pathIndexes.data(), numPaths);
 
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED
+    // Range check the pathIndexes, which index into _paths.
+    for (const uint32_t pathIndex: pathIndexes) {
+        if (pathIndex >= _paths.size()) {
+            TF_RUNTIME_ERROR("Corrupt path index in crate file (%u >= %zu)",
+                             pathIndex, _paths.size());
+            return;
+        }
+    }
+#endif // PXR_PREFER_SAFETY_OVER_SPEED
+
     // elementTokenIndexes.
     elementTokenIndexes.resize(numPaths);
     cr.Read(reader, elementTokenIndexes.data(), numPaths);
+
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED
+    // Range check the pathIndexes, which index (by absolute value) into _tokens.
+    for (const int32_t elementTokenIndex: elementTokenIndexes) {
+        if (static_cast<size_t>(
+                std::abs(elementTokenIndex)) >= _tokens.size()) {
+            TF_RUNTIME_ERROR("Corrupt path element token index in crate file "
+                             "(%d >= %zu)",
+                             std::abs(elementTokenIndex), _tokens.size());
+            return;
+        }
+    }
+#endif // PXR_PREFER_SAFETY_OVER_SPEED
 
     // jumps.
     jumps.resize(numPaths);
@@ -3683,6 +3707,16 @@ CrateFile::_BuildDecompressedPathsImpl(
             if (hasSibling) {
                 // Branch off a parallel task for the sibling subtree.
                 auto siblingIndex = thisIndex + jumps[thisIndex];
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED
+                // Range check siblingIndex, which indexes into pathIndexes.
+                if (siblingIndex >= pathIndexes.size()) {
+                    TF_RUNTIME_ERROR(
+                        "Corrupt paths jumps table in crate file (jump:%d + "
+                        "thisIndex:%zu >= %zu)",
+                        jumps[thisIndex], thisIndex, pathIndexes.size());
+                    return;
+                }
+#endif
                 dispatcher.Run(
                     [this, &pathIndexes, &elementTokenIndexes, &jumps,
                      siblingIndex, &dispatcher, parentPath]() mutable {
@@ -3877,7 +3911,7 @@ CrateFile::_PackValue(VtValue const &v)
         return it->second(v);
 
     TF_CODING_ERROR("Attempted to pack unsupported type '%s' "
-                    "(%s)\n", ArchGetDemangled(ti).c_str(),
+                    "(%s)", ArchGetDemangled(ti).c_str(),
                     TfStringify(v).c_str());
 
     return ValueRep(0);
