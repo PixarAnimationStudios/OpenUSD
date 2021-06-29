@@ -33,7 +33,6 @@
 #include "pxr/imaging/cameraUtil/screenWindowParameters.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
-#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/sdr/registry.h"
@@ -245,11 +244,9 @@ int main(int argc, char *argv[])
     //
     // USD setup
     //
-    // Set up USD path resolver, to resolve references
 
     TfStopwatch timer_usdOpen;
     timer_usdOpen.Start();
-    ArGetResolver().ConfigureResolverForAsset(inputFilename);
     // Load USD file
     UsdStageRefPtr stage = UsdStage::Open(inputFilename);
     if (!stage) {
