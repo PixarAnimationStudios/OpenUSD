@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2021 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,24 +21,39 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+
+#include "pxr/usd/ar/notice.h"
+
+#include "pxr/base/tf/pyNoticeWrapper.h"
+
+#include <boost/python/scope.hpp>
+#include <boost/python/class.hpp>
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+namespace
 {
-    TF_WRAP(ResolvedPath);
 
-    TF_WRAP(Resolver);
-    TF_WRAP(ResolverContext);
-    TF_WRAP(ResolverContextBinder);
-    TF_WRAP(ResolverScopedCache);
+TF_INSTANTIATE_NOTICE_WRAPPER(
+    ArNotice::ResolverNotice, TfNotice);
+TF_INSTANTIATE_NOTICE_WRAPPER(
+    ArNotice::ResolverChanged, ArNotice::ResolverNotice);
 
-    TF_WRAP(DefaultResolver);
-    TF_WRAP(DefaultResolverContext);
+} // end anonymous namespace
 
-    TF_WRAP(PackageUtils);
-    TF_WRAP(Notice);
+void
+wrapNotice()
+{
+    scope s = class_<ArNotice>("Notice", no_init);
+    
+    TfPyNoticeWrapper<ArNotice::ResolverNotice, TfNotice>::Wrap();
+
+    TfPyNoticeWrapper<
+        ArNotice::ResolverChanged, ArNotice::ResolverNotice>::Wrap()
+        .def("AffectsContext", &ArNotice::ResolverChanged::AffectsContext,
+             args("context"))
+        ;
 }

@@ -222,7 +222,10 @@ public:
     ArResolverContext CreateContextFromStrings(
         const std::vector<std::pair<std::string, std::string>>& contextStrs);
 
-    /// Refresh any caches associated with the given context.
+    /// Refresh any caches associated with the given context. If doing so
+    /// would invalidate asset paths that had previously been resolved,
+    /// an ArNotice::ResolverChanged notice will be sent to inform clients
+    /// of this.
     AR_API
     void RefreshContext(
         const ArResolverContext& context);
@@ -552,7 +555,11 @@ protected:
     virtual ArResolverContext _CreateContextFromString(
         const std::string& contextStr);
 
-    /// Refresh any caches associated with the given context.
+    /// Refresh any caches associated with the given context. If doing so
+    /// would invalidate asset paths that had previously been resolved,
+    /// this function should send an ArNotice::ResolverChanged notice to
+    /// inform clients of this. See documentation on that class for more
+    /// details.
     ///
     /// The default implementation does nothing.
     AR_API

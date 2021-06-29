@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2021 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -23,22 +23,42 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include "pxr/usd/ar/notice.h"
 
-TF_WRAP_MODULE
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/type.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfType)
 {
-    TF_WRAP(ResolvedPath);
-
-    TF_WRAP(Resolver);
-    TF_WRAP(ResolverContext);
-    TF_WRAP(ResolverContextBinder);
-    TF_WRAP(ResolverScopedCache);
-
-    TF_WRAP(DefaultResolver);
-    TF_WRAP(DefaultResolverContext);
-
-    TF_WRAP(PackageUtils);
-    TF_WRAP(Notice);
+    TfType::Define<
+        ArNotice::ResolverNotice, TfType::Bases<TfNotice>>();
+    TfType::Define<
+        ArNotice::ResolverChanged, TfType::Bases<ArNotice::ResolverNotice>>();
 }
+
+ArNotice::ResolverNotice::ResolverNotice() = default;
+ArNotice::ResolverNotice::~ResolverNotice() = default;
+
+ArNotice::ResolverChanged::ResolverChanged()
+    : ResolverChanged([](const ArResolverContext&) { return true; })
+{
+}
+
+ArNotice::ResolverChanged::ResolverChanged(
+    const std::function<bool(const ArResolverContext&)>& affectsFn)
+    : _affects(affectsFn)
+{
+}
+
+ArNotice::ResolverChanged::~ResolverChanged() = default;
+
+bool 
+ArNotice::ResolverChanged::AffectsContext(const ArResolverContext& ctx) const
+{
+    return _affects(ctx);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

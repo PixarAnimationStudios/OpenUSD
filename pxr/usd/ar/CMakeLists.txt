@@ -96,6 +96,7 @@ pxr_library(ar
         definePackageResolver.h
         defineResolver.h
         defineResolverContext.h
+        notice.h
         packageResolver.h
         packageUtils.h
         resolvedPath.h
@@ -118,6 +119,7 @@ pxr_library(ar
         asset.cpp
         assetInfo.cpp
         filesystemAsset.cpp
+        notice.cpp
         packageResolver.cpp
         packageUtils.cpp
         resolvedPath.cpp
@@ -134,6 +136,7 @@ pxr_library(ar
     PYMODULE_CPPFILES
         module.cpp
         wrapDefaultResolverContext.cpp
+        wrapNotice.cpp
         wrapPackageUtils.cpp
         wrapResolvedPath.cpp
         wrapResolverContextBinder.cpp
@@ -261,6 +264,21 @@ pxr_build_test(testArDefaultResolver_CPP
     CPPFILES
         testenv/testArDefaultResolver.cpp
 ) 
+
+if (AR_VERSION EQUAL 2)
+    pxr_build_test(testArNotice_CPP
+        LIBRARIES
+            arch
+            tf
+            ar
+        CPPFILES
+            testenv/testArNotice.cpp
+    ) 
+
+    pxr_register_test(testArNotice_CPP
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArNotice_CPP"
+    )
+endif()
 
 pxr_build_test(testArResolverContext_CPP
     LIBRARIES
