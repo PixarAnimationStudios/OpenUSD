@@ -304,7 +304,12 @@ class Launcher(object):
         from pxr import Ar
         
         r = Ar.GetResolver()
-        r.ConfigureResolverForAsset(usdFile)
+
+        # ConfigureResolverForAsset no longer exists under Ar 2.0; this
+        # is here for backwards compatibility with Ar 1.0.
+        if hasattr(r, "ConfigureResolverForAsset"):
+            r.ConfigureResolverForAsset(usdFile)
+
         return r.CreateDefaultContextForAsset(usdFile)
 
 
