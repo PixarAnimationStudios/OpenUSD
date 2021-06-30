@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2021 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -20,24 +20,18 @@
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
-#ifndef PXR_USD_AR_FILESYSTEM_ASSET_H
-#define PXR_USD_AR_FILESYSTEM_ASSET_H
-
-/// \file ar/filesystemAsset.h
-
+//
 #include "pxr/pxr.h"
-#include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/asset.h"
 
-#define INCLUDE_AR_FILESYSTEM_ASSET
+PXR_NAMESPACE_OPEN_SCOPE
 
-#if AR_VERSION == 1
-#include "pxr/usd/ar/filesystemAsset_v1.h"
-#elif AR_VERSION == 2
-#include "pxr/usd/ar/filesystemAsset_v2.h"
-#else
-#error Unhandled AR_VERSION
-#endif
+ArAsset::ArAsset()
+{
+}
 
-#undef INCLUDE_AR_FILESYSTEM_ASSET
+ArAsset::~ArAsset()
+{
+}
 
-#endif // PXR_USD_AR_FILESYSTEM_ASSET_H
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -24,12 +24,16 @@ set(versionedPymoduleCPPFiles "")
 
 if (AR_VERSION EQUAL 1)
     list(APPEND versionedHeaders 
+         asset_v1.h
          defaultResolver_v1.h
+         filesystemAsset_v1.h
          resolver_v1.h
          resolverContext_v1.h
     )
     list(APPEND versionedCPPFiles
+         asset_v1.cpp
          defaultResolver_v1.cpp
+         filesystemAsset_v1.cpp
          resolver_v1.cpp
          resolverContext_v1.cpp
     )
@@ -46,14 +50,18 @@ if (AR_VERSION EQUAL 1)
     )
 elseif (AR_VERSION EQUAL 2)
     list(APPEND versionedHeaders 
+         asset_v2.h
          defaultResolver_v2.h
+         filesystemAsset_v2.h
          filesystemWritableAsset.h
          resolver_v2.h
          resolverContext_v2.h
          writableAsset.h
     )
     list(APPEND versionedCPPFiles
+         asset_v2.cpp
          defaultResolver_v2.cpp
+         filesystemAsset_v2.cpp
          filesystemWritableAsset.cpp
          resolver_v2.cpp
          resolverContext_v2.cpp
@@ -116,9 +124,7 @@ pxr_library(ar
         ${versionedPrivateHeaders}
 
     CPPFILES
-        asset.cpp
         assetInfo.cpp
-        filesystemAsset.cpp
         notice.cpp
         packageResolver.cpp
         packageUtils.cpp

@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2021 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -56,13 +56,13 @@ ArFilesystemAsset::~ArFilesystemAsset()
 }
 
 size_t
-ArFilesystemAsset::GetSize()
+ArFilesystemAsset::GetSize() const
 {
     return ArchGetFileLength(_file);
 }
 
 std::shared_ptr<const char> 
-ArFilesystemAsset::GetBuffer()
+ArFilesystemAsset::GetBuffer() const
 {
     ArchConstFileMapping mapping = ArchMapFileReadOnly(_file);
     if (!mapping) {
@@ -87,7 +87,7 @@ ArFilesystemAsset::GetBuffer()
 }
 
 size_t
-ArFilesystemAsset::Read(void* buffer, size_t count, size_t offset)
+ArFilesystemAsset::Read(void* buffer, size_t count, size_t offset) const
 {
     int64_t numRead = ArchPRead(_file, buffer, count, offset);
     if (numRead == -1) {
@@ -99,7 +99,7 @@ ArFilesystemAsset::Read(void* buffer, size_t count, size_t offset)
 }
         
 std::pair<FILE*, size_t>
-ArFilesystemAsset::GetFileUnsafe()
+ArFilesystemAsset::GetFileUnsafe() const
 {
     return std::make_pair(_file, 0);
 }
