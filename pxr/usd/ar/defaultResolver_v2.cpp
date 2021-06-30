@@ -125,7 +125,7 @@ ArDefaultResolver::SetDefaultSearchPath(
 std::string
 ArDefaultResolver::_CreateIdentifier(
     const std::string& assetPath,
-    const ArResolvedPath& anchorAssetPath)
+    const ArResolvedPath& anchorAssetPath) const
 {
     if (assetPath.empty()) {
         return assetPath;
@@ -159,7 +159,7 @@ ArDefaultResolver::_CreateIdentifier(
 std::string
 ArDefaultResolver::_CreateIdentifierForNewAsset(
     const std::string& assetPath,
-    const ArResolvedPath& anchorAssetPath)
+    const ArResolvedPath& anchorAssetPath) const
 {
     if (assetPath.empty()) {
         return assetPath;
@@ -175,7 +175,7 @@ ArDefaultResolver::_CreateIdentifierForNewAsset(
 }
 
 std::string
-ArDefaultResolver::_GetExtension(const std::string& path)
+ArDefaultResolver::_GetExtension(const std::string& path) const
 {
     return TfGetExtension(path);
 }
@@ -206,7 +206,7 @@ _ResolveAnchored(
 }
 
 ArResolvedPath
-ArDefaultResolver::_Resolve(const std::string& path)
+ArDefaultResolver::_Resolve(const std::string& path) const
 {
     if (path.empty()) {
         return ArResolvedPath();
@@ -245,7 +245,7 @@ ArDefaultResolver::_Resolve(const std::string& path)
 
 ArResolvedPath
 ArDefaultResolver::_ResolveForNewAsset(
-    const std::string& assetPath)
+    const std::string& assetPath) const
 {
     return ArResolvedPath(assetPath.empty() ? assetPath : TfAbsPath(assetPath));
 }
@@ -253,7 +253,7 @@ ArDefaultResolver::_ResolveForNewAsset(
 VtValue
 ArDefaultResolver::_GetModificationTimestamp(
     const std::string& path,
-    const ArResolvedPath& resolvedPath)
+    const ArResolvedPath& resolvedPath) const
 {
     // Since the default resolver always resolves paths to local
     // paths, we can just look at the mtime of the file indicated
@@ -267,7 +267,7 @@ ArDefaultResolver::_GetModificationTimestamp(
 
 std::shared_ptr<ArAsset> 
 ArDefaultResolver::_OpenAsset(
-    const ArResolvedPath& resolvedPath)
+    const ArResolvedPath& resolvedPath) const
 {
     return ArFilesystemAsset::Open(resolvedPath);
 }
@@ -275,34 +275,34 @@ ArDefaultResolver::_OpenAsset(
 std::shared_ptr<ArWritableAsset>
 ArDefaultResolver::_OpenAssetForWrite(
     const ArResolvedPath& resolvedPath,
-    WriteMode writeMode)
+    WriteMode writeMode) const
 {
     return ArFilesystemWritableAsset::Create(resolvedPath, writeMode);
 }
 
 bool
 ArDefaultResolver::_IsContextDependentPath(
-    const std::string& assetPath)
+    const std::string& assetPath) const
 {
     return _IsSearchPath(assetPath);
 }
 
 ArResolverContext 
-ArDefaultResolver::_CreateDefaultContext()
+ArDefaultResolver::_CreateDefaultContext() const
 {
     return _defaultContext;
 }
 
 ArResolverContext
 ArDefaultResolver::_CreateContextFromString(
-    const std::string& contextStr)
+    const std::string& contextStr) const
 {
     return ArDefaultResolverContext(_ParseSearchPaths(contextStr));
 }
 
 ArResolverContext 
 ArDefaultResolver::_CreateDefaultContextForAsset(
-    const std::string& assetPath)
+    const std::string& assetPath) const
 {
     if (assetPath.empty()){
         return ArResolverContext(ArDefaultResolverContext());
@@ -315,7 +315,7 @@ ArDefaultResolver::_CreateDefaultContextForAsset(
 }
 
 const ArDefaultResolverContext* 
-ArDefaultResolver::_GetCurrentContextPtr()
+ArDefaultResolver::_GetCurrentContextPtr() const
 {
     return _GetCurrentContextObject<ArDefaultResolverContext>();
 }

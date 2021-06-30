@@ -95,7 +95,7 @@ public:
 protected:
     std::string _CreateIdentifier(
         const std::string& assetPathIn,
-        const ArResolvedPath& anchorAssetPath) final
+        const ArResolvedPath& anchorAssetPath) const final
     {
         std::string assetPath;
         if (const _TestResolverContext* ctx =
@@ -125,7 +125,7 @@ protected:
         return TfAbsPath(assetPath);
     }
 
-    ArResolvedPath _Resolve(const std::string& assetPath) final
+    ArResolvedPath _Resolve(const std::string& assetPath) const final
     {
         // If this assetPath already indicates a file, just return it.
         const std::string absAssetPath = TfAbsPath(assetPath);
@@ -186,7 +186,7 @@ protected:
         }
     }
 
-    bool _IsContextDependentPath(const std::string& assetPath) final
+    bool _IsContextDependentPath(const std::string& assetPath) const final
     {
         // This resolver deals with two types of paths that rely on the
         // config name specified in the associated resolver context:
@@ -198,24 +198,24 @@ protected:
 
     std::string _CreateIdentifierForNewAsset(
         const std::string& assetPath,
-        const ArResolvedPath& anchorAssetPath) final
+        const ArResolvedPath& anchorAssetPath) const final
     {
         return assetPath;
     }
 
-    ArResolvedPath _ResolveForNewAsset(const std::string& assetPath) final
+    ArResolvedPath _ResolveForNewAsset(const std::string& assetPath) const final
     {
         return ArResolvedPath();
     }
 
-    std::string _GetExtension(const std::string& assetPath) final
+    std::string _GetExtension(const std::string& assetPath) const final
     {
         return TfGetExtension(assetPath);
     }
 
     VtValue _GetModificationTimestamp(
         const std::string& assetPath,
-        const ArResolvedPath& resolvedPath) final
+        const ArResolvedPath& resolvedPath) const final
     {
         double time;
         if (ArchGetModificationTime(
@@ -226,20 +226,17 @@ protected:
     }
 
     std::shared_ptr<ArAsset> _OpenAsset(
-        const ArResolvedPath& resolvedPath) final
+        const ArResolvedPath& resolvedPath) const final
     {
         return ArFilesystemAsset::Open(resolvedPath);
     }
 
     std::shared_ptr<ArWritableAsset> _OpenAssetForWrite(
         const ArResolvedPath& resolvedPath,
-        WriteMode writeMode) final
+        WriteMode writeMode) const final
     {
         return nullptr;
     }
-
-    void _BeginCacheScope(VtValue*) final { }
-    void _EndCacheScope(VtValue*) final { }
 
 private:
     using _ConfigNameToAssetPathMap = 

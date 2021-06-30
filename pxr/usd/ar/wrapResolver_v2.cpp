@@ -77,13 +77,13 @@ wrapResolver()
              args("assetPath"))
 
         .def("CreateContextFromString", 
-             (ArResolverContext (This::*)(const std::string&))
+             (ArResolverContext (This::*)(const std::string&) const)
                  &This::CreateContextFromString,
              args("contextStr"))
 
         .def("CreateContextFromString", 
              (ArResolverContext (This::*)
-                 (const std::string&, const std::string&))
+                 (const std::string&, const std::string&) const)
                  &This::CreateContextFromString,
              (arg("uriScheme"), arg("contextStr")))
 

@@ -36,7 +36,7 @@ class _TestResolver
     : public ArResolver
 {
 protected:
-    void _PrintFunctionName(const std::string& func)
+    void _PrintFunctionName(const std::string& func) const
     {
         printf("%s\n", func.c_str());
     }
@@ -55,21 +55,21 @@ protected:
         _PrintFunctionName("_UnbindContext");
     }
 
-    ArResolverContext _CreateDefaultContext() final
+    ArResolverContext _CreateDefaultContext() const final
     {
         _PrintFunctionName("_CreateDefaultContext");
         return ArResolverContext();
     }
 
     ArResolverContext _CreateDefaultContextForAsset(
-        const std::string& assetPath) final
+        const std::string& assetPath) const final
     {
         _PrintFunctionName("_CreateDefaultContextForAsset");
         return ArResolverContext();
     };
 
     ArResolverContext _CreateContextFromString(
-        const std::string& contextStr) final
+        const std::string& contextStr) const final
     {
         _PrintFunctionName("_CreateContextFromString");
         return ArResolverContext();
@@ -81,14 +81,14 @@ protected:
         _PrintFunctionName("_RefreshContext");
     };
 
-    ArResolverContext _GetCurrentContext() final
+    ArResolverContext _GetCurrentContext() const final
     {
         _PrintFunctionName("_GetCurrentContext");
         return ArResolverContext();
     };
 
     bool _IsContextDependentPath(
-        const std::string& assetPath) final
+        const std::string& assetPath) const final
     {
         _PrintFunctionName("_IsContextDependentPath");
         return false;
@@ -110,24 +110,24 @@ protected:
     // test.
     std::string _CreateIdentifier(
         const std::string& assetPath,
-        const ArResolvedPath& anchorAssetPath) final { return std::string(); }
+        const ArResolvedPath& anchorAssetPath) const final { return std::string(); }
     std::string _CreateIdentifierForNewAsset(
         const std::string& assetPath,
-        const ArResolvedPath& anchorAssetPath) final { return std::string(); }
+        const ArResolvedPath& anchorAssetPath) const final { return std::string(); }
     ArResolvedPath _Resolve(
-        const std::string& assetPath) final { return ArResolvedPath(); }
+        const std::string& assetPath) const final { return ArResolvedPath(); }
     ArResolvedPath _ResolveForNewAsset(
-        const std::string& assetPath) final { return ArResolvedPath(); }
+        const std::string& assetPath) const final { return ArResolvedPath(); }
     std::string _GetExtension(
-        const std::string& assetPath) final { return std::string(); }
+        const std::string& assetPath) const final { return std::string(); }
     VtValue _GetModificationTimestamp(
         const std::string& assetPath,
-        const ArResolvedPath& resolvedPath) final { return VtValue(); }
+        const ArResolvedPath& resolvedPath) const final { return VtValue(); }
     std::shared_ptr<ArAsset> _OpenAsset(
-        const ArResolvedPath& resolvedPath) final { return nullptr; }
+        const ArResolvedPath& resolvedPath) const final { return nullptr; }
     std::shared_ptr<ArWritableAsset> _OpenAssetForWrite(
         const ArResolvedPath& resolvedPath,
-        WriteMode writeMode) final { return nullptr; }
+        WriteMode writeMode) const final { return nullptr; }
 };
 
 AR_DEFINE_RESOLVER(_TestResolver, ArResolver);

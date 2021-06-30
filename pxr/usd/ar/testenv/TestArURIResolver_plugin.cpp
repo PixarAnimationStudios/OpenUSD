@@ -44,22 +44,22 @@ PXR_NAMESPACE_USING_DIRECTIVE
 class _TestURIResolverBase
     : public ArResolver
 {
-public:
-    virtual void ConfigureResolverForAsset(
-        const std::string& path) final
+protected:
+    _TestURIResolverBase(const std::string& uriScheme)
+        : _uriScheme(uriScheme + ":")
     {
     }
 
-    virtual std::string _GetExtension(
-        const std::string& path) final
+    std::string _GetExtension(
+        const std::string& path) const final
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(path), _uriScheme));
         return TfGetExtension(path);
     }
 
-    virtual std::string _CreateIdentifier(
+    std::string _CreateIdentifier(
         const std::string& assetPath,
-        const ArResolvedPath& anchorAssetPath) final
+        const ArResolvedPath& anchorAssetPath) const final
     {
         TF_AXIOM(
             TfStringStartsWith(TfStringToLower(assetPath), _uriScheme) ||
@@ -67,9 +67,9 @@ public:
         return assetPath;
     }
 
-    virtual std::string _CreateIdentifierForNewAsset(
+    std::string _CreateIdentifierForNewAsset(
         const std::string& assetPath,
-        const ArResolvedPath& anchorAssetPath) final
+        const ArResolvedPath& anchorAssetPath) const final
     {
         TF_AXIOM(
             TfStringStartsWith(TfStringToLower(assetPath), _uriScheme) ||
@@ -77,8 +77,8 @@ public:
         return assetPath;
     }
 
-    virtual ArResolvedPath _Resolve(
-        const std::string& assetPath) final
+    ArResolvedPath _Resolve(
+        const std::string& assetPath) const final
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(assetPath), _uriScheme));
 
@@ -90,62 +90,56 @@ public:
         return ArResolvedPath(assetPath);
     }
 
-    virtual ArResolvedPath _ResolveForNewAsset(
-        const std::string& assetPath) final
+    ArResolvedPath _ResolveForNewAsset(
+        const std::string& assetPath) const final
     {
         return _Resolve(assetPath);
     }
 
-    virtual ArResolverContext _CreateDefaultContext() final
+    ArResolverContext _CreateDefaultContext() const final
     {
         return ArResolverContext(_TestURIResolverContext());
     }
 
-    virtual ArResolverContext _CreateDefaultContextForAsset(
-        const std::string& filePath) final
+    ArResolverContext _CreateDefaultContextForAsset(
+        const std::string& filePath) const final
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(filePath), _uriScheme));
         return ArResolverContext(_TestURIResolverContext());
     }
 
-    virtual VtValue _GetModificationTimestamp(
+    VtValue _GetModificationTimestamp(
         const std::string& path,
-        const ArResolvedPath& resolvedPath) final
+        const ArResolvedPath& resolvedPath) const final
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(path), _uriScheme));
         return VtValue(42);
     }
 
-    virtual std::shared_ptr<ArAsset> _OpenAsset(
-        const ArResolvedPath& resolvedPath)
+    std::shared_ptr<ArAsset> _OpenAsset(
+        const ArResolvedPath& resolvedPath) const final
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(resolvedPath), _uriScheme));
         return nullptr;
     }
 
-protected:
-    _TestURIResolverBase(const std::string& uriScheme)
-        : _uriScheme(uriScheme + ":")
-    {
-    }
-
-    virtual ArResolverContext _CreateContextFromString(
-        const std::string& contextStr) override
+    ArResolverContext _CreateContextFromString(
+        const std::string& contextStr) const final
     {
         return ArResolverContext(_TestURIResolverContext(contextStr));
     };
 
-    virtual std::shared_ptr<ArWritableAsset>
+    std::shared_ptr<ArWritableAsset>
     _OpenAssetForWrite(
         const ArResolvedPath& resolvedPath,
-        WriteMode writeMode) override
+        WriteMode writeMode) const final
     {
         TF_AXIOM(TfStringStartsWith(TfStringToLower(resolvedPath), _uriScheme));
         return nullptr;
     }
 
 private:
-    const _TestURIResolverContext* _GetCurrentContextPtr()
+    const _TestURIResolverContext* _GetCurrentContextPtr() const
     {
         return _GetCurrentContextObject<_TestURIResolverContext>();
     }

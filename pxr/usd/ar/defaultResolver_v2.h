@@ -86,25 +86,25 @@ public:
 
 protected:
     AR_API
-    virtual std::string _CreateIdentifier(
+    std::string _CreateIdentifier(
         const std::string& assetPath,
-        const ArResolvedPath& anchorAssetPath) override;
+        const ArResolvedPath& anchorAssetPath) const override;
 
     AR_API
-    virtual std::string _CreateIdentifierForNewAsset(
+    std::string _CreateIdentifierForNewAsset(
         const std::string& assetPath,
-        const ArResolvedPath& anchorAssetPath) override;
+        const ArResolvedPath& anchorAssetPath) const override;
 
     AR_API
-    virtual ArResolvedPath _Resolve(
-        const std::string& assetPath) override;
+    ArResolvedPath _Resolve(
+        const std::string& assetPath) const override;
 
     AR_API
-    virtual ArResolvedPath _ResolveForNewAsset(
-        const std::string& assetPath) override;
+    ArResolvedPath _ResolveForNewAsset(
+        const std::string& assetPath) const override;
 
     AR_API
-    virtual ArResolverContext _CreateDefaultContext() override;
+    ArResolverContext _CreateDefaultContext() const override;
 
     /// Creates a context that adds the directory containing \p assetPath
     /// as a first directory to be searched, when the resulting context is
@@ -114,42 +114,42 @@ protected:
     /// \p assetPath is not an absolute filesystem path, it will first be
     /// anchored to the process's current working directory.
     AR_API
-    virtual ArResolverContext _CreateDefaultContextForAsset(
-        const std::string& assetPath) override;
+    ArResolverContext _CreateDefaultContextForAsset(
+        const std::string& assetPath) const override;
 
     /// Creates an ArDefaultResolverContext from \p contextStr. This
     /// string is expected to be a list of directories delimited by
     /// the platform's standard path separator.
     AR_API
-    virtual ArResolverContext _CreateContextFromString(
-        const std::string& contextStr) override;
+    ArResolverContext _CreateContextFromString(
+        const std::string& contextStr) const override;
 
     AR_API
-    virtual bool _IsContextDependentPath(
-        const std::string& assetPath) override;
+    bool _IsContextDependentPath(
+        const std::string& assetPath) const override;
 
     AR_API
-    virtual std::string _GetExtension(
-        const std::string& path) override;
+    std::string _GetExtension(
+        const std::string& path) const override;
 
     AR_API
-    virtual VtValue _GetModificationTimestamp(
+    VtValue _GetModificationTimestamp(
         const std::string& path,
-        const ArResolvedPath& resolvedPath) override;
+        const ArResolvedPath& resolvedPath) const override;
 
     AR_API
-    virtual std::shared_ptr<ArAsset> _OpenAsset(
-        const ArResolvedPath& resolvedPath) override;
+    std::shared_ptr<ArAsset> _OpenAsset(
+        const ArResolvedPath& resolvedPath) const override;
 
     /// Creates an ArFilesystemWriteableAsset for the asset at the
     /// given \p resolvedPath.
     AR_API
-    virtual std::shared_ptr<ArWritableAsset> _OpenAssetForWrite(
+    std::shared_ptr<ArWritableAsset> _OpenAssetForWrite(
         const ArResolvedPath& resolvedPath,
-        WriteMode writeMode) override;
+        WriteMode writeMode) const override;
 
 private:
-    const ArDefaultResolverContext* _GetCurrentContextPtr();
+    const ArDefaultResolverContext* _GetCurrentContextPtr() const;
 
     ArDefaultResolverContext _fallbackContext;
     ArResolverContext _defaultContext;

@@ -441,14 +441,14 @@ public:
         return *_resolver->Get();
     }
 
-    const ArResolverContext* GetInternallyManagedCurrentContext()
+    const ArResolverContext* GetInternallyManagedCurrentContext() const
     {
         _ContextStack& contextStack = _threadContextStack.local();
         return contextStack.empty() ? nullptr : contextStack.back();
     }
 
     ArResolverContext CreateContextFromString(
-        const std::string& uriScheme, const std::string& contextStr)
+        const std::string& uriScheme, const std::string& contextStr) const
     {
         ArResolver* resolver =
             uriScheme.empty() ?
@@ -458,7 +458,7 @@ public:
     }
 
     ArResolverContext CreateContextFromStrings(
-        const std::vector<std::pair<std::string, std::string>>& strs)
+        const std::vector<std::pair<std::string, std::string>>& strs) const
     {
         std::vector<ArResolverContext> contexts;
         contexts.reserve(strs.size());
@@ -474,9 +474,9 @@ public:
         return ArResolverContext(contexts);
     }
 
-    virtual std::string _CreateIdentifier(
+    std::string _CreateIdentifier(
         const std::string& assetPath,
-        const ArResolvedPath& anchorAssetPath) override
+        const ArResolvedPath& anchorAssetPath) const final
     {
         return _CreateIdentifierHelper(
             assetPath, anchorAssetPath,
@@ -486,9 +486,9 @@ public:
             });
     }
 
-    virtual std::string _CreateIdentifierForNewAsset(
+    std::string _CreateIdentifierForNewAsset(
         const std::string& assetPath,
-        const ArResolvedPath& anchorAssetPath) override
+        const ArResolvedPath& anchorAssetPath) const final
     {
         return _CreateIdentifierHelper(
             assetPath, anchorAssetPath,
@@ -503,7 +503,7 @@ public:
     std::string _CreateIdentifierHelper(
         const std::string& assetPath,
         const ArResolvedPath& anchorAssetPath,
-        const CreateIdentifierFn& createIdentifierFn)
+        const CreateIdentifierFn& createIdentifierFn) const
     {
         // If assetPath has a recognized URI scheme, we assume it's an absolute
         // URI per RFC 3986 sec 4.3 and delegate to the associated URI resolver
@@ -541,8 +541,8 @@ public:
         return createIdentifierFn(*resolver, assetPath, anchorResolvedPath);
     }
 
-    virtual bool _IsContextDependentPath(
-        const std::string& assetPath)
+    bool _IsContextDependentPath(
+        const std::string& assetPath) const final
     {
         const _ResolverInfo* info = nullptr;
         ArResolver& resolver = _GetResolver(assetPath, &info);
@@ -558,7 +558,7 @@ public:
         return resolver.IsContextDependentPath(assetPath);
     }
 
-    virtual bool _IsRepositoryPath(const std::string& path) override
+    bool _IsRepositoryPath(const std::string& path) const final
     {
         ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
@@ -568,7 +568,7 @@ public:
         return resolver.IsRepositoryPath(path);
     }
 
-    virtual std::string _GetExtension(const std::string& path) override
+    std::string _GetExtension(const std::string& path) const final
     {
         ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
@@ -595,9 +595,9 @@ public:
     // or a URI resolver.
     using _ResolverContextData = std::vector<VtValue>;
 
-    virtual void _BindContext(
+    void _BindContext(
         const ArResolverContext& context,
-        VtValue* bindingData) override
+        VtValue* bindingData) final
     {
         _ResolverContextData contextData(1 + _uriResolvers.size());
 
@@ -625,9 +625,9 @@ public:
         contextStack.push_back(&context);
     }
 
-    virtual void _UnbindContext(
+    void _UnbindContext(
         const ArResolverContext& context,
-        VtValue* bindingData) override
+        VtValue* bindingData) final
     {
         if (!TF_VERIFY(bindingData->IsHolding<_ResolverContextData>())) {
             return;
@@ -667,7 +667,7 @@ public:
         }
     }
 
-    virtual ArResolverContext _CreateDefaultContext() override
+    ArResolverContext _CreateDefaultContext() const final
     {
         std::vector<ArResolverContext> contexts;
 
@@ -688,8 +688,8 @@ public:
         return ArResolverContext(contexts);
     }
 
-    virtual ArResolverContext _CreateContextFromString(
-        const std::string& str) override
+    ArResolverContext _CreateContextFromString(
+        const std::string& str) const final
     {
         if (!_resolver->info.implementsContexts) {
             return ArResolverContext();
@@ -698,8 +698,8 @@ public:
         return _resolver->Get()->CreateContextFromString(str);
     }
 
-    virtual ArResolverContext _CreateDefaultContextForAsset(
-        const std::string& filePath) override
+    ArResolverContext _CreateDefaultContextForAsset(
+        const std::string& filePath) const final
     {
         const _ResolverInfo* info = nullptr;
         ArResolver& resolver = _GetResolver(filePath, &info);
@@ -715,7 +715,7 @@ public:
         return resolver.CreateDefaultContextForAsset(filePath);
     }
 
-    virtual void _RefreshContext(const ArResolverContext& context) override
+    void _RefreshContext(const ArResolverContext& context) final
     {
         if (_resolver->info.implementsContexts) {
             _resolver->Get()->RefreshContext(context);
@@ -732,7 +732,7 @@ public:
         }
     }
 
-    virtual ArResolverContext _GetCurrentContext() override
+    ArResolverContext _GetCurrentContext() const final
     {
         // Although we manage the stack of contexts bound via calls
         // to BindContext, some resolver implementations may also be
@@ -765,8 +765,8 @@ public:
         return ArResolverContext(contexts);
     }
 
-    virtual ArResolvedPath _Resolve(
-        const std::string& assetPath) override
+    ArResolvedPath _Resolve(
+        const std::string& assetPath) const final
     {
         auto resolveFn = [this](const std::string& path) {
             const _ResolverInfo* info = nullptr;
@@ -789,8 +789,8 @@ public:
         return _ResolveHelper(assetPath, resolveFn);
     }
 
-    virtual ArResolvedPath _ResolveForNewAsset(
-        const std::string& assetPath) override
+    ArResolvedPath _ResolveForNewAsset(
+        const std::string& assetPath) const final
     {
         ArResolver& resolver = _GetResolver(assetPath);
         if (ArIsPackageRelativePath(assetPath)) {
@@ -802,9 +802,9 @@ public:
         return resolver.ResolveForNewAsset(assetPath);
     };
 
-    virtual ArAssetInfo _GetAssetInfo(
+    ArAssetInfo _GetAssetInfo(
         const std::string& assetPath,
-        const ArResolvedPath& resolvedPath)
+        const ArResolvedPath& resolvedPath) const final
     {
         ArAssetInfo assetInfo;
 
@@ -832,9 +832,9 @@ public:
         return resolver.GetAssetInfo(assetPath, resolvedPath);
     }
 
-    virtual VtValue _GetModificationTimestamp(
+    VtValue _GetModificationTimestamp(
         const std::string& path,
-        const ArResolvedPath& resolvedPath) override
+        const ArResolvedPath& resolvedPath) const final
     {
         ArResolver& resolver = _GetResolver(path);
         if (ArIsPackageRelativePath(path)) {
@@ -846,8 +846,8 @@ public:
         return resolver.GetModificationTimestamp(path, resolvedPath);
     }
 
-    virtual std::shared_ptr<ArAsset> _OpenAsset(
-        const ArResolvedPath& resolvedPath) override
+    std::shared_ptr<ArAsset> _OpenAsset(
+        const ArResolvedPath& resolvedPath) const final
     { 
         ArResolver& resolver = _GetResolver(resolvedPath);
         if (ArIsPackageRelativePath(resolvedPath)) {
@@ -865,9 +865,9 @@ public:
         return resolver.OpenAsset(resolvedPath);
     }
 
-    virtual std::shared_ptr<ArWritableAsset> _OpenAssetForWrite(
+    std::shared_ptr<ArWritableAsset> _OpenAssetForWrite(
         const ArResolvedPath& resolvedPath,
-        WriteMode mode) override
+        WriteMode mode) const final
     {
         ArResolver& resolver = _GetResolver(resolvedPath);
         if (ArIsPackageRelativePath(resolvedPath)) {
@@ -877,9 +877,9 @@ public:
         return resolver.OpenAssetForWrite(resolvedPath, mode);
     }
 
-    virtual bool _CanWriteAssetToPath(
+    bool _CanWriteAssetToPath(
         const ArResolvedPath& resolvedPath,
-        std::string* whyNot) override
+        std::string* whyNot) const final
     {
         ArResolver& resolver = _GetResolver(resolvedPath);
         if (ArIsPackageRelativePath(resolvedPath)) {
@@ -898,8 +898,8 @@ public:
     // package resolver.
     using _ResolverCacheData = std::vector<VtValue>;
 
-    virtual void _BeginCacheScope(
-        VtValue* cacheScopeData) override
+    void _BeginCacheScope(
+        VtValue* cacheScopeData) final
     {
         // If we've filled in cacheScopeData from a previous call to
         // BeginCacheScope, extract the _ResolverCacheData so we can pass
@@ -948,8 +948,8 @@ public:
         cacheScopeData->Swap(cacheData);
     }
 
-    virtual void _EndCacheScope(
-        VtValue* cacheScopeData) override
+    void _EndCacheScope(
+        VtValue* cacheScopeData) final
     {
         if (!TF_VERIFY(cacheScopeData->IsHolding<_ResolverCacheData>())) {
             return;
@@ -1206,7 +1206,7 @@ private:
     ArResolver&
     _GetResolver(
         const std::string& assetPath,
-        const _ResolverInfo** info = nullptr)
+        const _ResolverInfo** info = nullptr) const
     {
         ArResolver* uriResolver = _GetURIResolver(assetPath, info);
         if (uriResolver) {
@@ -1222,7 +1222,7 @@ private:
     ArResolver*
     _GetURIResolver(
         const std::string& assetPath,
-        const _ResolverInfo** info = nullptr)
+        const _ResolverInfo** info = nullptr) const
     {
         if (_uriResolvers.empty()) {
             return nullptr;
@@ -1247,7 +1247,7 @@ private:
     ArResolver*
     _GetURIResolverForScheme(
         const std::string& scheme,
-        const _ResolverInfo** info = nullptr)
+        const _ResolverInfo** info = nullptr) const
     {
         // Per RFC 3986 sec 3.1 schemes are case-insensitive. The schemes
         // stored in _uriResolvers are always stored in lower-case, so
@@ -1265,7 +1265,7 @@ private:
     }
 
     ArPackageResolver*
-    _GetPackageResolver(const std::string& packageRelativePath)
+    _GetPackageResolver(const std::string& packageRelativePath) const
     {
         const std::string innermostPackage = 
             ArSplitPackageRelativePathInner(packageRelativePath).first;
@@ -1282,7 +1282,7 @@ private:
 
     template <class ResolveFn>
     ArResolvedPath
-    _ResolveHelper(const std::string& path, ResolveFn resolveFn)
+    _ResolveHelper(const std::string& path, ResolveFn resolveFn) const
     {
         if (ArIsPackageRelativePath(path)) {
             // Resolve the outer-most package path first. For example, given a
@@ -1394,7 +1394,7 @@ private:
     using _ContextStack = std::vector<const ArResolverContext*>;
     using _PerThreadContextStack = 
         tbb::enumerable_thread_specific<_ContextStack>;
-    _PerThreadContextStack _threadContextStack;
+    mutable _PerThreadContextStack _threadContextStack;
 
     // Scoped Cache --------------------
 
@@ -1407,7 +1407,7 @@ private:
 
     using _PerThreadCache = ArThreadLocalScopedCache<_Cache>;
     using _CachePtr = _PerThreadCache::CachePtr;
-    _PerThreadCache _threadCache;
+    mutable _PerThreadCache _threadCache;
 
 };
 
@@ -1437,7 +1437,7 @@ ArResolver::~ArResolver()
 std::string
 ArResolver::CreateIdentifier(
     const std::string& assetPath,
-    const ArResolvedPath& anchorAssetPath)
+    const ArResolvedPath& anchorAssetPath) const
 {
     return _CreateIdentifier(assetPath, anchorAssetPath);
 }
@@ -1445,21 +1445,21 @@ ArResolver::CreateIdentifier(
 std::string
 ArResolver::CreateIdentifierForNewAsset(
     const std::string& assetPath,
-    const ArResolvedPath& anchorAssetPath)
+    const ArResolvedPath& anchorAssetPath) const
 {
     return _CreateIdentifierForNewAsset(assetPath, anchorAssetPath);
 }
 
 ArResolvedPath
 ArResolver::Resolve(
-    const std::string& assetPath)
+    const std::string& assetPath) const
 {
     return _Resolve(assetPath);
 }
 
 ArResolvedPath
 ArResolver::ResolveForNewAsset(
-    const std::string& assetPath)
+    const std::string& assetPath) const
 {
     return _ResolveForNewAsset(assetPath);
 }
@@ -1481,35 +1481,35 @@ ArResolver::UnbindContext(
 }
 
 ArResolverContext
-ArResolver::CreateDefaultContext()
+ArResolver::CreateDefaultContext() const
 {
     return _CreateDefaultContext();
 }
 
 ArResolverContext
 ArResolver::CreateDefaultContextForAsset(
-    const std::string& assetPath)
+    const std::string& assetPath) const
 {
     return _CreateDefaultContextForAsset(assetPath);
 }
 
 ArResolverContext
 ArResolver::CreateContextFromString(
-    const std::string& contextStr)
+    const std::string& contextStr) const
 {
     return _CreateContextFromString(contextStr);
 }
 
 ArResolverContext
 ArResolver::CreateContextFromString(
-    const std::string& uriScheme, const std::string& contextStr)
+    const std::string& uriScheme, const std::string& contextStr) const
 {
     return _GetResolver().CreateContextFromString(uriScheme, contextStr);
 }
 
 ArResolverContext
 ArResolver::CreateContextFromStrings(
-    const std::vector<std::pair<std::string, std::string>>& contextStrs)
+    const std::vector<std::pair<std::string, std::string>>& contextStrs) const
 {
     return _GetResolver().CreateContextFromStrings(contextStrs);
 }
@@ -1522,14 +1522,14 @@ ArResolver::RefreshContext(
 }
 
 ArResolverContext
-ArResolver::GetCurrentContext()
+ArResolver::GetCurrentContext() const
 {
     return _GetCurrentContext();
 }
 
 std::string
 ArResolver::GetExtension(
-    const std::string& assetPath)
+    const std::string& assetPath) const
 {
     return _GetExtension(assetPath);
 }
@@ -1537,7 +1537,7 @@ ArResolver::GetExtension(
 ArAssetInfo
 ArResolver::GetAssetInfo(
     const std::string& assetPath,
-    const ArResolvedPath& resolvedPath)
+    const ArResolvedPath& resolvedPath) const
 {
     return _GetAssetInfo(assetPath, resolvedPath);
 }
@@ -1545,14 +1545,14 @@ ArResolver::GetAssetInfo(
 VtValue
 ArResolver::GetModificationTimestamp(
     const std::string& assetPath,
-    const ArResolvedPath& resolvedPath)
+    const ArResolvedPath& resolvedPath) const
 {
     return _GetModificationTimestamp(assetPath, resolvedPath);
 }
 
 std::shared_ptr<ArAsset>
 ArResolver::OpenAsset(
-    const ArResolvedPath& resolvedPath)
+    const ArResolvedPath& resolvedPath) const
 {
     return _OpenAsset(resolvedPath);
 }
@@ -1560,7 +1560,7 @@ ArResolver::OpenAsset(
 std::shared_ptr<ArWritableAsset>
 ArResolver::OpenAssetForWrite(
     const ArResolvedPath& resolvedPath,
-    WriteMode mode)
+    WriteMode mode) const
 {
     return _OpenAssetForWrite(resolvedPath, mode);
 }
@@ -1568,14 +1568,14 @@ ArResolver::OpenAssetForWrite(
 bool
 ArResolver::CanWriteAssetToPath(
     const ArResolvedPath& resolvedPath,
-    std::string* whyNot)
+    std::string* whyNot) const
 {
     return _CanWriteAssetToPath(resolvedPath, whyNot);
 }
 
 bool
 ArResolver::IsContextDependentPath(
-    const std::string& assetPath)
+    const std::string& assetPath) const
 {
     return _IsContextDependentPath(assetPath);
 }
@@ -1596,7 +1596,7 @@ ArResolver::EndCacheScope(
 
 bool
 ArResolver::IsRepositoryPath(
-    const std::string& path)
+    const std::string& path) const
 {
     return _IsRepositoryPath(path);
 }
@@ -1628,21 +1628,21 @@ ArResolver::_EndCacheScope(
 }
 
 ArResolverContext
-ArResolver::_CreateDefaultContext()
+ArResolver::_CreateDefaultContext() const
 {
     return ArResolverContext();
 }
 
 ArResolverContext
 ArResolver::_CreateDefaultContextForAsset(
-    const std::string& assetPath)
+    const std::string& assetPath) const
 {
     return ArResolverContext();
 }
 
 ArResolverContext
 ArResolver::_CreateContextFromString(
-    const std::string& contextStr)
+    const std::string& contextStr) const
 {
     return ArResolverContext();
 }
@@ -1654,7 +1654,7 @@ ArResolver::_RefreshContext(
 }
 
 ArResolverContext
-ArResolver::_GetCurrentContext()
+ArResolver::_GetCurrentContext() const
 {
     return ArResolverContext();
 }
@@ -1662,7 +1662,7 @@ ArResolver::_GetCurrentContext()
 ArAssetInfo
 ArResolver::_GetAssetInfo(
     const std::string& assetPath,
-    const ArResolvedPath& resolvedPath)
+    const ArResolvedPath& resolvedPath) const
 {
     return ArAssetInfo();
 }
@@ -1670,21 +1670,21 @@ ArResolver::_GetAssetInfo(
 bool
 ArResolver::_CanWriteAssetToPath(
     const ArResolvedPath& resolvedPath,
-    std::string* whyNot)
+    std::string* whyNot) const
 {
     return true;
 }
 
 bool
 ArResolver::_IsContextDependentPath(
-    const std::string& assetPath)
+    const std::string& assetPath) const
 {
     return false;
 }
 
 bool
 ArResolver::_IsRepositoryPath(
-    const std::string& path)
+    const std::string& path) const
 {
     return false;
 }
