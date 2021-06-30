@@ -361,7 +361,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         } else {
             FS[fsIndex++] = _tokens->patchEdgeQuadFS;
         }
-        if (isPrimTypePatches) {
+        if (isPrimTypeRefinedMesh) {
             FS[fsIndex++] = _tokens->patchEdgeOnSurfFS;
         } else {
             FS[fsIndex++] = _tokens->edgeOnSurfFS;

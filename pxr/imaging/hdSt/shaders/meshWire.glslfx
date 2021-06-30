@@ -157,9 +157,12 @@ float GetMinEdgeDistance()
 }
 
 // Use edge distance to compute a smooth opacity falloff for good looking edges.
-float GetEdgeOpacity() {
-    float d = GetMinEdgeDistance();
+float GetEdgeFalloff(float d) {
     return exp2(-4 * d * d);
+}
+
+float GetEdgeOpacity() {
+    return GetEdgeFalloff(GetMinEdgeDistance());
 }
 
 --- --------------------------------------------------------------------------
@@ -172,9 +175,16 @@ float GetEdgeOpacity(vec2 patchCoord)
     vec3 param = vec3(patchCoord.x, patchCoord.y, 1-patchCoord.x-patchCoord.y);
     vec3 patchEdgeDistance = max(vec3(0.0), param / fwidth(param));
 
+    const float patchEdgeMinDistance =
+        min(patchEdgeDistance.x, min(patchEdgeDistance.y, patchEdgeDistance.z));
+
     // Reduce the opacity of edges not on patch boundaries
-    float scale = all(greaterThan(patchEdgeDistance, vec3(1.0))) ? 0.3 : 1.0;
-    return scale * GetEdgeOpacity();
+    if (patchEdgeMinDistance > 1.0) {
+        return 0.3 * GetEdgeOpacity();
+    }
+
+    // Use distance to patch edge rather than distance to primitive edge
+    return GetEdgeFalloff(patchEdgeMinDistance);
 }
 
 --- --------------------------------------------------------------------------
@@ -192,9 +202,17 @@ float GetEdgeOpacity(vec2 patchCoord)
     // Hide sub-patch internal edges introduced by quadrangulation
     if (GetEdgeFlag() != 0) patchEdgeDistance.yz += vec2(2.0);
 
+    const float patchEdgeMinDistance =
+        min(min(patchEdgeDistance.x, patchEdgeDistance.y),
+            min(patchEdgeDistance.z, patchEdgeDistance.w));
+
     // Reduce the opacity of edges not on patch boundaries
-    float scale = all(greaterThan(patchEdgeDistance, vec4(1.0))) ? 0.3 : 1.0;
-    return scale * GetEdgeOpacity();
+    if (patchEdgeMinDistance > 1.0) {
+        return 0.3 * GetEdgeOpacity();
+    }
+
+    // Use distance to patch edge rather than distance to primitive edge
+    return GetEdgeFalloff(patchEdgeMinDistance);
 }
 
 --- --------------------------------------------------------------------------
@@ -216,7 +234,7 @@ float GetMinEdgeDistance()
 
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
-    float p = GetEdgeOpacity(patchCoord.xy);
+    float p = GetEdgeOpacity();
     
     vec4 wireColor = GetWireframeColor();
     
