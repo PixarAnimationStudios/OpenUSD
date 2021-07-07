@@ -162,7 +162,7 @@ def "Root" {
     def Xform "RenderXform" {
         token purpose = "render"
 
-        def "Prim {
+        def "Prim" {
             token purpose = "default"
 
             def Xform "InheritXform" {
@@ -174,7 +174,7 @@ def "Root" {
         }
     }
 
-    def Xform "Xform {
+    def Xform "Xform" {
     }
 }
 \endcode
