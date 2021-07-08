@@ -751,6 +751,24 @@ def "Root"
         self.assertEqual(list(layer9.rootPrims.keys()),
                          list(["Generated"]))
 
+    def test_CreatePrimInLayer(self):
+        layer = Sdf.Layer.CreateAnonymous()
+        self.assertFalse(layer.GetPrimAtPath("/root"))
+        rootSpec = Sdf.CreatePrimInLayer(layer, '/root')
+        # Must return new prim spec
+        self.assertTrue(rootSpec)
+        # Prim spec must match what we retrieve via namespace
+        self.assertEqual(rootSpec, layer.GetPrimAtPath('/root'))
+        with self.assertRaises(Tf.ErrorException):
+            # Must fail with non-prim path
+            Sdf.CreatePrimInLayer(layer, '/root.property')
+        # Must be able to create variants
+        variantSpec = Sdf.CreatePrimInLayer(layer, '/root{x=y}')
+        self.assertTrue(variantSpec)
+        self.assertEqual(variantSpec, layer.GetPrimAtPath('/root{x=y}'))
+        # New variant names use prepend
+        self.assertTrue('x' in rootSpec.variantSetNameList.prependedItems)
+        self.assertTrue(len(rootSpec.variantSetNameList.addedItems) == 0)
 
 if __name__ == "__main__":
     unittest.main()
