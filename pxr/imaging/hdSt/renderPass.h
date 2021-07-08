@@ -97,7 +97,7 @@ private:
     bool _collectionChanged;
 
     // DrawItems that are used to build the draw batches.
-    HdRenderIndex::HdDrawItemPtrVector _drawItems;
+    HdDrawItemConstPtrVectorSharedPtr _drawItems;
     size_t _drawItemCount;
     bool _drawItemsChanged;
 

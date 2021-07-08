@@ -319,8 +319,9 @@ HdSt_RenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
             }
         }
 
-        _drawItems = GetRenderIndex()->GetDrawItems(collection, renderTags);
-        _drawItemCount = _drawItems.size();
+        _drawItems = std::make_shared<HdDrawItemConstPtrVector>(
+            GetRenderIndex()->GetDrawItems(collection, renderTags));
+        _drawItemCount = _drawItems->size();
         _drawItemsChanged = true;
 
         _collectionVersion = collectionVersion;
@@ -351,10 +352,7 @@ HdSt_RenderPass::_PrepareCommandBuffer(TfTokenVector const& renderTags)
 
     // Rebuild draw batches based on new draw items
     if (_drawItemsChanged) {
-        _cmdBuffer.SwapDrawItems(
-            // Downcast the HdDrawItem entries to HdStDrawItems:
-            reinterpret_cast<std::vector<HdStDrawItem const*>*>(&_drawItems),
-            batchVersion);
+        _cmdBuffer.SetDrawItems(_drawItems, batchVersion);
 
         _drawItemsChanged = false;
         size_t itemCount = _cmdBuffer.GetTotalSize();
