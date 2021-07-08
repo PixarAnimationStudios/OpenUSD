@@ -89,6 +89,7 @@ class GLSLProgram():
         # <version_number> = <major_number>.<minor_number>[.<release_number>]
         versionNumberString = versionString.split()[0]
         self._glMajorVersion = int(versionNumberString.split('.')[0])
+        self._glMinorVersion = int(versionNumberString.split('.')[1])
 
         # requires PyOpenGL 3.0.2 or later for glGenVertexArrays.
         self.useVAO = (self._glMajorVersion >= 3 and
@@ -99,7 +100,8 @@ class GLSLProgram():
         vertexShader   = GL.glCreateShader(GL.GL_VERTEX_SHADER)
         fragmentShader = GL.glCreateShader(GL.GL_FRAGMENT_SHADER)
 
-        if (self._glMajorVersion >= 3):
+        # requires OpenGL 3.1 or greater for version 140 shader source
+        if (self._glMajorVersion, self._glMinorVersion) >= (3, 1):
             vsSource = VS3
             fsSource = FS3
         else:
