@@ -1046,9 +1046,12 @@ namespace {
     }
 
     // Wrapper for HdRprimCollection that provides a custom hash and equality
-    // test based on the just the paths and repr opinions.
+    // test based on just the repr opinion.
     // This is used to avoid redundant work in the dirty list merge step in
     // HdRenderIndex::SyncAll.
+    // Note: The include and exclude paths are skipped from the hash
+    // and equality tests since it isn't used as a filter to determine
+    // which Rprims to sync. See HdRenderIndex::_GetDirtyRprimIds
     struct _CollectionWrapper
     {
         _CollectionWrapper(HdRprimCollection const &col)
@@ -1056,10 +1059,9 @@ namespace {
 
         bool operator==(_CollectionWrapper const & other) const
         {
+            // See comment above.
             HdRprimCollection const &otherCol = other.collection;
-            return collection.GetRootPaths() == otherCol.GetRootPaths()
-                && collection.GetExcludePaths() == otherCol.GetExcludePaths()
-                && collection.GetReprSelector() == otherCol.GetReprSelector()
+            return collection.GetReprSelector() == otherCol.GetReprSelector()
                 && collection.IsForcedRepr() == otherCol.IsForcedRepr();
         }
 
@@ -1075,14 +1077,8 @@ namespace {
     void TfHashAppend(
         HashState &h, _CollectionWrapper const &val) {
         HdRprimCollection const &col = val.collection;
-        // Note: The include and exclude paths can be skipped from the hash
-        // and equality tests since it isn't used as a filter to
-        // determine which Rprims to sync.
-        // See HdRenderIndex::_GetDirtyRprimIds
-        h.Append(col.GetRootPaths(),
-                 col.GetExcludePaths(),
-                 col.GetReprSelector(),
-                 col.IsForcedRepr());
+        // See comment above.
+        h.Append(col.GetReprSelector(), col.IsForcedRepr());
     }
 }
 
