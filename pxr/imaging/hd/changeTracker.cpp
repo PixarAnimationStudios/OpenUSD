@@ -106,6 +106,11 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
         return;
     }
 
+    // XXX: During the migration, "DirtyPrimvar" implies DirtyPoints/etc.
+    if (bits & DirtyPrimvar) {
+        bits |= DirtyPoints | DirtyNormals | DirtyWidths;
+    }
+
     _IDStateMap::iterator it = _rprimState.find(id);
     if (!TF_VERIFY(it != _rprimState.end(), "%s\n", id.GetText())) {
         return;
