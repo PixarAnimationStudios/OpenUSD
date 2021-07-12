@@ -197,7 +197,7 @@ HdPrmanInstancer::SampleInstanceTransforms(
             }
             if (rot.size() > instanceIndex) {
                 GfMatrix4d r(1);
-                r.SetRotate(GfRotation(rot[instanceIndex]));
+                r.SetRotate(GfQuatd(rot[instanceIndex]));
                 ma[j] = r * ma[j];
             }
             if (scale.size() > instanceIndex) {
