@@ -64,9 +64,15 @@ public:
     HDST_API
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
-    /// Obtains the render delegate specific representation of the shader.
+    /// Obtains the GLSLFX code together with supporting information
+    /// such as material params and textures to render surfaces.
     HDST_API
-    HdStShaderCodeSharedPtr GetShaderCode() const;
+    HdStShaderCodeSharedPtr GetSurfaceShader() const;
+
+    /// Obtains the GLSLFLX code together with material params to
+    /// render volumes.
+    HDST_API
+    HdStShaderCodeSharedPtr GetVolumeShader() const;
 
     /// Summary flag. Returns true if the material is bound to one or more
     /// textures and any of those textures is a ptex texture.
@@ -112,6 +118,7 @@ private:
     static HioGlslfx *_fallbackGlslfx;
 
     HdStSurfaceShaderSharedPtr _surfaceShader;
+    HdStSurfaceShaderSharedPtr _volumeShader;
 
     bool _isInitialized : 1;
     bool _hasPtex : 1;

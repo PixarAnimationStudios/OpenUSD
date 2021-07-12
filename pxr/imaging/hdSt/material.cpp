@@ -205,6 +205,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
     std::string fragmentSource;
     std::string geometrySource;
+    std::string volumeSource;
     VtDictionary materialMetadata;
     TfToken materialTag = _materialTag;
     HdSt_MaterialParamVector params;
@@ -218,14 +219,17 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
             _networkProcessor.ProcessMaterialNetwork(GetId(), hdNetworkMap,
                                                     resourceRegistry.get());
             fragmentSource = _networkProcessor.GetFragmentCode();
+            volumeSource = _networkProcessor.GetVolumeCode();
             geometrySource = _networkProcessor.GetGeometryCode();
             materialMetadata = _networkProcessor.GetMetadata();
             materialTag = _networkProcessor.GetMaterialTag();
             params = _networkProcessor.GetMaterialParams();
                 textureDescriptors = _networkProcessor.GetTextureDescriptors();
-            }
         }
+    }
 
+    // Use fallback shader when there is no source for fragment and geometry
+    // shader.
     if (fragmentSource.empty() && geometrySource.empty()) {
         _InitFallbackShader();
         fragmentSource = _fallbackGlslfx->GetSurfaceSource();
@@ -235,8 +239,30 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         materialMetadata = _fallbackGlslfx->GetMetadata();
     }
 
-    // If we're updating the fragment or geometry source, we need to rebatch
-    // anything that uses this material.
+    // Update volume shader.
+    // Note that we set the volume shader to null rather than use a fallback
+    // shader here. The fallback shader will be used in _ComputeVolumeShader in
+    // volume.cpp.
+    if (volumeSource.empty()) {
+        _volumeShader = nullptr;
+    } else {
+        if (!_volumeShader) {
+            _volumeShader = std::make_shared<HdStSurfaceShader>();
+        }
+        std::string const &oldVolumeSource = 
+            _volumeShader->GetSource(HdShaderTokens->fragmentShader);
+        if (oldVolumeSource != volumeSource) {
+            _volumeShader->SetFragmentSource(volumeSource);
+            // If we're updating the volume source, we need to rebatch anything that
+            // uses this material.
+            markBatchesDirty = true;
+        }
+        _volumeShader->SetParams(params);
+        _volumeShader->SetMaterialTag(materialTag);
+    }
+
+    // If we're updating the fragment or geometry source, we need to
+    // rebatch anything that uses this material.
     std::string const& oldFragmentSource = 
         _surfaceShader->GetSource(HdShaderTokens->fragmentShader);
     std::string const& oldGeometrySource = 
@@ -382,9 +408,15 @@ HdStMaterial::GetInitialDirtyBitsMask() const
 }
 
 HdStShaderCodeSharedPtr
-HdStMaterial::GetShaderCode() const
+HdStMaterial::GetSurfaceShader() const
 {
     return _surfaceShader;
+}
+
+HdStShaderCodeSharedPtr
+HdStMaterial::GetVolumeShader() const
+{
+    return _volumeShader;
 }
 
 void

@@ -205,29 +205,22 @@ _MakeFallbackVolumeShader()
 HdStShaderCodeSharedPtr
 _ComputeVolumeShader(const HdStMaterial * const material)
 {
+    // Try to use volume shader from material.
     if (material) {
-        // Use the shader from the HdStMaterial as volume shader.
-        //
-        // Note that rprims should query the material whether they want
-        // a surface or volume shader instead of just asking for "some"
-        // shader with HdStMaterial::GetShaderCode().
-        // We can use HdStMaterial::GetShaderCode() here because the
-        // UsdImagingGLHydraMaterialAdapter is following the outputs:volume
-        // input of a material if the outputs:surface is unconnected.
-        //
-        // We should revisit the API an rprim is using to ask HdStMaterial
-        // for a shader once we switched over to HdMaterialNetworkMap's.
-        return material->GetShaderCode();
-    } else {
-        // Instantiate fallback volume shader only once
-        //
-        // Note that the default HdStMaterial provides a fallback surface
-        // shader and we need a volume shader, so we create the shader here
-        // ourselves.
-        static const HdStShaderCodeSharedPtr fallbackVolumeShader =
-            _MakeFallbackVolumeShader();
-        return fallbackVolumeShader;
+        HdStShaderCodeSharedPtr const shader = material->GetVolumeShader();
+        if (shader) {
+            return shader;
+        }
     }
+
+    // Instantiate fallback volume shader only once
+    //
+    // Note that the default HdStMaterial provides a fallback surface
+    // shader and we need a volume shader, so we create the shader here
+    // ourselves.
+    static const HdStShaderCodeSharedPtr fallbackVolumeShader =
+        _MakeFallbackVolumeShader();
+    return fallbackVolumeShader;
 }
 
 // A map from name to HdStVolumeFieldDescriptor (identifying a

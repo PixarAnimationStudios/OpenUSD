@@ -242,7 +242,7 @@ HdStGetMaterialShader(
                 renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
     }
 
-    return material->GetShaderCode();
+    return material->GetSurfaceShader();
 }
 
 // -----------------------------------------------------------------------------

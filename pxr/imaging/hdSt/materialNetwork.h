@@ -63,6 +63,9 @@ public:
     std::string const& GetFragmentCode() const;
 
     HDST_API
+    std::string const& GetVolumeCode() const;
+
+    HDST_API
     std::string const& GetGeometryCode() const;
 
     HDST_API
@@ -103,6 +106,7 @@ public:
 private:
     TfToken _materialTag;
     std::string _fragmentSource;
+    std::string _volumeSource;
     std::string _geometrySource;
     VtDictionary _materialMetadata;
     HdSt_MaterialParamVector _materialParams;
