@@ -39,6 +39,8 @@
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hgiGL/buffer.h"
+
 #include "pxr/base/tf/staticTokens.h"
 
 #include <boost/functional/hash.hpp>
@@ -1028,7 +1030,11 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
             glMakeNamedBufferResidentNV(
                 buffer->GetHandle()->GetRawResource(), GL_READ_WRITE);
         }
-        glUniformui64NV(loc, buffer->GetGPUAddress());
+        {
+            HgiGLBuffer * bufferGL =
+                static_cast<HgiGLBuffer*>(buffer->GetHandle().Get());
+            glUniformui64NV(loc, bufferGL->GetBindlessGPUAddress());
+        }
         break;
     case HdBinding::SSBO:
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, loc,
@@ -1041,7 +1047,11 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
             glMakeNamedBufferResidentNV(
                 buffer->GetHandle()->GetRawResource(), GL_READ_WRITE);
         }
-        glUniformui64NV(loc, buffer->GetGPUAddress()+offset);
+        {
+            HgiGLBuffer * bufferGL =
+                static_cast<HgiGLBuffer*>(buffer->GetHandle().Get());
+            glUniformui64NV(loc, bufferGL->GetBindlessGPUAddress()+offset);
+        }
         break;
     case HdBinding::DISPATCH:
         glBindBuffer(GL_DRAW_INDIRECT_BUFFER,
