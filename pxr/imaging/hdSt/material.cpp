@@ -239,26 +239,23 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         materialMetadata = _fallbackGlslfx->GetMetadata();
     }
 
-    // Update volume shader.
-    // Note that we set the volume shader to null rather than use a fallback
-    // shader here. The fallback shader will be used in _ComputeVolumeShader in
-    // volume.cpp.
-    if (volumeSource.empty()) {
-        _volumeShader = nullptr;
-    } else {
-        if (!_volumeShader) {
-            _volumeShader = std::make_shared<HdStSurfaceShader>();
+    // Update volume material data.
+    if (_volumeMaterialData.source != volumeSource) {
+        // If we're updating the volume source, we need to rebatch anything that
+        // uses this material.
+        markBatchesDirty = true;
+        _volumeMaterialData.source = std::move(volumeSource);
+
+        if (_volumeMaterialData.source.empty()) {
+            // Material does not provide a volume shader.
+            // In this case, we leave it to _ComputeVolumeMaterialData in
+            // volume.cpp to use the fallback volume data.
+            // The params of this material are also irrelevant for volumes in
+            // this case.
+            _volumeMaterialData.params = {};
+        } else {
+            _volumeMaterialData.params = params;
         }
-        std::string const &oldVolumeSource = 
-            _volumeShader->GetSource(HdShaderTokens->fragmentShader);
-        if (oldVolumeSource != volumeSource) {
-            _volumeShader->SetFragmentSource(volumeSource);
-            // If we're updating the volume source, we need to rebatch anything that
-            // uses this material.
-            markBatchesDirty = true;
-        }
-        _volumeShader->SetParams(params);
-        _volumeShader->SetMaterialTag(materialTag);
     }
 
     // If we're updating the fragment or geometry source, we need to
@@ -411,12 +408,6 @@ HdStShaderCodeSharedPtr
 HdStMaterial::GetSurfaceShader() const
 {
     return _surfaceShader;
-}
-
-HdStShaderCodeSharedPtr
-HdStMaterial::GetVolumeShader() const
-{
-    return _volumeShader;
 }
 
 void

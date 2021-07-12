@@ -173,43 +173,40 @@ HdStVolume::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 
 namespace {
 
-// Fallback volume shader created from shaders/fallbackVolume.glslfx
-HdStShaderCodeSharedPtr
-_MakeFallbackVolumeShader()
+// Fallback volume data created from shaders/fallbackVolume.glslfx
+HdStMaterial::VolumeMaterialData
+_MakeFallbackVolumeMaterialData()
 {
     const HioGlslfx glslfx(HdStPackageFallbackVolumeShader());
 
-    // Note that we use HdStSurfaceShader for a volume shader.
-    // Despite its name, HdStSurfaceShader is really just a pair of
-    // GLSL code and bindings and not specific to surface shading.
-    HdStSurfaceShaderSharedPtr const result =
-        std::make_shared<HdStSurfaceShader>();
-    
-    result->SetFragmentSource(glslfx.GetVolumeSource());
-    result->SetParams(
+    return
         {
-            HdSt_MaterialParam(
-                HdSt_MaterialParam::ParamTypeFieldRedirect,
-                _fallbackShaderTokens->density,
-                VtValue(0.0f),
-                { _fallbackShaderTokens->density }),
-            HdSt_MaterialParam(
-                HdSt_MaterialParam::ParamTypeFieldRedirect,
-                _fallbackShaderTokens->emission,
-                VtValue(GfVec3f(0.0, 0.0, 0.0)),
-                { _fallbackShaderTokens->emission })});
-
-    return result;
+            glslfx.GetVolumeSource(),
+            {
+                HdSt_MaterialParam(
+                    HdSt_MaterialParam::ParamTypeFieldRedirect,
+                    _fallbackShaderTokens->density,
+                    VtValue(0.0f),
+                    { _fallbackShaderTokens->density }),
+                HdSt_MaterialParam(
+                    HdSt_MaterialParam::ParamTypeFieldRedirect,
+                    _fallbackShaderTokens->emission,
+                    VtValue(GfVec3f(0.0, 0.0, 0.0)),
+                    { _fallbackShaderTokens->emission })
+            }
+        };
 }
 
-HdStShaderCodeSharedPtr
-_ComputeVolumeShader(const HdStMaterial * const material)
+const
+HdStMaterial::VolumeMaterialData &
+_ComputeVolumeMaterialData(const HdStMaterial * const material)
 {
-    // Try to use volume shader from material.
+    // Try to use volume material data from material.
     if (material) {
-        HdStShaderCodeSharedPtr const shader = material->GetVolumeShader();
-        if (shader) {
-            return shader;
+        const HdStMaterial::VolumeMaterialData &data =
+            material->GetVolumeMaterialData();
+        if (!data.source.empty()) {
+            return data;
         }
     }
 
@@ -218,9 +215,9 @@ _ComputeVolumeShader(const HdStMaterial * const material)
     // Note that the default HdStMaterial provides a fallback surface
     // shader and we need a volume shader, so we create the shader here
     // ourselves.
-    static const HdStShaderCodeSharedPtr fallbackVolumeShader =
-        _MakeFallbackVolumeShader();
-    return fallbackVolumeShader;
+    static const HdStMaterial::VolumeMaterialData fallbackData =
+        _MakeFallbackVolumeMaterialData();
+    return fallbackData;
 }
 
 // A map from name to HdStVolumeFieldDescriptor (identifying a
@@ -295,7 +292,7 @@ HdSt_VolumeShaderSharedPtr
 _ComputeMaterialShader(
     HdSceneDelegate * const sceneDelegate,
     const SdfPath &id,
-    const HdStShaderCodeSharedPtr &volumeShader,
+    const HdStMaterial::VolumeMaterialData &volumeMaterialData,
     const GfRange3d &authoredExtents)
 {
     TRACE_FUNCTION();
@@ -316,10 +313,7 @@ _ComputeMaterialShader(
     // The names of the fields read by field readers.
     std::set<TfToken> fieldNames;
 
-    // Make a copy of the original params
-    HdSt_MaterialParamVector params = volumeShader->GetParams();
-
-    for (const auto & param : params) {
+    for (const auto & param : volumeMaterialData.params) {
         // Scan original parameters...
         if ( param.IsFieldRedirect() ||
              param.IsPrimvarRedirect() ||
@@ -338,6 +332,9 @@ _ComputeMaterialShader(
         }
         // Ignoring 2D texture parameters for volumes.
     }
+
+    // Make a copy of the original params
+    HdSt_MaterialParamVector params = volumeMaterialData.params;
 
     // Note that it is a requirement of HdSt_VolumeShader that
     // namedTextureHandles and fieldDescs line up.
@@ -424,8 +421,7 @@ _ComputeMaterialShader(
 
     // Append the volume shader (calling into the GLSL functions
     // generated above)
-    result->SetFragmentSource(
-        volumeShader->GetSource(HdShaderTokens->fragmentShader));
+    result->SetFragmentSource(volumeMaterialData.source);
 
     return result;
 }
@@ -436,7 +432,7 @@ _ComputeBBoxVertices(GfRange3d const &range)
     VtVec3fArray result(8);
 
     const GfVec3d min = HdSt_VolumeShader::GetSafeMin(range);
-    const GfVec3d&max = HdSt_VolumeShader::GetSafeMax(range);
+    const GfVec3d max = HdSt_VolumeShader::GetSafeMax(range);
 
     int i = 0;
 
@@ -533,7 +529,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
             _ComputeMaterialShader(
                 sceneDelegate,
                 GetId(),
-                _ComputeVolumeShader(material),
+                _ComputeVolumeMaterialData(material),
                 _sharedData.bounds.GetRange()));
     }        
 
