@@ -137,6 +137,7 @@ pxr_library(hdSt
         codeGen
         cullingShaderKey
         drawBatch
+        drawItemsCache
         extCompComputeShader
         fieldTextureCpuData
         imageShaderShaderKey

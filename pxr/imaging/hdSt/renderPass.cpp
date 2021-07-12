@@ -26,6 +26,7 @@
 #include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/imaging/hdSt/debugCodes.h"
+#include "pxr/imaging/hdSt/drawItemsCache.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -46,6 +47,7 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/gf/frustum.h"
 
 
@@ -54,6 +56,16 @@
 #include "pxr/imaging/hgiGL/graphicsCmds.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_DRAW_ITEMS_CACHE, false,
+                "Enable usage of the draw items cache in Storm.");
+
+static bool
+_IsDrawItemsCacheEnabled()
+{
+    static const bool enabled = TfGetEnvSetting(HDST_ENABLE_DRAW_ITEMS_CACHE);
+    return enabled;
+}
 
 void
 _ExecuteDraw(
@@ -92,6 +104,7 @@ HdSt_RenderPass::HdSt_RenderPass(HdRenderIndex *index,
     , _materialTagsVersion(0)
     , _collectionChanged(false)
     , _drawItemCount(0)
+    , _drawItemsGathered(false)
     , _drawItemsChanged(false)
     , _hgi(nullptr)
 {
@@ -113,10 +126,14 @@ HdSt_RenderPass::GetDrawItemCount() const
     return _drawItemCount;
 }
 
+/* virtual */
 void
 HdSt_RenderPass::_Prepare(TfTokenVector const &renderTags)
 {
+    // Tasks may not call HdRenderPass::_Prepare, in which case draw items are
+    // updated during _Execute.
     _PrepareDrawItems(renderTags);
+    _drawItemsGathered = true; // This is reset during _Execute.
 }
 
 static
@@ -270,13 +287,44 @@ HdSt_RenderPass::_MarkCollectionDirty()
     _collectionVersion = 0;
 }
 
+static
+HdStDrawItemsCachePtr
+_GetDrawItemsCache(HdRenderIndex *renderIndex)
+{
+    HdStRenderDelegate* renderDelegate =
+        static_cast<HdStRenderDelegate*>(renderIndex->GetRenderDelegate());
+    return renderDelegate->GetDrawItemsCache();
+}
+
 void
 HdSt_RenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
 {
     HD_TRACE_FUNCTION();
 
-    HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
     HdRprimCollection const &collection = GetRprimCollection();
+    if (_IsDrawItemsCacheEnabled()) {
+        HdStDrawItemsCachePtr cache = _GetDrawItemsCache(GetRenderIndex());
+
+        HdDrawItemConstPtrVectorSharedPtr cachedEntry =
+            cache->GetDrawItems(
+                collection, renderTags, GetRenderIndex(), _drawItems);
+        
+        if (_drawItems != cachedEntry) {
+            // XXX The metric below should be renamed. It tracks the number
+            // of times the draw items have to be refetched.
+            HD_PERF_COUNTER_INCR(HdPerfTokens->collectionsRefreshed);
+
+            _drawItems = cachedEntry;
+            _drawItemsChanged = true;
+            _drawItemCount = _drawItems->size();
+        }
+        // We don't rely on this state when using the cache. Reset always.
+        _collectionChanged = false;
+
+        return;
+    }
+
+    HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
 
     const int collectionVersion =
         tracker.GetCollectionVersion(collection.GetName());
@@ -343,13 +391,17 @@ HdSt_RenderPass::_PrepareCommandBuffer(TfTokenVector const& renderTags)
     // We know what must be drawn and that the stream needs to be updated,
     // so iterate over each prim, cull it and schedule it to be drawn.
 
-    const int batchVersion = _GetDrawBatchesVersion(GetRenderIndex());
-
     // It is optional for a render task to call RenderPass::Prepare() to
     // update the drawItems during the prepare phase. We ensure our drawItems
     // are always up-to-date before building the command buffers.
-    _PrepareDrawItems(renderTags);
+    {
+        if (!_drawItemsGathered) {
+            _PrepareDrawItems(renderTags);
+        }
+        _drawItemsGathered = false;
+    }
 
+    const int batchVersion = _GetDrawBatchesVersion(GetRenderIndex());
     // Rebuild draw batches based on new draw items
     if (_drawItemsChanged) {
         _cmdBuffer.SetDrawItems(_drawItems, batchVersion);

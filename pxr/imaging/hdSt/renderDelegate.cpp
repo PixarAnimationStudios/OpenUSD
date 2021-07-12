@@ -25,6 +25,7 @@
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
 #include "pxr/imaging/hdSt/basisCurves.h"
+#include "pxr/imaging/hdSt/drawItemsCache.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/extComputation.h"
 #include "pxr/imaging/hdSt/field.h"
@@ -174,6 +175,7 @@ HdStRenderDelegate::HdStRenderDelegate(HdRenderSettingsMap const& settingsMap)
     : HdRenderDelegate(settingsMap)
     , _hgi(nullptr)
     , _renderParam(std::make_unique<HdStRenderParam>())
+    , _drawItemsCache(std::make_unique<HdSt_DrawItemsCache>())
 {
     // Initialize the settings and settings descriptors.
     _settingDescriptors = {
@@ -494,6 +496,8 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
     // see bug126621. currently dispatch buffers need to be released
     //                more frequently than we expect.
     _resourceRegistry->GarbageCollectDispatchBuffers();
+
+    _drawItemsCache->GarbageCollect();
 }
 
 bool
@@ -526,6 +530,12 @@ bool
 HdStRenderDelegate::IsPrimvarFilteringNeeded() const
 {
     return true;
+}
+
+HdStDrawItemsCachePtr
+HdStRenderDelegate::GetDrawItemsCache() const
+{
+    return _drawItemsCache.get();
 }
 
 Hgi*

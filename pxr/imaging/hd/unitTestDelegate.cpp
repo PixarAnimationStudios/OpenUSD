@@ -676,6 +676,8 @@ HdUnitTestDelegate::UpdateTask(SdfPath const &id,
        tracker.MarkTaskDirty(id, HdChangeTracker::DirtyParams);
    } else if (key == HdTokens->collection) {
        tracker.MarkTaskDirty(id, HdChangeTracker::DirtyCollection);
+   } else if (key == HdTokens->renderTags) {
+       tracker.MarkTaskDirty(id, HdChangeTracker::DirtyRenderTags);
    } else {
        TF_CODING_ERROR("Unknown key %s", key.GetText());
    }
@@ -704,6 +706,19 @@ HdUnitTestDelegate::GetRenderTag(SdfPath const& id)
     }
 
     return HdRenderTagTokens->hidden;
+}
+
+/*virtual*/
+TfTokenVector
+HdUnitTestDelegate::GetTaskRenderTags(SdfPath const& id)
+{
+    const auto it = _tasks.find(id);
+    if (it == _tasks.end()) {
+        return TfTokenVector();
+    }
+
+    const VtDictionary &dict = it->second.params;
+    return VtDictionaryGet<TfTokenVector>(dict, HdTokens->renderTags, VtDefault = TfTokenVector());
 }
 
 /*virtual*/

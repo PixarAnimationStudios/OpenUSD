@@ -359,6 +359,8 @@ public:
     HD_API
     virtual TfToken GetRenderTag(SdfPath const& id) override;
     HD_API
+    virtual TfTokenVector GetTaskRenderTags(SdfPath const &taskId) override;
+    HD_API
     virtual PxOsdSubdivTags GetSubdivTags(SdfPath const& id) override;
     HD_API
     virtual GfRange3d GetExtent(SdfPath const & id) override;

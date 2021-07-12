@@ -78,6 +78,7 @@ private:
 
     // -----------------------------------------------------------------------
     // Change tracking state.
+    // XXX: This is necessary only when not using the draw items cache.
 
     // The version number of the currently held collection.
     int _collectionVersion;
@@ -96,9 +97,11 @@ private:
     // previously held collection.
     bool _collectionChanged;
 
+    // -----------------------------------------------------------------------
     // DrawItems that are used to build the draw batches.
     HdDrawItemConstPtrVectorSharedPtr _drawItems;
     size_t _drawItemCount;
+    bool _drawItemsGathered;
     bool _drawItemsChanged;
 
     Hgi* _hgi;
