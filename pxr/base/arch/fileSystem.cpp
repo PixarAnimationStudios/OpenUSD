@@ -899,7 +899,7 @@ ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset)
         return nread;
 
     // Track a total and retry until we read everything or hit EOF or an error.
-    int64_t total = std::max<int64_t>(nread, 0);
+    int64_t total = 0;
     while (nread != -1 || (nread == -1 && errno == EINTR)) {
         // Update bookkeeping and retry.
         if (nread > 0) {
@@ -958,7 +958,7 @@ ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset)
         return nwritten;
 
     // Track a total and retry until we write everything or hit an error.
-    int64_t total = std::max<int64_t>(nwritten, 0);
+    int64_t total = 0;
     while (nwritten != -1) {
         // Update bookkeeping and retry.
         total += nwritten;
