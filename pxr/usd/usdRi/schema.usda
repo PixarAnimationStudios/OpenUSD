@@ -1,6 +1,6 @@
 #usda 1.0
 (
-    "This file describes the USD Shader (RSL) schemata for code generation."
+    "This file describes the USD RenderMan Interface (UsdRi) schemata for code generation."
     subLayers = [
         @usd/schema.usda@,
         @usdShade/schema.usda@,
@@ -16,6 +16,10 @@ def "GLOBAL" (
         # string tokensPrefix   = "UsdRi"
         # dictionary libraryTokens = {}
         dictionary libraryTokens = {
+            dictionary "renderContext" = {
+                string value = "ri"
+                string doc = "UsdShadeMaterial / Hydra render context token for UsdRi"
+            }
             dictionary spline = {
                 string doc = "UsdSplineAPI - Namespace for spline attributes"
             }
@@ -68,102 +72,6 @@ class "StatementsAPI" (
 """
     }
 ) {
-}
-
-##### RSL #####
-
-class RslShader "RslShader" (
-    inherits = [</Shader>]
-    doc = """
-    \\deprecated RSL shaders have been deprecated in RenderMan.  This
-    schema will be removed in a future release.
-    """
-) {
-    asset info:sloPath (
-        customData = {
-            string apiName = "sloPath"
-        }
-    )
-}
-
-##### RIS #####
-
-class RisObject "RisObject" (
-    inherits = [</Shader>]
-    doc = """
-    \\deprecated Specialized RIS shader schemas have been deprecated in 
-    favor of all shader prims being simple UsdShadeShader.
-    This schema will be removed in a future release.
-
-    Represents a ris object with connectable parameters. """ 
-) {
-    asset info:filePath (
-        customData = { 
-            string apiName = "filePath"
-        }
-    )
-    asset info:argsPath (
-        customData = {
-            string apiName = "argsPath"
-        }
-    )
-}
-
-class RisPattern "RisPattern" (
-    inherits = [</RisObject>]
-    doc = """
-    \\deprecated Specialized RIS shader schemas have been deprecated in 
-    favor of all shader prims being simple UsdShadeShader.
-    This schema will be removed in a future release.
-
-    Represents a ris pattern object. Multiple of these can be assigned.""" 
-) {
-}
-
-class RisOslPattern "RisOslPattern" (
-    inherits = [</RisPattern>]
-    doc = """
-    \\deprecated Specialized RIS shader schemas have been deprecated in 
-    favor of all shader prims being simple UsdShadeShader.
-    This schema will be removed in a future release.
-
-    Represents a ris osl pattern object.""" 
-) {
-    asset info:filePath = @PxrOSL@ (
-        hidden = true
-        customData = {
-            string apiName = "filePath"
-        }
-    )
-    asset info:oslPath (
-        customData = {
-            string apiName = "oslPath"
-        }
-    )
-}
-
-class RisBxdf "RisBxdf" (
-    inherits = [</RisObject>]
-    doc = """
-    \\deprecated Specialized RIS shader schemas have been deprecated in 
-    favor of all shader prims being simple UsdShadeShader.
-    This schema will be removed in a future release.
-
-    Represents a ris bxdf object. One of these is assigned at one time.
-    """ 
-) {
-}
-
-class RisIntegrator "RisIntegrator" (
-    inherits = </Typed>
-    doc = """
-    \\deprecated RIS integrator settings will be replaced
-    with a new schema in a future release.
-
-    Integrator. Only one can be declared in a rib scene."""
-) {
-    asset filePath
-    asset argsPath
 }
 
 ### Material API common to both RSL and RIS ###

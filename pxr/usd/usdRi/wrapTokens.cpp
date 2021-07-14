@@ -88,7 +88,6 @@ void wrapUsdRiTokens()
     _AddToken(cls, "analyticShearY", UsdRiTokens->analyticShearY);
     _AddToken(cls, "analyticUseLightDirection", UsdRiTokens->analyticUseLightDirection);
     _AddToken(cls, "aovName", UsdRiTokens->aovName);
-    _AddToken(cls, "argsPath", UsdRiTokens->argsPath);
     _AddToken(cls, "barnMode", UsdRiTokens->barnMode);
     _AddToken(cls, "beginDistance", UsdRiTokens->beginDistance);
     _AddToken(cls, "bspline", UsdRiTokens->bspline);
@@ -122,14 +121,9 @@ void wrapUsdRiTokens()
     _AddToken(cls, "falloffFloats", UsdRiTokens->falloffFloats);
     _AddToken(cls, "falloffInterpolation", UsdRiTokens->falloffInterpolation);
     _AddToken(cls, "falloffKnots", UsdRiTokens->falloffKnots);
-    _AddToken(cls, "filePath", UsdRiTokens->filePath);
     _AddToken(cls, "haziness", UsdRiTokens->haziness);
     _AddToken(cls, "height", UsdRiTokens->height);
     _AddToken(cls, "hour", UsdRiTokens->hour);
-    _AddToken(cls, "infoArgsPath", UsdRiTokens->infoArgsPath);
-    _AddToken(cls, "infoFilePath", UsdRiTokens->infoFilePath);
-    _AddToken(cls, "infoOslPath", UsdRiTokens->infoOslPath);
-    _AddToken(cls, "infoSloPath", UsdRiTokens->infoSloPath);
     _AddToken(cls, "inPrimaryHit", UsdRiTokens->inPrimaryHit);
     _AddToken(cls, "inReflection", UsdRiTokens->inReflection);
     _AddToken(cls, "inRefraction", UsdRiTokens->inRefraction);
@@ -161,6 +155,7 @@ void wrapUsdRiTokens()
     _AddToken(cls, "refineLeft", UsdRiTokens->refineLeft);
     _AddToken(cls, "refineRight", UsdRiTokens->refineRight);
     _AddToken(cls, "refineTop", UsdRiTokens->refineTop);
+    _AddToken(cls, "renderContext", UsdRiTokens->renderContext);
     _AddToken(cls, "repeat", UsdRiTokens->repeat);
     _AddToken(cls, "riCombineMode", UsdRiTokens->riCombineMode);
     _AddToken(cls, "riDensity", UsdRiTokens->riDensity);

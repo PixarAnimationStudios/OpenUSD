@@ -158,10 +158,6 @@ struct UsdRiTokensType {
     /// 
     /// UsdRiPxrAovLight
     const TfToken aovName;
-    /// \brief "argsPath"
-    /// 
-    /// UsdRiRisIntegrator
-    const TfToken argsPath;
     /// \brief "barnMode"
     /// 
     /// UsdRiPxrBarnLightFilter
@@ -294,10 +290,6 @@ struct UsdRiTokensType {
     /// 
     /// UsdRiPxrRodLightFilter, UsdRiPxrRampLightFilter
     const TfToken falloffKnots;
-    /// \brief "filePath"
-    /// 
-    /// UsdRiRisIntegrator
-    const TfToken filePath;
     /// \brief "haziness"
     /// 
     /// UsdRiPxrEnvDayLight
@@ -310,22 +302,6 @@ struct UsdRiTokensType {
     /// 
     /// UsdRiPxrEnvDayLight
     const TfToken hour;
-    /// \brief "info:argsPath"
-    /// 
-    /// UsdRiRisObject
-    const TfToken infoArgsPath;
-    /// \brief "info:filePath"
-    /// 
-    /// UsdRiRisOslPattern, UsdRiRisObject
-    const TfToken infoFilePath;
-    /// \brief "info:oslPath"
-    /// 
-    /// UsdRiRisOslPattern
-    const TfToken infoOslPath;
-    /// \brief "info:sloPath"
-    /// 
-    /// UsdRiRslShader
-    const TfToken infoSloPath;
     /// \brief "inPrimaryHit"
     /// 
     /// UsdRiPxrAovLight
@@ -450,6 +426,10 @@ struct UsdRiTokensType {
     /// 
     /// UsdRiPxrRodLightFilter, UsdRiPxrBarnLightFilter
     const TfToken refineTop;
+    /// \brief "ri"
+    /// 
+    /// UsdShadeMaterial / Hydra render context token for UsdRi
+    const TfToken renderContext;
     /// \brief "repeat"
     /// 
     /// Possible value for UsdRiPxrCookieLightFilter::GetTextureWrapModeAttr()

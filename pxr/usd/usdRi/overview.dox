@@ -18,10 +18,6 @@ The primary classes are:
 \li UsdRiStatements, which provides API for encoding most Renderman specific 
 concepts, like Ri Attributes, and (scoped) coordinate systems.
 
-\li UsdRiLookAPI, UsdRiRisBxdf and several other shading-schema-related
-classes for encoding Renderman shading interfaces and networks in the UsdShade
-shading model.
-
 \li \ref usdRi/rmanUtilities.h prvides usd/ri conversion utilities
 
 \li The UsdRiPxr...LightFilter classes, representing extensions to the
