@@ -60,7 +60,6 @@ struct HdRprimSharedData {
         , instancerLevels(0)
         , visible(true)
         , rprimID()
-        , materialTag(HdMaterialTagTokens->defaultMaterialTag)
     { }
 
     HdRprimSharedData(int barContainerSize,
@@ -70,7 +69,6 @@ struct HdRprimSharedData {
         , instancerLevels(0)
         , visible(visible)
         , rprimID()
-        , materialTag(HdMaterialTagTokens->defaultMaterialTag)
     { }
 
     // BufferArrayRange array
