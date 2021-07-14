@@ -50,17 +50,6 @@ std::ostream &operator <<(std::ostream &os, TfTokenVector const &tags)
 }
 
 //------------------------------------------------------------------------------
-// _CacheKey
-
-bool
-HdSt_DrawItemsCache::_CacheKey::operator==(
-    HdSt_DrawItemsCache::_CacheKey const &other) const
-{
-    return _collection == other._collection &&
-           _renderTags == other._renderTags;
-}
-
-//------------------------------------------------------------------------------
 // Helper methods
 
 static size_t
@@ -183,6 +172,8 @@ HdSt_DrawItemsCache::_UpdateCacheEntry(
     HdRenderIndex *renderIndex,
     HdSt_DrawItemsCache::_CacheValue *val)
 {
+    TRACE_FUNCTION();
+
     HdChangeTracker const &tracker = renderIndex->GetChangeTracker();
 
     val->collectionVersion =

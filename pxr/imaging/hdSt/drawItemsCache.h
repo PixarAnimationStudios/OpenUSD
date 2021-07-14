@@ -104,11 +104,15 @@ private:
             h.Append(key._collection, key._renderTags, key._renderIndex);
         }
 
-        bool operator==(_CacheKey const &other) const;
+        bool operator==(_CacheKey const &other) const {
+            return _collection == other._collection &&
+                   _renderTags == other._renderTags &&
+                   _renderIndex == other._renderIndex;
+        }
 
     private:
-        HdRprimCollection _collection;
-        TfTokenVector _renderTags;
+        HdRprimCollection const _collection;
+        TfTokenVector const _renderTags;
         HdRenderIndex * const _renderIndex;
     };
 
@@ -139,9 +143,7 @@ private:
     HdSt_DrawItemsCache &operator =(const HdSt_DrawItemsCache &) = delete;
 
     //--------------------------------------------------------------------------
-    using _Cache =
-        std::unordered_map<_CacheKey, _CacheValue, TfHash>;
-        // std::unordered_map<_CacheKey, _CacheValue, _CacheKeyHashFunctor>;
+    using _Cache = std::unordered_map<_CacheKey, _CacheValue, TfHash>;
     _Cache _cache;
 };
 
