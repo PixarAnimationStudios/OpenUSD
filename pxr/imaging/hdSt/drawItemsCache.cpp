@@ -181,10 +181,17 @@ HdSt_DrawItemsCache::_UpdateCacheEntry(
     val->renderTagsVersion = tracker.GetRenderTagVersion();
     val->materialTagsVersion = _GetMaterialTagsVersion(renderIndex);
 
-    HdDrawItemConstPtrVector drawItems =
-        renderIndex->GetDrawItems(collection, renderTags);
-    val->drawItems =
-        std::make_shared<HdDrawItemConstPtrVector>(std::move(drawItems));
+    const HdStRenderParam * const renderParam =
+        static_cast<HdStRenderParam *>(
+            renderIndex->GetRenderDelegate()->GetRenderParam());
+    if (renderParam->HasMaterialTag(collection.GetMaterialTag())) {
+        val->drawItems = std::make_shared<HdDrawItemConstPtrVector>(
+            renderIndex->GetDrawItems(collection, renderTags));
+    } else {
+        // No need to even call GetDrawItems when we know that
+        // there is no prim with the desired material tag.
+        val->drawItems = std::make_shared<HdDrawItemConstPtrVector>();
+    }
 }
 
 
