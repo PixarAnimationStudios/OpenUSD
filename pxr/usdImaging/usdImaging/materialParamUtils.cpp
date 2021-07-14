@@ -21,6 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <regex>
+
 #include "pxr/usdImaging/usdImaging/materialParamUtils.h"
 
 #include "pxr/base/tf/pathUtils.h"
@@ -40,6 +42,7 @@ static const char UDIM_PATTERN[] = "<UDIM>";
 static const int UDIM_START_TILE = 1001;
 static const int UDIM_END_TILE = 1100;
 static const std::string::size_type UDIM_TILE_NUMBER_LENGTH = 4;
+static const std::regex USDZ_REGEX(".+\\.usdz\\[.+]");
 
 // We need to find the first layer that changes the value
 // of the parameter so that we anchor relative paths to that.
@@ -178,13 +181,29 @@ _ResolveAssetAttribute(
 
     const std::string &suffix = splitPath.second;
 
+    ArResolver& resolver = ArGetResolver();
+    std::string ext = "." + resolver.GetExtension(firstTilePath);
+
     // Sanity check that the part after <UDIM> did not change.
-    if (!TfStringEndsWith(firstTilePath, suffix)) {
+    if (ext != suffix) {
         TF_WARN(
             "Resolution of first udim tile gave ambigious result. "
             "First tile for '%s' is '%s'.",
             assetPath.GetAssetPath().c_str(), firstTilePath.c_str());
         return assetPath;
+    }
+
+    // Check if texture is embedded in a USDZ archive.
+    if (std::regex_search(firstTilePath, USDZ_REGEX)) {
+        // Length of the part /filePath/myStage.usdz[myImage.
+        // Subtract 1 for trailing ]
+        const std::string::size_type prefixLength =
+            firstTilePath.size() - suffix.size() - UDIM_TILE_NUMBER_LENGTH - 1;
+
+        return
+            SdfAssetPath( 
+                assetPath.GetAssetPath(),
+                firstTilePath.substr(0, prefixLength) + UDIM_PATTERN + suffix + ']');
     }
 
     // Length of the part /filePath/myImage.<UDIM>.exr.
