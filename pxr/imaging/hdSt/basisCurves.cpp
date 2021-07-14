@@ -125,7 +125,7 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
 void
 HdStBasisCurves::Finalize(HdRenderParam *renderParam)
 {
-    HdStMarkGarbageCollectionNeeded(renderParam);
+    HdStFinalizeRprim(this, renderParam);
 }
 
 void

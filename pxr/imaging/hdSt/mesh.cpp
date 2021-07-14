@@ -178,7 +178,7 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
 void
 HdStMesh::Finalize(HdRenderParam *renderParam)
 {
-    HdStMarkGarbageCollectionNeeded(renderParam);
+    HdStFinalizeRprim(this, renderParam);
 }
 
 HdMeshTopologySharedPtr

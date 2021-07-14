@@ -89,7 +89,7 @@ HdStPoints::Sync(HdSceneDelegate *delegate,
 void
 HdStPoints::Finalize(HdRenderParam *renderParam)
 {
-    HdStMarkGarbageCollectionNeeded(renderParam);
+    HdStFinalizeRprim(this, renderParam);
 }
 
 void

@@ -67,6 +67,11 @@ void HdStMarkMaterialTagsDirty(HdRenderParam *renderParam);
 HDST_API
 void HdStMarkGarbageCollectionNeeded(HdRenderParam *renderParam);
 
+// Mark garbage collection needed and update materialTag count.
+HDST_API
+void HdStFinalizeRprim(HdRprim * rprim,
+                       HdRenderParam * renderParam);
+
 // -----------------------------------------------------------------------------
 // Primvar descriptor filtering utilities
 // -----------------------------------------------------------------------------
@@ -93,6 +98,11 @@ HDST_API
 void HdStSetMaterialId(HdSceneDelegate *delegate,
                        HdRenderParam *renderParam,
                        HdRprim *rprim);
+
+HDST_API
+void HdStSetMaterialTag(HdRenderParam *renderParam,
+                        HdRprim *rprim,
+                        const TfToken &materialTag);
 
 HDST_API
 void HdStSetMaterialTag(HdSceneDelegate *delegate,

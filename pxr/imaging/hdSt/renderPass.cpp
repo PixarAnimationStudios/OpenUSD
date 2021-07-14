@@ -367,8 +367,17 @@ HdSt_RenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
             }
         }
 
-        _drawItems = std::make_shared<HdDrawItemConstPtrVector>(
-            GetRenderIndex()->GetDrawItems(collection, renderTags));
+        const HdStRenderParam * const renderParam =
+            static_cast<HdStRenderParam *>(
+                GetRenderIndex()->GetRenderDelegate()->GetRenderParam());
+        if (renderParam->HasMaterialTag(collection.GetMaterialTag())) {
+            _drawItems = std::make_shared<HdDrawItemConstPtrVector>(
+                GetRenderIndex()->GetDrawItems(collection, renderTags));
+        } else {
+            // No need to even call GetDrawItems when we know that
+            // there is no prim with the desired material tag.
+            _drawItems = std::make_shared<HdDrawItemConstPtrVector>();
+        }
         _drawItemCount = _drawItems->size();
         _drawItemsChanged = true;
 

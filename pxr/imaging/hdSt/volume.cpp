@@ -127,7 +127,7 @@ HdStVolume::Sync(HdSceneDelegate *delegate,
 {
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         HdStSetMaterialId(delegate, renderParam, this);
-        SetMaterialTag(HdStMaterialTagTokens->volume);
+        HdStSetMaterialTag(renderParam, this, HdStMaterialTagTokens->volume);
     }
 
     _UpdateRepr(delegate, renderParam, reprToken, dirtyBits);
@@ -143,7 +143,7 @@ HdStVolume::Sync(HdSceneDelegate *delegate,
 void
 HdStVolume::Finalize(HdRenderParam *renderParam)
 {
-    HdStMarkGarbageCollectionNeeded(renderParam);
+    HdStFinalizeRprim(this, renderParam);
 }
 
 void
