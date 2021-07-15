@@ -479,53 +479,6 @@ _GetAppliedAPISchemaNames()
     return result;
 }
 
-static bool
-_CollectMultipleApplyAPISchemaNamespaces(
-    const VtDictionary &customDataDict,
-    _TokenToTokenMap *multipleApplyAPISchemaNamespaces)
-{
-    // Names of multiple apply API schemas are stored in their schemas
-    // in a dictionary mapping them to their property namespace prefixes. 
-    // These will be useful in mapping schema instance property names 
-    // to the schema property specs.
-
-    auto it = customDataDict.find(_tokens->multipleApplyAPISchemas);
-    if (it == customDataDict.end()) {
-        return true;
-    }
-
-    if (!it->second.IsHolding<VtDictionary>()) {
-        TF_CODING_ERROR("Found an unexpected value type for layer "
-            "customData key '%s'; expected a dictionary. Multiple apply API "
-            "schemas may be incorrect.",
-            _tokens->multipleApplyAPISchemas.GetText());
-        return false;
-    }
-
-    bool success = true;
-    const VtDictionary &multipleApplyAPISchemas = 
-        it->second.UncheckedGet<VtDictionary>();
-    for (const auto &it : multipleApplyAPISchemas) {
-        const TfToken apiSchemaName(it.first);
-
-        if (!it.second.IsHolding<std::string>()) {
-            TF_CODING_ERROR("Found an unexpected value type for key '%s' in "
-                "the dictionary for layer customData field '%s'; expected a "
-                "string. Multiple apply API schema of type '%s' will not be "
-                "correctly registered.",
-                apiSchemaName.GetText(),
-                _tokens->multipleApplyAPISchemas.GetText(),
-                apiSchemaName.GetText());
-            success = false;
-            continue;
-        }
-
-        (*multipleApplyAPISchemaNamespaces)[apiSchemaName] = 
-             TfToken(it.second.UncheckedGet<std::string>());
-    }
-    return success;
-}
-
 static TfTokenVector
 _GetNameListFromMetadata(const JsObject &dict, const TfToken &key)
 {
@@ -666,8 +619,84 @@ _GetTypeToAutoAppliedAPISchemaNames()
     return result;
 }
 
+// Helper class for initializing the schema registry by finding all generated 
+// schema types in plugin libraries and creating the static prim definitions 
+// for all concrete and applied API schema types.
+class UsdSchemaRegistry::_SchemaDefInitHelper
+{
+public:
+    _SchemaDefInitHelper(UsdSchemaRegistry *registry) 
+        : _registry(registry)
+    {};
+
+    void FindAndBuildAllSchemaDefinitions()
+    {
+        // Find and load all the generated schema in plugin libraries.  We find 
+        // these files adjacent to pluginfo files in libraries that provide 
+        // subclasses of UsdSchemaBase.
+        _FindAndAddPluginSchema();
+    }
+
+private:
+    void _FindAndAddPluginSchema();
+
+    bool _CollectMultipleApplyAPISchemaNamespaces(
+        const VtDictionary &customDataDict);
+
+    UsdSchemaRegistry *_registry;
+};
+
+bool
+UsdSchemaRegistry::_SchemaDefInitHelper::
+_CollectMultipleApplyAPISchemaNamespaces(
+    const VtDictionary &customDataDict)
+{
+    // Names of multiple apply API schemas are stored in their schemas
+    // in a dictionary mapping them to their property namespace prefixes. 
+    // These will be useful in mapping schema instance property names 
+    // to the schema property specs.
+
+    auto it = customDataDict.find(_tokens->multipleApplyAPISchemas);
+    if (it == customDataDict.end()) {
+        return true;
+    }
+
+    if (!it->second.IsHolding<VtDictionary>()) {
+        TF_CODING_ERROR("Found an unexpected value type for layer "
+            "customData key '%s'; expected a dictionary. Multiple apply API "
+            "schemas may be incorrect.",
+            _tokens->multipleApplyAPISchemas.GetText());
+        return false;
+    }
+
+    bool success = true;
+    const VtDictionary &multipleApplyAPISchemas = 
+        it->second.UncheckedGet<VtDictionary>();
+    for (const auto &it : multipleApplyAPISchemas) {
+        const TfToken apiSchemaName(it.first);
+
+        if (!it.second.IsHolding<std::string>()) {
+            TF_CODING_ERROR("Found an unexpected value type for key '%s' in "
+                "the dictionary for layer customData field '%s'; expected a "
+                "string. Multiple apply API schema of type '%s' will not be "
+                "correctly registered.",
+                apiSchemaName.GetText(),
+                _tokens->multipleApplyAPISchemas.GetText(),
+                apiSchemaName.GetText());
+            success = false;
+            continue;
+        }
+
+        // The property namespace is stored along side where the prim definition
+        // defining the schema's properties will be.
+        _registry->_multiApplyAPIPrimDefinitions[apiSchemaName]
+            .propertyNamespace = TfToken(it.second.UncheckedGet<std::string>());
+    }
+    return success;
+}
+
 void
-UsdSchemaRegistry::_FindAndAddPluginSchema()
+UsdSchemaRegistry::_SchemaDefInitHelper::_FindAndAddPluginSchema()
 {
     // Get all types that derive UsdSchemaBase by getting the type map cache.
     const _TypeMapCache &typeCache = _GetTypeMapCache();
@@ -710,12 +739,16 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
 
             bool hasErrors = false;
 
-            if (!_CollectMultipleApplyAPISchemaNamespaces(
-                    customDataDict, &_multipleApplyAPISchemaNamespaces)) {
+            // This collects all the multiple apply API schema namespaces 
+            // prefixes that are defined in the generated schema and stores
+            // them in the prim definition map entry that will contain the 
+            // prim definition for the corresponding multiple apply API schema
+            // name.
+            if (!_CollectMultipleApplyAPISchemaNamespaces(customDataDict)) {
                 hasErrors = true;
             }
 
-            _AddSchema(generatedSchema, _schematics);
+            _AddSchema(generatedSchema, _registry->_schematics);
 
             // Schema generation will have added any defined fallback prim 
             // types as a dictionary in layer metadata which will be composed
@@ -726,7 +759,7 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
                                           &generatedFallbackPrimTypes)) {
                 for (const auto &it: generatedFallbackPrimTypes) {
                     if (it.second.IsHolding<VtTokenArray>()) {
-                        _fallbackPrimTypes.insert(it);
+                        _registry->_fallbackPrimTypes.insert(it);
                     } else {
                         TF_CODING_ERROR("Found a VtTokenArray value for type "
                             "name key '%s' in fallbackPrimTypes layer metadata "
@@ -777,7 +810,8 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
 
         // We only map type names for types that have an underlying prim
         // spec, i.e. concrete and API schema types.
-        SdfPrimSpecHandle primSpec = _schematics->GetPrimAtPath(primPath);
+        SdfPrimSpecHandle primSpec = 
+            _registry->_schematics->GetPrimAtPath(primPath);
         if (primSpec) {
             // If the prim spec doesn't have a type name, then it's an
             // API schema
@@ -787,10 +821,23 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
                 // prim definition to applied API schema map.
                 if (appliedAPISchemaNames.find(usdTypeNameToken) != 
                         appliedAPISchemaNames.end()) {
-                    // Add it to the map using the USD type name.
-                    _appliedAPIPrimDefinitions[usdTypeNameToken] = 
-                        new UsdPrimDefinition(primSpec, 
-                                              /*isAPISchema=*/ true);
+                    // If a multiple apply schema entry exists for the type 
+                    // name, then this is a multiple apply and we add the new 
+                    // prim definition to that entry. Otherwise we add a new
+                    // single apply API schema definition. 
+                    if (_MultipleApplyAPIDefinition *multiApplyDef = 
+                            TfMapLookupPtr(
+                                _registry->_multiApplyAPIPrimDefinitions,
+                                usdTypeNameToken)) {
+                        multiApplyDef->primDef = 
+                            new UsdPrimDefinition(primSpec, 
+                                                  /*isAPISchema=*/ true);
+                    } else {
+                        // Add it to the map using the USD type name.
+                        _registry->_singleApplyAPIPrimDefinitions[usdTypeNameToken] = 
+                            new UsdPrimDefinition(primSpec, 
+                                                  /*isAPISchema=*/ true);
+                    }
                 }
             } else {
                 // Otherwise it's a concrete type. We need to see if it requires
@@ -800,8 +847,8 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
                 // First check for any applied API schemas defined in the 
                 // metadata for the type in the schematics.
                 SdfTokenListOp apiSchemasListOp;
-                if (_schematics->HasField(primPath, UsdTokens->apiSchemas, 
-                                          &apiSchemasListOp)) {
+                if (_registry->_schematics->HasField(
+                        primPath, UsdTokens->apiSchemas, &apiSchemasListOp)) {
                     apiSchemasListOp.ApplyOperations(&apiSchemasToApply);
                 }
                 // Next, check if there are any API schemas that have been 
@@ -829,7 +876,7 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
                 // name. Otherwise we defer the creation of the prim definition
                 // until all API schema definitions have processed..
                 if (apiSchemasToApply.empty()) {
-                    _concreteTypedPrimDefinitions[usdTypeNameToken] = 
+                    _registry->_concreteTypedPrimDefinitions[usdTypeNameToken] = 
                         new UsdPrimDefinition(primSpec, 
                                               /*isAPISchema=*/ false);
                 } else {
@@ -850,9 +897,10 @@ UsdSchemaRegistry::_FindAndAddPluginSchema()
         // opinions on the prim spec are stronger than the API schema fallbacks
         // here.
         UsdPrimDefinition *primDef =
-            _concreteTypedPrimDefinitions[it.usdTypeNameToken] = 
+            _registry->_concreteTypedPrimDefinitions[it.usdTypeNameToken] = 
             new UsdPrimDefinition();
-        _ApplyAPISchemasToPrimDefinition(primDef, it.apiSchemasToApply);
+        _registry->_ApplyAPISchemasToPrimDefinition(
+            primDef, it.apiSchemasToApply);
         primDef->_SetPrimSpec(it.primSpec, /*providesPrimMetadata=*/ true);
     }
 }
@@ -862,10 +910,10 @@ UsdSchemaRegistry::UsdSchemaRegistry()
     _schematics = SdfLayer::CreateAnonymous("registry.usda");
     _emptyPrimDefinition = new UsdPrimDefinition();
 
-    // Find and load all the generated schema in plugin libraries.  We find thes
-    // files adjacent to pluginfo files in libraries that provide subclasses of
-    // UsdSchemaBase.
-    _FindAndAddPluginSchema();
+    // Find and load all the generated schema in plugin libraries and build all
+    // the schema prim definitions.
+    _SchemaDefInitHelper schemaDefHelper(this);
+    schemaDefHelper.FindAndBuildAllSchemaDefinitions();
 
     TfSingleton<UsdSchemaRegistry>::SetInstanceConstructed(*this);
     TfRegistryManager::GetInstance().SubscribeTo<UsdSchemaRegistry>();
@@ -1044,9 +1092,11 @@ TfToken
 UsdSchemaRegistry::GetPropertyNamespacePrefix(
     const TfToken &multiApplyAPISchemaName) const
 {
-    const TfToken *prefix = TfMapLookupPtr(
-        _multipleApplyAPISchemaNamespaces, multiApplyAPISchemaName);
-    return prefix ? *prefix : TfToken();
+    if (const _MultipleApplyAPIDefinition *def = TfMapLookupPtr(
+            _multiApplyAPIPrimDefinitions, multiApplyAPISchemaName)) {
+        return def->propertyNamespace;
+    }
+    return TfToken();
 }
 
 std::unique_ptr<UsdPrimDefinition>
@@ -1113,13 +1163,13 @@ void UsdSchemaRegistry::_ApplyAPISchemasToPrimDefinition(
             // Otherwise we have a multiple apply schema. We need to use the 
             // instance name and the property prefix to map and add the correct
             // properties for this instance.
-            auto it = _multipleApplyAPISchemaNamespaces.find(
+            auto it = _multiApplyAPIPrimDefinitions.find(
                 typeNameAndInstance.first);
-            if (it == _multipleApplyAPISchemaNamespaces.end()) {
+            if (it == _multiApplyAPIPrimDefinitions.end()) {
                 // Warn that this not actually a multiple apply schema type?
                 continue;
             }
-            const TfToken &prefix = it->second;
+            const TfToken &prefix = it->second.propertyNamespace;
             if (TF_VERIFY(!prefix.IsEmpty())) {
                 // The prim definition for a multiple apply schema will have its
                 // properties stored with no prefix. We generate the prefix for 
