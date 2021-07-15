@@ -93,9 +93,7 @@ class TestUsdRiSchemata(unittest.TestCase):
         # this is so convoluted
         attr = riStatements.GetPrim().GetAttribute(props[0].GetName())
         assert attr
-        prefix = ('primvars:'
-            if Tf.GetEnvSetting('USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING')
-            else '')
+        prefix = 'primvars:'
         self.assertEqual(attr.GetName(),
             prefix+'ri:attributes:user:ModelName')
         self.assertEqual(attr.Get(), 'someModelName')
@@ -139,8 +137,7 @@ class TestUsdRiSchemata(unittest.TestCase):
         self.assertEqual(UsdRi.StatementsAPI(world).GetModelScopedCoordinateSystems(), [])
 
         # Test mixed old & new style encodings
-        if (Tf.GetEnvSetting('USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING') and
-            Tf.GetEnvSetting('USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING')):
+        if Tf.GetEnvSetting('USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING'):
             prim  = stage.DefinePrim("/prim")
             riStatements = UsdRi.StatementsAPI.Apply(prim)
             self.assertEqual(len(riStatements.GetRiAttributes()), 0)
