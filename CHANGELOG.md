@@ -105,7 +105,8 @@ Support for RenderMan 23 was deprecated in 21.05 and has now been removed.
   the [proposal](https://graphics.pixar.com/usd/docs/Rigid-Body-Physics-in-USD-Proposal.html).
   (PR: [#1424](https://www.github.com/PixarAnimationStudios/USD/pull/1424))
 - Miscellaneous documentation fixes.
-  (PR: [#1485](https://www.github.com/PixarAnimationStudios/USD/pull/1485))
+  (PR: [#1485](https://www.github.com/PixarAnimationStudios/USD/pull/1485),
+   [#1553](https://www.github.com/PixarAnimationStudios/USD/pull/1553))
 
 ### Imaging
 - Added basic support for Hydra Commands, a mechanism to invoke actions that
