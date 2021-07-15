@@ -7,46 +7,40 @@
 
 \section ar_overview Overview
 
-The Ar (asset resolution) library provides functions for interacting
-with asset paths in USD. An asset path is a string that describes the 
-location of an asset in a user's system. These paths are used extensively
-throughout USD; for example, asset paths are used to specify sublayers,
-references, and other composition arcs in scene description.
+The Ar (Asset Resolution) library is responsible for querying, reading, and
+writing asset data. It provides several interfaces that allow USD to access an
+asset without knowing how that asset is physically stored.
 
-Ar's primary responsibility is to 'resolve' an asset path into a
-corresponding filesystem path. By default, Ar assumes that all asset 
-paths are simple filesystem paths and treats them accordingly. However, 
-clients may implement their own resolver class by implementing the ArResolver 
-interface to provide custom resolution logic for asset paths. This allows 
-clients to use asset paths that are appropriate for their situation.
+Ar ships with implementations based on a traditional filesystem. However, users
+can provide custom implementations to integrate their own asset storage system
+and behaviors with USD. For example, a user might have an asset system that
+stores assets in a database and uses special identifiers to address those
+assets. That user could create a custom implementation of the ArResolver
+interface that interprets those identifiers and a custom implementation of the
+ArAsset interface that reads data straight from the database. This would allow
+the user to use those identifiers for references, payloads, and sublayer
+composition arcs and other places throughout USD.
 
-For example, a client might have an asset management system that uses URLs 
-to identify assets. That client could implement a custom resolver that would 
-resolve those URLs and fetch data from a server to the local filesystem
-and return that filesystem path as the 'resolved' path. This would enable
-the client to use these URLs in scene description (e.g., for referencing)
-for USD.
+\section ar_resolver ArResolver
 
-\section ar_resolver Accessing the Resolver
+ArResolver is the central interface for asset operations in Ar. Clients can
+implement subclasses of this interface to customize behaviors for their asset
+system.
 
-Consumers may access the asset resolver by calling #ArGetResolver.
+Ar manages a set of ArResolver subclasses for handling different asset paths,
+which are described below. These subclasses are discovered and instantiated
+via the plugin system and managed internally by Ar. Instead of using these
+subclasses directly, clients just use a single resolver that is accessed
+by calling #ArGetResolver. When methods are called on this resolver, Ar will
+determine the appropriate subclass for handling the given input paths and
+forward the call to that subclass.
 
-\section ar_default_resolver Default Resolver
+\subsection ar_primary_resolver Primary Resolver
 
-If no custom implementation of ArResolver is found, Ar will fall back
-to using an ArDefaultResolver, which assumes all asset paths it encounters are
-filesystem paths. ArDefaultResolver also performs simple search path-based
-resolution that will search for an asset in a specified list of directories.
-See documentation on ArDefaultResolver for more information on configuring
-this behavior.
+The primary resolver is the ArResolver subclass that Ar uses to handle all
+asset paths that are not handled by the other resolvers described below.
 
-\section ar_implementing_resolver Implementing a Custom Resolver
-
-To implement a custom asset resolver, users must create a plugin containing a
-subclass of ArResolver.  This subclass must be registered with the plugin
-system so that it can be discovered and instantiated at runtime. Keep in mind
-that the subclass may be constructed at any time; at a minimum, the subclass
-will be constructed during the first call to \ref ArGetResolver.
+To create a custom primary resolver:
 
 - Implement an ArResolver subclass
 \code{.cpp}
@@ -55,15 +49,14 @@ class CustomResolver : public ArResolver {
 }
 \endcode
 
-- In its implementation, register the ArResolver subclass with the TfType
-  system using #AR_DEFINE_RESOLVER
+- Use #AR_DEFINE_RESOLVER to define the subclass as a resolver
 \code{.cpp}
-# custom resolver's .cpp file
+# In the custom resolver's .cpp file
 AR_DEFINE_RESOLVER(CustomResolver, ArResolver);
 \endcode
 
-- Declare the ArResolver subclass in the plugin's plugInfo.json file. 
-See PlugRegistry for more details.
+- Declare the subclass in the plugin's plugInfo.json file.
+  See \ref PlugRegistry for more details.
 \code{.json}
 # plugInfo.json
 {
@@ -76,37 +69,205 @@ See PlugRegistry for more details.
                     }
                 }
             },
-            ... 
-        },
-        ...
+            ...
+        }
     ]
 
 }
 \endcode
 
 - Ensure that the resolver plugin is located where the plugin system can
-find it.
+  find it.
 
 \note Ar does not support custom resolvers implemented in Python to avoid
 performance issues, especially for multi-threaded consumers.
 
-\section ar_resolver_context Resolver Context Objects
+At runtime Ar will query the plugin system to discover any classes that have
+ArResolver or another subclass of ArResolver declared as a base type, then
+instantiate that class when needed. Keep in mind that the class may be
+constructed at any time; at a minimum, the class will be constructed during the
+first call to \ref ArGetResolver.
 
-Each custom resolver can reason about its own ArResolverContext type,
-which allows a single process to access multiple different state-sets
-(contexts) to guide asset resolution differently for different 
-datasets/contexts.
+If no custom resolver is found, Ar will use ArDefaultResolver as the primary
+resolver. This resolver assumes all asset paths it encounters are filesystem
+paths. ArDefaultResolver also performs simple search path-based resolution
+that will search for an asset in a specified list of directories.
+See documentation on ArDefaultResolver for more information on configuring
+this behavior.
 
-Users may declare that a particular object type may be used as a
-context object by using #AR_DECLARE_RESOLVER_CONTEXT.  This allows 
-ArResolverContext objects to be constructed from objects of this type.
+\subsection ar_uri_resolvers URI Resolvers
+
+URI resolvers are ArResolver subclasses that are associated with particular
+URI schemes.
+
+When Ar encounters an asset path or resolved path of the form "<scheme>:...", it
+will check if any ArResolver subclasses have been registered for the scheme. If
+so, it will dispatch the path to that subclass for handling. If not, it will
+dispatch the path to the primary resolver for handling.
+
+For example, if there were an HTTPResolver subclass of ArResolver that was
+registered to handle the "http" scheme. If the following was called:
+
+\code{.cpp}
+ArGetResolver().Resolve("http://mynetwork/model.usd")
+\endcode
+
+Ar would inspect the given path, find the "http" scheme and determine that
+"http" was associated with HTTPResolver. Ar would create an instance of the
+HTTPResolver (if one had not already been created), then call
+HTTPResolver::Resolve on that instance with the given path.
+
+To create a URI resolver:
+
+- Implement a subclass of ArResolver as described in the 
+  \ref ar_primary_resolver "Primary Resolver" section above.
+
+- In the entry for the subclass in the plugin's plugInfo.json file,
+  add a "uriSchemes" key with a list of URI schemes associated with the
+  resolver.
+\code{.json}
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "HTTPResolver": {
+                        "bases": ["ArResolver"],
+                        "uriSchemes": ["http", "https"]
+                    }
+                }
+            },
+            ...
+        }
+    ]
+}
+\endcode
+
+\section ar_resolution Asset Path Resolution
+
+An asset path is a string that describes the location of an asset in a user's
+system. These paths are used extensively throughout USD; for example, asset
+paths are used to specify sublayers, references, and payloads in scene
+description.
+
+One of ArResolver's primary responsibilities is to resolve an input asset
+path by determining if an asset exists at the given path and, if so, returning
+a resolved path that may be used by other ArResolver API and in other
+parts of the system. This is done via calls to ArResolver::Resolve. This 
+process allows ArResolver subclasses to apply custom logic to determine the
+actual asset that a logical asset path refers to. 
+
+For example, the filesystem-based ArDefaultResolver implements search-path logic
+in its asset path resolution. When ArDefaultResolver is given a relative filesystem
+asset path to resolve like "Foo/Bar/Baz.usd", it will look for that file relative
+to the current working directory, then relative to a set of search paths. Once it
+finds an existing file, it will return the absolute path to that file as the
+resolved path.
+
+For more details, see:
+- \ref ArResolver_resolution "Path Resolution Operations"
+- \ref ArResolver_implementation "Implementation"
+
+\section ar_resolver_contexts Resolver Contexts
+
+A resolver context is an object that stores configuration or other information
+that can be used by a resolver to guide path resolution and other operations.
+Resolver contexts can be bound within blocks of code to affect resolver
+operations within that scope via an ArResolverContextBinder. UsdStage uses this
+functionality heavily to allow different stages to resolve asset paths
+differently.
+
+For example, ArDefaultResolver has a context object ArDefaultResolverContext
+that contains a set of search paths for use during resolution that prepend
+ArDefaultResolver's list of global search paths. A client might use this to
+set up stages that look in different locations for assets:
+
+\code{.cpp}
+
+// Configure ArDefaultResolver's global search paths.
+ArDefaultResolver::SetDefaultSearchPath({"/Global/assets"});
+
+// Create a resolver context with an additional search path and
+// use it for opening the UsdStage for ShotA.usd.
+//
+// If ShotA.usd contains an asset path like "Foo/Bar/Baz.usd",
+// ArDefaultResolver will search for this file at: 
+//  - <current working dir>/Foo/Bar/Baz.usd
+//  - /ShotA/assets/Foo/Bar/Baz.usd
+//  - /Global/assets/Foo/Bar/Baz.usd
+ArDefaultResolverContext shotACtx({"/ShotA/assets"})
+UsdStageRefPtr shotA = UsdStage::Open("ShotA.usd", shotACtx);
+
+// Create a resolver context with an additional search path and
+// use it for opening the UsdStage for ShotB.usd.
+//
+// If ShotB.usd contains the same asset path as above in ShotA,
+// ArDefaultResolver will search for this file at: 
+//  - <current working dir>/Foo/Bar/Baz.usd
+//  - /ShotB/assets/Foo/Bar/Baz.usd
+//  - /Global/assets/Foo/Bar/Baz.usd
+ArDefaultResolverContext shotBCtx({"/ShotB/assets"})
+UsdStageRefPtr shotB = UsdStage::Open("ShotB.usd", shotBCtx);
+
+\endcode
+
+It's important to note that any information in a resolver context that is used
+during path resolution should be factored into the resulting resolved path.
+This is because resolved paths may be passed to downstream clients or external
+libraries that will not (or can not) have a context object bound when the
+resolved path is used to open an asset. Put another way: a resolved path should
+be usable by downstream clients that do not have a resolver context bound.
+
+For more details, see: 
+
+- ArResolverContext
+- ArResolverContextBinder
+- \ref ArResolver_context "Asset Resolver Context Operations"
+- \ref ArResolver_contextImplementation "Context Operations Implementation"
 
 \section ar_resolver_scoped_cache Resolver Scoped Caches
 
-Since resolving assets to filesystem paths can be expensive, and typically
-clients (such as USD) will commonly attempt to resolve the same assets over 
-and over again, we also provide an RAII ArResolverScopedCache that can
-greatly speed up asset resolution by caching results. See ArDefaultResolver
-for an example implementation.
+A resolver scoped cache is a cache of asset resolution results that is
+active during a given block of code. Clients can activate a scoped cache
+by using an ArResolverScopedCache object.
+
+Resolving asset paths may be expensive and a UsdStage may need to resolve
+hundreds to thousands of asset paths (or more) depending on the complexity
+of the scene, many of which may be repeated. A scoped cache helps to minimize
+that expense. A scoped cache also ensures that resolving a given asset path
+multiple times returns the same result, which is important for consistency
+and correctness. 
+
+Ar provides default scoped cache behaviors for all ArResolver subclasses.
+However, this default behavior is very basic. Subclasses may provide their
+own scoped cache implementations that can take advantage of implementation
+details of their underlying asset system to maximize efficiency. For such
+cases Ar provides an ArThreadLocalScopedCache utility class to help with
+this.
+
+For more details, see:
+
+- \ref ArResolver_scopedCache "Scoped Resolution Cache"
+- \ref ArResolver_scopedCacheImplementation "Scoped Resolution Cache Implementation"
+
+\section ar_paths Asset Paths and Resolved Paths
+
+In general, Ar does not impose any requirements or restrictions on the format of
+an asset path or resolved path. Users are free to use whatever path syntax they
+want as long as they are supported by their underlying resolver
+implementations. For example, the filesystem-based ArDefaultResolver simply
+uses filesystem paths, but other implementations might use special URIs or 
+database identifiers.
+
+Ar reserves trailing bracket-enclosed paths as syntax for package-relative
+asset paths. For example, paths like:
+
+- "/foo/baz.usdz[file.usd]"
+- "my_uri://foo/baz.usdz[file.usd]" 
+
+will be recognized by Ar as a package-relative asset path and will be split
+so that  ArResolver subclasses will only see the path "/foo/baz.usdz" or 
+"my_uri://foo/baz.usdz". For more details, see 
+\ref Ar_packagePaths "Package Relative Paths"
 
 */
