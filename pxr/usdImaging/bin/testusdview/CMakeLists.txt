@@ -434,9 +434,9 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         EXPECTED_RETURN_CODE 0
     )
 
-pxr_register_test(testUsdviewAnimatedBounds
+    pxr_register_test(testUsdviewAnimatedBounds
         PYTHON
-	COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewAnimatedBounds.py test.usda"
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewAnimatedBounds.py test.usda"
         EXPECTED_RETURN_CODE 0
     )
     

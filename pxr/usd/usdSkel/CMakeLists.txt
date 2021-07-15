@@ -89,6 +89,10 @@ pxr_library(usdSkel
         doxygen/objectModel.dox
         doxygen/schemaOverview.dox
         doxygen/schemas.dox
+        images/blendshapes.svg
+        images/blendshapesWithInbetweens.svg
+        images/influencesPrimvarLayout.svg
+        images/unboundedInterpolationExample.svg
 )
    
 pxr_test_scripts(

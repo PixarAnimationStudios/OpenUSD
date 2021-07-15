@@ -56,13 +56,9 @@ UsdGeomImageable::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdGeomImageable::_GetSchemaKind() const {
+UsdSchemaKind UsdGeomImageable::_GetSchemaKind() const
+{
     return UsdGeomImageable::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdGeomImageable::_GetSchemaType() const {
-    return UsdGeomImageable::schemaType;
 }
 
 /* static */

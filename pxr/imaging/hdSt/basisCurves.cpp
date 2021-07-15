@@ -48,6 +48,7 @@
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
+#include "pxr/imaging/hf/diagnostic.h"
 #include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -665,10 +666,10 @@ AddVertexOrVaryingPrimvarSource(const TfToken &name,
     VtArray<T> array = value.Get<VtArray<T>>();
     // Empty primvar arrays are ignored, except for points
     if (!array.empty() || name == HdTokens->points) {
-        sources->push_back(HdBufferSourceSharedPtr(
+        sources->push_back(
             std::make_shared<HdSt_BasisCurvesPrimvarInterpolaterComputation<T>>(
                 topology, array, name, interpolation, fallbackValue, 
-                HdGetValueTupleType(VtValue(array)).type)));
+                HdGetValueTupleType(VtValue(array)).type));
     }
 }
 
@@ -736,8 +737,7 @@ void ProcessVertexOrVaryingPrimvar(
     } else {
         TF_WARN("Type of vertex or varying primvar %s not yet fully supported", 
                 name.GetText());
-        sources->push_back(HdBufferSourceSharedPtr(
-            std::make_shared<HdVtBufferSource>(name, value)));
+        sources->push_back(std::make_shared<HdVtBufferSource>(name, value));
     }
 }
 } // anonymous namespace
@@ -993,17 +993,30 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferSourceSharedPtrVector sources;
     sources.reserve(uniformPrimvars.size());
 
+    const size_t numCurves = _topology ? _topology->GetNumCurves() : 0;
+
     for (HdPrimvarDescriptor const& primvar: uniformPrimvars) {
         if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name))
             continue;
 
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
         if (!value.IsEmpty()) {
-            sources.push_back(HdBufferSourceSharedPtr(
-                              new HdVtBufferSource(primvar.name, value)));
-                              
+            HdBufferSourceSharedPtr source =
+                std::make_shared<HdVtBufferSource>(primvar.name, value);
+
+            // verify primvar length
+            if (source->GetNumElements() != numCurves) {
+                HF_VALIDATION_WARN(id,
+                    "# of curves mismatch (%d != %d) for uniform primvar %s",
+                    (int)source->GetNumElements(), (int)numCurves, 
+                    primvar.name.GetText());
+                continue;
+            }
+           
+            sources.push_back(source);
+
             if (primvar.name == HdTokens->displayOpacity) {
-                _displayOpacity = true;
+                 _displayOpacity = true;
             }
         }
     }

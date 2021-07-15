@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
+#include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
 
@@ -58,7 +59,9 @@ typedef std::vector<SdfPayload> SdfPayloadVector;
 ///
 class SdfPayload : boost::totally_ordered<SdfPayload> {
 public:
-    /// Creates a payload.
+    /// Create a payload. See SdfAssetPath for what characters are valid in \p
+    /// assetPath.  If \p assetPath contains invalid characters, issue an error
+    /// and set this payload's asset path to the empty asset path.
     ///
     SDF_API
     SdfPayload(
@@ -71,9 +74,14 @@ public:
         return _assetPath;
     }
 
-    /// Sets a new asset path for the layer the payload uses.
+    /// Sets a new asset path for the layer the payload uses.  See SdfAssetPath
+    /// for what characters are valid in \p assetPath.  If \p assetPath contains
+    /// invalid characters, issue an error and set this payload's asset path to
+    /// the empty asset path.
     void SetAssetPath(const std::string &assetPath) {
-        _assetPath = assetPath;
+        // Go through SdfAssetPath() to raise an error if \p assetPath contains
+        // illegal characters (i.e. control characters).
+        _assetPath = SdfAssetPath(assetPath).GetAssetPath();
     }
 
     /// Returns the scene path of the prim for the payload.

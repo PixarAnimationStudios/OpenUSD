@@ -26,7 +26,6 @@
 #include "pxr/imaging/hdSt/meshTopology.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
 #include "pxr/imaging/hdSt/subdivision.h"
-#include "pxr/imaging/hdSt/subdivision3.h"
 #include "pxr/imaging/hdSt/triangulate.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
@@ -42,7 +41,6 @@
 #include "pxr/base/tf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 
 // static
@@ -71,12 +69,7 @@ HdSt_MeshTopology::HdSt_MeshTopology(
 {
 }
 
-HdSt_MeshTopology::~HdSt_MeshTopology()
-{
-    delete _quadInfo;
-    delete _subdivision;
-}
-
+HdSt_MeshTopology::~HdSt_MeshTopology() = default;
 
 bool
 HdSt_MeshTopology::operator==(HdSt_MeshTopology const &other) const {
@@ -90,8 +83,7 @@ HdSt_MeshTopology::operator==(HdSt_MeshTopology const &other) const {
 void
 HdSt_MeshTopology::SetQuadInfo(HdQuadInfo const *quadInfo)
 {
-    delete _quadInfo;
-    _quadInfo = quadInfo;
+    _quadInfo.reset(quadInfo);
 }
 
 HdBufferSourceSharedPtr
@@ -102,23 +94,22 @@ HdSt_MeshTopology::GetPointsIndexBuilderComputation()
     VtIntArray indices(numPoints);
     for (int i = 0; i < numPoints; ++i) indices[i] = i;
 
-    return HdBufferSourceSharedPtr(
-        new HdVtBufferSource(HdTokens->indices, VtValue(indices)));
+    return std::make_shared<HdVtBufferSource>(
+        HdTokens->indices, VtValue(indices));
 }
 
 HdBufferSourceSharedPtr
 HdSt_MeshTopology::GetTriangleIndexBuilderComputation(SdfPath const &id)
 {
-    return HdBufferSourceSharedPtr(
-        new HdSt_TriangleIndexBuilderComputation(this, id));
+    return std::make_shared<HdSt_TriangleIndexBuilderComputation>(this, id);
 }
 
 HdSt_QuadInfoBuilderComputationSharedPtr
 HdSt_MeshTopology::GetQuadInfoBuilderComputation(
     bool gpu, SdfPath const &id, HdStResourceRegistry *resourceRegistry)
 {
-    HdSt_QuadInfoBuilderComputationSharedPtr builder(
-        new HdSt_QuadInfoBuilderComputation(this, id));
+    HdSt_QuadInfoBuilderComputationSharedPtr builder =
+        std::make_shared<HdSt_QuadInfoBuilderComputation>(this, id);
 
     // store as a weak ptr.
     _quadInfoBuilder = builder;
@@ -130,8 +121,9 @@ HdSt_MeshTopology::GetQuadInfoBuilderComputation(
             return builder;
         }
 
-        HdBufferSourceSharedPtr quadrangulateTable(
-            new HdSt_QuadrangulateTableComputation(this, builder));
+        HdBufferSourceSharedPtr quadrangulateTable =
+            std::make_shared<HdSt_QuadrangulateTableComputation>(
+                this, builder);
 
         // allocate quadrangulation table on GPU
         HdBufferSpecVector bufferSpecs;
@@ -149,8 +141,8 @@ HdSt_MeshTopology::GetQuadInfoBuilderComputation(
 HdBufferSourceSharedPtr
 HdSt_MeshTopology::GetQuadIndexBuilderComputation(SdfPath const &id)
 {
-    return HdBufferSourceSharedPtr(
-        new HdSt_QuadIndexBuilderComputation(this, _quadInfoBuilder.lock(), id));
+    return std::make_shared<HdSt_QuadIndexBuilderComputation>(
+        this, _quadInfoBuilder.lock(), id);
 }
 
 HdBufferSourceSharedPtr
@@ -171,8 +163,8 @@ HdSt_MeshTopology::GetQuadrangulateComputation(
     // unregisterd computation.
     HdBufferSourceSharedPtr quadInfo = _quadInfoBuilder.lock();
 
-    return HdBufferSourceSharedPtr(
-        new HdSt_QuadrangulateComputation(this, source, quadInfo, id));
+    return std::make_shared<HdSt_QuadrangulateComputation>(
+        this, source, quadInfo, id);
 }
 
 HdComputationSharedPtr
@@ -184,24 +176,24 @@ HdSt_MeshTopology::GetQuadrangulateComputationGPU(
         // no need of quadrangulation.
         return HdComputationSharedPtr();
     }
-    return HdComputationSharedPtr(
-        new HdSt_QuadrangulateComputationGPU(this, name, dataType, id));
+    return std::make_shared<HdSt_QuadrangulateComputationGPU>(
+        this, name, dataType, id);
 }
 
 HdBufferSourceSharedPtr
 HdSt_MeshTopology::GetQuadrangulateFaceVaryingComputation(
     HdBufferSourceSharedPtr const &source, SdfPath const &id)
 {
-    return HdBufferSourceSharedPtr(
-        new HdSt_QuadrangulateFaceVaryingComputation(this, source, id));
+    return std::make_shared<HdSt_QuadrangulateFaceVaryingComputation>(
+        this, source, id);
 }
 
 HdBufferSourceSharedPtr
 HdSt_MeshTopology::GetTriangulateFaceVaryingComputation(
     HdBufferSourceSharedPtr const &source, SdfPath const &id)
 {
-    return HdBufferSourceSharedPtr(
-        new HdSt_TriangulateFaceVaryingComputation(this, source, id));
+    return std::make_shared<HdSt_TriangulateFaceVaryingComputation>(
+        this, source, id);
 }
 
 bool
@@ -234,18 +226,17 @@ HdSt_MeshTopology::GetOsdTopologyComputation(SdfPath const &id)
     // this has to be the first instance.
     if (!TF_VERIFY(!_subdivision)) return HdBufferSourceSharedPtr();
 
+    bool const adaptive = RefinesToBSplinePatches() ||
+                          RefinesToBoxSplineTrianglePatches();
+
     // create HdSt_Subdivision
-    _subdivision = HdSt_Osd3Factory::CreateSubdivision();
+    _subdivision = std::make_unique<HdSt_Subdivision>(adaptive, _refineLevel);
 
     if (!TF_VERIFY(_subdivision)) return HdBufferSourceSharedPtr();
 
-    bool adaptive = RefinesToBSplinePatches() ||
-                    RefinesToBoxSplineTrianglePatches();
-
     // create a topology computation for HdSt_Subdivision
     HdBufferSourceSharedPtr builder =
-        _subdivision->CreateTopologyComputation(this, adaptive,
-                                                _refineLevel, id);
+        _subdivision->CreateTopologyComputation(this, id);
     _osdTopologyBuilder = builder; // retain weak ptr
     return builder;
 }
@@ -257,11 +248,20 @@ HdSt_MeshTopology::GetOsdIndexBuilderComputation()
     return _subdivision->CreateIndexComputation(this, topologyBuilder);
 }
 
+HdBufferSourceSharedPtr 
+HdSt_MeshTopology::GetOsdFvarIndexBuilderComputation(int channel)
+{
+    HdBufferSourceSharedPtr topologyBuilder = _osdTopologyBuilder.lock();
+    return _subdivision->CreateFvarIndexComputation(
+        this, topologyBuilder, channel);
+}
+
 HdBufferSourceSharedPtr
 HdSt_MeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source,
-                                        bool varying)
+                                           Interpolation interpolation,
+                                           int fvarChannel)
 {
-    // Make a dependency to far mesh.
+    // Make a dependency to osd topology builder computation.
     // (see comment on GetQuadrangulateComputation)
     //
     // It can be null for the second or later primvar animation.
@@ -280,22 +280,37 @@ HdSt_MeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source
 
     HdBufferSourceSharedPtr topologyBuilder = _osdTopologyBuilder.lock();
 
-    return _subdivision->CreateRefineComputation(this, source, varying,
-                                                 topologyBuilder);
+    return _subdivision->CreateRefineComputationCPU(this, source,
+                                                    topologyBuilder, 
+                                                    interpolation);
 }
 
 HdComputationSharedPtr
-HdSt_MeshTopology::GetOsdRefineComputationGPU(TfToken const &name,
-                                              HdType dataType)
+HdSt_MeshTopology::GetOsdRefineComputationGPU(
+    TfToken const &name,
+    HdType dataType,
+    HdStResourceRegistry *resourceRegistry,
+    Interpolation interpolation,
+    int fvarChannel)
 {
+    // Make a dependency to osd topology builder computation.
+    // (see comment on GetOsdRefineComputation)
+
     // for empty topology, we don't need to refine anything.
-    if (_topology.GetFaceVertexCounts().size() == 0) {
-        return HdComputationSharedPtr();
+    if (_topology.GetFaceVertexCounts().size() == 0) return nullptr;
+
+    if (!TF_VERIFY(_subdivision)) {
+        TF_CODING_ERROR("GetOsdTopologyComputation should be called before "
+                        "GetOsdRefineComputationGPU.");
+        return nullptr;
     }
 
-    if (!TF_VERIFY(_subdivision)) return HdComputationSharedPtr();
-
-    return _subdivision->CreateRefineComputationGPU(this, name, dataType);
+    HdBufferSourceSharedPtr topologyBuilder = _osdTopologyBuilder.lock();
+    
+    return _subdivision->CreateRefineComputationGPU(this, topologyBuilder,
+                                                    name, dataType,
+                                                    resourceRegistry,
+                                                    interpolation, fvarChannel);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

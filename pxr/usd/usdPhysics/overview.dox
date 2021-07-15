@@ -1,0 +1,629 @@
+/*!
+
+\page usdPhysics_page_front UsdPhysics : USD Physics Schema
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdPhysics : USD Physics Schema
+\endif
+
+__UsdPhysics__ defines the physics-related prim and property schemas that
+together form a physics simulation representation.
+
+<b>Rigid Body Physics in USD Overview.</b>
+
+\tableofcontents
+
+\section usdPhysics_purpose_and_scope Purpose and Scope
+
+While at its launch USD was primarily targeted at film and VFX pipelines, it 
+has been adopted into many other spaces and applications, including the 
+authoring, interchange, and delivery of interactive 3D graphics content.
+Computer games and 3D web applications are examples of new domains for
+the integration of this content. In these consumer-facing applications, 
+real-time physics allows realistic user interaction with virtual objects. 
+In professional and academic applications, there are a number of use cases for 
+real-time physics in areas such as mechanical engineering, architecture, 
+artificial intelligence and robotics where vehicles or robots are designed, 
+tested and trained in simulation. This schema extends USD to represent the 
+real-time physics data required to enable these applications.
+
+The realm of simulation is broad. This schema is intended as a baseline initial 
+extension to USD that enables the minimum set of common concepts required to 
+represent rigid body physics. Future iterations and extensions will 
+incrementally add capabilities as needs are identified.
+
+\section usdPhysics_overall_design Overall Design Concerns
+
+The initial usdPhysics schema concerns rigid body simulations. Rigid body 
+simulations are the most broadly applicable category we could identify, with 
+common and long standing uses across all disciplines described above.
+
+\subsection usdPhysics_rigid_body Rigid Body Simulation Primer
+
+Rigid body simulators take as input a list of rigid bodies and a list of 
+constraints. Given the state, or the state history of the bodies 
+at a specific time, they compute the updated state of the bodies a moment in 
+time later, with the general desire being that the bodies' movement while 
+constrained by the constraints obeys the laws of physics. One can invoke a 
+sequence of such simulation updates to generate an animation.
+
+A rigid body can be described by its pose (position and orientation in 
+a well defined frame of reference), as well as its mass distribution 
+(specified by a center of mass position, total mass, and an inertia tensor). 
+The body will also have a velocity (linear and angular vectors). 
+Pose and velocity are both inputs and outputs of the simulation update.
+
+Constraints describe physical limits between bodies. They can take many forms, 
+but fall primarily into two categories: 
+
+\li <b>Explicit constraints</b>, often called joints, which create a fixed 
+spatial relationship between two rigid bodies. One example is a requirement 
+that one body never rotate relative to the other body, even if relative 
+translation is possible.
+
+\li <b>Implicit constraints</b>, most commonly contacts, which are generally 
+created 'behind the scenes' by the simulator to ensure that e.g. solid objects 
+do not pass through each other. For the simulator to derive these constraints, 
+each body must be provided with a collision representation 
+(called 'collision shape' or 'collider') and physical material properties.
+
+Simulations often share a set of global parameters that influence 
+the simulation of all bodies. It is generally possible to simultaneously 
+create multiple simulations, each with their own set of parameter settings.
+
+\subsection usdPhysics_usd_implementation USD Implementation
+
+\subsubsection usdPhysics_disambiguation Disambiguation
+
+First, it is clear that some terminology commonly used by the physics simulation
+community, such as 'scene', 'joint', and 'material' have different meanings
+than in VFX, and are already in use in other contexts by USD, so all of the 
+usdPhysics schema classes are prefixed with 'Physics' and make use of 
+namespacing to avoid any ambiguity.
+
+\subsubsection usdPhysics_fundamental_editing Fundamental Editing Capabilities
+
+A primary assumption in designing this schema was that one of the most common 
+use cases will be to add physics behavior to existing USD content. 
+Furthermore, the conventional wisdom was that to maximize the performance of USD
+implementations, it is best to avoid inflating the number of USD objects in a 
+scene. Accordingly, the best approach is to attach new API schemas that contain
+physics attributes to existing USD objects whenever this makes sense. In rare
+cases there is no object already available to which simulation attributes can
+be attached in a rational manner, and in these cases, usdPhysics makes use of 
+new USD IsA schemas.
+
+It is vital that any operation to add physics can also be undone, which can be 
+accomplished in most cases using UsdPrim::RemoveAPI().
+
+Similarly, in editor use cases it is a common capability to temporarily be able 
+to mute/disable properties, without deleting them outright. Removing an API 
+will make it be no longer "present", but all data authored to that API still 
+remains. USD allows entire objects to deactivate via an active flag, but it can
+not be animated over time - which cannot be done with just RemoveAPI(). For a
+few cases where animating mute behavior is a really common use case, we have
+defined a boolean enable attribute.
+(Note that we initially wanted to have the enable flag in a base class for the 
+classes that need it, but this creates problems when multiple enableable APIs 
+are applied to an object. In this case USD only creates a single shared enable 
+flag, which is not what we want.)
+
+\subsubsection usdPhysics_physics_scenes Physics Scenes
+
+A primary requirement is that multiple independent physics simulations can be 
+described within a single USD stage. We found the best way to do this is to 
+create a UsdPhysicsScene class. It was proposed to use the USD layers concept 
+to partition physics into separate scenes, but the dominant layering idioms are 
+workflow oriented, as opposed to primitive organization. It makes sense to 
+leave those operational principles to a a studio's data design, rather than 
+overload the concept for simulations. In case there are multiple scenes in a 
+stage, bodies are assigned to specific scenes using a rel from body to scene. 
+If there is only one unique scene, an explicit rel is unnecessary, and bodies 
+are assumed to be associated with the singleton scene. It is not possible to 
+put a single body into multiple scenes, as data races could occur, and it would 
+be impossible to resolve the correct state of body given conflicting simulation.
+
+Scenes can define a gravity vector attribute which accelerates all contained 
+bodies appropriately. Gravity is provided as a separate direction vector and 
+magnitude. This allows for the independent specification of default direction 
+(which is opposite the stage up axis), and default magnitude (earth gravity).
+
+\subsubsection usdPhysics_types Types
+
+USD differentiates between base and role value types. We tried to use the 
+available role types whenever applicable. For example, a velocity is a vector3f
+rather than a float3. 
+
+We chose to use single rather than double precision floats as widely available 
+real time physics simulation software universally use single precision types 
+for best performance, and the use of double or extended precision is only 
+warranted for positions in extremely large spaces, which is already 
+accommodated through the use of USD's built-in UsdGeomXformable type.
+
+\subsubsection usdPhysics_units Units
+
+In terms of units, physics makes use of USD's established concepts of distance 
+and time, and also adds the concept of mass. All of the physical quantities 
+we use can be decomposed into a product of these three basic types. USD does 
+not in general prescribe units for distance and time. It however has the 
+concept of metersPerUnit (\ref UsdGeomTokensType::metersPerUnit) and 
+timeCodesPerSecond \(UsdStage::SetTimeCodesPerSecond()\) metadata which makes 
+it possible to scale content authored at different scales correctly relative to 
+each other when bringing them into a shared scene. However, the class 
+UsdGeomPointInstancer stores velocity and angular velocity attributes that are 
+specified in units per second and degrees per second, respectively. This 
+indicates a particular preference for degrees and seconds in USD, and we wish 
+to stay consistent with this. This physics extension therefore adopts degrees 
+as the standard angular unit, seconds as the standard time unit, and continues 
+to respect arbitrary units for distance. Additionally we adopt arbitrary mass 
+units and add a kilogramsPerUnit (\ref UsdPhysicsTokensType::kilogramsPerUnit) 
+metadata which remains consistent with scaling conversions into the 
+International System of Units. 
+
+In the schema we indicate the units for each specified quantity as an 
+expression using the terms 'distance', 'degrees', 'mass' and 'seconds' as 
+defined above. A USD stage can be composed by referencing a number of USD files 
+that may each have differing units; however, the specification of unit is 
+**per-stage**, so correctives must be applied to referenced data to bring it 
+into the units of the referencing stage, as part of the act of adding the 
+reference. In the case of linear units, given the hierarchical nature of both 
+references and composition of transformations in a scenegraph, it is possible 
+to "correct" for differing units by applying a scale transformation on the prim 
+where the reference is added. However, for a change of mass units, no such easy 
+corrective is possible; instead, each measurement must be adjusted in an 
+overriding opinion.
+
+Similarly, any simulation outputs can be converted back into their original 
+units before being written back to USD.
+
+A few metric helper APIs (\ref UsdPhysicsGetStageKilogramsPerUnit(),
+\ref UsdPhysicsStageHasAuthoredKilogramsPerUnit(),
+\ref UsdPhysicsSetStageKilogramsPerUnit(), 
+\ref UsdPhysicsMassUnitsAre()) are provided to access and set the stage 
+level kilogramsPerUnit metadata.
+
+\subsubsection usdPhysics_default_values Default Values
+
+For some attributes in these schemas we desire the ability to signal that we 
+want the simulator to supply a reasonable default value, whatever that may be 
+for the particular simulator. Since USD prefers for all schema attributes to 
+provide "fallback" (i.e. default) values, we specify default values for these 
+attributes explicitly, typically with sentinel values that lie outside of the 
+legal range of values for each particular attribute. For example, if an 
+attribute is normally required to be non-negative, we use -1.0 to request a 
+certain default behavior. Sometimes the attribute can use the entire floating 
+point range, in which case we reserve what is effectively +/- infinity at the 
+edges of this range as sentinels. We will use the floating point 'inf' literal 
+which USD supports in files and schemas to denote this. We document such 
+default sentinel behavior on a case by case basis in the schema.
+
+\subsubsection usdPhysics_rigid_bodies Rigid Bodies
+
+We represent physics rigid bodies using the UsdPhysicsRigidBodyAPI, which can 
+be applied to any UsdGeomXformable. UsdGeomXformable is the suitable base class 
+as it provides a placement in space via the xform which is also a fundamental 
+property of physics bodies.
+
+Rigid bodies have linear and angular velocity attributes that are specified in 
+local space, to be consistent with velocities in point instancers and 
+a prim's xform. 
+
+Bodies can specify a simulationOwner scene rel for the aforementioned 
+multi-scene simulation scenario.
+
+\subsubsection usdPhysics_interaction_with_usd Interaction with the USD hierarchy
+
+If a prim in a USD scene graph hierarchy is marked with UsdPhysicsRigidBodyAPI, 
+the behavior is such that with UsdPhysicsRigidBodyAPI, all chidlren of the 
+marked prim are assumed to be part of this rigid body, and move rigidly along 
+with the body. This is consistent with the common behavior one expects during 
+hand-animation of a sub-tree. If aggregate properties of the entire rigid body 
+must be computed, such as total mass or the entirety of its collision volume, 
+then the contents of the entire subtree are considered. 
+
+Note that it is of course permitted to change/animate the transforms in such 
+a sub-tree, in which case any derived quantities in the physics engine such 
+as center of mass or relative shape poses will be updated. Such animation 
+will however not generate momentum. For example, rapidly animating rigid 
+portions of Luxo Jr. will not cause the lamp to jump, since to compute such 
+behavior we would need to capture the relative masses of multiple independent 
+portions of the lamp, which is not possible if the whole is treated as 
+a single rigid assembly. The correct approach would be to model each of the 
+rigid portions of the lamp as independent rigid bodies, and connect these 
+with joints, which we will discuss later.
+
+It is not possible to have nested bodies. PhysicsRigidBodyAPIs applied to 
+anything in the subtree under a prim that already has a UsdPhysicsRigidBodyAPI 
+are ignored. An exception is if a prim has an resetXformStack op. In this case
+it ignores rigid body parenting, and a rigid body API can then be used to make 
+it dynamic.
+
+\subsubsection usdPhysics_rb_sleep Sleep
+
+Large terrestrial simulations have the common property that all objects will 
+eventually fall to the ground and come to rest. It is common for rigid body 
+simulation software to have a notion of 'sleeping' such bodies to improve 
+performance. This means that interactions cease to be updated when an 
+equilibrium state is reached, and start to be updated again once the 
+equilibrium state has somehow been disturbed. It is also possible to start off 
+simulations in a sleeping state. We provide 
+UsdPhysicsTokensType::physicsStartsAsleep to support this. We have considered 
+exposing the runtime sleep state of each body in the simulation so that it 
+would be visible to USD when the simulation deactivated a body, and to let USD 
+force a body to sleep during simulation. We decided against this since the 
+precise deactivation rules are an implementation detail that can vary 
+significantly between simulations, so we prefer to keep this as a hidden 
+implementation detail for the time being.
+
+\subsubsection usdPhysics_kinematic_bodies Kinematic Bodies
+
+In games and VFX it is often desirable to have an animator take full control 
+over a body, even as it interacts with other physics driven bodies. We call 
+such bodies 'kinematic'. Kinematic bodies still 'pull on' joints and 'push on' 
+touching rigid bodies, but their xform is only read, but not written, by the 
+physics simulator, letting the animation system write their xforms. We support 
+such bodies using the UsdPhysicsTokensType::physicsKinematicEnabled attribute. 
+Kinematic bodies are not exactly the same thing as an animated static body with 
+a collider: The simulation infers a continuous velocity for the kinematic body 
+from the keyframing, and this velocity will be imparted to dynamic bodies 
+during collisions. 
+
+\subsubsection usdPhysics_animation_of_attributes Animation of Attributes
+
+We worked with the assumption that every attribute on every class that is 
+not explicitly marked with "uniform" can be animated. Obviously erratic 
+changing of some parameters could make some simulations explode in practice, 
+we believe this is highly implementation dependent and not a reason to 
+generally forbid attribute animation.
+
+\subsubsection usdPhysics_body_mass_properties Body Mass Properties
+
+We opted to decouple mass properties from UsdPhysicsRigidBodyAPI and place them 
+in a separate UsdPhysicsMassAPI. UsdPhysicsMassAPI is not required in cases 
+where the mass properties of an object can be derived from collision geometry 
+(discussed further down in this document) and the UsdPhysicsMaterialAPI. Most 
+commonly, UsdPhysicsMassAPI is applied in addition to UsdPhysicsRigidBodyAPI.
+
+Unlike UsdPhysicsRigidBodyAPI, it is also possible to apply UsdPhysicsMassAPI 
+multiple times in a USD scene graph subtree, in order to make it possible to 
+accumulate the mass of rigid components.
+
+The mass of an object may be specified in multiple ways, and several 
+conflicting settings are resolved using a precedence system that will initially 
+seem rather complex yet but is actually intuitive and practical:
+
+\li Parents' explicit total masses override any mass properties specified 
+further down in the subtree.
+
+\li Density has lower precedence than mass, so explicit mass always overrides 
+implicit mass that can be computed from volume and density.
+
+\li A density in a child overrides a density specified in a parent for all of 
+the subtree under the child.
+
+\li A density specified via UsdPhysicsMassAPI, even if it is inherited from a 
+prim higher in the tree, overrides any density specified via a material 
+(see UsdPhysicsMaterialAPI later in this document).
+
+\li Implicit mass at any prim is the computed volume of collision geometry at 
+that prim times the locally effective density, plus the implicit masses of 
+all children in the subtree.
+
+\li Density is assumed to be 1000.0 kg/m3 (approximately the density of water) 
+for volume computation when no other density is specified locally, or in bound 
+materials either locally or higher up in the tree, and this value is converted 
+into the collider's native units prior to being used for mass computation.
+
+\li Mass is assumed to be 1.0 in the mass units used when none is provided 
+explicitly, and there are no collision volumes to derive from.
+
+Implementing this rule set is potentially nontrivial, but it's important to get 
+right. We plan to make the pseudocode of a mass computation system available 
+that relies on the underlying physics system to compute the volume of collision 
+geometry.
+
+\subsubsection usdPhysics_collision_shapes Collision Shapes
+
+Our design for collision shapes defines a UsdPhysicsCollisionAPI that may be 
+attached to objects of type UsdGeomGprim representing graphics geometry. 
+Specifically, we suggest the support of UsdGeomCapsule, UsdGeomCone, 
+UsdGeomCube, UsdGeomCylinder, UsdGeomSphere and UsdGeomMesh, though the 
+precise set of supported geoms might be implementation specific. Note also 
+that some implementations might support some of these shapes using potentially 
+faceted convex approximations.
+
+As we have alluded to earlier, a subtree under a UsdPhysicsRigidBodyAPI prim 
+may contain multiple collision shape prims (or 'colliders') that are required 
+to resolve the motion of the body as it touches other bodies. For example, a 
+teapot is a single rigid body (the top level prim is marked with 
+UsdPhysicsRigidBodyAPI), but it may be composed of multiple Mesh and other 
+Geoms at and under this prim. Each of these parts can gain a 
+UsdPhysicsCollisionAPI which instructs the system to make this shape's geom 
+into a collider for the purposes of physics simulation.
+
+It is also possible to have PhysicsCollisionAPIs on prims that are not under a 
+UsdPhysicsRigidBodyAPI. These are treated as static colliders -- shapes that 
+are not moved by physics, but they can still collide with bodies, at which 
+point they are interpreted as having zero velocity and infinite mass. Since 
+static colliders do not have a corresponding UsdPhysicsRigidBodyAPI, in this 
+case it is possible for the UsdPhysicsCollisionAPI **itself** to specify a 
+simulationOwner scene. For any collider that **is** associated with a 
+UsdPhysicsRigidBodyAPI, the collider's simulation owner attribute is ignored.
+
+According to USD rules, UsdGeomGprim(s) must generally be leaf prims, and 
+because UsdPhysicsCollisionAPI can only be applied to UsdGeomGprim, it means 
+that there is no opportunity to inherit UsdPhysicsCollisionAPI attributes down 
+the scene graph. If a mesh is composed of submeshes, all of the submeshes are 
+considered to be part of the collider.
+
+The current design has the drawback that it is not possible to add multiple 
+colliders to a single geom object directly. To add multiple colliders one must 
+create a parent Xform (which receives the UsdPhysicsRigidBodyAPI), and then add 
+the original geom as a child, and add any additional colliders as additional 
+children. This is a bit more invasive than we would prefer, but the only 
+alternative would be to make colliders Is-A schemas rather than APIs, which 
+there was a desire to avoid to prevent the number of USD objects from 
+increasing a great deal.
+
+\subsubsection usdPhysics_mesh_into_shapes Turning Meshes into Shapes
+
+Simple USD Prims like Sphere, Cylinder, Cube, Cone and Capsule can be used for
+physics simulation directly with the simple addition of a 
+UsdPhysicsCollisionAPI. UsdGeomMesh is a bit tricky because the state of the 
+art in simulating arbitrary meshes in real time comes with some tradeoffs that 
+users generally want control over. To support this, we allow 
+UsdPhysicsMeshCollisionAPI to be applied to UsdGeomMesh(es) only, alongside the 
+UsdPhysicsCollisionAPI. This API has an approximation attribute that lets the 
+user choose between no approximation (generally lowest performance), a 
+simplified mesh, a set of convex hulls, a single convex hull, a bounding box or 
+a bounding sphere. If an implementation does not support a particular kind of 
+approximation, it is recommended that it falls back to the most similar 
+supported option.
+
+Collision meshes may be specified explicitly (for example one that was 
+processed by a particular decimator) by adding the custom collider mesh as a 
+sibling to the original graphics mesh, UsdGeomImageable _purpose_ to "guide" so 
+it does not render, and apply UsdPhysicsCollisionAPI and 
+UsdPhysicsMeshCollisionAPI to it specifying no approximation.
+
+\subsubsection usdPhysics_physics_materials Physics Materials
+
+Just like graphics, physics uses material properties. These are primarily used 
+to inform friction and collision restitution behavior, in addition to being one 
+of several ways to specify object density as discussed earlier. All these 
+properties are stored in the UsdPhysicsMaterialAPI, which can be applied to a 
+USDShadeMaterial prim as we believe it to be practical to add physics 
+properties to an established USD material library. 
+
+USD Physics materials are bound in the same way as graphics materials using 
+UsdShadeMaterialBindingAPI, either wih no material purpose or with a specific
+"physics" purpose. Note that this approach also permits binding different 
+materials to UsdGeomSubset(s). Not all physics simulations support different 
+materials per UsdGeomSubset, and it's possible that all but one subset per 
+collider will be ignored by the implementation.
+
+The unitless coefficients dynamicFriction and staticFriction are defined 
+by the Coulomb friction model. The coefficient of restitution is the ratio of 
+the final to initial relative velocity between two objects after they collide. 
+These three properties actually should be defined for each combination of two 
+materials, but this is generally considered impractical. Common practice in 
+real time physics is to define them on each material and then to use a simple 
+formula to combine them, for example by taking the product or the minimum. 
+Currently the default behavior we propose is to average the values, which is 
+the default behavior in popular real time game engines. In the future other 
+combine modes should be exposed.
+
+\subsubsection usdPhysics_plane_shapes Plane Shapes
+
+Implicit plane shapes are a very common physics primitive used primarily for 
+testing simple simulations. There are plans to add a Plane class to USD as a 
+UsdGeomGPrim. We look forward to supporting such plane shapes as static 
+colliders when they become available.
+
+\subsubsection usdPhysics_collision_filtering Collision Filtering
+
+Even in the simplest practical applications, the need to ignore some collisions 
+occurs often. One might need the sword of a game character to pass through an 
+enemy rather than to bounce off, while wanting it to bounce off walls, for 
+example.
+
+We define a CollisionGroup as an IsA schema with a UsdCollectionAPI applied, 
+that defines the membership of colliders (objects with a 
+UsdPhysicsCollisionAPI) in the group. Each group also has a multi-target 
+relationship to other groups (potentially including itself) with which it needs 
+to not collide. Colliders not in any CollisionGroup collide with all other 
+colliders in the scene.
+
+\subsubsection usdPhysics_pairwise_filtering Pairwise Filtering
+
+Sometimes group based filtering is insufficiently powerful to take care of some 
+filtering special cases. One would for example set up group based filtering 
+such that bodies of human characters collide against extremities like arms and 
+legs, generally assuming that these arms and legs belong to different humans 
+than the bodies. One however often doesn't want the extremities of a particular 
+human to collide with its own body, which is hard to avoid during a lot of 
+constant close proximity movement. To cover this case we have the 
+FilteringPairsAPI, which specifies a multi-target relationship to other objects 
+with which collisions are explicitly disabled. This pairwise filtering has 
+precedence over group based filtering. 
+
+The FilteringPairsAPI can be applied to objects with a UsdPhysicsRigidBodyAPI, 
+UsdPhysicsCollisionAPI, or UsdPhysicsArticulationAPI.
+
+It is sufficient to have a rel from an object A to an object B, to get the 
+filtering behavior. In this case the backwards rel from B to A is 
+implicit and not necessary.
+
+\subsubsection usdPhysics_joints Joints
+
+Joints are generally fixed attachments that can represent the way a drawer is 
+attached to a cabinet, a wheel to a car, or links of a robot to each-other. 
+Here we try to focus on a set of capabilities that are common to most 
+simulation packages and sufficiently expressive for a large number of 
+applications.
+
+Mathematically, jointed assemblies can be modeled either in maximal 
+(world space) or reduced (relative to other bodies) coordinates. 
+Both representations have pros and cons. We are proposing a USD 
+representation that will work with both approaches. 
+
+\subsubsection usdPhysics_joint_reference_frames Joint Reference Frames
+
+The joint base type is the IsA class UsdPhysicsJoint. Joints don't necessarily 
+have a single unique Xform in space, rather, they are defined by two distinct 
+frames, one relative to each of the two bodies which they connect.
+
+These two frames might not work out to be the same position and orientation 
+in world space because of either the permitted relative movement of the joint 
+(think of a car suspension moving up and down: the joint frame of the 
+suspension is constant relative to both the car body and the car axle, yet the 
+axle and undercarriage move relative to each other) or the error of approximate 
+simulations that can permit the joint to slightly pull apart when subjected 
+to significant forces or velocities.
+
+It does not make sense to derive UsdPhysicsJoint from UsdGeomXformable because 
+UsdGeomXformable has only a single Xform, and a joint has many. We could have 
+created an asymmetrical solution where the secondary xform is added on, or 
+split the joint object into two separate joint frames that are parented into 
+the scene graph and are then somehow pairwise cross referenced, but we opted to 
+go with an entirely new class that has all the information we need in a 
+symmetrical fashion.
+
+\subsubsection usdPhysics_jointed_bodies Jointed Bodies
+
+A joint defines a pair of relationships to UsdGeomXformable(s), to which we will 
+refer as the 'bodies'. Simulation of the joint is possible if at least one of 
+these has a UsdPhysicsRigidBodyAPI on it, or on an ancestor. If either rel is 
+not defined, it is treated as equivalent to attaching to the static world frame, 
+though it is recommended to always work with two well defined 
+UsdGeomXformable(s).
+
+The joint space relative to each body is a translation and orientation only, 
+scaling is not supported. (This is a general tension between graphics and 
+physics. Real world objects cannot scale arbitrarily, and simulations therefore 
+tend to not support scaling during rigid body simulation). For this reason we 
+don't use a general USD xform that is too flexible for our needs, but rather a 
+separate position and orientation quaternion. (Note however that this local 
+joint space is fixed in the prim's local space, which of course CAN be scaled 
+using the prim's own Xform scaling. This means that if a doorknob is attached 
+to a door at a particular position, it will continue to appear in the same 
+correct position on the door regardless of how the door is scaled, without 
+having to adjust the joint position.)
+
+We generally desire to have the two joint frames line up in world space, at 
+least along their constrained degrees of freedom. This condition can be 
+violated if either body is moved in world space, either by changing its own or 
+one of its parents' transforms, or if either body rels is changed. As a result 
+it is desirable to recompute the joint frames when the connected bodies or 
+their world space transforms have changed.
+
+\subsubsection usdPhysics_joint_collision_filtering Joint Collision Filtering
+
+It is common practice to disable collisions between the jointed bodies so that 
+their collision shapes don't interfere. It is therefore the default behavior 
+that collisions between the two subtrees indicated by the two body rel-s are 
+ignored. This default filtering behavior can be opted out of using the joint's 
+collisionEnabled attribute. No filtering occurs if either rel is undefined.
+
+\subsubsection usdPhysics_breaking_disabling_joints Breaking and Disabling Joints
+
+Breaking force is a practical property useful for all joints; joints can break
+when sufficient force is applied. For example a door can be ripped off its 
+hinges. This can be modeled using the breakForce and breakTorque attributes. 
+
+Joints can entirely be temporarily disabled just like rigid bodies or colliders. 
+Contrary to breaking, which is a (within a simulation run irreversible) 
+simulated behavior, disabling is a request to not simulate the joint at all.
+
+\subsubsection usdPhysics_joint_subtypes Joint Subtypes
+
+It is possible to derive a number of specific joint types, however the Joint API
+itself can represent a generic configurable joint, so in that sense it is not 
+an abstract type.
+
+The subtypes UsdPhysicsSphericalJoint, UsdPhysicsRevoluteJoint and 
+UsdPhysicsPrismaticJoint both define a primary axis (Following the USD axis 
+definition pattern established in e.g. UsdGeomCapsule and UsdGeomCylinder) and 
+a top and bottom motion limit along it.
+
+UsdPhysicsDistanceJoint defines a min and max distance between the attachment 
+points. The UsdPhysicsFixedJoint has no additional properties and simply locks 
+all relative degrees of freedom.
+
+\subsubsection usdPhysics_limits_drives Joint Limits and Drives
+
+Instead of using one of the predefined joint subtypes, it is also possible to 
+compose a custom joint from a set of limits and drives. Limits and drives are
+multi-apply schemas, so one can apply multiple instances, one for each degree 
+of freedom. The degree of freedom is specified via the TfToken (effectively a 
+string, one of "transX", "transY", "transZ", "rotX", "rotY", "rotZ", 
+"distance", that is postpended after the class name.) 
+
+The limit API further contains optional low and high limit attributes.
+
+The drive API allows joints to be motorized along degrees of freedom. It may 
+specify either a force or acceleration drive (The strength of force drives is 
+impacted by the mass of the bodies attached to the joint, an acceleration drive 
+is not). It also has a target value to reach, and one can specify if the target 
+is a goal position or velocity. One can limit the maximum force the drive can 
+apply, and one can specify a spring and damping coefficient. 
+
+The resulting drive force or acceleration is proportional to 
+\code
+stiffness * (targetPosition - p) + damping * (targetVelocity - v)
+\endcode
+where p is the relative pose space motion of the joint (the axial rotation of a 
+revolute joint, or axial translation for a prismatic joint) and v is the rate 
+of change of this motion. 
+
+For all limits that specify ranges, a "low" limit larger than the "high" limit 
+means the joint motion along that axis is locked.
+
+\subsubsection usdPhysics_articulations Articulations
+
+Earlier we mentioned that we support reduced coordinate joints, which require 
+some additional specification. We decided to do this with a minimal extension 
+of the above maximal joints. Any prim of the USD scene graph hierarchy may be 
+marked with an UsdPhysicsArticulationRootAPI. This informs the simulation that 
+any joints found in the subtree should preferentially be simulated using a 
+reduced coordinate approach. For floating articulations (robotics jargon for 
+something not bolted down, e.g. a wheeled robot or a quadcopter), this API 
+should be used on the root body (typically the central mass the wheels or 
+rotors are attached to), or a direct or indirect parent prim. For fixed 
+articulations (robotics jargon for e.g. a robot arm for welding that is bolted 
+to the floor), this API can be on a direct or indirect parent of the root joint 
+which is connected to the world, or on the joint itself. If there are multiple 
+qualifying bodies or joints under an UsdPhysicsArticulationRootAPI prim, each 
+is made into a separate articulation root.
+
+This should in general make it possible to uniquely identify a distinguished 
+root body or root joint for the articulation. From this root, a tree of bodies 
+and joints is identified that is not to contain loops (which may be closed by 
+joint collections). If loops are found, they may be broken at an arbitrary 
+location. Alternatively, a joint in the loop may use its 
+excludeFromArticulation attribute flag to denote that it wishes to remain a 
+maximal joint, and at this point the loop is then broken.
+
+\subsection usdPhysics_examples Examples
+
+\subsubsection usdPhysics_box_on_box Box on Box
+\include examples/usdPhysicsBoxOnBox2.usda
+
+\subsubsection usdPhysics_box_on_quad Box on Quad
+\include examples/usdPhysicsBoxOnQuad.usda
+
+\subsubsection usdPhysics_spheres_with_material Spheres with Materials
+\include examples/usdPhysicsSpheresWithMaterial.usda
+
+\subsubsection usdPhysics_group_filtering Group Filtering
+\include examples/usdPhysicsGroupFiltering.usda
+
+\subsubsection usdPhysics_pair_filtering Pair Filtering
+\include examples/usdPhysicsPairFiltering.usda
+
+\subsubsection usdPhysics_joint_example Joint
+\include examples/usdPhysicsJoints.usda
+
+\subsubsection usdPhysics_distance_joint_example Distance Joint
+\include examples/usdPhysicsDistanceJoint.usda
+
+*/

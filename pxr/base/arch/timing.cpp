@@ -59,6 +59,11 @@ ARCH_HIDDEN
 void
 Arch_InitTickTimer()
 {
+#if defined(ARCH_CPU_ARM)
+    uint64_t counter_hz;
+    __asm __volatile("mrs	%0, CNTFRQ_EL0" : "=&r" (counter_hz));
+    Arch_NanosecondsPerTick = double(1e9) / double(counter_hz);
+#else
     // NOTE: Normally ifstream would be cleaner, but it causes crashes when
     //       used in conjunction with DSOs and the Intel Compiler.
     FILE *in;
@@ -135,6 +140,7 @@ Arch_InitTickTimer()
     }
 
     Arch_NanosecondsPerTick = double(1e9) / double(cpuHz);
+#endif
 }
 #elif defined(ARCH_OS_WINDOWS)
 

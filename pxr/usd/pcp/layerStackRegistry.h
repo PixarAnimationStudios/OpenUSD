@@ -86,6 +86,9 @@ public:
     /// returns \c NULL.
     PcpLayerStackPtr Find(const PcpLayerStackIdentifier&) const;
 
+    /// Return true if this registry contains \p layerStack, false otherwise.
+    bool Contains(const PcpLayerStackPtr &layerStack) const;
+
     /// Returns every layer stack that includes \p layer.
     const PcpLayerStackPtrVector&
     FindAllUsingLayer(const SdfLayerHandle& layer) const;

@@ -34,7 +34,9 @@
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/ostreamMethods.h"
+#include "pxr/base/tf/pathUtils.h"
 #include <Alembic/Abc/OArchive.h>
 #include <Alembic/Abc/OObject.h>
 #include <Alembic/AbcGeom/OCamera.h>
@@ -3732,6 +3734,13 @@ UsdAbc_AlembicDataWriter::Open(
     TRACE_FUNCTION();
 
     _errorLog.clear();
+
+    const std::string dir = TfGetPathName(filePath);
+    if (!dir.empty() && !TfIsDir(dir) && !TfMakeDirs(dir)) {
+        TF_RUNTIME_ERROR("Could not create directory '%s'", dir.c_str());
+        return false;
+    }
+
     try {
         _impl->SetArchive(
             CreateArchiveWithInfo(Alembic::AbcCoreOgawa::WriteArchive(),

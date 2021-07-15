@@ -102,7 +102,7 @@ class SdfAssetPath;
 /// schema or directly from APISchemaBase. Similarly, a non-applied API schema 
 /// can only inherit from a non-applied API Schema or directly from 
 /// APISchemaBase. 'usdGenSchema' attempts to issue a warning if it detects 
-/// an incompability.
+/// an incompatibility.
 /// 
 /// \note A multiple-apply API schema may not inherit from a single-apply API 
 /// schema and vice versa. 
@@ -120,11 +120,6 @@ public:
     ///
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::AbstractBase;
-
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::AbstractBase;
 
     /// Construct a UsdAPISchemaBase on UsdPrim \p prim .
     /// Equivalent to UsdAPISchemaBase::Get(prim.GetStage(), prim.GetPath())
@@ -161,12 +156,6 @@ protected:
     /// \sa UsdSchemaKind
     USD_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USD_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.

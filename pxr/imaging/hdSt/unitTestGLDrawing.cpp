@@ -277,12 +277,18 @@ HdSt_UnitTestGLDrawing::RunTest(int argc, char *argv[])
 
     if (offscreen) {
         // no GUI mode (automated test)
-        _widget->OffscreenTest();
+        RunOffscreenTest();
     } else {
         // Interactive mode
         if (animate) _widget->StartTimer();
         _widget->Run();
     }
+}
+
+void
+HdSt_UnitTestGLDrawing::RunOffscreenTest()
+{
+    _widget->OffscreenTest();
 }
 
 /* virtual */

@@ -75,13 +75,9 @@ UsdShadeNodeGraph::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdShadeNodeGraph::_GetSchemaKind() const {
+UsdSchemaKind UsdShadeNodeGraph::_GetSchemaKind() const
+{
     return UsdShadeNodeGraph::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdShadeNodeGraph::_GetSchemaType() const {
-    return UsdShadeNodeGraph::schemaType;
 }
 
 /* static */
@@ -383,7 +379,7 @@ bool
 UsdShadeNodeGraph::ConnectableAPIBehavior::CanConnectOutputToSource(
     const UsdShadeOutput &output,
     const UsdAttribute &source,
-    std::string *reason)
+    std::string *reason) const
 {
     return UsdShadeConnectableAPIBehavior::_CanConnectOutputToSource(
             output, source, reason);

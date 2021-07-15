@@ -1321,7 +1321,12 @@ layer:
     ;
 
 layer_metadata_opt:
-    newlines_opt
+    newlines_opt {
+            // If we're only reading metadata and we got here, 
+            // we're done.
+            if (context->metadataOnly)
+                YYACCEPT;
+        }
     | newlines_opt '(' layer_metadata_list_opt ')' newlines_opt {
             // Abort if error after layer metadata.
             ABORT_IF_ERROR(context->seenError);

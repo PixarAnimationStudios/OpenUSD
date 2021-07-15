@@ -16,9 +16,10 @@ def "Root" (
         double moveScale = 1.5
         token geomType = "Cube"
     }
-    # Payload to the dynamic file. The file must exist but its contents are
-    # irrelevant as everything is generated from parameters above.
-    payload = @./empty.usddancingcubesexample@
+    # Payload to the dynamic file. This can be an anonymous file because 
+    # its contents are completely generated from parameters above and 
+    # the file format allows the reading of anonymous files.
+    payload = @anon:dummy:cubes.usddancingcubesexample@
 )
 {
 }

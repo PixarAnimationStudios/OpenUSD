@@ -221,6 +221,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (proxy)                                     \
     (render)
 
+#define HD_RENDER_CONTEXT_TOKENS                \
+    ((universal, ""))
+
 #define HD_OPTION_TOKENS                        \
     (parallelRprimSync)                        
 
@@ -346,7 +349,9 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (convergedVariance)                               \
     (convergedSamplesPerPixel)                        \
     /* thread limit settings */                       \
-    (threadLimit)
+    (threadLimit)                                     \
+    /* interactive vs offline */                      \
+    (enableInteractive)
 
 #define HD_RESOURCE_TYPE_TOKENS                       \
     (texture)                                         \
@@ -361,6 +366,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialTagTokens, HD_API, HD_MATERIALTAG_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialTerminalTokens, HD_API,
                          HD_MATERIAL_TERMINAL_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRenderTagTokens, HD_API, HD_RENDERTAG_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRenderContextTokens, HD_API, HD_RENDER_CONTEXT_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdOptionTokens, HD_API, HD_OPTION_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_API, HD_PRIMTYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_API, HD_PRIMVAR_ROLE_TOKENS);

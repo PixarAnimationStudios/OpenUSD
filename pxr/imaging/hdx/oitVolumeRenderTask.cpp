@@ -33,6 +33,8 @@
 
 #include "pxr/imaging/hdSt/renderPassShader.h"
 
+#include "pxr/imaging/glf/diagnostic.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
@@ -43,9 +45,6 @@ HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
             HdxPackageRenderPassOitVolumeShader()))
     , _isOitEnabled(HdxOitBufferAccessor::IsOitEnabled())
 {
-    // Raymarching shader needs to stop when hitting opaque geometry,
-    // so allow shader to read the depth buffer.
-    _oitVolumeRenderPassShader->AddAovReadback(HdAovTokens->depth);
 }
 
 HdxOitVolumeRenderTask::~HdxOitVolumeRenderTask() = default;
@@ -79,6 +78,12 @@ HdxOitVolumeRenderTask::Prepare(HdTaskContext* ctx,
         if (HdxRenderTask::_HasDrawItems()) {
             HdxOitBufferAccessor(ctx).RequestOitBuffers();
         }
+
+        if (HdRenderPassStateSharedPtr const state = _GetRenderPassState(ctx)) {
+            _oitVolumeRenderPassShader->UpdateAovInputTextures(
+                state->GetAovInputBindings(),
+                renderIndex);
+        }
     }
 }
 
@@ -87,6 +92,8 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
+    GLF_GROUP_FUNCTION();
 
     if (!_isOitEnabled) return;
     if (!HdxRenderTask::_HasDrawItems()) return;

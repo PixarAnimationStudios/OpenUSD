@@ -72,6 +72,12 @@ enum HgiFormat : int
     HgiFormatFloat32Vec3,
     HgiFormatFloat32Vec4,
 
+    // Int16 - a 2-byte signed integer
+    HgiFormatInt16,
+    HgiFormatInt16Vec2,
+    HgiFormatInt16Vec3,
+    HgiFormatInt16Vec4,
+
     // UInt16 - a 2-byte unsigned integer
     HgiFormatUInt16,
     HgiFormatUInt16Vec2,

@@ -75,13 +75,9 @@ UsdGeomCapsule::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdGeomCapsule::_GetSchemaKind() const {
+UsdSchemaKind UsdGeomCapsule::_GetSchemaKind() const
+{
     return UsdGeomCapsule::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdGeomCapsule::_GetSchemaType() const {
-    return UsdGeomCapsule::schemaType;
 }
 
 /* static */

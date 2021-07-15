@@ -1,0 +1,26 @@
+Loading @root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.sdf             /A
+
+------------------------------------------------------------------------
+Results for composing </B>
+
+Prim Stack:
+    root.sdf             /B
+
+------------------------------------------------------------------------
+Results for composing </C>
+
+Prim Stack:
+    root.sdf             /C
+    root.sdf             /A
+    root.sdf             /B
+

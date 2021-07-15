@@ -30,6 +30,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct MxHdInfo;
+
 /// \class HdStMaterialXShaderGen
 ///
 /// Generates a glslfx shader with a surfaceShader function for a MaterialX 
@@ -37,11 +39,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdStMaterialXShaderGen : public MaterialX::GlslShaderGenerator
 {
 public:
-    HdStMaterialXShaderGen(MaterialX::StringMap const& mxHdTextureMap);
+    HdStMaterialXShaderGen(MxHdInfo const& mxHdInfo);
 
-    static MaterialX::ShaderGeneratorPtr create(
-            MaterialX::StringMap const& mxHdTextureMap=MaterialX::StringMap()) {
-        return std::make_shared<HdStMaterialXShaderGen>(mxHdTextureMap); 
+    static MaterialX::ShaderGeneratorPtr create(MxHdInfo const& mxHdInfo) {
+        return std::make_shared<HdStMaterialXShaderGen>(mxHdInfo); 
     }
 
     MaterialX::ShaderPtr generate(const std::string& shaderName,
@@ -89,9 +90,13 @@ private:
                                   MaterialX::ShaderStage& stage,
                                   bool assignValue = true) const override;
 
-    // Store MaterialX texture node names and their Hydra counterparts to 
-    // initialize the texture sampler values 
+    // Store MaterialX and Hydra counterparts and other Hydra specific info
+    // to generate an appropriate glslfx header and properly initialize 
+    // MaterialX values.
     MaterialX::StringMap _mxHdTextureMap;
+    MaterialX::StringMap _mxHdPrimvarMap;
+    std::string _defaultTexcoordName;
+    std::string _materialTag;
 };
 
 

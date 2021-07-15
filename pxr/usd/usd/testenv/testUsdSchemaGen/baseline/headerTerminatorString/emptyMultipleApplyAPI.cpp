@@ -68,13 +68,17 @@ UsdContrivedEmptyMultipleApplyAPI::Get(const UsdPrim &prim, const TfToken &name)
 
 
 /* virtual */
-UsdSchemaKind UsdContrivedEmptyMultipleApplyAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdContrivedEmptyMultipleApplyAPI::_GetSchemaKind() const
+{
     return UsdContrivedEmptyMultipleApplyAPI::schemaKind;
 }
 
-/* virtual */
-UsdSchemaKind UsdContrivedEmptyMultipleApplyAPI::_GetSchemaType() const {
-    return UsdContrivedEmptyMultipleApplyAPI::schemaType;
+/* static */
+bool
+UsdContrivedEmptyMultipleApplyAPI::CanApply(
+    const UsdPrim &prim, const TfToken &name, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdContrivedEmptyMultipleApplyAPI>(name, whyNot);
 }
 
 /* static */

@@ -267,6 +267,11 @@ vec4 IntToVec4(int id)
 
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
+    // Allow alpha threshold discard for ID renders regardless of material tag
+    if (ShouldDiscardByAlpha(color)) {
+        discard;
+    }
+
     int primId = HdGet_primID();
     primIdOut = IntToVec4(primId);
 

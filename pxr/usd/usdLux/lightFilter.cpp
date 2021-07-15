@@ -75,13 +75,9 @@ UsdLuxLightFilter::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdLuxLightFilter::_GetSchemaKind() const {
+UsdSchemaKind UsdLuxLightFilter::_GetSchemaKind() const
+{
     return UsdLuxLightFilter::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdLuxLightFilter::_GetSchemaType() const {
-    return UsdLuxLightFilter::schemaType;
 }
 
 /* static */
@@ -159,20 +155,36 @@ class UsdLuxLightFilter_ConnectableAPIBehavior :
     bool
     CanConnectInputToSource(const UsdShadeInput &input,
                             const UsdAttribute &source,
-                            std::string *reason) override
-    {     
+                            std::string *reason) const override
+    {   
         return _CanConnectInputToSource(input, source, reason, 
                 ConnectableNodeTypes::DerivedContainerNodes);
     }
 
-    bool IsContainer() const
+    bool 
+    IsContainer() const override
     {
         return true;
+    }
+
+    // We expect to make light filters be connected across multiple light
+    // scopes, hence ignoring encapsulation rules.
+    bool 
+    RequiresEncapsulation() const override
+    {
+        return false;
     }
 
     // Note that LightFilter's outputs are not connectable (different from
     // UsdShadeNodeGraph default behavior) as there are no known use-case for 
     // these right now.
+    bool
+    CanConnectOutputToSource(const UsdShadeOutput &output,
+                             const UsdAttribute &source,
+                             std::string *reason) const override
+    {
+        return false;
+    }
 
 };
 

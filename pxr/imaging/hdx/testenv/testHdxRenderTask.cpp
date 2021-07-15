@@ -135,6 +135,7 @@ int main(int argc, char *argv[])
     drawTarget->WriteToFile("color", "color2.png");
 
     // update collection
+    index->GetChangeTracker().AddCollection(_tokens->testCollection);
     HdRprimCollection collection(_tokens->testCollection,
         HdReprSelector(HdReprTokens->wire));
     delegate->SetTaskParam(renderTask1, HdTokens->collection, VtValue(collection));

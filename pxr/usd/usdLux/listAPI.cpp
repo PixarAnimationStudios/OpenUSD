@@ -62,13 +62,17 @@ UsdLuxListAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdLuxListAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdLuxListAPI::_GetSchemaKind() const
+{
     return UsdLuxListAPI::schemaKind;
 }
 
-/* virtual */
-UsdSchemaKind UsdLuxListAPI::_GetSchemaType() const {
-    return UsdLuxListAPI::schemaType;
+/* static */
+bool
+UsdLuxListAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdLuxListAPI>(whyNot);
 }
 
 /* static */

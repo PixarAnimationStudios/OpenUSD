@@ -155,7 +155,7 @@ _GetGlslfxForTerminal(
                 resourceRegistry->RegisterGLSLFXFile(*glslfxOutHash);
 
             if (glslfxInstance.IsFirstInstance()) {
-                glslfxOut.reset(new HioGlslfx(glslfxFilePath));
+                glslfxOut = std::make_shared<HioGlslfx>(glslfxFilePath);
                 glslfxInstance.SetValue(glslfxOut);
             }
             glslfxOut = glslfxInstance.GetValue();
@@ -166,7 +166,7 @@ _GetGlslfxForTerminal(
                 // Do not use the registry for the source code to avoid
                 // the cost of hashing the entire source code.
                 std::istringstream sourceCodeStream(sourceCode);
-                glslfxOut.reset(new HioGlslfx(sourceCodeStream));
+                glslfxOut = std::make_shared<HioGlslfx>(sourceCodeStream);
             }
         }
     }

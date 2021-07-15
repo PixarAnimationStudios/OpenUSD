@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/materialXShaderGen.h"
+#include "pxr/imaging/hdSt/materialXFilter.h"
+#include "pxr/base/tf/stringUtils.h"
 
 #include <MaterialXCore/Value.h>
 #include <MaterialXGenShader/Shader.h>
@@ -88,9 +90,14 @@ R"(#if NUM_LIGHTS > 0
 )";
 
 HdStMaterialXShaderGen::HdStMaterialXShaderGen(
-    MaterialX::StringMap const& mxHdTextureMap) 
-    : GlslShaderGenerator(), _mxHdTextureMap(mxHdTextureMap)
+    MxHdInfo const& mxHdInfo)
+    : GlslShaderGenerator(), 
+      _mxHdTextureMap(mxHdInfo.textureMap),
+      _mxHdPrimvarMap(mxHdInfo.primvarMap),
+      _materialTag(mxHdInfo.materialTag)
 {
+    _defaultTexcoordName = (mxHdInfo.defaultTexcoordName == mx::EMPTY_STRING) ?
+                            "st" : mxHdInfo.defaultTexcoordName;
 }
 
 // Based on GlslShaderGenerator::generate()
@@ -139,6 +146,29 @@ HdStMaterialXShaderGen::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
         R"(-- configuration)" "\n"
         R"({)" "\n", mxStage);
 
+    // insert materialTag metadata
+    {
+        emitString(R"(    "metadata": {)" "\n", mxStage);
+        std::string line;
+        line += "        \"materialTag\": \"" + _materialTag + "\"\n";
+        emitString(line, mxStage);
+        emitString(R"(    }, )""\n", mxStage);
+    }
+
+    // insert primvar information if needed
+    if (!_mxHdPrimvarMap.empty()) {
+        emitString(R"(    "attributes": {)" "\n", mxStage);
+        std::string line; unsigned int i = 0;
+        for (auto primvarPair : _mxHdPrimvarMap) {
+            line += "        \"" + primvarPair.first + "\": {\n";
+            line += "            \"type\": \"" + primvarPair.second + "\"\n";
+            line += "        }";
+            line += (i < _mxHdPrimvarMap.size() - 1) ? ",\n" : "\n";
+            i++;
+        }
+        emitString(line, mxStage);
+        emitString(R"(    }, )""\n", mxStage);
+    }
     // insert texture information if needed
     if (!_mxHdTextureMap.empty()) {
         emitString(R"(    "textures": {)" "\n", mxStage);
@@ -514,18 +544,34 @@ HdStMaterialXShaderGen::_EmitMxVertexDataLine(
         
         // Wrap initialization inside #ifdef in case the object does not have 
         // the st primvar
-        hdVariableDef = "\n"
-                "    #ifdef HD_HAS_st\n"
-                "        HdGet_st(),\n"
+        hdVariableDef = TfStringPrintf("\n"
+                "    #ifdef HD_HAS_%s\n"
+                "        HdGet_%s(),\n"
                 "    #else\n"
                 "        vec2(0.0),\n"
-                "    #endif\n        ";
+                "    #endif\n        ", 
+                _defaultTexcoordName.c_str(), _defaultTexcoordName.c_str());
+    }
+    else if (mxVariableName.compare(0, mx::HW::T_IN_GEOMPROP.size(), 
+                                    mx::HW::T_IN_GEOMPROP) == 0) {
+        // Wrap initialization inside #ifdef in case the object does not have 
+        // the geomprop primvar
+        // Note: variable name format: 'T_IN_GEOMPROP_geomPropName';
+        const std::string geompropName = mxVariableName.substr(
+                                            mx::HW::T_IN_GEOMPROP.size());
+        hdVariableDef = TfStringPrintf("\n"
+                "    #ifdef HD_HAS%s\n"
+                "        HdGet%s(),\n"
+                "    #else\n"
+                "        vec2(0.0),\n"
+                "    #endif\n        ", 
+                geompropName.c_str(), geompropName.c_str());
     }
     else {
         const std::string valueStr = variable->getValue() 
             ? _syntax->getValue(variable->getType(), *variable->getValue(), true)
             : _syntax->getDefaultValue(variable->getType(), true);
-        hdVariableDef += valueStr.empty() ? mx::EMPTY_STRING : valueStr;
+        hdVariableDef = valueStr.empty() ? mx::EMPTY_STRING : valueStr + separator;
     }
 
     return hdVariableDef.empty() ? mx::EMPTY_STRING : hdVariableDef;

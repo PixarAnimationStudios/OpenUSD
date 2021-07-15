@@ -43,7 +43,7 @@ using HdxSelectionTrackerSharedPtr =
 /// ----------------------------------------------------------------------------
 /// Selection highlighting in Hydra:
 ///
-/// Hydra Stream (*) supports selection highlighting of:
+/// Hydra Storm (*) supports selection highlighting of:
 /// (a) a set of rprims, wherein each rprim is entirely highlighted
 /// (b) a set of instances of an rprim, wherein each instance is highlighted
 /// (c) a set of subprimitives of an rprim, wherein each subprim is highlighted.
@@ -52,7 +52,7 @@ using HdxSelectionTrackerSharedPtr =
 ///  and points of meshes.
 /// 
 /// * While the goal is have an architecture that is extensible by rendering
-/// backends, the current implementation is heavily influenced by the Stream(GL)
+/// backends, the current implementation is heavily influenced by the Storm
 /// backend.
 /// 
 /// Background:
@@ -76,10 +76,10 @@ using HdxSelectionTrackerSharedPtr =
 /// (b) HdxSelectionTracker: Base class that observes (a) and encodes it as
 /// needed by (c). This may be specialized to be backend specific.
 /// (c) HdxSelectionTask : A scene task that, currently, only syncs resources
-/// related to selection highlighting. Currently, this is tied to Stream.
+/// related to selection highlighting. Currently, this is tied to Storm.
 /// (d) HdxRenderSetupTask : A scene task that sets up the render pass shader
 /// to use the selection highlighting mixin in the render pass(es) of
-/// HdxRenderTask. This is relevant only to Stream.
+/// HdxRenderTask. This is relevant only to Storm.
 ///
 /// ----------------------------------------------------------------------------
 
@@ -105,7 +105,7 @@ public:
     virtual ~HdxSelectionTracker();
 
     /// Optional override to update the HdSelection during
-    /// HdxSelectionTask::Sync.
+    /// HdxSelectionTask::Prepare.
     HDX_API
     virtual void UpdateSelection(HdRenderIndex *index);
 

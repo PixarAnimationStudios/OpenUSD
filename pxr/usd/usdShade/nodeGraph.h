@@ -85,11 +85,6 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::ConcreteTyped;
-
     /// Construct a UsdShadeNodeGraph on UsdPrim \p prim .
     /// Equivalent to UsdShadeNodeGraph::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -163,12 +158,6 @@ protected:
     /// \sa UsdSchemaKind
     USDSHADE_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDSHADE_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -397,7 +386,7 @@ public:
         bool
         CanConnectOutputToSource(const UsdShadeOutput &output,
                                  const UsdAttribute &source,
-                                 std::string *reason) override;
+                                 std::string *reason) const override;
 
         USDSHADE_API
         bool IsContainer() const override;

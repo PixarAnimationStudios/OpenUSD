@@ -79,8 +79,9 @@ ArResolvedPath Sdf_ComputeFilePath(
     const std::string& layerPath,
     ArAssetInfo* assetInfo = nullptr);
 
-/// Returns true if a layer can be written to \p layerPath.
-bool Sdf_CanWriteLayerToPath(const std::string& layerPath);
+/// Returns true if a layer can be written to \p resolvedPath.
+bool Sdf_CanWriteLayerToPath(
+    const ArResolvedPath& resolvedPath);
 
 /// Returns a newly allocated Sdf_AssetInfo struct with fields computed using
 /// the specified \p identifier and \p filePath. If \p fileVersion is

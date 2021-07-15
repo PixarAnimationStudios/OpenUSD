@@ -583,13 +583,15 @@ Sdf_EvalAssetPath(const char* x, size_t n, bool tripleDelimited)
 
     // Asset paths are assumed to only contain printable characters and 
     // no escape sequences except for the "@@@" delimiter.
-    size_t numDelimiters = tripleDelimited ? 3 : 1;
+    const int numDelimiters = tripleDelimited ? 3 : 1;
     std::string ret(x + numDelimiters, n - (2 * numDelimiters));
     if (tripleDelimited) {
         ret = TfStringReplace(ret, "\\@@@", "@@@");
     }
 
-    return ret;
+    // Go through SdfAssetPath for validation -- this will raise an error and
+    // produce the empty asset path if 'ret' contains invalid characters.
+    return SdfAssetPath(ret).GetAssetPath();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

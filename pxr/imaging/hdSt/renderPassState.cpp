@@ -314,8 +314,6 @@ HdStRenderPassState::SetLightingShader(HdStLightingShaderSharedPtr const &lighti
 void 
 HdStRenderPassState::SetRenderPassShader(HdStRenderPassShaderSharedPtr const &renderPassShader)
 {
-    if (_renderPassShader == renderPassShader) return;
-
     _renderPassShader = renderPassShader;
     if (_renderPassStateBar) {
 

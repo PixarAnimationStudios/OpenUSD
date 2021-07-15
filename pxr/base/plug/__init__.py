@@ -25,15 +25,7 @@
 This package defines facilities for dealing with plugins.
 """
 
-from . import _plug
 from pxr import Tf
-Tf.PrepareModule(_plug, locals())
-del _plug, Tf
-
-try:
-    from . import __DOC
-    __DOC.Execute(locals())
-    del __DOC
-except Exception:
-    pass
+Tf.PreparePythonModule()
+del Tf
 

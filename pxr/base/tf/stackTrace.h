@@ -28,6 +28,7 @@
 #include "pxr/base/tf/api.h"
 
 #include <cstdio>
+#include <ctime>
 #include <iosfwd>
 #include <string>
 

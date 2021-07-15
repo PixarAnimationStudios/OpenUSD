@@ -34,8 +34,12 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/base/work/dispatcher.h"
+#include "pxr/usd/ar/ar.h"
 #include "pxr/usd/ar/asset.h"
+#if AR_VERSION > 1
+#include "pxr/usd/ar/writableAsset.h"
+#endif
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
@@ -69,6 +73,9 @@ using std::tuple;
 using std::vector;
 
 using ArAssetSharedPtr = std::shared_ptr<ArAsset>;
+#if AR_VERSION > 1
+using ArWritableAssetSharedPtr = std::shared_ptr<ArWritableAsset>;
+#endif
 
 // Trait indicating trivially copyable types, a hack since gcc doesn't yet
 // implement is_trivially_copyable correctly.
@@ -392,15 +399,12 @@ private:
             , _start(_mapping.get() + offset)
             , _length(length == -1 ?
                       ArchGetFileMappingLength(_mapping) : length) {}
+
+        ~_FileMapping();
         
         // Add an an externally referenced page range.
         ZeroCopySource *
         AddRangeReference(void *addr, size_t numBytes);
-
-        // "Silent-store" to touch outstanding page ranges to detach them in the
-        // copy-on-write sense from their file backing and make them
-        // swap-backed.  No new page ranges can be added once this is invoked.
-        void DetachReferencedRanges();
 
         // Return the start address of the mapped file content.  Note that due
         // to having usdc files embedded into other files (like usdz files) the
@@ -412,6 +416,11 @@ private:
 
     private:
         friend class CrateFile;
+
+        // "Silent-store" to touch outstanding page ranges to detach them in the
+        // copy-on-write sense from their file backing and make them
+        // swap-backed.  No new page ranges can be added once this is invoked.
+        void _DetachReferencedRanges();
 
         // This class is managed by a combination of boost::intrusive_ptr and
         // manual reference counting -- see explicit calls to
@@ -802,18 +811,18 @@ private:
     template <class Reader> void _ReadPaths(Reader src);
     template <class Header, class Reader>
     void _ReadPathsImpl(Reader reader,
-                        WorkArenaDispatcher &dispatcher,
+                        WorkDispatcher &dispatcher,
                         SdfPath parentPath=SdfPath());
     template <class Reader>
     void _ReadCompressedPaths(Reader reader,
-                              WorkArenaDispatcher &dispatcher);
+                              WorkDispatcher &dispatcher);
     void _BuildDecompressedPathsImpl(
         std::vector<uint32_t> const &pathIndexes,
         std::vector<int32_t> const &elementTokenIndexes,
         std::vector<int32_t> const &jumps,
         size_t curIndex,
         SdfPath parentPath,
-        WorkArenaDispatcher &dispatcher);
+        WorkDispatcher &dispatcher);
 
     void _ReadRawBytes(int64_t start, int64_t size, char *buf) const;
 

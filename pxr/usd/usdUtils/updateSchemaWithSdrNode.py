@@ -40,12 +40,13 @@ class SchemaDefiningMiscConstants(ConstantsGroup):
     SINGLE_APPLY_SCHEMA = "singleApply"
     TYPED_SCHEMA = "Typed"
     USD_SOURCE_TYPE = "USD"
+    NodeDefAPI = "NodeDefAPI"
 
 class PropertyDefiningKeys(ConstantsGroup):
     USD_VARIABILITY = "usdVariability"
+    USD_SUPPRESS_PROPERTY = "usdSuppressProperty"
     SDF_VARIABILITY_UNIFORM_STRING = "Uniform"
     CONNECTABILITY = "connectability"
-
 
 def _CreateAttrSpecFromNodeAttribute(primSpec, prop, usdSchemaNode, 
         isInput=True):
@@ -67,6 +68,12 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, usdSchemaNode,
             return
 
     propMetadata = prop.GetMetadata()
+    
+    # Early out if the property should be suppressed from being translated to
+    # propertySpec
+    if ((PropertyDefiningKeys.USD_SUPPRESS_PROPERTY in propMetadata) and
+            propMetadata[PropertyDefiningKeys.USD_SUPPRESS_PROPERTY] == "True"):
+        return
 
     if not Sdf.Path.IsValidNamespacedIdentifier(propName):
         Tf.RaiseRuntimeError("Property name (%s) for schema (%s) is an " \
@@ -87,8 +94,7 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, usdSchemaNode,
         attrType = Sdf.ValueTypeNames.Token
 
     attrVariability = Sdf.VariabilityUniform \
-            if (propMetadata.has_key(
-                PropertyDefiningKeys.USD_VARIABILITY) and \
+            if ((PropertyDefiningKeys.USD_VARIABILITY in propMetadata) and
                 propMetadata[PropertyDefiningKeys.USD_VARIABILITY] == 
                     PropertyDefiningKeys.SDF_VARIABILITY_UNIFORM_STRING) \
                             else Sdf.VariabilityVarying
@@ -141,8 +147,12 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
           system. This gets appended to the domain name to register with TfType.
 
     Property Level Metadata:
-        USD_VARIABILITY = A property level metadata, which specified a specific
-        sdrNodeProperty should its usd variability set to Uniform or Varying.
+        - USD_VARIABILITY:  A property level metadata, which specified a 
+          specific sdrNodeProperty should its usd variability set to Uniform or 
+          Varying.
+        - USD_SUPPRESS_PROPERTY: A property level metadata, which determines if the
+          property should be suppressed from translation from args to property
+          spec.
     """
     # Early exit on invalid parameters
     if not schemaLayer:
@@ -154,7 +164,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
 
     sdrNodeMetadata = sdrNode.GetMetadata()
 
-    if not sdrNodeMetadata.has_key(SchemaDefiningKeys.SCHEMA_NAME):
+    if SchemaDefiningKeys.SCHEMA_NAME not in sdrNodeMetadata:
         Tf.Warn("Sdr Node does not define a schema name metadata.")
         return
     schemaName = sdrNodeMetadata[SchemaDefiningKeys.SCHEMA_NAME]
@@ -164,13 +174,13 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
                 %(schemaName, Tf.MakeValidIdentifier(schemaName)))
 
     tfTypeNameSuffix = None
-    if sdrNodeMetadata.has_key(SchemaDefiningKeys.TF_TYPENAME_SUFFIX):
+    if SchemaDefiningKeys.TF_TYPENAME_SUFFIX in sdrNodeMetadata:
         tfTypeNameSuffix = sdrNodeMetadata[SchemaDefiningKeys.TF_TYPENAME_SUFFIX]
         if not Tf.IsValidIdentifier(tfTypeNameSuffix):
             Tf.RaiseRuntimeError("tfTypeNameSuffix (%s) is an invalid " \
                     "identifier" %(tfTypeNameSuffix))
 
-    if not sdrNodeMetadata.has_key(SchemaDefiningKeys.SCHEMA_KIND):
+    if SchemaDefiningKeys.SCHEMA_KIND not in sdrNodeMetadata:
         schemaKind = SchemaDefiningMiscConstants.TYPED_SCHEMA
     else:
         schemaKind = sdrNodeMetadata[SchemaDefiningKeys.SCHEMA_KIND]
@@ -191,7 +201,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
             tfTypeNameSuffix = tfTypeNameSuffix + \
                     SchemaDefiningMiscConstants.API_STRING
 
-    if not sdrNodeMetadata.has_key(SchemaDefiningKeys.SCHEMA_BASE):
+    if SchemaDefiningKeys.SCHEMA_BASE not in sdrNodeMetadata:
         Tf.Warn("No schemaBase specified in node metadata, defaulting to "
                 "APISchemaBase for API schemas else Typed")
         schemaBase = SchemaDefiningMiscConstants.API_SCHEMA_BASE if isAPI \
@@ -200,15 +210,13 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
         schemaBase = sdrNodeMetadata[SchemaDefiningKeys.SCHEMA_BASE]
 
     apiSchemaAutoApplyTo = None
-    if sdrNodeMetadata.has_key(
-            SchemaDefiningKeys.API_SCHEMA_AUTO_APPLY_TO):
+    if SchemaDefiningKeys.API_SCHEMA_AUTO_APPLY_TO in sdrNodeMetadata:
         apiSchemaAutoApplyTo = \
             sdrNodeMetadata[SchemaDefiningKeys.API_SCHEMA_AUTO_APPLY_TO] \
                 .split('|')
 
     usdSchemaClass = None
-    if isAPI and sdrNodeMetadata.has_key(
-            SchemaDefiningKeys.USD_SCHEMA_CLASS):
+    if isAPI and SchemaDefiningKeys.USD_SCHEMA_CLASS in sdrNodeMetadata:
         usdSchemaClass = \
             sdrNodeMetadata[SchemaDefiningKeys.USD_SCHEMA_CLASS]
 
@@ -254,7 +262,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
         reg = Sdr.Registry()
         usdSchemaNode = reg.GetNodeByIdentifierAndType(usdSchemaClass, 
                 SchemaDefiningMiscConstants.USD_SOURCE_TYPE)
-    
+
     # Create attrSpecs from input parameters
     for propName in sdrNode.GetInputNames():
         _CreateAttrSpecFromNodeAttribute(primSpec, sdrNode.GetInput(propName), 
@@ -264,5 +272,16 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
     for propName in sdrNode.GetOutputNames():
         _CreateAttrSpecFromNodeAttribute(primSpec, sdrNode.GetOutput(propName), 
                 usdSchemaNode, False)
+
+    # Extra attrSpec
+    schemaBasePrimDefinition = \
+        Usd.SchemaRegistry().FindConcretePrimDefinition(schemaBase)
+    if schemaBasePrimDefinition and \
+        SchemaDefiningMiscConstants.NodeDefAPI in \
+        schemaBasePrimDefinition.GetAppliedAPISchemas():
+            infoIdAttrSpec = Sdf.AttributeSpec(primSpec, \
+                    UsdShade.Tokens.infoId, Sdf.ValueTypeNames.Token, \
+                    Sdf.VariabilityUniform)
+            infoIdAttrSpec.default = sdrNode.GetIdentifier()
 
     schemaLayer.Save()

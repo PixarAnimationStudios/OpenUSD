@@ -62,13 +62,17 @@ UsdShadeMaterialBindingAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdShadeMaterialBindingAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdShadeMaterialBindingAPI::_GetSchemaKind() const
+{
     return UsdShadeMaterialBindingAPI::schemaKind;
 }
 
-/* virtual */
-UsdSchemaKind UsdShadeMaterialBindingAPI::_GetSchemaType() const {
-    return UsdShadeMaterialBindingAPI::schemaType;
+/* static */
+bool
+UsdShadeMaterialBindingAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdShadeMaterialBindingAPI>(whyNot);
 }
 
 /* static */

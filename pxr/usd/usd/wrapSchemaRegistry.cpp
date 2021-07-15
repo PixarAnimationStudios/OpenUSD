@@ -127,9 +127,20 @@ void wrapUsdSchemaRegistry()
             (arg("typeName")))
         .staticmethod("GetTypeFromName")
 
-        .def("GetTypeAndInstance", &This::GetTypeAndInstance,
+        .def("GetTypeNameAndInstance", &This::GetTypeNameAndInstance,
             (arg("typeName")), return_value_policy<TfPyPairToTuple>())
-        .staticmethod("GetTypeAndInstance")
+        .staticmethod("GetTypeNameAndInstance")
+
+        .def("IsAllowedAPISchemaInstanceName", 
+             &This::IsAllowedAPISchemaInstanceName,
+             (arg("apiSchemaName"), arg("instanceName")))
+        .staticmethod("IsAllowedAPISchemaInstanceName")
+
+        .def("GetAPISchemaCanOnlyApplyToTypeNames", 
+             &This::GetAPISchemaCanOnlyApplyToTypeNames,
+             (arg("apiSchemaName"), arg("instanceName")=TfToken()),
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetAPISchemaCanOnlyApplyToTypeNames")
 
         .def("GetAutoApplyAPISchemas", &This::GetAutoApplyAPISchemas,
              return_value_policy<TfPyMapToDictionary>())

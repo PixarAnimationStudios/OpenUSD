@@ -225,6 +225,8 @@ class TestUsdPrim(unittest.TestCase):
         assert root.IsGroup()
         assert not root.IsAbstract()
         assert root.IsDefined()
+        assert root.HasDefiningSpecifier()
+        assert root.GetSpecifier() == Sdf.SpecifierDef
 
         assert globalClass.IsActive()
         assert globalClass.IsLoaded()
@@ -232,6 +234,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not globalClass.IsGroup()
         assert globalClass.IsAbstract()
         assert globalClass.IsDefined()
+        assert globalClass.HasDefiningSpecifier()
+        assert globalClass.GetSpecifier() == Sdf.SpecifierClass
 
         assert abstractSubscope.IsActive()
         assert abstractSubscope.IsLoaded()
@@ -239,6 +243,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not abstractSubscope.IsGroup()
         assert abstractSubscope.IsAbstract()
         assert abstractSubscope.IsDefined()
+        assert abstractSubscope.HasDefiningSpecifier()
+        assert abstractSubscope.GetSpecifier() == Sdf.SpecifierDef
 
         assert abstractOver.IsActive()
         assert abstractOver.IsLoaded()
@@ -246,6 +252,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not abstractOver.IsGroup()
         assert abstractOver.IsAbstract()
         assert not abstractOver.IsDefined()
+        assert not abstractOver.HasDefiningSpecifier()
+        assert abstractOver.GetSpecifier() == Sdf.SpecifierOver
 
         assert pureOver.IsActive()
         assert pureOver.IsLoaded()
@@ -253,6 +261,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not pureOver.IsGroup()
         assert not pureOver.IsAbstract()
         assert not pureOver.IsDefined()
+        assert not pureOver.HasDefiningSpecifier()
+        assert pureOver.GetSpecifier() == Sdf.SpecifierOver
 
         assert undefSubscope.IsActive()
         assert undefSubscope.IsLoaded()
@@ -260,6 +270,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not undefSubscope.IsGroup()
         assert not undefSubscope.IsAbstract()
         assert not undefSubscope.IsDefined()
+        assert undefSubscope.HasDefiningSpecifier()
+        assert undefSubscope.GetSpecifier() == Sdf.SpecifierDef
 
         assert group.IsActive()
         assert not group.IsLoaded()
@@ -267,6 +279,8 @@ class TestUsdPrim(unittest.TestCase):
         assert group.IsGroup()
         assert not group.IsAbstract()
         assert group.IsDefined()
+        assert group.HasDefiningSpecifier()
+        assert group.GetSpecifier() == Sdf.SpecifierDef
 
         assert modelChild.IsActive()
         assert not modelChild.IsLoaded()
@@ -274,6 +288,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not modelChild.IsGroup()
         assert not modelChild.IsAbstract()
         assert modelChild.IsDefined()
+        assert modelChild.HasDefiningSpecifier()
+        assert modelChild.GetSpecifier() == Sdf.SpecifierDef
 
         assert localChild.IsActive()
         assert not localChild.IsLoaded()
@@ -281,6 +297,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not localChild.IsGroup()
         assert not localChild.IsAbstract()
         assert localChild.IsDefined()
+        assert localChild.HasDefiningSpecifier()
+        assert localChild.GetSpecifier() == Sdf.SpecifierDef
 
         assert undefModelChild.IsActive()
         assert not undefModelChild.IsLoaded()
@@ -288,6 +306,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not undefModelChild.IsGroup()
         assert not undefModelChild.IsAbstract()
         assert not undefModelChild.IsDefined()
+        assert not undefModelChild.HasDefiningSpecifier()
+        assert undefModelChild.GetSpecifier() == Sdf.SpecifierOver
 
         assert not deactivatedScope.IsActive()
         assert not deactivatedScope.IsLoaded()
@@ -295,6 +315,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not deactivatedScope.IsGroup()
         assert not deactivatedScope.IsAbstract()
         assert deactivatedScope.IsDefined()
+        assert deactivatedScope.HasDefiningSpecifier()
+        assert deactivatedScope.GetSpecifier() == Sdf.SpecifierDef
         assert not stage.GetPrimAtPath(
             deactivatedScope.GetPath().AppendChild('child'))
 
@@ -307,6 +329,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not deactivatedScope.IsGroup()
         assert not deactivatedScope.IsAbstract()
         assert deactivatedScope.IsDefined()
+        assert deactivatedScope.HasDefiningSpecifier()
+        assert deactivatedScope.GetSpecifier() == Sdf.SpecifierDef
         assert stage.GetPrimAtPath(
             deactivatedScope.GetPath().AppendChild('child'))
 
@@ -319,6 +343,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not deactivatedScope.IsGroup()
         assert not deactivatedScope.IsAbstract()
         assert deactivatedScope.IsDefined()
+        assert deactivatedScope.HasDefiningSpecifier()
+        assert deactivatedScope.GetSpecifier() == Sdf.SpecifierDef
         assert stage.GetPrimAtPath(
             deactivatedScope.GetPath().AppendChild('child'))
 
@@ -331,6 +357,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not deactivatedScope.IsGroup()
         assert not deactivatedScope.IsAbstract()
         assert deactivatedScope.IsDefined()
+        assert deactivatedScope.HasDefiningSpecifier()
+        assert deactivatedScope.GetSpecifier() == Sdf.SpecifierDef
         assert not stage.GetPrimAtPath(
             deactivatedScope.GetPath().AppendChild('child'))
 
@@ -340,6 +368,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not deactivatedModel.IsGroup()
         assert not deactivatedModel.IsAbstract()
         assert deactivatedModel.IsDefined()
+        assert deactivatedScope.HasDefiningSpecifier()
+        assert deactivatedScope.GetSpecifier() == Sdf.SpecifierDef
         assert not stage.GetPrimAtPath(
             deactivatedModel.GetPath().AppendChild('child'))
 
@@ -349,6 +379,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not deactivatedOver.IsGroup()
         assert not deactivatedOver.IsAbstract()
         assert not deactivatedOver.IsDefined()
+        assert deactivatedScope.HasDefiningSpecifier()
+        assert deactivatedScope.GetSpecifier() == Sdf.SpecifierDef
         assert not stage.GetPrimAtPath(
             deactivatedOver.GetPath().AppendChild('child'))
 
@@ -361,6 +393,8 @@ class TestUsdPrim(unittest.TestCase):
         assert group.IsGroup()
         assert not group.IsAbstract()
         assert group.IsDefined()
+        assert group.HasDefiningSpecifier()
+        assert group.GetSpecifier() == Sdf.SpecifierDef
 
         # child should be loaded now.
         assert localChild.IsActive()
@@ -369,6 +403,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not localChild.IsGroup()
         assert not localChild.IsAbstract()
         assert localChild.IsDefined()
+        assert localChild.HasDefiningSpecifier()
+        assert localChild.GetSpecifier() == Sdf.SpecifierDef
 
         # undef child should be loaded and defined, due to payload inclusion.
         assert undefModelChild.IsActive()
@@ -387,6 +423,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not payloadChild.IsGroup()
         assert not payloadChild.IsAbstract()
         assert payloadChild.IsDefined()
+        assert undefModelChild.HasDefiningSpecifier()
+        assert undefModelChild.GetSpecifier() == Sdf.SpecifierDef
 
         # check deactivated scope again.
         assert not deactivatedScope.IsActive()
@@ -395,6 +433,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not deactivatedScope.IsGroup()
         assert not deactivatedScope.IsAbstract()
         assert deactivatedScope.IsDefined()
+        assert deactivatedScope.HasDefiningSpecifier()
+        assert deactivatedScope.GetSpecifier() == Sdf.SpecifierDef
         assert not stage.GetPrimAtPath(
             deactivatedScope.GetPath().AppendChild('child'))
 
@@ -406,6 +446,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not deactivatedScope.IsGroup()
         assert not deactivatedScope.IsAbstract()
         assert deactivatedScope.IsDefined()
+        assert deactivatedScope.HasDefiningSpecifier()
+        assert deactivatedScope.GetSpecifier() == Sdf.SpecifierDef
         assert stage.GetPrimAtPath(
             deactivatedScope.GetPath().AppendChild('child'))
 
@@ -417,6 +459,8 @@ class TestUsdPrim(unittest.TestCase):
         assert not deactivatedScope.IsGroup()
         assert not deactivatedScope.IsAbstract()
         assert deactivatedScope.IsDefined()
+        assert deactivatedScope.HasDefiningSpecifier()
+        assert deactivatedScope.GetSpecifier() == Sdf.SpecifierDef
         assert not stage.GetPrimAtPath(
             deactivatedScope.GetPath().AppendChild('child'))
 
@@ -525,16 +569,17 @@ class TestUsdPrim(unittest.TestCase):
             sphereRefs = sphere.GetReferences()
             s3 = Usd.Stage.CreateNew("refTest2."+fmt)
             box = s3.DefinePrim("/Box", "Cube")
-            assert s2.ResolveIdentifierToEditTarget(
-                s1.GetRootLayer().identifier) != ""
-            assert s2.ResolveIdentifierToEditTarget("./refTest2."+fmt) != ""
-            assert s2.ResolveIdentifierToEditTarget(
-                s2.GetRootLayer().realPath) != ""
+            self.assertEqual(s2.ResolveIdentifierToEditTarget(
+                s1.GetRootLayer().identifier), s1.GetRootLayer().identifier)
+            self.assertNotEqual(s2.ResolveIdentifierToEditTarget(
+                "./refTest2."+fmt), "")
+            self.assertNotEqual(s2.ResolveIdentifierToEditTarget(
+                s2.GetRootLayer().realPath), "")
             # but paths to non-existent files fail
-            assert s2.ResolveIdentifierToEditTarget("./noFile."+fmt) == ""
-            # and paths relative to in-memory layers fail (expected errors?)
-            print("bazRefs = " + s1.ResolveIdentifierToEditTarget("./refTest2."+fmt))
-            assert s1.ResolveIdentifierToEditTarget("./refTest2."+fmt) == "" 
+            self.assertEqual(s2.ResolveIdentifierToEditTarget("./noFile."+fmt), "")
+            # paths relative to in-memory layers resolve relative to the cwd
+            # (under the default resolver)
+            self.assertNotEqual(s1.ResolveIdentifierToEditTarget("./refTest2."+fmt), "")
 
             # A good reference generates no errors or exceptions
             assert bazRefs.AddReference(s2.GetRootLayer().identifier, "/Sphere")

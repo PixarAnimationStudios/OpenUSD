@@ -47,6 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (quadrangulateDouble)
 
 #define HDST_TOKENS                             \
+    (constantLighting)                          \
     (packedSmoothNormals)                       \
     (smoothNormals)                             \
     (packedFlatNormals)                         \
@@ -57,7 +58,12 @@ PXR_NAMESPACE_OPEN_SCOPE
     (translation)                               \
     (sRGB)                                      \
     (raw)                                       \
-    ((colorSpaceAuto, "auto"))
+    ((_double, "double"))                       \
+    ((_float, "float"))                         \
+    ((_int, "int"))                             \
+    ((colorSpaceAuto, "auto"))                  \
+    (fvarIndices)                               \
+    (fvarPatchParam)
 
 #define HDST_LIGHT_TOKENS                       \
     (color)

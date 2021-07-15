@@ -47,6 +47,7 @@ HdRenderPassState::HdRenderPassState()
     , _pointColor(0.0f, 0.0f, 0.0f, 1.0f)
     , _pointSize(3.0)
     , _lightingEnabled(true)
+    , _clippingEnabled(true)
 
     , _maskColor(1.0f, 0.0f, 0.0f, 1.0f)
     , _indicatorColor(0.0f, 1.0f, 0.0f, 1.0f)
@@ -176,6 +177,11 @@ HdRenderPassState::GetProjectionMatrix() const
 HdRenderPassState::ClipPlanesVector const &
 HdRenderPassState::GetClipPlanes() const
 {
+    if (!_clippingEnabled) {
+        const static HdRenderPassState::ClipPlanesVector empty;
+        return empty;
+    }
+
     if (!_camera) {
         return _clipPlanes;
     }
@@ -255,6 +261,12 @@ HdRenderPassState::SetLightingEnabled(bool enabled)
 }
 
 void
+HdRenderPassState::SetClippingEnabled(bool enabled)
+{
+    _clippingEnabled = enabled;
+}
+
+void
 HdRenderPassState::SetAovBindings(
         HdRenderPassAovBindingVector const& aovBindings)
 {
@@ -265,6 +277,19 @@ HdRenderPassAovBindingVector const&
 HdRenderPassState::GetAovBindings() const
 {
     return _aovBindings;
+}
+
+void
+HdRenderPassState::SetAovInputBindings(
+        HdRenderPassAovBindingVector const& aovBindings)
+{
+    _aovInputBindings= aovBindings;
+}
+
+HdRenderPassAovBindingVector const&
+HdRenderPassState::GetAovInputBindings() const
+{
+    return _aovInputBindings;
 }
 
 void

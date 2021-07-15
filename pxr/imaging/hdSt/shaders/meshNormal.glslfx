@@ -48,6 +48,25 @@ vec3 GetNormal(vec3 Neye, int index)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl MeshNormal.Scene.Patches
+
+vec3 GetNormal(vec3 Neye, int index, vec2 localST)
+{
+    vec3 normal = vec3(0);
+#if defined(HD_HAS_normals)
+    normal = vec3(HdGet_normals(index, localST).xyz);
+#endif
+
+    MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
+    normal = vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
+                  vec4(normal,0)).xyz;
+
+    if (length(normal) > 0.0)
+        normal = normalize(normal);
+    return normal;
+}
+
+--- --------------------------------------------------------------------------
 -- glsl MeshNormal.Smooth
 
 vec3 GetNormal(vec3 Neye, int index)
@@ -89,12 +108,22 @@ vec3 GetNormal(vec3 Neye, int index)
     return normal;
 }
 
+vec3 GetNormal(vec3 Neye, int index, vec2 localST)
+{
+    return GetNormal(Neye, index);
+}
+
 --- --------------------------------------------------------------------------
 -- glsl MeshNormal.Pass
 
 vec3 GetNormal(vec3 Neye, int index)
 {
     return Neye;
+}
+
+vec3 GetNormal(vec3 Neye, int index, vec2 localST)
+{
+    return GetNormal(Neye, index);
 }
 
 --- --------------------------------------------------------------------------

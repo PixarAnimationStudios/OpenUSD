@@ -25,8 +25,9 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/layerPrefetchRequest.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
-#include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/threadLimits.h"
+#include "pxr/base/work/withScopedParallelism.h"
 
 #include <tbb/spin_mutex.h>
 
@@ -77,7 +78,7 @@ private:
         }
     }
 
-    WorkArenaDispatcher _dispatcher;
+    WorkDispatcher _dispatcher;
     const Pcp_MutedLayers& _mutedLayers;
     std::set<SdfLayerRefPtr> *_retainedLayers;
     mutable tbb::spin_mutex _retainedLayersMutex;
@@ -96,7 +97,7 @@ PcpLayerPrefetchRequest::RequestSublayerStack(
 void
 PcpLayerPrefetchRequest::Run(const Pcp_MutedLayers& mutedLayers)
 {
-    if (WorkGetConcurrencyLimit() <= 1) {
+    if (!WorkHasConcurrency()) {
         // Do not bother pre-fetching if we do not have extra threads
         // available.
         return;
@@ -111,9 +112,11 @@ PcpLayerPrefetchRequest::Run(const Pcp_MutedLayers& mutedLayers)
     requests.swap(_sublayerRequests);
 
     // Open all the sublayers in the request.
-    _Opener opener(mutedLayers, &_retainedLayers);
-    TF_FOR_ALL(req, requests)
-        opener.OpenSublayers(req->first, req->second);
+    WorkWithScopedParallelism([&]() {
+            _Opener opener(mutedLayers, &_retainedLayers);
+            TF_FOR_ALL(req, requests)
+                opener.OpenSublayers(req->first, req->second);
+        });
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

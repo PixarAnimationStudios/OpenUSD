@@ -92,9 +92,12 @@ private:
         HdRenderIndex* renderIndex,
         GfVec2i const& screenSize);
 
-    void _PrepareAovBindings(
-        HdTaskContext* ctx,
-        HdRenderIndex* renderIndex);
+    GfVec2i _ComputeScreenSize(
+        HdTaskContext *ctx,
+        HdRenderIndex* renderIndex) const;
+
+    const HdRenderPassAovBindingVector &_GetAovBindings(
+        HdTaskContext *ctx) const;
 
     HdRenderPassSharedPtr _renderPass;
     HdStRenderPassStateSharedPtr _renderPassState;

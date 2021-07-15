@@ -62,13 +62,17 @@ UsdGeomMotionAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdGeomMotionAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdGeomMotionAPI::_GetSchemaKind() const
+{
     return UsdGeomMotionAPI::schemaKind;
 }
 
-/* virtual */
-UsdSchemaKind UsdGeomMotionAPI::_GetSchemaType() const {
-    return UsdGeomMotionAPI::schemaType;
+/* static */
+bool
+UsdGeomMotionAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdGeomMotionAPI>(whyNot);
 }
 
 /* static */

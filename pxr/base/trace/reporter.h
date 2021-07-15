@@ -58,7 +58,7 @@ class TraceCollectionAvailable;
 ////////////////////////////////////////////////////////////////////////////////
 /// \class TraceReporter
 ///
-/// This class converters streams of TraceEvent objects into call trees which
+/// This class converts streams of TraceEvent objects into call trees which
 /// can then be used as a data source to a GUI or written out to a file.
 ///
 class TraceReporter : 

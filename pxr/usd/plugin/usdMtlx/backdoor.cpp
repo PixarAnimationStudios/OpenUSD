@@ -25,6 +25,7 @@
 
 #include "pxr/usd/plugin/usdMtlx/backdoor.h"
 #include "pxr/usd/plugin/usdMtlx/reader.h"
+#include "pxr/usd/plugin/usdMtlx/utils.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/base/tf/diagnostic.h"
 
@@ -43,8 +44,10 @@ UsdStageRefPtr
 _MtlxTest(R&& reader, bool nodeGraphs)
 {
     try {
-        auto doc = mx::createDocument();
-        reader(doc);
+        auto doc = reader();
+        if (!doc) {
+            return TfNullPtr;
+        }
 
         auto stage = UsdStage::CreateInMemory("tmp.usda", TfNullPtr);
         if (nodeGraphs) {
@@ -70,15 +73,21 @@ _MtlxTest(R&& reader, bool nodeGraphs)
 UsdStageRefPtr
 UsdMtlx_TestString(const std::string& buffer, bool nodeGraphs)
 {
-    return _MtlxTest([&](mx::DocumentPtr d){mx::readFromXmlString(d, buffer);},
-                     nodeGraphs);
+    return _MtlxTest(
+        [&](){
+            auto d = mx::createDocument();
+            mx::readFromXmlString(d, buffer);
+            return d; 
+        },
+        nodeGraphs);
 }
 
 UsdStageRefPtr
 UsdMtlx_TestFile(const std::string& pathname, bool nodeGraphs)
 {
-    return _MtlxTest([&](mx::DocumentPtr d){mx::readFromXmlFile(d, pathname);},
-                     nodeGraphs);
+    return _MtlxTest(
+        [&](){ return UsdMtlxReadDocument(pathname); },
+        nodeGraphs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -240,13 +240,13 @@ HdxTaskController::_CreateRenderGraph()
         _CreateLightingTask();
         _CreateShadowTask();
         _renderTaskIds.push_back(_CreateRenderTask(
-            HdMaterialTagTokens->defaultMaterialTag));
+            HdStMaterialTagTokens->defaultMaterialTag));
         _renderTaskIds.push_back(_CreateRenderTask(
             HdStMaterialTagTokens->masked));
         _renderTaskIds.push_back(_CreateRenderTask(
-            HdxMaterialTagTokens->additive));
+            HdStMaterialTagTokens->additive));
         _renderTaskIds.push_back(_CreateRenderTask(
-            HdxMaterialTagTokens->translucent));
+            HdStMaterialTagTokens->translucent));
         _renderTaskIds.push_back(_CreateRenderTask(
             HdStMaterialTagTokens->volume));
 
@@ -316,12 +316,12 @@ HdxTaskController::_CreateRenderTask(TfToken const& materialTag)
                                  materialTag);
     collection.SetRootPath(SdfPath::AbsoluteRootPath());
 
-    if (materialTag == HdMaterialTagTokens->defaultMaterialTag || 
-        materialTag == HdxMaterialTagTokens->additive ||
+    if (materialTag == HdStMaterialTagTokens->defaultMaterialTag || 
+        materialTag == HdStMaterialTagTokens->additive ||
         materialTag == HdStMaterialTagTokens->masked ||
         materialTag.IsEmpty()) {
         GetRenderIndex()->InsertTask<HdxRenderTask>(&_delegate, taskId);
-    } else if (materialTag == HdxMaterialTagTokens->translucent) {
+    } else if (materialTag == HdStMaterialTagTokens->translucent) {
         GetRenderIndex()->InsertTask<HdxOitRenderTask>(&_delegate, taskId);
         // OIT is using its own buffers which are only per pixel and not per
         // sample. Thus, we resolve the AOVs before starting to render any
@@ -351,7 +351,7 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
         return;
     }
 
-    if (materialTag == HdxMaterialTagTokens->additive) {
+    if (materialTag == HdStMaterialTagTokens->additive) {
         // Additive blend -- so no sorting of drawItems is needed
         renderParams->blendEnable = true;
         // For color, we are setting all factors to ONE.
@@ -381,20 +381,15 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
         // Since we are using alpha blending, we disable screen door
         // transparency for this renderpass.
         renderParams->enableAlphaToCoverage = false;
-    } else if (materialTag == HdxMaterialTagTokens->translucent ||
-               materialTag == HdStMaterialTagTokens->volume) {
-        // Order Independent Transparency blend state or its first render pass.
-        renderParams->blendEnable = false;
-        renderParams->enableAlphaToCoverage = false;
-        renderParams->depthMaskEnable = false;
-    } else if (materialTag == HdStMaterialTagTokens->masked) {
+    } else if (materialTag == HdStMaterialTagTokens->defaultMaterialTag ||
+               materialTag == HdStMaterialTagTokens->masked) {
+        // The default and masked material tags share the same blend state, but 
+        // we classify them as separate because in the general case, masked 
+        // materials use fragment shader discards while the defaultMaterialTag 
+        // should not.
         renderParams->blendEnable = false;
         renderParams->depthMaskEnable = true;
         renderParams->enableAlphaToCoverage = true;
-    } else {
-        renderParams->blendEnable = false;
-        renderParams->depthMaskEnable = true;
-        renderParams->enableAlphaToCoverage = false;
     }
 }
 
@@ -919,6 +914,7 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
     // that specifies no clear color for the remaining render tasks.
     HdRenderPassAovBindingVector aovBindingsClear;
     HdRenderPassAovBindingVector aovBindingsNoClear;
+    HdRenderPassAovBindingVector aovInputBindings;
     aovBindingsClear.resize(localOutputs.size());
     aovBindingsNoClear.resize(aovBindingsClear.size());
 
@@ -930,7 +926,13 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
 
         aovBindingsNoClear[i] = aovBindingsClear[i];
         aovBindingsNoClear[i].clearValue = VtValue();
+
+        if (localOutputs[i] == HdAovTokens->depth) {
+            aovInputBindings.push_back(aovBindingsNoClear[i]);
+        }
     }
+
+    const SdfPath volumeId = _GetRenderTaskPath(HdStMaterialTagTokens->volume);
 
     // Set AOV bindings on render tasks
     for (SdfPath const& renderTaskId : _renderTaskIds) {
@@ -946,6 +948,9 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
                 HdTokens->params);
 
         rParams.aovBindings = aovBindings;
+        if (renderTaskId == volumeId) {
+            rParams.aovInputBindings = aovInputBindings;
+        }
 
         _delegate.SetParameter(renderTaskId, HdTokens->params, rParams);
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
@@ -1242,6 +1247,7 @@ HdxTaskController::SetRenderParams(HdxRenderTaskParams const& params)
         mergedParams.framing = oldParams.framing;
         mergedParams.overrideWindowPolicy = oldParams.overrideWindowPolicy;
         mergedParams.aovBindings = oldParams.aovBindings;
+        mergedParams.aovInputBindings = oldParams.aovInputBindings;
 
         // We also explicitly manage blend params, based on the material tag.
         // XXX: Note: if params.enableIdRender is set, we want to use default
@@ -1694,6 +1700,10 @@ HdxTaskController::SetColorCorrectionParams(
 void 
 HdxTaskController::SetEnablePresentation(bool enabled)
 {
+    if (_presentTaskId.IsEmpty()) {
+        return;
+    }
+
     HdxPresentTaskParams params =
         _delegate.GetParameter<HdxPresentTaskParams>(
             _presentTaskId, HdTokens->params);
@@ -1711,6 +1721,10 @@ HdxTaskController::SetPresentationOutput(
     TfToken const &api,
     VtValue const &framebuffer)
 {
+    if (_presentTaskId.IsEmpty()) {
+        return;
+    }
+
     HdxPresentTaskParams params =
         _delegate.GetParameter<HdxPresentTaskParams>(
             _presentTaskId, HdTokens->params);

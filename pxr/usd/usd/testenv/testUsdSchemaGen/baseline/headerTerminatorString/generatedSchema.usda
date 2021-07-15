@@ -112,11 +112,11 @@ class "Base" (
         doc = "Uniform bool, default false"
     )
     token myVaryingToken = "VariableTokenDefault" (
-        allowedTokens = ["VariableTokenAllowed1", "VariableTokenAllowed2", ""]
+        allowedTokens = ["VariableTokenAllowed1", "VariableTokenAllowed2", "VariableTokenAllowed<3>", ""]
         doc = "VariableToken attribute docs."
     )
     uniform token[] myVaryingTokenArray = ["VariableTokenArrayAllowed1", ""] (
-        allowedTokens = ["VariableTokenArrayAllowed1", "VariableTokenArrayAllowed2", ""]
+        allowedTokens = ["VariableTokenArrayAllowed1", "VariableTokenArrayAllowed2", "VariableTokenArrayAllowed<3>", ""]
         doc = "VariableTokenArray attribute docs."
     )
     normal3d normal3d = (0, 0, 0)
@@ -248,11 +248,11 @@ class Derived "Derived" (
         doc = "Uniform bool, default false"
     )
     token myVaryingToken = "VariableTokenDefault" (
-        allowedTokens = ["VariableTokenAllowed1", "VariableTokenAllowed2", ""]
+        allowedTokens = ["VariableTokenAllowed1", "VariableTokenAllowed2", "VariableTokenAllowed<3>", ""]
         doc = "VariableToken attribute docs."
     )
     uniform token[] myVaryingTokenArray = ["VariableTokenArrayAllowed1", ""] (
-        allowedTokens = ["VariableTokenArrayAllowed1", "VariableTokenArrayAllowed2", ""]
+        allowedTokens = ["VariableTokenArrayAllowed1", "VariableTokenArrayAllowed2", "VariableTokenArrayAllowed<3>", ""]
         doc = "VariableTokenArray attribute docs."
     )
     float3[] myVecfArray

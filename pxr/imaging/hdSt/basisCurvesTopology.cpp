@@ -80,15 +80,15 @@ HdSt_BasisCurvesTopology::GetPointsIndexBuilderComputation()
     }
 
     // Note: The primitive param buffer isn't bound.
-    return HdBufferSourceSharedPtr(
-        new HdVtBufferSource(HdTokens->indices, VtValue(finalIndices)));
+    return std::make_shared<HdVtBufferSource>(
+        HdTokens->indices, VtValue(finalIndices));
 }
 
 HdBufferSourceSharedPtr
 HdSt_BasisCurvesTopology::GetIndexBuilderComputation(bool forceLines)
 {
-    return HdBufferSourceSharedPtr(
-        new HdSt_BasisCurvesIndexBuilderComputation(this, forceLines));
+    return std::make_shared<HdSt_BasisCurvesIndexBuilderComputation>(
+        this, forceLines);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

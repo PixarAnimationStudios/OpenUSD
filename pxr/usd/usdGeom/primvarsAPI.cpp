@@ -62,13 +62,9 @@ UsdGeomPrimvarsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdGeomPrimvarsAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdGeomPrimvarsAPI::_GetSchemaKind() const
+{
     return UsdGeomPrimvarsAPI::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdGeomPrimvarsAPI::_GetSchemaType() const {
-    return UsdGeomPrimvarsAPI::schemaType;
 }
 
 /* static */

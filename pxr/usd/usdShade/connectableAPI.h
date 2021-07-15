@@ -86,11 +86,6 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::NonAppliedAPI;
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::NonAppliedAPI;
-
     /// Construct a UsdShadeConnectableAPI on UsdPrim \p prim .
     /// Equivalent to UsdShadeConnectableAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -140,12 +135,6 @@ protected:
     USDSHADE_API
     UsdSchemaKind _GetSchemaKind() const override;
 
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDSHADE_API
-    UsdSchemaKind _GetSchemaType() const override;
-
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
@@ -173,6 +162,8 @@ public:
 protected:
     /// Returns true if the given prim is compatible with this API schema,
     /// i.e. if it is a valid shader or a node-graph.
+    /// A prim has a compatible connectableAPI if a valid behavior is registered
+    /// for it.
     USDSHADE_API
     bool _IsCompatible() const override;
     
@@ -183,6 +174,14 @@ public:
     /// that defines whether it is a container.
     USDSHADE_API
     bool IsContainer() const;
+
+    /// Returns true if container encapsulation rules should be respected when
+    /// evaluating connectibility behavior, false otherwise.
+    ///
+    /// The underlying prim type may provide runtime behavior that defines if
+    /// encapsulation rules are respected or not.
+    USDSHADE_API
+    bool RequiresEncapsulation() const;
 
     /// \name Connections 
     /// 
@@ -668,8 +667,10 @@ public:
         return ClearSources(output.GetAttr());
     }
 
-    /// Return true if the \p schemaType has a connectableAPIBehavior
+    /// Return true if the \p schemaType has a valid connectableAPIBehavior
     /// registered, false otherwise.
+    /// To check if a prim's connectableAPI has a behavior defined, use
+    /// UsdSchemaBase::operator bool().
     USDSHADE_API
     static bool HasConnectableAPI(const TfType& schemaType);
 

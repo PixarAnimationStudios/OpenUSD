@@ -75,13 +75,9 @@ UsdRiRisObject::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdRiRisObject::_GetSchemaKind() const {
+UsdSchemaKind UsdRiRisObject::_GetSchemaKind() const
+{
     return UsdRiRisObject::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdRiRisObject::_GetSchemaType() const {
-    return UsdRiRisObject::schemaType;
 }
 
 /* static */

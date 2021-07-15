@@ -75,13 +75,9 @@ UsdRiPxrCookieLightFilter::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdRiPxrCookieLightFilter::_GetSchemaKind() const {
+UsdSchemaKind UsdRiPxrCookieLightFilter::_GetSchemaKind() const
+{
     return UsdRiPxrCookieLightFilter::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdRiPxrCookieLightFilter::_GetSchemaType() const {
-    return UsdRiPxrCookieLightFilter::schemaType;
 }
 
 /* static */

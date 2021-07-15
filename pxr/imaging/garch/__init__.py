@@ -26,15 +26,7 @@ garch
 
 """
 
-from . import _garch
 from pxr import Tf
-Tf.PrepareModule(_garch, locals())
-del _garch, Tf
-
-try:
-    from . import __DOC
-    __DOC.Execute(locals())
-    del __DOC
-except Exception:
-    pass
+Tf.PreparePythonModule()
+del Tf
 

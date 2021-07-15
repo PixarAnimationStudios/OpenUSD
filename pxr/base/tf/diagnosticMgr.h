@@ -45,8 +45,8 @@
 
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_rw_mutex.h>
-#include <tbb/atomic.h>
 
+#include <atomic>
 #include <cstdarg>
 #include <list>
 #include <string>
@@ -434,7 +434,7 @@ private:
     mutable tbb::spin_rw_mutex _delegatesMutex;
 
     // Global serial number for sorting.
-    tbb::atomic<size_t> _nextSerial;
+    std::atomic<size_t> _nextSerial;
 
     // Thread-specific error list.
     tbb::enumerable_thread_specific<ErrorList> _errorList;

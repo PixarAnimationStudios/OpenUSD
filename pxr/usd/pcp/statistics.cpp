@@ -170,7 +170,7 @@ public:
     struct _Helper {
         static std::string FormatNumber(size_t n)
         {
-            return TfStringPrintf("%'zd", n);
+            return TfStringPrintf("%zd", n);
         }
 
         static std::string FormatAverage(size_t n, size_t d)

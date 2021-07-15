@@ -183,26 +183,25 @@ class TestUsdLuxLight(unittest.TestCase):
             'graphOut', Sdf.ValueTypeNames.Float)
         self.assertTrue(filterGraphOutput)
 
-        # From the default behavior light outputs cannot be connected.
-        self.assertFalse(lightOutput.CanConnect(lightGraphOutput))
-        self.assertFalse(lightOutput.CanConnect(filterGraphOutput))
+        # Light outputs can be connected.
+        self.assertTrue(lightOutput.CanConnect(lightGraphOutput))
+        self.assertTrue(lightOutput.CanConnect(filterGraphOutput))
 
-        # From the custom behavior, light inputs can only be connected to 
-        # sources from immediate descendants (encapsultated) prims of the light.
-        self.assertFalse(lightInput.CanConnect(lightOutput))
+        # Light inputs diverge from the default behavior and should be 
+        # connectable across its own scope (encapsulation is not required)
+        self.assertTrue(lightInput.CanConnect(lightOutput))
         self.assertTrue(lightInput.CanConnect(lightGraphOutput))
-        self.assertFalse(lightInput.CanConnect(filterGraphOutput))
+        self.assertTrue(lightInput.CanConnect(filterGraphOutput))
 
         # From the default behavior light filter outputs cannot be connected.
         self.assertFalse(filterOutput.CanConnect(lightGraphOutput))
         self.assertFalse(filterOutput.CanConnect(filterGraphOutput))
 
-        # From the custom behavior, light filter inputs can only be connected to 
-        # sources from immediate descendants (encapsultated) prims of the light 
-        # filter.
-        self.assertFalse(filterInput.CanConnect(filterOutput))
+        # Light filters inputs diverge from the default behavior and should be 
+        # connectable across its own scope (encapsulation is not required)
+        self.assertTrue(filterInput.CanConnect(filterOutput))
         self.assertTrue(filterInput.CanConnect(filterGraphOutput))
-        self.assertFalse(filterInput.CanConnect(lightGraphOutput))
+        self.assertTrue(filterInput.CanConnect(lightGraphOutput))
 
         # The shaping API can add more connectable attributes to the light 
         # and implements the same connectable interface functions. We test 
@@ -216,12 +215,13 @@ class TestUsdLuxLight(unittest.TestCase):
         self.assertEqual(shapingAPI.GetInput('shaping:focus').GetAttr(), 
                          shapingAPI.GetShapingFocusAttr())
         # These inputs have the same connectable behaviors as all light inputs,
-        # i.e. they can only be connected to sources from immediate 
-        # descendant (encapsultated) prims of the light.
+        # i.e. they should also diverge from the default behavior of only be 
+        # connected to sources from immediate descendant (encapsultated) prims 
+        # of the light.
         shapingInput = shapingAPI.GetInput('shaping:focus')
-        self.assertFalse(shapingInput.CanConnect(lightOutput))
+        self.assertTrue(shapingInput.CanConnect(lightOutput))
         self.assertTrue(shapingInput.CanConnect(lightGraphOutput))
-        self.assertFalse(shapingInput.CanConnect(filterGraphOutput))
+        self.assertTrue(shapingInput.CanConnect(filterGraphOutput))
 
         # The shadow API can add more connectable attributes to the light 
         # and implements the same connectable interface functions. We test 
@@ -235,12 +235,13 @@ class TestUsdLuxLight(unittest.TestCase):
         self.assertEqual(shadowAPI.GetInput('shadow:distance').GetAttr(), 
                          shadowAPI.GetShadowDistanceAttr())
         # These inputs have the same connectable behaviors as all light inputs,
-        # i.e. they can only be connected to sources from immediate 
-        # descendant (encapsultated) prims of the light.
+        # i.e. they should also diverge from the default behavior of only be 
+        # connected to sources from immediate descendant (encapsultated) prims 
+        # of the light.
         shadowInput = shadowAPI.GetInput('shadow:color')
-        self.assertFalse(shadowInput.CanConnect(lightOutput))
+        self.assertTrue(shadowInput.CanConnect(lightOutput))
         self.assertTrue(shadowInput.CanConnect(lightGraphOutput))
-        self.assertFalse(shadowInput.CanConnect(filterGraphOutput))
+        self.assertTrue(shadowInput.CanConnect(filterGraphOutput))
 
         # Even though the shadow and shaping API schemas provide connectable
         # attributes and an interface for the ConnectableAPI, the typed schema

@@ -27,6 +27,7 @@
 #include "pxr/usd/sdf/primSpec.h"
 
 #include "pxr/usd/usd/pyConversions.h"
+#include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -79,11 +80,29 @@ _Repr(const UsdContrivedPublicMultipleApplyAPI &self)
         primRepr.c_str(), instanceName.c_str());
 }
 
+struct UsdContrivedPublicMultipleApplyAPI_CanApplyResult : 
+    public TfPyAnnotatedBoolResult<std::string>
+{
+    UsdContrivedPublicMultipleApplyAPI_CanApplyResult(bool val, std::string const &msg) :
+        TfPyAnnotatedBoolResult<std::string>(val, msg) {}
+};
+
+static UsdContrivedPublicMultipleApplyAPI_CanApplyResult
+_WrapCanApply(const UsdPrim& prim, const TfToken& name)
+{
+    std::string whyNot;
+    bool result = UsdContrivedPublicMultipleApplyAPI::CanApply(prim, name, &whyNot);
+    return UsdContrivedPublicMultipleApplyAPI_CanApplyResult(result, whyNot);
+}
+
 } // anonymous namespace
 
 void wrapUsdContrivedPublicMultipleApplyAPI()
 {
     typedef UsdContrivedPublicMultipleApplyAPI This;
+
+    UsdContrivedPublicMultipleApplyAPI_CanApplyResult::Wrap<UsdContrivedPublicMultipleApplyAPI_CanApplyResult>(
+        "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
         cls("PublicMultipleApplyAPI");
@@ -104,6 +123,9 @@ void wrapUsdContrivedPublicMultipleApplyAPI()
                &This::Get,
             (arg("prim"), arg("name")))
         .staticmethod("Get")
+
+        .def("CanApply", &_WrapCanApply, (arg("prim"), arg("name")))
+        .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (arg("prim"), arg("name")))
         .staticmethod("Apply")

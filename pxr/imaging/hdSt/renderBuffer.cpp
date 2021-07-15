@@ -156,7 +156,7 @@ HdStRenderBuffer::Allocate(
     
     if (multiSampled) {
         if (!_textureMSAAObject) {
-            // Allocate texture object if necesssary
+            // Allocate texture object if necessary
             _textureMSAAObject =
                 std::dynamic_pointer_cast<HdStDynamicUvTextureObject>(
                     _resourceRegistry->AllocateTextureObject(

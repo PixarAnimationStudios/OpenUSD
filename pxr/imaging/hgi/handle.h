@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Handle that contains a hgi object and unique id.
 ///
-/// The unique id is used to compare two handles to gaurd against pointer
+/// The unique id is used to compare two handles to guard against pointer
 /// aliasing, where the same memory address is used to create a similar object,
 /// but it is not actually the same object.
 ///

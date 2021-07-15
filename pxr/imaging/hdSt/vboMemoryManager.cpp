@@ -220,8 +220,9 @@ HdStVBOMemoryManager::_StripedBufferArray::_AddResource(TfToken const& name,
         }
     }
 
-    HdStBufferResourceSharedPtr bufferRes = HdStBufferResourceSharedPtr(
-        new HdStBufferResource(GetRole(), tupleType, offset, stride));
+    HdStBufferResourceSharedPtr bufferRes = 
+        std::make_shared<HdStBufferResource>(
+            GetRole(), tupleType, offset, stride);
     _resourceList.emplace_back(name, bufferRes);
     return bufferRes;
 }

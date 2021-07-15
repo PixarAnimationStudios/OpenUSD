@@ -47,7 +47,9 @@ SdfReference::SdfReference(
     const SdfPath &primPath,
     const SdfLayerOffset &layerOffset,
     const VtDictionary &customData) :
-    _assetPath(assetPath),
+    // Pass through SdfAssetPath() to issue an error and produce empty string if
+    // \p assetPath contains invalid characters.
+    _assetPath(SdfAssetPath(assetPath).GetAssetPath()),
     _primPath(primPath),
     _layerOffset(layerOffset),
     _customData(customData)

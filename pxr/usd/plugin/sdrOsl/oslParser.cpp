@@ -26,10 +26,14 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ndr/debugCodes.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
@@ -85,6 +89,19 @@ SdrOslParserPlugin::~SdrOslParserPlugin()
     // Nothing yet
 }
 
+template <class String>
+static bool
+_ParseFromSourceCode(OSL::OSLQuery* query, const String& sourceCode)
+{
+#if OSL_LIBRARY_VERSION_CODE < 10701
+    TF_WARN("Support for parsing OSL from an in-memory string is only "
+            "available in OSL version 1.7.1 or newer.");
+    return false;
+#else
+    return query->open_bytecode(sourceCode);
+#endif
+}
+
 NdrNodeUniquePtr
 SdrOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 {
@@ -95,7 +112,8 @@ SdrOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
     bool parseSuccessful = true;
 
     if (!discoveryResult.uri.empty()) {
-        // Get the resolved URI to a location that it can be read by the OSL parser    
+#if AR_VERSION == 1
+        // Get the resolved URI to a location that it can be read by the OSL parser
         bool localFetchSuccessful = ArGetResolver().FetchToLocalResolvedPath(
             discoveryResult.uri,
             discoveryResult.resolvedUri
@@ -108,18 +126,38 @@ SdrOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 
             return NdrParserPlugin::GetInvalidNode(discoveryResult);
         }
+#endif
+        // Attempt to parse the node
+        // Since parsing from buffers is only available with OSL > 1.7.1,
+        // we explicitly check if we're reading from a file on disk and
+        // use the regular open function so that this case still works with
+        // older versions.
+        if (TfIsFile(discoveryResult.resolvedUri)) {
+            parseSuccessful = oslQuery.open(discoveryResult.resolvedUri);
+        }
+        else {
+            std::shared_ptr<const char> buffer;
+            std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
+                ArResolvedPath(discoveryResult.resolvedUri));
+            if (asset) {
+                buffer = asset->GetBuffer();
+            }
 
-       // Attempt to parse the node
-        parseSuccessful = oslQuery.open(discoveryResult.resolvedUri);
+            if (!buffer) {
+                TF_WARN("Could not open the OSL at URI [%s] (%s). An invalid Sdr "
+                        "node definition will be created.",
+                        discoveryResult.uri.c_str(),
+                        discoveryResult.resolvedUri.c_str());
+                return NdrParserPlugin::GetInvalidNode(discoveryResult);
+            }
+
+            parseSuccessful = _ParseFromSourceCode(
+                &oslQuery, OSL::string_view(buffer.get(), asset->GetSize()));
+        }
 
     } else if (!discoveryResult.sourceCode.empty()) {
-#if OSL_LIBRARY_VERSION_CODE < 10701
-        TF_WARN("Support for parsing OSL from an in-memory string is only "
-            "available in OSL version 1.7.1 or newer.");
-#else
-        parseSuccessful = oslQuery.open_bytecode(discoveryResult.sourceCode);
-#endif
-
+        parseSuccessful = _ParseFromSourceCode(
+            &oslQuery, discoveryResult.sourceCode);
     } else {
         TF_WARN("Invalid NdrNodeDiscoveryResult with identifier %s: both uri "
             "and sourceCode are empty.", discoveryResult.identifier.GetText());

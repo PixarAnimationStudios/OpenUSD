@@ -41,13 +41,14 @@
 #include "pxr/base/tf/weakBase.h"
 
 #include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/notice.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/notice.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/pcp/cache.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/base/work/dispatcher.h"
 
 #include <boost/optional.hpp>
 
@@ -123,7 +124,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// - \ref Usd_stageSerialization "Serialization" methods for "flattening" a
 /// composition (to varying degrees), and exporting a completely flattened
 /// view of the stage to a string or file.  These methods can be very useful
-/// for targetted asset optimization and debugging, though care should be 
+/// for targeted asset optimization and debugging, though care should be
 /// exercized with large scenes, as flattening defeats some of the benefits of
 /// referenced scene description, and may produce very large results, 
 /// especially in file formats that do not support data de-duplication, like
@@ -174,11 +175,13 @@ public:
     /// The initial set of prims to load on the stage can be specified
     /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
     ///
-    /// Note that the \p pathResolverContext passed here will apply to all path
-    /// resolutions for this stage, regardless of what other context may be
-    /// bound at resolve time. If no context is passed in here, Usd will create
-    /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
-    /// root layer's repository path if the layer has one, otherwise its real 
+    /// If \p pathResolverContext is provided it will be bound when creating the
+    /// root layer at \p identifier and whenever asset path resolution is done
+    /// for this stage, regardless of what other context may be bound at that
+    /// time. Otherwise Usd will create the root layer with no context bound,
+    /// then create a context for all future asset path resolution for the stage
+    /// by calling ArResolver::CreateDefaultContextForAsset with the root
+    /// layer's repository path if the layer has one, otherwise its resolved
     /// path.
     USD_API
     static UsdStageRefPtr
@@ -207,10 +210,12 @@ public:
     /// Creates a new stage only in memory, analogous to creating an
     /// anonymous SdfLayer.
     ///
-    /// Note that the \p pathResolverContext passed here will apply to all path
-    /// resolutions for this stage, regardless of what other context may be
-    /// bound at resolve time. If no context is passed in here, Usd will create
-    /// one by calling \sa ArResolver::CreateDefaultContext.
+    /// If \p pathResolverContext is provided it will be bound when creating the
+    /// root layer at \p identifier and whenever asset path resolution is done
+    /// for this stage, regardless of what other context may be bound at that
+    /// time. Otherwise Usd will create the root layer with no context bound,
+    /// then create a context for all future asset path resolution for the stage
+    /// by calling ArResolver::CreateDefaultContext.
     ///
     /// The initial set of prims to load on the stage can be specified
     /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
@@ -247,7 +252,6 @@ public:
                    const ArResolverContext& pathResolverContext,
                    InitialLoadSet load = LoadAll);
 
-
     /// Attempt to find a matching existing stage in a cache if
     /// UsdStageCacheContext objects exist on the stack. Failing that, create a
     /// new stage and recursively compose prims defined within and referenced by
@@ -256,12 +260,13 @@ public:
     /// The initial set of prims to load on the stage can be specified
     /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
     ///
-    /// Note that the \p pathResolverContext passed here will apply to all path
-    /// resolutions for this stage, regardless of what other context may be
-    /// bound at resolve time. If no context is passed in here, Usd will create
-    /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
-    /// root layer's repository path if the layer has one, otherwise its real 
-    /// path.
+    /// If \p pathResolverContext is provided it will be bound when opening the
+    /// root layer at \p filePath and whenever asset path resolution is done for
+    /// this stage, regardless of what other context may be bound at that
+    /// time. Otherwise Usd will open the root layer with no context bound, then
+    /// create a context for all future asset path resolution for the stage by
+    /// calling ArResolver::CreateDefaultContextForAsset with the layer's
+    /// repository path if the layer has one, otherwise its resolved path.
     USD_API
     static UsdStageRefPtr
     Open(const std::string& filePath, InitialLoadSet load = LoadAll);
@@ -282,12 +287,13 @@ public:
     /// The initial set of prims to load on the stage can be specified
     /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
     ///
-    /// Note that the \p pathResolverContext passed here will apply to all path
-    /// resolutions for this stage, regardless of what other context may be
-    /// bound at resolve time. If no context is passed in here, Usd will create
-    /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
-    /// root layer's repository path if the layer has one, otherwise its real 
-    /// path.
+    /// If \p pathResolverContext is provided it will be bound when opening the
+    /// root layer at \p filePath and whenever asset path resolution is done for
+    /// this stage, regardless of what other context may be bound at that
+    /// time. Otherwise Usd will open the root layer with no context bound, then
+    /// create a context for all future asset path resolution for the stage by
+    /// calling ArResolver::CreateDefaultContextForAsset with the layer's
+    /// repository path if the layer has one, otherwise its resolved path.
     USD_API
     static UsdStageRefPtr
     OpenMasked(const std::string &filePath,
@@ -316,12 +322,12 @@ public:
     /// The initial set of prims to load on the stage can be specified
     /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
     ///
-    /// Note that the \p pathResolverContext passed here will apply to all path
-    /// resolutions for this stage, regardless of what other context may be
-    /// bound at resolve time. If no context is passed in here, Usd will create
-    /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
-    /// root layer's repository path if the layer has one, otherwise its real 
-    /// path.
+    /// If \p pathResolverContext is provided it will be bound when whenever
+    /// asset path resolution is done for this stage, regardless of what other
+    /// context may be bound at that time. Otherwise Usd will create a context
+    /// for all future asset path resolution for the stage by calling
+    /// ArResolver::CreateDefaultContextForAsset with the layer's repository
+    /// path if the layer has one, otherwise its resolved path.
     ///
     /// When searching for a matching stage in bound UsdStageCache s, only the
     /// provided arguments matter for cache lookup.  For example, if only a root
@@ -367,12 +373,12 @@ public:
     /// The initial set of prims to load on the stage can be specified
     /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
     ///
-    /// Note that the \p pathResolverContext passed here will apply to all path
-    /// resolutions for this stage, regardless of what other context may be
-    /// bound at resolve time. If no context is passed in here, Usd will create
-    /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
-    /// root layer's repository path if the layer has one, otherwise its real 
-    /// path.
+    /// If \p pathResolverContext is provided it will be bound when whenever
+    /// asset path resolution is done for this stage, regardless of what other
+    /// context may be bound at that time. Otherwise Usd will create a context
+    /// for all future asset path resolution for the stage by calling
+    /// ArResolver::CreateDefaultContextForAsset with the layer's repository
+    /// path if the layer has one, otherwise its resolved path.
     USD_API
     static UsdStageRefPtr
     OpenMasked(const SdfLayerHandle& rootLayer,
@@ -1591,11 +1597,6 @@ public:
     // --------------------------------------------------------------------- //
 
     /// Returns all native instancing prototype prims.
-    /// \deprecated Use UsdStage::GetPrototypes instead.
-    USD_API
-    std::vector<UsdPrim> GetMasters() const;
-
-    /// Returns all native instancing prototype prims.
     USD_API
     std::vector<UsdPrim> GetPrototypes() const;
 
@@ -1870,6 +1871,13 @@ private:
 
     // Update stage contents in response to changes in scene description.
     void _HandleLayersDidChange(const SdfNotice::LayersDidChangeSentPerLayer &);
+
+    // Update stage contents in response to changes to the asset resolver.
+    void _HandleResolverDidChange(const ArNotice::ResolverChanged &);
+
+    // Process stage change information stored in _pendingChanges.
+    // _pendingChanges will be set to nullptr by the end of the function.
+    void _ProcessPendingChanges();
 
     // Remove scene description for the prim at \p fullPath in the current edit
     // target.
@@ -2182,6 +2190,7 @@ private:
                                                  const UsdAttribute &attr) const;
 
     void _RegisterPerLayerNotices();
+    void _RegisterResolverChangeNotice();
 
 private:
 
@@ -2204,6 +2213,8 @@ private:
 
     TfHashMap<TfToken, TfToken, TfHash> _invalidPrimTypeToFallbackMap;
 
+    size_t _usedLayersRevision;
+
     // A map from Path to Prim, for fast random access.
     typedef TfHashMap<
         SdfPath, Usd_PrimDataIPtr, SdfPath::Hash> PathToNodeMap;
@@ -2218,7 +2229,13 @@ private:
     _LayerAndNoticeKeyVec _layersAndNoticeKeys;
     size_t _lastChangeSerialNumber;
 
-    boost::optional<WorkArenaDispatcher> _dispatcher;
+    TfNotice::Key _resolverChangeKey;
+
+    // Data for pending change processing.
+    class _PendingChanges;
+    _PendingChanges* _pendingChanges;
+
+    boost::optional<WorkDispatcher> _dispatcher;
 
     // To provide useful aggregation of malloc stats, we bill everything
     // for this stage - from all access points - to this tag.

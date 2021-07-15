@@ -1,0 +1,12 @@
+#usda 1.0
+
+def "BonniesRoom"
+{
+    def "Woody" (references = @{version}/Woody.usda@</Woody>)
+    {
+    }
+
+    def "Buzz" (references = @Buzz@</Buzz>)
+    {
+    }
+}

@@ -43,6 +43,7 @@
 
 #include "pxr/imaging/hdx/oitBufferAccessor.h"
 
+#include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/contextCaps.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -161,6 +162,47 @@ HdxOitResolveTask::Sync(
     *dirtyBits = HdChangeTracker::Clean;
 }
 
+const HdRenderPassAovBindingVector&
+HdxOitResolveTask::_GetAovBindings(
+    HdTaskContext * const ctx) const
+{
+    static HdRenderPassAovBindingVector empty;
+
+    if (!_HasTaskContextData(ctx, HdxTokens->renderPassState)) {
+        return empty;
+    }
+
+    HdRenderPassStateSharedPtr renderPassState;
+    _GetTaskContextData(ctx, HdxTokens->renderPassState, &renderPassState);
+    if (!renderPassState) {
+        return empty;
+    }
+
+    return renderPassState->GetAovBindings();
+}
+
+GfVec2i
+HdxOitResolveTask::_ComputeScreenSize(
+    HdTaskContext *ctx,
+    HdRenderIndex* renderIndex) const
+{
+    const HdRenderPassAovBindingVector&aovBindings = _GetAovBindings(ctx);
+    if (aovBindings.empty()) {
+        return _GetScreenSize();
+    }
+
+    const SdfPath &bufferId = aovBindings.front().renderBufferId;
+    HdRenderBuffer * const buffer = static_cast<HdRenderBuffer*>(
+        renderIndex->GetBprim(HdPrimTypeTokens->renderBuffer, bufferId));
+    if (!buffer) {
+        TF_CODING_ERROR("No render buffer at path %s specified in AOV bindings",
+                        bufferId.GetText());
+        return _GetScreenSize();
+    }
+
+    return GfVec2i(buffer->GetWidth(), buffer->GetHeight());
+}
+
 void
 HdxOitResolveTask::_PrepareOitBuffers(
     HdTaskContext* ctx, 
@@ -275,27 +317,6 @@ HdxOitResolveTask::_PrepareOitBuffers(
 }
 
 void
-HdxOitResolveTask::_PrepareAovBindings(HdTaskContext* ctx,
-                                       HdRenderIndex* renderIndex)
-{
-    HdRenderPassAovBindingVector aovBindings;
-    auto aovIt = ctx->find(HdxTokens->aovBindings);
-    if (aovIt != ctx->end()) {
-        const VtValue& vtAov = aovIt->second;
-        if (vtAov.IsHolding<HdRenderPassAovBindingVector>()) {
-            aovBindings = vtAov.UncheckedGet<HdRenderPassAovBindingVector>();
-        }
-    }
-
-    // OIT should not clear the AOVs.
-    for (size_t i = 0; i < aovBindings.size(); ++i) {
-        aovBindings[i].clearValue = VtValue();
-    }
-
-    _renderPassState->SetAovBindings(aovBindings);
-}
-
-void
 HdxOitResolveTask::Prepare(HdTaskContext* ctx,
                            HdRenderIndex* renderIndex)
 {
@@ -328,6 +349,8 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
         _renderPassState = std::make_shared<HdStRenderPassState>();
         _renderPassState->SetEnableDepthTest(false);
         _renderPassState->SetEnableDepthMask(false);
+        _renderPassState->SetAlphaThreshold(0.0f);
+        _renderPassState->SetAlphaToCoverageEnabled(false);
         _renderPassState->SetColorMasks({HdRenderPassState::ColorMaskRGBA});
         _renderPassState->SetBlendEnabled(true);
         // We expect pre-multiplied color as input into the OIT resolve shader
@@ -354,26 +377,8 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
         _renderPass->Prepare(GetRenderTags());
     }
 
-    // XXX Fragile AOVs dependency. We expect RenderSetupTask::Prepare
-    // to have resolved aob.renderBuffers and then push the AOV bindings onto
-    // the SharedContext before we attempt to use those AOVs.
-    _PrepareAovBindings(ctx, renderIndex);
-
-    // If we have Aov buffers, resize Oit based on its dimensions.
-    GfVec2i screenSize;
-    const HdRenderPassAovBindingVector& aovBindings = 
-        _renderPassState->GetAovBindings();
-
-    if (!aovBindings.empty()) {
-        unsigned int w = aovBindings.front().renderBuffer->GetWidth();
-        unsigned int h = aovBindings.front().renderBuffer->GetHeight();
-        screenSize = GfVec2i(w,h);
-    } else {
-        // Without AOVs, try to use OpenGL state to get the screen size.
-        screenSize = _GetScreenSize();
-    }
-
-    _PrepareOitBuffers(ctx, renderIndex, screenSize); 
+    _PrepareOitBuffers(
+        ctx, renderIndex, _ComputeScreenSize(ctx, renderIndex)); 
 }
 
 void
@@ -381,6 +386,8 @@ HdxOitResolveTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
+    GLF_GROUP_FUNCTION();
 
     // Check whether the request flag was set and delete it so that for the
     // next iteration the request flag is not set unless an OIT render task
@@ -395,6 +402,8 @@ HdxOitResolveTask::Execute(HdTaskContext* ctx)
 
     if (!TF_VERIFY(_renderPassState)) return;
     if (!TF_VERIFY(_renderPassShader)) return;
+
+    _renderPassState->SetAovBindings(_GetAovBindings(ctx));
 
     HdxOitBufferAccessor oitBufferAccessor(ctx);
     if (!oitBufferAccessor.AddOitBufferBindings(_renderPassShader)) {

@@ -20,7 +20,6 @@ pxr_plugin(${PXR_PACKAGE}
     RESOURCE_FILES
         plugInfo.json
         dancingCubes.usda:usdDancingCubesExample/dancingCubes.usda
-        empty.usddancingcubesexample:usdDancingCubesExample/empty.usddancingcubesexample
 
     DISABLE_PRECOMPILED_HEADERS
 )

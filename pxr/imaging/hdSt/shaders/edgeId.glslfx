@@ -28,34 +28,8 @@
 --- #import $TOOLS/hdSt/shaders/edgeId.glslfx
 
 --- --------------------------------------------------------------------------
--- glsl EdgeId.Geometry.None
-
-// called from Mesh.Geometry.*
-void ProcessEdgeId(int index, vec2 faceUV)
-{
-    // do nothing
-}
-
---- --------------------------------------------------------------------------
--- glsl EdgeId.Geometry.EdgeParam
-
-// Interpolate linearly since we want to be able to
-// reason about the distance from the edge in fragment space.
-noperspective out vec2 gsEdgeParam;
-
-// called from Mesh.Geometry.*
-void ProcessEdgeId(int index, vec2 faceUV)
-{
-    // The local triangular parameterization is a subset of the
-    // local rectangular parameterization, so for both cases
-    // we just record the uv parameterization at the face vertex
-    // and can reconstruct the third coordinate when necessary.
-    gsEdgeParam = faceUV;
-}
-
---- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.Fallback
-// Mixin version to use for meshes when the geometry shader stage is inactive.
+// Mixin version to use when mesh edge selection and highlighting is inactive.
 // Note: When rendering a mesh as points, this mixin isn't used. We handle it
 // in code gen.
 
@@ -78,6 +52,8 @@ float GetMinEdgeDistance(); // meshWire.glslfx
 
 // Returns whether a fragment is on or close to an unhidden triangle edge.
 const float edgePickRadius = 2; // in viewport pixels
+const float edgePickParametricRadius = 0.02; // in parametric space
+
 bool IsFragmentOnEdge()
 {
     float d = GetMinEdgeDistance();
@@ -86,33 +62,79 @@ bool IsFragmentOnEdge()
 }
 
 // For smooth looking edges, use an exponential falloff for the opacity.
-// Note: We use a slower falloff fn than in meshWire.glslfx to make the selected
-// edges stand out.
-float GetSelectedEdgeOpacity() {
-    float d = GetMinEdgeDistance();
+// Note: We use a slower falloff fn than in meshWire.glslfx to make the
+// selected edges stand out.
+float SelectedEdgeFalloff(float d) {
     return exp2(-1 * d * d);
+}
+
+vec4 GetPatchCoord(int localIndex); // codeGen
+
+vec3 GetEdgeParamTriangle()
+{
+    // Expand barycentric coordinates
+    vec2 param = GetPatchCoord(0).xy;
+    vec3 barycentric = vec3(param.x, param.y, 1 - param.x - param.y);
+
+    // Match triangle edge order
+    return barycentric.yzx;
+}
+
+vec4 GetEdgeParamQuad()
+{
+    // Expand coordinates to opposite corners of quad
+    vec2 leftBottom = GetPatchCoord(0).xy;
+    vec2 rightTop = vec2(1.0) - leftBottom;
+
+    // Match quad edge order
+    return vec4(leftBottom.y, rightTop.x, rightTop.y, leftBottom.x);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl EdgeId.Fragment.TriangleSurface
+
+vec3 ComputeBaseFaceEdgeDistanceTriangle()
+{
+    vec3 param = GetEdgeParamTriangle();
+    return max(vec3(0.0), param / fwidth(param));
+}
+
+--- --------------------------------------------------------------------------
+-- glsl EdgeId.Fragment.TriangleLines
+
+vec3 ComputeBaseFaceEdgeDistanceTriangle()
+{
+    // Use parametric distance since we can't use surface derivatives for lines
+    vec3 param = GetEdgeParamTriangle();
+    bvec3 nearEdge = lessThan(param, vec3(edgePickParametricRadius));
+    return vec3(edgePickRadius) * vec3(not(nearEdge));
 }
 
 --- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.TriangleParam
 
-vec3 ExpandBarycentricCoord(vec2 bc)
+float GetSelectedEdgeOpacity()
 {
-    return vec3(bc.x, bc.y, 1 - bc.x - bc.y);
-}
+    float closestEdgeDistance = 0.0;
 
-noperspective in vec2 gsEdgeParam;
+    // The sequence of comparisons should match GetPrimitiveEdgeId()
+    vec3 dist = ComputeBaseFaceEdgeDistanceTriangle();
+    if (dist.x < edgePickRadius) {
+        closestEdgeDistance = dist.x;
+    } else if (dist.y < edgePickRadius) {
+        closestEdgeDistance = dist.y;
+    } else if (dist.z < edgePickRadius) {
+        closestEdgeDistance = dist.z;
+    } else {
+        return 0;
+    }
+
+    return SelectedEdgeFalloff(closestEdgeDistance);
+}
 
 // called from hdx/renderPass.glslfx and selection.glslfx
 int GetPrimitiveEdgeId()
 {
-    // Use edge distance to reject fragments that aren't on/near
-    // (unhidden) triangle edges.
-    if (!IsFragmentOnEdge()) return -1;
-
-    // Find out which edge the fragment is on.
-    vec3 bc = ExpandBarycentricCoord(gsEdgeParam.xy);
-
     //              2 (0,1,0)
     //              ^
     //         e2 /   \ e1
@@ -121,32 +143,81 @@ int GetPrimitiveEdgeId()
     //              e0
 
     int edgeId = -1;
-    float delta = 0.02;
-    bvec3 ltResult = lessThan(bc, vec3(delta));
-    if (ltResult.y && (bc.y < bc.x) && (bc.y < bc.z)) {
+
+    vec3 dist = ComputeBaseFaceEdgeDistanceTriangle();
+    if (dist.x < edgePickRadius) {
         edgeId = 0;
-    } else if (ltResult.z && (bc.z < bc.x)) {
+    } else if (dist.y < edgePickRadius) {
         edgeId = 1;
-    } else if (ltResult.x) {
+    } else if (dist.z < edgePickRadius) {
         edgeId = 2;
+    } else {
+        return -1; // Not on a mesh edge
     }
 
+    const int edgeFlag = GetEdgeFlag();
+    const int meshEdgeIndex = HdGet_edgeIndices().x;
+
+    // Translate face-edge to authored mesh-edge
+    if (edgeFlag == 0) {
+        edgeId = meshEdgeIndex + edgeId; // regular triangle face.
+    } else if ((bool(edgeFlag & 1) && edgeId == 2) ||
+               (bool(edgeFlag & 2) && edgeId == 0)) {
+        edgeId = -1; // Not an authored mesh edge
+    } else {
+        edgeId = meshEdgeIndex + edgeId - 1;
+    }
     return edgeId;
 }
 
 --- --------------------------------------------------------------------------
--- glsl EdgeId.Fragment.RectangleParam
+-- glsl EdgeId.Fragment.QuadSurface
 
-noperspective in vec2 gsEdgeParam;
+vec4 ComputeBaseFaceEdgeDistanceQuad()
+{
+    vec4 param = GetEdgeParamQuad();
+    return max(vec4(0.0), param / fwidth(param));
+}
+
+--- --------------------------------------------------------------------------
+-- glsl EdgeId.Fragment.QuadLines
+
+vec4 ComputeBaseFaceEdgeDistanceQuad()
+{
+    // Use parametric distance since we can't use surface derivatives for lines
+    vec4 param = GetEdgeParamQuad();
+    bvec4 nearEdge = lessThan(param, vec4(edgePickParametricRadius));
+    return vec4(edgePickRadius) * vec4(not(nearEdge));
+}
+
+--- --------------------------------------------------------------------------
+-- glsl EdgeId.Fragment.QuadParam
+
+float GetSelectedEdgeOpacity()
+{
+    float closestEdgeDistance = 0.0;
+
+    // The sequence of comparisons should match GetPrimitiveEdgeId()
+    vec4 dist = ComputeBaseFaceEdgeDistanceQuad();
+    if (dist.x < edgePickRadius) {
+        closestEdgeDistance = dist.x;
+    } else if (dist.y < edgePickRadius) {
+        closestEdgeDistance = dist.y;
+    } else if (dist.z < edgePickRadius) {
+        closestEdgeDistance = dist.z;
+    } else if (dist.w < edgePickRadius) {
+        closestEdgeDistance = dist.w;
+    } else {
+        return 0;
+    }
+
+    return SelectedEdgeFalloff(closestEdgeDistance);
+}
 
 // called from hdx/renderPass.glslfx and selection.glslfx
 int GetPrimitiveEdgeId()
 {
-    // Use edge distance to reject fragments that aren't on/near (unhidden)
-    // triangle edges.
-    if (!IsFragmentOnEdge()) return -1;
-
-    //              e2
+    //               e2
     //     (0,1) 3 ------ 2 (1,1)
     //           |        |
     //       e3  |        |  e1
@@ -155,20 +226,32 @@ int GetPrimitiveEdgeId()
     //               e0
 
     int edgeId = -1;
-    const float delta = 0.02;
-    const float delLow = delta;
-    const float delHigh = 1 - delLow;
-    vec2 uv = gsEdgeParam.xy;
 
-    if (uv.y < delLow && uv.y < uv.x) {
+    vec4 dist = ComputeBaseFaceEdgeDistanceQuad();
+    if (dist.x < edgePickRadius) {
         edgeId = 0;
-    } else if (uv.x < delLow) {
-        edgeId = 3;
-    } else if (uv.x > delHigh && uv.x > uv.y) {
+    } else if (dist.y < edgePickRadius) {
         edgeId = 1;
-    } else if (uv.y > delHigh) {
+    } else if (dist.z < edgePickRadius) {
         edgeId = 2;
+    } else if (dist.w < edgePickRadius) {
+        edgeId = 3;
+    } else {
+        return -1; // Not on a mesh edge
     }
 
+    const int edgeFlag = GetEdgeFlag();
+    const ivec2 meshEdgeIndices = HdGet_edgeIndices();
+
+    // Translate face-edge to authored mesh-edge
+    if (edgeFlag == 0) {
+        edgeId = meshEdgeIndices[0] + edgeId; // regular quad face
+    } else if (edgeId == 0) {
+        edgeId = meshEdgeIndices[0];
+    } else if (edgeId == 3) {
+        edgeId = meshEdgeIndices[1];
+    } else {
+        edgeId = -1; // Not an authored mesh edge
+    }
     return edgeId;
 }

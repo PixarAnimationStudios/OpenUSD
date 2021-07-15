@@ -91,8 +91,9 @@ HdBufferArray::TryAssignRange(HdBufferArrayRangeSharedPtr &range)
     }
 
     range->SetBufferArray(this);
-    
-    _needsReallocation = true;  // Multiple threads may try to set this to true at once, which is ok.
+
+    // Multiple threads may try to set this to true at once, which is ok.
+    _needsReallocation = true;  
 
     return true;
 }
@@ -105,13 +106,15 @@ HdBufferArray::RemoveUnusedRanges()
     size_t idx = 0;
     while (idx < numRanges) {
         if (_rangeList[idx].expired()) {
-            // Order of range objects doesn't matter so use range at end to fill gap.
+            // Order of range objects doesn't matter so use range at end to fill 
+            // gap.
             _rangeList[idx] = _rangeList[numRanges - 1];
             _rangeList[numRanges - 1].reset();
             --numRanges;
 
             HD_PERF_COUNTER_INCR(_garbageCollectionPerfToken);
-            // Don't increament idx as we need to check the value we just moved into the slot.
+            // Don't increment idx as we need to check the value we just moved 
+            // into the slot.
         } else {
             ++idx;
         }
@@ -125,7 +128,7 @@ HdBufferArrayRangePtr
 HdBufferArray::GetRange(size_t idx) const
 {
     // XXX: This would need a lock on range list
-    // if run in parrelel to TryAssignRange
+    // if run in parallel to TryAssignRange
 
     TF_VERIFY(idx < _rangeCount); // Note this maybe lower than the actual array
     return _rangeList[idx];

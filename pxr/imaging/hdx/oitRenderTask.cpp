@@ -34,6 +34,8 @@
 
 #include "pxr/imaging/hdSt/renderPassShader.h"
 
+#include "pxr/imaging/glf/diagnostic.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdxOitRenderTask::HdxOitRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
@@ -88,17 +90,26 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
+    GLF_GROUP_FUNCTION();
+
     if (!_isOitEnabled) return;
     if (!HdxRenderTask::_HasDrawItems()) return;
 
     //
     // Pre Execute Setup
     //
+    {
+        HdxOitBufferAccessor oitBufferAccessor(ctx);
 
-    HdxOitBufferAccessor oitBufferAccessor(ctx);
-
-    oitBufferAccessor.RequestOitBuffers();
-    oitBufferAccessor.InitializeOitBuffersIfNecessary();
+        oitBufferAccessor.RequestOitBuffers();
+        oitBufferAccessor.InitializeOitBuffersIfNecessary();
+        if (!oitBufferAccessor.AddOitBufferBindings(
+                _oitTranslucentRenderPassShader)) {
+            TF_CODING_ERROR(
+                "No OIT buffers allocated but needed by OIT render task");
+            return;
+        }
+    }
 
     HdRenderPassStateSharedPtr renderPassState = _GetRenderPassState(ctx);
     if (!TF_VERIFY(renderPassState)) return;
@@ -109,14 +120,15 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
         return;
     }
 
-    extendedState->SetUseSceneMaterials(true);
-
-    if (!oitBufferAccessor.AddOitBufferBindings(
-            _oitTranslucentRenderPassShader)) {
-        TF_CODING_ERROR(
-            "No OIT buffers allocated but needed by OIT render task");
-        return;
+    // Render pass state overrides
+    {
+        extendedState->SetUseSceneMaterials(true);
+        // blending is relevant only for the oitResolve task.
+        extendedState->SetBlendEnabled(false);
+        extendedState->SetAlphaToCoverageEnabled(false);
+        extendedState->SetAlphaThreshold(0.f);
     }
+
     
     // We render into a SSBO -- not MSSA compatible
     bool oldMSAA = glIsEnabled(GL_MULTISAMPLE);
@@ -140,22 +152,32 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
         extendedState->GetCullStyle());
 
     //
-    // Opaque pixels pass
-    // These pixels are rendered to FB instead of OIT buffers
+    // 1. Opaque pixels pass
+    // 
+    // Fragments that are opaque (alpha > 1.0) are rendered to the active
+    // framebuffer. Translucent fragments are discarded.
+    // This can reduce the data written to the OIT SSBO buffers because of
+    // improved depth testing.
     //
-    extendedState->SetRenderPassShader(_oitOpaqueRenderPassShader);
-    renderPassState->SetEnableDepthMask(true);
-    renderPassState->SetColorMasks({HdRenderPassState::ColorMaskRGBA});
+    {
+        extendedState->SetRenderPassShader(_oitOpaqueRenderPassShader);
+        renderPassState->SetEnableDepthMask(true);
+        renderPassState->SetColorMasks({HdRenderPassState::ColorMaskRGBA});
 
-    HdxRenderTask::Execute(ctx);
+        HdxRenderTask::Execute(ctx);
+    }
 
     //
-    // Translucent pixels pass
+    // 2. Translucent pixels pass
     //
-    extendedState->SetRenderPassShader(_oitTranslucentRenderPassShader);
-    renderPassState->SetEnableDepthMask(false);
-    renderPassState->SetColorMasks({HdRenderPassState::ColorMaskNone});
-    HdxRenderTask::Execute(ctx);
+    // Fill OIT SSBO buffers for the translucent fragments.  
+    //
+    {
+        extendedState->SetRenderPassShader(_oitTranslucentRenderPassShader);
+        renderPassState->SetEnableDepthMask(false);
+        renderPassState->SetColorMasks({HdRenderPassState::ColorMaskNone});
+        HdxRenderTask::Execute(ctx);
+    }
 
     //
     // Post Execute Restore

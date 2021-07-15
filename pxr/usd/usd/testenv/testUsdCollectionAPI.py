@@ -58,6 +58,8 @@ class TestUsdCollectionAPI(unittest.TestCase):
     def test_AuthorCollections(self):
         # ----------------------------------------------------------
         # Test an explicitOnly collection.
+        self.assertTrue(Usd.CollectionAPI.CanApply(testPrim, 
+                "test:Explicit:Collection"))
         explicitColl = Usd.CollectionAPI.Apply(testPrim, 
                 "test:Explicit:Collection")
         explicitColl.CreateExpansionRuleAttr(Usd.Tokens.explicitOnly)
@@ -113,6 +115,8 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
         # ----------------------------------------------------------
         # Test an expandPrims collection.
+        self.assertTrue(Usd.CollectionAPI.CanApply(testPrim, 
+                "testExpandPrimsColl"))
         expandPrimsColl = Usd.CollectionAPI.Apply(testPrim, 
                 "testExpandPrimsColl")
         expandPrimsColl.CreateIncludesRel().AddTarget(geom.GetPath())
@@ -141,6 +145,8 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
         # ----------------------------------------------------------
         # Test an expandPrimsAndProperties collection.
+        self.assertTrue(Usd.CollectionAPI.CanApply(testPrim, 
+                "testExpandPrimsAndPropertiesColl"))
         expandPrimsAndPropertiesColl = Usd.CollectionAPI.Apply(
                 testPrim, 
                 "testExpandPrimsAndPropertiesColl")
@@ -161,6 +167,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # 
         # Create a collection that combines the explicit collection and 
         # the expandPrimsAndProperties collection.
+        self.assertTrue(Usd.CollectionAPI.CanApply(testPrim, "combined"))
         combinedColl = Usd.CollectionAPI.Apply(testPrim, "combined")
         combinedColl.CreateExpansionRuleAttr(Usd.Tokens.explicitOnly)
         combinedColl.CreateIncludesRel().AddTarget(
@@ -199,6 +206,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertTrue(explicitColl.HasNoIncludedPaths())
 
     def test_testIncludeAndExcludePath(self):
+        self.assertTrue(Usd.CollectionAPI.CanApply(geom, "geom"))
         geomCollection = Usd.CollectionAPI.Apply(geom, 
             "geom")
         self.assertTrue(geomCollection.IncludePath(shapes.GetPath()))
@@ -238,6 +246,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # Test includeRoot.
         # First create a collection that excludes /CollectionTest/Geom
         # but includes the root.
+        self.assertTrue(Usd.CollectionAPI.CanApply(testPrim, "includeRootTest"))
         includeRootTest = Usd.CollectionAPI.Apply(testPrim,
             "includeRootTest")
         includeRootTest.IncludePath('/')
@@ -297,6 +306,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # the expansionRule.
         self.assertEqual(leafGeom.GetExpansionRuleAttr().Get(), 
                          Usd.Tokens.explicitOnly)
+        self.assertTrue(Usd.CollectionAPI.CanApply(testPrim, "leafGeom"))
         leafGeom = Usd.CollectionAPI.Apply(testPrim, "leafGeom")
         self.assertEqual(leafGeom.GetExpansionRuleAttr().Get(), 
                          Usd.Tokens.explicitOnly)
@@ -402,6 +412,10 @@ class TestUsdCollectionAPI(unittest.TestCase):
             self.assertTrue(len(reason) > 0)
 
     def test_CircularDependency(self):
+        self.assertTrue(Usd.CollectionAPI.CanApply(testPrim, "A"))
+        self.assertTrue(Usd.CollectionAPI.CanApply(testPrim, "B"))
+        self.assertTrue(Usd.CollectionAPI.CanApply(testPrim, "C"))
+        self.assertTrue(Usd.CollectionAPI.CanApply(testPrim, "D"))
         collectionA = Usd.CollectionAPI.Apply(testPrim, "A")
         collectionA.CreateExpansionRuleAttr(Usd.Tokens.explicitOnly)
         collectionB = Usd.CollectionAPI.Apply(testPrim, 
@@ -547,8 +561,18 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # ----------------------------------------------------------
         # Test Apply when passed a string that doesn't tokenize to
         # make sure we don't crash in that case, but issue a coding error.
+        # Both CanApply and Apply raise coding errors in the instance name is 
+        # empty.
+        with self.assertRaises(Tf.ErrorException):
+            self.assertFalse(Usd.CollectionAPI.CanApply(testPrim, ""))
         with self.assertRaises(Tf.ErrorException):
             Usd.CollectionAPI.Apply(testPrim, "")
+
+        # Test Apply when the instance name is invalid because it matches a
+        # property name. CanApply will catch this too but not as a coding error.
+        self.assertFalse(Usd.CollectionAPI.CanApply(testPrim, "excludes"))
+        with self.assertRaises(Tf.ErrorException):
+            Usd.CollectionAPI.Apply(testPrim, "excludes")
 
     def test_CollectionEquivalence(self):
         # ----------------------------------------------------------

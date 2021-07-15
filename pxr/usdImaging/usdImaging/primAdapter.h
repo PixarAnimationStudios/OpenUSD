@@ -758,6 +758,13 @@ protected:
     virtual void _RemovePrim(SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) = 0;
 
+    // Utility to resync bound dependencies of a particular usd path.
+    // This is necessary for the resync processing of certain prim types
+    // (e.g. materials).
+    USDIMAGING_API
+    void _ResyncDependents(SdfPath const& usdPath,
+                           UsdImagingIndexProxy *index);
+
     USDIMAGING_API
     UsdImaging_CollectionCache& _GetCollectionCache() const;
 
@@ -774,6 +781,9 @@ protected:
 
     USDIMAGING_API
     Usd_PrimFlagsConjunction _GetDisplayPredicate() const;
+
+    USDIMAGING_API
+    Usd_PrimFlagsConjunction _GetDisplayPredicateForPrototypes() const;
 
     USDIMAGING_API
     bool _DoesDelegateSupportCoordSys() const;

@@ -35,9 +35,17 @@ Ar.SetPreferredResolver(preferredResolver)
 
 # Import other modules from pxr after Ar to ensure we don't pull on Ar
 # before the preferred resolver has been specified.
-from pxr import Sdf, Tf
+from pxr import Sdf, Tf, Plug
 
 class TestSdfLayer(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Register dso plugins.
+        testRoot = os.path.join(os.path.dirname(__file__), 'SdfPlugins')
+        testPluginsDso = testRoot + '/lib'
+        testPluginsDsoSearch = testPluginsDso + '/*/Resources/'
+        Plug.Registry().RegisterPlugins(testPluginsDsoSearch)
+
     def test_IdentifierWithArgs(self):
         paths = [
             ("foo.sdf", 
@@ -61,6 +69,44 @@ class TestSdfLayer(unittest.TestCase):
 
             joinedIdentifier = Sdf.Layer.CreateIdentifier(splitPath, splitArgs)
             self.assertEqual(identifier, joinedIdentifier)
+
+    def test_SetIdentifier(self):
+        layer = Sdf.Layer.CreateAnonymous()
+
+        # Can't change a layer's identifier if another layer with the same
+        # identifier and resolved path exists.
+        existingLayer = Sdf.Layer.CreateNew("testSetIdentifier.sdf")
+        with self.assertRaises(Tf.ErrorException):
+            layer.identifier = existingLayer.identifier
+
+        # Can't change a layer's identifier to the empty string.
+        with self.assertRaises(Tf.ErrorException):
+            layer.identifier = ""
+
+        # Can't change a layer's identifier to an anonymous layer identifier.
+        with self.assertRaises(Tf.ErrorException):
+            layer.identifier = "anon:testing"
+
+    def test_SetIdentifierWithArgs(self):
+        layer = Sdf.Layer.CreateAnonymous()
+        layer.Export("testSetIdentifierWithArgs.sdf")
+
+        layer = Sdf.Layer.FindOrOpen(
+            "testSetIdentifierWithArgs.sdf", args={"a":"b"})
+        self.assertTrue(layer)
+
+        # Can't change arguments when setting a new identifier
+        with self.assertRaises(Tf.ErrorException):
+            layer.identifier = Sdf.Layer.CreateIdentifier(
+                "testSetIdentifierWithArgs.sdf", {"a":"c"})
+
+        with self.assertRaises(Tf.ErrorException):
+            layer.identifier = Sdf.Layer.CreateIdentifier(
+                "testSetIdentifierWithArgs.sdf", {"b":"d"})
+
+        # Can change the identifier if we leave the args the same.
+        layer.identifier = Sdf.Layer.CreateIdentifier(
+            "testSetIdentifierWithArgsNew.sdf", {"a":"b"})
 
     def test_OpenWithInvalidFormat(self):
         l = Sdf.Layer.FindOrOpen('foo.invalid')
@@ -93,7 +139,7 @@ class TestSdfLayer(unittest.TestCase):
         _TestWithTag("test.sdf")
 
     def test_FindOrOpenWithAnonymousIdentifier(self):
-        def _TestWithTag(tag, validExtension):
+        def _TestWithTag(tag):
             layer = Sdf.Layer.CreateAnonymous(tag)
             layerId = layer.identifier
             self.assertEqual(Sdf.Layer.FindOrOpen(layerId), layer)
@@ -103,21 +149,14 @@ class TestSdfLayer(unittest.TestCase):
                 [l for l in Sdf.Layer.GetLoadedLayers() 
                  if l.identifier == layerId])
 
-            # FindOrOpen currently throws a coding error when given an
-            # anonymous layer identifier with an unrecognized (or no)
-            # extension.
-            if validExtension:
-                self.assertFalse(Sdf.Layer.FindOrOpen(layerId))
-            else:
-                with self.assertRaises(Tf.ErrorException):
-                    self.assertFalse(Sdf.Layer.FindOrOpen(layerId))
+            self.assertFalse(Sdf.Layer.FindOrOpen(layerId))
 
-        _TestWithTag("", validExtension=False)
-        _TestWithTag(".sdf", validExtension=True)
-        _TestWithTag(".invalid", validExtension=False)
-        _TestWithTag("test", validExtension=False)
-        _TestWithTag("test.invalid", validExtension=False)
-        _TestWithTag("test.sdf", validExtension=True)
+        _TestWithTag("")
+        _TestWithTag(".sdf")
+        _TestWithTag(".invalid")
+        _TestWithTag("test")
+        _TestWithTag("test.invalid")
+        _TestWithTag("test.sdf")
 
     def test_AnonymousIdentifiersDisplayName(self):
         # Ensure anonymous identifiers work as expected
@@ -554,6 +593,164 @@ def "Root"
         with Ar.ResolverContextBinder(ctx2):
             anonLayerB = Sdf.Layer.CreateAnonymous()
         self.assertEqual(Sdf.Layer.Find(anonLayerB.identifier), anonLayerB)
+
+    def test_FindOrOpenNoAssetAnonLayers(self):
+        """
+        This test case confirms assumptions about how anonymous layers behave 
+        for fileformats that can read/generate layers without requiring a 
+        resolved asset to read. These assumptions allow anonymous layer 
+        identifiers along with file format arguments to be used to refer to 
+        fully dynamically generated layers without requiring a placeholder real 
+        asset file that is never read.
+        """
+
+        # Verify that our test file format exists. This file format doesn't 
+        # read any assets and instead creates a simple layer with a pseudoroot
+        # and optionally a single prim spec at the root with a name defined by
+        # the file format argument "rootName" if the arg is provided.
+        fileFormat = Sdf.FileFormat.FindByExtension(".testsdfnoasset")
+        self.assertTrue(fileFormat)
+
+        # Example anonymous layer identifier of our file format type
+        layerId = "anon:placeholder:.testsdfnoasset"
+        self.assertTrue(Sdf.Layer.IsAnonymousLayerIdentifier(layerId))
+
+        # Layer find should not find this layer.
+        self.assertFalse(Sdf.Layer.Find(layerId))
+
+        # FindOrOpen however is able to open an anonymous layer with this
+        # identifier because the format's Read function doesn't need an asset
+        # to read this file.
+        layer1 = Sdf.Layer.FindOrOpen(layerId)
+        self.assertTrue(layer1)
+        self.assertTrue(layer1.anonymous)
+        # No args were provided so no root prim was created.
+        self.assertFalse(layer1.rootPrims)
+
+        # Layer find does find the layer now that it's open and it's the only
+        # loaded layer.
+        self.assertEqual(layer1, Sdf.Layer.Find(layerId))
+        self.assertEqual(set(Sdf.Layer.GetLoadedLayers()), set([layer1]))
+
+        # Now we try with layer args that should populate the layer
+        layerArgs = {"rootName":"Generated"}
+        # Layer find on the existing anonymous layer identifier but with args
+        # now should not find the layer
+        self.assertFalse(Sdf.Layer.Find(layerId, layerArgs))
+
+        # FindOrOpen is also able to open an anonymous layer with this
+        # identifier and the given args.
+        layer2 = Sdf.Layer.FindOrOpen(layerId, layerArgs)
+        self.assertTrue(layer2)
+        self.assertTrue(layer2.anonymous)
+        # Since a rootName argument was provided, a root prim with the provided
+        # name is generated on the layer.
+        self.assertEqual(list(layer2.rootPrims.keys()),
+                         list(["Generated"]))
+
+        # Layer find does find the layer with the provided args now too and 
+        # both layers are loaded.
+        self.assertEqual(layer2, Sdf.Layer.Find(layerId, layerArgs))
+        self.assertEqual(set(Sdf.Layer.GetLoadedLayers()),
+                         set([layer1, layer2]))
+
+        # Call FindOrOpen using the same identifier and args. Verify that it
+        # does not open a new layer and returns the existing layer.
+        layer3 = Sdf.Layer.FindOrOpen(layerId, layerArgs)
+        self.assertEqual(layer2, layer3)
+        layer4 = Sdf.Layer.FindOrOpen(layer2.identifier)
+        self.assertEqual(layer2, layer4)
+        self.assertEqual(set(Sdf.Layer.GetLoadedLayers()),
+                         set([layer1, layer2]))
+
+        # Open another anonymous layer with a different identifier but the 
+        # same file format arguments. This is a new layer because the identifier
+        # is different
+        layer5 = Sdf.Layer.FindOrOpen("anon:placeholder:other.testsdfnoasset", 
+                                      layerArgs)
+        self.assertNotEqual(layer2, layer5)
+        self.assertTrue(layer5.anonymous)
+        self.assertEqual(list(layer5.rootPrims.keys()),
+                         list(["Generated"]))
+
+        # Open another anonymous layer with the same identifier but a different
+        # rootName arg. This will also be a new layer
+        layer6 = Sdf.Layer.FindOrOpen(layerId, {"rootName":"Other"})
+        self.assertNotEqual(layer2, layer6)
+        self.assertTrue(layer6.anonymous)
+        self.assertEqual(list(layer6.rootPrims.keys()),
+                         list(["Other"]))
+
+        self.assertEqual(set(Sdf.Layer.GetLoadedLayers()),
+                         set([layer1, layer2, layer5, layer6]))
+
+        # Test muting the anonymous layer. This will removed the generated
+        # root prim.
+        layer2.SetMuted(True)
+        self.assertTrue(layer2.IsMuted())
+        self.assertFalse(layer2.rootPrims)
+        # Test unmuting the layer, the generated root prim returns.
+        layer2.SetMuted(False)
+        self.assertFalse(layer2.IsMuted())
+        self.assertEqual(list(layer2.rootPrims.keys()),
+                         list(["Generated"]))
+
+        # Test reload
+        # First reload returns false since layer hasn't changed.
+        self.assertFalse(layer2.Reload())
+        # Edit the layer adding a prim to dirty it
+        Sdf.CreatePrimInLayer(layer2, Sdf.Path("/NewPrim"))
+        self.assertEqual(list(layer2.rootPrims.keys()),
+                         list(["Generated", "NewPrim"]))
+        # Reload now succeeds and the layer is in the state when it was first
+        # opened with its args.
+        self.assertTrue(layer2.Reload())
+        self.assertEqual(list(layer2.rootPrims.keys()),
+                         list(["Generated"]))
+
+        # Test CreateAnonymous for layers of this format. CreateAnonymous 
+        # does NOT read any layer contents so the layer will be empty after 
+        # creation regardless of what file format arguments are provided. While
+        # this behavior may not necessarily useful in this context, it's 
+        # consistent in that CreateNew and CreateAnonymous should never "read"
+        # anything.
+
+        # Create an anonymous layer with no arguments. It generates no prims.
+        layer7 = Sdf.Layer.CreateAnonymous(".testsdfnoasset")
+        self.assertTrue(layer7)
+        self.assertTrue(layer7.anonymous)
+        self.assertFalse(layer7.rootPrims)
+
+        # Create two new anonymous layers with the same arguments as used for
+        # layer2 in Sdf.Layer.FindOrOpen. Both layers will still have no 
+        # root prims because we don't "read" the anonymous layer and so don't
+        # generate the layer contents.
+        layer8 = Sdf.Layer.CreateAnonymous(".testsdfnoasset", layerArgs)
+        layer9 = Sdf.Layer.CreateAnonymous(".testsdfnoasset", layerArgs)
+        self.assertTrue(layer8)
+        self.assertTrue(layer9)
+        self.assertFalse(layer8.rootPrims)
+        self.assertFalse(layer9.rootPrims)
+        # As with all layers from CreateAnonymous, they will be unique layers
+        # even when generated with the same tag and args.
+        self.assertNotEqual(layer8, layer9)
+        self.assertNotEqual(layer8.identifier, layer9.identifier)
+        self.assertEqual(
+            set(Sdf.Layer.GetLoadedLayers()),
+            set([layer1, layer2, layer5, layer6, layer7, layer8, layer9]))
+
+        # Force reload the created anonymous layers. This will call Read and
+        # generate the appropriate layer contents from the original file format
+        # args.
+        self.assertTrue(layer7.Reload(force=True))
+        self.assertTrue(layer8.Reload(force=True))
+        self.assertTrue(layer9.Reload(force=True))
+        self.assertFalse(layer7.rootPrims)
+        self.assertEqual(list(layer8.rootPrims.keys()),
+                         list(["Generated"]))
+        self.assertEqual(list(layer9.rootPrims.keys()),
+                         list(["Generated"]))
+
 
 if __name__ == "__main__":
     unittest.main()

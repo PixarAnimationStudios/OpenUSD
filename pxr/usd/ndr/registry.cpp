@@ -66,7 +66,7 @@ NdrRegistry_ValidateProperty(
     std::string* errorMessage)
 {
     const VtValue& defaultValue = property->GetDefaultValue();
-    const SdfTypeIndicator sdfTypeIndicator = property->GetTypeAsSdfType();
+    const NdrSdfTypeIndicator sdfTypeIndicator = property->GetTypeAsSdfType();
     const SdfValueTypeName sdfType = sdfTypeIndicator.first;
 
     // We allow default values to be unspecified, but if they aren't empty, then

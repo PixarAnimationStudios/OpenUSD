@@ -33,16 +33,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// Return the current concurrency limit, always >= 1.
 ///
-/// The initial value is determined by the PXR_WORK_THREAD_LIMIT env setting,
-/// which defaults to WorkGetPhysicalConcurrencyLimit(). If the env setting
-/// has been explicitly set to a non-zero value, it will always override any
-/// concurrency limit set via the API calls below.
+/// This value is determined by the underlying concurrency subsystem.  It may
+/// have been set by a third party, by a call to Work API below, or by Work
+/// itself if the PXR_WORK_THREAD_LIMIT env setting was set.  If the
+/// PXR_WORK_THREAD_LIMIT env setting has been explicitly set to a non-zero
+/// value, Work will attempt to configure the underlying concurrency subsystem
+/// to use the specified limit and will ignore concurrency limits set via the
+/// API calls below.
 ///
 /// Note that this can return a value larger than
 /// WorkGetPhysicalConcurrencyLimit() if WorkSetConcurrencyLimit() was called
 /// with such a value, or if PXR_WORK_THREAD_LIMIT was set with such a value.
 ///
 WORK_API unsigned WorkGetConcurrencyLimit();
+
+/// Return true if WorkGetPhysicalConcurrencyLimit() returns a number greater
+/// than 1 and PXR_WORK_THREAD_LIMIT was not set in an attempt to limit the
+/// process to a single thread, false otherwise.
+///
+WORK_API bool WorkHasConcurrency();
 
 /// Return the number of physical execution cores available to the program.
 /// This is either the number of physical cores on the machine or the number of

@@ -31,7 +31,7 @@ class TestUsdUtilsIntrospection(unittest.TestCase):
             'prototypes': {
                 'primCountsByType': {'untyped': 4, 'Mesh': 7, 'Xform': 2}, 
                 'primCounts': {'activePrimCount': 13, 'inactivePrimCount': 0,
-                                'instanceCount': 2, 'pureOverCount': 4, 
+                                'instanceCount': 2, 'pureOverCount': 0, 
                                 'totalPrimCount': 13}},
                 'usedLayerCount': 1, 
             'primary': {

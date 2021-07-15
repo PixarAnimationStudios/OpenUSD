@@ -1,0 +1,75 @@
+#usda 1.0
+(
+    "Test schema file for testUsdShadeConnectableAPIBehavior"
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "testUsdShadeConnectableAPIBehavior"
+        bool skipCodeGeneration = true
+    }
+)
+{
+}
+
+class "AutoApplyDefaultConnectableBehaviorAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """Test default UsdShadeConnectableAPIBehavior through an auto apply 
+    schema. This will be auto applied to a type which has a behavior defined but
+    different than the default, and will also be auto applied to a type which
+    has no connectableAPIBehavior defined in its plug.
+    """
+    customData = {
+        string className = "AutoApplyDefaultConnectableBehaviorAPI"
+        dictionary extraPlugInfo = {
+            bool implementsUsdShadeConnectableAPIBehavior = 1
+        }
+        token[] apiSchemaAutoApplyTo = [
+            "UsdShadeMaterial", 
+            "UsdShadeTestTypedHasAutoApply"
+        ] 
+    }
+)
+{
+}
+
+class "DefaultConnectableBehaviorAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """Test default UsdShadeConnectableAPIBehavior through an applied API
+    schema. This will be applied to a type which has a behavior defined, showing
+    the api schema overrides the behavior defined for the type.
+    """
+    customData = {
+        string className = "DefaultConnectableBehaviorAPI"
+        dictionary extraPlugInfo = {
+            bool implementsUsdShadeConnectableAPIBehavior = 1
+        }
+    }
+)
+{
+}
+
+class UsdShadeTestTypedHasAutoApply "UsdShadeTestTypedHasAutoApply" (
+    inherits = </Typed>
+    doc = """A typed schema with no plug metadata for connectableAPIBehavior.
+    A connectable behavior defining auto apply api schema imparts connectability
+    behavior to this type.
+    """
+)
+{
+}
+
+class UsdShadeTestTyped "UsdShadeTestTyped" (
+    inherits = </Typed>
+    doc = """A typed schema with no plug metadata for connectableAPIBehavior.
+    Prims of this type could have DefaultConnectableBehaviorAPI applied to
+    impart UsdShade connectableAPIBehavior.
+    """
+)
+{
+}

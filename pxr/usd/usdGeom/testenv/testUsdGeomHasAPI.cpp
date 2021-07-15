@@ -42,6 +42,8 @@ TestHasAPI()
     
     // Valid cases
     TF_AXIOM(!prim.HasAPI<UsdGeomMotionAPI>());
+    TF_AXIOM(UsdGeomMotionAPI::CanApply(prim));
+    TF_AXIOM(prim.CanApplyAPI<UsdGeomMotionAPI>());
     UsdGeomMotionAPI::Apply(prim);
     TF_AXIOM(prim.HasAPI<UsdGeomMotionAPI>());
     prim.RemoveAPI<UsdGeomMotionAPI>();
@@ -50,6 +52,8 @@ TestHasAPI()
     TF_AXIOM(prim.HasAPI<UsdGeomMotionAPI>());
     
     TF_AXIOM(!prim.HasAPI<UsdGeomModelAPI>());
+    TF_AXIOM(UsdGeomModelAPI::CanApply(prim));
+    TF_AXIOM(prim.CanApplyAPI<UsdGeomModelAPI>());
     UsdGeomModelAPI::Apply(prim);
     TF_AXIOM(prim.HasAPI<UsdGeomModelAPI>());
     prim.RemoveAPI<UsdGeomModelAPI>();
@@ -71,10 +75,12 @@ TestHasAPI()
     // TF_AXIOM(!prim.HasAPI<UsdModelAPI>());     // can't be non-applied API schema
     // 
     // // must be derived from UsdAPISchemaBase
+    // TF_AXIOM(prim.CanApplyAPI<UsdGeomXform>());   
     // TF_AXIOM(prim.ApplyAPI<UsdGeomXform>());   
     // TF_AXIOM(prim.RemoveAPI<UsdGeomXform>());  
     // 
     // // must be multiple apply for instance name
+    // TF_AXIOM(prim.CanApplyAPI<UsdGeomModelAPI>(TfToken("instance")));
     // TF_AXIOM(prim.ApplyAPI<UsdGeomModelAPI>(TfToken("instance")));   
     // TF_AXIOM(prim.RemoveAPI<UsdGeomModelAPI>(TfToken("instance")));
 }

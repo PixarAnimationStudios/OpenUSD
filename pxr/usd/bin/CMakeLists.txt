@@ -3,6 +3,7 @@ set(DIRS
     usdchecker
     usddiff
     usddumpcrate
+    usdgenschemafromsdr
     usdedit
     usdresolve
     usdstitch

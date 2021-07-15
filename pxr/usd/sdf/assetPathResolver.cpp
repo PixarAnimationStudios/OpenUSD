@@ -71,19 +71,31 @@ Sdf_CanCreateNewLayerWithIdentifier(
     string* whyNot)
 {
     if (identifier.empty()) {
-        if (whyNot)
-            *whyNot = "cannot create a new layer with an empty identifier.";
+        if (whyNot) {
+            *whyNot = "cannot use empty identifier.";
+        }
+        return false;
+    }
+
+    if (Sdf_IsAnonLayerIdentifier(identifier)) {
+        if (whyNot) {
+            *whyNot = "cannot use anonymous layer identifier.";
+        }
         return false;
     }
 
     if (Sdf_IdentifierContainsArguments(identifier)) {
-        if (whyNot)
-            *whyNot = "cannot create a new layer with arguments in the "
-                "identifier";
+        if (whyNot) {
+            *whyNot = "cannot use arguments in the identifier.";
+        }
         return false;
     }
 
+#if AR_VERSION == 1
     return ArGetResolver().CanCreateNewLayerWithIdentifier(identifier, whyNot);
+#else
+    return true;
+#endif
 }
 
 ArResolvedPath
@@ -102,10 +114,15 @@ Sdf_ResolvePath(
 
 bool
 Sdf_CanWriteLayerToPath(
-    const string& layerPath)
+    const ArResolvedPath& resolvedPath)
 {
+#if AR_VERSION == 1
     return ArGetResolver().CanWriteLayerToPath(
-        layerPath, /* whyNot = */ nullptr);
+        resolvedPath, /* whyNot = */ nullptr);
+#else
+    return ArGetResolver().CanWriteAssetToPath(
+        resolvedPath, /* whyNot = */ nullptr);
+#endif
 }
 
 ArResolvedPath

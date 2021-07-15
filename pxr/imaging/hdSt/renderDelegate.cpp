@@ -314,7 +314,7 @@ HdRenderPassSharedPtr
 HdStRenderDelegate::CreateRenderPass(HdRenderIndex *index,
                         HdRprimCollection const& collection)
 {
-    return HdRenderPassSharedPtr(new HdSt_RenderPass(index, collection));
+    return std::make_shared<HdSt_RenderPass>(index, collection);
 }
 
 HdRenderPassStateSharedPtr
@@ -453,10 +453,11 @@ HdStRenderDelegate::DestroyBprim(HdBprim *bPrim)
 HdSprim *
 HdStRenderDelegate::_CreateFallbackMaterialPrim()
 {
-    HioGlslfxSharedPtr glslfx(
-        new HioGlslfx(HdStPackageFallbackSurfaceShader()));
+    HioGlslfxSharedPtr glslfx =
+        std::make_shared<HioGlslfx>(HdStPackageFallbackSurfaceShader());
 
-    HdStSurfaceShaderSharedPtr fallbackShaderCode(new HdStGLSLFXShader(glslfx));
+    HdStSurfaceShaderSharedPtr fallbackShaderCode =
+        std::make_shared<HdStGLSLFXShader>(glslfx);
 
     HdStMaterial *material = new HdStMaterial(SdfPath::EmptyPath());
     material->SetSurfaceShader(fallbackShaderCode);
@@ -504,13 +505,21 @@ HdStRenderDelegate::IsSupported()
 TfTokenVector
 HdStRenderDelegate::GetShaderSourceTypes() const
 {
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
     return {HioGlslfxTokens->glslfx, _tokens->mtlx};
+#else
+    return {HioGlslfxTokens->glslfx};
+#endif
 }
 
 TfTokenVector
 HdStRenderDelegate::GetMaterialRenderContexts() const
 {
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
     return {HioGlslfxTokens->glslfx, _tokens->mtlx};
+#else
+    return {HioGlslfxTokens->glslfx};
+#endif
 }
 
 bool

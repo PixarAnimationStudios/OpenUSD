@@ -75,13 +75,9 @@ UsdLuxSphereLight::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdLuxSphereLight::_GetSchemaKind() const {
+UsdSchemaKind UsdLuxSphereLight::_GetSchemaKind() const
+{
     return UsdLuxSphereLight::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdLuxSphereLight::_GetSchemaType() const {
-    return UsdLuxSphereLight::schemaType;
 }
 
 /* static */

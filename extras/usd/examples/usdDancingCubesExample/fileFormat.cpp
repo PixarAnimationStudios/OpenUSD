@@ -65,10 +65,11 @@ SdfAbstractDataRefPtr
 UsdDancingCubesExampleFileFormat::InitData(
     const FileFormatArguments &args) const
 {
-    // Create our special procedural abstract data with its parameters extracted
-    // from the file format arguments.
-    return UsdDancingCubesExample_Data::New(
-        UsdDancingCubesExample_DataParams::FromArgs(args));
+    // While we have the file format arguments used to generate the layer
+    // data here, this function is meant to return the data in its new layer
+    // form. The Read is responsible for generating the parameter driven
+    // data. This is important for muting the layer.
+    return UsdDancingCubesExample_Data::New();
 }
 
 bool
@@ -80,6 +81,15 @@ UsdDancingCubesExampleFileFormat::Read(
     if (!TF_VERIFY(layer)) {
         return false;
     }
+
+    // Recreate the procedural abstract data with its parameters extracted
+    // from the file format arguments.
+    const FileFormatArguments &args = layer->GetFileFormatArguments();
+    SdfAbstractDataRefPtr data = InitData(args);
+    UsdDancingCubesExample_DataRefPtr cubesData = 
+        TfStatic_cast<UsdDancingCubesExample_DataRefPtr>(data);
+    cubesData->SetParams(UsdDancingCubesExample_DataParams::FromArgs(args));
+    _SetLayerData(layer, data);
 
     // Enforce that the layer is read only.
     layer->SetPermissionToSave(false);
@@ -188,6 +198,23 @@ UsdDancingCubesExampleFileFormat::CanFieldChangeAffectFileFormatArguments(
     // None of the relevant data params changed between the two dictionaries.
     return false;
 }
+
+bool 
+UsdDancingCubesExampleFileFormat::_ShouldSkipAnonymousReload() const
+{
+    // Anonymous layers need to be reloadable for mute/unmute of the
+    // layer to work.
+    return false;
+}
+
+bool UsdDancingCubesExampleFileFormat::_ShouldReadAnonymousLayers() const
+{
+    // Anonymous layers of this format are allowed to call Read because
+    // Read doesn't read from an actual asset path. This allows payloads
+    // to target anonymous layers of this format.
+    return true;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

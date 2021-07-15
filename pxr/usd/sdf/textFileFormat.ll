@@ -25,6 +25,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/textParserContext.h"
 #include "pxr/usd/sdf/parserHelpers.h"
@@ -159,17 +160,19 @@ PXR_NAMESPACE_USING_DIRECTIVE
     }
 
     /* Single '@'-delimited asset references */
-@([^[:cntrl:]@]+)?@ {
+@[^@\n]*@ {
+        TfErrorMark m;
         (*yylval_param) = 
             Sdf_EvalAssetPath(yytext, yyleng, /* tripleDelimited = */ false);
-        return TOK_ASSETREF;
+        return m.IsClean() ? TOK_ASSETREF : TOK_SYNTAX_ERROR;
     }
 
     /* Triple '@'-delimited asset references. */
-@@@(([^[:cntrl:]@]|@{1,2}[^@]|\\@@@)+)?(@{0,2})@@@ {
+@@@([^@\n]|@{1,2}[^@\n]|\\@@@)*@{0,2}@@@ {
+        TfErrorMark m;
         (*yylval_param) = 
             Sdf_EvalAssetPath(yytext, yyleng, /* tripleDelimited = */ true);
-        return TOK_ASSETREF;
+        return m.IsClean() ? TOK_ASSETREF : TOK_SYNTAX_ERROR;
     }
 
     /* Singly quoted, single line strings with escapes.

@@ -62,13 +62,17 @@ UsdRiMaterialAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdRiMaterialAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdRiMaterialAPI::_GetSchemaKind() const
+{
     return UsdRiMaterialAPI::schemaKind;
 }
 
-/* virtual */
-UsdSchemaKind UsdRiMaterialAPI::_GetSchemaType() const {
-    return UsdRiMaterialAPI::schemaType;
+/* static */
+bool
+UsdRiMaterialAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdRiMaterialAPI>(whyNot);
 }
 
 /* static */

@@ -68,6 +68,10 @@ public:
     void AddLight(SdfPath const &id, GlfSimpleLight const &light);
     void SetLight(SdfPath const &id, TfToken const &key, VtValue value);
 
+    // render buffer
+    void AddRenderBuffer(SdfPath const &id,
+                         const HdRenderBufferDescriptor &desc);
+
     // draw target
     void AddDrawTarget(SdfPath const &id);
     void SetDrawTarget(SdfPath const &id, TfToken const &key, VtValue value);
@@ -177,6 +181,9 @@ public:
         TfToken const &paramName) override;
 
     TfTokenVector GetTaskRenderTags(SdfPath const& taskId) override;
+
+    bool WriteRenderBufferToFile(SdfPath const &id,
+                                 std::string const &filePath);
 
 private:
     struct _Mesh {

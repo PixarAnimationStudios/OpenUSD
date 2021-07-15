@@ -35,9 +35,6 @@
 #include "pxr/usd/ar/defaultResolverContext.h"
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/ar/threadLocalScopedCache.h"
-
-#include <tbb/enumerable_thread_specific.h>
 
 #include <memory>
 #include <string>
@@ -87,61 +84,27 @@ public:
     static void SetDefaultSearchPath(
         const std::vector<std::string>& searchPath);
 
-    // ArResolver overrides
-
-    /// Sets the resolver's default context (returned by CreateDefaultContext())
-    /// to the same context you would get by calling 
-    /// CreateDefaultContextForAsset(). Has no other effect on the resolver's
-    /// configuration.
-    AR_API
-    virtual void ConfigureResolverForAsset(const std::string& path) override;
-
-    AR_API
-    virtual std::string AnchorRelativePath(
-        const std::string& anchorPath, 
-        const std::string& path) override; 
-
-    AR_API
-    virtual bool IsRelativePath(const std::string& path) override;
-
-    AR_API
-    virtual bool IsSearchPath(const std::string& path) override;
-
-    AR_API
-    virtual bool CreatePathForLayer(
-        const std::string& path) override;
-
 protected:
     AR_API
-    virtual std::string _CreateIdentifier(
+    std::string _CreateIdentifier(
         const std::string& assetPath,
-        const ArResolvedPath& anchorAssetPath) override;
+        const ArResolvedPath& anchorAssetPath) const override;
 
     AR_API
-    virtual std::string _CreateIdentifierForNewAsset(
+    std::string _CreateIdentifierForNewAsset(
         const std::string& assetPath,
-        const ArResolvedPath& anchorAssetPath) override;
+        const ArResolvedPath& anchorAssetPath) const override;
 
     AR_API
-    virtual ArResolvedPath _Resolve(
-        const std::string& assetPath) override;
+    ArResolvedPath _Resolve(
+        const std::string& assetPath) const override;
 
     AR_API
-    virtual ArResolvedPath _ResolveForNewAsset(
-        const std::string& assetPath) override;
+    ArResolvedPath _ResolveForNewAsset(
+        const std::string& assetPath) const override;
 
     AR_API
-    virtual void _BindContext(
-        const ArResolverContext& context,
-        VtValue* bindingData) override;
-
-    AR_API
-    virtual void _UnbindContext(
-        const ArResolverContext& context,
-        VtValue* bindingData) override;
-
-    AR_API
-    virtual ArResolverContext _CreateDefaultContext() override;
+    ArResolverContext _CreateDefaultContext() const override;
 
     /// Creates a context that adds the directory containing \p assetPath
     /// as a first directory to be searched, when the resulting context is
@@ -151,72 +114,45 @@ protected:
     /// \p assetPath is not an absolute filesystem path, it will first be
     /// anchored to the process's current working directory.
     AR_API
-    virtual ArResolverContext _CreateDefaultContextForAsset(
-        const std::string& assetPath) override;
+    ArResolverContext _CreateDefaultContextForAsset(
+        const std::string& assetPath) const override;
 
     /// Creates an ArDefaultResolverContext from \p contextStr. This
     /// string is expected to be a list of directories delimited by
     /// the platform's standard path separator.
     AR_API
-    virtual ArResolverContext _CreateContextFromString(
-        const std::string& contextStr) override;
+    ArResolverContext _CreateContextFromString(
+        const std::string& contextStr) const override;
 
     AR_API
-    virtual ArResolverContext _GetCurrentContext() override;
+    bool _IsContextDependentPath(
+        const std::string& assetPath) const override;
 
     AR_API
-    virtual bool _IsContextDependentPath(
-        const std::string& assetPath) override;
+    std::string _GetExtension(
+        const std::string& path) const override;
 
     AR_API
-    virtual std::string _GetExtension(
-        const std::string& path) override;
-
-    AR_API
-    virtual VtValue _GetModificationTimestamp(
+    VtValue _GetModificationTimestamp(
         const std::string& path,
-        const ArResolvedPath& resolvedPath) override;
+        const ArResolvedPath& resolvedPath) const override;
 
     AR_API
-    virtual std::shared_ptr<ArAsset> _OpenAsset(
-        const ArResolvedPath& resolvedPath) override;
+    std::shared_ptr<ArAsset> _OpenAsset(
+        const ArResolvedPath& resolvedPath) const override;
 
     /// Creates an ArFilesystemWriteableAsset for the asset at the
     /// given \p resolvedPath.
     AR_API
-    virtual std::shared_ptr<ArWritableAsset> _OpenAssetForWrite(
+    std::shared_ptr<ArWritableAsset> _OpenAssetForWrite(
         const ArResolvedPath& resolvedPath,
-        WriteMode writeMode) override;
-
-    AR_API
-    virtual void _BeginCacheScope(
-        VtValue* cacheScopeData) override;
-
-    AR_API
-    virtual void _EndCacheScope(
-        VtValue* cacheScopeData) override;
+        WriteMode writeMode) const override;
 
 private:
-    struct _Cache;
-    using _PerThreadCache = ArThreadLocalScopedCache<_Cache>;
-    using _CachePtr = _PerThreadCache::CachePtr;
-    _CachePtr _GetCurrentCache();
+    const ArDefaultResolverContext* _GetCurrentContextPtr() const;
 
-    const ArDefaultResolverContext* _GetCurrentContextPtr();
-
-    ArResolvedPath _ResolveNoCache(const std::string& path);
-
-private:
     ArDefaultResolverContext _fallbackContext;
     ArResolverContext _defaultContext;
-
-    _PerThreadCache _threadCache;
-
-    using _ContextStack = std::vector<const ArDefaultResolverContext*>;
-    using _PerThreadContextStack = 
-        tbb::enumerable_thread_specific<_ContextStack>;
-    _PerThreadContextStack _threadContextStack;
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

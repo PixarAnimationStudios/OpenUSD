@@ -156,11 +156,6 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::SingleApplyAPI;
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::SingleApplyAPI;
-
     /// Construct a UsdShadeMaterialBindingAPI on UsdPrim \p prim .
     /// Equivalent to UsdShadeMaterialBindingAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -203,6 +198,26 @@ public:
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
+    /// Returns true if this <b>single-apply</b> API schema can be applied to 
+    /// the given \p prim. If this schema can not be a applied to the prim, 
+    /// this returns false and, if provided, populates \p whyNot with the 
+    /// reason it can not be applied.
+    /// 
+    /// Note that if CanApply returns false, that does not necessarily imply
+    /// that calling Apply will fail. Callers are expected to call CanApply
+    /// before calling Apply if they want to ensure that it is valid to 
+    /// apply a schema.
+    /// 
+    /// \sa UsdPrim::GetAppliedSchemas()
+    /// \sa UsdPrim::HasAPI()
+    /// \sa UsdPrim::CanApplyAPI()
+    /// \sa UsdPrim::ApplyAPI()
+    /// \sa UsdPrim::RemoveAPI()
+    ///
+    USDSHADE_API
+    static bool 
+    CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
+
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
     /// This information is stored by adding "MaterialBindingAPI" to the 
     /// token-valued, listOp metadata \em apiSchemas on the prim.
@@ -214,6 +229,7 @@ public:
     /// 
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
+    /// \sa UsdPrim::CanApplyAPI()
     /// \sa UsdPrim::ApplyAPI()
     /// \sa UsdPrim::RemoveAPI()
     ///
@@ -227,12 +243,6 @@ protected:
     /// \sa UsdSchemaKind
     USDSHADE_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDSHADE_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.

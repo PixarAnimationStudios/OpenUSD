@@ -1876,8 +1876,9 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
                       const std::vector<RefOrPayloadType> &arcs,
                       const PcpSourceArcInfoVector &infoVec)
 {
-    const SdfPath & srcPath = node.GetPath();
-
+    // This loop will be adding arcs and therefore can grow the node
+    // storage vector, so we need to avoid holding any references
+    // into that storage outside the loop.
     for (size_t arcNum=0; arcNum < arcs.size(); ++arcNum) {
         const RefOrPayloadType & refOrPayload = arcs[arcNum];
         const PcpSourceArcInfo& info = infoVec[arcNum];
@@ -1915,7 +1916,7 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
                 PcpErrorInvalidReferenceOffset::New();
             err->rootSite = PcpSite(node.GetRootNode().GetSite());
             err->layer      = srcLayer;
-            err->sourcePath = srcPath;
+            err->sourcePath = node.GetPath();
             err->assetPath  = info.authoredAssetPath;
             err->targetPath = refOrPayload.GetPrimPath();
             err->offset     = srcLayerOffset;
@@ -2130,9 +2131,8 @@ _EvalNodePayloads(
         return;
     }
 
-    const SdfPath & srcPath = node.GetPath();
     PCP_INDEXING_MSG(
-        indexer, node, "Found payload for node %s", srcPath.GetText());
+        indexer, node, "Found payload for node %s", node.GetPath().GetText());
 
     // Mark that this prim index contains a payload.
     // However, only process the payload if it's been requested.
@@ -4547,15 +4547,17 @@ _BuildInitialPrimIndexFromAncestor(
 
     // Reset the 'has payload' flag on this prim index.
     // This flag should only be set when a prim introduces a payload,
-    // not when any of its parents introduced a payload.
+    // not when any of its parents introduced a payload. 
+    // Also reset the payload state in the outputs for the same reason.
     //
     // XXX: 
-    // Updating this flag may cause a new copy of the prim index 
-    // graph to be created, which is wasteful if this graph will
+    // Updating the graph's payload flag may cause a new copy of the prim 
+    // index graph to be created, which is wasteful if this graph will
     // later set the flag back to its original value. It would be
     // better to defer setting this bit until we have the final
     // answer.
     graph->SetHasPayloads(false);
+    outputs->payloadState = PcpPrimIndexOutputs::NoPayload;
 
     PcpNodeRef rootNode = outputs->primIndex.GetRootNode();
     _ConvertNodeForChild(rootNode, inputs);

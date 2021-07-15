@@ -38,6 +38,7 @@
 #include <vector>
 #include <string>
 #include <iosfwd>
+#include <ctime>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

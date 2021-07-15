@@ -154,7 +154,7 @@ pipeline-specific capabilities that could be addded as extensions include:
 \subsection usdLux_PluginSchemas Plugin Lights and Light Filters
 
 We expect "published, pipeline citizen" render delegates to provide typed 
-and applied dynamic schemas that derive from the UsdLux base types (even if 
+and applied codeless schemas that derive from the UsdLux base types (even if 
 only UsdLuxLight) for all of the renderer's core light types. But some 
 render delegates may be developed as part of a proprietary application 
 package that is only using USD as a mechanism to communicate to that render 
@@ -170,7 +170,7 @@ UsdLuxPluginLight and UsdLuxPluginLightFilter, concrete schema types that
 specify a "node identification" encoding, just like UsdShadeShader, so that the
 application need only plug its extensions into Sdr (by providing node 
 definitions that will be consumed by render delegates), and not be required to
-take the extra step of generating dynamic USD schema definitions. Because they
+take the extra step of generating USD schema definitions. Because they
 provide less easily accessible information to users, we do not advocate using 
 these types in pipeline-persistent "user-level" USD files.
 

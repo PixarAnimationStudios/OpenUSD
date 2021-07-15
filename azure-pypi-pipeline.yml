@@ -30,6 +30,12 @@ stages:
         Python37:
           PYTHON_INTERPRETER: /opt/python/cp37-cp37m/bin/python
           PYTHON_TAG: cp37
+        Python38:
+          PYTHON_INTERPRETER: /opt/python/cp38-cp38/bin/python
+          PYTHON_TAG: cp38
+        Python39:
+          PYTHON_INTERPRETER: /opt/python/cp39-cp39/bin/python
+          PYTHON_TAG: cp39
     timeoutInMinutes: 90
     pool:
       vmImage: Ubuntu-18.04
@@ -74,6 +80,12 @@ stages:
         Python37:
           PYTHON_VERSION_SPEC: 3.7
           PYTHON_TAG: cp37
+        Python38:
+          PYTHON_VERSION_SPEC: 3.8
+          PYTHON_TAG: cp38
+        Python39:
+          PYTHON_VERSION_SPEC: 3.9
+          PYTHON_TAG: cp39
     timeoutInMinutes: 90
     pool:
       vmImage: 'VS2017-Win2016'
@@ -121,6 +133,14 @@ stages:
           PYTHON_VERSION_SPEC: 3.7
           PYTHON_INTERPRETER: python3.7
           PYTHON_TAG: cp37
+        Python38:
+          PYTHON_VERSION_SPEC: 3.8
+          PYTHON_INTERPRETER: python3.8
+          PYTHON_TAG: cp38
+        Python39:
+          PYTHON_VERSION_SPEC: 3.9
+          PYTHON_INTERPRETER: python3.9
+          PYTHON_TAG: cp39
     timeoutInMinutes: 90
     pool:
       vmImage: 'macOS-10.14'
@@ -208,6 +228,14 @@ stages:
           PYTHON_VERSION_SPEC: 3.7
           IMAGE: 'Ubuntu-18.04'
           PYTHON_INTERPRETER: python3
+        Linux_Python38:
+          PYTHON_VERSION_SPEC: 3.8
+          IMAGE: 'Ubuntu-18.04'
+          PYTHON_INTERPRETER: python3
+        Linux_Python39:
+          PYTHON_VERSION_SPEC: 3.9
+          IMAGE: 'Ubuntu-18.04'
+          PYTHON_INTERPRETER: python3
         Windows_Python36:
           PYTHON_VERSION_SPEC: 3.6
           IMAGE: 'VS2017-Win2016'
@@ -216,12 +244,28 @@ stages:
           PYTHON_VERSION_SPEC: 3.7
           IMAGE: 'VS2017-Win2016'
           PYTHON_INTERPRETER: python
+        Windows_Python38:
+          PYTHON_VERSION_SPEC: 3.8
+          IMAGE: 'VS2017-Win2016'
+          PYTHON_INTERPRETER: python
+        Windows_Python39:
+          PYTHON_VERSION_SPEC: 3.9
+          IMAGE: 'VS2017-Win2016'
+          PYTHON_INTERPRETER: python
         Mac_Python36:
           PYTHON_VERSION_SPEC: 3.6
           IMAGE: 'macOS-10.14'
           PYTHON_INTERPRETER: python3
         Mac_Python37:
           PYTHON_VERSION_SPEC: 3.7
+          IMAGE: 'macOS-10.14'
+          PYTHON_INTERPRETER: python3
+        Mac_Python38:
+          PYTHON_VERSION_SPEC: 3.8
+          IMAGE: 'macOS-10.14'
+          PYTHON_INTERPRETER: python3
+        Mac_Python39:
+          PYTHON_VERSION_SPEC: 3.9
           IMAGE: 'macOS-10.14'
           PYTHON_INTERPRETER: python3
     timeoutInMinutes: 10

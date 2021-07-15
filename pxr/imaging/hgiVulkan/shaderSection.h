@@ -195,6 +195,70 @@ private:
     const uint32_t _dimensions;
 };
 
+/// \class HgiVulkanBufferShaderSection
+///
+/// Declares Vulkan buffers, and their cross language function
+///
+class HgiVulkanBufferShaderSection final: public HgiVulkanShaderSection
+{
+public:
+    HGIVULKAN_API
+    explicit HgiVulkanBufferShaderSection(
+        const std::string &identifier,
+        const uint32_t layoutIndex,
+        const std::string &type,
+        const HgiShaderSectionAttributeVector &attributes);
+
+    HGIVULKAN_API
+    ~HgiVulkanBufferShaderSection() override;
+
+    HGIVULKAN_API
+    void WriteType(std::ostream &ss) const override;
+
+    HGIVULKAN_API
+    bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
+
+private:
+    HgiVulkanBufferShaderSection() = delete;
+    HgiVulkanBufferShaderSection & operator=(
+        const HgiVulkanBufferShaderSection&) = delete;
+    HgiVulkanBufferShaderSection(const HgiVulkanBufferShaderSection&) = delete;
+
+    const std::string _type;
+};
+
+/// \class HgiVulkanKeywordShaderSection
+///
+/// Declares reserved Vulkan shader inputs, and their cross language function
+///
+class HgiVulkanKeywordShaderSection final: public HgiVulkanShaderSection
+{
+public:
+    HGIVULKAN_API
+    explicit HgiVulkanKeywordShaderSection(
+        const std::string &identifier,
+        const std::string &type,
+        const std::string &keyword);
+
+    HGIVULKAN_API
+    ~HgiVulkanKeywordShaderSection() override;
+
+    HGIVULKAN_API
+    void WriteType(std::ostream &ss) const override;
+
+    HGIVULKAN_API
+    bool VisitGlobalMemberDeclarations(std::ostream &ss) override;
+
+private:
+    HgiVulkanKeywordShaderSection() = delete;
+    HgiVulkanKeywordShaderSection & operator=(
+        const HgiVulkanKeywordShaderSection&) = delete;
+    HgiVulkanKeywordShaderSection(const HgiVulkanKeywordShaderSection&) = delete;
+
+    const std::string _type;
+    const std::string _keyword;
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

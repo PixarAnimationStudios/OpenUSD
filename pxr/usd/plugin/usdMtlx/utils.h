@@ -67,6 +67,15 @@ USDMTLX_LOCAL
 NdrStringVec
 UsdMtlxStandardFileExtensions();
 
+/// Return the MaterialX document at \p resolvedPath.  Return null if the
+/// document could not be read and report a runtime error.
+///
+/// Unlike UsdMtlxGetDocument, this function does not implement any
+/// caching or special behavior for MaterialX standard library documents.
+USDMTLX_LOCAL
+MaterialX::DocumentPtr
+UsdMtlxReadDocument(const std::string& resolvedPath);
+
 /// Return the (possibly cached) MaterialX document at \p resolvedUri.
 /// Return null if the document could not be read and report a
 /// warning (once per uri).  \p resolvedUri may be empty to indicate

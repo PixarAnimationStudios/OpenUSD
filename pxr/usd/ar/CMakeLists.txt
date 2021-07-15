@@ -24,12 +24,16 @@ set(versionedPymoduleCPPFiles "")
 
 if (AR_VERSION EQUAL 1)
     list(APPEND versionedHeaders 
+         asset_v1.h
          defaultResolver_v1.h
+         filesystemAsset_v1.h
          resolver_v1.h
          resolverContext_v1.h
     )
     list(APPEND versionedCPPFiles
+         asset_v1.cpp
          defaultResolver_v1.cpp
+         filesystemAsset_v1.cpp
          resolver_v1.cpp
          resolverContext_v1.cpp
     )
@@ -46,14 +50,18 @@ if (AR_VERSION EQUAL 1)
     )
 elseif (AR_VERSION EQUAL 2)
     list(APPEND versionedHeaders 
+         asset_v2.h
          defaultResolver_v2.h
+         filesystemAsset_v2.h
          filesystemWritableAsset.h
          resolver_v2.h
          resolverContext_v2.h
          writableAsset.h
     )
     list(APPEND versionedCPPFiles
+         asset_v2.cpp
          defaultResolver_v2.cpp
+         filesystemAsset_v2.cpp
          filesystemWritableAsset.cpp
          resolver_v2.cpp
          resolverContext_v2.cpp
@@ -96,6 +104,7 @@ pxr_library(ar
         definePackageResolver.h
         defineResolver.h
         defineResolverContext.h
+        notice.h
         packageResolver.h
         packageUtils.h
         resolvedPath.h
@@ -115,9 +124,8 @@ pxr_library(ar
         ${versionedPrivateHeaders}
 
     CPPFILES
-        asset.cpp
         assetInfo.cpp
-        filesystemAsset.cpp
+        notice.cpp
         packageResolver.cpp
         packageUtils.cpp
         resolvedPath.cpp
@@ -134,6 +142,7 @@ pxr_library(ar
     PYMODULE_CPPFILES
         module.cpp
         wrapDefaultResolverContext.cpp
+        wrapNotice.cpp
         wrapPackageUtils.cpp
         wrapResolvedPath.cpp
         wrapResolverContextBinder.cpp
@@ -179,6 +188,80 @@ pxr_build_test_shared_lib(TestArPackageResolver
 ) 
 
 if (AR_VERSION EQUAL 2)
+    pxr_build_test_shared_lib(TestArOptionalImplementation
+        CREATE_FRAMEWORK
+        INSTALL_PREFIX ArPlugins
+        LIBRARIES
+            tf
+            ar
+        CPPFILES
+            testenv/TestArOptionalImplementation_plugin.cpp
+    ) 
+
+    pxr_test_scripts(
+        testenv/testArOptionalImplementation.py
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testArOptionalImplementation
+        DEST testArOptionalImplementation_1
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testArOptionalImplementation
+        DEST testArOptionalImplementation_2
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testArOptionalImplementation
+        DEST testArOptionalImplementation_3
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testArOptionalImplementation
+        DEST testArOptionalImplementation_4
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testArOptionalImplementation
+        DEST testArOptionalImplementation_5
+    )
+
+    pxr_register_test(testArOptionalImplementation_1
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestResolver"
+        STDOUT_REDIRECT base.txt
+        DIFF_COMPARE base.txt
+    )
+
+    pxr_register_test(testArOptionalImplementation_2
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestResolverWithContextMethods"
+        STDOUT_REDIRECT resolver_with_context.txt
+        DIFF_COMPARE resolver_with_context.txt
+    )
+
+    pxr_register_test(testArOptionalImplementation_3
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestDerivedResolverWithContextMethods"
+        STDOUT_REDIRECT derived_resolver_with_context.txt
+        DIFF_COMPARE derived_resolver_with_context.txt
+    )
+
+    pxr_register_test(testArOptionalImplementation_4
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestResolverWithCacheMethods"
+        STDOUT_REDIRECT resolver_with_cache.txt
+        DIFF_COMPARE resolver_with_cache.txt
+    )
+
+    pxr_register_test(testArOptionalImplementation_5
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOptionalImplementation _TestDerivedResolverWithCacheMethods"
+        STDOUT_REDIRECT derived_resolver_with_cache.txt
+        DIFF_COMPARE derived_resolver_with_cache.txt
+    )
+
     pxr_build_test_shared_lib(TestArURIResolver
         CREATE_FRAMEWORK
         INSTALL_PREFIX ArPlugins
@@ -211,6 +294,21 @@ pxr_build_test(testArDefaultResolver_CPP
     CPPFILES
         testenv/testArDefaultResolver.cpp
 ) 
+
+if (AR_VERSION EQUAL 2)
+    pxr_build_test(testArNotice_CPP
+        LIBRARIES
+            arch
+            tf
+            ar
+        CPPFILES
+            testenv/testArNotice.cpp
+    ) 
+
+    pxr_register_test(testArNotice_CPP
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArNotice_CPP"
+    )
+endif()
 
 pxr_build_test(testArResolverContext_CPP
     LIBRARIES

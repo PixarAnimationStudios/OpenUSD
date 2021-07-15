@@ -1378,6 +1378,20 @@ SdfSchemaBase::IsValidSubLayer(const std::string& sublayer)
         return SdfAllowed("Sublayer paths must not be empty");
     }
 
+    // 'sublayer' must be a valid asset path as well, attempt to construct one
+    // to check.
+    TfErrorMark m;
+    SdfAssetPath test(sublayer);
+    if (!m.IsClean()) {
+        std::vector<std::string> errs;
+        for (TfError const &err: m) {
+            errs.push_back(err.GetCommentary());
+        }
+        m.Clear();
+        return SdfAllowed(
+            TfStringPrintf("Invalid sublayer path: %s",
+                           TfStringJoin(errs, "; ").c_str()));
+    }
     return true;
 }
 

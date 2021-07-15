@@ -105,12 +105,30 @@ public:
                 primType == PrimitiveType::PRIM_MESH_REFINED_QUADS);
     }
 
+    static inline bool IsPrimTypeRefinedMesh(PrimitiveType primType) {
+        return (primType == PrimitiveType::PRIM_MESH_REFINED_TRIANGLES ||
+                primType == PrimitiveType::PRIM_MESH_REFINED_QUADS ||
+                primType == PrimitiveType::PRIM_MESH_BSPLINE ||
+                primType == PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE);
+    }
+
     static inline bool IsPrimTypePatches(PrimitiveType primType) {
         return primType == PrimitiveType::PRIM_MESH_BSPLINE ||
                primType == PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE ||
                primType == PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES ||
                primType == PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES;
     }
+
+    // Face-varying patch type
+    enum class FvarPatchType { 
+        PATCH_COARSE_TRIANGLES,  
+        PATCH_REFINED_TRIANGLES,
+        PATCH_COARSE_QUADS,
+        PATCH_REFINED_QUADS,
+        PATCH_BSPLINE,
+        PATCH_BOXSPLINETRIANGLE,
+        PATCH_NONE
+    }; 
 
     HDST_API
     HdSt_GeometricShader(std::string const &glslfxString,
@@ -121,6 +139,7 @@ public:
                        bool doubleSided,
                        HdPolygonMode polygonMode,
                        bool cullingPass,
+                       FvarPatchType fvarPatchType,
                        SdfPath const &debugId = SdfPath(),
                        float lineWidth = 0);
 
@@ -178,6 +197,10 @@ public:
         return IsPrimTypePatches(_primType);
     }
 
+    FvarPatchType GetFvarPatchType() const {
+        return _fvarPatchType;
+    }
+
     /// Return the GL primitive type of the draw item based on _primType
     HDST_API
     GLenum GetPrimitiveMode() const;
@@ -186,6 +209,11 @@ public:
     // 3 for triangles, 4 for quads, 16 for regular b-spline patches etc.
     HDST_API
     int GetPrimitiveIndexSize() const;
+
+    // Returns the number of vertices output for patch evaluation,
+    // i.e. the number of tessellation control shader invocations.
+    HDST_API
+    int GetNumPatchEvalVerts() const;
 
     // Returns the primitive index size for the geometry shader shade
     // 1 for points, 2 for lines, 3 for triangles, 4 for lines_adjacency    
@@ -208,6 +236,7 @@ private:
 
     std::unique_ptr<HioGlslfx> _glslfx;
     bool _frustumCullingPass;
+    FvarPatchType _fvarPatchType;
     ID _hash;
 
     // No copying

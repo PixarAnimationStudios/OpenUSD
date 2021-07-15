@@ -102,7 +102,7 @@ class SdfAssetPath;
 /// the behavior of cubic Bspline and Catmull-Rom curves. To evaluate or render
 /// pinned curves, a client must effectively add 'phantom points' at the 
 /// beginning and end of every curve in a batch.  These phantom points
-/// are injected to ensure that the inteprolated curve begins at P[0] and
+/// are injected to ensure that the interpolated curve begins at P[0] and
 /// ends at P[n-1].
 /// 
 /// For a curve with initial point P[0] and last point P[n-1], the phantom
@@ -268,11 +268,6 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
 
-    /// \deprecated
-    /// Same as schemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    static const UsdSchemaKind schemaType = UsdSchemaKind::ConcreteTyped;
-
     /// Construct a UsdGeomBasisCurves on UsdPrim \p prim .
     /// Equivalent to UsdGeomBasisCurves::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -346,12 +341,6 @@ protected:
     /// \sa UsdSchemaKind
     USDGEOM_API
     UsdSchemaKind _GetSchemaKind() const override;
-
-    /// \deprecated
-    /// Same as _GetSchemaKind, provided to maintain temporary backward 
-    /// compatibility with older generated schemas.
-    USDGEOM_API
-    UsdSchemaKind _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.

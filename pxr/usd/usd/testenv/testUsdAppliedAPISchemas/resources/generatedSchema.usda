@@ -4,6 +4,7 @@
     customLayerData = {
         dictionary multipleApplyAPISchemas = {
             string TestMultiApplyAPI = "multi"
+            string TestMultiCanApplyAPI = "multi"
         }
     }
 )
@@ -35,6 +36,38 @@ class "TestSingleApplyAPI" (
         doc = "Relationship"
     )
     uniform token single:token_attr = "bar" (
+        allowedTokens = ["foo", "bar", "baz"]
+        doc = "Token attribute"
+    )
+}
+
+class "TestSingleCanApplyAPI" (
+    doc = "Test single apply API schema"
+)
+{
+    uniform bool singleCan:bool_attr = 1 (
+        doc = "Boolean attribute"
+    )
+    rel singleCan:relationship (
+        doc = "Relationship"
+    )
+    uniform token singleCan:token_attr = "bar" (
+        allowedTokens = ["foo", "bar", "baz"]
+        doc = "Token attribute"
+    )
+}
+
+class "TestMultiCanApplyAPI" (
+    doc = "Test multi-apply API schema"
+)
+{
+    uniform bool bool_attr = 1 (
+        doc = "Boolean attribute"
+    )
+    rel relationship (
+        doc = "Relationship"
+    )
+    uniform token token_attr = "foo" (
         allowedTokens = ["foo", "bar", "baz"]
         doc = "Token attribute"
     )

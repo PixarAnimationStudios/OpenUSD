@@ -230,7 +230,7 @@ public:
     /// set to `Token` to indicate an unclean mapping, and the second element
     /// will be set to the original type returned by `GetType()`.
     SDR_API
-    const SdfTypeIndicator GetTypeAsSdfType() const override;
+    const NdrSdfTypeIndicator GetTypeAsSdfType() const override;
 
     /// Determines if the value held by this property is an asset identifier
     /// (eg, a file path); the logic for this is left up to the parser.

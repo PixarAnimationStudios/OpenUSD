@@ -24,8 +24,6 @@
 #ifndef PXR_USD_SDF_NOTICE_H
 #define PXR_USD_SDF_NOTICE_H
 
-/// \file sdf/notice.h
-
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/changeList.h"

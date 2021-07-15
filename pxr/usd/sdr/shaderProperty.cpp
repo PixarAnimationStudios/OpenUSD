@@ -144,7 +144,7 @@ namespace {
 
     // Helper to convert array types to Sdf types. Shouldn't be used directly;
     // use `_GetTypeAsSdfType()` instead
-    const SdfTypeIndicator _GetTypeAsSdfArrayType(
+    const NdrSdfTypeIndicator _GetTypeAsSdfArrayType(
         const TfToken& type, size_t arraySize)
     {
         SdfValueTypeName convertedType = SdfValueTypeNames->Token;
@@ -194,7 +194,7 @@ namespace {
 
     // Helper to convert the type to an Sdf type (this will call
     // `_GetTypeAsSdfArrayType()` if an array type is detected)
-    const SdfTypeIndicator _GetTypeAsSdfType(
+    const NdrSdfTypeIndicator _GetTypeAsSdfType(
         const TfToken& type, size_t arraySize, const NdrTokenMap& metadata)
     {
         // There is one Sdf type (Asset) that is not included in the type
@@ -221,7 +221,9 @@ namespace {
         // If the conversion can't be made, it defaults to the 'Token' type
         SdfValueTypeName convertedType = SdfValueTypeNames->Token;
 
-        if (arraySize > 0) {
+        bool isDynamicArray =
+            IsTruthy(SdrPropertyMetadata->IsDynamicArray, metadata);
+        if (arraySize > 0 || isDynamicArray) {
             return _GetTypeAsSdfArrayType(type, arraySize);
         }
 
@@ -304,7 +306,7 @@ namespace {
         }
 
         // Return early if no conformance issue
-        const SdfTypeIndicator sdfTypeIndicator = _GetTypeAsSdfType(
+        const NdrSdfTypeIndicator sdfTypeIndicator = _GetTypeAsSdfType(
             sdrType, arraySize, metadata);
         const SdfValueTypeName sdfType = sdfTypeIndicator.first;
 
@@ -473,9 +475,9 @@ SdrShaderProperty::CanConnectTo(const NdrProperty& other) const
     }
 
     // Convert input/output types to Sdf types
-    const SdfTypeIndicator& sdfInputTypeInd =
+    const NdrSdfTypeIndicator& sdfInputTypeInd =
         _GetTypeAsSdfType(inputType, inputArraySize, inputMetadata);
-    const SdfTypeIndicator& sdfOutputTypeInd =
+    const NdrSdfTypeIndicator& sdfOutputTypeInd =
         _GetTypeAsSdfType(outputType, outputArraySize, outputMetadata);
     const SdfValueTypeName& sdfInputType = sdfInputTypeInd.first;
     const SdfValueTypeName& sdfOutputType = sdfOutputTypeInd.first;
@@ -522,7 +524,7 @@ SdrShaderProperty::IsVStruct() const
     return _type == SdrPropertyTypes->Vstruct;
 }
 
-const SdfTypeIndicator
+const NdrSdfTypeIndicator
 SdrShaderProperty::GetTypeAsSdfType() const
 {
     return _GetTypeAsSdfType(_type, _arraySize, _metadata);

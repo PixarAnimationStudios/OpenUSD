@@ -25,6 +25,8 @@
 #include "pxr/imaging/hio/glslfxConfig.h"
 #include "pxr/imaging/hio/debugCodes.h"
 
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
 
 #include "pxr/base/arch/systemInfo.h"
@@ -278,6 +280,26 @@ HioGlslfx::IsValid(std::string *reason) const
     return _valid;
 }
 
+static unique_ptr<istream>
+_CreateStreamForFile(string const& filePath)
+{
+    if (TfIsFile(filePath)) {
+        return make_unique<ifstream>(filePath);
+    }
+
+    const shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
+        ArResolvedPath(filePath));
+    if (asset) {
+        const shared_ptr<const char> buffer = asset->GetBuffer();
+        if (buffer) {
+            return make_unique<istringstream>(
+                string(buffer.get(), asset->GetSize()));
+        }
+    }
+
+    return nullptr;
+}
+
 bool
 HioGlslfx::_ProcessFile(string const & filePath, _ParseContext & context)
 {
@@ -289,15 +311,21 @@ HioGlslfx::_ProcessFile(string const & filePath, _ParseContext & context)
     }
 
     _seenFiles.insert(filePath);
-    ifstream input(filePath.c_str());
-    return _ProcessInput(&input, context);
+
+    const unique_ptr<istream> str = _CreateStreamForFile(filePath);
+    if (!str) {
+        TF_RUNTIME_ERROR("Could not open %s", filePath.c_str());
+        return false;
+    }
+
+    return _ProcessInput(str.get(), context);
 }
 
 // static
 vector<string>
 HioGlslfx::ExtractImports(const string& filename)
 {
-    ifstream input(filename);
+    const unique_ptr<istream> input = _CreateStreamForFile(filename);
     if (!input) {
         return {};
     }
@@ -305,7 +333,7 @@ HioGlslfx::ExtractImports(const string& filename)
     vector<string> imports;
 
     string line;
-    while (getline(input, line)) {
+    while (getline(*input, line)) {
         if (line.find(_tokens->import) == 0) {
             imports.push_back(TfStringTrim(line.substr(_tokens->import.size())));
         }

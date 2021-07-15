@@ -67,7 +67,7 @@ private:
     void _PrepareCommandBuffer(TfTokenVector const& renderTags);
 
     // XXX: This should really be in HdSt_DrawBatch::PrepareDraw.
-    void _FrustumCullCPU(HdStRenderPassStateSharedPtr const &renderPasssState);
+    void _FrustumCullCPU(HdStRenderPassStateSharedPtr const &renderPassState);
 
     // -----------------------------------------------------------------------
     // Drawing state

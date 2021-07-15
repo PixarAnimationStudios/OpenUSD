@@ -77,7 +77,7 @@ public:
     virtual bool
     CanConnectInputToSource(const UsdShadeInput &,
                             const UsdAttribute &,
-                            std::string *reason);
+                            std::string *reason) const;
 
     /// The prim owning the output is guaranteed to be of the type this
     /// behavior was registered with. The function must be thread-safe.
@@ -95,15 +95,26 @@ public:
     virtual bool
     CanConnectOutputToSource(const UsdShadeOutput &,
                              const UsdAttribute &,
-                             std::string *reason);
+                             std::string *reason) const;
 
-    /// The prim owning the output is guaranteed to be of the type this
-    /// behavior was registered with. The function must be thread-safe.
+    /// The function must be thread-safe.
     ///
     /// It should return true if the associated prim type is considered
     /// a "container" for connected nodes.
     USDSHADE_API
     virtual bool IsContainer() const;
+
+    /// The function must be thread-safe.
+    ///
+    /// Determines if the behavior should respect container encapsulation rules
+    /// (\ref UsdShadeConnectability), when evaluating CanConnectInputToSource 
+    /// or CanConnectOutputToSource. This should return true if the container 
+    /// encapsulation rules need to be respected, false otherwise. 
+    ///
+    /// \sa IsContainer()
+    /// 
+    USDSHADE_API
+    virtual bool RequiresEncapsulation() const;
 
 protected:
     /// Helper function to separate and share special connectivity logic for 
@@ -117,13 +128,14 @@ protected:
     bool _CanConnectInputToSource(const UsdShadeInput&, const UsdAttribute&,
                                   std::string *reason, 
                                   ConnectableNodeTypes nodeType = 
-                                    ConnectableNodeTypes::BasicNodes);
+                                    ConnectableNodeTypes::BasicNodes) const;
 
     USDSHADE_API
     bool _CanConnectOutputToSource(const UsdShadeOutput&, const UsdAttribute&,
                                    std::string *reason,
                                    ConnectableNodeTypes nodeType =
-                                     ConnectableNodeTypes::BasicNodes);
+                                     ConnectableNodeTypes::BasicNodes) const;
+
     
 };
 

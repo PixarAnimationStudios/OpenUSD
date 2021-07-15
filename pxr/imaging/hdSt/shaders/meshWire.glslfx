@@ -27,26 +27,17 @@
 --- This is what an import might look like.
 --- #import $TOOLS/hdSt/shaders/meshWire.glslfx
 
-#import $TOOLS/hdx/shaders/selection.glslfx 
-
 --- --------------------------------------------------------------------------
 -- glsl MeshWire.Geometry.NoEdge
 
-void ProcessEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
-                         vec3 edgeClip)
+void
+ProcessBarycentricCoordTriangle(int index)
 {
     // do nothing.
 }
 
 void
-ProcessTriEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3, int inEdgeFlag)
-{
-    // do nothing.
-}
-
-void
-ProcessQuadEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
-                        int triCounter)
+ProcessBarycentricCoordQuad(int index)
 {
     // do nothing.
 }
@@ -56,46 +47,33 @@ ProcessQuadEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
 
 out EdgeData
 {
-    noperspective out vec3 edgeDistance;
+    noperspective out vec3 barycentricCoord;
 } outEdgeData;
 
-vec3 edgeDistance(vec2 p, vec2 p0, vec2 p1, vec2 p2)
+void ProcessBarycentricCoordTriangle(int index)
 {
-    vec3 r;
-    r.x = abs((p.x - p0.x) * (p1.y - p0.y) -
-              (p.y - p0.y) * (p1.x - p0.x)) / length(p1.xy - p0.xy);
-    r.y = abs((p.x - p1.x) * (p2.y - p1.y) -
-              (p.y - p1.y) * (p2.x - p1.x)) / length(p2.xy - p1.xy);
-    r.z = abs((p.x - p2.x) * (p0.y - p2.y) -
-              (p.y - p2.y) * (p0.x - p2.x)) / length(p0.xy - p2.xy);
-    return r;
+    // These correspond to built-in fragment shader barycentric coords.
+    const vec3 barycentricCoords[3] = vec3[](
+        vec3(1,0,0), vec3(0,1,0), vec3(0,0,1)
+    );
+    outEdgeData.barycentricCoord = barycentricCoords[index];
 }
 
-void ProcessEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
-                         vec3 edgeClip)
+void ProcessBarycentricCoordQuad(int index)
 {
-    // note:
-    // we expect the GLSL compiler optimizes out the redundant computations of
-    // following projection.
-
-    vec4 viewport = GetViewport();
-    vec4 viewportScale = vec4(0.5*viewport[2], 0.5*viewport[3], 1, 1);
-
-    // screen space position
-    vec4 v0 = GetProjectionMatrix() * Peye0;
-    vec4 v1 = GetProjectionMatrix() * Peye1;
-    vec4 v2 = GetProjectionMatrix() * Peye2;
-    vec4 v3 = GetProjectionMatrix() * Peye3;
-    v0.xy = (v0.xy/v0.w) * viewportScale.xy;
-    v1.xy = (v1.xy/v1.w) * viewportScale.xy;
-    v2.xy = (v2.xy/v2.w) * viewportScale.xy;
-    v3.xy = (v3.xy/v3.w) * viewportScale.xy;
-
-    outEdgeData.edgeDistance =
-        max(edgeDistance(v0.xy, v1.xy, v2.xy, v3.xy), edgeClip);
+    // These correspond to built-in fragment shader barycentric coords
+    // except reversed for the second triangle in the quad. Each quad is
+    // split into two triangles with indices (3,0,2) and (1,2,0).
+    const vec3 barycentricCoords[4] = vec3[](
+        vec3(0,0,1), vec3(1,0,0), vec3(0,1,0), vec3(1,0,0)
+    );
+    outEdgeData.barycentricCoord = barycentricCoords[index];
 }
 
-void ProcessTriEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3, int inEdgeFlag)
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeMaskTriangle
+
+vec3 GetPrimitiveEdgeMask()
 {
     // see hd/meshUtil.cpp
     //
@@ -110,59 +88,51 @@ void ProcessTriEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3, int 
     //    A       1        hide [2-0]
     //    B       2        hide [0-1]
     //    C       3        hide [0-1] and [2-0]
-    //    D       4        hide [1-2]
-    //
-    // edgeDistance returns 3 floats, distances from
-    // given vertex to edge [0-1], [1-2], [2-0] as (x, y, z).
-    // i.e. to remove edge [2-0], make edgeDistance.z big in viewport pixel.
-    // similary edgeDistance.x can be used for edge [0-1].
 
-    int edgeFlag = GetEdgeFlag(inEdgeFlag);
-    vec3 edgeClip = vec3(0);
-    // it might be nice to use the viewport scale, but constant is much faster.
-    edgeClip.z = ((edgeFlag & 1) != 0) ? 1000.0 : 0;
-    edgeClip.x = ((edgeFlag & 2) != 0) ? 1000.0 : 0;
-    edgeClip.y = ((edgeFlag & 4) != 0) ? 1000.0 : 0;
-
-    ProcessEdgeDistance(Peye0, Peye1, Peye2, Peye3, edgeClip);
+    // A value of one in this mask hides the corresponding edge.
+    return vec3(0, GetEdgeFlag() & 1, GetEdgeFlag() & 2);
 }
 
-void ProcessQuadEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
-                             int triCounter)
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeMaskQuad
+
+vec3 GetPrimitiveEdgeMask()
 {
     // see hd/meshUtil.cpp
     //  Case                   EdgeFlag    Draw
     //  Quad/Refined face         0        hide common edge for the tri-pair
-    //  Non-Quad face             1/2/3    hide common edge for the tri-pair & 
+    //  Non-Quad face             1/2/3    hide common edge for the tri-pair &
     //                                     hide interior quadrangulated edges
     //
     //  The first quad of a non-quad face is marked 1; the last as 2; and
     //  intermediate quads as 3.
-
-    int edgeFlag = GetEdgeFlag(0);
-    
-    //  0---3
-    //  |. 0|
-    //  | . |
-    //  |1 .|
-    //  1---2
     //
-    // triCounter == 0 : skip the second edge of (3,0,2), i.e., (0-2)
-    // triCounter == 1 : skip the first  edge of (2,0,1), i.e., (2-0)
-    vec3 edgeClip = triCounter == 0 ? vec3(0, 1000.0, 0) : vec3(1000.0, 0, 0);
+    //  3...2
+    //  |  ..
+    //  | . .
+    //  |.  .
+    //  0---1
+    //
 
-    if (edgeFlag != 0) {
-        // the quad face stems from quadrangulation
-        // 0   - original (coarse) vertex
-        // 1,3 - edge vertices
-        // 2   - center vertex
-        
-        // skip the third edge (i.e. edge-center, 2-3 or 1-2 depending on
-        // triCounter).
-        edgeClip.z = 1000.0;
-    }
+    // A value of one in this mask hides the corresponding edge.
+    return vec3(1, 0, GetEdgeFlag() != 0);
+}
 
-    ProcessEdgeDistance(Peye0, Peye1, Peye2, Peye3, edgeClip);
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeMaskRefinedQuad
+
+vec3 GetPrimitiveEdgeMask()
+{
+    // Hide the common edge between the pair of rasterized triangles.
+    return vec3(1,0,0);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeMaskNone
+
+vec3 GetPrimitiveEdgeMask()
+{
+    return vec3(0);
 }
 
 --- --------------------------------------------------------------------------
@@ -170,38 +140,79 @@ void ProcessQuadEdgeDistance(vec4 Peye0, vec4 Peye1, vec4 Peye2, vec4 Peye3,
 
 in EdgeData
 {
-    noperspective vec3 edgeDistance;
+    // Could be vec2 but vec3 matches built-in barycentric coord
+    noperspective vec3 barycentricCoord;
 } inEdgeData;
 
 // Returns the distance of the current fragment (in viewport pixel units) from
 // the nearest edge.
 float GetMinEdgeDistance()
 {
-    vec3 edgeDistance = inEdgeData.edgeDistance;
+    // Hide triangle edges by adding edge mask.
+    vec3 param = inEdgeData.barycentricCoord + GetPrimitiveEdgeMask();
+    vec3 edgeDistance = max(vec3(0.0), param / fwidth(param));
     return min(edgeDistance.x,
                min(edgeDistance.y,
                    edgeDistance.z));
 }
 
 // Use edge distance to compute a smooth opacity falloff for good looking edges.
-float GetEdgeOpacity() {
-    float d = GetMinEdgeDistance();
-    float p = exp2(-4 * d * d);
-    return p;
+float GetEdgeFalloff(float d) {
+    return exp2(-4 * d * d);
 }
 
+float GetEdgeOpacity() {
+    return GetEdgeFalloff(GetMinEdgeDistance());
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshPatchWire.Fragment.PatchEdgeTriangle
+
 // Override for subdivided faces to make the boundary of the face stand out.
-float GetEdgeOpacity(vec2 patchCoord) {
-    float d = GetMinEdgeDistance();
+float GetEdgeOpacity(vec2 patchCoord)
+{
+    // Distance in pixels from triangle patch edges.
+    vec3 param = vec3(patchCoord.x, patchCoord.y, 1-patchCoord.x-patchCoord.y);
+    vec3 patchEdgeDistance = max(vec3(0.0), param / fwidth(param));
 
-    // Is the fragment on a face boundary?
-    if (patchCoord.x < 0.01 ||
-        patchCoord.x > 0.99 ||
-        patchCoord.y < 0.01 ||
-        patchCoord.y > 0.99) d *= 0.25;
+    const float patchEdgeMinDistance =
+        min(patchEdgeDistance.x, min(patchEdgeDistance.y, patchEdgeDistance.z));
 
-    float p = exp2(-4 * d * d);
-    return p;
+    // Reduce the opacity of edges not on patch boundaries
+    if (patchEdgeMinDistance > 1.0) {
+        return 0.3 * GetEdgeOpacity();
+    }
+
+    // Use distance to patch edge rather than distance to primitive edge
+    return GetEdgeFalloff(patchEdgeMinDistance);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshPatchWire.Fragment.PatchEdgeQuad
+
+// Override for subdivided faces to make the boundary of the face stand out.
+float GetEdgeOpacity(vec2 patchCoord)
+{
+    // Distance in pixels from quad patch edges.
+    vec2 leftBottom = patchCoord;
+    vec2 rightTop = vec2(1) - leftBottom;
+    vec4 param = vec4(leftBottom.y, rightTop.x, rightTop.y, leftBottom.x);
+    vec4 patchEdgeDistance = max(vec4(0.0), param / fwidth(param));
+
+    // Hide sub-patch internal edges introduced by quadrangulation
+    if (GetEdgeFlag() != 0) patchEdgeDistance.yz += vec2(2.0);
+
+    const float patchEdgeMinDistance =
+        min(min(patchEdgeDistance.x, patchEdgeDistance.y),
+            min(patchEdgeDistance.z, patchEdgeDistance.w));
+
+    // Reduce the opacity of edges not on patch boundaries
+    if (patchEdgeMinDistance > 1.0) {
+        return 0.3 * GetEdgeOpacity();
+    }
+
+    // Use distance to patch edge rather than distance to primitive edge
+    return GetEdgeFalloff(patchEdgeMinDistance);
 }
 
 --- --------------------------------------------------------------------------
@@ -223,11 +234,7 @@ float GetMinEdgeDistance()
 
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
-    // Skip the selection filter since the line rasterization draw order issue 
-    // isn't relevant.
-    // XXX: We don't use the patchCoord below to make the face boundary
-    // stand out. Should we?
-    float p = GetEdgeOpacity(/*patchCoord.xy*/);
+    float p = GetEdgeOpacity();
     
     vec4 wireColor = GetWireframeColor();
     
@@ -275,8 +282,6 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
-    // Skip the selection filter since the line rasterization draw order issue
-    // isn't relevant.
     float p = GetEdgeOpacity(patchCoord.xy);
     
     vec4 wireColor = GetWireframeColor();

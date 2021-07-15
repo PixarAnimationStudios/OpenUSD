@@ -317,11 +317,19 @@ public:
         USD_API virtual ~LayerMutingChanged();
 
         /// Returns the identifier of the layers that were muted.
+        ///
+        /// The stage's resolver context must be bound when looking up
+        /// layers using the returned identifiers to ensure the same layers
+        /// that would be used by the stage are found.
         const std::vector<std::string>& GetMutedLayers() const {
             return _mutedLayers;
         }
 
         /// Returns the identifier of the layers that were unmuted.
+        ///
+        /// The stage's resolver context must be bound when looking up
+        /// layers using the returned identifiers to ensure the same layers
+        /// that would be used by the stage are found.
         const std::vector<std::string>& GetUnmutedLayers() const {
             return _unMutedLayers;
         }

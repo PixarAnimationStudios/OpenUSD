@@ -28,15 +28,21 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/meshTopology.h"
-#include "pxr/imaging/hf/perfLog.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/token.h"
 
+#include <opensubdiv/far/patchTable.h>
+#include <opensubdiv/far/stencilTable.h>
+
+#include <memory>
+#include <mutex>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
+
+using HdSt_GpuStencilTableSharedPtr =
+        std::shared_ptr<class HdSt_GpuStencilTable>;
 
 /// \class Hd_Subdivision
 ///
@@ -44,40 +50,68 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// This single struct can be used for cpu and gpu subdivision at the same time.
 ///
-class HdSt_Subdivision
+class HdSt_Subdivision final
 {
 public:
-    virtual ~HdSt_Subdivision();
+    using StencilTable = OpenSubdiv::Far::StencilTable;
+    using PatchTable = OpenSubdiv::Far::PatchTable;
 
-    virtual int GetNumVertices() const = 0;
+    HdSt_Subdivision(bool adaptive, int refineLevel);
+    ~HdSt_Subdivision();
 
-    virtual void RefineCPU(HdBufferSourceSharedPtr const &source,
-                           bool varying,
-                           void *vertexBuffer) = 0;
-    virtual void RefineGPU(HdBufferArrayRangeSharedPtr const &range,
-                           TfToken const &name) = 0;
+    bool IsAdaptive() const {
+        return _adaptive;
+    }
+
+    int GetRefineLevel() const {
+        return _refineLevel;
+    }
+
+    int GetNumVertices() const;
+    int GetNumVarying() const;
+    int GetNumFaceVarying(int channel) const;
+    int GetMaxNumFaceVarying() const;
+
+    VtIntArray GetRefinedFvarIndices(int channel) const;
+
+    void RefineCPU(HdBufferSourceSharedPtr const &source,
+                   std::vector<float> *primvarBuffer,
+                   HdSt_MeshTopology::Interpolation interpolation,
+                   int fvarChannel = 0);
+    void RefineGPU(HdBufferArrayRangeSharedPtr const &primvarBuffer,
+                   TfToken const &primvarName,
+                   HdSt_GpuStencilTableSharedPtr const &gpuStencilTable,
+                   HdStResourceRegistry *resourceRegistry);
 
     // computation factory methods
-    virtual HdBufferSourceSharedPtr CreateTopologyComputation(
+    HdBufferSourceSharedPtr CreateTopologyComputation(
         HdSt_MeshTopology *topology,
-        bool adaptive,
-        int level,
-        SdfPath const &id) = 0;
+        SdfPath const &id);
 
-    virtual HdBufferSourceSharedPtr CreateIndexComputation(
+    HdBufferSourceSharedPtr CreateIndexComputation(
         HdSt_MeshTopology *topology,
-        HdBufferSourceSharedPtr const &osdTopology) = 0;
+        HdBufferSourceSharedPtr const &osdTopology);
 
-    virtual HdBufferSourceSharedPtr CreateRefineComputation(
+    HdBufferSourceSharedPtr CreateFvarIndexComputation(
+        HdSt_MeshTopology *topology,
+        HdBufferSourceSharedPtr const &osdTopology,
+        int channel);
+
+    HdBufferSourceSharedPtr CreateRefineComputationCPU(
         HdSt_MeshTopology *topology,
         HdBufferSourceSharedPtr const &source,
-        bool varying,
-        HdBufferSourceSharedPtr const &osdTopology) = 0;
+        HdBufferSourceSharedPtr const &osdTopology,
+        HdSt_MeshTopology::Interpolation interpolation,
+        int fvarChannel = 0);
 
-    virtual HdComputationSharedPtr CreateRefineComputationGPU(
+    HdComputationSharedPtr CreateRefineComputationGPU(
         HdSt_MeshTopology *topology,
+        HdBufferSourceSharedPtr const &osdTopology,
         TfToken const &name,
-        HdType type) = 0;
+        HdType type,
+        HdStResourceRegistry *resourceRegistry,
+        HdSt_MeshTopology::Interpolation interpolation,
+        int fvarChannel = 0);
 
     /// Returns true if the subdivision for \a scheme generates triangles,
     /// instead of quads.
@@ -89,65 +123,51 @@ public:
     /// Returns true if the subdivision for \a scheme generates box spline
     /// triangle patches.
     static bool RefinesToBoxSplineTrianglePatches(TfToken const &scheme);
-};
 
-// ---------------------------------------------------------------------------
-/// \class Hd_OsdTopologyComputation
-///
-/// OpenSubdiv Topology Analysis.
-/// Create Hd_Subdivision struct and sets it into HdSt_MeshTopology.
-///
-class HdSt_OsdTopologyComputation : public HdComputedBufferSource
-{
-public:
-    HdSt_OsdTopologyComputation(HdSt_MeshTopology *topology,
-                                int level,
-                                SdfPath const &id);
+    /// Takes ownership of stencil tables and patch table
+    void SetRefinementTables(
+        std::unique_ptr<StencilTable const> && vertexStencils,
+        std::unique_ptr<StencilTable const> && varyingStencils,
+        std::vector<std::unique_ptr<StencilTable const>> && faceVaryingStencils,
+        std::unique_ptr<PatchTable const> && patchTable);
 
-    /// overrides
-    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    StencilTable const *
+    GetStencilTable(HdSt_MeshTopology::Interpolation interpolation,
+                    int fvarChannel) const;
 
-protected:
-    HdSt_MeshTopology *_topology;
-    int _level;
-    SdfPath const _id;
-};
+    PatchTable const *GetPatchTable() const {
+        return _patchTable.get();
+    }
 
-// ---------------------------------------------------------------------------
-/// \class HdSt_OsdIndexComputation
-///
-/// OpenSubdiv refined index buffer computation.
-///
-/// computes index buffer and primitiveParam
-///
-/// primitiveParam : refined quads to coarse faces mapping buffer
-///
-/// ----+-----------+-----------+------
-/// ... |i0 i1 i2 i3|i4 i5 i6 i7| ...    index buffer (for quads)
-/// ----+-----------+-----------+------
-/// ... |           |           | ...    primitive param[0] (coarse face index)
-/// ... |     p0    |     p1    | ...    primitive param[1] (patch param 0)
-/// ... |           |           | ...    primitive param[2] (patch param 1)
-/// ----+-----------+-----------+------
-///
-class HdSt_OsdIndexComputation : public HdComputedBufferSource
-{
-public:
-    /// overrides
-    bool HasChainedBuffer() const override;
-    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
-    HdBufferSourceSharedPtrVector GetChainedBuffers() const override;
+private:
+    HdSt_GpuStencilTableSharedPtr
+    _GetGpuStencilTable(
+        HdSt_MeshTopology *topology,
+        HdBufferSourceSharedPtr const & osdTopology,
+        HdStResourceRegistry * registry,
+        HdSt_MeshTopology::Interpolation interpolation,
+        int fvarChannel = 0);
 
-protected:
-    HdSt_OsdIndexComputation(HdSt_MeshTopology *topology,
-                           HdBufferSourceSharedPtr const &osdTopology);
+    HdSt_GpuStencilTableSharedPtr
+    _CreateGpuStencilTable(
+        HdBufferSourceSharedPtr const & osdTopology,
+        HdStResourceRegistry * registry,
+        HdSt_MeshTopology::Interpolation interpolation,
+        int fvarChannel = 0) const;
 
-    bool _CheckValid() const override;
+    std::unique_ptr<StencilTable const> _vertexStencils;
+    std::unique_ptr<StencilTable const> _varyingStencils;
+    std::vector<std::unique_ptr<StencilTable const>> _faceVaryingStencils;
+    std::unique_ptr<PatchTable const> _patchTable;
 
-    HdSt_MeshTopology *_topology;
-    HdBufferSourceSharedPtr _osdTopology;
-    HdBufferSourceSharedPtr _primitiveBuffer;
-    HdBufferSourceSharedPtr _edgeIndicesBuffer;
+    bool const _adaptive;
+    int const _refineLevel;
+    int _maxNumFaceVarying; // calculated during SetRefinementTables()
+
+    std::mutex _gpuStencilMutex;
+    HdSt_GpuStencilTableSharedPtr _gpuVertexStencils;
+    HdSt_GpuStencilTableSharedPtr  _gpuVaryingStencils;
+    std::vector<HdSt_GpuStencilTableSharedPtr> _gpuFaceVaryingStencils;
 };
 
 // ---------------------------------------------------------------------------
@@ -155,18 +175,18 @@ protected:
 ///
 /// OpenSubdiv CPU Refinement.
 /// This class isn't inherited from HdComputedBufferSource.
-/// GetData() returns the internal buffer of Hd_OsdCpuVertexBuffer,
-/// so that reducing data copy between osd buffer and HdBufferSource.
+/// GetData() returns the internal buffer to skip unecessary copy.
 ///
-template <typename VERTEX_BUFFER>
-class HdSt_OsdRefineComputation final : public HdBufferSource
+class HdSt_OsdRefineComputationCPU final : public HdBufferSource
 {
 public:
-    HdSt_OsdRefineComputation(HdSt_MeshTopology *topology,
+    HdSt_OsdRefineComputationCPU(HdSt_MeshTopology *topology,
                             HdBufferSourceSharedPtr const &source,
-                            bool varying,
-                            HdBufferSourceSharedPtr const &osdTopology);
-    ~HdSt_OsdRefineComputation() override;
+                            HdBufferSourceSharedPtr const &osdTopology,
+                            HdSt_MeshTopology::Interpolation interpolation,
+                            int fvarChannel = 0);
+    ~HdSt_OsdRefineComputationCPU() override;
+
     TfToken const &GetName() const override;
     size_t ComputeHash() const override;
     void const* GetData() const override;
@@ -176,6 +196,7 @@ public:
     bool Resolve() override;
     bool HasPreChainedBuffer() const override;
     HdBufferSourceSharedPtr GetPreChainedBuffer() const override;
+    HdSt_MeshTopology::Interpolation GetInterpolation() const;
 
 protected:
     bool _CheckValid() const override;
@@ -184,8 +205,9 @@ private:
     HdSt_MeshTopology *_topology;
     HdBufferSourceSharedPtr _source;
     HdBufferSourceSharedPtr _osdTopology;
-    VERTEX_BUFFER *_cpuVertexBuffer;
-    bool _varying;
+    std::vector<float> _primvarBuffer;
+    HdSt_MeshTopology::Interpolation _interpolation;
+    int _fvarChannel;
 };
 
 // ---------------------------------------------------------------------------
@@ -193,164 +215,31 @@ private:
 ///
 /// OpenSubdiv GPU Refinement.
 ///
-class HdSt_OsdRefineComputationGPU : public HdComputation
+class HdSt_OsdRefineComputationGPU final : public HdComputation
 {
 public:
-    HdSt_OsdRefineComputationGPU(HdSt_MeshTopology *topology,
-                               TfToken const &name,
-                               HdType type);
+    HdSt_OsdRefineComputationGPU(
+        HdSt_MeshTopology *topology,
+        TfToken const &primvarName,
+        HdType type,
+        HdSt_GpuStencilTableSharedPtr const & gpuStencilTable,
+        HdSt_MeshTopology::Interpolation interpolation,
+        int fvarChannel = 0);
+    ~HdSt_OsdRefineComputationGPU() override;
 
     void Execute(HdBufferArrayRangeSharedPtr const &range,
                          HdResourceRegistry *resourceRegistry) override;
     void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     int GetNumOutputElements() const override;
-
-    // A wrapper class to bridge between HdBufferResource and OpenSubdiv
-    // vertex buffer API.
-    //
-    class VertexBuffer
-    {
-    public:
-        VertexBuffer(HdBufferResourceSharedPtr const &resource) { 
-            _resource =
-                std::static_pointer_cast<HdStBufferResource> (resource);
-        }
-
-        // bit confusing, osd expects 'GetNumElements()' returns the num 
-        // components, in Storm sense
-        size_t GetNumElements() const {
-            return HdGetComponentCount(_resource->GetTupleType().type);
-        }
-        uint64_t BindVBO() {
-            return _resource->GetHandle()->GetRawResource();
-        }
-        HdStBufferResourceSharedPtr _resource;
-    };
+    HdSt_MeshTopology::Interpolation GetInterpolation() const;
 
 private:
     HdSt_MeshTopology *_topology;
-    TfToken _name;
+    TfToken _primvarName;
+    HdSt_GpuStencilTableSharedPtr _gpuStencilTable;
+    HdSt_MeshTopology::Interpolation _interpolation;
+    int _fvarChannel;
 };
-
-// ---------------------------------------------------------------------------
-// template implementations
-template <typename VERTEX_BUFFER>
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::HdSt_OsdRefineComputation(
-    HdSt_MeshTopology *topology,
-    HdBufferSourceSharedPtr const &source,
-    bool varying,
-    HdBufferSourceSharedPtr const &osdTopology)
-    : _topology(topology), _source(source), _osdTopology(osdTopology),
-      _cpuVertexBuffer(nullptr), _varying(varying)
-{
-}
-
-template <typename VERTEX_BUFFER>
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::~HdSt_OsdRefineComputation()
-{
-    delete _cpuVertexBuffer;
-}
-
-template <typename VERTEX_BUFFER>
-TfToken const &
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetName() const
-{
-    return _source->GetName();
-}
-
-template <typename VERTEX_BUFFER>
-size_t
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::ComputeHash() const
-{
-    return 0;
-}
-
-template <typename VERTEX_BUFFER>
-void const*
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetData() const
-{
-    return _cpuVertexBuffer->BindCpuBuffer();
-}
-
-template <typename VERTEX_BUFFER>
-HdTupleType
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetTupleType() const
-{
-    return _source->GetTupleType();
-}
-
-template <typename VERTEX_BUFFER>
-size_t
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetNumElements() const
-{
-    return _cpuVertexBuffer->GetNumVertices();
-}
-
-template <typename VERTEX_BUFFER>
-bool
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::Resolve()
-{
-    if (_source && !_source->IsResolved()) return false;
-    if (_osdTopology && !_osdTopology->IsResolved()) return false;
-
-    if (!_TryLock()) return false;
-
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    HdSt_Subdivision *subdivision = _topology->GetSubdivision();
-    if (!TF_VERIFY(subdivision)) {
-        _SetResolved();
-        return true;
-    }
-
-    // prepare cpu vertex buffer including refined vertices
-    TF_VERIFY(!_cpuVertexBuffer);
-    _cpuVertexBuffer = VERTEX_BUFFER::Create(
-        HdGetComponentCount(_source->GetTupleType().type),
-        subdivision->GetNumVertices());
-
-    subdivision->RefineCPU(_source, _varying, _cpuVertexBuffer);
-
-    HD_PERF_COUNTER_INCR(HdPerfTokens->subdivisionRefineCPU);
-
-    _SetResolved();
-    return true;
-}
-
-template <typename VERTEX_BUFFER>
-bool
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::_CheckValid() const
-{
-    bool valid = _source->IsValid();
-
-    // _osdTopology is optional
-    valid &= _osdTopology ? _osdTopology->IsValid() : true;
-
-    return valid;
-}
-
-template <typename VERTEX_BUFFER>
-void
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetBufferSpecs(HdBufferSpecVector *specs) const
-{
-    // produces same spec buffer as source
-    _source->GetBufferSpecs(specs);
-}
-
-template <typename VERTEX_BUFFER>
-bool
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::HasPreChainedBuffer() const
-{
-    return true;
-}
-
-template <typename VERTEX_BUFFER>
-HdBufferSourceSharedPtr
-HdSt_OsdRefineComputation<VERTEX_BUFFER>::GetPreChainedBuffer() const
-{
-    return _source;
-}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

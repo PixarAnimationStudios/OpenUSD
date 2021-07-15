@@ -1,0 +1,32 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "TestArOptionalImplementation",
+            "Root": "@TEST_PLUG_INFO_ROOT@",
+            "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@",
+            "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
+            "Info": {
+                "Types": {
+                    "_TestResolver": {
+                        "bases": ["ArResolver"]
+                    },
+                    "_TestResolverWithContextMethods": {
+                        "bases": ["_TestResolver"],
+                        "implementsContexts": true
+                    },
+                    "_TestDerivedResolverWithContextMethods": {
+                        "bases": ["_TestResolverWithContextMethods"]
+                    },
+                    "_TestResolverWithCacheMethods": {
+                        "bases": ["_TestResolver"],
+                        "implementsScopedCaches": true
+                    },
+                    "_TestDerivedResolverWithCacheMethods": {
+                        "bases": ["_TestResolverWithCacheMethods"]
+                    }
+                }
+            }
+        }
+    ]
+}

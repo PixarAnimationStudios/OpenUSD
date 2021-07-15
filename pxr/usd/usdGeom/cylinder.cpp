@@ -75,13 +75,9 @@ UsdGeomCylinder::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdGeomCylinder::_GetSchemaKind() const {
+UsdSchemaKind UsdGeomCylinder::_GetSchemaKind() const
+{
     return UsdGeomCylinder::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdGeomCylinder::_GetSchemaType() const {
-    return UsdGeomCylinder::schemaType;
 }
 
 /* static */

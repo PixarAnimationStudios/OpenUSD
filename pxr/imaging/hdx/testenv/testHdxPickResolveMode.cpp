@@ -398,7 +398,7 @@ My_TestGLDrawing::OffscreenTest()
         size_t expectedHitCount[] = {
             6  /*primsAndInstances*/,
             69 /*faces*/,
-            75 /*edges*/,
+           131 /*edges*/,
             41 /*points*/};
         
         for (size_t i = 0; i < pickTargets.size(); i++) {
@@ -407,6 +407,9 @@ My_TestGLDrawing::OffscreenTest()
                 pickTargets[i],
                 HdxPickTokens->resolveUnique,
                 &allHits);
+            std::cout << "allHits: " << allHits.size()
+                      << " expectedHitCount:  " << expectedHitCount[i]
+                      << std::endl;
             TF_VERIFY(allHits.size() == expectedHitCount[i]);
         }
     }

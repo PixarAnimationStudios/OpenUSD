@@ -100,6 +100,13 @@ struct HdSt_ShaderKey {
     virtual HdPolygonMode GetPolygonMode() const;
     HDST_API
     virtual float GetLineWidth() const;
+
+    // Returns the face-varying patch type used in code gen during creation
+    // of the face-varying primvar accessors. Only relevant for mesh prims with 
+    // face-varying primvars.
+    HDST_API
+    virtual HdSt_GeometricShader::FvarPatchType GetFvarPatchType() const; 
+
 };
 
 

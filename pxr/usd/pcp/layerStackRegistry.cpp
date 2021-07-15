@@ -191,6 +191,12 @@ Pcp_LayerStackRegistry::_Find(const PcpLayerStackIdentifier& identifier) const
         iter->second : PcpLayerStackPtr();
 }
 
+bool
+Pcp_LayerStackRegistry::Contains(const PcpLayerStackPtr& layerStack) const
+{
+    auto ptr = get_pointer(layerStack);
+    return ptr && get_pointer(ptr->_registry) == this;
+}
 
 const PcpLayerStackPtrVector&
 Pcp_LayerStackRegistry::FindAllUsingLayer(const SdfLayerHandle& layer) const

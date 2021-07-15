@@ -1,0 +1,29 @@
+#usda 1.0
+
+class "TestSchemaAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["SomeConcreteType", "SomeAbstractType"]
+        string apiSchemaType = "singleApply"
+    }
+    inherits = </APISchemaBase>
+)
+{
+    uniform string inputs:colorMapGamma (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Map Gamma"
+        doc = """
+                uniform color mapping for gamma.
+                """
+    )
+    float inputs:intensity = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Intensity"
+        doc = """
+                intensity: Itensity of the flame thrower.
+                """
+    )
+    color3f outputs:resultRGB
+}
+

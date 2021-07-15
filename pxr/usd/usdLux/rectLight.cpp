@@ -75,13 +75,9 @@ UsdLuxRectLight::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdLuxRectLight::_GetSchemaKind() const {
+UsdSchemaKind UsdLuxRectLight::_GetSchemaKind() const
+{
     return UsdLuxRectLight::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdLuxRectLight::_GetSchemaType() const {
-    return UsdLuxRectLight::schemaType;
 }
 
 /* static */

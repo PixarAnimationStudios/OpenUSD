@@ -127,6 +127,7 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
         _flags[Usd_PrimModelFlag] = true;
         _flags[Usd_PrimGroupFlag] = true;
         _flags[Usd_PrimDefinedFlag] = true;
+        _flags[Usd_PrimHasDefiningSpecifierFlag] = true;
         _flags[Usd_PrimPrototypeFlag] = isPrototypePrim;
         _flags[Usd_PrimPseudoRootFlag] = !parent;
     } 

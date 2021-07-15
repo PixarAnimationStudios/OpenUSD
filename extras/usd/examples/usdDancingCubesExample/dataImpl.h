@@ -47,11 +47,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdDancingCubesExample_DataImpl
 {
 public:
+    UsdDancingCubesExample_DataImpl();
+
     UsdDancingCubesExample_DataImpl(
         const UsdDancingCubesExample_DataParams &params);
-
-    /// Returns true if the parameters produce no specs
-    bool IsEmpty() const;
 
     /// Generates the spec type for the path.
     SdfSpecType GetSpecType(const SdfPath &path) const;

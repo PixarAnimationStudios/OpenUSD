@@ -106,6 +106,9 @@
             "quadrangulateDouble": {
                 "source": [ "Compute.QuadrangulateDouble",
                             "Compute.Quadrangulate" ]
+            },
+            "evalStencils": {
+                "source": [ "Compute.EvalStencils" ]
             }
         }
     }
@@ -114,7 +117,6 @@
 --- --------------------------------------------------------------------------
 -- glsl Compute.NormalsSrcFloat
 
-layout(std430, binding=0) buffer Points { float points[]; };
 vec3 getPoint(int index)
 {
     return vec3(points[index],
@@ -124,7 +126,6 @@ vec3 getPoint(int index)
 --- --------------------------------------------------------------------------
 -- glsl Compute.NormalsSrcDouble
 
-layout(std430, binding=0) buffer Points { double points[]; };
 vec3 getPoint(int index)
 {
     return vec3(points[index],
@@ -134,7 +135,6 @@ vec3 getPoint(int index)
 --- --------------------------------------------------------------------------
 -- glsl Compute.NormalsDstFloat
 
-layout(std430, binding=1) buffer Normals { float normals[]; };
 void writeNormal(int nIndex, vec3 normal)
 {
     normals[nIndex+0] = normal.x;
@@ -144,7 +144,6 @@ void writeNormal(int nIndex, vec3 normal)
 --- --------------------------------------------------------------------------
 -- glsl Compute.NormalsDstDouble
 
-layout(std430, binding=1) buffer Normals { double normals[]; };
 void writeNormal(int nIndex, vec3 normal)
 {
     normals[nIndex+0] = normal.x;
@@ -154,7 +153,6 @@ void writeNormal(int nIndex, vec3 normal)
 --- --------------------------------------------------------------------------
 -- glsl Compute.NormalsDstPacked
 
-layout(std430, binding=1) buffer Normals { int normals[]; };
 void writeNormal(int nIndex, vec3 normal)
 {
     normal *= 511.0;
@@ -165,18 +163,6 @@ void writeNormal(int nIndex, vec3 normal)
 }
 --- --------------------------------------------------------------------------
 -- glsl Compute.SmoothNormals
-
-layout(std430, binding=2) buffer Adjacency { int entry[]; };
-
-layout(std140, binding=0) uniform Uniform {
-   int vertexOffset;       // offset in aggregated buffer
-   int adjacencyOffset;
-   int pointsOffset;       // interleave offset
-   int pointsStride;       // interleave stride
-   int normalsOffset;      // interleave offset
-   int normalsStride;      // interleave stride
-};
-layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
 
 int getPointsIndex(int idx)
 {
@@ -190,7 +176,7 @@ int getNormalsIndex(int idx)
 
 void main()
 {
-    int index = int(gl_GlobalInvocationID.x);
+    int index = int(hd_GlobalInvocationID.x);
     
     int offIndex = index * 2 + adjacencyOffset;
     
@@ -218,24 +204,6 @@ void main()
 
 --- --------------------------------------------------------------------------
 -- glsl Compute.FlatNormals
-
-layout(std430, binding=2) buffer Indices { int indices[]; };
-layout(std430, binding=3) buffer PrimitiveParam { int primitiveParam[]; };
-
-layout(std140, binding=0) uniform Uniform {
-   int vertexOffset;       // offset in aggregated buffer
-   int elementOffset;      // offset in aggregated buffer
-   int topologyOffset;     // offset in aggregated buffer
-   int pointsOffset;       // interleave offset
-   int pointsStride;       // interleave stride
-   int normalsOffset;      // interleave offset
-   int normalsStride;      // interleave stride
-   int indexOffset;        // interleave offset
-   int indexStride;        // interleave stride
-   int pParamOffset;       // interleave offset
-   int pParamStride;       // interleave stride
-};
-layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
 
 int getPointsIndex(int idx)
 {
@@ -271,7 +239,7 @@ vec3 computeNormalForPrimIndex(int primIndex);
 
 void main()
 {
-    int primIndex = int(gl_GlobalInvocationID.x);
+    int primIndex = int(hd_GlobalInvocationID.x);
     int pParam = primitiveParam[getPrimitiveParamIndex(primIndex)];
     int edgeFlag = getEdgeFlag(pParam);
     int faceIndex = getFaceIndex(pParam);
@@ -349,36 +317,19 @@ vec3 computeNormalForPrimIndex(int primIndex)
 --- --------------------------------------------------------------------------
 -- glsl Compute.QuadrangulateFloat
 
-layout(std430, binding=0) buffer Primvar { float primvar[]; };
-layout(std430, binding=1) buffer QuadInfo { int quadInfo[]; };
-
 #define DATATYPE float
 
 --- --------------------------------------------------------------------------
 -- glsl Compute.QuadrangulateDouble
-
-layout(std430, binding=0) buffer Primvar { double primvar[]; };
-layout(std430, binding=1) buffer QuadInfo { int quadInfo[]; };
 
 #define DATATYPE double
 
 --- --------------------------------------------------------------------------
 -- glsl Compute.Quadrangulate
 
-layout(std140, binding=0) uniform Uniform {
-    int vertexOffset;      // offset in aggregated buffer
-    int quadInfoStride;
-    int quadInfoOffset;
-    int maxNumVert;
-    int primvarOffset;     // interleave offset
-    int primvarStride;     // interleave stride
-    int numComponents;     // interleave datasize
-};
-layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
-
 void main()
 {
-    int index = int(gl_GlobalInvocationID.x);
+    int index = int(hd_GlobalInvocationID.x);
 
     int quadInfoIndex = index * quadInfoStride + quadInfoOffset;
     int numVert = quadInfo[quadInfoIndex];
@@ -410,5 +361,39 @@ void main()
         // center
         center /= numVert;
         primvar[(dstOffset + numVert + vertexOffset)*primvarStride + primvarOffset + j] = center;
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Compute.EvalStencils
+
+void main()
+{
+    const int pointIndex = pointIndexStart + int(hd_GlobalInvocationID.x);
+    if (pointIndex >= pointIndexEnd) {
+        return;
+    }
+
+    const int numElements = EVAL_STENCILS_NUM_ELEMENTS;
+    float result[numElements];
+    for (int element = 0; element < numElements; ++element) {
+        result[element] = 0;
+    }
+
+    const int stencilSize = sizes[pointIndex + sizesBase];
+    const int stencilOffset = offsets[pointIndex + offsetsBase];
+
+    for (int stencil = 0; stencil < stencilSize; ++stencil) {
+        const int index = indices[stencil + stencilOffset + indicesBase];
+        const float weight = weights[stencil + stencilOffset + weightsBase];
+        const int srcIndex = (index + srcBase) * srcStride;
+        for (int element = 0; element < numElements; ++element) {
+            result[element] += weight * primvar[srcIndex + element];
+        }
+    }
+
+    const int dstIndex = (pointIndex + dstBase) * dstStride;
+    for (int element = 0; element < numElements; ++element) {
+        primvar[dstIndex + element] = result[element];
     }
 }

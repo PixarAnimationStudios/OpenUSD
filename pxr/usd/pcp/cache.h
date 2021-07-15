@@ -38,6 +38,7 @@
 #include "pxr/usd/ar/ar.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/base/tf/declarePtrs.h"
+#include "pxr/base/tf/functionRef.h"
 #include "pxr/base/tf/hashset.h"
 
 #include <memory>
@@ -272,6 +273,11 @@ public:
     PcpLayerStackPtr
     FindLayerStack(const PcpLayerStackIdentifier &identifier) const;
 
+    /// Return true if \p layerStack is used by this cache in its composition,
+    /// false otherwise.
+    PCP_API
+    bool UsesLayerStack(const PcpLayerStackPtr &layerStack) const;
+
     /// Compute and return a reference to the cached result for the
     /// prim index for the given path. \p allErrors will contain any errors 
     /// encountered while performing this operation.
@@ -361,6 +367,16 @@ public:
     const PcpPrimIndex *
     FindPrimIndex(const SdfPath &primPath) const;
 
+    /// Run the given \p callback on every prim index in the cache.
+    /// The callback must have the signature: void(const PcpPrimIndex&).
+    template <class Callback>
+    void
+    ForEachPrimIndex(const Callback& callback) const
+    {
+        TfFunctionRef<void(const PcpPrimIndex&)> fn(callback);
+        _ForEachPrimIndex(fn);
+    }
+
     /// Compute and return a reference to the cached result for the
     /// property index for the given path. \p allErrors will contain any
     /// errors encountered while performing this operation.
@@ -419,6 +435,14 @@ public:
     /// Returns set of all layers used by this cache. 
     PCP_API
     SdfLayerHandleSet GetUsedLayers() const;
+
+    /// Return a number that can be used to determine whether or not the set of
+    /// layers used by this cache may have changed or not.  For example, if one
+    /// calls GetUsedLayers() and saves the GetUsedLayersRevision(), and then
+    /// later calls GetUsedLayersRevision() again, if the number is unchanged,
+    /// then GetUsedLayers() is guaranteed to be unchanged as well.
+    PCP_API
+    size_t GetUsedLayersRevision() const;
 
     /// Returns set of all root layers used by this cache.
     PCP_API
@@ -682,6 +706,10 @@ private:
     // Returns the property index for \p path if it exists, NULL otherwise.
     PcpPropertyIndex* _GetPropertyIndex(const SdfPath& path);
     const PcpPropertyIndex* _GetPropertyIndex(const SdfPath& path) const;
+
+    PCP_API
+    void _ForEachPrimIndex(
+        const TfFunctionRef<void(const PcpPrimIndex&)>& fn) const;
 
 private:
     // Fixed evaluation parameters, set when the cache is created.  Note that

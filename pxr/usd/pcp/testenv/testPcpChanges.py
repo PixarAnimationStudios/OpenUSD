@@ -44,22 +44,27 @@ class TestPcpChanges(unittest.TestCase):
         subLayer2 = Sdf.Layer.CreateAnonymous()
         self.assertTrue(subLayer2.empty)
 
-        # Adding an empty sublayer should not require recomputing any
-        # prim indexes or change their prim stacks.
+        # Adding an empty sublayer should not require recomputing any prim
+        # indexes or change their prim stacks, but it should change the used
+        # layers revision count.
+        revCount = pcp.GetUsedLayersRevision()
         with Pcp._TestChangeProcessor(pcp):
             rootLayer.subLayerPaths.insert(0, subLayer2.identifier)
 
         pi = pcp.FindPrimIndex('/Test')
         self.assertTrue(pi)
         self.assertEqual(pi.primStack, [primSpec])
+        self.assertNotEqual(revCount, pcp.GetUsedLayersRevision())
 
         # Same with deleting an empty sublayer.
+        revCount = pcp.GetUsedLayersRevision()
         with Pcp._TestChangeProcessor(pcp):
             del rootLayer.subLayerPaths[0]
 
         pi = pcp.FindPrimIndex('/Test')
         self.assertTrue(pi)
         self.assertEqual(pi.primStack, [primSpec])
+        self.assertNotEqual(revCount, pcp.GetUsedLayersRevision())
 
     def test_InvalidSublayerAdd(self):
         invalidSublayerId = "/tmp/testPcpChanges_invalidSublayer.sdf"
@@ -71,6 +76,7 @@ class TestPcpChanges(unittest.TestCase):
         (layerStack, errs) = pcp.ComputeLayerStack(layerStackId)
         self.assertEqual(len(errs), 0)
         self.assertEqual(len(layerStack.localErrors), 0)
+        self.assertTrue(pcp.UsesLayerStack(layerStack))
 
         with Pcp._TestChangeProcessor(pcp):
             layer.subLayerPaths.append(invalidSublayerId)
@@ -83,6 +89,7 @@ class TestPcpChanges(unittest.TestCase):
         # stored in the layer stack's localErrors field, however.
         self.assertEqual(len(errs), 0)
         self.assertEqual(len(layerStack.localErrors), 1)
+        self.assertTrue(pcp.UsesLayerStack(layerStack))
 
     def test_InvalidSublayerRemoval(self):
         invalidSublayerId = "/tmp/testPcpChanges_invalidSublayer.sdf"
@@ -105,6 +112,7 @@ class TestPcpChanges(unittest.TestCase):
         self.assertEqual(len(errs), 0)
         self.assertEqual(len(layerStack.localErrors), 0)
         self.assertFalse(pcp.IsInvalidSublayerIdentifier(invalidSublayerId))
+        self.assertTrue(pcp.UsesLayerStack(layerStack))
 
     def test_UnusedVariantChanges(self):
         layer = Sdf.Layer.CreateAnonymous()
@@ -924,6 +932,7 @@ class TestPcpChanges(unittest.TestCase):
         self.assertEqual(err, [])
         self.assertEqual(pi.propertyStack, [rootAttrSpec, subAttrSpec])
 
+        revCount = pcp.GetUsedLayersRevision()
         with Pcp._TestChangeProcessor(pcp) as cp:
             del rootLayer.pseudoRoot.nameChildren['Parent']
             self.assertFalse(rootParentSpec)
@@ -934,6 +943,8 @@ class TestPcpChanges(unittest.TestCase):
             self.assertEqual(cp.GetSpecChanges(), 
                              ['/Parent', '/Parent/Child', '/Parent/Child.attr'])
             self.assertEqual(cp.GetPrimChanges(), [])
+
+        self.assertEqual(revCount, pcp.GetUsedLayersRevision())
 
         (pi, err) = pcp.ComputePrimIndex('/Parent')
         self.assertEqual(err, [])

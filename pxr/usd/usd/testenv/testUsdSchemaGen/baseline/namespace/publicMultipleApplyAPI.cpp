@@ -117,13 +117,17 @@ UsdContrivedPublicMultipleApplyAPI::IsPublicMultipleApplyAPIPath(
 }
 
 /* virtual */
-UsdSchemaKind UsdContrivedPublicMultipleApplyAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdContrivedPublicMultipleApplyAPI::_GetSchemaKind() const
+{
     return UsdContrivedPublicMultipleApplyAPI::schemaKind;
 }
 
-/* virtual */
-UsdSchemaKind UsdContrivedPublicMultipleApplyAPI::_GetSchemaType() const {
-    return UsdContrivedPublicMultipleApplyAPI::schemaType;
+/* static */
+bool
+UsdContrivedPublicMultipleApplyAPI::CanApply(
+    const UsdPrim &prim, const TfToken &name, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdContrivedPublicMultipleApplyAPI>(name, whyNot);
 }
 
 /* static */

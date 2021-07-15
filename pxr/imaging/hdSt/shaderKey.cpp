@@ -84,6 +84,7 @@ HdSt_ShaderKey::ComputeHash() const
     boost::hash_combine(hash, GetPolygonMode());
     boost::hash_combine(hash, IsFrustumCullingPass());
     boost::hash_combine(hash, GetLineWidth());
+    boost::hash_combine(hash, GetFvarPatchType());    
 
     return hash;
 }
@@ -221,6 +222,12 @@ float
 HdSt_ShaderKey::GetLineWidth() const
 {
     return 0.0f;
+}
+
+/*virtual*/
+HdSt_GeometricShader::FvarPatchType 
+HdSt_ShaderKey::GetFvarPatchType() const {
+    return HdSt_GeometricShader::FvarPatchType::PATCH_NONE;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

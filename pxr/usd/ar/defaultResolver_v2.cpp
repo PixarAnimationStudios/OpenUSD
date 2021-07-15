@@ -44,8 +44,6 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/value.h"
 
-#include <tbb/concurrent_hash_map.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 AR_DEFINE_RESOLVER(ArDefaultResolver, ArResolver);
@@ -55,6 +53,41 @@ _IsFileRelative(const std::string& path) {
     return path.find("./") == 0 || path.find("../") == 0;
 }
 
+static bool
+_IsRelativePath(const std::string& path)
+{
+    return (!path.empty() && TfIsRelativePath(path));
+}
+
+static bool
+_IsSearchPath(const std::string& path)
+{
+    return _IsRelativePath(path) && !_IsFileRelative(path);
+}
+
+static std::string
+_AnchorRelativePath(
+    const std::string& anchorPath, 
+    const std::string& path)
+{
+    if (TfIsRelativePath(anchorPath) ||
+        !_IsRelativePath(path)) {
+        return path;
+    }
+
+    // Ensure we are using forward slashes and not back slashes.
+    std::string forwardPath = anchorPath;
+    std::replace(forwardPath.begin(), forwardPath.end(), '\\', '/');
+
+    // If anchorPath does not end with a '/', we assume it is specifying
+    // a file, strip off the last component, and anchor the path to that
+    // directory.
+    const std::string anchoredPath = TfStringCatPaths(
+        TfStringGetBeforeSuffix(forwardPath, '/'), path);
+    return TfNormPath(anchoredPath);
+}
+
+
 static std::vector<std::string>
 _ParseSearchPaths(const std::string& pathStr)
 {
@@ -62,13 +95,6 @@ _ParseSearchPaths(const std::string& pathStr)
 }
 
 static TfStaticData<std::vector<std::string>> _SearchPath;
-
-struct ArDefaultResolver::_Cache
-{
-    using _PathToResolvedPathMap = 
-        tbb::concurrent_hash_map<std::string, ArResolvedPath>;
-    _PathToResolvedPathMap _pathToResolvedPathMap;
-};
 
 ArDefaultResolver::ArDefaultResolver()
 {
@@ -96,44 +122,10 @@ ArDefaultResolver::SetDefaultSearchPath(
     *_SearchPath = searchPath;
 }
 
-void
-ArDefaultResolver::ConfigureResolverForAsset(const std::string& path)
-{
-    _defaultContext = CreateDefaultContextForAsset(path);
-}
-
-bool
-ArDefaultResolver::IsRelativePath(const std::string& path)
-{
-    return (!path.empty() && TfIsRelativePath(path));
-}
-
-std::string
-ArDefaultResolver::AnchorRelativePath(
-    const std::string& anchorPath, 
-    const std::string& path)
-{
-    if (TfIsRelativePath(anchorPath) ||
-        !IsRelativePath(path)) {
-        return path;
-    }
-
-    // Ensure we are using forward slashes and not back slashes.
-    std::string forwardPath = anchorPath;
-    std::replace(forwardPath.begin(), forwardPath.end(), '\\', '/');
-
-    // If anchorPath does not end with a '/', we assume it is specifying
-    // a file, strip off the last component, and anchor the path to that
-    // directory.
-    const std::string anchoredPath = TfStringCatPaths(
-        TfStringGetBeforeSuffix(forwardPath, '/'), path);
-    return TfNormPath(anchoredPath);
-}
-
 std::string
 ArDefaultResolver::_CreateIdentifier(
     const std::string& assetPath,
-    const ArResolvedPath& anchorAssetPath)
+    const ArResolvedPath& anchorAssetPath) const
 {
     if (assetPath.empty()) {
         return assetPath;
@@ -155,9 +147,9 @@ ArDefaultResolver::_CreateIdentifier(
     // exists there, we just return the anchored path. Otherwise, we return
     // the asset path as-is.
     const std::string anchoredAssetPath =
-        AnchorRelativePath(anchorAssetPath, assetPath);
+        _AnchorRelativePath(anchorAssetPath, assetPath);
 
-    if (IsSearchPath(assetPath) && Resolve(anchoredAssetPath).empty()) {
+    if (_IsSearchPath(assetPath) && Resolve(anchoredAssetPath).empty()) {
         return TfNormPath(assetPath);
     }
 
@@ -167,29 +159,23 @@ ArDefaultResolver::_CreateIdentifier(
 std::string
 ArDefaultResolver::_CreateIdentifierForNewAsset(
     const std::string& assetPath,
-    const ArResolvedPath& anchorAssetPath)
+    const ArResolvedPath& anchorAssetPath) const
 {
     if (assetPath.empty()) {
         return assetPath;
     }
 
-    if (IsRelativePath(assetPath)) {
+    if (_IsRelativePath(assetPath)) {
         return TfNormPath(anchorAssetPath ? 
-            AnchorRelativePath(anchorAssetPath, assetPath) :
+            _AnchorRelativePath(anchorAssetPath, assetPath) :
             TfAbsPath(assetPath));
     }
 
     return TfNormPath(assetPath);
 }
 
-bool
-ArDefaultResolver::IsSearchPath(const std::string& path)
-{
-    return IsRelativePath(path) && !_IsFileRelative(path);
-}
-
 std::string
-ArDefaultResolver::_GetExtension(const std::string& path)
+ArDefaultResolver::_GetExtension(const std::string& path) const
 {
     return TfGetExtension(path);
 }
@@ -207,7 +193,7 @@ _ResolveAnchored(
         // causes consumers to break. 
         // 
         // Ultimately what we should do is specify whether anchorPath 
-        // in both Resolve and AnchorRelativePath can be files or directories 
+        // in both Resolve and _AnchorRelativePath can be files or directories 
         // and fix up all the callers to accommodate this.
         resolvedPath = TfStringCatPaths(anchorPath, path);
     }
@@ -220,13 +206,13 @@ _ResolveAnchored(
 }
 
 ArResolvedPath
-ArDefaultResolver::_ResolveNoCache(const std::string& path)
+ArDefaultResolver::_Resolve(const std::string& path) const
 {
     if (path.empty()) {
         return ArResolvedPath();
     }
 
-    if (IsRelativePath(path)) {
+    if (_IsRelativePath(path)) {
         // First try to resolve relative paths against the current
         // working directory.
         ArResolvedPath resolvedPath = _ResolveAnchored(ArchGetCwd(), path);
@@ -236,7 +222,7 @@ ArDefaultResolver::_ResolveNoCache(const std::string& path)
 
         // If that fails and the path is a search path, try to resolve
         // against each directory in the specified search paths.
-        if (IsSearchPath(path)) {
+        if (_IsSearchPath(path)) {
             const ArDefaultResolverContext* contexts[2] =
                 {_GetCurrentContextPtr(), &_fallbackContext};
             for (const ArDefaultResolverContext* ctx : contexts) {
@@ -258,28 +244,8 @@ ArDefaultResolver::_ResolveNoCache(const std::string& path)
 }
 
 ArResolvedPath
-ArDefaultResolver::_Resolve(
-    const std::string& assetPath)
-{
-    if (assetPath.empty()) {
-        return ArResolvedPath();
-    }
-
-    if (_CachePtr currentCache = _GetCurrentCache()) {
-        _Cache::_PathToResolvedPathMap::accessor accessor;
-        if (currentCache->_pathToResolvedPathMap.insert(
-                accessor, std::make_pair(assetPath, ArResolvedPath()))) {
-            accessor->second = _ResolveNoCache(assetPath);
-        }
-        return accessor->second;
-    }
-
-    return _ResolveNoCache(assetPath);
-}
-
-ArResolvedPath
 ArDefaultResolver::_ResolveForNewAsset(
-    const std::string& assetPath)
+    const std::string& assetPath) const
 {
     return ArResolvedPath(assetPath.empty() ? assetPath : TfAbsPath(assetPath));
 }
@@ -287,7 +253,7 @@ ArDefaultResolver::_ResolveForNewAsset(
 VtValue
 ArDefaultResolver::_GetModificationTimestamp(
     const std::string& path,
-    const ArResolvedPath& resolvedPath)
+    const ArResolvedPath& resolvedPath) const
 {
     // Since the default resolver always resolves paths to local
     // paths, we can just look at the mtime of the file indicated
@@ -301,55 +267,42 @@ ArDefaultResolver::_GetModificationTimestamp(
 
 std::shared_ptr<ArAsset> 
 ArDefaultResolver::_OpenAsset(
-    const ArResolvedPath& resolvedPath)
+    const ArResolvedPath& resolvedPath) const
 {
-    FILE* f = ArchOpenFile(resolvedPath.GetPathString().c_str(), "rb");
-    if (!f) {
-        return nullptr;
-    }
-
-    return std::shared_ptr<ArAsset>(new ArFilesystemAsset(f));
+    return ArFilesystemAsset::Open(resolvedPath);
 }
 
 std::shared_ptr<ArWritableAsset>
 ArDefaultResolver::_OpenAssetForWrite(
     const ArResolvedPath& resolvedPath,
-    WriteMode writeMode)
+    WriteMode writeMode) const
 {
     return ArFilesystemWritableAsset::Create(resolvedPath, writeMode);
 }
 
 bool
 ArDefaultResolver::_IsContextDependentPath(
-    const std::string& assetPath)
+    const std::string& assetPath) const
 {
-    return IsSearchPath(assetPath);
-}
-
-bool
-ArDefaultResolver::CreatePathForLayer(
-    const std::string& path)
-{
-    const std::string layerDir = TfGetPathName(path);
-    return layerDir.empty() || TfIsDir(layerDir) || TfMakeDirs(layerDir);
+    return _IsSearchPath(assetPath);
 }
 
 ArResolverContext 
-ArDefaultResolver::_CreateDefaultContext()
+ArDefaultResolver::_CreateDefaultContext() const
 {
     return _defaultContext;
 }
 
 ArResolverContext
 ArDefaultResolver::_CreateContextFromString(
-    const std::string& contextStr)
+    const std::string& contextStr) const
 {
     return ArDefaultResolverContext(_ParseSearchPaths(contextStr));
 }
 
 ArResolverContext 
 ArDefaultResolver::_CreateDefaultContextForAsset(
-    const std::string& assetPath)
+    const std::string& assetPath) const
 {
     if (assetPath.empty()){
         return ArResolverContext(ArDefaultResolverContext());
@@ -361,67 +314,10 @@ ArDefaultResolver::_CreateDefaultContextForAsset(
                                  std::vector<std::string>(1, assetDir)));
 }
 
-ArResolverContext
-ArDefaultResolver::_GetCurrentContext()
-{
-    const ArDefaultResolverContext* ctx = _GetCurrentContextPtr();
-    return ctx ? ArResolverContext(*ctx) : ArResolverContext();
-}
-
-void 
-ArDefaultResolver::_BeginCacheScope(
-    VtValue* cacheScopeData)
-{
-    _threadCache.BeginCacheScope(cacheScopeData);
-}
-
-void 
-ArDefaultResolver::_EndCacheScope(
-    VtValue* cacheScopeData)
-{
-    _threadCache.EndCacheScope(cacheScopeData);
-}
-
-ArDefaultResolver::_CachePtr 
-ArDefaultResolver::_GetCurrentCache()
-{
-    return _threadCache.GetCurrentCache();
-}
-
-void 
-ArDefaultResolver::_BindContext(
-    const ArResolverContext& context,
-    VtValue* bindingData)
-{
-    const ArDefaultResolverContext* ctx = 
-        context.Get<ArDefaultResolverContext>();
-
-    _ContextStack& contextStack = _threadContextStack.local();
-    contextStack.push_back(ctx);
-}
-
-void 
-ArDefaultResolver::_UnbindContext(
-    const ArResolverContext& context,
-    VtValue* bindingData)
-{
-    _ContextStack& contextStack = _threadContextStack.local();
-    if (contextStack.empty()) {
-        TF_CODING_ERROR(
-            "No context was bound, cannot unbind context: %s",
-            context.GetDebugString().c_str());
-    }
-
-    if (!contextStack.empty()) {
-        contextStack.pop_back();
-    }
-}
-
 const ArDefaultResolverContext* 
-ArDefaultResolver::_GetCurrentContextPtr()
+ArDefaultResolver::_GetCurrentContextPtr() const
 {
-    _ContextStack& contextStack = _threadContextStack.local();
-    return contextStack.empty() ? nullptr : contextStack.back();
+    return _GetCurrentContextObject<ArDefaultResolverContext>();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

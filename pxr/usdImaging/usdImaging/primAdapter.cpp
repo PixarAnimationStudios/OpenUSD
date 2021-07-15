@@ -165,6 +165,38 @@ UsdImagingPrimAdapter::ProcessPrimResync(SdfPath const& cachePath,
 
 /*virtual*/
 void
+UsdImagingPrimAdapter::_ResyncDependents(SdfPath const& usdPath,
+                                         UsdImagingIndexProxy* index)
+{
+    auto const range = _delegate->_dependencyInfo.equal_range(usdPath);
+    for (auto it = range.first; it != range.second; ++it) {
+        SdfPath const& depCachePath = it->second;
+        // If _ResyncDependents is called by the resync method of hydra prim
+        // /Foo, there's a strong chance the hydra prim has a declared
+        // dependency on USD prim /Foo.  (This is true pretty much except for
+        // instancing cases that aren't expected to call this function).
+        //
+        // In order to avoid infinite loops, if the hydra dependency we get has
+        // the same path as the passed in usdPath, skip resyncing it.
+        if (depCachePath == usdPath) {
+            continue;
+        }
+
+        TF_DEBUG(USDIMAGING_CHANGES)
+            .Msg("<%s> Resyncing dependent %s\n",
+                    usdPath.GetText(), depCachePath.GetText());
+
+        UsdImagingDelegate::_HdPrimInfo *primInfo =
+            _delegate->_GetHdPrimInfo(depCachePath);
+        if (primInfo != nullptr &&
+            TF_VERIFY(primInfo->adapter != nullptr)) {
+            primInfo->adapter->ProcessPrimResync(depCachePath, index);
+        }
+    }
+}
+
+/*virtual*/
+void
 UsdImagingPrimAdapter::ProcessPrimRemoval(SdfPath const& cachePath,
                                           UsdImagingIndexProxy* index)
 {
@@ -1080,6 +1112,12 @@ Usd_PrimFlagsConjunction
 UsdImagingPrimAdapter::_GetDisplayPredicate() const
 {
     return _delegate->_GetDisplayPredicate();
+}
+
+Usd_PrimFlagsConjunction
+UsdImagingPrimAdapter::_GetDisplayPredicateForPrototypes() const
+{
+    return _delegate->_GetDisplayPredicateForPrototypes();
 }
 
 size_t

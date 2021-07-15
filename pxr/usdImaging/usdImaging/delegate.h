@@ -106,7 +106,7 @@ public:
     void SyncAll(bool includeUnvarying);
 
     /// Opportunity for the delegate to clean itself up after
-    /// performing parrellel work during sync phase
+    /// performing parallel work during sync phase
     USDIMAGING_API
     virtual void PostSyncCleanup() override;
 
@@ -197,7 +197,7 @@ public:
     void SetCullStyleFallback(HdCullStyle cullStyle);
 
     /// Sets the root transform for the entire delegate, which is applied to all
-    /// render prims generated. Settting this value will immediately invalidate
+    /// render prims generated. Setting this value will immediately invalidate
     /// existing rprim transforms.
     USDIMAGING_API
     void SetRootTransform(GfMatrix4d const& xf);
@@ -206,7 +206,7 @@ public:
     const GfMatrix4d &GetRootTransform() const { return _rootXf; }
 
     /// Sets the root visibility for the entire delegate, which is applied to
-    /// all render prims generated. Settting this value will immediately
+    /// all render prims generated. Setting this value will immediately
     /// invalidate existing rprim visibility.
     USDIMAGING_API
     void SetRootVisibility(bool isVisible);
@@ -684,6 +684,7 @@ private:
     _HdPrimInfo *_GetHdPrimInfo(const SdfPath &cachePath);
 
     Usd_PrimFlagsConjunction _GetDisplayPredicate() const;
+    Usd_PrimFlagsConjunction _GetDisplayPredicateForPrototypes() const;
 
     // Mark render tags dirty for all prims.
     // This is done in response to toggling the purpose-based display settings.

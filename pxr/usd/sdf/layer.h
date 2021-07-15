@@ -301,10 +301,6 @@ public:
     /// \name File I/O
     /// @{
 
-    /// Converts \e layerPath to a file system path.
-    SDF_API
-    static std::string ComputeRealPath(const std::string &layerPath);
-
     /// Returns \c true if successful, \c false if an error occurred.
     /// Returns \c false if the layer has no remembered file name or the 
     /// layer type cannot be saved. The layer will not be overwritten if the 
@@ -529,11 +525,23 @@ public:
     SDF_API
     const VtValue& GetAssetInfo() const;
 
-    /// Make the given \p relativePath absolute using the identifier of this
-    /// layer.  If this layer does not have an identifier, or if the layer
-    /// identifier is itself relative, \p relativePath is returned unmodified.
+    /// Returns the path to the asset specified by \p assetPath using this layer
+    /// to anchor the path if necessary. Returns \p assetPath if it's empty or
+    /// an anonymous layer identifier.
+    ///
+    /// This method can be used on asset paths that are authored in this layer
+    /// to create new asset paths that can be copied to other layers.  These new
+    /// asset paths should refer to the same assets as the original asset
+    /// paths. For example, if the underlying ArResolver is filesystem-based and
+    /// \p assetPath is a relative filesystem path, this method might return the
+    /// absolute filesystem path using this layer's location as the anchor.
+    ///
+    /// The returned path should in general not be assumed to be an absolute
+    /// filesystem path or any other specific form. It is "absolute" in that it
+    /// should resolve to the same asset regardless of what layer it's authored
+    /// in.
     SDF_API
-    std::string ComputeAbsolutePath(const std::string &relativePath);
+    std::string ComputeAbsolutePath(const std::string& assetPath) const;
 
     /// @}
 
@@ -1123,6 +1131,10 @@ public:
     ///
     /// Edits through the proxy changes the sublayers.  If this layer does
     /// not have any sublayers the proxy is empty.
+    ///
+    /// Sub-layer paths are asset paths, and thus must contain valid asset path
+    /// characters (UTF-8 without C0 and C1 controls).  See SdfAssetPath for
+    /// more details.
     SDF_API
     SdfSubLayerProxy GetSubLayerPaths() const;
 
@@ -1499,6 +1511,17 @@ private:
         Lock &lock,
         const _FindOrOpenLayerInfo& info,
         bool metadataOnly);
+
+    // Helper function for finding a layer with \p identifier and \p args.
+    // \p lock must be unlocked initially and will be locked by this
+    // function when needed. See docs for \p retryAsWriter argument on
+    // _TryToFindLayer for details on the final state of the lock when
+    // this function returns.
+    template <class ScopedLock>
+    static SdfLayerRefPtr
+    _Find(const std::string &identifier,
+          const FileFormatArguments &args,
+          ScopedLock &lock, bool retryAsWriter);
 
     // Helper function to try to find the layer with \p identifier and
     // pre-resolved path \p resolvedPath in the registry.  Caller must hold

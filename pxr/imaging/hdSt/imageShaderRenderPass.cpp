@@ -68,8 +68,8 @@ HdSt_ImageShaderRenderPass::HdSt_ImageShaderRenderPass(
 {
     _sharedData.instancerLevels = 0;
     _sharedData.rprimID = SdfPath("/imageShaderRenderPass");
-    _immediateBatch = HdSt_DrawBatchSharedPtr(
-        new HdSt_ImmediateDrawBatch(&_drawItemInstance));
+    _immediateBatch = 
+        std::make_shared<HdSt_ImmediateDrawBatch>(&_drawItemInstance);
 
     HdStRenderDelegate* renderDelegate =
         static_cast<HdStRenderDelegate*>(index->GetRenderDelegate());

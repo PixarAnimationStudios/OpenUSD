@@ -101,6 +101,14 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(HdFormatFloat32Vec2);
     TF_ADD_ENUM_NAME(HdFormatFloat32Vec3);
     TF_ADD_ENUM_NAME(HdFormatFloat32Vec4);
+    TF_ADD_ENUM_NAME(HdFormatInt16);
+    TF_ADD_ENUM_NAME(HdFormatInt16Vec2);
+    TF_ADD_ENUM_NAME(HdFormatInt16Vec3);
+    TF_ADD_ENUM_NAME(HdFormatInt16Vec4);
+    TF_ADD_ENUM_NAME(HdFormatUInt16);
+    TF_ADD_ENUM_NAME(HdFormatUInt16Vec2);
+    TF_ADD_ENUM_NAME(HdFormatUInt16Vec3);
+    TF_ADD_ENUM_NAME(HdFormatUInt16Vec4);
     TF_ADD_ENUM_NAME(HdFormatInt32);
     TF_ADD_ENUM_NAME(HdFormatInt32Vec2);
     TF_ADD_ENUM_NAME(HdFormatInt32Vec3);

@@ -192,6 +192,42 @@ private:
     const std::string _samplerSharedIdentifier;
 };
 
+/// \class HgiMetalBufferShaderSection
+///
+/// Declares the buffer
+///
+class HgiMetalBufferShaderSection final
+        : public HgiMetalShaderSection
+{
+public:
+    HGIMETAL_API
+    HgiMetalBufferShaderSection(
+        const std::string &samplerSharedIdentifier,
+        const std::string &type,
+        const HgiShaderSectionAttributeVector &attributes);
+
+    HGIMETAL_API
+    void WriteType(std::ostream& ss) const override;
+
+    HGIMETAL_API
+    bool VisitScopeMemberDeclarations(std::ostream &ss) override;
+    HGIMETAL_API
+    bool VisitEntryPointParameterDeclarations(std::ostream &ss)  override;
+    HGIMETAL_API
+    bool VisitEntryPointFunctionExecutions(
+        std::ostream& ss,
+        const std::string &scopeInstanceName) override;
+
+private:
+    HgiMetalBufferShaderSection() = delete;
+    HgiMetalBufferShaderSection & operator=(
+        const HgiMetalTextureShaderSection&) = delete;
+    HgiMetalBufferShaderSection(const HgiMetalBufferShaderSection&) = delete;
+
+    const std::string _type;
+    const std::string _samplerSharedIdentifier;
+};
+
 /// \class HgiMetalStructTypeDeclarationShaderSection
 ///
 /// Defines how to declare a struct type. Takes in members that it will include
@@ -284,6 +320,39 @@ public:
 private:
     const std::string _addressSpace;
     const bool _isPointer;
+};
+
+/// \class HgiMetalKeywordInputShaderSection
+///
+/// Defines and writes out special shader keyword inputs
+///
+class HgiMetalKeywordInputShaderSection final
+    : public HgiMetalShaderSection
+{
+public:
+    HGIMETAL_API
+    explicit HgiMetalKeywordInputShaderSection(
+        const std::string &identifier,
+        const std::string &type,
+        const HgiShaderSectionAttributeVector &attributes);
+
+    HGIMETAL_API
+    void WriteType(std::ostream& ss) const override;
+
+    HGIMETAL_API
+    bool VisitEntryPointParameterDeclarations(std::ostream &ss)  override;
+    HGIMETAL_API
+    bool VisitEntryPointFunctionExecutions(
+        std::ostream& ss,
+        const std::string &scopeInstanceName) override;
+
+private:
+    HgiMetalKeywordInputShaderSection() = delete;
+    HgiMetalKeywordInputShaderSection & operator=(
+        const HgiMetalKeywordInputShaderSection&) = delete;
+    HgiMetalKeywordInputShaderSection(const HgiMetalBufferShaderSection&) = delete;
+
+    const std::string _type;
 };
 
 /// \class HgiMetalStageOutputShaderSection

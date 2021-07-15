@@ -262,6 +262,24 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
     return _initializationWasSuccessful.get();
 }
 
+// For the given layer, gets a dictionary of resolved external asset dependency 
+// paths to the timestamp for each asset.
+static VtDictionary
+_GetExternalAssetModificationTimes(const SdfLayer& layer)
+{
+    VtDictionary result;
+    std::set<std::string> externalAssetDependencies = 
+        layer.GetExternalAssetDependencies();
+    for (const std::string& resolvedPath : externalAssetDependencies) {
+        // Get the modification timestamp for the path. Note that external
+        // asset dependencies only returns resolved paths so pass the same
+        // path for both params.
+        result[resolvedPath] = ArGetResolver().GetModificationTimestamp(
+            resolvedPath, ArResolvedPath(resolvedPath));
+    }
+    return result;
+}
+
 SdfLayerRefPtr
 SdfLayer::CreateAnonymous(
     const string& tag, const FileFormatArguments& args)
@@ -372,12 +390,6 @@ SdfLayer::_CreateNew(
     const string& identifier,
     const FileFormatArguments &args)
 {
-    if (Sdf_IsAnonLayerIdentifier(identifier)) {
-        TF_CODING_ERROR("Cannot create a new layer with anonymous "
-            "layer identifier '%s'.", identifier.c_str());
-        return TfNullPtr;
-    }
-
     string whyNot;
     if (!Sdf_CanCreateNewLayerWithIdentifier(identifier, &whyNot)) {
         TF_CODING_ERROR("Cannot create new layer '%s': %s",
@@ -400,17 +412,31 @@ SdfLayer::_CreateNew(
     // Direct newly created layers to a local path.
     const string localPath = resolver.ComputeLocalPath(absIdentifier);
 #else
-    const string absIdentifier =
-        resolver.CreateIdentifierForNewAsset(identifier);
+    string absIdentifier, localPath;
+    {
+        TfErrorMark m;
+        absIdentifier = resolver.CreateIdentifierForNewAsset(identifier);
 
-    // Resolve the identifier to the path where new assets should go.
-    const string localPath = resolver.ResolveForNewAsset(absIdentifier);
+        // Resolve the identifier to the path where new assets should go.
+        localPath = resolver.ResolveForNewAsset(absIdentifier);
+
+        if (!m.IsClean()) {
+            std::vector<std::string> errors;
+            for (const TfError& error : m) {
+                errors.push_back(error.GetCommentary());
+            }
+            whyNot = TfStringJoin(errors, ", ");
+            m.Clear();
+        }
+    }
 #endif
 
     if (localPath.empty()) {
         TF_CODING_ERROR(
-            "Failed to compute path for new layer with "
-            "identifier '%s'", absIdentifier.c_str());
+            "Cannot create new layer '%s': %s",
+            absIdentifier.c_str(), 
+            (whyNot.empty() ? "failed to compute path for new layer" 
+                : whyNot.c_str()));
         return TfNullPtr;
     }
 
@@ -519,13 +545,6 @@ SdfLayer::New(
     layer->_FinishInitialization(/* success = */ true);
 
     return layer;
-}
-
-/* static */
-string
-SdfLayer::ComputeRealPath(const string &layerPath)
-{
-    return Sdf_ComputeFilePath(layerPath);
 }
 
 static SdfLayer::FileFormatArguments&
@@ -781,8 +800,16 @@ SdfLayer::FindOrOpen(const string &identifier,
 
     // Some layers, such as anonymous layers, have identifiers but don't have
     // resolved paths.  They aren't backed by assets on disk.  If we don't find
-    // such a layer by identifier in the registry, we're done since we don't
+    // such a layer by identifier in the registry and the format doesn't specify
+    // that anonymous layers should still be read, we're done since we don't
     // have an asset to open.
+    if (layerInfo.isAnonymous) {
+        if (!layerInfo.fileFormat || 
+            !layerInfo.fileFormat->ShouldReadAnonymousLayers()) {
+            return TfNullPtr;
+        }
+    }
+
     if (layerInfo.resolvedLayerPath.empty()) {
         return TfNullPtr;
     }
@@ -869,24 +896,6 @@ SdfLayer::GetSchema() const
     return GetFileFormat()->GetSchema();
 }
 
-// For the given layer, gets a dictionary of resolved external asset dependency 
-// paths to the timestamp for each asset.
-static VtDictionary
-_GetExternalAssetModificationTimes(const SdfLayer& layer)
-{
-    VtDictionary result;
-    std::set<std::string> externalAssetDependencies = 
-        layer.GetExternalAssetDependencies();
-    for (const std::string& resolvedPath : externalAssetDependencies) {
-        // Get the modification timestamp for the path. Note that external
-        // asset dependencies only returns resolved paths so pass the same
-        // path for both params.
-        result[resolvedPath] = ArGetResolver().GetModificationTimestamp(
-            resolvedPath, ArResolvedPath(resolvedPath));
-    }
-    return result;
-}
-
 SdfLayer::_ReloadResult
 SdfLayer::_Reload(bool force)
 {
@@ -898,9 +907,10 @@ SdfLayer::_Reload(bool force)
         return _ReloadFailed;
     }
 
-    SdfChangeBlock block;
+    const bool isAnonymous = IsAnonymous();
 
-    if (IsAnonymous() && GetFileFormat()->ShouldSkipAnonymousReload()) {
+    SdfChangeBlock block;
+    if (isAnonymous && GetFileFormat()->ShouldSkipAnonymousReload()) {
         // Different file formats have different policies for reloading
         // anonymous layers.  Some want to treat it as a noop, others want to
         // treat it as 'Clear'.
@@ -910,7 +920,8 @@ SdfLayer::_Reload(bool force)
         // reload data appropriately.
         return _ReloadSkipped;
     }
-    else if (IsMuted() || IsAnonymous()) {
+    else if (IsMuted() || 
+             (isAnonymous && !GetFileFormat()->ShouldReadAnonymousLayers())) {
         // Reloading a muted layer leaves it with the initialized contents.
         SdfAbstractDataRefPtr initialData = 
             GetFileFormat()->InitData(GetFileFormatArguments());
@@ -918,6 +929,27 @@ SdfLayer::_Reload(bool force)
             return _ReloadSkipped;
         }
         _SetData(initialData);
+    }
+    else if (isAnonymous) {
+        // Ask the current external asset dependency state.
+        VtDictionary externalAssetTimestamps = 
+            _GetExternalAssetModificationTimes(*this);
+
+        // See if we can skip reloading.
+        if (!force && !IsDirty()
+            && (externalAssetTimestamps == _externalAssetModificationTimes)) {
+            return _ReloadSkipped;
+        }
+
+        std::string resolvedPath;
+        std::string args;
+        Sdf_SplitIdentifier(GetIdentifier(), &resolvedPath, &args);
+
+        if (!_Read(identifier, resolvedPath, /* metadataOnly = */ false)) {
+            return _ReloadFailed;
+        }
+
+        _externalAssetModificationTimes = std::move(externalAssetTimestamps);
     } else {
         // The physical location of the file may have changed since
         // the last load, so re-resolve the identifier.
@@ -1049,6 +1081,7 @@ SdfLayer::_Read(
         TfStringify(metadataOnly).c_str());
 
     SdfFileFormatConstPtr format = GetFileFormat();
+#if AR_VERSION == 1
     if (format->LayersAreFileBased()) {
         if (!ArGetResolver().FetchToLocalResolvedPath(
                 identifier, resolvedPath)) {
@@ -1063,7 +1096,7 @@ SdfLayer::_Read(
             "SdfLayer::_Read - fetched '%s' to local path '%s'\n",
             identifier.c_str(), resolvedPath.c_str());
     }
-
+#endif
     return format->Read(this, resolvedPath, metadataOnly);
 }
 
@@ -1074,6 +1107,17 @@ SdfLayer::Find(const string &identifier,
 {
     TRACE_FUNCTION();
 
+    tbb::queuing_rw_mutex::scoped_lock lock;
+    return _Find(identifier, args, lock, /* retryAsWriter = */ false);
+}
+
+template <class ScopedLock>
+SdfLayerRefPtr
+SdfLayer::_Find(const string &identifier,
+                const FileFormatArguments &args,
+                ScopedLock& lock,
+                bool retryAsWriter)
+{
     // We don't need to drop the GIL here, since _TryToFindLayer() doesn't
     // invoke any plugin code, and if we do wind up calling
     // _WaitForInitializationAndCheckIfSuccessful() then we'll drop the GIL in
@@ -1085,11 +1129,10 @@ SdfLayer::Find(const string &identifier,
     }
 
     // First see if this layer is already present.
-    tbb::queuing_rw_mutex::scoped_lock
-        lock(_GetLayerRegistryMutex(), /*write=*/false);
+    lock.acquire(_GetLayerRegistryMutex(), /*write=*/false);
     if (SdfLayerRefPtr layer = _TryToFindLayer(
             layerInfo.identifier, layerInfo.resolvedLayerPath,
-            lock, /*retryAsWriter=*/false)) {
+            lock, retryAsWriter)) {
         return layer->_WaitForInitializationAndCheckIfSuccessful() ?
             layer : TfNullPtr;
     }
@@ -2013,7 +2056,7 @@ SdfLayer::PermissionToSave() const
     return _permissionToSave &&
         !IsAnonymous() &&
         !IsMuted()     &&
-        Sdf_CanWriteLayerToPath(GetRealPath());
+        Sdf_CanWriteLayerToPath(GetResolvedPath());
 }
 
 void
@@ -2375,13 +2418,15 @@ SdfLayer::SetIdentifier(const string &identifier)
         "SdfLayer::SetIdentifier('%s')\n",
         identifier.c_str());
 
-    string oldLayerPath, oldArguments;
+    string oldLayerPath;
+    SdfLayer::FileFormatArguments oldArguments;
     if (!TF_VERIFY(Sdf_SplitIdentifier(
             GetIdentifier(), &oldLayerPath, &oldArguments))) {
         return;
     }
 
-    string newLayerPath, newArguments;
+    string newLayerPath;
+    SdfLayer::FileFormatArguments newArguments;
     if (!Sdf_SplitIdentifier(identifier, &newLayerPath, &newArguments)) {
         TF_CODING_ERROR("Invalid identifier '%s'", identifier.c_str());
         return;
@@ -2395,6 +2440,13 @@ SdfLayer::SetIdentifier(const string &identifier)
         return;
     }
 
+    string whyNot;
+    if (!Sdf_CanCreateNewLayerWithIdentifier(newLayerPath, &whyNot)) {
+        TF_CODING_ERROR("Cannot change identifier to '%s': %s", 
+            identifier.c_str(), whyNot.c_str());
+        return;
+    }
+
 #if AR_VERSION == 1
     // When changing a layer's identifier, assume that relative identifiers are
     // relative to the current working directory.
@@ -2404,17 +2456,43 @@ SdfLayer::SetIdentifier(const string &identifier)
     // Create an identifier for the layer based on the desired identifier
     // that was passed in. Since this may identifier may point to an asset
     // that doesn't exist yet, use CreateIdentifierForNewAsset.
-    const string absIdentifier =
-        ArGetResolver().CreateIdentifierForNewAsset(identifier);
+    const string absIdentifier = Sdf_CreateIdentifier(
+        ArGetResolver().CreateIdentifierForNewAsset(newLayerPath),
+        newArguments);
 #endif
-
     const ArResolvedPath oldResolvedPath = GetResolvedPath();
 
     // Hold open a change block to defer identifier-did-change
     // notification until the mutex is unlocked.
     SdfChangeBlock block;
+
     {
-        tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
+        tbb::queuing_rw_mutex::scoped_lock lock;
+
+        // See if another layer with the same identifier exists in the registry.
+        // If it doesn't, we will be updating the registry so we need to ensure
+        // our lock is upgraded to a write lock by setting retryAsWriter = true.
+        //
+        // It is possible that the call to _Find returns the same layer we're 
+        // modifying. For example, if a layer was originally opened using some
+        // path and we're now trying to set its identifier to something that
+        // resolves to that same path. In this case, we don't want to error
+        // out.
+        const bool retryAsWriter = true;
+        SdfLayerRefPtr existingLayer = _Find(
+            absIdentifier, FileFormatArguments(), lock, retryAsWriter);
+        if (existingLayer) {
+            if (get_pointer(existingLayer) != this) {
+                TF_CODING_ERROR(
+                    "Layer with identifier '%s' and resolved path '%s' exists.",
+                    existingLayer->GetIdentifier().c_str(),
+                    existingLayer->GetResolvedPath().GetPathString().c_str());
+                return;
+            }
+        }
+
+        // We should have acquired a write lock on the layer registry by this
+        // point, so it's safe to call _InitializeFromIdentifier.
         _InitializeFromIdentifier(absIdentifier);
     }
 
@@ -2578,18 +2656,23 @@ SdfLayer::GetMetadata() const
 }
 
 string
-SdfLayer::ComputeAbsolutePath(const string &relativePath)
+SdfLayer::ComputeAbsolutePath(const string& assetPath) const
 {
-    if (relativePath.empty()
-        || Sdf_IsAnonLayerIdentifier(relativePath)){
-        return relativePath;
+    if (assetPath.empty()
+        || Sdf_IsAnonLayerIdentifier(assetPath)) {
+        return assetPath;
     }
 
+#if AR_VERSION == 1
     // Make it relative to the repository path, if available, so that path
     // resolution will work for references.
     const string relativeToPath = GetRepositoryPath().empty() ?
         GetRealPath() : GetRepositoryPath();
-    return ArGetResolver().AnchorRelativePath(relativeToPath, relativePath);
+    return ArGetResolver().AnchorRelativePath(relativeToPath, assetPath);
+#else
+    return SdfComputeAssetPathRelativeToLayer(
+        SdfCreateNonConstHandle(this), assetPath);
+#endif
 }
 
 string
@@ -3220,18 +3303,21 @@ SdfLayer::_ListFields(SdfSchemaBase const &schema,
 
     // Union them together, but retain order of dataList, since it influences
     // the output ordering in some file writers.
-    auto dataListBegin = dataList.begin(), dataListEnd = dataList.end();
+    TfToken const *dataListBegin = dataList.data();
+    TfToken const *dataListEnd = dataListBegin + dataList.size();
     bool mightAlloc = (dataList.size() + req.size()) > dataList.capacity();
     for (size_t reqIdx = 0, reqSz = req.size(); reqIdx != reqSz; ++reqIdx) {
         TfToken const &reqName = req[reqIdx];
-        auto iter = std::find(dataListBegin, dataListEnd, reqName);
+        TfToken const *iter = std::find(dataListBegin, dataListEnd, reqName);
         if (iter == dataListEnd) {
             // If the required field name is not already present, append it.
             // Make sure we have capacity for all required fields so we do no
             // more than one additional allocation here.
             if (mightAlloc && dataList.size() == dataList.capacity()) {
                 dataList.reserve(dataList.size() + (reqSz - reqIdx));
-                dataListBegin = dataList.begin(), dataListEnd = dataList.end();
+                dataListEnd =
+                    dataList.data() + std::distance(dataListBegin, dataListEnd);
+                dataListBegin = dataList.data();
                 mightAlloc = false;
             }
             dataList.push_back(reqName);
@@ -3643,12 +3729,17 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
     // of Sd.  Do all this in a single changeblock.
     SdfChangeBlock block;
 
-    // If this layer streams its data on demand, we cannot perform 
-    // fine-grained change notification because that would cause all of 
-    // the data in the layer to be streamed in from disk.
-    // So, all we can do is move the new data into place and
-    // notify the world that this layer may have changed arbitrarily.
-    if (_data->StreamsData()) {
+    // If we're transferring from one schema to a different schema, we will go
+    // through the fine-grained update in order to do cross-schema field
+    // validation.
+    const bool differentSchema = newDataSchema && newDataSchema != &GetSchema();
+
+    // If this layer streams its data on demand, we avoid the fine-grained
+    // change code path (unless it's to a different schema) because that would
+    // cause all of the data in the layer to be streamed in from disk.  So we
+    // move the new data into place and notify the world that this layer may
+    // have changed arbitrarily.
+    if (!differentSchema && _data->StreamsData()) {
         _data = newData;
         Sdf_ChangeManager::Get().DidReplaceLayerContent(_self);
         return;
@@ -3731,7 +3822,6 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
         _SpecsToCreate specsToCreate(*boost::get_pointer(_data));
         newData->VisitSpecs(&specsToCreate);
 
-        bool differentSchema = newDataSchema && newDataSchema != &GetSchema();
         SdfPath unrecognizedSpecTypePaths[SdfNumSpecTypes];
 
         // Create specs top-down to provide optimal diffs.
@@ -3815,7 +3905,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
 
                 const SdfSchemaBase &thisLayerSchema = layer->GetSchema();
 
-                bool differentSchema = &thisLayerSchema != &newDataSchema;
+                const bool differentSchema = &thisLayerSchema != &newDataSchema;
 
                 // If this layer has a different schema from newDataSchema, then
                 // it's possible there is no corresponding spec for the path, in
@@ -4500,20 +4590,41 @@ SdfLayer::_WriteToFile(const string & newFileName,
         return false;
     }
 
+#if AR_VERSION == 1
     if (!ArGetResolver().CreatePathForLayer(newFileName)) {
         TF_RUNTIME_ERROR(
             "Cannot create path to write '%s'",
             newFileName.c_str());
         return false;
     }
+#endif
 
-    // XXX Check for schema compatibility here...
+    // If the output file format has a different schema, then transfer content
+    // to an in-memory layer first just to validate schema compatibility.
+    const bool differentSchema = &fileFormat->GetSchema() != &GetSchema();
+    if (differentSchema) {
+        SdfLayerRefPtr tmpLayer =
+            CreateAnonymous("cross-schema-write-test", fileFormat, args);
+        TfErrorMark m;
+        tmpLayer->TransferContent(
+            SdfLayerHandle(const_cast<SdfLayer *>(this)));
+        if (!m.IsClean()) {
+            TF_RUNTIME_ERROR("Failed attempting to write '%s' under a "
+                             "different schema.  If this is intended, "
+                             "TransferContent() to a temporary anonymous "
+                             "layer with the desired schema and handle "
+                             "the errors, then export that temporary layer",
+                             newFileName.c_str());
+            return false;
+        }
+    }    
 
     bool ok = fileFormat->WriteToFile(*this, newFileName, comment, args);
 
     // If we wrote to the backing file then we're now clean.
-    if (ok && newFileName == GetRealPath())
+    if (ok && newFileName == GetRealPath()) {
        _MarkCurrentStateAsClean();
+    }
 
     return ok;
 }
@@ -4522,7 +4633,15 @@ bool
 SdfLayer::Export(const string& newFileName, const string& comment,
                  const FileFormatArguments& args) const
 {
-    return _WriteToFile(newFileName, comment, TfNullPtr, args);
+    return _WriteToFile(
+        newFileName,
+        comment,
+        // If the layer's current format supports the extension, use it,
+        // otherwise pass TfNullPtr, which instructs the callee to use the
+        // primary format for the output's extension.
+        GetFileFormat()->IsSupportedExtension(newFileName)
+            ? GetFileFormat() : TfNullPtr,
+        args);
 }
 
 bool

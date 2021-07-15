@@ -31,6 +31,8 @@ HgiShaderFunctionTextureDesc::HgiShaderFunctionTextureDesc()
 {
 }
 
+HgiShaderFunctionBufferDesc::HgiShaderFunctionBufferDesc()  =  default;
+
 HgiShaderFunctionParamDesc::HgiShaderFunctionParamDesc() = default;
 
 HgiShaderFunctionDesc::HgiShaderFunctionDesc() 
@@ -55,6 +57,21 @@ bool operator==(
 bool operator!=(
     const HgiShaderFunctionTextureDesc& lhs,
     const HgiShaderFunctionTextureDesc& rhs)
+{
+    return !(lhs == rhs);
+}
+
+bool operator==(
+    const HgiShaderFunctionBufferDesc& lhs,
+    const HgiShaderFunctionBufferDesc& rhs)
+{
+    return lhs.nameInShader == rhs.nameInShader &&
+           lhs.type == rhs.type;
+}
+
+bool operator!=(
+    const HgiShaderFunctionBufferDesc& lhs,
+    const HgiShaderFunctionBufferDesc& rhs)
 {
     return !(lhs == rhs);
 }
@@ -111,6 +128,19 @@ HgiShaderFunctionAddTexture(
     texDesc.format = format;
 
     desc->textures.push_back(std::move(texDesc));
+}
+
+void
+HgiShaderFunctionAddBuffer(
+    HgiShaderFunctionDesc * const desc,
+    const std::string &nameInShader,
+    const std::string &type)
+{
+    HgiShaderFunctionBufferDesc bufDesc;
+    bufDesc.nameInShader = nameInShader;
+    bufDesc.type = type;
+
+    desc->buffers.push_back(std::move(bufDesc));
 }
 
 void

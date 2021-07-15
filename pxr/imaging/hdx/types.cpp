@@ -82,10 +82,15 @@ const HioFormat FORMAT_DESC[] =
     HioFormatFloat32Vec3,   // Float32Vec3
     HioFormatFloat32Vec4,   // Float32Vec4
 
-    HioFormatUInt16,         // UInt16
-    HioFormatUInt16Vec2,     // UInt16Vec2
-    HioFormatUInt16Vec3,     // UInt16Vec3
-    HioFormatUInt16Vec4,     // UInt16Vec4
+    HioFormatInt16,         // Int16
+    HioFormatInt16Vec2,     // Int16Vec2
+    HioFormatInt16Vec3,     // Int16Vec3
+    HioFormatInt16Vec4,     // Int16Vec4
+
+    HioFormatUInt16,        // UInt16
+    HioFormatUInt16Vec2,    // UInt16Vec2
+    HioFormatUInt16Vec3,    // UInt16Vec3
+    HioFormatUInt16Vec4,    // UInt16Vec4
 
     HioFormatInt32,         // Int32
     HioFormatInt32Vec2,     // Int32Vec2
@@ -113,10 +118,10 @@ constexpr bool _CompileTimeValidateHgiFormatTable() {
             HgiFormatUNorm8 == 0 &&
             HgiFormatFloat16Vec4 == 9 &&
             HgiFormatFloat32Vec4 == 13 &&
-            HgiFormatUInt16Vec4 == 17 &&
-            HgiFormatInt32Vec4 == 21 &&
-            HgiFormatUNorm8Vec4srgb == 22 &&
-            HgiFormatBC3UNorm8Vec4 == 28) ? true : false;
+            HgiFormatUInt16Vec4 == 21 &&
+            HgiFormatInt32Vec4 == 25 &&
+            HgiFormatUNorm8Vec4srgb == 26 &&
+            HgiFormatBC3UNorm8Vec4 == 32) ? true : false;
 }
 
 static_assert(_CompileTimeValidateHgiFormatTable(), 

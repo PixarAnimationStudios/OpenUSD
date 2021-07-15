@@ -211,8 +211,8 @@ _GetFallbackSurfaceShader()
     static HdStSurfaceShaderSharedPtr fallbackSurfaceShader;
    
     std::call_once(once, [](){
-        HioGlslfxSharedPtr glslfx(
-            new HioGlslfx(HdStPackageFallbackSurfaceShader()));
+        HioGlslfxSharedPtr glslfx =
+            std::make_shared<HioGlslfx>(HdStPackageFallbackSurfaceShader());
 
         fallbackSurfaceShader.reset(new HdStGLSLFXShader(glslfx));
     });

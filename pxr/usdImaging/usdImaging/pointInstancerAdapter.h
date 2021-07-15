@@ -392,7 +392,7 @@ private:
     // Indexed by cachePath (each prim has one entry)
     typedef std::unordered_map<SdfPath, _ProtoPrim, SdfPath::Hash> _ProtoPrimMap;
 
-    // All data asscoiated with a given Instancer prim. PrimMap could
+    // All data associated with a given Instancer prim. PrimMap could
     // technically be split out to avoid two lookups, however it seems cleaner
     // to keep everything bundled up under the instancer path.
     struct _InstancerData {

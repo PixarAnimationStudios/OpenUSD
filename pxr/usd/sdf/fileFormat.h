@@ -27,6 +27,7 @@
 /// \file sdf/fileFormat.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/ar.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/base/tf/declarePtrs.h"
@@ -143,6 +144,7 @@ public:
     /// layers.
     SDF_API bool ShouldSkipAnonymousReload() const;
 
+#if AR_VERSION == 1
     /// Return true if layers produced by this file format are based
     /// on physical files on disk. If so, this file format requires
     /// layers to be serialized to and read from files on disk.
@@ -158,6 +160,21 @@ public:
     /// \sa ArResolver::Resolve
     /// \sa ArResolver::FetchToLocalResolvedPath
     SDF_API bool LayersAreFileBased() const;
+#endif
+
+    /// Returns true if anonymous layer identifiers should be passed to Read 
+    /// when a layer is opened or reloaded.
+    /// 
+    /// Anonymous layers will not have an asset backing and thus for most
+    /// file formats there is nothing that can be read for an anonymous layer. 
+    /// However, there are file formats that use Read to generate dynamic layer 
+    /// content without reading any data from the resolved asset associated with
+    /// the layer's identifier. 
+    /// 
+    /// For these types of file formats it is useful to be able to open 
+    /// anonymous layers and allow Read to populate them to avoid requiring a
+    /// placeholder asset to exist just so Read can populate the layer.
+    SDF_API bool ShouldReadAnonymousLayers() const;
 
     /// Returns true if \p file can be read by this format.
     SDF_API
@@ -350,7 +367,7 @@ protected:
     SDF_API
     static SdfAbstractDataConstPtr _GetLayerData(const SdfLayer& layer);
 
-private:
+protected:
     SDF_API
     virtual SdfLayer *_InstantiateNewLayer(
         const SdfFileFormatConstPtr &fileFormat,
@@ -364,12 +381,22 @@ private:
     SDF_API
     virtual bool _ShouldSkipAnonymousReload() const;
 
+#if AR_VERSION == 1
     /// File format subclasses may override this to specify whether
     /// their layers are backed by physical files on disk.
     /// Default implementation returns true.
     SDF_API
     virtual bool _LayersAreFileBased() const;
+#endif
 
+    /// File format subclasses may override this to specify whether
+    /// Read should be called when creating, opening, or reloading an anonymous
+    /// layer of this format.
+    /// Default implementation returns false.
+    SDF_API 
+    virtual bool _ShouldReadAnonymousLayers() const;
+
+private:
     const SdfSchemaBase& _schema;
     const TfToken _formatId;
     const TfToken _target;

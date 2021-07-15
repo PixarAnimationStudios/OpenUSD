@@ -27,6 +27,7 @@
 #include "pxr/usd/sdf/primSpec.h"
 
 #include "pxr/usd/usd/pyConversions.h"
+#include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -70,11 +71,38 @@ _CreateVolumeAttr(UsdSchemaExamplesParamsAPI &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdSchemaExamplesParamsAPI &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdSchemaExamples.ParamsAPI(%s)",
+        primRepr.c_str());
+}
+
+struct UsdSchemaExamplesParamsAPI_CanApplyResult : 
+    public TfPyAnnotatedBoolResult<std::string>
+{
+    UsdSchemaExamplesParamsAPI_CanApplyResult(bool val, std::string const &msg) :
+        TfPyAnnotatedBoolResult<std::string>(val, msg) {}
+};
+
+static UsdSchemaExamplesParamsAPI_CanApplyResult
+_WrapCanApply(const UsdPrim& prim)
+{
+    std::string whyNot;
+    bool result = UsdSchemaExamplesParamsAPI::CanApply(prim, &whyNot);
+    return UsdSchemaExamplesParamsAPI_CanApplyResult(result, whyNot);
+}
+
 } // anonymous namespace
 
 void wrapUsdSchemaExamplesParamsAPI()
 {
     typedef UsdSchemaExamplesParamsAPI This;
+
+    UsdSchemaExamplesParamsAPI_CanApplyResult::Wrap<UsdSchemaExamplesParamsAPI_CanApplyResult>(
+        "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
         cls("ParamsAPI");
@@ -86,6 +114,9 @@ void wrapUsdSchemaExamplesParamsAPI()
 
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
+
+        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .staticmethod("CanApply")
 
         .def("Apply", &This::Apply, (arg("prim")))
         .staticmethod("Apply")
@@ -124,6 +155,7 @@ void wrapUsdSchemaExamplesParamsAPI()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

@@ -27,6 +27,9 @@
 #include "pxr/usd/sdf/primSpec.h"
 
 #include "pxr/usd/usd/pyConversions.h"
+{% if cls.isAppliedAPISchema %}
+#include "pxr/base/tf/pyAnnotatedBoolResult.h"
+{% endif %}
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -89,6 +92,33 @@ _Repr(const {{ cls.cppClassName }} &self)
 {% endif %}
 }
 {% endif %}
+{% if cls.isAppliedAPISchema %}
+
+struct {{ cls.cppClassName }}_CanApplyResult : 
+    public TfPyAnnotatedBoolResult<std::string>
+{
+    {{ cls.cppClassName }}_CanApplyResult(bool val, std::string const &msg) :
+        TfPyAnnotatedBoolResult<std::string>(val, msg) {}
+};
+
+{% if cls.isMultipleApply %}
+static {{ cls.cppClassName }}_CanApplyResult
+_WrapCanApply(const UsdPrim& prim, const TfToken& name)
+{
+    std::string whyNot;
+    bool result = {{ cls.cppClassName }}::CanApply(prim, name, &whyNot);
+    return {{ cls.cppClassName }}_CanApplyResult(result, whyNot);
+}
+{% else %}
+static {{ cls.cppClassName }}_CanApplyResult
+_WrapCanApply(const UsdPrim& prim)
+{
+    std::string whyNot;
+    bool result = {{ cls.cppClassName }}::CanApply(prim, &whyNot);
+    return {{ cls.cppClassName }}_CanApplyResult(result, whyNot);
+}
+{% endif %}
+{% endif %}
 {% if useExportAPI %}
 
 } // anonymous namespace
@@ -98,6 +128,11 @@ void wrap{{ cls.cppClassName }}()
 {
     typedef {{ cls.cppClassName }} This;
 
+{% if cls.isAppliedAPISchema %}
+    {{ cls.cppClassName }}_CanApplyResult::Wrap<{{ cls.cppClassName }}_CanApplyResult>(
+        "_CanApplyResult", "whyNot");
+
+{% endif %}
 {% if cls.isAPISchemaBase %}
     class_< This , bases<{{ cls.parentCppClassName }}>, boost::noncopyable> cls ("APISchemaBase", "", no_init);
 {% else %}
@@ -138,6 +173,16 @@ void wrap{{ cls.cppClassName }}()
 
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
+{% endif %}
+{% if cls.isAppliedAPISchema and not cls.isMultipleApply %}
+
+        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .staticmethod("CanApply")
+{% endif %}
+{% if cls.isAppliedAPISchema and cls.isMultipleApply %}
+
+        .def("CanApply", &_WrapCanApply, (arg("prim"), arg("name")))
+        .staticmethod("CanApply")
 {% endif %}
 {% if cls.isAppliedAPISchema and not cls.isMultipleApply %}
 

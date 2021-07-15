@@ -45,8 +45,9 @@
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/base/work/arenaDispatcher.h"
+#include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/loops.h"
+#include "pxr/base/work/withScopedParallelism.h"
 #include "pxr/base/tf/pyLock.h"
 
 #include <iostream>
@@ -1192,51 +1193,56 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
     // These tasks will call Sync() adding dirty lists to _syncQueue for
     // processing below.
     //
-    size_t numTasks = tasks->size();
-    for (size_t taskNum = 0; taskNum < numTasks; ++taskNum) {
-        HdTaskSharedPtr &task = (*tasks)[taskNum];
+    {
+        TRACE_FUNCTION_SCOPE("Task Sync");
 
-        if (!TF_VERIFY(task)) {
-            TF_CODING_ERROR("Null Task in task list.  Entry Num: %zu", taskNum);
-            continue;
-        }
+        size_t numTasks = tasks->size();
+        for (size_t taskNum = 0; taskNum < numTasks; ++taskNum) {
+            HdTaskSharedPtr &task = (*tasks)[taskNum];
 
-        SdfPath taskId = task->GetId();
+            if (!TF_VERIFY(task)) {
+                TF_CODING_ERROR("Null Task in task list.  Entry Num: %zu",
+                                taskNum);
+                continue;
+            }
 
-        // Is this a tracked task?
-        _TaskMap::iterator taskMapIt = _taskMap.find(taskId);
-        if (taskMapIt != _taskMap.end()) {
-            _TaskInfo &taskInfo = taskMapIt->second;
+            SdfPath taskId = task->GetId();
 
-            // If the task is in the render index, then we have the
-            // possibility that the task passed in points to a
-            // different instance than the one stored in the render index
-            // even though they have the same id.
-            //
-            // For consistency, we always use the registered task in the
-            // render index for a given id, as that is the one the state is
-            // tracked for.
-            //
-            // However, this is still a weird situation, so report the
-            // issue as a verify so it can be addressed.
-            TF_VERIFY(taskInfo.task == task);
+            // Is this a tracked task?
+            _TaskMap::iterator taskMapIt = _taskMap.find(taskId);
+            if (taskMapIt != _taskMap.end()) {
+                _TaskInfo &taskInfo = taskMapIt->second;
 
-            HdDirtyBits taskDirtyBits = _tracker.GetTaskDirtyBits(taskId);
+                // If the task is in the render index, then we have the
+                // possibility that the task passed in points to a
+                // different instance than the one stored in the render index
+                // even though they have the same id.
+                //
+                // For consistency, we always use the registered task in the
+                // render index for a given id, as that is the one the state is
+                // tracked for.
+                //
+                // However, this is still a weird situation, so report the
+                // issue as a verify so it can be addressed.
+                TF_VERIFY(taskInfo.task == task);
 
-            taskInfo.task->Sync(taskInfo.sceneDelegate,
-                                taskContext,
-                                &taskDirtyBits);
+                HdDirtyBits taskDirtyBits = _tracker.GetTaskDirtyBits(taskId);
 
-            _tracker.MarkTaskClean(taskId, taskDirtyBits);
+                taskInfo.task->Sync(taskInfo.sceneDelegate,
+                                    taskContext,
+                                    &taskDirtyBits);
 
-        } else {
-            // Dummy dirty bits
-            HdDirtyBits taskDirtyBits = 0;
+                _tracker.MarkTaskClean(taskId, taskDirtyBits);
 
-            // This is an untracked task, never added to the render index.
-            task->Sync(nullptr,
-                       taskContext,
-                       &taskDirtyBits);
+            } else {
+                // Dummy dirty bits
+                HdDirtyBits taskDirtyBits = 0;
+
+                // This is an untracked task, never added to the render index.
+                task->Sync(nullptr,
+                           taskContext,
+                           &taskDirtyBits);
+            }
         }
     }
 
@@ -1398,20 +1404,21 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
         HF_TRACE_FUNCTION_SCOPE("Pre-Sync Rprims");
 
         // Dispatch synchronization work to each delegate.
-        WorkArenaDispatcher dirtyBitDispatcher;
+        WorkWithScopedParallelism([&]() {
+            WorkDispatcher dirtyBitDispatcher;
 
-        TF_FOR_ALL(dlgIt, syncMap) {
-            HdSceneDelegate *sceneDelegate = dlgIt->first;
-            _RprimSyncRequestVector *r = &dlgIt->second;
-            dirtyBitDispatcher.Run(
-                                   std::bind(&_PreSyncRequestVector,
-                                             sceneDelegate,
-                                             &_tracker,
-                                             r,
-                                             std::cref(reprs)));
+            TF_FOR_ALL(dlgIt, syncMap) {
+                HdSceneDelegate *sceneDelegate = dlgIt->first;
+                _RprimSyncRequestVector *r = &dlgIt->second;
+                dirtyBitDispatcher.Run(
+                    std::bind(&_PreSyncRequestVector,
+                              sceneDelegate,
+                              &_tracker,
+                              r,
+                              std::cref(reprs)));
 
-        }
-        dirtyBitDispatcher.Wait();
+            }
+        });
     }
 
     {
@@ -1426,39 +1433,43 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
     }
 
     // Collect results and synchronize.
-    WorkArenaDispatcher dispatcher;
-    TF_FOR_ALL(dlgIt, syncMap) {
-        HdSceneDelegate* sceneDelegate = dlgIt->first;
-        _RprimSyncRequestVector& r = dlgIt->second;
+    WorkWithScopedParallelism([&]() {
+        WorkDispatcher dispatcher;
+        TF_FOR_ALL(dlgIt, syncMap) {
+            HdSceneDelegate* sceneDelegate = dlgIt->first;
+            _RprimSyncRequestVector& r = dlgIt->second;
+            
+            {
+                _SyncRPrims workerState(
+                    sceneDelegate, r, reprs, _tracker, renderParam);
 
-        {
-            _SyncRPrims workerState(sceneDelegate, r, reprs, _tracker, renderParam);
-
-            if (!TfDebug::IsEnabled(HD_DISABLE_MULTITHREADED_RPRIM_SYNC) &&
-                  sceneDelegate->IsEnabled(HdOptionTokens->parallelRprimSync)) {
-                TRACE_SCOPE("Parallel Rprim Sync");
-                // In the lambda below, we capture workerState by value and 
-                // incur a copy in the std::bind because the lambda execution 
-                // may be delayed (until we call Wait), resulting in
-                // workerState going out of scope.
-                dispatcher.Run([&r, workerState]() {
-                    WorkParallelForN(r.rprims.size(),
-                        std::bind(&_SyncRPrims::Sync, workerState,
-                                  std::placeholders::_1,
-                                  std::placeholders::_2));
-                });
-            } else {
-                TRACE_SCOPE("Serial Rprim Sync");
-                // Single-threaded version: Call worker directly
-                workerState.Sync(0, r.rprims.size());
+                if (!TfDebug::IsEnabled(HD_DISABLE_MULTITHREADED_RPRIM_SYNC) &&
+                    sceneDelegate->IsEnabled(
+                        HdOptionTokens->parallelRprimSync)) {
+                    TRACE_SCOPE("Parallel Rprim Sync");
+                    // In the lambda below, we capture workerState by value and
+                    // incur a copy in the std::bind because the lambda
+                    // execution may be delayed (until we call Wait), resulting
+                    // in workerState going out of scope.
+                    dispatcher.Run([&r, workerState]() {
+                        WorkParallelForN(r.rprims.size(),
+                                         std::bind(
+                                             &_SyncRPrims::Sync, workerState,
+                                             std::placeholders::_1,
+                                             std::placeholders::_2));
+                    });
+                } else {
+                    TRACE_SCOPE("Serial Rprim Sync");
+                    // Single-threaded version: Call worker directly
+                    workerState.Sync(0, r.rprims.size());
+                }
             }
         }
-    }
-    dispatcher.Wait();
+    });
 
     {
         HF_TRACE_FUNCTION_SCOPE("Clean Up");
-        // Give Delegate's to do any post-parrellel work,
+        // Give Delegate's to do any post-parallel work,
         // such as garbage collection.
         TF_FOR_ALL(dlgIt, syncMap) {
             HdSceneDelegate *delegate = dlgIt->first;

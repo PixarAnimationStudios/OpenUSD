@@ -204,6 +204,10 @@ public:
     void SetLightingEnabled(bool enabled);
     bool GetLightingEnabled() const { return _lightingEnabled; }
 
+    HD_API
+    void SetClippingEnabled(bool enabled);
+    bool GetClippingEnabled() const { return _clippingEnabled; }
+
     // ---------------------------------------------------------------------- //
     /// \name Render pipeline state
     // ---------------------------------------------------------------------- //
@@ -213,6 +217,12 @@ public:
     void SetAovBindings(HdRenderPassAovBindingVector const &aovBindings);
     HD_API
     HdRenderPassAovBindingVector const& GetAovBindings() const;
+
+    /// Set the AOVs that this renderpass needs to read from.
+    HD_API
+    void SetAovInputBindings(HdRenderPassAovBindingVector const &aovBindings);
+    HD_API
+    HdRenderPassAovBindingVector const& GetAovInputBindings() const;
 
     /// Returns true if the render pass wants to render into the multi-sample
     /// aovs. Returns false if the render wants to render into the resolve aovs.
@@ -330,8 +340,7 @@ protected:
     GfVec4f _viewport;
     CameraUtilFraming _framing;
     std::pair<bool, CameraUtilConformWindowPolicy> _overrideWindowPolicy;
-    // TODO: This is only used for CPU culling, should compute it on the fly.
-    GfMatrix4d _cullMatrix; 
+    GfMatrix4d _cullMatrix; // updated during Prepare(..)
 
     // Used by applications setting the view matrix directly instead of
     // using an HdCamera. Will be removed eventually.
@@ -351,6 +360,7 @@ protected:
     GfVec4f _pointColor;
     float _pointSize;
     bool _lightingEnabled;
+    bool _clippingEnabled;
 
     GfVec4f _maskColor;
     GfVec4f _indicatorColor;
@@ -402,6 +412,7 @@ protected:
     std::vector<ColorMask> _colorMasks;
 
     HdRenderPassAovBindingVector _aovBindings;
+    HdRenderPassAovBindingVector _aovInputBindings;
     bool _useMultiSampleAov;
 };
 

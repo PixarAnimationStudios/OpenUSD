@@ -62,13 +62,17 @@ UsdRiLightPortalAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 
 /* virtual */
-UsdSchemaKind UsdRiLightPortalAPI::_GetSchemaKind() const {
+UsdSchemaKind UsdRiLightPortalAPI::_GetSchemaKind() const
+{
     return UsdRiLightPortalAPI::schemaKind;
 }
 
-/* virtual */
-UsdSchemaKind UsdRiLightPortalAPI::_GetSchemaType() const {
-    return UsdRiLightPortalAPI::schemaType;
+/* static */
+bool
+UsdRiLightPortalAPI::CanApply(
+    const UsdPrim &prim, std::string *whyNot)
+{
+    return prim.CanApplyAPI<UsdRiLightPortalAPI>(whyNot);
 }
 
 /* static */

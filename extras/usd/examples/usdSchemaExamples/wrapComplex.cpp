@@ -56,6 +56,15 @@ _CreateComplexStringAttr(UsdSchemaExamplesComplex &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->String), writeSparsely);
 }
 
+static std::string
+_Repr(const UsdSchemaExamplesComplex &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdSchemaExamples.Complex(%s)",
+        primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapUsdSchemaExamplesComplex()
@@ -96,6 +105,7 @@ void wrapUsdSchemaExamplesComplex()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
+        .def("__repr__", ::_Repr)
     ;
 
     _CustomWrapCode(cls);

@@ -23,6 +23,7 @@
 //
 
 #include "pxr/imaging/hgiMetal/shaderGenerator.h"
+#include "pxr/imaging/hgi/tokens.h"
 #include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -336,23 +337,30 @@ _ComputeHeader(id<MTLDevice> device)
     header  << "#include <metal_stdlib>\n"
             << "#include <simd/simd.h>\n"
             << "#include <metal_pack>\n"
+            << "#pragma clang diagnostic ignored \"-Wunused-variable\"\n"
+            << "#pragma clang diagnostic ignored \"-Wsign-compare\"\n"
             << "using namespace metal;\n";
 
     header  << "#define double float\n"
             << "#define vec2 float2\n"
             << "#define vec3 float3\n"
             << "#define vec4 float4\n"
+            << "#define mat2 float2x2\n"
             << "#define mat3 float3x3\n"
             << "#define mat4 float4x4\n"
             << "#define ivec2 int2\n"
             << "#define ivec3 int3\n"
             << "#define ivec4 int4\n"
+            << "#define uvec2 uint2\n"
+            << "#define uvec3 uint3\n"
+            << "#define uvec4 uint4\n"
             << "#define bvec2 bool2\n"
             << "#define bvec3 bool3\n"
             << "#define bvec4 bool4\n"
             << "#define dvec2 float2\n"
             << "#define dvec3 float3\n"
             << "#define dvec4 float4\n"
+            << "#define dmat2 float2x2\n"
             << "#define dmat3 float3x3\n"
             << "#define dmat4 float4x4\n";
 
@@ -383,6 +391,9 @@ _ComputeHeader(id<MTLDevice> device)
     << "template <typename T>\n"
     << "T bitfieldReverse(T x) { return reverse_bits(x); }\n\n"
     << "template <typename T>\n"
+    << "T bitfieldExtract(T value, int offset, int bits) {\n"
+    << "  return extract_bits(value, offset, bits); }\n"
+    << "template <typename T>\n"
     << "ivec2 imageSize(T texture) {\n"
     << "    return ivec2(texture.get_width(), texture.get_height());\n"
     << "}\n\n"
@@ -403,6 +414,8 @@ _ComputeHeader(id<MTLDevice> device)
             << "        float r, rr, rrr, rrrr, g, b, a;\n"
             << "    };\n"
             << "    wrapped_float(float _x) { x = _x;}\n"
+            << "    wrapped_float(const thread wrapped_float &_x) { x = _x.x;}\n"
+            << "    wrapped_float(const device wrapped_float &_x) { x = _x.x;}\n"
             << "    operator float () {\n"
             << "        return x;\n"
             << "    }\n"
@@ -414,6 +427,8 @@ _ComputeHeader(id<MTLDevice> device)
             << "        int r, rr, rrr, rrrr, g, b, a;\n"
             << "    };\n"
             << "    wrapped_int(int _x) { x = _x;}\n"
+            << "    wrapped_int(const thread wrapped_int &_x) { x = _x.x;}\n"
+            << "    wrapped_int(const device wrapped_int &_x) { x = _x.x;}\n"
             << "    operator int () {\n"
             << "        return x;\n"
             << "    }\n"
@@ -774,6 +789,69 @@ void HgiMetalShaderGenerator::_BuildTextureShaderSections(
         structSection);
 }
 
+//Instantiate buffer shader sections based on the given descriptor
+void HgiMetalShaderGenerator::_BuildBufferShaderSections(
+    const HgiShaderFunctionDesc &descriptor)
+{
+    const std::vector<HgiShaderFunctionBufferDesc> &buffers =
+        descriptor.buffers;
+    for (size_t i = 0; i < buffers.size(); ++i) {
+        //Create the buffer shader section
+        const std::string &bufName = buffers[i].nameInShader;
+        const std::string &bufType = buffers[i].type;
+
+        const HgiShaderSectionAttributeVector attributes = {
+            HgiShaderSectionAttribute{"buffer", std::to_string(i + 1)} };
+
+        //Shader section vector on the generator
+        // owns all sections, point to it in the vector
+        HgiMetalBufferShaderSection * const section =
+            CreateShaderSection<HgiMetalBufferShaderSection>(
+                    bufName,
+                    bufType,
+                    attributes);
+    }
+}
+
+//Instantiate special keyword shader sections based on the given descriptor
+void HgiMetalShaderGenerator::_BuildKeywordInputShaderSections(
+    const HgiShaderFunctionDesc &descriptor)
+{
+    //possible metal attributes on shader inputs.
+    // Map from descriptor to Metal
+    std::unordered_map<std::string, std::string> roleIndexM {
+       {HgiShaderKeywordTokens->hdGlobalInvocationID, "thread_position_in_grid"}
+    };
+
+    const std::vector<HgiShaderFunctionParamDesc> &inputs =
+        descriptor.stageInputs;
+    for (size_t i = 0; i < inputs.size(); ++i) {
+        const HgiShaderFunctionParamDesc &p(inputs[i]);
+        const std::string &role = p.role;
+
+        //check if has a role
+        if(!p.role.empty()) {
+            auto it = roleIndexM.find(p.role);
+            if (it != roleIndexM.end()) {
+                //Create the keyword shader section
+                const std::string &keywordName = p.nameInShader;
+
+                const HgiShaderSectionAttributeVector attributes = {
+                    HgiShaderSectionAttribute{it->second, "" }};
+
+                //Shader section vector on the generator
+                // owns all sections, point to it in the vector
+                HgiMetalKeywordInputShaderSection * const section =
+                    CreateShaderSection<HgiMetalKeywordInputShaderSection>(
+                            keywordName,
+                            p.type,
+                            attributes);
+
+            }
+        }
+    }
+}
+
 std::unique_ptr<HgiMetalShaderStageEntryPoint>
 HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
     const HgiShaderFunctionDesc &descriptor)
@@ -781,6 +859,10 @@ HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
     if(!descriptor.textures.empty()) {
         _BuildTextureShaderSections(descriptor);
     }
+    if(!descriptor.buffers.empty()) {
+        _BuildBufferShaderSections(descriptor);
+    }
+    _BuildKeywordInputShaderSections(descriptor);
 
     //Create differing shader function signature based on stage
     const ShaderStageData stageData(descriptor, this);
@@ -875,9 +957,10 @@ void HgiMetalShaderGenerator::_Execute(
     ss << "};\n\n";
 
     //write out the entry point signature
+    HgiMetalStageOutputShaderSection* const outputs =
+        _generatorShaderSections->GetOutputs();
     std::stringstream returnSS;
-    if (HgiMetalStageOutputShaderSection* const outputs =
-                        _generatorShaderSections->GetOutputs()) {
+    if (outputs) {
         const HgiMetalStructTypeDeclarationShaderSection* const decl =
             outputs->GetStructTypeDeclaration();
         decl->WriteIdentifier(returnSS);
@@ -917,11 +1000,14 @@ void HgiMetalShaderGenerator::_Execute(
         }
     }
     //return the instance of the shader entrypoint output type
-    const std::string outputInstanceName =
-            _generatorShaderSections->GetOutputInstanceName();
-    if(!outputInstanceName.empty())
+    if(outputs)
     {
+        const std::string outputInstanceName =
+                _generatorShaderSections->GetOutputInstanceName();
         ss << "return " << outputInstanceName << ";\n";
+    }
+    else {
+        ss << _generatorShaderSections->GetScopeInstanceName() << ".main();\n";
     }
     ss << "}\n";
 }

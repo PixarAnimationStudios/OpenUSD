@@ -232,6 +232,9 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         // Allocate hydra prototype prims for the prims in the USD prototype.
         // -------------------------------------------------------------- //
 
+        // We do not need _GetDisplayPredicateForPrototypes here because
+        // the regular display predicate works properly with native instancing
+        // prototypes.
         UsdPrimRange range(prototypePrim, _GetDisplayPredicate());
         int protoID = 0;
         int primCount = 0;
@@ -1267,6 +1270,12 @@ UsdImagingInstanceAdapter::ProcessPropertyChange(UsdPrim const& prim,
             protoPrim, cachePath, propertyName);
 
         return dirtyBits;
+    }
+
+    // Purpose changes to instances mean we need to resync everything, since
+    // purpose is part of the native instance population state.
+    if (propertyName == UsdGeomTokens->purpose) {
+        return HdChangeTracker::AllDirty;
     }
 
     // Transform changes to instance prims end up getting folded into the

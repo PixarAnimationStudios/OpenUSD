@@ -23,6 +23,10 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/plugin/usdMtlx/utils.h"
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/packageUtils.h"
+#include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ndr/debugCodes.h"
 #include "pxr/usd/ndr/filesystemDiscoveryHelpers.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -35,7 +39,9 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/array.h"
 #include <MaterialXCore/Util.h>
@@ -211,6 +217,127 @@ UsdMtlxStandardFileExtensions()
     return extensions;
 }
 
+#if AR_VERSION > 1
+static void
+_ReadFromAsset(mx::DocumentPtr doc, const ArResolvedPath& resolvedPath,
+               const mx::FileSearchPath& searchPath = mx::FileSearchPath(),
+               const mx::XmlReadOptions* readOptionsIn = nullptr)
+{
+    std::shared_ptr<const char> buffer;
+    size_t bufferSize = 0;
+
+    std::tie(buffer, bufferSize) = [&resolvedPath]() {
+        const std::shared_ptr<ArAsset> asset = 
+            ArGetResolver().OpenAsset(resolvedPath);
+        return asset ?
+            std::make_pair(asset->GetBuffer(), asset->GetSize()) :
+            std::make_pair(std::shared_ptr<const char>(), 0ul);
+    }();
+
+    if (!buffer) {
+        TF_RUNTIME_ERROR("Unable to open MaterialX document '%s'",
+                         resolvedPath.GetPathString().c_str());
+        return;
+    }
+
+    // Copy contents of file into a string to pass to MaterialX. 
+    // MaterialX does have a std::istream-based API so we could try to use that
+    // if the string copy becomes a burden.
+    const std::string s(buffer.get(), bufferSize);
+
+    // Set up an XmlReadOptions with a callback to this function so that we
+    // can also handle any XInclude paths using the ArAsset API.
+    mx::XmlReadOptions readOptions =
+        readOptionsIn ? *readOptionsIn : mx::XmlReadOptions();
+    readOptions.readXIncludeFunction = 
+        [&resolvedPath](mx::DocumentPtr newDoc, 
+                        const mx::FilePath& newFilename,
+                        const mx::FileSearchPath& newSearchPath, 
+                        const mx::XmlReadOptions* newReadOptions)
+        {
+            // MaterialX does not anchor XInclude'd file paths to the source
+            // document's path, so we need to do that ourselves to pass to Ar.
+            std::string newFilePath;
+
+            if (ArIsPackageRelativePath(resolvedPath)) {
+                // If the source file is a package like foo.usdz[a/b/doc.mx],
+                // we want to anchor the new filename to the packaged path, so
+                // we'd wind up with foo.usdz[a/b/included.mx].
+                std::string packagePath, packagedPath;
+                std::tie(packagePath, packagedPath) = 
+                    ArSplitPackageRelativePathInner(resolvedPath);
+
+                std::string newPackagedPath = TfGetPathName(packagedPath);
+                newPackagedPath = TfNormPath(newPackagedPath.empty() ? 
+                    newFilename.asString() : 
+                    TfStringCatPaths(newPackagedPath, newFilename));
+
+                newFilePath = ArJoinPackageRelativePath(
+                    packagePath, newPackagedPath);
+            }
+            else {
+                // Otherwise use ArResolver to anchor newFilename to the
+                // source file.
+                newFilePath = ArGetResolver().CreateIdentifier(
+                    newFilename, resolvedPath);
+            }
+
+            const ArResolvedPath newResolvedPath = ArGetResolver().Resolve(
+                newFilePath);
+            if (!newResolvedPath) {
+                TF_RUNTIME_ERROR("Unable to open MaterialX document '%s'",
+                                 newFilePath.c_str());
+                return;
+            }
+
+            _ReadFromAsset(newDoc, newResolvedPath, newSearchPath,
+                           newReadOptions);
+        };
+
+    mx::readFromXmlString(doc, s, &readOptions);
+}
+#endif
+
+mx::DocumentPtr
+UsdMtlxReadDocument(const std::string& resolvedPath)
+{
+    try {
+        mx::DocumentPtr doc = mx::createDocument();
+
+#if AR_VERSION == 1
+        mx::readFromXmlFile(doc, resolvedPath);
+        return doc;
+#else
+        // If resolvedPath points to a file on disk read from it directly
+        // otherwise use the more general ArAsset API to read it from
+        // whatever backing store it points to.
+        if (TfIsFile(resolvedPath)) {
+            mx::readFromXmlFile(doc, resolvedPath);
+            return doc;
+        }
+        else {
+            TfErrorMark m;
+            _ReadFromAsset(doc, ArResolvedPath(resolvedPath));
+            if (m.IsClean()) {
+                return doc;
+            }
+        }
+#endif
+    }
+    catch (mx::ExceptionFoundCycle& x) {
+        TF_RUNTIME_ERROR("MaterialX cycle found reading '%s': %s", 
+                         resolvedPath.c_str(), x.what());
+        return nullptr;
+    }
+    catch (mx::Exception& x) {
+        TF_RUNTIME_ERROR("MaterialX error reading '%s': %s",
+                         resolvedPath.c_str(), x.what());
+        return nullptr;
+    }
+
+    return nullptr;
+}
+
 mx::ConstDocumentPtr 
 UsdMtlxGetDocumentFromString(const std::string &mtlxXml)
 {
@@ -245,6 +372,8 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
         return document;
     }
 
+    TfErrorMark m;
+
     // Read the file or the standard library files.
     if (resolvedUri.empty()) {
         document = mx::createDocument();
@@ -253,11 +382,15 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
                     UsdMtlxStandardLibraryPaths(),
                     UsdMtlxStandardFileExtensions(),
                     false)) {
-            try {
-                // Read the file.
-                auto doc = mx::createDocument();
-                mx::readFromXmlFile(doc, fileResult.resolvedUri);
 
+            // Read the file. If this fails due to an exception, a runtime
+            // error will be raised so we can just skip to the next file.
+            auto doc = UsdMtlxReadDocument(fileResult.resolvedUri);
+            if (!doc) {
+                continue;
+            }
+
+            try {
                 // Set the source URI on all (immediate) children of
                 // the root so we can find the source later.  We
                 // can't use the source URI on the document element
@@ -270,24 +403,21 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
                 _CopyContent(document, doc);
             }
             catch (mx::Exception& x) {
-                TF_DEBUG(NDR_PARSING).Msg("MaterialX error reading '%s': %s",
-                                          fileResult.resolvedUri.c_str(),
-                                          x.what());
-                continue;
+                TF_RUNTIME_ERROR("MaterialX error reading '%s': %s",
+                                 fileResult.resolvedUri.c_str(),
+                                 x.what());
             }
         }
     }
     else {
-        try {
-            mx::DocumentPtr doc = mx::createDocument();
-            mx::readFromXmlFile(doc, resolvedUri);
-            document = doc;
+        document = UsdMtlxReadDocument(resolvedUri);
+    }
+
+    if (!m.IsClean()) {
+        for (const auto& error : m) {
+            TF_DEBUG(NDR_PARSING).Msg("%s\n", error.GetCommentary().c_str());
         }
-        catch (mx::Exception& x) {
-            TF_DEBUG(NDR_PARSING).Msg("MaterialX error reading '%s': %s",
-                                      resolvedUri.c_str(),
-                                      x.what());
-        }
+        m.Clear();
     }
 
     return document;

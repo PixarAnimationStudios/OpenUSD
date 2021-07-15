@@ -40,4 +40,5 @@ TF_WRAP_MODULE
     TF_WRAP(DefaultResolverContext);
 
     TF_WRAP(PackageUtils);
+    TF_WRAP(Notice);
 }

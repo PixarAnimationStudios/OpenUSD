@@ -52,6 +52,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
                                        bool doubleSided,
                                        HdPolygonMode polygonMode,
                                        bool cullingPass,
+                                       FvarPatchType fvarPatchType,
                                        SdfPath const &debugId,
                                        float lineWidth)
     : HdStShaderCode()
@@ -63,6 +64,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
     , _polygonMode(polygonMode)
     , _lineWidth(lineWidth)
     , _frustumCullingPass(cullingPass)
+    , _fvarPatchType(fvarPatchType)
     , _hash(0)
 {
     HD_TRACE_FUNCTION();
@@ -83,6 +85,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
     boost::hash_combine(_hash, _glslfx->GetHash());
     boost::hash_combine(_hash, cullingPass);
     boost::hash_combine(_hash, primType);
+    boost::hash_combine(_hash, fvarPatchType);
     //
     // note: Don't include cullStyle and polygonMode into the hash.
     //      They are independent from the GLSL program.
@@ -306,6 +309,33 @@ HdSt_GeometricShader::GetPrimitiveIndexSize() const
 }
 
 int
+HdSt_GeometricShader::GetNumPatchEvalVerts() const
+{
+    int numPatchEvalVerts = 0;
+
+    switch (_primType)
+    {
+        case PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES:
+            numPatchEvalVerts = 2;
+            break;
+        case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
+            numPatchEvalVerts = 4;
+            break;
+        case PrimitiveType::PRIM_MESH_BSPLINE:
+            numPatchEvalVerts = 16;
+            break;
+        case PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
+            numPatchEvalVerts = 15;
+            break;
+        default:
+            numPatchEvalVerts = 0;
+            break;
+    }
+
+    return numPatchEvalVerts;
+}
+
+int
 HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
 {
     int numPrimVerts = 1;
@@ -340,7 +370,7 @@ HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
 /*static*/
  HdSt_GeometricShaderSharedPtr
  HdSt_GeometricShader::Create(
-     HdSt_ShaderKey const &shaderKey, 
+    HdSt_ShaderKey const &shaderKey, 
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     // Use the shaderKey hash to deduplicate geometric shaders.
@@ -349,18 +379,18 @@ HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
 
     if (geometricShaderInstance.IsFirstInstance()) {
         geometricShaderInstance.SetValue(
-            HdSt_GeometricShaderSharedPtr(
-                new HdSt_GeometricShader(
-                    shaderKey.GetGlslfxString(),
-                    shaderKey.GetPrimitiveType(),
-                    shaderKey.GetCullStyle(),
-                    shaderKey.UseHardwareFaceCulling(),
-                    shaderKey.HasMirroredTransform(),
-                    shaderKey.IsDoubleSided(),
-                    shaderKey.GetPolygonMode(),
-                    shaderKey.IsFrustumCullingPass(),
-                    /*debugId=*/SdfPath(),
-                    shaderKey.GetLineWidth())));
+            std::make_shared<HdSt_GeometricShader>(
+                shaderKey.GetGlslfxString(),
+                shaderKey.GetPrimitiveType(),
+                shaderKey.GetCullStyle(),
+                shaderKey.UseHardwareFaceCulling(),
+                shaderKey.HasMirroredTransform(),
+                shaderKey.IsDoubleSided(),
+                shaderKey.GetPolygonMode(),
+                shaderKey.IsFrustumCullingPass(),
+                shaderKey.GetFvarPatchType(),
+                /*debugId=*/SdfPath(),
+                shaderKey.GetLineWidth()));
     }
     return geometricShaderInstance.GetValue();
 }

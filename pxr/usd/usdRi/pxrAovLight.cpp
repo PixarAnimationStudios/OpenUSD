@@ -75,13 +75,9 @@ UsdRiPxrAovLight::Define(
 }
 
 /* virtual */
-UsdSchemaKind UsdRiPxrAovLight::_GetSchemaKind() const {
+UsdSchemaKind UsdRiPxrAovLight::_GetSchemaKind() const
+{
     return UsdRiPxrAovLight::schemaKind;
-}
-
-/* virtual */
-UsdSchemaKind UsdRiPxrAovLight::_GetSchemaType() const {
-    return UsdRiPxrAovLight::schemaType;
 }
 
 /* static */

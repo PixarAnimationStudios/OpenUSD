@@ -194,6 +194,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
     std::unique_ptr<HioGlslfx> glslfx;
 
     if (!discoveryResult.uri.empty()) {
+#if AR_VERSION == 1
         // Get the resolved URI to a location that can be read 
         // by the glslfx parser.
         bool localFetchSuccessful = ArGetResolver().FetchToLocalResolvedPath(
@@ -208,12 +209,13 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
                     discoveryResult.uri.c_str());
             return NdrParserPlugin::GetInvalidNode(discoveryResult);
         }
+#endif
 
-        glslfx.reset( new HioGlslfx(discoveryResult.resolvedUri));
+        glslfx = std::make_unique<HioGlslfx>(discoveryResult.resolvedUri);
 
     } else if (!discoveryResult.sourceCode.empty()) {
         std::istringstream sourceCodeStream(discoveryResult.sourceCode);
-        glslfx.reset(new HioGlslfx(sourceCodeStream));
+        glslfx = std::make_unique<HioGlslfx>(sourceCodeStream);
 
     } else {
         TF_WARN("Invalid NdrNodeDiscoveryResult with identifier %s: both uri "
@@ -244,8 +246,8 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
         NdrTokenMap hints;
         NdrOptionVec options;
         NdrTokenMap localMetadata;
-        nodeProperties.emplace_back(
-            SdrShaderPropertyUniquePtr(new SdrShaderProperty(
+        nodeProperties.push_back(
+            std::make_unique<SdrShaderProperty>(
                 TfToken(p.name),
                 sdrType,
                 defaultValue,
@@ -254,14 +256,14 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
                 localMetadata, 
                 hints, 
                 options
-            )));
+            ));
     }
 
     HioGlslfxConfig::Textures textures = glslfx->GetTextures();
     for (HioGlslfxConfig::Texture const & t : textures) {
 
         size_t arraySize = 0;
-        TfToken sdrType = SdrPropertyTypes->Color;
+        TfToken sdrType;
         VtValue defaultValue = ConvertToSdrCompatibleValueAndType(
             t.defaultValue,
             &arraySize,
@@ -269,14 +271,15 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 
         // Check for a default value, or fallback to all black.
         if (defaultValue.IsEmpty()) {
+            sdrType = SdrPropertyTypes->Color;
             defaultValue = VtValue(GfVec3f(0.0,0.0,0.0));
         }
 
         NdrTokenMap hints;
         NdrOptionVec options;
         NdrTokenMap localMetadata;
-        nodeProperties.emplace_back(
-            SdrShaderPropertyUniquePtr(new SdrShaderProperty(
+        nodeProperties.push_back(
+            std::make_unique<SdrShaderProperty>(
                 TfToken(t.name),
                 sdrType,
                 defaultValue,
@@ -285,7 +288,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
                 localMetadata, 
                 hints, 
                 options
-            )));
+            ));
     }
 
     NdrTokenMap metadata = discoveryResult.metadata;
@@ -304,7 +307,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
     // XXX: Add support for reading metadata from glslfx and converting
     //      to node metadata
 
-    return NdrNodeUniquePtr(new SdrShaderNode(
+    return std::make_unique<SdrShaderNode>(
         discoveryResult.identifier,
         discoveryResult.version,
         discoveryResult.name,
@@ -315,7 +318,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
         discoveryResult.resolvedUri,
         std::move(nodeProperties),
         metadata,
-        discoveryResult.sourceCode));
+        discoveryResult.sourceCode);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

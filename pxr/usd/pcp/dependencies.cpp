@@ -56,7 +56,8 @@ Pcp_Dependencies::ConcurrentPopulationContext::~ConcurrentPopulationContext()
 }
 
 Pcp_Dependencies::Pcp_Dependencies()
-    : _concurrentPopulationContext(nullptr)
+    : _layerStacksRevision(0)
+    , _concurrentPopulationContext(nullptr)
 {
     // Do nothing
 }
@@ -105,7 +106,12 @@ Pcp_Dependencies::Add(
                 if (_concurrentPopulationContext) {
                     lock.acquire(_concurrentPopulationContext->_mutex);
                 }
-                _SiteDepMap &siteDepMap = _deps[n.GetLayerStack()];
+                auto iresult = _deps.emplace(n.GetLayerStack(), _SiteDepMap());
+                _SiteDepMap &siteDepMap = iresult.first->second;
+                if (iresult.second) {
+                    // If we inserted a new entry, bump the revision count.
+                    ++_layerStacksRevision;
+                }
                 std::vector<SdfPath> &deps = siteDepMap[n.GetPath()];
                 deps.push_back(primIndexPath);
             }
@@ -223,6 +229,7 @@ Pcp_Dependencies::Remove(const PcpPrimIndex &primIndex, PcpLifeboat *lifeboat)
                         lifeboat->Retain(n.GetLayerStack());
                     }
                     _deps.erase(n.GetLayerStack());
+                    ++_layerStacksRevision;
 
                     TF_DEBUG(PCP_DEPENDENCIES)
                         .Msg("    Removed last dep on %s\n",
@@ -276,6 +283,7 @@ Pcp_Dependencies::RemoveAll(PcpLifeboat* lifeboat)
     }
 
     _deps.clear();
+    ++_layerStacksRevision;
     _possibleDynamicFileFormatArgumentFields.clear();
     _fileFormatArgumentDependencyMap.clear();
 }

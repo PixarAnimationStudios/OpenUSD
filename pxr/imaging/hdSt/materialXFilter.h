@@ -26,16 +26,30 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/usd/sdf/path.h"
 #include <MaterialXCore/Document.h>
 #include <MaterialXFormat/Util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// Storing MaterialX-Hydra counterparts and other Hydra specific information
+struct MxHdInfo {
+    MxHdInfo() 
+        : textureMap(MaterialX::StringMap()), 
+          primvarMap(MaterialX::StringMap()), 
+          defaultTexcoordName("st"),
+          materialTag(HdStMaterialTagTokens->defaultMaterialTag.GetString()) {}
+    MaterialX::StringMap textureMap;
+    MaterialX::StringMap primvarMap;
+    std::string defaultTexcoordName;
+    std::string materialTag;
+};
+
 /// MaterialX Filter
 /// Converting a MaterialX node to one with a generated MaterialX glslfx file
 void HdSt_ApplyMaterialXFilter(
-    HdMaterialNetwork2 * hdNetwork,
+    HdMaterialNetwork2* hdNetwork,
     SdfPath const& materialPath,
     HdMaterialNode2 const& terminalNode,
     SdfPath const& terminalNodePath);
@@ -44,7 +58,7 @@ void HdSt_ApplyMaterialXFilter(
 std::string HdSt_GenMaterialXShaderCode(
     MaterialX::DocumentPtr const& mxDoc,
     MaterialX::FileSearchPath const& searchPath,
-    MaterialX::StringMap const& mxHdTextureMap); // Mx-Hd texture counterparts 
+    MxHdInfo const& mxHdInfo=MxHdInfo());
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

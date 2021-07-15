@@ -29,7 +29,7 @@
 # MATERIALX_FOUND            Defined if MaterialX has been detected
 # MATERIALX_BASE_DIR         Path to the root of the MaterialX installation 
 # MATERIALX_INCLUDE_DIRS     Path to the MaterialX include directories
-# MATERIALX_LIB_DIRS         Path to the MaterialX libraray directories
+# MATERIALX_LIB_DIRS         Path to the MaterialX library directories
 # MATERIALX_STDLIB_DIR       Path to the MaterialX standard library directory
 # MATERIALX_LIBRARIES        List of MaterialX libraries
 

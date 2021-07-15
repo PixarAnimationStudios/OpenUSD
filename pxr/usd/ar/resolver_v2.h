@@ -33,6 +33,8 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/resolvedPath.h"
+#include "pxr/usd/ar/resolverContext.h"
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -95,7 +97,7 @@ public:
     AR_API
     std::string CreateIdentifier(
         const std::string& assetPath,
-        const ArResolvedPath& anchorAssetPath = ArResolvedPath());
+        const ArResolvedPath& anchorAssetPath = ArResolvedPath()) const;
 
     /// Returns an identifier for a new asset specified by \p assetPath.
     /// If \p anchorAssetPath is not empty, it is the resolved asset path
@@ -103,7 +105,7 @@ public:
     AR_API
     std::string CreateIdentifierForNewAsset(
         const std::string& assetPath,
-        const ArResolvedPath& anchorAssetPath = ArResolvedPath());
+        const ArResolvedPath& anchorAssetPath = ArResolvedPath()) const;
 
     /// @}
 
@@ -119,7 +121,7 @@ public:
     /// ArResolvedPath.
     AR_API
     ArResolvedPath Resolve(
-        const std::string& assetPath);
+        const std::string& assetPath) const;
 
     /// Returns the resolved path for the given \p assetPath that may be used
     /// to create a new asset. If such a path cannot be computed for
@@ -129,7 +131,7 @@ public:
     /// resolved path.
     AR_API
     ArResolvedPath ResolveForNewAsset(
-        const std::string& assetPath);
+        const std::string& assetPath) const;
 
     /// @}
 
@@ -165,20 +167,20 @@ public:
     /// Return an ArResolverContext that may be bound to this resolver
     /// to resolve assets when no other context is explicitly specified.
     AR_API
-    ArResolverContext CreateDefaultContext();
+    ArResolverContext CreateDefaultContext() const;
 
     /// Return an ArResolverContext that may be bound to this resolver
     /// to resolve the asset located at \p assetPath when no other context is
     /// explicitly specified.
     AR_API
     ArResolverContext CreateDefaultContextForAsset(
-        const std::string& assetPath);
+        const std::string& assetPath) const;
 
     /// Return an ArResolverContext created from the primary ArResolver
     /// implementation using the given \p contextStr.
     AR_API
     ArResolverContext CreateContextFromString(
-        const std::string& contextStr);
+        const std::string& contextStr) const;
 
     /// Return an ArResolverContext created from the ArResolver registered
     /// for the given \p uriScheme using the given \p contextStr.
@@ -190,7 +192,7 @@ public:
     /// ArResolverContext.
     AR_API
     ArResolverContext CreateContextFromString(
-        const std::string& uriScheme, const std::string& contextStr);
+        const std::string& uriScheme, const std::string& contextStr) const;
 
     /// Return an ArResolverContext created by combining the ArResolverContext
     /// objects created from the given \p contextStrs.
@@ -218,9 +220,13 @@ public:
     /// \p contextStrs, that entry will be ignored.
     AR_API
     ArResolverContext CreateContextFromStrings(
-        const std::vector<std::pair<std::string, std::string>>& contextStrs);
+        const std::vector<
+            std::pair<std::string, std::string>>& contextStrs) const;
 
-    /// Refresh any caches associated with the given context.
+    /// Refresh any caches associated with the given context. If doing so
+    /// would invalidate asset paths that had previously been resolved,
+    /// an ArNotice::ResolverChanged notice will be sent to inform clients
+    /// of this.
     AR_API
     void RefreshContext(
         const ArResolverContext& context);
@@ -229,7 +235,7 @@ public:
     ///
     /// \see ArResolver::BindContext, ArResolver::UnbindContext
     AR_API
-    ArResolverContext GetCurrentContext();
+    ArResolverContext GetCurrentContext() const;
 
     /// Returns true if \p assetPath is a context-dependent path, false
     /// otherwise.
@@ -242,7 +248,7 @@ public:
     /// consulted to determine if they are the same.
     AR_API
     bool IsContextDependentPath(
-        const std::string& assetPath);
+        const std::string& assetPath) const;
 
     /// @}
 
@@ -257,7 +263,7 @@ public:
     /// extension does not include a "." at the beginning.
     AR_API
     std::string GetExtension(
-        const std::string& assetPath);
+        const std::string& assetPath) const;
 
     /// Returns an ArAssetInfo populated with additional metadata (if any)
     /// about the asset at the given \p assetPath. \p resolvedPath is the
@@ -265,7 +271,7 @@ public:
     AR_API
     ArAssetInfo GetAssetInfo(
         const std::string& assetPath,
-        const ArResolvedPath& resolvedPath);
+        const ArResolvedPath& resolvedPath) const;
 
     /// Return a value representing the last time the asset at the given 
     /// \p assetPath was modified. \p resolvedPath is the resolved path
@@ -277,7 +283,7 @@ public:
     AR_API
     VtValue GetModificationTimestamp(
         const std::string& assetPath,
-        const ArResolvedPath& resolvedPath);
+        const ArResolvedPath& resolvedPath) const;
 
     /// Returns an ArAsset object for the asset located at \p resolvedPath. 
     /// Returns an invalid std::shared_ptr if object could not be created.
@@ -286,7 +292,7 @@ public:
     /// contents of the specified asset. 
     AR_API
     std::shared_ptr<ArAsset> OpenAsset(
-        const ArResolvedPath& resolvedPath);
+        const ArResolvedPath& resolvedPath) const;
 
     /// Enumeration of write modes for OpenAssetForWrite
     enum class WriteMode
@@ -316,7 +322,15 @@ public:
     AR_API
     std::shared_ptr<ArWritableAsset> OpenAssetForWrite(
         const ArResolvedPath& resolvedPath,
-        WriteMode writeMode);
+        WriteMode writeMode) const;
+
+    /// Returns true if an asset may be written to the given \p resolvedPath,
+    /// false otherwise. If this function returns false and \p whyNot is not
+    /// \c nullptr, it may be filled with an explanation.
+    AR_API
+    bool CanWriteAssetToPath(
+        const ArResolvedPath& resolvedPath,
+        std::string* whyNot = nullptr) const;
 
     /// @}
 
@@ -391,124 +405,10 @@ public:
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// Configures the resolver for a given asset path
-    /// Default implementation does nothing.
-    /// \deprecated
-    AR_API
-    virtual void ConfigureResolverForAsset(const std::string& path);
-
-    /// Returns the path formed by anchoring \p path to \p anchorPath.
-    ///
-    /// If \p anchorPath ends with a trailing '/', it is treated as
-    /// a directory to which \p path will be anchored. Otherwise, it
-    /// is treated as a file and \p path will be anchored to its
-    /// containing directory.
-    ///
-    /// If \p anchorPath is empty, \p path will be returned as-is.
-    ///
-    /// If \p path is empty or not a relative path, it will be 
-    /// returned as-is.
-    ///
-    /// \deprecated Planned for removal in favor of CreateIdentifier.
-    AR_API
-    virtual std::string AnchorRelativePath(
-        const std::string& anchorPath, 
-        const std::string& path) = 0; 
-
-    /// Returns true if the given path is a relative path.
-    /// \deprecated
-    AR_API
-    virtual bool IsRelativePath(const std::string& path) = 0;
-
-    /// Returns whether this path is a search path.
-    /// The default implementation returns false.
-    /// \deprecated
-    AR_API
-    virtual bool IsSearchPath(const std::string& path);
-
     /// \deprecated
     /// Returns true if the given path is a repository path.
     AR_API
-    bool IsRepositoryPath(const std::string& path);
-
-    /// Fetch the asset identified by \p path to the filesystem location
-    /// specified by \p resolvedPath. \p resolvedPath is the resolved path
-    /// that results from calling Resolve or ResolveWithAssetInfo on 
-    /// \p path.
-    ///
-    /// This method provides a way for consumers that expect assets 
-    /// to exist as physical files on disk to retrieve data from 
-    /// systems that store data in external data stores, e.g. databases,
-    /// etc. 
-    ///
-    /// Returns true if the asset was successfully fetched to the specified
-    /// \p resolvedPath or if no fetching was required. If \p resolvedPath 
-    /// is not a local path or the asset could not be fetched to that path, 
-    /// returns false.
-    ///
-    /// The default implementation assumes no fetching is required and returns
-    /// true.
-    ///
-    /// \deprecated Planned for removal in favor or using OpenAsset to read
-    /// data instead of requiring assets to be fetched to disk.
-    AR_API
-    virtual bool FetchToLocalResolvedPath(
-        const std::string& path,
-        const std::string& resolvedPath);
-
-    /// Create path needed to write a file to the given \p path. 
-    ///
-    /// For example:
-    /// - A filesystem-based resolver might create the directories specified
-    ///   in \p path.
-    /// - A database-based resolver might create a new table, or it might
-    ///   ignore this altogether.
-    ///
-    /// In practice, when writing a layer, CanWriteLayerToPath will be called
-    /// first to check if writing is permitted. If this returns true, then
-    /// CreatePathForLayer will be called before writing the layer out.
-    ///
-    /// Returns true on success, false otherwise.
-    ///
-    /// \deprecated Planned for removal in favor of making OpenAssetForWrite
-    /// responsible for creating any intemediate path that might be needed.
-    AR_API
-    virtual bool CreatePathForLayer(
-        const std::string& path) = 0;
-
-    /// Returns true if a file may be written to the given \p path, false
-    /// otherwise. 
-    ///
-    /// In practice, when writing a layer, CanWriteLayerToPath will be called
-    /// first to check if writing is permitted. If this returns true, then
-    /// CreatePathForLayer will be called before writing the layer out.
-    /// 
-    /// If this function returns false and \p whyNot is not \c nullptr,
-    /// it will be filled in with an explanation.
-    ///
-    /// The default implementation returns true.
-    ///
-    /// \deprecated Planned for removal in favor of making OpenAssetForWrite
-    /// responsible for determining if a layer can be written to a given path.
-    AR_API
-    virtual bool CanWriteLayerToPath(
-        const std::string& path,
-        std::string* whyNot);
-
-    /// Returns true if a new file may be created using the given
-    /// \p identifier, false otherwise.
-    ///
-    /// If this function returns false and \p whyNot is not \c nullptr,
-    /// it will be filled in with an explanation.
-    ///
-    /// The default implementation returns true.
-    ///
-    /// \deprecated Planned for removal in favor of using ResolveForNewAsset
-    /// to determine if a new layer can be created with a given identifier.
-    AR_API
-    virtual bool CanCreateNewLayerWithIdentifier(
-        const std::string& identifier, 
-        std::string* whyNot);
+    bool IsRepositoryPath(const std::string& path) const;
 
     /// @}
 
@@ -533,7 +433,7 @@ protected:
     /// returned identifier to a consistent format.
     virtual std::string _CreateIdentifier(
         const std::string& assetPath,
-        const ArResolvedPath& anchorAssetPath) = 0;
+        const ArResolvedPath& anchorAssetPath) const = 0;
 
     /// Return an identifier for a new asset at the given \p assetPath.  If
     /// \p anchorAssetPath is non-empty, it should be used as the anchoring
@@ -543,18 +443,38 @@ protected:
     /// for new assets that are being created.
     virtual std::string _CreateIdentifierForNewAsset(
         const std::string& assetPath,
-        const ArResolvedPath& anchorAssetPath) = 0;
+        const ArResolvedPath& anchorAssetPath) const = 0;
 
     /// Return the resolved path for the given \p assetPath or an empty
     /// ArResolvedPath if no asset exists at that path.
     virtual ArResolvedPath _Resolve(
-        const std::string& assetPath) = 0;
+        const std::string& assetPath) const = 0;
 
     /// Return the resolved path for the given \p assetPath that may be used
     /// to create a new asset or an empty ArResolvedPath if such a path cannot
     /// be computed.
     virtual ArResolvedPath _ResolveForNewAsset(
-        const std::string& assetPath) = 0;
+        const std::string& assetPath) const = 0;
+
+    /// @}
+
+    // --------------------------------------------------------------------- //
+    /// \anchor ArResolver_contextImplementation
+    /// \name Context Operations Implementation
+    ///
+    /// If any of these functions are implemented in a subclass, the plugin
+    /// metadata for that subclass in the plugin library's plugInfo.json 
+    /// must specify:
+    /// \code
+    /// "implementsContexts" : true.
+    /// \endcode
+    ///
+    /// If a subclass indicates that it implements any of these functions,
+    /// its plugin library will be loaded and these functions will be called
+    /// when the corresponding public ArResolver API is called. Otherwise,
+    /// these functions will not be called.
+    ///
+    /// @{
 
     /// Bind the given \p context to this resolver. \p bindingData may be
     /// populated with additional information that will be kept alive while
@@ -568,6 +488,14 @@ protected:
     /// Context binding is thread-specific; contexts bound in a thread must
     /// only affect other resolver calls in the same thread.
     ///
+    /// ArResolver itself manages thread-local stacks of bound contexts.
+    /// Subclasses can retrieve the most recent context object which was passed
+    /// to BindContext using _GetCurrentContextObject. Because of this,
+    /// subclasses typically do not need to implement this function unless they
+    /// need to be informed when a context object is bound. For example, this
+    /// may be needed if the context needs to be passed on to another subsystem
+    /// that manages these bindings itself.
+    ///
     /// The default implementation does nothing.
     AR_API
     virtual void _BindContext(
@@ -578,6 +506,11 @@ protected:
     ///
     /// It is an error if the context being unbound is not the currently
     /// bound context.
+    ///
+    /// Subclasses typically do not need to implement this function since
+    /// ArResolver itself keeps track of the contexts that are bound via calls
+    /// to BindContext. However, subclasses may need to implement this function
+    /// if they are managing these bindings itself.
     ///
     /// The default implementation does nothing.
     AR_API
@@ -594,7 +527,7 @@ protected:
     /// The default implementation returns a default-constructed
     /// ArResolverContext.
     AR_API
-    virtual ArResolverContext _CreateDefaultContext();
+    virtual ArResolverContext _CreateDefaultContext() const;
 
     /// Return an ArResolverContext that may be bound to this resolver
     /// to resolve the asset located at \p assetPath when no other context is
@@ -607,7 +540,7 @@ protected:
     /// ArResolverContext.
     AR_API
     virtual ArResolverContext _CreateDefaultContextForAsset(
-        const std::string& assetPath);
+        const std::string& assetPath) const;
 
     /// Return an ArResolverContext created from the given \p contextStr.
     ///
@@ -615,9 +548,13 @@ protected:
     /// ArResolverContext.
     AR_API
     virtual ArResolverContext _CreateContextFromString(
-        const std::string& contextStr);
+        const std::string& contextStr) const;
 
-    /// Refresh any caches associated with the given context.
+    /// Refresh any caches associated with the given context. If doing so
+    /// would invalidate asset paths that had previously been resolved,
+    /// this function should send an ArNotice::ResolverChanged notice to
+    /// inform clients of this. See documentation on that class for more
+    /// details.
     ///
     /// The default implementation does nothing.
     AR_API
@@ -628,10 +565,18 @@ protected:
     /// thread-specific, this should return the context that was most recently
     /// bound in this thread.
     ///
+    /// Subclasses typically do not need to implement this function since
+    /// ArResolver itself keeps track of the contexts that are bound via calls
+    /// to BindContext. However, if a subclass is managing bound contexts itself
+    /// and allows clients to bind context objects via other API outside of
+    /// BindContext, this function should return the context object as described
+    /// above. This typically happens with subclasses that are wrappers around
+    /// other resolution subsystems. \see _BindContext for more information.
+    ///
     /// The default implementation returns a default-constructed 
     /// ArResolverContext.
     AR_API
-    virtual ArResolverContext _GetCurrentContext();
+    virtual ArResolverContext _GetCurrentContext() const;
 
     /// Return true if the result of resolving the given \p assetPath may
     /// differ depending on the asset resolver context that is bound when
@@ -640,12 +585,20 @@ protected:
     /// The default implementation returns false.
     AR_API
     virtual bool _IsContextDependentPath(
-        const std::string& assetPath);
+        const std::string& assetPath) const;
+
+    /// @}
+
+    // --------------------------------------------------------------------- //
+    /// \anchor ArResolver_assetImplementation
+    /// \name Asset Operations Implementation
+    ///
+    /// @{
 
     /// Return the file extension for the given \p assetPath. This extension
     /// should not include a "." at the beginning of the string.
     virtual std::string _GetExtension(
-        const std::string& assetPath) = 0;
+        const std::string& assetPath) const = 0;
 
     /// Return an ArAssetInfo populated with additional metadata (if any)
     /// about the asset at the given \p assetPath. \p resolvedPath is the
@@ -654,7 +607,7 @@ protected:
     AR_API
     virtual ArAssetInfo _GetAssetInfo(
         const std::string& assetPath,
-        const ArResolvedPath& resolvedPath);
+        const ArResolvedPath& resolvedPath) const;
 
     /// Return a value representing the last time the asset at the given 
     /// \p assetPath was modified. \p resolvedPath is the resolved path
@@ -668,7 +621,7 @@ protected:
     /// as a file on disk, the timestamp may simply be that file's mtime. 
     virtual VtValue _GetModificationTimestamp(
         const std::string& assetPath,
-        const ArResolvedPath& resolvedPath) = 0;
+        const ArResolvedPath& resolvedPath) const = 0;
 
     /// Return an ArAsset object for the asset located at \p resolvedPath.
     /// Return an invalid std::shared_ptr if object could not be created
@@ -681,7 +634,16 @@ protected:
     /// overwriting any of the contents of that file.
     AR_API
     virtual std::shared_ptr<ArAsset> _OpenAsset(
-        const ArResolvedPath& resolvedPath) = 0;
+        const ArResolvedPath& resolvedPath) const = 0;
+
+    /// Return true if an asset may be written to the given \p resolvedPath,
+    /// false otherwise. If this function returns false and \p whyNot is not
+    /// \c nullptr, it may be filled with an explanation.  The default
+    /// implementation returns true.
+    AR_API
+    virtual bool _CanWriteAssetToPath(
+        const ArResolvedPath& resolvedPath,
+        std::string* whyNot) const;
 
     /// Return an ArWritableAsset object for the asset at \p resolvedPath
     /// using the specified \p writeMode. Return an invalid std::shared_ptr
@@ -696,33 +658,111 @@ protected:
     virtual std::shared_ptr<ArWritableAsset>
     _OpenAssetForWrite(
         const ArResolvedPath& resolvedPath,
-        WriteMode writeMode) = 0;
+        WriteMode writeMode) const = 0;
+
+    /// @}
+
+    // --------------------------------------------------------------------- //
+    /// \anchor ArResolver_scopedCacheImplementation
+    /// \name Scoped Resolution Cache Implementation
+    ///
+    /// If any of these functions are implemented in a subclass, the plugin
+    /// metadata for that subclass in the plugin library's plugInfo.json 
+    /// must specify:
+    /// \code
+    /// "implementsScopedCaches" : true.
+    /// \endcode
+    ///
+    /// If a subclass indicates that it implements these functions, ArResolver
+    /// will assume the subclass is handling all caching of resolved paths
+    /// and will call these functions when a caching scope is opened and closed.
+    /// Otherwise, these functions will not be called. Instead, ArResolver
+    /// itself will handle caching and returning resolved paths as needed.
+    ///
+    /// @{
 
     /// Mark the start of a resolution caching scope. 
     ///
     /// Resolvers may fill \p cacheScopeData with arbitrary data. Clients may
     /// also pass in a \p cacheScopeData populated by an earlier call to
     /// BeginCacheScope to allow the resolver access to that information.
+    ///
+    /// See \ref ArResolver_scopedCacheImplementation "Scoped Resolution Cache Implementation" 
+    /// for more implementation details.
     AR_API
     virtual void _BeginCacheScope(
-        VtValue* cacheScopeData) = 0;
+        VtValue* cacheScopeData);
 
     /// Mark the end of a resolution caching scope.
     ///
     /// \p cacheScopeData should contain the data that was populated by the
     /// previous corresponding call to BeginCacheScope.
+    ///
+    /// See \ref ArResolver_scopedCacheImplementation "Scoped Resolution Cache Implementation" 
+    /// for more implementation details.
     AR_API
     virtual void _EndCacheScope(
-        VtValue* cacheScopeData) = 0;
+        VtValue* cacheScopeData);
+
+    /// @}
 
     /// \deprecated
     /// Return true if the given path is a repository path, false otherwise.
     /// Default implementation returns false.
     AR_API
     virtual bool _IsRepositoryPath(
-        const std::string& path);
+        const std::string& path) const;
+
+    // --------------------------------------------------------------------- //
+    /// \anchor ArResolver_implementationUtils
+    /// \name Implementation Utilities
+    ///
+    /// Utility functions for implementations.
+    ///
+    /// @{
+
+    /// Returns a pointer to the context object of type \p ContextObj from
+    /// the last ArResolverContext that was bound via a call to BindContext,
+    /// or \c NULL if no context object of that type exists.
+    ///
+    /// Typically, a subclass might use this in their _Resolve function to
+    /// get the currently bound context to drive their resolution behavior.
+    ///
+    /// \code
+    /// if (const MyContextObject* ctx = 
+    ///        _GetCurrentContextObject<MyContextObject>()) {
+    ///
+    ///     // Use information in ctx to resolve given path
+    /// }
+    /// else {
+    ///     // Resolve given path with no context object
+    /// }
+    /// \endcode
+    ///
+    /// This is the same as GetCurrentContext().Get<ContextObj>() but more
+    /// efficient, since it does not make a copy of the ArResolverContext.
+    /// However, it is *not* the same as _GetCurrentContext().Get<ContextObj>().
+    /// Subclasses that manage context binding themselves may have overridden
+    /// _GetCurrentContext to return a context that was bound without calling
+    /// BindContext. These subclasses should not use this function and should
+    /// retrieve the current context from their own internal data structures.
+    template <class ContextObj>
+    const ContextObj* _GetCurrentContextObject() const
+    {
+        const ArResolverContext* ctx = _GetInternallyManagedCurrentContext();
+        return ctx ? ctx->Get<ContextObj>() : nullptr;
+    }
 
     /// @}
+
+private:
+    // Returns pointer to ArResolverContext that was most recently bound
+    // via BindContext. This is *not* the same as GetCurrentContext,
+    // since subclasses may return an ArResolverContext that hasn't
+    // been bound via BindContext in their implementations.
+    AR_API
+    const ArResolverContext* _GetInternallyManagedCurrentContext() const;
+
 };
 
 /// Returns the configured asset resolver.

@@ -31,6 +31,7 @@
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
+#include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/refPtr.h"
 
 #include <boost/noncopyable.hpp>
@@ -39,14 +40,36 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+class Ar_PyAnnotatedBoolResult
+    : public TfPyAnnotatedBoolResult<std::string>
+{
+public:
+    Ar_PyAnnotatedBoolResult(bool val, const std::string& annotation)
+        : TfPyAnnotatedBoolResult<std::string>(val, annotation)
+    {
+    }
+};
+
+static 
+Ar_PyAnnotatedBoolResult
+_CanWriteAssetToPath(
+    ArResolver& resolver, const ArResolvedPath& resolvedPath)
+{
+    std::string whyNot;
+    const bool rval = resolver.CanWriteAssetToPath(resolvedPath, &whyNot);
+    return Ar_PyAnnotatedBoolResult(rval, whyNot);
+}
+
 void
 wrapResolver()
 {
+    Ar_PyAnnotatedBoolResult::Wrap<Ar_PyAnnotatedBoolResult>
+        ("_PyAnnotatedBoolResult", "whyNot");
+
     typedef ArResolver This;
 
     class_<This, boost::noncopyable>
         ("Resolver", no_init)
-        .def("ConfigureResolverForAsset", &This::ConfigureResolverForAsset)
 
         .def("CreateDefaultContext", &This::CreateDefaultContext)
         .def("CreateDefaultContextForAsset", 
@@ -54,13 +77,13 @@ wrapResolver()
              args("assetPath"))
 
         .def("CreateContextFromString", 
-             (ArResolverContext (This::*)(const std::string&))
+             (ArResolverContext (This::*)(const std::string&) const)
                  &This::CreateContextFromString,
              args("contextStr"))
 
         .def("CreateContextFromString", 
              (ArResolverContext (This::*)
-                 (const std::string&, const std::string&))
+                 (const std::string&, const std::string&) const)
                  &This::CreateContextFromString,
              (arg("uriScheme"), arg("contextStr")))
 
@@ -68,9 +91,6 @@ wrapResolver()
              args("contextStrs"))
 
         .def("GetCurrentContext", &This::GetCurrentContext)
-
-        .def("IsRelativePath", &This::IsRelativePath)
-        .def("AnchorRelativePath", &This::AnchorRelativePath)
 
         .def("IsContextDependentPath", &This::IsContextDependentPath,
              args("assetPath"))
@@ -93,6 +113,10 @@ wrapResolver()
              (args("assetPath"), args("resolvedPath")))
         .def("GetExtension", &This::GetExtension,
              args("assetPath"))
+
+        .def("CanWriteAssetToPath", &_CanWriteAssetToPath,
+             args("resolvedPath"))
+
         .def("RefreshContext", &This::RefreshContext)
         ;
 
