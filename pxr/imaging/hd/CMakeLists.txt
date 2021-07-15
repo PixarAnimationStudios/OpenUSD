@@ -126,3 +126,15 @@ pxr_build_test(testHdExtComputationUtils
 pxr_register_test(testHdExtComputationUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdExtComputationUtils"
 )
+
+pxr_build_test(testHdTimeSampleArray
+    LIBRARIES
+        hd
+
+    CPPFILES
+        testenv/testHdTimeSampleArray.cpp
+)
+
+pxr_register_test(testHdTimeSampleArray
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTimeSampleArray"
+)

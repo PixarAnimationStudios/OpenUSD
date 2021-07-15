@@ -109,7 +109,7 @@ T HdResampleRawTimeSamples(
         return vs[i-1];
     } else {
         // Linear blend of neighboring samples.
-        float alpha = (us[i]-u) / (us[i]-us[i-1]);
+        float alpha = (u-us[i-1]) / (us[i]-us[i-1]);
         return HdResampleNeighbors(alpha, vs[i-1], vs[i]);
     }
 }
