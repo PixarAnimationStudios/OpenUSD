@@ -502,8 +502,6 @@ void
 HdxDrawTargetTask::Prepare(HdTaskContext* ctx,
                            HdRenderIndex* renderIndex)
 {
-    // Not calling HdSt_RenderPass::Prepare(...) here since
-    // HdxDrawTargetRenderPass::Prepare didn't do so.
 }
 
 void

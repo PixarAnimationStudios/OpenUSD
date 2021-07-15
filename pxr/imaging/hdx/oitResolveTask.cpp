@@ -160,6 +160,10 @@ HdxOitResolveTask::Sync(
 {
     HD_TRACE_FUNCTION();
     *dirtyBits = HdChangeTracker::Clean;
+
+    // Note: We defer creation of the render pass to the Prepare phase since
+    // the notion of a "collection" is irrelevant to this task.
+    // So, the Sync step for the image shader render pass is skipped as well.
 }
 
 const HdRenderPassAovBindingVector&
@@ -343,6 +347,7 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
 
         _renderPass = std::make_shared<HdSt_ImageShaderRenderPass>(
             renderIndex, collection);
+        _renderPass->SetupFullscreenTriangleDrawItem();
 
         // We do not use renderDelegate->CreateRenderPassState because
         // ImageShaders always use HdSt
@@ -373,8 +378,6 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
         _renderPassShader = std::make_shared<HdStRenderPassShader>(
             HdxPackageOitResolveImageShader());
         _renderPassState->SetRenderPassShader(_renderPassShader);
-
-        _renderPass->Prepare(GetRenderTags());
     }
 
     _PrepareOitBuffers(

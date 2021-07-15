@@ -109,7 +109,7 @@ HdSt_ImageShaderRenderPass::_SetupVertexPrimvarBAR(
 }
 
 void
-HdSt_ImageShaderRenderPass::_Prepare(TfTokenVector const &renderTags)
+HdSt_ImageShaderRenderPass::SetupFullscreenTriangleDrawItem()
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -195,11 +195,6 @@ HdSt_ImageShaderRenderPass::_Execute(
     }
 
     stRenderPassState->Unbind();
-}
-
-void
-HdSt_ImageShaderRenderPass::_MarkCollectionDirty()
-{
 }
 
 

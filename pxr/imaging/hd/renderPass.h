@@ -102,14 +102,6 @@ public:
     void Sync();
 
     // ---------------------------------------------------------------------- //
-    /// \name Prepare
-    // ---------------------------------------------------------------------- //
-
-    /// Prepare renderpass data
-    HD_API
-    void Prepare(TfTokenVector const &renderTags);
-
-    // ---------------------------------------------------------------------- //
     /// \name Execution
     // ---------------------------------------------------------------------- //
 
@@ -135,9 +127,6 @@ protected:
 
     /// Optional API: let derived classes sync data.
     virtual void _Sync() {}
-
-    /// Optional API: let derived classes prepare data.
-    virtual void _Prepare(TfTokenVector const &renderTags) {}
 
 private:
 

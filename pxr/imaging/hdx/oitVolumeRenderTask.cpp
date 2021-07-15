@@ -70,14 +70,11 @@ HdxOitVolumeRenderTask::Prepare(HdTaskContext* ctx,
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    if (_isOitEnabled) {
+    // OIT buffers take up significant GPU resources. Skip if there are no
+    // oit draw items (i.e. no volumetric draw items)
+    if (_isOitEnabled && HdxRenderTask::_HasDrawItems()) {
         HdxRenderTask::Prepare(ctx, renderIndex);
-
-        // OIT buffers take up significant GPU resources. Skip if there are no
-        // oit draw items (i.e. no translucent or volumetric draw items)
-        if (HdxRenderTask::_HasDrawItems()) {
-            HdxOitBufferAccessor(ctx).RequestOitBuffers();
-        }
+        HdxOitBufferAccessor(ctx).RequestOitBuffers();
 
         if (HdRenderPassStateSharedPtr const state = _GetRenderPassState(ctx)) {
             _oitVolumeRenderPassShader->UpdateAovInputTextures(
@@ -95,9 +92,10 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
 
     GLF_GROUP_FUNCTION();
 
-    if (!_isOitEnabled) return;
-    if (!HdxRenderTask::_HasDrawItems()) return;
-
+    if (!_isOitEnabled || !HdxRenderTask::_HasDrawItems()) {
+        return;
+    }
+    
     //
     // Pre Execute Setup
     //

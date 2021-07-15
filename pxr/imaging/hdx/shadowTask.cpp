@@ -47,7 +47,7 @@ bool
 _HasDrawItems(HdRenderPassSharedPtr pass)
 {
     HdSt_RenderPass *hdStRenderPass = static_cast<HdSt_RenderPass*>(pass.get());
-    return hdStRenderPass && hdStRenderPass->GetDrawItemCount() > 0;
+    return hdStRenderPass && hdStRenderPass->HasDrawItems();
 }
 
 HdxShadowTask::HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id)
@@ -256,7 +256,6 @@ HdxShadowTask::Prepare(HdTaskContext* ctx,
 
     for(size_t passId = 0; passId < _passes.size(); passId++) {
         _renderPassStates[passId]->Prepare(resourceRegistry);
-        _passes[passId]->Prepare(GetRenderTags());
     }
 }
 

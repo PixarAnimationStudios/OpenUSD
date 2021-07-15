@@ -104,7 +104,6 @@ HdSt_RenderPass::HdSt_RenderPass(HdRenderIndex *index,
     , _materialTagsVersion(0)
     , _collectionChanged(false)
     , _drawItemCount(0)
-    , _drawItemsGathered(false)
     , _drawItemsChanged(false)
     , _hgi(nullptr)
 {
@@ -117,23 +116,18 @@ HdSt_RenderPass::~HdSt_RenderPass()
 {
 }
 
-size_t
-HdSt_RenderPass::GetDrawItemCount() const
+bool
+HdSt_RenderPass::HasDrawItems() const
 {
-    // Note that returning '_drawItems.size()' is only correct during Prepare.
-    // During Execute _drawItems is cleared in SwapDrawItems().
-    // For that reason we return the cached '_drawItemCount' here.
-    return _drawItemCount;
-}
-
-/* virtual */
-void
-HdSt_RenderPass::_Prepare(TfTokenVector const &renderTags)
-{
-    // Tasks may not call HdRenderPass::_Prepare, in which case draw items are
-    // updated during _Execute.
-    _PrepareDrawItems(renderTags);
-    _drawItemsGathered = true; // This is reset during _Execute.
+    // Note that using the material tag alone isn't a sufficient filter.
+    // The collection paths and task render tags also matter. Factoring them 
+    // requires querying the render index, which is an expensive operation that
+    // we avoid here.
+    const HdStRenderParam * const renderParam =
+        static_cast<HdStRenderParam *>(
+            GetRenderIndex()->GetRenderDelegate()->GetRenderParam());
+    
+    return renderParam->HasMaterialTag(GetRprimCollection().GetMaterialTag());
 }
 
 static
@@ -221,7 +215,7 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
     TF_VERIFY(stRenderPassState);
 
     // Validate and update draw batches.
-    _PrepareCommandBuffer(renderTags);
+    _UpdateCommandBuffer(renderTags);
 
     // CPU frustum culling (if chosen)
     _FrustumCullCPU(stRenderPassState);
@@ -297,7 +291,7 @@ _GetDrawItemsCache(HdRenderIndex *renderIndex)
 }
 
 void
-HdSt_RenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
+HdSt_RenderPass::_UpdateDrawItems(TfTokenVector const& renderTags)
 {
     HD_TRACE_FUNCTION();
 
@@ -390,7 +384,7 @@ HdSt_RenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
 }
 
 void
-HdSt_RenderPass::_PrepareCommandBuffer(TfTokenVector const& renderTags)
+HdSt_RenderPass::_UpdateCommandBuffer(TfTokenVector const& renderTags)
 {
     HD_TRACE_FUNCTION();
 
@@ -400,15 +394,9 @@ HdSt_RenderPass::_PrepareCommandBuffer(TfTokenVector const& renderTags)
     // We know what must be drawn and that the stream needs to be updated,
     // so iterate over each prim, cull it and schedule it to be drawn.
 
-    // It is optional for a render task to call RenderPass::Prepare() to
-    // update the drawItems during the prepare phase. We ensure our drawItems
-    // are always up-to-date before building the command buffers.
-    {
-        if (!_drawItemsGathered) {
-            _PrepareDrawItems(renderTags);
-        }
-        _drawItemsGathered = false;
-    }
+    // Ensure that the drawItems are always up-to-date before building the
+    // command buffers.
+    _UpdateDrawItems(renderTags);
 
     const int batchVersion = _GetDrawBatchesVersion(GetRenderIndex());
     // Rebuild draw batches based on new draw items

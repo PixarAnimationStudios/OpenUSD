@@ -46,25 +46,23 @@ public:
     HDST_API
     virtual ~HdSt_RenderPass();
 
-    /// Returns the number of draw items used by this render pass.
-    /// Will only return the correct value after Prepare() has been called on
-    /// HdRenderPass. Calling this during Sync() will return last frame's
-    /// drawItem count.
+    /// Returns whether the render pass has draw items to be submitted
+    /// during _Execute. This may be queried during the Prepare and Execute
+    /// phases of the task owning the render pass.
+    /// This information is useful to prevent unnecessary resource allocation
+    /// and pipeline state changes.
     HDST_API
-    size_t GetDrawItemCount() const;
+    bool HasDrawItems() const;
 
 protected:
-    virtual void _Prepare(TfTokenVector const &renderTags) override;
-
-    /// Execute the buckets corresponding to renderTags
     virtual void _Execute(HdRenderPassStateSharedPtr const &renderPassState,
                           TfTokenVector const &renderTags) override;
 
     virtual void _MarkCollectionDirty() override;
 
 private:
-    void _PrepareDrawItems(TfTokenVector const& renderTags);
-    void _PrepareCommandBuffer(TfTokenVector const& renderTags);
+    void _UpdateDrawItems(TfTokenVector const& renderTags);
+    void _UpdateCommandBuffer(TfTokenVector const& renderTags);
 
     // XXX: This should really be in HdSt_DrawBatch::PrepareDraw.
     void _FrustumCullCPU(HdStRenderPassStateSharedPtr const &renderPassState);
@@ -101,7 +99,6 @@ private:
     // DrawItems that are used to build the draw batches.
     HdDrawItemConstPtrVectorSharedPtr _drawItems;
     size_t _drawItemCount;
-    bool _drawItemsGathered;
     bool _drawItemsChanged;
 
     Hgi* _hgi;
