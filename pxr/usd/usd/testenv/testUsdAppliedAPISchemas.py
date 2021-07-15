@@ -869,9 +869,11 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         prim.AddAppliedSchema("TestMultiApplyAPI")
         # Duplicate.
         prim.AddAppliedSchema("TestSingleApplyAPI")
+        # Even though invalid type names get added to the apiSchemas metadata,
+        # they won't show up in GetAppliedSchemas as they won't be composed into
+        # the prim's UsdPrimDefinition.
         self.assertEqual(prim.GetAppliedSchemas(), 
-                         ["TestSingleApplyAPI", "TestMultiApplyAPI:bar",
-                          "BogusTypeName", "TestMultiApplyAPI"])
+                         ["TestSingleApplyAPI", "TestMultiApplyAPI:bar"])
         _VerifyListOp(rootLayer, 
                       prepended = ["TestSingleApplyAPI", "TestMultiApplyAPI:bar",
                                    "BogusTypeName", "TestMultiApplyAPI"])

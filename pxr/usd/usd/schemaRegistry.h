@@ -336,8 +336,17 @@ private:
 
     UsdSchemaRegistry();
 
-    void _ApplyAPISchemasToPrimDefinition(
-        UsdPrimDefinition *primDef, const TfTokenVector &appliedAPISchemas) const;
+    // For the given full API schema name (which may be "type:instance" for 
+    // multiple apply API schemas), finds and returns the prim definition for 
+    // the API schema type. If the API schema is an instance of a multiple 
+    // apply API, the full prefix that will be prepended to all properties 
+    // when the schema is applied will be set in propertyPrefix.
+    const UsdPrimDefinition *_FindAPIPrimDefinitionByFullName(
+        const TfToken &apiSchemaName, std::string *propertyPrefix) const;
+
+    void _ComposeAPISchemasIntoPrimDefinition(
+        UsdPrimDefinition *primDef, 
+        const TfTokenVector &appliedAPISchemas) const;
 
     // Private class for helping initialize the schema registry. Defined 
     // entirely in the implementation. Declared here for private access to the

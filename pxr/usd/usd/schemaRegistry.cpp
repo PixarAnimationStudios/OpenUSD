@@ -821,6 +821,12 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_FindAndAddPluginSchema()
                 // prim definition to applied API schema map.
                 if (appliedAPISchemaNames.find(usdTypeNameToken) != 
                         appliedAPISchemaNames.end()) {
+                    // Create a new prim definition from the API schema prim
+                    // spec and add its properties.
+                    UsdPrimDefinition *apiSchemaPrimDef = 
+                        new UsdPrimDefinition(primPath, /*isAPISchema=*/ true);
+                    apiSchemaPrimDef->_ComposePropertiesFromPrimSpec(primSpec);
+
                     // If a multiple apply schema entry exists for the type 
                     // name, then this is a multiple apply and we add the new 
                     // prim definition to that entry. Otherwise we add a new
@@ -829,14 +835,11 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_FindAndAddPluginSchema()
                             TfMapLookupPtr(
                                 _registry->_multiApplyAPIPrimDefinitions,
                                 usdTypeNameToken)) {
-                        multiApplyDef->primDef = 
-                            new UsdPrimDefinition(primSpec, 
-                                                  /*isAPISchema=*/ true);
+                        multiApplyDef->primDef = apiSchemaPrimDef;
                     } else {
                         // Add it to the map using the USD type name.
                         _registry->_singleApplyAPIPrimDefinitions[usdTypeNameToken] = 
-                            new UsdPrimDefinition(primSpec, 
-                                                  /*isAPISchema=*/ true);
+                            apiSchemaPrimDef;
                     }
                 }
             } else {
@@ -871,15 +874,18 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_FindAndAddPluginSchema()
                                              autoAppliedAPIs->end());
                 }
 
-                // If it has no API schemas, add the new prim definition to the 
-                // concrete typed schema map also using both the USD and TfType 
-                // name. Otherwise we defer the creation of the prim definition
-                // until all API schema definitions have processed..
-                if (apiSchemasToApply.empty()) {
-                    _registry->_concreteTypedPrimDefinitions[usdTypeNameToken] = 
-                        new UsdPrimDefinition(primSpec, 
-                                              /*isAPISchema=*/ false);
-                } else {
+                // Create a new prim definition from the concrete typed prim
+                // spec and add its properties.
+                UsdPrimDefinition *primDef =
+                    new UsdPrimDefinition(primPath, /*isAPISchema=*/ false);
+                primDef->_ComposePropertiesFromPrimSpec(primSpec);
+                _registry->_concreteTypedPrimDefinitions[usdTypeNameToken] = 
+                    primDef;
+
+                // If it has API schemas, we'll need to do a second pass on this
+                // prim definition to apply the built-in API schemas all API 
+                // schema definitions have been processed.
+                if (!apiSchemasToApply.empty()) {
                     primTypesWithAPISchemas.emplace_back(
                         usdTypeNameToken, primSpec);
                     primTypesWithAPISchemas.back().apiSchemasToApply = 
@@ -889,19 +895,15 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_FindAndAddPluginSchema()
         }
     }
 
-    // All valid API schema prim definitions now exist so create the concrete
-    // typed prim definitions that require API schemas.
+    // All valid API schema prim definitions now exist so apply the API schema
+    // definitions to the concrete typed definitions that need them. These
+    // built-in API schemas have weaker property definition opinions than the
+    // typed schema itself which is why we compose them in afterwards.
     for (const auto &it : primTypesWithAPISchemas) {
-        // We create an empty prim definition, apply the API schemas and then
-        // add the typed prim spec. This is specifically because the authored
-        // opinions on the prim spec are stronger than the API schema fallbacks
-        // here.
         UsdPrimDefinition *primDef =
-            _registry->_concreteTypedPrimDefinitions[it.usdTypeNameToken] = 
-            new UsdPrimDefinition();
-        _registry->_ApplyAPISchemasToPrimDefinition(
+            _registry->_concreteTypedPrimDefinitions[it.usdTypeNameToken];
+        _registry->_ComposeAPISchemasIntoPrimDefinition(
             primDef, it.apiSchemasToApply);
-        primDef->_SetPrimSpec(it.primSpec, /*providesPrimMetadata=*/ true);
     }
 }
 
@@ -1111,75 +1113,89 @@ UsdSchemaRegistry::BuildComposedPrimDefinition(
         return std::unique_ptr<UsdPrimDefinition>();
     }
 
-    // Start with a copy of the prim definition for the typed prim type. Note 
-    // that its perfectly valid for there to be no prim definition for the given
-    // type, in which case we start with an empty prim definition.
+    // Start with a new prim definition mapped to the same prim spec path as the 
+    // prim type's definition. This does not yet add the prim type's properties.
+    // Note that its perfectly valid for there to be no prim definition for the 
+    // given prim type, in which case we compose API schemas over an empty prim 
+    // definition.
     const UsdPrimDefinition *primDef = FindConcretePrimDefinition(primType);
-    std::unique_ptr<UsdPrimDefinition> composedPrimDef(
-        primDef ? new UsdPrimDefinition(*primDef) : new UsdPrimDefinition());
+    std::unique_ptr<UsdPrimDefinition> composedPrimDef(primDef ? 
+        new UsdPrimDefinition(
+            primDef->_schematicsPrimPath, /* isAPISchema = */ false) : 
+        new UsdPrimDefinition());
 
-    // Now we'll add in properties from each applied API schema in order. Note
-    // that in this loop, if we encounter a property name that already exists
-    // we overwrite it. This will be rare and discouraged in practice, but this
-    // is policy in property name conflicts from applied schemas.
-    _ApplyAPISchemasToPrimDefinition(composedPrimDef.get(), appliedAPISchemas);
+    // We compose in the new API schemas first as these API schema property 
+    // opinions need to be stronger than the prim type's prim definition's 
+    // opinions.
+    _ComposeAPISchemasIntoPrimDefinition(
+        composedPrimDef.get(), appliedAPISchemas);
         
+    // Now compose in the prim type's properties if we can.        
+    if (primDef) {
+        composedPrimDef->_ComposePropertiesFromPrimDef(*primDef);
+        // The prim type's prim definition may have its own built-in API 
+        // schemas (which were already composed into its definition). We need
+        // to append these to applied API schemas list for our composed prim
+        // definition.
+        composedPrimDef->_appliedAPISchemas.insert(
+            composedPrimDef->_appliedAPISchemas.end(),
+            primDef->_appliedAPISchemas.begin(),
+            primDef->_appliedAPISchemas.end());
+    }
+            
     return composedPrimDef;
 }
 
-void UsdSchemaRegistry::_ApplyAPISchemasToPrimDefinition(
+const UsdPrimDefinition *
+UsdSchemaRegistry::_FindAPIPrimDefinitionByFullName(
+    const TfToken &apiSchemaName, 
+    std::string *propertyPrefix) const
+{
+    // Applied schemas may be single or multiple apply so we have to parse
+    // the full schema name into a type and possibly an instance name.
+    auto typeNameAndInstance = GetTypeNameAndInstance(apiSchemaName);
+    const TfToken &typeName = typeNameAndInstance.first;
+    const TfToken &instanceName = typeNameAndInstance.second;
+
+    // If the instance name is empty we expect a single apply API schema 
+    // otherwise it should be a multiple apply API.
+    if (instanceName.IsEmpty()) {
+        if (const UsdPrimDefinition * const *apiSchemaTypeDef = 
+                TfMapLookupPtr(_singleApplyAPIPrimDefinitions, typeName)) {
+            return *apiSchemaTypeDef;
+        }
+    } else {
+        const _MultipleApplyAPIDefinition *multiApplyDef =
+            TfMapLookupPtr(_multiApplyAPIPrimDefinitions, typeName);
+        if (multiApplyDef) {
+            // We also provide the full property namespace prefix for this 
+            // particular instance of the multiple apply API.
+            *propertyPrefix = SdfPath::JoinIdentifier(
+                multiApplyDef->propertyNamespace, instanceName);
+            return multiApplyDef->primDef;
+        }
+    }
+
+    return nullptr;
+}
+
+void UsdSchemaRegistry::_ComposeAPISchemasIntoPrimDefinition(
     UsdPrimDefinition *primDef, const TfTokenVector &appliedAPISchemas) const
 {
-    // Prepend the new applied schema names to the existing applied schemas for
-    // prim definition.
-    primDef->_appliedAPISchemas.insert(primDef->_appliedAPISchemas.begin(), 
-        appliedAPISchemas.begin(), appliedAPISchemas.end());
+    // Add in properties from each new applied API schema. Applied API schemas 
+    // are ordered strongest to weakest so we compose, in order, each weaker 
+    // schema's properties.
+    for (const TfToken &apiSchemaName : appliedAPISchemas) {
 
-    // Now we'll add in properties from each new applied API schema in order. 
-    // Note that applied API schemas are ordered strongest to weakest so we
-    // apply in reverse order, overwriting a property's path if we encounter a 
-    // duplicate property name.
-    for (auto it = appliedAPISchemas.crbegin(); 
-         it != appliedAPISchemas.crend(); ++it) {
-        const TfToken &schema = *it;
-
-        // Applied schemas may be single or multiple apply so we have to parse
-        // the schema name into a type and possibly an instance name.
-        auto typeNameAndInstance = GetTypeNameAndInstance(schema);
-
-        // From the type we should able to find an existing prim definition for
-        // the API schema type if it is valid.
+        std::string propPrefix;
         const UsdPrimDefinition *apiSchemaTypeDef = 
-            FindAppliedAPIPrimDefinition(typeNameAndInstance.first);
-        if (!apiSchemaTypeDef) {
-            continue;
-        }
+            _FindAPIPrimDefinitionByFullName(apiSchemaName, &propPrefix);
 
-        if (typeNameAndInstance.second.IsEmpty()) {
-            // An empty instance name indicates a single apply schema. Just 
-            // copy its properties into the new prim definition.
-            primDef->_ApplyPropertiesFromPrimDef(*apiSchemaTypeDef);
-        } else {
-            // Otherwise we have a multiple apply schema. We need to use the 
-            // instance name and the property prefix to map and add the correct
-            // properties for this instance.
-            auto it = _multiApplyAPIPrimDefinitions.find(
-                typeNameAndInstance.first);
-            if (it == _multiApplyAPIPrimDefinitions.end()) {
-                // Warn that this not actually a multiple apply schema type?
-                continue;
-            }
-            const TfToken &prefix = it->second.propertyNamespace;
-            if (TF_VERIFY(!prefix.IsEmpty())) {
-                // The prim definition for a multiple apply schema will have its
-                // properties stored with no prefix. We generate the prefix for 
-                // this instance and apply it to each property name and map the
-                // prefix name to the definition's property.
-                const std::string propPrefix = 
-                    SdfPath::JoinIdentifier(prefix, typeNameAndInstance.second);
-                primDef->_ApplyPropertiesFromPrimDef(
-                    *apiSchemaTypeDef, propPrefix);
-            }
+        if (apiSchemaTypeDef) {
+            primDef->_ComposePropertiesFromPrimDef(
+                *apiSchemaTypeDef, propPrefix);
+            // Append the API schema name to the API schema list.
+            primDef->_appliedAPISchemas.push_back(apiSchemaName);
         }
     }
 }
