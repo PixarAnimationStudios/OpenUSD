@@ -1729,13 +1729,34 @@ static void _EmitFVarGSAccessor(
     switch (fvarPatchType) {
         case HdSt_GeometricShader::FvarPatchType::PATCH_COARSE_QUADS:         
         case HdSt_GeometricShader::FvarPatchType::PATCH_COARSE_TRIANGLES:
-        // Note: Bspline/boxspline patch interpolation requires the tessellation
-        // coordinates as input, so this version of the function should not be 
-        // used in adaptive subdivision
-        case HdSt_GeometricShader::FvarPatchType::PATCH_BSPLINE:
-        case HdSt_GeometricShader::FvarPatchType::PATCH_BOXSPLINETRIANGLE:
         {
             str << "  vec2 localST = GetPatchCoord(localIndex).xy;\n";
+            break;
+        }
+        case HdSt_GeometricShader::FvarPatchType::PATCH_BSPLINE:
+        {
+            // Compute localST in normalized patch param space
+            str << "  ivec2 fvarPatchParam = HdGet_fvarPatchParam" 
+                << fvarChannel << "();\n"
+                << "  OsdPatchParam param = OsdPatchParamInit(fvarPatchParam.x,"
+                << " fvarPatchParam.y, 0);\n"
+                << "  vec2 unnormalized = GetPatchCoord(localIndex).xy;\n"
+                << "  float uv[2] = float[2](unnormalized.x, unnormalized.y);\n"
+                << "  OsdPatchParamNormalize(param, uv);\n"
+                << "  vec2 localST = vec2(uv[0], uv[1]);\n";
+            break;
+        }
+        case HdSt_GeometricShader::FvarPatchType::PATCH_BOXSPLINETRIANGLE:
+        {
+            // Compute localST in normalized patch param space
+            str << "  ivec2 fvarPatchParam = HdGet_fvarPatchParam" 
+                << fvarChannel << "();\n"
+                << "  OsdPatchParam param = OsdPatchParamInit(fvarPatchParam.x,"
+                << " fvarPatchParam.y, 0);\n"
+                << "  vec2 unnormalized = GetPatchCoord(localIndex).xy;\n"
+                << "  float uv[2] = float[2](unnormalized.x, unnormalized.y);\n"
+                << "  OsdPatchParamNormalizeTriangle(param, uv);\n"
+                << "  vec2 localST = vec2(uv[0], uv[1]);\n";
             break;
         }
         case HdSt_GeometricShader::FvarPatchType::PATCH_REFINED_QUADS:
