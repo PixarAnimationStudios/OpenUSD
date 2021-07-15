@@ -175,11 +175,13 @@ public:
     /// The initial set of prims to load on the stage can be specified
     /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
     ///
-    /// Note that the \p pathResolverContext passed here will apply to all path
-    /// resolutions for this stage, regardless of what other context may be
-    /// bound at resolve time. If no context is passed in here, Usd will create
-    /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
-    /// root layer's repository path if the layer has one, otherwise its real 
+    /// If \p pathResolverContext is provided it will be bound when creating the
+    /// root layer at \p identifier and whenever asset path resolution is done
+    /// for this stage, regardless of what other context may be bound at that
+    /// time. Otherwise Usd will create the root layer with no context bound,
+    /// then create a context for all future asset path resolution for the stage
+    /// by calling ArResolver::CreateDefaultContextForAsset with the root
+    /// layer's repository path if the layer has one, otherwise its resolved
     /// path.
     USD_API
     static UsdStageRefPtr
@@ -208,10 +210,12 @@ public:
     /// Creates a new stage only in memory, analogous to creating an
     /// anonymous SdfLayer.
     ///
-    /// Note that the \p pathResolverContext passed here will apply to all path
-    /// resolutions for this stage, regardless of what other context may be
-    /// bound at resolve time. If no context is passed in here, Usd will create
-    /// one by calling \sa ArResolver::CreateDefaultContext.
+    /// If \p pathResolverContext is provided it will be bound when creating the
+    /// root layer at \p identifier and whenever asset path resolution is done
+    /// for this stage, regardless of what other context may be bound at that
+    /// time. Otherwise Usd will create the root layer with no context bound,
+    /// then create a context for all future asset path resolution for the stage
+    /// by calling ArResolver::CreateDefaultContext.
     ///
     /// The initial set of prims to load on the stage can be specified
     /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
@@ -248,7 +252,6 @@ public:
                    const ArResolverContext& pathResolverContext,
                    InitialLoadSet load = LoadAll);
 
-
     /// Attempt to find a matching existing stage in a cache if
     /// UsdStageCacheContext objects exist on the stack. Failing that, create a
     /// new stage and recursively compose prims defined within and referenced by
@@ -257,12 +260,13 @@ public:
     /// The initial set of prims to load on the stage can be specified
     /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
     ///
-    /// Note that the \p pathResolverContext passed here will apply to all path
-    /// resolutions for this stage, regardless of what other context may be
-    /// bound at resolve time. If no context is passed in here, Usd will create
-    /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
-    /// root layer's repository path if the layer has one, otherwise its real 
-    /// path.
+    /// If \p pathResolverContext is provided it will be bound when opening the
+    /// root layer at \p filePath and whenever asset path resolution is done for
+    /// this stage, regardless of what other context may be bound at that
+    /// time. Otherwise Usd will open the root layer with no context bound, then
+    /// create a context for all future asset path resolution for the stage by
+    /// calling ArResolver::CreateDefaultContextForAsset with the layer's
+    /// repository path if the layer has one, otherwise its resolved path.
     USD_API
     static UsdStageRefPtr
     Open(const std::string& filePath, InitialLoadSet load = LoadAll);
@@ -283,12 +287,13 @@ public:
     /// The initial set of prims to load on the stage can be specified
     /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
     ///
-    /// Note that the \p pathResolverContext passed here will apply to all path
-    /// resolutions for this stage, regardless of what other context may be
-    /// bound at resolve time. If no context is passed in here, Usd will create
-    /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
-    /// root layer's repository path if the layer has one, otherwise its real 
-    /// path.
+    /// If \p pathResolverContext is provided it will be bound when opening the
+    /// root layer at \p filePath and whenever asset path resolution is done for
+    /// this stage, regardless of what other context may be bound at that
+    /// time. Otherwise Usd will open the root layer with no context bound, then
+    /// create a context for all future asset path resolution for the stage by
+    /// calling ArResolver::CreateDefaultContextForAsset with the layer's
+    /// repository path if the layer has one, otherwise its resolved path.
     USD_API
     static UsdStageRefPtr
     OpenMasked(const std::string &filePath,
@@ -317,12 +322,12 @@ public:
     /// The initial set of prims to load on the stage can be specified
     /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
     ///
-    /// Note that the \p pathResolverContext passed here will apply to all path
-    /// resolutions for this stage, regardless of what other context may be
-    /// bound at resolve time. If no context is passed in here, Usd will create
-    /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
-    /// root layer's repository path if the layer has one, otherwise its real 
-    /// path.
+    /// If \p pathResolverContext is provided it will be bound when whenever
+    /// asset path resolution is done for this stage, regardless of what other
+    /// context may be bound at that time. Otherwise Usd will create a context
+    /// for all future asset path resolution for the stage by calling
+    /// ArResolver::CreateDefaultContextForAsset with the layer's repository
+    /// path if the layer has one, otherwise its resolved path.
     ///
     /// When searching for a matching stage in bound UsdStageCache s, only the
     /// provided arguments matter for cache lookup.  For example, if only a root
@@ -368,12 +373,12 @@ public:
     /// The initial set of prims to load on the stage can be specified
     /// using the \p load parameter. \sa UsdStage::InitialLoadSet.
     ///
-    /// Note that the \p pathResolverContext passed here will apply to all path
-    /// resolutions for this stage, regardless of what other context may be
-    /// bound at resolve time. If no context is passed in here, Usd will create
-    /// one by calling \sa ArResolver::CreateDefaultContextForAsset with the
-    /// root layer's repository path if the layer has one, otherwise its real 
-    /// path.
+    /// If \p pathResolverContext is provided it will be bound when whenever
+    /// asset path resolution is done for this stage, regardless of what other
+    /// context may be bound at that time. Otherwise Usd will create a context
+    /// for all future asset path resolution for the stage by calling
+    /// ArResolver::CreateDefaultContextForAsset with the layer's repository
+    /// path if the layer has one, otherwise its resolved path.
     USD_API
     static UsdStageRefPtr
     OpenMasked(const SdfLayerHandle& rootLayer,
