@@ -39,27 +39,47 @@ class UsdAnimXCurve : public adsk::ICurve {
 public:
     UsdAnimXCurve();
     UsdAnimXCurve(const UsdAnimXCurveDesc &desc);
+    ANIMX_API
     bool keyframe(double time, adsk::Keyframe &key) const override;
+    ANIMX_API
     bool keyframeAtIndex(int index, adsk::Keyframe &key) const override;
+    ANIMX_API
     bool first(adsk::Keyframe &key) const override;
+    ANIMX_API
     bool last(adsk::Keyframe &key) const override;
+    ANIMX_API
     adsk::InfinityType preInfinityType() const override;
+    ANIMX_API
     adsk::InfinityType postInfinityType() const override;
+    ANIMX_API
     bool isWeighted() const override;
+    ANIMX_API
     bool isStatic() const override;
+    ANIMX_API
     unsigned int keyframeCount() const override;
+    ANIMX_API
     bool isRotation() const;
 
+    ANIMX_API
     size_t findClosest(double time) const;
+    ANIMX_API
     void addKeyframe(const UsdAnimXKeyframe& key);
+    ANIMX_API
     void addKeyframe(double time, double value);
+    ANIMX_API
     void removeKeyframe(double time);
+    ANIMX_API
     void removeKeyframe(size_t index);
+    ANIMX_API
     void reindexKeys();
 
+    ANIMX_API
     std::set<double> computeSamples() const;
+    ANIMX_API
     double evaluate(double time) const;
+    ANIMX_API
     const std::string& getName() const;
+    ANIMX_API
     void setName(const std::string& name);
     ANIMX_API
     void setKeyframeAtIndex(size_t index, const adsk::Keyframe& key);

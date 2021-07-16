@@ -73,6 +73,25 @@ public:
     ANIMX_API
     SdfAbstractDataConstPtr GetData(SdfLayer* layer) const;
 
+    ANIMX_API
+    bool WriteToFile(   const SdfLayer& layer,
+                        const std::string& filePath,
+                        const std::string& comment = std::string(),
+                        const FileFormatArguments& args = 
+                            FileFormatArguments()) const override;
+    ANIMX_API
+    bool ReadFromString(    SdfLayer* layer,
+                            const std::string& str) const override;
+    ANIMX_API
+    bool WriteToString( const SdfLayer& layer,
+                        std::string* str,
+                        const std::string& comment=std::string()) 
+                        const override;
+    ANIMX_API
+    bool WriteToStream( const SdfSpecHandle &spec,
+                        std::ostream& out,
+                        size_t indent) const override;
+
     /*
      // Required PcpDynamicFileFormatInterface overrides
     void ComposeFieldsForFileFormatArguments(
