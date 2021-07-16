@@ -146,5 +146,50 @@ UsdAnimXFileFormat::CanRead(const std::string& filePath) const
     return asset && _CanRead(asset, GetFileCookie());
 }
 
+bool
+UsdAnimXFileFormat::WriteToFile(
+    const SdfLayer& layer,
+    const std::string& filePath,
+    const std::string& comment,
+    const FileFormatArguments& args) const
+{
+    // Write.
+    SdfAbstractDataConstPtr data = _GetLayerData(layer);
+    UsdAnimXWriter writer;
+    writer.Open(filePath);
+    if(TF_VERIFY(data))
+        writer.Write(data);
+    writer.Close();
+}
+
+bool 
+UsdAnimXFileFormat::ReadFromString(
+    SdfLayer* layer,
+    const std::string& str) const
+{
+    // XXX: For now, this is not implemented
+    return false;
+}
+
+bool 
+UsdAnimXFileFormat::WriteToString(
+    const SdfLayer& layer,
+    std::string* str,
+    const std::string& comment) const
+{
+    // XXX: For now, this is not implemented
+    return false;
+}
+
+bool
+UsdAnimXFileFormat::WriteToStream(
+    const SdfSpecHandle &spec,
+    std::ostream& out,
+    size_t indent) const
+{
+    // XXX: For now, this is not implemented
+    return false;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
