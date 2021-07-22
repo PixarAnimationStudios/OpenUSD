@@ -238,7 +238,6 @@ Pcp_LayerStackRegistry::_SetLayersAndRemove(
 {
     tbb::queuing_rw_mutex::scoped_lock lock(_data->mutex, /*write=*/true);
 
-    _SetLayers(layerStack);
     Pcp_LayerStackRegistryData::IdentifierToLayerStack::const_iterator i =
         _data->identifierToLayerStack.find(identifier);
     // It's possible that layerStack has already been removed from the
@@ -247,6 +246,7 @@ Pcp_LayerStackRegistry::_SetLayersAndRemove(
     // destructor is called (which is how we get into this method).
     if (i != _data->identifierToLayerStack.end() &&
         i->second.operator->() == layerStack) {
+        _SetLayers(layerStack);
         _data->identifierToLayerStack.erase(identifier);
     }
 }
