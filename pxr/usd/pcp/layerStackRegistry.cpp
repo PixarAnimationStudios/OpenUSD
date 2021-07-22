@@ -145,23 +145,31 @@ Pcp_LayerStackRegistry::FindOrCreate(const PcpLayerStackIdentifier& identifier,
     }
 
     tbb::queuing_rw_mutex::scoped_lock lock(_data->mutex, /*write=*/false);
+    PcpLayerStackRefPtr refLayerStack;
 
     if (const PcpLayerStackPtr & layerStack = _Find(identifier)) {
-        return layerStack;
-    } else {
+        refLayerStack = TfCreateRefPtrFromProtectedWeakPtr(layerStack);
+    }
+    if (!refLayerStack) {
         lock.release();
 
-        PcpLayerStackRefPtr refLayerStack =
+        PcpLayerStackRefPtr createdLayerStack =
             TfCreateRefPtr(new PcpLayerStack(
                 identifier, _GetFileFormatTarget(), _GetMutedLayers(), 
                 _IsUsd()));
 
-        // Take the lock and see if we get to install the layerstack.
+        // Take the lock and check again for an existing layer stack, or
+        // install the one we just created.
         lock.acquire(_data->mutex);
-        auto iresult =
-            _data->identifierToLayerStack.emplace(identifier, refLayerStack);
-        if (iresult.second) {
-            // If so give it a link back to us so it can remove itself upon
+        if (const PcpLayerStackPtr & layerStack = _Find(identifier)) {
+            refLayerStack = TfCreateRefPtrFromProtectedWeakPtr(layerStack);
+        }
+        if (!refLayerStack) {
+            // No existing entry, or it is being deleted. Add the one we just
+            // create to the map.
+            refLayerStack = createdLayerStack;
+            _data->identifierToLayerStack[identifier] = refLayerStack;
+            // Also give it a link back to us so it can remove itself upon
             // destruction, and install its layers into our structures.
             refLayerStack->_registry = TfCreateWeakPtr(this);
             _SetLayers(get_pointer(refLayerStack));
@@ -171,9 +179,9 @@ Pcp_LayerStackRegistry::FindOrCreate(const PcpLayerStackIdentifier& identifier,
             PcpErrorVector errors = refLayerStack->GetLocalErrors();
             allErrors->insert(allErrors->end(), errors.begin(), errors.end());
         }
-
-        return iresult.first->second;
     }
+
+    return refLayerStack;
 }
 
 PcpLayerStackPtr
@@ -224,13 +232,21 @@ Pcp_LayerStackRegistry::GetAllLayerStacks() const
 // Private helper methods.
 
 void
-Pcp_LayerStackRegistry::_Remove(const PcpLayerStackIdentifier& identifier,
-                                const PcpLayerStack *layerStack)
+Pcp_LayerStackRegistry::_SetLayersAndRemove(
+    const PcpLayerStackIdentifier& identifier,
+    const PcpLayerStack *layerStack)
 {
+    tbb::queuing_rw_mutex::scoped_lock lock(_data->mutex, /*write=*/true);
+
+    _SetLayers(layerStack);
     Pcp_LayerStackRegistryData::IdentifierToLayerStack::const_iterator i =
         _data->identifierToLayerStack.find(identifier);
-    if (TF_VERIFY(i != _data->identifierToLayerStack.end()) &&
-        TF_VERIFY(i->second.operator->() == layerStack)) {
+    // It's possible that layerStack has already been removed from the
+    // map if a FindOrCreate call intercedes between the moment when the
+    // layer stack's ref count drops to zero and the time the layer stack
+    // destructor is called (which is how we get into this method).
+    if (i != _data->identifierToLayerStack.end() &&
+        i->second.operator->() == layerStack) {
         _data->identifierToLayerStack.erase(identifier);
     }
 }

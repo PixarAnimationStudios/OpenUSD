@@ -112,8 +112,8 @@ private:
     PcpLayerStackPtr _Find(const PcpLayerStackIdentifier&) const;
 
     // Remove the layer stack with the given identifier from the registry.
-    void _Remove(const PcpLayerStackIdentifier&,
-                 const PcpLayerStack *);
+    void _SetLayersAndRemove(const PcpLayerStackIdentifier&,
+                             const PcpLayerStack *);
 
     // Update the layer-stack-by-layer maps by setting the layers for the
     // given layer stack.
