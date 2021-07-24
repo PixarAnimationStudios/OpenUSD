@@ -346,6 +346,7 @@ UsdNprContour::ComputeExtent(const UsdTimeCode& timeCode, const UsdPrim& prim, V
   }
   (*extent)[0] = GfVec3f(accum.GetMin());
   (*extent)[1] = GfVec3f(accum.GetMax());
+  return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
