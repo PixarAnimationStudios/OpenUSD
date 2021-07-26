@@ -287,9 +287,7 @@ namespace {
             return defaultValue;
         }
 
-        bool isDynamicArray =
-            IsTruthy(SdrPropertyMetadata->IsDynamicArray, metadata);
-        bool isArray = (arraySize > 0) || isDynamicArray;
+        bool isArray = _IsArray(arraySize, metadata);
 
         // ASSET and ASSET ARRAY
         // ---------------------------------------------------------------------
@@ -362,7 +360,10 @@ SdrShaderProperty::SdrShaderProperty(
         name,
         /* type= */ _ConvertSdrPropertyTypeAndArraySize(
             type, arraySize, metadata).first,
-        _ConformDefaultValue(defaultValue, type, arraySize, metadata),
+        // Note, that the default value might be modified after creation in
+        // SdrShaderNode::_PostProcessProperties. Hence we check and conform the
+        // default value in _FinalizeProperty.
+        defaultValue,
         isOutput,
         /* arraySize= */ _ConvertSdrPropertyTypeAndArraySize(
             type, arraySize, metadata).second,
@@ -513,6 +514,20 @@ bool
 SdrShaderProperty::IsDefaultInput() const
 {
     return _IsDefaultInput(_metadata);
+}
+
+void
+SdrShaderProperty::_ConvertToVStruct()
+{
+    _type = SdrPropertyTypes->Vstruct;
+    _defaultValue = VtValue(TfToken());
+}
+
+void
+SdrShaderProperty::_FinalizeProperty()
+{
+    _defaultValue = _ConformDefaultValue(_defaultValue, _type, _arraySize,
+                                         _metadata);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

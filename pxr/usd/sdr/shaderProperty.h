@@ -256,6 +256,15 @@ protected:
     // time.
     friend void SdrShaderNode::_PostProcessProperties();
 
+    // Convert this property to a VStruct, which has a special type and a
+    // different default value
+    void _ConvertToVStruct();
+
+    // This function is called by SdrShaderNode::_PostProcessProperties once all
+    // information is locked in and won't be changed anymore. This allows each
+    // property to take some extra steps once all information is available.
+    void _FinalizeProperty();
+
     // Some metadata values cannot be returned by reference from the main
     // metadata dictionary because they need additional parsing.
     const NdrTokenMap _hints;

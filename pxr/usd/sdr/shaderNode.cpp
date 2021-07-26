@@ -54,8 +54,8 @@ SdrShaderNode::SdrShaderNode(
     const NdrTokenMap& metadata,
     const std::string &sourceCode)
     : NdrNode(identifier, version, name, family,
-              context, sourceType, definitionURI, implementationURI, std::move(properties),
-              metadata, sourceCode)
+              context, sourceType, definitionURI, implementationURI,
+              std::move(properties), metadata, sourceCode)
 {
     // Cast inputs to shader inputs
     for (const auto& input : _inputs) {
@@ -84,38 +84,24 @@ SdrShaderNode::_PostProcessProperties()
 {
     const NdrTokenVec vsNames = GetAllVstructNames();
 
-    // Declare the input type to be vstruct if it's a vstruct head, and update
-    // the default value
-    for (const TfToken& inputName : _inputNames) {
-        NdrTokenVec::const_iterator it =
-            std::find(vsNames.begin(), vsNames.end(), inputName);
+    for (const NdrPropertyUniquePtr& property : _properties) {
+        SdrShaderPropertyConstPtr constShaderProperty =
+            dynamic_cast<SdrShaderPropertyConstPtr>(property.get());
+        // This function, and only this function, has special permission (is a
+        // friend function of SdrProperty) to call private methods and so we
+        // need a non-const pointer.
+        SdrShaderProperty* shaderProperty =
+            const_cast<SdrShaderProperty*>(constShaderProperty);
 
-        if (it != vsNames.end()) {
-            SdrShaderPropertyConstPtr input = _shaderInputs.at(inputName);
-
-            const_cast<SdrShaderProperty*>(input)->_type =
-                SdrPropertyTypes->Vstruct;
-
-            const_cast<SdrShaderProperty*>(input)->_defaultValue =
-                VtValue(TfToken());
+        bool isVStruct = std::find(vsNames.begin(), vsNames.end(),
+                                   shaderProperty->GetName()) != vsNames.end();
+        if (isVStruct) {
+            shaderProperty->_ConvertToVStruct();
         }
-    }
 
-    // Declare the output type to be vstruct if it's a vstruct head, and update
-    // the default value
-    for (const TfToken& outputName : _outputNames) {
-        NdrTokenVec::const_iterator it =
-            std::find(vsNames.begin(), vsNames.end(), outputName);
-
-        if (it != vsNames.end()) {
-            SdrShaderPropertyConstPtr output = _shaderOutputs.at(outputName);
-
-            const_cast<SdrShaderProperty*>(output)->_type =
-                SdrPropertyTypes->Vstruct;
-
-            const_cast<SdrShaderProperty*>(output)->_defaultValue =
-                VtValue(TfToken());
-        }
+        // There must not be any further modifcations of this property after
+        // this method has been called.
+        shaderProperty->_FinalizeProperty();
     }
 }
 
