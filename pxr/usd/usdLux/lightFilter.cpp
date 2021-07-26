@@ -152,6 +152,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdLuxLightFilter_ConnectableAPIBehavior : 
     public UsdShadeConnectableAPIBehavior
 {
+public:
+    // By default all UsdLuxLightFilter connectable behavior should be container
+    // and we expect to make light filters be connected across multiple light
+    // scopes, hence ignoring encapsulation rules.
+    UsdLuxLightFilter_ConnectableAPIBehavior() :
+        UsdShadeConnectableAPIBehavior(
+                true /*isContainer*/, false /*requiresEncapsulation*/) {}
+
     bool
     CanConnectInputToSource(const UsdShadeInput &input,
                             const UsdAttribute &source,
@@ -161,19 +169,6 @@ class UsdLuxLightFilter_ConnectableAPIBehavior :
                 ConnectableNodeTypes::DerivedContainerNodes);
     }
 
-    bool 
-    IsContainer() const override
-    {
-        return true;
-    }
-
-    // We expect to make light filters be connected across multiple light
-    // scopes, hence ignoring encapsulation rules.
-    bool 
-    RequiresEncapsulation() const override
-    {
-        return false;
-    }
 
     // Note that LightFilter's outputs are not connectable (different from
     // UsdShadeNodeGraph default behavior) as there are no known use-case for 

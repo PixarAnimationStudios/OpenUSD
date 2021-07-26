@@ -67,7 +67,7 @@ class "Light" (
     """
     customData = {
         dictionary extraPlugInfo = {
-            bool implementsUsdShadeConnectableAPIBehavior = 1
+            bool providesUsdShadeConnectableAPIBehavior = 1
         }
         string extraIncludes = """
 #include "pxr/usd/usd/collectionAPI.h"
@@ -443,7 +443,7 @@ class LightFilter "LightFilter" (
     """
     customData = {
         dictionary extraPlugInfo = {
-            bool implementsUsdShadeConnectableAPIBehavior = 1
+            bool providesUsdShadeConnectableAPIBehavior = 1
         }
         string extraIncludes = """
 #include "pxr/usd/usd/collectionAPI.h"

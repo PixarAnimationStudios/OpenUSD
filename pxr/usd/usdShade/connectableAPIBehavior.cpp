@@ -188,13 +188,7 @@ UsdShadeConnectableAPIBehavior::_CanConnectInputToSource(
 
     TfToken inputConnectability = input.GetConnectability();
 
-    // Note that instead of directly calling RequiresEncapsulation(), 
-    // here we go through UsdShadeConnectableAPI::RequiresEncapsulation(). 
-    // This is because, UsdShadeConnectableAPI gives us access to the bound prim
-    // which in subsequent change(s) will be used to provide a fallback value in 
-    // cases where behavior is not found.
-    const bool requiresEncapsulation = 
-        UsdShadeConnectableAPI(input.GetPrim()).RequiresEncapsulation();
+    const bool requiresEncapsulation = RequiresEncapsulation();
     if (inputConnectability == UsdShadeTokens->full) {
         if (UsdShadeInput::IsInput(source)) {
             if (!requiresEncapsulation ||
@@ -268,13 +262,7 @@ UsdShadeConnectableAPIBehavior::_CanConnectOutputToSource(
     const SdfPath outputPrimPath = output.GetPrim().GetPath();
 
 
-    // Note that instead of directly calling RequiresEncapsulation(), 
-    // here we go through UsdShadeConnectableAPI::RequiresEncapsulation(). 
-    // This is because, UsdShadeConnectableAPI gives us access to the bound prim
-    // which in subsequent change(s) will be used to provide a fallback value in 
-    // cases where behavior is not found.
-    const bool requiresEncapsulation = 
-        UsdShadeConnectableAPI(output.GetPrim()).RequiresEncapsulation();
+    const bool requiresEncapsulation = RequiresEncapsulation();
     if (UsdShadeInput::IsInput(source)) {
         // passthrough usage is not allowed for DerivedContainerNodes
         if (nodeType == ConnectableNodeTypes::DerivedContainerNodes) {
@@ -331,13 +319,13 @@ UsdShadeConnectableAPIBehavior::CanConnectOutputToSource(
 bool
 UsdShadeConnectableAPIBehavior::IsContainer() const
 {
-    return false;
+    return _isContainer;
 }
 
 bool
 UsdShadeConnectableAPIBehavior::RequiresEncapsulation() const
 {
-    return true;
+    return _requiresEncapsulation;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -495,6 +483,30 @@ public:
         RegisterBehaviorForPrimTypeId(primTypeId, behavior);
     }
 
+    void RegisterPlugConfiguredBehaviorForType(
+        const TfType &type, SharedConnectableAPIBehaviorPtr &behavior)
+    {
+        // Lambda which takes a key and returns the metadata value if one 
+        // exists corresponding to the key, defaultValue otherwise.
+        auto GetBoolPlugMetadataValue = [&type](const std::string &key,
+                const bool defaultValue) {
+            PlugRegistry &plugReg = PlugRegistry::GetInstance();
+            const JsValue value = plugReg.GetDataFromPluginMetaData(type, key);
+            if (value.Is<bool>()) {
+                return value.Get<bool>();
+            }
+            return defaultValue;
+        };
+        bool isContainer = 
+            GetBoolPlugMetadataValue("isUsdShadeContainer", false);
+        bool requiresEncapsulation =
+            GetBoolPlugMetadataValue("requiresUsdShadeEncapsulation", true);
+        behavior = SharedConnectableAPIBehaviorPtr(
+                new UsdShadeConnectableAPIBehavior(
+                    isContainer, requiresEncapsulation));
+        RegisterBehaviorForType(type, behavior);
+    }
+
     const SharedConnectableAPIBehaviorPtr*
     GetBehaviorForPrimTypeId(const _PrimTypeId &primTypeId)
     {
@@ -522,7 +534,7 @@ public:
     // 3. Behavior defined for the prim's ancestor types, wins over
     // 4. Behavior defined for any built-in API schemas.
     // 5. If no Behavior is found but an api schema adds
-    //    implementsUsdShadeConnectableAPIBehavior plug metadata then a default
+    //    providesUsdShadeConnectableAPIBehavior plug metadata then a default
     //    behavior is registered for the primTypeId.
     //
     UsdShadeConnectableAPIBehavior*
@@ -564,10 +576,14 @@ public:
             if (_LoadPluginDefiningBehaviorForType(type)) {
                 // If we loaded the plugin for this type, a new function may
                 // have been registered so look again.
-                if (_FindBehaviorForType(type, &behavior)) {
-                    foundBehaviorInAncestorType = true;
-                    break;
+                if (!_FindBehaviorForType(type, &behavior)) {
+                    // If no registered behavior is found, then register a
+                    // behavior via plugInfo configuration, since this types
+                    // plug has a providesUsdShadeConnectableAPIBehavior
+                    RegisterPlugConfiguredBehaviorForType(type, behavior);
                 }
+                foundBehaviorInAncestorType = true;
+                break;
             }
         }
         // If a behavior is found on primType's ancestor, we can safely 
@@ -596,7 +612,7 @@ public:
                     UsdSchemaRegistry::GetAPITypeFromSchemaTypeName(
                             appliedSchema);
                 // Override the prim type registered behavior if any of the 
-                // authored apiSchemas (in strength order) implements a 
+                // authored apiSchemas (in strength order) provides a 
                 // UsdShadeConnectableAPIBehavior
                 SharedConnectableAPIBehaviorPtr apiBehavior;
                 if (_FindBehaviorForApiSchema(appliedSchemaType, apiBehavior)) {
@@ -616,7 +632,7 @@ public:
         // No behavior was found to be registered on prim type or primTypeId,
         // lookup all apiSchemas and if found, register it against primTypeId
         // in the _primTypeIdCache. Note that codeless api schemas could 
-        // provide implementsUsdShadeConnectableAPIBehavior plug metadata 
+        // contain providesUsdShadeConnectableAPIBehavior plug metadata 
         // without providing a c++ Behavior implementation, for such applied 
         // schemas, a default UsdShadeConnectableAPIBehavior is created and
         // registered/cached with the appliedSchemaType and the primTypeId.
@@ -647,11 +663,11 @@ private:
     {
         PlugRegistry& plugReg = PlugRegistry::GetInstance();
 
-        const JsValue implementsUsdShadeConnectableAPIBehavior = 
+        const JsValue providesUsdShadeConnectableAPIBehavior = 
             plugReg.GetDataFromPluginMetaData(type, 
-                    "implementsUsdShadeConnectableAPIBehavior");
-        if (!implementsUsdShadeConnectableAPIBehavior.Is<bool>() ||
-            !implementsUsdShadeConnectableAPIBehavior.Get<bool>()) {
+                    "providesUsdShadeConnectableAPIBehavior");
+        if (!providesUsdShadeConnectableAPIBehavior.Is<bool>() ||
+            !providesUsdShadeConnectableAPIBehavior.Get<bool>()) {
             return false;
         }
 
@@ -693,15 +709,16 @@ private:
     }
 
     bool _FindBehaviorForApiSchema(const TfType &appliedSchemaType,
-            SharedConnectableAPIBehaviorPtr &apiBehavior) {
+            SharedConnectableAPIBehaviorPtr &apiBehavior) 
+    {
         if (_LoadPluginDefiningBehaviorForType(appliedSchemaType)) {
             if (!_FindBehaviorForType(appliedSchemaType, &apiBehavior)) {
                 // If a behavior is not found/registered (but an
                 // appliedSchema specified its implementation, create a
                 // default behavior here and register it against this
                 // primTypeId.
-                apiBehavior = _defaultBehavior;
-                RegisterBehaviorForType(appliedSchemaType, apiBehavior);
+                RegisterPlugConfiguredBehaviorForType(
+                        appliedSchemaType, apiBehavior);
             }
             return true;
         }
@@ -712,8 +729,6 @@ private:
     using _RWMutex = tbb::queuing_rw_mutex;
     mutable _RWMutex _primTypeCacheMutex;
 
-    const SharedConnectableAPIBehaviorPtr _defaultBehavior = 
-        SharedConnectableAPIBehaviorPtr(new UsdShadeConnectableAPIBehavior);
 
     using _PrimTypeIdCache = 
         std::unordered_map<_PrimTypeId, SharedConnectableAPIBehaviorPtr, 

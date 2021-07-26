@@ -379,19 +379,6 @@ public:
 
     /// @}
 
-    /// UsdShadeNodeGraph provides its own connectability behavior,
-    /// to support nesting of node graphs.
-    class ConnectableAPIBehavior : public UsdShadeConnectableAPIBehavior {
-        USDSHADE_API
-        bool
-        CanConnectOutputToSource(const UsdShadeOutput &output,
-                                 const UsdAttribute &source,
-                                 std::string *reason) const override;
-
-        USDSHADE_API
-        bool IsContainer() const override;
-    };
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -396,13 +396,14 @@ Here's a short description of each datum in the global customData dictionary:
     If provided, the "value" string will be assigned as the token's value; 
     otherwise, the token's value will be its identifier (as a TfToken).
  
-  - \b skipCodeGeneration - Flag that, when set to true, tells schema generation
-    that it should not generate any C++ code for the classes in this module. We
-    call a schema without any corresponding C++ classes a "codeless schema".
-    Note that if skipCodeGeneration is set to true for a schema module, then 
-    any other schema module that includes it will also not generate any code. 
-    This is because we don't want to generate C++ code for classes that would 
-    possibly inherit from another C++ class that doesn't exist.
+  - \anchor codeless_schema \b skipCodeGeneration - Flag that, when set to 
+    true, tells schema generation that it should not generate any C++ code for 
+    the classes in this module. We call a schema without any corresponding C++ 
+    classes a "codeless schema". Note that if skipCodeGeneration is set to true 
+    for a schema module, then any other schema module that includes it will 
+    also not generate any code. This is because we don't want to generate C++ 
+    code for classes that would possibly inherit from another C++ class that 
+    doesn't exist.
  
 \section Usd_PerClassProperties Customizing Per-Class Properties
 
@@ -456,6 +457,10 @@ Here's a short description of each datum in the per-class customData dictionary:
     will be added as additional metadata for this class in the library's 
     plugInfo.json file. The values in this dictionary must be numeric types,
     strings, booleans, or dictionaries containing these types.
+    Examples of such extraPlugInfo include
+    _providesUsdShadeConnectableAPIBehavior_, _isUsdShadeContainer_,
+    _requiresUsdShadeEncapsulation_ -- these can be used to configure
+    UsdShadeConnectableAPIBehavior for Typed or API schemas.
 
   - \b schemaTokens - a place to declare tokens meaningful to the schema.
     These tokens will be included in the module's static tokens. See docs

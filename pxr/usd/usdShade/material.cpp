@@ -747,8 +747,13 @@ UsdShadeMaterial::ComputeVolumeSource(
 }
 
 class UsdShadeMaterial_ConnectableAPIBehavior : 
-    public UsdShadeNodeGraph::ConnectableAPIBehavior
+    public UsdShadeConnectableAPIBehavior
 {
+public:
+    // By default all Material Connectable Behavior should be
+    // container (of nodes) and exhibit encapsulation behavior.
+    UsdShadeMaterial_ConnectableAPIBehavior() : UsdShadeConnectableAPIBehavior(
+            true /*isContainer*/, true /*requiresEncapsulation*/) {}
     bool
     CanConnectInputToSource(const UsdShadeInput &input,
                             const UsdAttribute &source,
@@ -764,13 +769,7 @@ class UsdShadeMaterial_ConnectableAPIBehavior :
                              std::string *reason) const override
     {
         return _CanConnectOutputToSource(output, source, reason,
-                ConnectableAPIBehavior::DerivedContainerNodes);
-    }
-
-    bool IsContainer() const override
-    {
-        // Material does act as a namespace container for connected nodes
-        return true;
+                ConnectableNodeTypes::DerivedContainerNodes);
     }
 };
 

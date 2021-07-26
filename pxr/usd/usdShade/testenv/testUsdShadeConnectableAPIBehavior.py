@@ -74,12 +74,12 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
         usdShadeTestTyped = stage.DefinePrim("/UsdShadeTestTyped",
             "UsdShadeTestTyped")
         usdShadeTestTypedConn = UsdShade.ConnectableAPI(usdShadeTestTyped)
-        self.assertFalse(usdShadeTestTypedConn.RequiresEncapsulation())
         self.assertFalse(usdShadeTestTypedConn)
+        self.assertFalse(usdShadeTestTypedConn.RequiresEncapsulation())
 
         usdShadeTestTyped.AddAppliedSchema("DefaultConnectableBehaviorAPI")
-        self.assertTrue(usdShadeTestTypedConn.RequiresEncapsulation())
         self.assertTrue(usdShadeTestTypedConn)
+        self.assertTrue(usdShadeTestTypedConn.RequiresEncapsulation())
         self.assertFalse(UsdShade.ConnectableAPI.HasConnectableAPI(
             Tf.Type.FindByName('UsdShadeTestTyped')))
 
@@ -88,41 +88,172 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
         material = UsdShade.Material.Define(stage, '/Mat')
         materialPrim = material.GetPrim()
         materialPrimConn = UsdShade.ConnectableAPI(materialPrim)
-        # XXX: Used to trigger a call to _BehaviorRegistry::GetBehavior()
-        self.assertTrue(materialPrimConn.IsContainer())
         self.assertTrue(materialPrimConn)
+        self.assertTrue(materialPrimConn.IsContainer())
         # Apply overriding connectablility behavior (default has Container as
         # false)
         materialPrim.AddAppliedSchema("DefaultConnectableBehaviorAPI")
         # Following should also call GetBehavior and updating the registered
         # behavior for this material Prim
-        # TODO:Fix this
         self.assertFalse(materialPrimConn.IsContainer())
 
     def test_AutoAppliedSchemaWithDefaultBehavior(self):
         stage = Usd.Stage.CreateInMemory()
 
         autoAppliedPrim = stage.DefinePrim("/AutoAppliedPrim",
-            "UsdShadeTestTypedHasAutoApply")
+            "UsdShadeTestTypedHasAutoApplyDefault")
         autoAppliedPrimConn = UsdShade.ConnectableAPI(autoAppliedPrim)
         # auto applied schema should have provided connectability behavior to
         # this prim type
         # Following should trigger a GetBehavior call also to update the
         # behavior registry
+        self.assertTrue(autoAppliedPrimConn)
         self.assertTrue(autoAppliedPrimConn.RequiresEncapsulation())
         self.assertFalse(autoAppliedPrimConn.IsContainer())
-        self.assertTrue(autoAppliedPrimConn)
 
         # We also auto apply a DefaultConnectableBehaviorAPI to UsdMaterial, but
         # it should not override its behavior
         material = UsdShade.Material.Define(stage, '/Mat')
         materialPrim = material.GetPrim()
         materialPrimConn = UsdShade.ConnectableAPI(materialPrim)
+        self.assertTrue(materialPrimConn)
         self.assertTrue(materialPrimConn.IsContainer())
         self.assertTrue(materialPrimConn.RequiresEncapsulation())
-        self.assertTrue(materialPrimConn)
-        
 
+    def test_AutoAppliedSchemaWithOverridingPlugMetadata(self):
+        stage = Usd.Stage.CreateInMemory()
+
+        autoAppliedPrim = stage.DefinePrim("/Prim",
+            "UsdShadeTestTypedHasAutoApplyContainer")
+        connectable = UsdShade.ConnectableAPI(autoAppliedPrim)
+        self.assertTrue(connectable)
+        self.assertTrue(connectable.RequiresEncapsulation())
+        # Note here that by default a UsdShadeConnectableAPIBehavior does not
+        # impart a container property to the prim, but plug metadata on the auto
+        # applied api schema sets isContainer to true.
+        self.assertTrue(connectable.IsContainer())
+
+        shader = UsdShade.Shader.Define(stage, '/Shader')
+        shaderPrim = shader.GetPrim()
+        shaderPrimConn = UsdShade.ConnectableAPI(shaderPrim)
+        self.assertTrue(shaderPrimConn)
+        # note that even though autoApplied schema has isContainer set, it does
+        # not affect UsdShadeShaders' default behavior, since a type's behavior
+        # is stronger than any built-in apiSchemas behavior.
+        self.assertFalse(shaderPrimConn.IsContainer())
+        self.assertTrue(shaderPrimConn.RequiresEncapsulation())
+
+        autoAppliedPrim2 = stage.DefinePrim("/Prim2",
+            "UsdShadeTestTypedHasAutoApplyRequiresEncapsulation")
+        connectable2 = UsdShade.ConnectableAPI(autoAppliedPrim2)
+        self.assertTrue(connectable2)
+        # Note here that by default a UsdShadeConnectableAPIBehavior has
+        # requiresEncapsulation set to True, but plug metadata on the auto
+        # applied api schema sets requiresEncapsulation to false.
+        self.assertFalse(connectable2.RequiresEncapsulation())
+        self.assertFalse(connectable2.IsContainer())
+
+        material = UsdShade.Material.Define(stage, '/Mat')
+        materialPrim = material.GetPrim()
+        materialPrimConn = UsdShade.ConnectableAPI(materialPrim)
+        self.assertTrue(materialPrimConn)
+        # note that even though autoApplied schema removed requiresEncapsulation 
+        # property, it does not affect UsdShadeMaterials' default behavior, 
+        # since a type's behavior is stronger than any built-in apiSchemas 
+        # behavior.
+        self.assertTrue(materialPrimConn.RequiresEncapsulation())
+        self.assertTrue(materialPrimConn.IsContainer())
+
+        
+    def test_AppliedSchemaWithOverridingPlugMetadata(self):
+        stage = Usd.Stage.CreateInMemory()
+ 
+        # imparts connectability traits to UsdShadeTestTyped prim while still
+        # having no connectability trails on the type itself.
+        self.assertFalse(UsdShade.ConnectableAPI.HasConnectableAPI(
+            Tf.Type.FindByName('UsdShadeTestTyped')))
+        usdShadeTestTyped = stage.DefinePrim("/UsdShadeTestTyped",
+                "UsdShadeTestTyped")
+        connectable = UsdShade.ConnectableAPI(usdShadeTestTyped)
+        self.assertFalse(connectable)
+        self.assertFalse(connectable.RequiresEncapsulation())
+
+        # Add ModifiedDefaultConnectableBehaviorAPI apiSchema and see if
+        # appropriate connectable behavior gets set for this prim
+        usdShadeTestTyped.AddAppliedSchema(
+                "ModifiedDefaultConnectableBehaviorAPI")
+        self.assertTrue(connectable)
+        self.assertTrue(connectable.IsContainer())
+        self.assertFalse(connectable.RequiresEncapsulation())
+        self.assertFalse(UsdShade.ConnectableAPI.HasConnectableAPI(
+            Tf.Type.FindByName('UsdShadeTestTyped')))
+
+        # If multiple applied schemas provide connectableBehavior then the order
+        # in which these get applied determines what drives the prim's
+        # connectable behavior
+        # Also apply the DefaultConnectableBehaviorAPI, connectableBehavior
+        # still should remain the same that is the one specified by
+        # ModifiedDefaultConnectableBehaviorAPI
+        usdShadeTestTyped.AddAppliedSchema("DefaultConnectableBehaviorAPI")
+        self.assertTrue(connectable)
+        self.assertTrue(connectable.IsContainer())
+        self.assertFalse(connectable.RequiresEncapsulation())
+
+        # Does ModifiedDefaultConnectableBehaviorAPI when explicit applied 
+        # modify the behavior of a UsdShadeMaterial and UsdShadeShader prim
+        material = UsdShade.Material.Define(stage, '/Mat')
+        materialPrim = material.GetPrim()
+        materialPrimConn = UsdShade.ConnectableAPI(materialPrim)
+        self.assertTrue(materialPrimConn)
+        self.assertTrue(materialPrimConn.IsContainer())
+        self.assertTrue(materialPrimConn.RequiresEncapsulation())
+        # Apply overriding ModifiedDefaultConnectableBehaviorAPI 
+        materialPrim.AddAppliedSchema("ModifiedDefaultConnectableBehaviorAPI")
+        self.assertTrue(materialPrimConn.IsContainer())
+        self.assertFalse(materialPrimConn.RequiresEncapsulation())
+
+        shader = UsdShade.Shader.Define(stage, '/Shader')
+        shaderPrim = shader.GetPrim()
+        shaderPrimConn = UsdShade.ConnectableAPI(shaderPrim)
+        self.assertTrue(shaderPrimConn)
+        self.assertFalse(shaderPrimConn.IsContainer())
+        self.assertTrue(shaderPrimConn.RequiresEncapsulation())
+        # Apply overriding ModifiedDefaultConnectableBehaviorAPI 
+        shaderPrim.AddAppliedSchema("ModifiedDefaultConnectableBehaviorAPI")
+        self.assertTrue(shaderPrimConn.IsContainer())
+        self.assertFalse(shaderPrimConn.RequiresEncapsulation())
+
+    def test_AncestorAndPlugConfiguredTypedSchema(self):
+        stage = Usd.Stage.CreateInMemory()
+
+        # Test a type which imparts connectableAPIBehavior through its plug
+        # metadata and not having an explicit behavior registered.
+        # XXX: Enable when USD-6751 has been fixed, since it will make
+        # HasConnectableAPI call GetBehavior
+        # self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
+            # Tf.Type.FindByName("UsdShadeTestPlugConfiguredType")))
+        usdShadeTestPlugConfiguredType = \
+            stage.DefinePrim("/UsdShadeTestPlugConfiguredType",
+                    "UsdShadeTestPlugConfiguredType")
+        connectable = UsdShade.ConnectableAPI(usdShadeTestPlugConfiguredType)
+        self.assertTrue(connectable)
+        self.assertFalse(connectable.IsContainer())
+        self.assertFalse(connectable.RequiresEncapsulation())
+
+        # Test a type which imparts connectableAPIBehavior through its ancestor
+        # XXX: Enable when USD-6751 has been fixed, since it will make
+        # HasConnectableAPI call GetBehavior
+        # self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
+            # Tf.Type.FindByName("UsdShadeTestAncestorConfiguredType")))
+        usdShadeTestAncestorConfiguredType = \
+            stage.DefinePrim("/UsdShadeTestAncestorConfiguredType",
+                    "UsdShadeTestAncestorConfiguredType")
+        connectable2 = UsdShade.ConnectableAPI(
+                usdShadeTestAncestorConfiguredType)
+        self.assertTrue(connectable2)
+        self.assertTrue(connectable2.IsContainer())
+        self.assertTrue(connectable2.RequiresEncapsulation())
+        
 
 if __name__ == "__main__":
     unittest.main()

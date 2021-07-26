@@ -292,6 +292,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdLuxLight_ConnectableAPIBehavior : public UsdShadeConnectableAPIBehavior
 {
+public:
+    // By default all UsdLuxLight Connectable Behavior should be
+    // container and not exhibit encapsulation behavior, as we expect lights to
+    // be connected across multiple scopes, hence ignoring encapsulation rules.
+    UsdLuxLight_ConnectableAPIBehavior() : 
+        UsdShadeConnectableAPIBehavior(
+                true /*isContainer*/, false /*requiresEncapsulation*/) {}
+
     bool
     CanConnectInputToSource(const UsdShadeInput &input,
                             const UsdAttribute &source,
@@ -310,23 +318,10 @@ class UsdLuxLight_ConnectableAPIBehavior : public UsdShadeConnectableAPIBehavior
                 ConnectableNodeTypes::DerivedContainerNodes);
     }
 
-    bool 
-    IsContainer() const override
-    {
-        return true;
-    }
-
-    bool
-    RequiresEncapsulation() const override
-    {
-        return false;
-    }
 };
 
 TF_REGISTRY_FUNCTION(UsdShadeConnectableAPI)
 {
-    // UsdLuxLight prims are connectable, with special behavior requiring 
-    // connection source to be encapsulated under the light.
     UsdShadeRegisterConnectableAPIBehavior<
         UsdLuxLight, UsdLuxLight_ConnectableAPIBehavior>();
 }

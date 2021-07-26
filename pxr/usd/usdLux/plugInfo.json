@@ -64,7 +64,7 @@
                         "bases": [
                             "UsdGeomXformable"
                         ], 
-                        "implementsUsdShadeConnectableAPIBehavior": true, 
+                        "providesUsdShadeConnectableAPIBehavior": true, 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdLuxLightFilter": {
@@ -75,7 +75,7 @@
                         "bases": [
                             "UsdGeomXformable"
                         ], 
-                        "implementsUsdShadeConnectableAPIBehavior": true, 
+                        "providesUsdShadeConnectableAPIBehavior": true, 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxLightPortal": {
