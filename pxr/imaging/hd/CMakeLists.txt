@@ -37,6 +37,7 @@ pxr_library(hd
         compExtCompInputSource
         computation
         coordSys
+        dataSource
         dataSourceLocator
         debugCodes
         dirtyList
@@ -97,11 +98,12 @@ pxr_library(hd
         unitTestNullRenderDelegate
         unitTestNullRenderPass
         vertexAdjacency
-	volume
+        volume
         vtBufferSource
 
     PUBLIC_HEADERS
         api.h
+        dataSourceTypeDefs.h
         driver.h
         version.h
 
