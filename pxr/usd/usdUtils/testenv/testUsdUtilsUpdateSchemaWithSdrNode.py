@@ -80,5 +80,21 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
         resultLayer = Sdf.Layer.CreateNew("./schemaConcrete.usda")
         UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode)
 
+    def test_UsdShadeConnectableAPIMetadata(self):
+        sdrNode = self._GetSdrNode("testUsdShadeConnectableAPI.usda", 
+                "/TestUsdShadeConnectableAPIMetadataAPI")
+        self.assertTrue(sdrNode)
+        resultLayer = \
+            Sdf.Layer.CreateNew("./resultUsdShadeConnectableAPIMetadata.usda")
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode)
+
+    def test_UsdShadeConnectableAPIMetadata2(self):
+        sdrNode = self._GetSdrNode("testUsdShadeConnectableAPI2.usda", 
+                "/TestUsdShadeConnectableAPIMetadataAPI")
+        self.assertTrue(sdrNode)
+        resultLayer = \
+            Sdf.Layer.CreateNew("./resultUsdShadeConnectableAPIMetadata2.usda")
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode)
+
 if __name__ == "__main__":
     unittest.main()

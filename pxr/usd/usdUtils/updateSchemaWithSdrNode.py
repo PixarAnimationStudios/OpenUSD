@@ -26,8 +26,15 @@
 from pxr import Tf, Sdf, Sdr, Usd, UsdShade, Vt
 from pxr.UsdUtils.constantsGroup import ConstantsGroup
 
+import distutils.util
+
 class SchemaDefiningKeys(ConstantsGroup):
     API_SCHEMA_AUTO_APPLY_TO = "apiSchemaAutoApplyTo"
+    API_SCHEMA_CAN_ONLY_APPLY_TO = "apiSchemaCanOnlyApplyTo"
+    PROVIDES_USD_SHADE_CONNECTABLE_API_BEHAVIOR = \
+            "providesUsdShadeConnectableAPIBehavior"
+    IS_USD_SHADE_CONTAINER = "isUsdShadeContainer"
+    REQUIRES_USD_SHADE_ENCAPSULATION = "requiresUsdShadeEncapsulation"
     SCHEMA_NAME = "schemaName"
     SCHEMA_BASE = "schemaBase"
     SCHEMA_KIND = "schemaKind"
@@ -123,7 +130,7 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, usdSchemaNode,
 def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
     """
     Updates the given schemaLayer with primSpec and propertySpecs from sdrNode
-    metadata. It consume the following attributes (that manifest as Sdr 
+    metadata. It consumes the following attributes (that manifest as Sdr 
     metadata) in addition to many of the standard Sdr metadata
     specified and parsed (via its parser plugin).
 
@@ -131,28 +138,38 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
         - "schemaName": Name of the new schema populated from the given sdrNode
           (Required)
         - "schemaKind": Specifies the UsdSchemaKind for the schema being
-          populated from the sdrNode. (note that this does not support
-          multi-applied schema kinds).
+          populated from the sdrNode. (Note that this does not support
+          multiple apply schema kinds).
         - "schemaBase": Base schema from which the new schema should inherit
-          from. Note this defaults to "APISchemaBase" for an api schema or 
+          from. Note this defaults to "APISchemaBase" for an API schema or 
           "Typed" for a concrete scheme.
-        - "usdSchemaClass": Specified the equivalent schema directly generated
+        - "usdSchemaClass": Specifies the equivalent schema directly generated
           by USD (sourceType: USD). This is used to make sure duplicate
           properties already specified in the USD schema are not populated in
           the new API schema. Note this is only used when we are dealing with an
           API schema.
-        - "apiSchemaAutoApplyTo": The Schemas to which the sdrNode populated 
-          (API) schema will autoApply to.
+        - "apiSchemaAutoApplyTo": The schemas to which the sdrNode populated 
+          API schema will autoApply to.
+        - "apiSchemaCanOnlyApplyTo": If specified, the API schema generated 
+          from the sdrNode can only be validly applied to this set of schemas.
+        - "providesUsdShadeConnectableAPIBehavior": Used to enable a 
+          connectability behavior for an API schema.
+        - "isUsdShadeContainer": Only used when
+          providesUsdShadeConnectableAPIBehavior is set to true. Marks the
+          connectable prim as a UsdShade container type.
+        - "requiresUsdShadeEncapsulation": Only used when
+          providesUsdShadeConnectableAPIBehavior is set to true. Configures the
+          UsdShade encapsulation rules governing its connectableBehavior.
         - "tfTypeNameSuffix": Class name which will get registered with TfType 
           system. This gets appended to the domain name to register with TfType.
 
     Property Level Metadata:
-        - USD_VARIABILITY:  A property level metadata, which specified a 
-          specific sdrNodeProperty should its usd variability set to Uniform or 
-          Varying.
-        - USD_SUPPRESS_PROPERTY: A property level metadata, which determines if the
-          property should be suppressed from translation from args to property
-          spec.
+        - USD_VARIABILITY: Property level metadata which specifies a specific 
+          sdrNodeProperty should have its USD variability set to Uniform or 
+          Varying
+        - USD_SUPPRESS_PROPERTY: A property level metadata which determines if 
+          the property should be suppressed from translation from args to 
+          property spec.
     """
     # Early exit on invalid parameters
     if not schemaLayer:
@@ -185,7 +202,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
     else:
         schemaKind = sdrNodeMetadata[SchemaDefiningKeys.SCHEMA_KIND]
 
-    # Note: We are not working on dynamic multiapply schemas right now.
+    # Note: We are not working on dynamic multiple apply schemas right now.
     isAPI = schemaKind == SchemaDefiningMiscConstants.SINGLE_APPLY_SCHEMA
     # Fix schemaName and warn if needed
     if isAPI and \
@@ -214,6 +231,19 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
         apiSchemaAutoApplyTo = \
             sdrNodeMetadata[SchemaDefiningKeys.API_SCHEMA_AUTO_APPLY_TO] \
                 .split('|')
+
+    apiSchemaCanOnlyApplyTo = None
+    if SchemaDefiningKeys.API_SCHEMA_CAN_ONLY_APPLY_TO in sdrNodeMetadata:
+        apiSchemaCanOnlyApplyTo = \
+            sdrNodeMetadata[SchemaDefiningKeys.API_SCHEMA_CAN_ONLY_APPLY_TO] \
+                .split('|')
+
+    providesUsdShadeConnectableAPIBehavior = False
+    if SchemaDefiningKeys.PROVIDES_USD_SHADE_CONNECTABLE_API_BEHAVIOR in \
+            sdrNodeMetadata:
+        providesUsdShadeConnectableAPIBehavior = \
+            distutils.util.strtobool(sdrNodeMetadata[SchemaDefiningKeys. \
+                PROVIDES_USD_SHADE_CONNECTABLE_API_BEHAVIOR])
 
     usdSchemaClass = None
     if isAPI and SchemaDefiningKeys.USD_SCHEMA_CLASS in sdrNodeMetadata:
@@ -248,6 +278,26 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
     if apiSchemaAutoApplyTo:
         primSpecCustomData['apiSchemaAutoApplyTo'] = \
             Vt.TokenArray(apiSchemaAutoApplyTo)
+    if apiSchemaCanOnlyApplyTo:
+        primSpecCustomData['apiSchemaCanOnlyApplyTo'] = \
+            Vt.TokenArray(apiSchemaCanOnlyApplyTo)
+
+    if providesUsdShadeConnectableAPIBehavior:
+        extraPlugInfo = {
+            SchemaDefiningKeys.PROVIDES_USD_SHADE_CONNECTABLE_API_BEHAVIOR \
+                    : True
+        }
+        for propKey in [SchemaDefiningKeys.IS_USD_SHADE_CONTAINER, \
+                SchemaDefiningKeys.REQUIRES_USD_SHADE_ENCAPSULATION]:
+            if propKey in sdrNodeMetadata:
+                # Since we want to assign the types for these to bool and
+                # because in python boolean type is a subset of int, we need to
+                # do following instead of assign the propValue directly.
+                propValue = distutils.util.strtobool(sdrNodeMetadata[propKey])
+                extraPlugInfo[propKey] = bool(propValue)
+
+        primSpecCustomData['extraPlugInfo'] = extraPlugInfo
+
     primSpec.customData = primSpecCustomData
 
     doc = sdrNode.GetHelp()

@@ -8,6 +8,7 @@ def Shader "TestSchemaAPI" (
         token schemaKind = "singleApply"
         token schemaBase = "APISchemaBase"
         token apiSchemaAutoApplyTo = "SomeConcreteType|SomeAbstractType"
+        token apiSchemaCanOnlyApplyTo = "SomeConcreteType|SomeAbstractType"
     }
 )
 {

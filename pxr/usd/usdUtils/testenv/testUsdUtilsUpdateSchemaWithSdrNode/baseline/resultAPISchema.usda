@@ -3,6 +3,7 @@
 class "TestSchemaAPI" (
     customData = {
         token[] apiSchemaAutoApplyTo = ["SomeConcreteType", "SomeAbstractType"]
+        token[] apiSchemaCanOnlyApplyTo = ["SomeConcreteType", "SomeAbstractType"]
         string apiSchemaType = "singleApply"
     }
     inherits = </APISchemaBase>

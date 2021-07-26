@@ -1,0 +1,21 @@
+#usda 1.0
+
+# Input USD File to test usdShade connectableAPIBehavior plug metadata
+
+def Shader "TestUsdShadeConnectableAPIMetadataAPI" (
+    sdrMetadata = {
+        token schemaName = "TestUsdShadeConnectableAPIMetadataAPI"
+        token schemaKind = "singleApply"
+        token schemaBase = "APISchemaBase"
+        bool providesUsdShadeConnectableAPIBehavior = 0
+        bool isUsdShadeContainer = 1
+        bool requiresUsdShadeEncapsulation = 0
+    }
+)
+{
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @testDummy.glslfx@
+    
+    color3f outputs:resultRGB
+}
+
