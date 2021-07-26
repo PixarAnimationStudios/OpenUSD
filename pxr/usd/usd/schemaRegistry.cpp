@@ -458,27 +458,6 @@ _GetGeneratedSchema(const PlugPluginPtr &plugin)
     return layer;
 }
 
-// Gets the names of all applied API schema types.
-static TfToken::HashSet
-_GetAppliedAPISchemaNames()
-{
-    TfToken::HashSet result;
-
-    // Get all types that derive UsdSchemaBase by getting the type map cache.
-    const _TypeMapCache &typeCache = _GetTypeMapCache();
-
-    for (const auto &valuePair : typeCache.typeToName) {
-        const TfType &type = valuePair.first;
-        const TfToken &typeName = valuePair.second.name;
-
-        if (!valuePair.second.isTyped &&
-            _IsAppliedAPISchemaKind(_GetSchemaKindFromPlugin(type))) {
-            result.insert(typeName);
-        }
-    }
-    return result;
-}
-
 static TfTokenVector
 _GetNameListFromMetadata(const JsObject &dict, const TfToken &key)
 {
@@ -634,14 +613,35 @@ public:
         // Find and load all the generated schema in plugin libraries.  We find 
         // these files adjacent to pluginfo files in libraries that provide 
         // subclasses of UsdSchemaBase.
-        _FindAndAddPluginSchema();
+        _InitializePrimDefsAndSchematicsForPluginSchemas();
+
+        // Populate multiple apply API schema definitions first. These can't 
+        // include other API schemas so they're populated directly from the 
+        // their prim spec in the schematics.
+        _PopulateMultipleApplyAPIPrimDefinitions();
+
+        // Populate single apply API schema definitions second. These will 
+        // eventually be allowed include other API schemas.
+        _PopulateSingleApplyAPIPrimDefinitions();
+
+        // Populate all concrete API schema definitions after all API schemas
+        // they may depend on have been populated.
+        _PopulateConcretePrimDefinitions();
     }
 
 private:
-    void _FindAndAddPluginSchema();
+    void _InitializePrimDefsAndSchematicsForPluginSchemas();
 
     bool _CollectMultipleApplyAPISchemaNamespaces(
         const VtDictionary &customDataDict);
+
+    void _PrependAuthoredAPISchemas(
+        const SdfPath &schematicsPrimPath,
+        TfTokenVector *appliedAPISchemas);
+
+    void _PopulateMultipleApplyAPIPrimDefinitions();
+    void _PopulateSingleApplyAPIPrimDefinitions();
+    void _PopulateConcretePrimDefinitions();
 
     UsdSchemaRegistry *_registry;
 };
@@ -696,16 +696,27 @@ _CollectMultipleApplyAPISchemaNamespaces(
 }
 
 void
-UsdSchemaRegistry::_SchemaDefInitHelper::_FindAndAddPluginSchema()
+UsdSchemaRegistry::_SchemaDefInitHelper::
+_InitializePrimDefsAndSchematicsForPluginSchemas()
 {
-    // Get all types that derive UsdSchemaBase by getting the type map cache.
+    // Get all types that derive from UsdSchemaBase by getting the type map 
+    // cache.
     const _TypeMapCache &typeCache = _GetTypeMapCache();
 
-    // Get all the plugins that provide the types.
+    // Gather the mapping of TfTypes to the schemas that are auto applied to
+    // those types. We need this before initializing our prim definitions.
+    _TypeToTokenVecMap typeToAutoAppliedAPISchemaNames =
+        _GetTypeToAutoAppliedAPISchemaNames();
+
+    // Get all the plugins that provide the types and initialize prim defintions
+    // for the found schema types.
     std::vector<PlugPluginPtr> plugins;
     for (const auto &valuePair : typeCache.typeToName) {
+        const TfType &type = valuePair.first;
+        const TfToken &typeName = valuePair.second.name;
+
         if (PlugPluginPtr plugin =
-            PlugRegistry::GetInstance().GetPluginForType(valuePair.first)) {
+            PlugRegistry::GetInstance().GetPluginForType(type)) {
 
             auto insertIt = 
                 std::lower_bound(plugins.begin(), plugins.end(), plugin);
@@ -713,8 +724,56 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_FindAndAddPluginSchema()
                 plugins.insert(insertIt, plugin);
             }
         }
+
+        // We register prim definitions by the schema type name which we already
+        // grabbed from the TfType alias, and is also the name of the defining 
+        // prim in the schema layer. The actual TfType's typename 
+        // (i.e. C++ type name) is not a valid typename for a prim.
+        SdfPath schematicsPrimPath = 
+            SdfPath::AbsoluteRootPath().AppendChild(typeName);
+
+        // Create a new UsdPrimDefinition for this type in the appropriate map 
+        // based on the type's schema kind. The prim definitions are not fully 
+        // populated by the schematics here; we'll populate all these prim 
+        // definitions in the rest FindAndBuildAllSchemaDefinitions.
+        const UsdSchemaKind schemaKind = _GetSchemaKindFromPlugin(type);
+        if (_IsConcreteSchemaKind(schemaKind)) {
+            UsdPrimDefinition *newPrimDef = new UsdPrimDefinition(
+                schematicsPrimPath, /* isAPISchema = */ false);
+            _registry->_concreteTypedPrimDefinitions.emplace(
+                typeName, newPrimDef);
+            // Check if there are any API schemas that have been setup to apply 
+            // to this type. We'll set these in the prim definition's applied 
+            // API schemas list so they can be processed when building out this
+            // prim definition in _PopulateConcretePrimDefinitions.
+            if (TfTokenVector *autoAppliedAPIs = 
+                    TfMapLookupPtr(typeToAutoAppliedAPISchemaNames, type)) {
+                TF_DEBUG(USD_AUTO_APPLY_API_SCHEMAS).Msg(
+                    "The prim definition for schema type '%s' has "
+                    "these additional built-in auto applied API "
+                    "schemas: [%s].\n",
+                    typeName.GetText(),
+                    TfStringJoin(autoAppliedAPIs->begin(), 
+                                 autoAppliedAPIs->end(), ", ").c_str());
+
+                newPrimDef->_appliedAPISchemas = std::move(*autoAppliedAPIs);
+            }
+        } else if (_IsAppliedAPISchemaKind(schemaKind)) {
+            UsdPrimDefinition *newPrimDef = new UsdPrimDefinition(
+                schematicsPrimPath, /* isAPISchema = */ true);
+            if (_IsMultipleApplySchemaKind(schemaKind)) {
+                // The multiple apply schema map stores both the prim definition
+                // and the property prefix for the schema, but we won't know
+                // the prefix until we read the generated schemas.
+                _registry->_multiApplyAPIPrimDefinitions[typeName].primDef = 
+                    newPrimDef;
+            } else {
+                _registry->_singleApplyAPIPrimDefinitions.emplace(
+                    typeName, newPrimDef);
+            }
+        } 
     }
-    
+
     // For each plugin, if it has generated schema, add it to the schematics.
     std::vector<SdfLayerRefPtr> generatedSchemas(plugins.size());
     WorkWithScopedParallelism([&plugins, &generatedSchemas]() {
@@ -729,9 +788,6 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_FindAndAddPluginSchema()
         });
 
     SdfChangeBlock block;
-    TfToken::HashSet appliedAPISchemaNames = _GetAppliedAPISchemaNames();
-    _TypeToTokenVecMap typeToAutoAppliedAPISchemaNames =
-        _GetTypeToAutoAppliedAPISchemaNames();
 
     for (const SdfLayerRefPtr& generatedSchema : generatedSchemas) {
         if (generatedSchema) {
@@ -778,132 +834,157 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_FindAndAddPluginSchema()
             }
         }
     }
+}
 
-    // Concrete typed prim schemas may contain a list of apiSchemas in their 
-    // schema prim definition which affect their set of fallback properties. 
-    // For these prim types, we'll need to defer the creation of their prim 
-    // definitions until all the API schema prim definitions have been created.
-    // So we'll store the necessary info about these prim types in this struct
-    // so we can create their definitions after the main loop.
-    struct _PrimDefInfo {
-        TfToken usdTypeNameToken;
-        SdfPrimSpecHandle primSpec;
-        TfTokenVector apiSchemasToApply;
-
-        _PrimDefInfo(const TfToken &usdTypeNameToken_,
-                     const SdfPrimSpecHandle &primSpec_)
-        : usdTypeNameToken(usdTypeNameToken_)
-        , primSpec(primSpec_) {}
-    };
-    std::vector<_PrimDefInfo> primTypesWithAPISchemas;
-
-    // Create the prim definitions for all the named concrete and API schemas
-    // we found types for.
-    for (const auto &valuePair: typeCache.nameToType) {
-        // We register prim definitions by the schema type name which we already
-        // grabbed from the TfType alias, and is also the name of the defining 
-        // prim in the schema layer. The actual TfType's typename 
-        // (i.e. C++ type name) is not a valid typename for a prim.
-        const TfToken &usdTypeNameToken = valuePair.first;
-        SdfPath primPath = SdfPath::AbsoluteRootPath().
-            AppendChild(usdTypeNameToken);
-
-        // We only map type names for types that have an underlying prim
-        // spec, i.e. concrete and API schema types.
-        SdfPrimSpecHandle primSpec = 
-            _registry->_schematics->GetPrimAtPath(primPath);
-        if (primSpec) {
-            // If the prim spec doesn't have a type name, then it's an
-            // API schema
-            if (primSpec->GetTypeName().IsEmpty()) {
-                // Non-apply API schemas also have prim specs so make sure
-                // this is actually an applied schema before adding the 
-                // prim definition to applied API schema map.
-                if (appliedAPISchemaNames.find(usdTypeNameToken) != 
-                        appliedAPISchemaNames.end()) {
-                    // Create a new prim definition from the API schema prim
-                    // spec and add its properties.
-                    UsdPrimDefinition *apiSchemaPrimDef = 
-                        new UsdPrimDefinition(primPath, /*isAPISchema=*/ true);
-                    apiSchemaPrimDef->_ComposePropertiesFromPrimSpec(primSpec);
-
-                    // If a multiple apply schema entry exists for the type 
-                    // name, then this is a multiple apply and we add the new 
-                    // prim definition to that entry. Otherwise we add a new
-                    // single apply API schema definition. 
-                    if (_MultipleApplyAPIDefinition *multiApplyDef = 
-                            TfMapLookupPtr(
-                                _registry->_multiApplyAPIPrimDefinitions,
-                                usdTypeNameToken)) {
-                        multiApplyDef->primDef = apiSchemaPrimDef;
-                    } else {
-                        // Add it to the map using the USD type name.
-                        _registry->_singleApplyAPIPrimDefinitions[usdTypeNameToken] = 
-                            apiSchemaPrimDef;
-                    }
-                }
-            } else {
-                // Otherwise it's a concrete type. We need to see if it requires
-                // any applied API schemas.
-                TfTokenVector apiSchemasToApply;
-
-                // First check for any applied API schemas defined in the 
-                // metadata for the type in the schematics.
-                SdfTokenListOp apiSchemasListOp;
-                if (_registry->_schematics->HasField(
-                        primPath, UsdTokens->apiSchemas, &apiSchemasListOp)) {
-                    apiSchemasListOp.ApplyOperations(&apiSchemasToApply);
-                }
-                // Next, check if there are any API schemas that have been 
-                // setup to apply to this type. We add these after the metadata
-                // metadata defined API schemas so that auto applied APIs are
-                // weaker.
-                if (const TfTokenVector *autoAppliedAPIs = 
-                        TfMapLookupPtr(typeToAutoAppliedAPISchemaNames, 
-                                       valuePair.second.type)) {
-                    TF_DEBUG(USD_AUTO_APPLY_API_SCHEMAS).Msg(
-                        "The prim definition for schema type '%s' has "
-                        "these additional built-in auto applied API "
-                        "schemas: [%s].\n",
-                        usdTypeNameToken.GetText(),
-                        TfStringJoin(autoAppliedAPIs->begin(), 
-                                     autoAppliedAPIs->end(), ", ").c_str());
-
-                    apiSchemasToApply.insert(apiSchemasToApply.end(), 
-                                             autoAppliedAPIs->begin(),
-                                             autoAppliedAPIs->end());
-                }
-
-                // Create a new prim definition from the concrete typed prim
-                // spec and add its properties.
-                UsdPrimDefinition *primDef =
-                    new UsdPrimDefinition(primPath, /*isAPISchema=*/ false);
-                primDef->_ComposePropertiesFromPrimSpec(primSpec);
-                _registry->_concreteTypedPrimDefinitions[usdTypeNameToken] = 
-                    primDef;
-
-                // If it has API schemas, we'll need to do a second pass on this
-                // prim definition to apply the built-in API schemas all API 
-                // schema definitions have been processed.
-                if (!apiSchemasToApply.empty()) {
-                    primTypesWithAPISchemas.emplace_back(
-                        usdTypeNameToken, primSpec);
-                    primTypesWithAPISchemas.back().apiSchemasToApply = 
-                        std::move(apiSchemasToApply);
-                }
-            }
-        }
+// Helper that gets the authored API schemas from the schema prim path in the
+// schematics layer and prepends them to the given applied API schemas list.
+void 
+UsdSchemaRegistry::_SchemaDefInitHelper::_PrependAuthoredAPISchemas(
+    const SdfPath &schematicsPrimPath,
+    TfTokenVector *appliedAPISchemas)
+{
+    // Get the API schemas from the list op field in the schematics.
+    SdfTokenListOp apiSchemasListOp;
+    if (!_registry->_schematics->HasField(
+            schematicsPrimPath, UsdTokens->apiSchemas, &apiSchemasListOp)) {
+        return;
+    }
+    TfTokenVector apiSchemas;
+    apiSchemasListOp.ApplyOperations(&apiSchemas);
+    if (apiSchemas.empty()) {
+        return;
     }
 
-    // All valid API schema prim definitions now exist so apply the API schema
-    // definitions to the concrete typed definitions that need them. These
-    // built-in API schemas have weaker property definition opinions than the
-    // typed schema itself which is why we compose them in afterwards.
-    for (const auto &it : primTypesWithAPISchemas) {
-        UsdPrimDefinition *primDef =
-            _registry->_concreteTypedPrimDefinitions[it.usdTypeNameToken];
-        _registry->_ComposeAPISchemasIntoPrimDefinition(
-            primDef, it.apiSchemasToApply);
+    // If the existing list has API schemas, append them to list we just pulled
+    // from the schematics before replacing the existing list with the new list.
+    if (!appliedAPISchemas->empty()) {
+        apiSchemas.insert(
+            apiSchemas.end(),
+            appliedAPISchemas->begin(),
+            appliedAPISchemas->end());
+    }
+    *appliedAPISchemas = std::move(apiSchemas);
+}
+
+void
+UsdSchemaRegistry::_SchemaDefInitHelper::
+_PopulateMultipleApplyAPIPrimDefinitions()
+{
+    // Populate all multiple apply API schema definitions. These can't 
+    // include other API schemas so they're populated directly from the 
+    // their prim spec in the schematics.
+    for (auto &nameAndDefPtr : _registry->_multiApplyAPIPrimDefinitions) {
+        UsdPrimDefinition *&primDef = nameAndDefPtr.second.primDef;
+        if (!TF_VERIFY(primDef)) {
+            continue;
+        }
+
+        SdfPrimSpecHandle primSpec = 
+            _registry->_schematics->GetPrimAtPath(primDef->_schematicsPrimPath);
+        if (!primSpec) {
+            // XXX: This, and the warnings below, should probably be coding
+            // errors. However a coding error here causes usdGenSchema to 
+            // fail when there are plugin schema types that are missing a 
+            // generated schema prim spec. Since running usdGenSchema is how 
+            // you'd fix this error, that's not helpful. 
+            TF_WARN("Could not find a prim spec at path '%s' in the "
+                    "schematics layer for registered multiple apply "
+                    "API schema '%s'. Schemas need to be regenerated.",
+                    primDef->_schematicsPrimPath.GetText(),
+                    nameAndDefPtr.first.GetText());
+            continue;
+        }
+
+        // Compose the properties from the prim spec to the prim definition.
+        primDef->_ComposePropertiesFromPrimSpec(primSpec);
+    }
+}
+
+void
+UsdSchemaRegistry::_SchemaDefInitHelper::
+_PopulateSingleApplyAPIPrimDefinitions()
+{
+    // Populate single apply API schema definitions. These will eventually 
+    // include other API schemas in upcoming change but right now they don't 
+    // so we populate them just from the schematics the same as multiple apply 
+    // API schema definitions.
+    for (auto &nameAndDefPtr : _registry->_singleApplyAPIPrimDefinitions) {
+        UsdPrimDefinition *&primDef = nameAndDefPtr.second;
+        if (!TF_VERIFY(primDef)) {
+            continue;
+        }
+
+        SdfPrimSpecHandle primSpec = 
+            _registry->_schematics->GetPrimAtPath(primDef->_schematicsPrimPath);
+        if (!primSpec) {
+            TF_WARN("Could not find a prim spec at path '%s' in the "
+                    "schematics layer for registered single apply "
+                    "API schema '%s'. Schemas need to be regenerated.",
+                    primDef->_schematicsPrimPath.GetText(),
+                    nameAndDefPtr.first.GetText());
+            continue;
+        }
+
+        // Compose the properties from the prim spec to the prim definition.
+        primDef->_ComposePropertiesFromPrimSpec(primSpec);
+    }
+}
+
+void 
+UsdSchemaRegistry::_SchemaDefInitHelper::
+_PopulateConcretePrimDefinitions()
+{
+    // Populate all concrete API schema definitions; it is expected that all 
+    // API schemas, which these may depend on, have already been populated.
+    for (auto &nameAndDefPtr : _registry->_concreteTypedPrimDefinitions) {
+        UsdPrimDefinition *&primDef = nameAndDefPtr.second;
+        if (!TF_VERIFY(primDef)) {
+            continue;
+        }
+
+        SdfPrimSpecHandle primSpec = 
+            _registry->_schematics->GetPrimAtPath(primDef->_schematicsPrimPath);
+        if (!primSpec) {
+            TF_WARN("Could not find a prim spec at path '%s' in the "
+                    "schematics layer for registered concrete typed "
+                    "schema '%s'. Schemas need to be regenerated.",
+                    primDef->_schematicsPrimPath.GetText(),
+                    nameAndDefPtr.first.GetText());
+            continue;
+        }
+
+        // During initialization, any auto applied API schema names relevant
+        // to this prim type were put in prim definition's applied API schema
+        // list. There may be applied API schemas defined in the metadata for 
+        // the type in the schematics. If so, these must be prepended to the
+        // collected auto applied schema names (auto apply API schemas are 
+        // weaker) to get full list of API schemas that need to be composed into
+        // this prim definition.
+        _PrependAuthoredAPISchemas(
+            primDef->_schematicsPrimPath,
+            &primDef->_appliedAPISchemas);
+
+        // Compose the properties from the prim spec to the prim definition
+        // first as these are stronger than the built-in API schema properties.
+        primDef->_ComposePropertiesFromPrimSpec(primSpec);
+
+        // If there are any applied API schemas in the list, compose them 
+        // in now
+        if (!primDef->_appliedAPISchemas.empty()) {
+            // We've stored the names of all the API schemas we're going to 
+            // compose in the primDef's _appliedAPISchemas even though we 
+            // haven't composed in any of their properties yet. In addition to 
+            // composing in properties, _ComposeAPISchemasIntoPrimDefinition 
+            // will also append the API schemas it receives to the primDef's 
+            // _appliedAPISchemas. Thus, we copy _appliedAPISchemas to a 
+            // temporary and clear it first so that we don't end up with the 
+            // entire contents of list appended to itself again.
+            TfTokenVector apiSchemasToCompose = 
+                std::move(primDef->_appliedAPISchemas);
+            primDef->_appliedAPISchemas.clear();
+            _registry->_ComposeAPISchemasIntoPrimDefinition(
+                primDef, apiSchemasToCompose);
+        }
     }
 }
 
