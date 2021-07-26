@@ -408,6 +408,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     metaDataOut->primitiveParamBinding = bindingDecl;
                 } else if (name == HdTokens->edgeIndices) {
                     metaDataOut->edgeIndexBinding = bindingDecl;
+                } else if (name == HdStTokens->coarseFaceIndex) {
+                    metaDataOut->coarseFaceIndexBinding = bindingDecl;
                 } else if (_TokenContainsString(name,
                            HdStTokens->fvarIndices.GetString())) {
                     metaDataOut->fvarIndicesBindings.push_back(bindingDecl);
@@ -1483,6 +1485,8 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     boost::hash_combine(hash, primitiveParamBinding.dataType);
     boost::hash_combine(hash, edgeIndexBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.dataType);
+    boost::hash_combine(hash, coarseFaceIndexBinding.binding.GetValue());
+    boost::hash_combine(hash, coarseFaceIndexBinding.dataType);
 
     TF_FOR_ALL(binDecl, fvarIndicesBindings) {
         boost::hash_combine(hash, binDecl->binding.GetValue());

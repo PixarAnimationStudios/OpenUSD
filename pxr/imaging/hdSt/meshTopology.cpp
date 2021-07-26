@@ -662,9 +662,10 @@ HdSt_GeomSubsetFaceIndexBuilderComputation::GetBufferSpecs(
     HdBufferSpecVector *specs) const
 {
     // Though this computation is used as the face indices input into the
-    // subset indices computations, it is also used in drawing as the unrefined
-    // fvar indices.
-    specs->emplace_back(HdStTokens->fvarIndices, HdTupleType {HdTypeInt32, 1});
+    // subset indices computations, it is also used in drawing as the coarse
+    // face index (in place of gl_PrimitiveID)
+    specs->emplace_back(HdStTokens->coarseFaceIndex, 
+        HdTupleType {HdTypeInt32, 1});
 }
 
 bool
@@ -698,7 +699,7 @@ HdSt_GeomSubsetFaceIndexBuilderComputation::Resolve()
     } 
 
     _SetResult(std::make_shared<HdVtBufferSource>(
-        HdStTokens->fvarIndices, VtValue(faceIndices)));
+        HdStTokens->coarseFaceIndex, VtValue(faceIndices)));
 
     _SetResolved();
 

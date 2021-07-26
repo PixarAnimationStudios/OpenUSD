@@ -655,7 +655,8 @@ void HdStMesh::_CreateTopologyRangeForGeomSubset(
                     indicesSource, geomSubsetFaceIndicesSource);
             sources.push_back(subsetSource);
 
-            // This source also becomes the unrefined fvar indices.
+            // This source also becomes the face index for coarse 
+            // triangles/quads (instead of gl_PrimitiveId).
             sources.push_back(geomSubsetFaceIndicesSource);
         }
 

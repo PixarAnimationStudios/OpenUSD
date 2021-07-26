@@ -64,6 +64,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((colorSpaceAuto, "auto"))                  \
     (fvarIndices)                               \
     (fvarPatchParam)                            \
+    (coarseFaceIndex)                           \
     (processedFaceCounts)                       \
     (processedFaceIndices)                      \
     (geomSubsetFaceIndices)

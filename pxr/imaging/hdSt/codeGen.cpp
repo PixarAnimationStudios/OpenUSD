@@ -2438,10 +2438,20 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                 {
                     // coarse quads or coarse triangles
                     // ptexId matches the primitiveID for quadrangulated or
-                    // triangulated meshes, the other fields can be left as 0
+                    // triangulated meshes, the other fields can be left as 0.
+                    // When there are geom subsets, we can no longer use the 
+                    // primitiveId and instead use a buffer source generated
+                    // per subset draw item containing the coarse face indices. 
                     accessors
+                        << "#if defined(HD_HAS_coarseFaceIndex)\n"
+                        << "int HdGet_coarseFaceIndex();\n"
+                        << "#endif\n"
                         << "ivec3 GetPatchParam() {\n"
+                        << "#if defined(HD_HAS_coarseFaceIndex)\n "
+                        << "  return ivec3(HdGet_coarseFaceIndex().x, 0, 0);\n"
+                        << "#else\n "
                         << "  return ivec3(gl_PrimitiveID, 0, 0);\n"
+                        << "#endif\n"
                         << "}\n";
                     // edge flag encodes edges which have been
                     // introduced by quadrangulation or triangulation
@@ -2556,6 +2566,18 @@ HdSt_CodeGen::_GenerateElementPrimvar()
         _EmitAccessor(accessors, _metaData.edgeIndexBinding.name,
                     _metaData.edgeIndexBinding.dataType, binding,
                     "GetDrawingCoord().primitiveCoord");
+    }
+
+    if (_metaData.coarseFaceIndexBinding.binding.IsValid()) {
+        _genCommon << "#define HD_HAS_" 
+            << _metaData.coarseFaceIndexBinding.name << " 1\n";
+
+        const HdBinding &binding = _metaData.coarseFaceIndexBinding.binding;
+
+        _EmitDeclaration(declarations, _metaData.coarseFaceIndexBinding);
+        _EmitAccessor(accessors, _metaData.coarseFaceIndexBinding.name,
+                    _metaData.coarseFaceIndexBinding.dataType, binding,
+                    "GetDrawingCoord().primitiveCoord  + localIndex");
     }
 
     switch (_geometricShader->GetPrimitiveType()) {
