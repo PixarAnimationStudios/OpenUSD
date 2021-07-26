@@ -117,7 +117,7 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, usdSchemaNode,
     if prop.GetLabel():
         attrSpec.displayName = prop.GetLabel()
     if options and attrType == Sdf.ValueTypeNames.Token:
-        attrSpec.allowedTokens = [ x[1] for x in options ]
+        attrSpec.allowedTokens = [ x[0] for x in options ]
     attrSpec.default = prop.GetDefaultValue()
 
     # The core UsdLux inputs should remain connectable (interfaceOnly)
