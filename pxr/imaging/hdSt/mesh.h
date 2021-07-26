@@ -136,6 +136,18 @@ protected:
                            HdDirtyBits *dirtyBits,
                            const HdMeshReprDesc &desc);
 
+    void _CreateTopologyRangeForGeomSubset(
+        HdStResourceRegistrySharedPtr resourceRegistry,
+        HdChangeTracker &changeTracker, 
+        HdRenderParam *renderParam, 
+        HdDrawItem *drawItem, 
+        const TfToken &indexToken,
+        HdBufferSourceSharedPtr indicesSource, 
+        HdBufferSourceSharedPtr fvarIndicesSource, 
+        HdBufferSourceSharedPtr geomSubsetFaceIndicesHelperSource,
+        const VtIntArray &faceIndices,
+        bool refined);
+        
     void _PopulateAdjacency(
         HdStResourceRegistrySharedPtr const &resourceRegistry);
 

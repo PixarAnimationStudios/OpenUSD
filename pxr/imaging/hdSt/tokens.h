@@ -63,7 +63,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((_int, "int"))                             \
     ((colorSpaceAuto, "auto"))                  \
     (fvarIndices)                               \
-    (fvarPatchParam)
+    (fvarPatchParam)                            \
+    (processedFaceCounts)                       \
+    (processedFaceIndices)                      \
+    (geomSubsetFaceIndices)
 
 #define HDST_LIGHT_TOKENS                       \
     (color)

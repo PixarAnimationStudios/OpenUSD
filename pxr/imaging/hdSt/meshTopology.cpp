@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdSt/meshTopology.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
 #include "pxr/imaging/hdSt/subdivision.h"
+#include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/triangulate.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
@@ -42,6 +43,79 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// Given an index builder buffer source and a face indices buffer source
+// (containin face indices after triangulation/quadrangulation), this will 
+// return a subset of the mesh indices that corresponds to those faces.
+class HdSt_IndexSubsetComputation : public HdComputedBufferSource
+{
+public:
+    HdSt_IndexSubsetComputation(
+        HdBufferSourceSharedPtr indexBuilderSource,
+        HdBufferSourceSharedPtr faceIndicesSource,
+        HdSt_MeshTopology *topology);
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    bool Resolve() override;
+
+    bool HasChainedBuffer() const override;
+    HdBufferSourceSharedPtrVector GetChainedBuffers() const override;
+
+protected:
+    bool _CheckValid() const override;
+    VtIntArray _ComputeProcessedFaceIndices() const;
+    void _ResolveIndices(VtIntArray const &faceIndices);
+    void _PopulateChainedBuffers(VtIntArray const &faceIndices);
+    HdBufferSourceSharedPtrVector _chainedBuffers;
+    HdBufferSourceSharedPtr _indexBuilderSource;
+    HdBufferSourceSharedPtr _faceIndicesSource;
+    HdSt_MeshTopology *_topology;
+};
+
+// Will map a geom subset's authored face indices to the appropriate 
+// triangulated/quadrangulated face indices. This buffer source is also used in
+// drawing as the unrefined fvar indices.
+class HdSt_GeomSubsetFaceIndexBuilderComputation : 
+    public HdComputedBufferSource
+{
+public:
+    HdSt_GeomSubsetFaceIndexBuilderComputation(
+        HdBufferSourceSharedPtr geomSubsetFaceIndexHelperSource,
+        VtIntArray const &faceIndices);
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    bool Resolve() override;
+
+protected:
+    bool _CheckValid() const override;
+    HdBufferSourceSharedPtr _geomSubsetFaceIndexHelperSource;
+    VtIntArray _faceIndices;
+};
+
+// Creates two buffer sources  to be used as input into 
+// HdSt_GeomSubsetFaceIndexBuilderComputation. The first of these buffer sources
+// contains the number of triangulated/quadrangulated faces created per base 
+// face, as each base face can become multiple faces after 
+// triangulation/quadrangulation. The second buffer source contains the 
+// starting face index of the triangulated/quadrangulated faces for each base 
+// face. 
+class HdSt_GeomSubsetFaceIndexHelperComputation : 
+    public HdComputedBufferSource
+{
+public:
+    HdSt_GeomSubsetFaceIndexHelperComputation(
+        HdSt_MeshTopology *topology,
+        bool refined, 
+        bool quadrangulated);
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    bool Resolve() override;
+    bool HasChainedBuffer() const override;
+    HdBufferSourceSharedPtrVector GetChainedBuffers() const override;
+
+protected:
+    bool _CheckValid() const override;
+    HdSt_MeshTopology *_topology;
+    bool _refined;
+    bool _quadrangulated;
+    HdBufferSourceSharedPtr _processedFaceIndicesBuffer;
+};
 
 // static
 HdSt_MeshTopologySharedPtr
@@ -242,6 +316,41 @@ HdSt_MeshTopology::GetOsdTopologyComputation(SdfPath const &id)
 }
 
 HdBufferSourceSharedPtr
+HdSt_MeshTopology::GetIndexSubsetComputation(
+    HdBufferSourceSharedPtr indexBuilderSource,
+    HdBufferSourceSharedPtr faceIndicesSource)
+{
+    return std::make_shared<HdSt_IndexSubsetComputation>(
+        indexBuilderSource, faceIndicesSource);
+}
+
+HdBufferSourceSharedPtr
+HdSt_MeshTopology::GetRefinedIndexSubsetComputation(
+    HdBufferSourceSharedPtr indexBuilderSource, 
+    HdBufferSourceSharedPtr faceIndicesSource)
+{
+    return std::make_shared<HdSt_IndexSubsetComputation>(
+        indexBuilderSource, faceIndicesSource, this);
+}
+
+HdBufferSourceSharedPtr
+HdSt_MeshTopology::GetGeomSubsetFaceIndexHelperComputation(
+    bool refined, bool quadrangulated)
+{
+    return std::make_shared<HdSt_GeomSubsetFaceIndexHelperComputation>(
+        this, refined, quadrangulated);
+}
+
+HdBufferSourceSharedPtr
+HdSt_MeshTopology::GetGeomSubsetFaceIndexBuilderComputation(
+    HdBufferSourceSharedPtr geomSubsetFaceIndexHelperSource, 
+    VtIntArray const &faceIndices) 
+{
+    return std::make_shared<HdSt_GeomSubsetFaceIndexBuilderComputation>(
+        geomSubsetFaceIndexHelperSource, faceIndices);
+}
+
+HdBufferSourceSharedPtr
 HdSt_MeshTopology::GetOsdIndexBuilderComputation()
 {
     HdBufferSourceSharedPtr topologyBuilder = _osdTopologyBuilder.lock();
@@ -311,6 +420,408 @@ HdSt_MeshTopology::GetOsdRefineComputationGPU(
                                                     name, dataType,
                                                     resourceRegistry,
                                                     interpolation, fvarChannel);
+}
+
+HdSt_IndexSubsetComputation::HdSt_IndexSubsetComputation(
+    HdBufferSourceSharedPtr indexBuilderSource,
+    HdBufferSourceSharedPtr faceIndicesSource,
+    HdSt_MeshTopology *topology = nullptr) : 
+    _indexBuilderSource(indexBuilderSource),
+    _faceIndicesSource(faceIndicesSource),
+    _topology(topology)
+{
+}
+    
+void
+HdSt_IndexSubsetComputation::GetBufferSpecs(HdBufferSpecVector *specs) const 
+{
+    return _indexBuilderSource->GetBufferSpecs(specs);
+}
+
+bool
+HdSt_IndexSubsetComputation::Resolve() 
+{
+    if (_indexBuilderSource && !_indexBuilderSource->IsResolved()) return false;
+    if (_faceIndicesSource && !_faceIndicesSource->IsResolved()) return false;
+
+    if (!_TryLock()) return false;
+
+    HD_TRACE_FUNCTION();
+
+    VtIntArray faceIndices;
+    if (_faceIndicesSource) {
+        const int32_t * const processedFaceIndices = 
+            reinterpret_cast<const int32_t*>(_faceIndicesSource->GetData());
+        const size_t numElements = _faceIndicesSource->GetNumElements();
+        faceIndices.resize(numElements);
+        memcpy(faceIndices.data(), processedFaceIndices, 
+            numElements * sizeof(int32_t));
+    }
+
+    // Refined indices need extra step to map the quadrangulated/triangulated
+    // face indices to the refined face indices.
+    if (_topology) {
+        HdSt_Subdivision *subdivision = _topology->GetSubdivision();
+        if (!TF_VERIFY(subdivision)) {
+            _SetResolved();
+            return true;
+        }
+
+        const std::vector<std::vector<int>> &baseFaceToRefinedFaceMap = 
+            subdivision->GetBaseFaceToRefinedFacesMap();
+
+        VtIntArray refinedFaceIndices;
+        for (size_t i = 0; i < faceIndices.size(); ++i) {
+            const std::vector<int> &refinedFaces = 
+                baseFaceToRefinedFaceMap[faceIndices[i]];
+            for (size_t j = 0; j < refinedFaces.size(); ++j) {
+                refinedFaceIndices.push_back(refinedFaces[j]);
+            }
+        }
+
+        faceIndices = refinedFaceIndices;
+    }
+
+    _ResolveIndices(faceIndices);
+    _PopulateChainedBuffers(faceIndices);
+
+    _SetResolved();
+    return true;
+}
+
+bool 
+HdSt_IndexSubsetComputation::HasChainedBuffer() const 
+{
+    return !_chainedBuffers.empty();
+}
+
+HdBufferSourceSharedPtrVector 
+HdSt_IndexSubsetComputation::GetChainedBuffers() const 
+{
+    return _chainedBuffers;
+}
+
+bool 
+HdSt_IndexSubsetComputation::_CheckValid() const 
+{
+    return true;
+}
+
+void 
+HdSt_IndexSubsetComputation::_ResolveIndices(VtIntArray const &faceIndices) 
+{
+    const size_t numFaces = faceIndices.size();
+    const int32_t * const indices = reinterpret_cast<const int32_t*>(
+        _indexBuilderSource->GetData());
+    const HdTupleType tupleType = _indexBuilderSource->GetTupleType();
+    const size_t arraySize = tupleType.count;
+
+    // We assume indices of type HdTypeInt32 can come in arrays, while the other 
+    // types do not.
+    VtValue subsetIndices;
+    switch (tupleType.type) {
+        case HdTypeInt32: 
+        {
+            VtIntArray typedSubsetIndices;
+            typedSubsetIndices.reserve(arraySize * numFaces);
+            for (size_t i = 0; i < numFaces; ++i) {
+                size_t index = arraySize * faceIndices[i];
+                for (size_t j = 0; j < arraySize; ++j) {
+                    typedSubsetIndices.push_back(indices[index + j]);
+                }
+            }
+            subsetIndices = VtValue(typedSubsetIndices);
+            break;
+        }
+        case HdTypeInt32Vec3: 
+        {
+            VtVec3iArray typedSubsetIndices(numFaces);
+            for (size_t i = 0; i < numFaces; ++i) {
+                size_t index = 3 * faceIndices[i];
+                typedSubsetIndices[i] = GfVec3i(
+                    indices[index], indices[index+1], indices[index+2]);
+            }
+            subsetIndices = VtValue(typedSubsetIndices);
+            break;
+        }
+        case HdTypeInt32Vec4:
+        {
+            VtVec4iArray typedSubsetIndices(numFaces);
+            for (size_t i = 0; i < numFaces; ++i) {
+                size_t index = 4 * faceIndices[i];
+                typedSubsetIndices[i] = GfVec4i(
+                    indices[index], indices[index+1], indices[index+2], 
+                        indices[index+3]);
+            }
+            subsetIndices = VtValue(typedSubsetIndices);
+            break;
+        }
+        default:
+            TF_WARN("%s indices type not supported",
+                _indexBuilderSource->GetName().GetText());
+    }
+
+    _SetResult(std::make_shared<HdVtBufferSource>(
+        _indexBuilderSource->GetName(), subsetIndices, arraySize));
+}
+
+void 
+HdSt_IndexSubsetComputation::_PopulateChainedBuffers(
+    VtIntArray const &faceIndices) 
+{
+    if (_indexBuilderSource->HasChainedBuffer()) {
+        const size_t numFaces = faceIndices.size();
+
+        HdBufferSourceSharedPtrVector chainedBuffers = 
+            _indexBuilderSource->GetChainedBuffers();
+
+        for (HdBufferSourceSharedPtr chainedBuffer : chainedBuffers) {
+            const int32_t * const chainedBufferData = 
+                reinterpret_cast<const int32_t*>(chainedBuffer->GetData());
+            const HdTupleType tupleType = chainedBuffer->GetTupleType();
+            
+            // We assume the chained buffers of the index builder comps all
+            // have an array size of 1.
+            VtValue subsetChainedBuffer;
+            switch (tupleType.type) {
+                case HdTypeInt32: 
+                {
+                    VtIntArray typedSubsetChainedBuffer(numFaces);
+                    for (size_t i = 0; i < numFaces; ++i) {
+                        size_t index = faceIndices[i];
+                        typedSubsetChainedBuffer[i] = chainedBufferData[index];
+                    }
+                    subsetChainedBuffer = VtValue(typedSubsetChainedBuffer);
+                    break;
+                } 
+                case HdTypeInt32Vec2:
+                {
+                    VtVec2iArray typedSubsetChainedBuffer(numFaces);
+                    for (size_t i = 0; i < numFaces; ++i) {
+                        size_t index = 2 * faceIndices[i];
+                        typedSubsetChainedBuffer[i] = GfVec2i(
+                            chainedBufferData[index], 
+                            chainedBufferData[index + 1]);
+                    }
+                    subsetChainedBuffer = VtValue(typedSubsetChainedBuffer);
+                    break;
+                }
+                case HdTypeInt32Vec3:
+                {
+                    VtVec3iArray typedSubsetChainedBuffer(numFaces);
+                    for (size_t i = 0; i < numFaces; ++i) {
+                        size_t index = 3 * faceIndices[i];
+                        typedSubsetChainedBuffer[i] = GfVec3i(
+                            chainedBufferData[index], 
+                            chainedBufferData[index + 1], 
+                            chainedBufferData[index + 2]);
+                    }
+                    subsetChainedBuffer = VtValue(typedSubsetChainedBuffer);
+                    break;
+                }
+                case HdTypeInt32Vec4:
+                {
+                    VtVec4iArray typedSubsetChainedBuffer(numFaces);
+                    for (size_t i = 0; i < numFaces; ++i) {
+                        size_t index = 4 * faceIndices[i];
+                        typedSubsetChainedBuffer[i] = GfVec4i(
+                            chainedBufferData[index], 
+                            chainedBufferData[index + 1], 
+                            chainedBufferData[index + 2], 
+                            chainedBufferData[index + 3]);
+                    }
+                    subsetChainedBuffer = VtValue(typedSubsetChainedBuffer);
+                    break;
+                }
+                default:
+                    TF_WARN("Chained buffer %s type not supported", 
+                        chainedBuffer->GetName().GetText());
+            }
+
+            HdBufferSourceSharedPtr subsetChainedBufferSource = 
+                std::make_shared<HdVtBufferSource>(
+                    chainedBuffer->GetName(),
+                    subsetChainedBuffer);
+
+            _chainedBuffers.push_back(subsetChainedBufferSource);
+        }
+    }
+}
+
+HdSt_GeomSubsetFaceIndexBuilderComputation::
+    HdSt_GeomSubsetFaceIndexBuilderComputation(
+        HdBufferSourceSharedPtr geomSubsetFaceIndexHelperSource, 
+        VtIntArray const& faceIndices) : 
+    _geomSubsetFaceIndexHelperSource(geomSubsetFaceIndexHelperSource), 
+    _faceIndices(faceIndices)
+{
+}
+
+void
+HdSt_GeomSubsetFaceIndexBuilderComputation::GetBufferSpecs(
+    HdBufferSpecVector *specs) const
+{
+    // Though this computation is used as the face indices input into the
+    // subset indices computations, it is also used in drawing as the unrefined
+    // fvar indices.
+    specs->emplace_back(HdStTokens->fvarIndices, HdTupleType {HdTypeInt32, 1});
+}
+
+bool
+HdSt_GeomSubsetFaceIndexBuilderComputation::Resolve()
+{
+    if (_geomSubsetFaceIndexHelperSource && 
+        !_geomSubsetFaceIndexHelperSource->IsResolved()) {
+        return false;
+    }
+
+    if (!_TryLock()) return false;
+
+    HD_TRACE_FUNCTION();
+
+    VtIntArray faceIndices;
+    if (_geomSubsetFaceIndexHelperSource) {
+        const int32_t * const processedFaceCounts = 
+            reinterpret_cast<const int32_t*>(
+                _geomSubsetFaceIndexHelperSource->GetData());
+        const int32_t * const processedFaceIndices = 
+            reinterpret_cast<const int32_t*>(
+                _geomSubsetFaceIndexHelperSource->GetChainedBuffers().front()->
+                    GetData());
+
+        for (size_t i = 0; i < _faceIndices.size(); ++i) {
+            const int baseFaceIndex = _faceIndices[i];
+            for (int j = 0; j < processedFaceCounts[baseFaceIndex]; ++j) {
+                faceIndices.push_back(processedFaceIndices[baseFaceIndex] + j);
+            }
+        }
+    } 
+
+    _SetResult(std::make_shared<HdVtBufferSource>(
+        HdStTokens->fvarIndices, VtValue(faceIndices)));
+
+    _SetResolved();
+
+    return true;
+}
+
+bool
+HdSt_GeomSubsetFaceIndexBuilderComputation::_CheckValid() const
+{
+    return true;
+}
+
+HdSt_GeomSubsetFaceIndexHelperComputation::
+    HdSt_GeomSubsetFaceIndexHelperComputation(
+        HdSt_MeshTopology *topology,
+        bool refined, 
+        bool quadrangulated) :
+    _topology(topology), 
+    _refined(refined), 
+    _quadrangulated(quadrangulated)
+{
+}
+
+void 
+HdSt_GeomSubsetFaceIndexHelperComputation::GetBufferSpecs(
+    HdBufferSpecVector *specs) const 
+{
+    specs->emplace_back(
+        HdStTokens->processedFaceCounts, HdTupleType {HdTypeInt32, 1});
+    specs->emplace_back(
+        HdStTokens->processedFaceIndices, HdTupleType {HdTypeInt32, 1});
+}
+
+bool 
+HdSt_GeomSubsetFaceIndexHelperComputation::Resolve() 
+{        
+    if (!_TryLock()) return false;
+
+    HD_TRACE_FUNCTION();
+
+    const VtIntArray &faceVertexCounts = _topology->GetFaceVertexCounts();
+    VtIntArray processedFaceCounts = VtIntArray(_topology->GetNumFaces());
+
+    // Based on whether the mesh underwent a triangulation or quadrangulation
+    // step, determine how many faces each base face becomes.
+    if (_quadrangulated) {
+        const VtIntArray &holeIndices = _topology->GetHoleIndices();
+        size_t holeIndex = 0;
+        for (int i = 0; i < _topology->GetNumFaces(); ++i) {
+            if (holeIndex < holeIndices.size() && holeIndices[holeIndex] == i) {
+                processedFaceCounts[i] = 0;
+                holeIndex++;
+            } else if (faceVertexCounts[i] == 4) {
+                // Quad faces do not get quadrangulated
+                processedFaceCounts[i] = 1;
+            } else {
+                processedFaceCounts[i] = faceVertexCounts[i];
+            }
+        }
+    } else {
+        const VtIntArray &holeIndices = _topology->GetHoleIndices();
+        size_t holeIndex = 0;
+        for (int i = 0; i < _topology->GetNumFaces(); ++i) {
+            if (holeIndex < holeIndices.size() && holeIndices[holeIndex] == i) {
+                processedFaceCounts[i] = 0;
+                holeIndex++;
+            } else {
+                processedFaceCounts[i] = faceVertexCounts[i] - 2;
+            }
+        }
+    }
+
+    _SetResult(std::make_shared<HdVtBufferSource>(
+        HdStTokens->processedFaceCounts, VtValue(processedFaceCounts)));
+
+    // Using the number of processed faces per base face, determine the new face
+    // index that each base face index maps to.
+    // Each base face can potentially map to multiple processed faces, but this
+    // value gives us the new starting index for those processed faces.
+    VtIntArray processedFaceIndices = VtIntArray(_topology->GetNumFaces());
+    int processedFaceIndex = 0;
+    for (int i = 0; i < _topology->GetNumFaces(); ++i) {
+        processedFaceIndices[i] = processedFaceIndex;
+
+        // If current face is hole 
+        if (_refined && processedFaceCounts[i] == 0) {
+            if (_quadrangulated) {
+                if (faceVertexCounts[i] == 4) {
+                    processedFaceIndex += 1;
+                } else {
+                    processedFaceIndex += faceVertexCounts[i];
+                }   
+            } else {
+                processedFaceIndex += faceVertexCounts[i] - 2;
+            }
+        } else {
+            processedFaceIndex += processedFaceCounts[i];
+        }      
+    }
+
+    _processedFaceIndicesBuffer.reset(new HdVtBufferSource(
+        HdStTokens->processedFaceIndices, VtValue(processedFaceIndices)));
+
+    _SetResolved();
+    return true;
+}
+
+bool 
+HdSt_GeomSubsetFaceIndexHelperComputation::HasChainedBuffer() const 
+{
+    return true;
+}
+
+HdBufferSourceSharedPtrVector 
+HdSt_GeomSubsetFaceIndexHelperComputation::GetChainedBuffers() const 
+{
+    return { _processedFaceIndicesBuffer };    
+}
+
+bool
+HdSt_GeomSubsetFaceIndexHelperComputation::_CheckValid() const
+{
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

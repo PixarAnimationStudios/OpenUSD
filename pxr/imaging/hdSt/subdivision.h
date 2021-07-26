@@ -139,6 +139,10 @@ public:
         return _patchTable.get();
     }
 
+    /// Returns mapping of base face index (after quadrangulation/triangulation)
+    /// to refined face indices
+    std::vector<std::vector<int>> const & GetBaseFaceToRefinedFacesMap();
+
 private:
     HdSt_GpuStencilTableSharedPtr
     _GetGpuStencilTable(
@@ -168,6 +172,8 @@ private:
     HdSt_GpuStencilTableSharedPtr _gpuVertexStencils;
     HdSt_GpuStencilTableSharedPtr  _gpuVaryingStencils;
     std::vector<HdSt_GpuStencilTableSharedPtr> _gpuFaceVaryingStencils;
+
+    std::vector<std::vector<int>> _baseFaceToRefinedFacesMap;
 };
 
 // ---------------------------------------------------------------------------

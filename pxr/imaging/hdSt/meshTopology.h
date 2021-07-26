@@ -215,6 +215,27 @@ public:
         HdStResourceRegistry *resourceRegistry,
         Interpolation interpolation,
         int fvarChannel = 0);
+    
+    /// Returns the indices subset computation for unrefined indices.
+    HdBufferSourceSharedPtr GetIndexSubsetComputation(
+        HdBufferSourceSharedPtr indexBuilderSource, 
+        HdBufferSourceSharedPtr faceIndicesSource);
+
+    /// Returns the indices subset computation for refined indices.
+    HdBufferSourceSharedPtr GetRefinedIndexSubsetComputation(
+        HdBufferSourceSharedPtr indexBuilderSource, 
+        HdBufferSourceSharedPtr faceIndicesSource);
+    
+    /// Returns the triangulated/quadrangulated face indices computation.
+    HdBufferSourceSharedPtr GetGeomSubsetFaceIndexBuilderComputation(
+        HdBufferSourceSharedPtr geomSubsetFaceIndexHelperSource, 
+        VtIntArray const &faceIndices);
+
+    /// Returns computation creating buffer sources used in mapping authored 
+    /// face indices to triangulated/quadrangulated face indices.
+    HdBufferSourceSharedPtr GetGeomSubsetFaceIndexHelperComputation(
+        bool refined, 
+        bool quadrangulated);
 
     /// Sets the face-varying topologies.
     void SetFvarTopologies(std::vector<VtIntArray> const &fvarTopologies) {

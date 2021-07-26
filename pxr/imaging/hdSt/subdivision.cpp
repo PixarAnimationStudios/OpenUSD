@@ -442,6 +442,37 @@ HdSt_Subdivision::RefinesToBoxSplineTrianglePatches(TfToken const &scheme)
     return false;
 }
 
+std::vector<std::vector<int>> const &
+HdSt_Subdivision::GetBaseFaceToRefinedFacesMap()
+{ 
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    const size_t numPatches = _patchTable ? 
+        _patchTable->GetPatchParamTable().size() : 0;
+
+    // If we have not filled the map yet, do so now.
+    if (numPatches != 0 && _baseFaceToRefinedFacesMap.empty()) {
+        // Take a guess at the size of the resulting map.
+        _baseFaceToRefinedFacesMap.resize(numPatches);
+
+        for (size_t i = 0; i < numPatches; ++i) {
+            OpenSubdiv::Far::PatchParam const &patchParam =
+                _patchTable->GetPatchParamTable()[i];
+            const int patchFaceIndex = patchParam.GetFaceId();
+
+            // Topological holes cause discrepency between number of patches
+            // and patch face indices
+            if (patchFaceIndex >= (int)_baseFaceToRefinedFacesMap.size()) {
+                _baseFaceToRefinedFacesMap.resize(patchFaceIndex + 1);
+            }
+            _baseFaceToRefinedFacesMap[patchFaceIndex].push_back(i);
+        }
+    }
+
+    return _baseFaceToRefinedFacesMap;
+}
+
 // ---------------------------------------------------------------------------
 
 /*virtual*/

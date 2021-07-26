@@ -567,8 +567,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             // there is a previously set range
             HdBufferArrayUsageHint usageHint;
             usageHint.value = 0;
-            usageHint.bits.sizeVarying =
-                                 ((bool)(drawItem->GetTopologyRange())) ? 1 : 0;
+            usageHint.bits.sizeVarying = drawItem->GetTopologyRange() ? 1 : 0;
 
             // allocate new range
             HdBufferArrayRangeSharedPtr range =
@@ -605,6 +604,107 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             &changeTracker);
 
     }  // Release regLock
+}
+
+void HdStMesh::_CreateTopologyRangeForGeomSubset(
+    HdStResourceRegistrySharedPtr resourceRegistry,
+    HdChangeTracker &changeTracker, 
+    HdRenderParam *renderParam, 
+    HdDrawItem *drawItem, 
+    const TfToken &indexToken,
+    HdBufferSourceSharedPtr indicesSource, 
+    HdBufferSourceSharedPtr fvarIndicesSource, 
+    HdBufferSourceSharedPtr geomSubsetFaceIndicesHelperSource,
+    const VtIntArray &faceIndices,
+    bool refined)
+{
+    HdTopology::ID subsetTopologyId = ArchHash64(
+                        (const char*)faceIndices.cdata(),
+                        sizeof(int)*faceIndices.size(), _topologyId);
+
+    // ask registry if there's a shareable buffer range for the topology
+    HdInstance<HdBufferArrayRangeSharedPtr> rangeInstance =
+        resourceRegistry->RegisterMeshIndexRange(subsetTopologyId, indexToken);
+
+    if (rangeInstance.IsFirstInstance()) {
+        // if not exists, update actual topology buffer to range.
+        // Allocate new one if necessary.
+        HdBufferSourceSharedPtrVector sources;
+
+        HdBufferSourceSharedPtr geomSubsetFaceIndicesSource = 
+            _topology->GetGeomSubsetFaceIndexBuilderComputation(
+                geomSubsetFaceIndicesHelperSource, faceIndices);
+
+        if (refined) {
+            resourceRegistry->AddSource(geomSubsetFaceIndicesSource);
+
+            HdBufferSourceSharedPtr subsetSource = 
+                _topology->GetRefinedIndexSubsetComputation(
+                    indicesSource, geomSubsetFaceIndicesSource);
+            sources.push_back(subsetSource);
+
+            if (fvarIndicesSource) {
+                HdBufferSourceSharedPtr fvarSubsetSource = 
+                    _topology->GetRefinedIndexSubsetComputation(
+                        fvarIndicesSource, geomSubsetFaceIndicesSource);
+                sources.push_back(fvarSubsetSource);
+            }
+        } else {
+            HdBufferSourceSharedPtr subsetSource = 
+                _topology->GetIndexSubsetComputation(
+                    indicesSource, geomSubsetFaceIndicesSource);
+            sources.push_back(subsetSource);
+
+            // This source also becomes the unrefined fvar indices.
+            sources.push_back(geomSubsetFaceIndicesSource);
+        }
+
+        // initialize buffer array
+        //   * indices
+        //   * primitiveParam
+        //   * fvarIndices (optional)
+        //   * fvarPatchParam (optional)
+        HdBufferSpecVector bufferSpecs;
+        HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+
+        // Set up the usage hints to mark topology as varying if there is a 
+        // previously set range
+        HdBufferArrayUsageHint usageHint;
+        usageHint.value = 0;
+        usageHint.bits.sizeVarying = drawItem->GetTopologyRange() ? 1 : 0;
+
+        // allocate new range
+        HdBufferArrayRangeSharedPtr range =
+            resourceRegistry->AllocateNonUniformBufferArrayRange(
+                HdTokens->topology, bufferSpecs, usageHint);
+
+        // add sources to update queue
+        resourceRegistry->AddSources(range, std::move(sources));
+
+        // save new range to registry
+        rangeInstance.SetValue(range);
+    } 
+
+    // If we are updating an existing topology, notify downstream systems of the
+    // change
+    HdBufferArrayRangeSharedPtr const& orgRange = drawItem->GetTopologyRange();
+    HdBufferArrayRangeSharedPtr newRange = rangeInstance.GetValue();
+
+    if (HdStIsValidBAR(orgRange) && (newRange != orgRange)) {
+        TF_DEBUG(HD_RPRIM_UPDATED).Msg("%s has varying topology"
+            " (topology index = %d).\n", GetId().GetText(),
+                drawItem->GetDrawingCoord()->GetTopologyIndex());
+                    
+        // Setup a flag to say this mesh's topology is varying
+        _hasVaryingTopology = true;
+    }
+
+    HdStUpdateDrawItemBAR(
+        newRange,
+        drawItem->GetDrawingCoord()->GetTopologyIndex(),
+        &_sharedData,
+        renderParam,
+        &changeTracker);
 }
 
 void
