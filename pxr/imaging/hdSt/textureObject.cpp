@@ -109,7 +109,9 @@ HdStTextureObject::_AddToTotalTextureMemory(
     const HgiTextureHandle &texture)
 {
     if (texture) {
-        _AdjustTotalTextureMemory(texture->GetByteSizeOfResource());
+        const int64_t m = static_cast<int64_t>(
+            texture->GetByteSizeOfResource());
+        _AdjustTotalTextureMemory(m);
     }
 }
 
@@ -118,7 +120,9 @@ HdStTextureObject::_SubtractFromTotalTextureMemory(
     const HgiTextureHandle &texture)
 {
     if (texture) {
-        _AdjustTotalTextureMemory(-texture->GetByteSizeOfResource());
+        const int64_t m = static_cast<int64_t>(
+            texture->GetByteSizeOfResource());
+        _AdjustTotalTextureMemory(-m);
     }
 }
 
