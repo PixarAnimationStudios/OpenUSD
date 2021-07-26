@@ -6,7 +6,9 @@
     }
 )
 
-class "DerivedSingleApplyAPI"
+class "DerivedSingleApplyAPI" (
+    apiSchemas = ["BuiltinAPI"]
+)
 {
 }
 

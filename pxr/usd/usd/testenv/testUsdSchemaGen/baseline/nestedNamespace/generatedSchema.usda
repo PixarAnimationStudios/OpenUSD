@@ -18,7 +18,9 @@ class "NonAppliedAPI"
 {
 }
 
-class "SingleApplyAPI"
+class "SingleApplyAPI" (
+    apiSchemas = ["BuiltinAPI"]
+)
 {
 }
 
@@ -46,6 +48,7 @@ class "PublicMultipleApplyAPI"
 }
 
 class "Base" (
+    apiSchemas = ["BuiltinAPI"]
     doc = 'This doc should only exist on the "Base" class.'
 )
 {
@@ -156,6 +159,7 @@ class "Base" (
 }
 
 class Derived "Derived" (
+    apiSchemas = ["BuiltinAPI"]
     doc = "Emphasized! Test Section"
 )
 {

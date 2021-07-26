@@ -1223,7 +1223,7 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
         # If this is an API schema, check if it's applied and record necessary
         # information.
         if p.GetName() in primsToKeep and p.GetName().endswith('API'):
-            apiSchemaType = p.GetCustomDataByKey(API_SCHEMA_TYPE)
+            apiSchemaType = p.GetCustomDataByKey(API_SCHEMA_TYPE) or SINGLE_APPLY
             if apiSchemaType == MULTIPLE_APPLY:
                 namespacePrefix = p.GetCustomDataByKey(PROPERTY_NAMESPACE_PREFIX)
                 if namespacePrefix:
@@ -1242,13 +1242,20 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
             #   'customData' - This will be deleted below
             #   'specifier' - This is a required field and will always exist.
             # Any other metadata is an error.
-            allowedAPIMetadata = ['specifier', 'customData', 'documentation']
+            allowedAPIMetadata = [
+                'specifier', 'customData', 'documentation']
+            # Single apply API schemas are also allowed to specify 'apiSchemas'
+            # metadata to include other API schemas.
+            if apiSchemaType == SINGLE_APPLY:
+                allowedAPIMetadata.append('apiSchemas')
             invalidMetadata = [key for key in p.GetAllAuthoredMetadata().keys()
                                if key not in allowedAPIMetadata]
             if invalidMetadata:
                 raise _GetSchemaDefException("Found invalid metadata fields "
-                    "%s in API schema definition. API schemas cannot provide "
-                    "prim metadata fallbacks" % str(invalidMetadata) , 
+                    "%s in API schema definition. API schemas of type %s "
+                    "can only provide prim metadata fallbacks for %s" % (
+                    str(invalidMetadata), apiSchemaType, str(allowedAPIMetadata)
+                    ), 
                     p.GetPath())
 
         if p.HasAuthoredTypeName():
