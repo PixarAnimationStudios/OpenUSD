@@ -85,11 +85,9 @@ main(int argc, char **argv)
         TF_VERIFY( HdResampleRawTimeSamples(0.75f, 2, times, values) > 191.0f );
         TF_VERIFY( HdResampleRawTimeSamples(0.75f, 2, times, values) < 193.0f );
 
-        // Extrapolation
-        TF_VERIFY( HdResampleRawTimeSamples(-1.0f, 2, times, values) > -257.0f );
-        TF_VERIFY( HdResampleRawTimeSamples(-1.0f, 2, times, values) < -255.0f );
-        TF_VERIFY( HdResampleRawTimeSamples(+2.0f, 2, times, values) > 511.0f );
-        TF_VERIFY( HdResampleRawTimeSamples(+2.0f, 2, times, values) < 513.0f );
+        // Extrapolation -- this returns constant values outside the sample range.
+        TF_VERIFY( HdResampleRawTimeSamples(-1.0f, 2, times, values) == 0.0f );
+        TF_VERIFY( HdResampleRawTimeSamples(+2.0f, 2, times, values) == 256.0f );
 
         // Coding error with empty sample list
         TF_VERIFY(errorMark.IsClean());
