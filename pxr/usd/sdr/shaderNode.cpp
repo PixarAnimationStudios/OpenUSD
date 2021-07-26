@@ -36,6 +36,7 @@ using ShaderMetadataHelpers::StringVal;
 using ShaderMetadataHelpers::StringVecVal;
 using ShaderMetadataHelpers::TokenVal;
 using ShaderMetadataHelpers::TokenVecVal;
+using ShaderMetadataHelpers::IntVal;
 
 TF_DEFINE_PUBLIC_TOKENS(SdrNodeMetadata, SDR_NODE_METADATA_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(SdrNodeContext, SDR_NODE_CONTEXT_TOKENS);
@@ -82,6 +83,15 @@ SdrShaderNode::SdrShaderNode(
 void
 SdrShaderNode::_PostProcessProperties()
 {
+    // See if this shader node has been tagged with an explict USD encoding
+    // version, which affects how properties manifest in USD files. We propagate
+    // this metadatum to the individual properties, since the encoding is
+    // controlled there in the GetTypeAsSdfType method.
+    static const int DEFAULT_ENCODING = -1;
+    int usdEncodingVersion =
+        IntVal(SdrNodeMetadata->SdrUsdEncodingVersion, _metadata,
+               DEFAULT_ENCODING);
+
     const NdrTokenVec vsNames = GetAllVstructNames();
 
     for (const NdrPropertyUniquePtr& property : _properties) {
@@ -93,13 +103,17 @@ SdrShaderNode::_PostProcessProperties()
         SdrShaderProperty* shaderProperty =
             const_cast<SdrShaderProperty*>(constShaderProperty);
 
+        if (usdEncodingVersion != DEFAULT_ENCODING) {
+            shaderProperty->_SetUsdEncodingVersion(usdEncodingVersion);
+        }
+
         bool isVStruct = std::find(vsNames.begin(), vsNames.end(),
                                    shaderProperty->GetName()) != vsNames.end();
         if (isVStruct) {
             shaderProperty->_ConvertToVStruct();
         }
 
-        // There must not be any further modifcations of this property after
+        // There must not be any further modifications of this property after
         // this method has been called.
         shaderProperty->_FinalizeProperty();
     }

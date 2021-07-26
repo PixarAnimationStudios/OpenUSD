@@ -23,6 +23,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/usd/ndr/debugCodes.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdr/shaderMetadataHelpers.h"
 #include "pxr/usd/sdr/shaderProperty.h"
@@ -36,9 +37,7 @@ TF_DEFINE_PUBLIC_TOKENS(SdrPropertyRole,
 
 using ShaderMetadataHelpers::GetRoleFromMetadata;
 using ShaderMetadataHelpers::IsTruthy;
-using ShaderMetadataHelpers::IsPropertyAnAssetIdentifier;
 using ShaderMetadataHelpers::StringVal;
-using ShaderMetadataHelpers::StringVecVal;
 using ShaderMetadataHelpers::TokenVal;
 using ShaderMetadataHelpers::TokenVecVal;
 
@@ -171,46 +170,113 @@ namespace {
 
     // -------------------------------------------------------------------------
 
-    // Helper to convert the type to an Sdf type
-    const NdrSdfTypeIndicator _GetTypeAsSdfType(
-        const TfToken& type, size_t arraySize, const NdrTokenMap& metadata)
-    {
-        bool isArray = _IsArray(arraySize, metadata);
+    // Encoding 0: this is the mapping from Sdr types to Sdf types that was used
+    //             internally at the inception of the Sdr at Pixar Animation
+    //             Studios
+    namespace _Encoding_0 {
+        const NdrSdfTypeIndicator
+        GetTypeAsSdfType(
+            const TfToken& type, size_t arraySize, const NdrTokenMap& metadata)
+        {
+            bool isArray = _IsArray(arraySize, metadata);
 
-        // There is one Sdf type (Asset) that is not included in the type
-        // mapping because it is determined dynamically
-        if (_IsAssetIdentifier(metadata)) {
-            return std::make_pair(isArray ? SdfValueTypeNames->AssetArray
-                                          : SdfValueTypeNames->Asset,
-                                  TfToken());
-        }
-
-        // We have several special SdrPropertyTypes that we want to map to
-        // 'token', which is the type we otherwise reserve for unknown types.
-        // We call out this conversion here so it is explicitly documented
-        // rather than happening implicitly.
-        if (type == SdrPropertyTypes->Terminal ||
-            type == SdrPropertyTypes->Struct ||
-            type == SdrPropertyTypes->Vstruct) {
-            return std::make_pair(SdfValueTypeNames->Token, type);
-        }
-
-        // We prefer more specific types, so if the arraySize is 2, 3, or 4,
-        // then try to convert to a fixed-dimension float array.
-        // In the future if we change this to not return a fixed-size array,
-        // all the parsers need to be updated to not return a fixed-size
-        // array as well.
-        if (type == SdrPropertyTypes->Float) {
-            if (arraySize == 2) {
-                return std::make_pair(SdfValueTypeNames->Float2, TfToken());
-            } else if (arraySize == 3) {
-                return std::make_pair(SdfValueTypeNames->Float3, TfToken());
-            } else if (arraySize == 4) {
-                return std::make_pair(SdfValueTypeNames->Float4, TfToken());
+            // There is one Sdf type (Asset) that is not included in the type
+            // mapping because it is determined dynamically
+            if (_IsAssetIdentifier(metadata)) {
+                return std::make_pair(isArray ? SdfValueTypeNames->StringArray
+                                              : SdfValueTypeNames->String,
+                                      TfToken());
             }
-        }
 
-        return _GetTypeIndicatorFromDefaultMapping(type, isArray);
+            if (type == SdrPropertyTypes->Terminal) {
+                return std::make_pair(SdfValueTypeNames->Token, type);
+            }
+
+            if (type == SdrPropertyTypes->Struct) {
+                return std::make_pair(SdfValueTypeNames->String, type);
+            }
+
+            if (type == SdrPropertyTypes->Vstruct) {
+                return std::make_pair(SdfValueTypeNames->Float, type);
+            }
+
+            return _GetTypeIndicatorFromDefaultMapping(type, isArray);
+        }
+    }
+
+    // Encoding 1: this is the original mapping from Sdr types to Sdf types that
+    //             is used to store attributes in USD.
+    namespace _Encoding_1 {
+        const NdrSdfTypeIndicator
+        GetTypeAsSdfType(
+            const TfToken& type, size_t arraySize, const NdrTokenMap& metadata)
+        {
+            bool isArray = _IsArray(arraySize, metadata);
+
+            // There is one Sdf type (Asset) that is not included in the type
+            // mapping because it is determined dynamically
+            if (_IsAssetIdentifier(metadata)) {
+                return std::make_pair(isArray ? SdfValueTypeNames->AssetArray
+                                              : SdfValueTypeNames->Asset,
+                                      TfToken());
+            }
+
+            // We have several special SdrPropertyTypes that we want to map to
+            // 'token', which is the type we otherwise reserve for unknown types.
+            // We call out this conversion here so it is explicitly documented
+            // rather than happening implicitly.
+            if (type == SdrPropertyTypes->Terminal ||
+                type == SdrPropertyTypes->Struct ||
+                type == SdrPropertyTypes->Vstruct) {
+                return std::make_pair(SdfValueTypeNames->Token, type);
+            }
+
+            // We prefer more specific types, so if the arraySize is 2, 3, or 4,
+            // then try to convert to a fixed-dimension float array.
+            // In the future if we change this to not return a fixed-size array,
+            // all the parsers need to be updated to not return a fixed-size
+            // array as well.
+            if (type == SdrPropertyTypes->Float) {
+                if (arraySize == 2) {
+                    return std::make_pair(SdfValueTypeNames->Float2, TfToken());
+                } else if (arraySize == 3) {
+                    return std::make_pair(SdfValueTypeNames->Float3, TfToken());
+                } else if (arraySize == 4) {
+                    return std::make_pair(SdfValueTypeNames->Float4, TfToken());
+                }
+            }
+
+            return _GetTypeIndicatorFromDefaultMapping(type, isArray);
+        }
+    }
+
+    enum _UsdEncodingVersions : int {
+        _UsdEncodingVersions0 = 0,
+        _UsdEncodingVersions1,
+
+        _UsdEncodingVersionsCurrent = _UsdEncodingVersions1
+    };
+
+    // -------------------------------------------------------------------------
+
+    // Helper to convert the type to an Sdf type
+    const NdrSdfTypeIndicator
+    _GetTypeAsSdfType(
+        const TfToken& type, size_t arraySize, const NdrTokenMap& metadata,
+        int usdEncodingVersion)
+    {
+        switch (usdEncodingVersion) {
+        case _UsdEncodingVersions0:
+            return _Encoding_0::GetTypeAsSdfType(type, arraySize, metadata);
+        case _UsdEncodingVersions1:
+            return _Encoding_1::GetTypeAsSdfType(type, arraySize, metadata);
+        default:
+            TF_DEBUG(NDR_PARSING).Msg(
+                "Invalid/unsupported usdEncodingVersion %d. "
+                "Current version is %d.",
+                usdEncodingVersion, _UsdEncodingVersionsCurrent);
+            return std::make_pair(SdfValueTypeNames->Token, TfToken());
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -271,7 +337,8 @@ namespace {
         const VtValue& defaultValue,
         const TfToken& sdrType,
         size_t arraySize,
-        const NdrTokenMap& metadata)
+        const NdrTokenMap& metadata,
+        int usdEncodingVersion)
     {
         // Return early if there is no value to conform
         if (defaultValue.IsEmpty()) {
@@ -280,7 +347,7 @@ namespace {
 
         // Return early if no conformance issue
         const NdrSdfTypeIndicator sdfTypeIndicator = _GetTypeAsSdfType(
-            sdrType, arraySize, metadata);
+            sdrType, arraySize, metadata, usdEncodingVersion);
         const SdfValueTypeName sdfType = sdfTypeIndicator.first;
 
         if (defaultValue.GetType() == sdfType.GetType()) {
@@ -292,7 +359,7 @@ namespace {
         // ASSET and ASSET ARRAY
         // ---------------------------------------------------------------------
         if (sdrType == SdrPropertyTypes->String &&
-            IsPropertyAnAssetIdentifier(metadata)) {
+            _IsAssetIdentifier(metadata)) {
             if (isArray) {
                 VtStringArray arrayVal;
                 _GetValue(defaultValue, &arrayVal);
@@ -318,6 +385,14 @@ namespace {
             VtFloatArray arrayVal;
             _GetValue(defaultValue, &arrayVal);
 
+            if (arrayVal.size() != arraySize) {
+                TF_DEBUG(NDR_PARSING).Msg(
+                    "Default value for fixed size float array type does not "
+                    "have the right length (%zu vs expected %zu)",
+                    arrayVal.size(), arraySize);
+                return defaultValue;
+            }
+
             // We return a fixed-size array for arrays with size 2, 3, or 4
             // because SdrShaderProperty::GetTypeAsSdfType returns a specific
             // size type (Float2, Float3, Float4).  If in the future we want to
@@ -342,8 +417,9 @@ namespace {
         }
 
         // Default value's type was not conformant, but no special translation
-        // step was found
-        return defaultValue;
+        // step was found. So we use the default value of the SdfTypeName, which
+        // is guaranteed to match
+        return sdfType.GetDefaultValue();
     }
 }
 
@@ -371,7 +447,8 @@ SdrShaderProperty::SdrShaderProperty(
         metadata),
 
       _hints(hints),
-      _options(options)
+      _options(options),
+      _usdEncodingVersion(_UsdEncodingVersionsCurrent)
 {
     _isDynamicArray =
         IsTruthy(SdrPropertyMetadata->IsDynamicArray, _metadata);
@@ -450,9 +527,11 @@ SdrShaderProperty::CanConnectTo(const NdrProperty& other) const
 
     // Convert input/output types to Sdf types
     const NdrSdfTypeIndicator& sdfInputTypeInd =
-        _GetTypeAsSdfType(inputType, inputArraySize, inputMetadata);
+        _GetTypeAsSdfType(inputType, inputArraySize, inputMetadata,
+                          _usdEncodingVersion);
     const NdrSdfTypeIndicator& sdfOutputTypeInd =
-        _GetTypeAsSdfType(outputType, outputArraySize, outputMetadata);
+        _GetTypeAsSdfType(outputType, outputArraySize, outputMetadata,
+                          _usdEncodingVersion);
     const SdfValueTypeName& sdfInputType = sdfInputTypeInd.first;
     const SdfValueTypeName& sdfOutputType = sdfOutputTypeInd.first;
 
@@ -501,7 +580,8 @@ SdrShaderProperty::IsVStruct() const
 const NdrSdfTypeIndicator
 SdrShaderProperty::GetTypeAsSdfType() const
 {
-    return _GetTypeAsSdfType(_type, _arraySize, _metadata);
+    return _GetTypeAsSdfType(_type, _arraySize, _metadata,
+                             _usdEncodingVersion);
 }
 
 bool
@@ -517,17 +597,27 @@ SdrShaderProperty::IsDefaultInput() const
 }
 
 void
+SdrShaderProperty::_SetUsdEncodingVersion(int usdEncodingVersion)
+{
+    _usdEncodingVersion = usdEncodingVersion;
+}
+
+void
 SdrShaderProperty::_ConvertToVStruct()
 {
     _type = SdrPropertyTypes->Vstruct;
-    _defaultValue = VtValue(TfToken());
+
+    // The default value should match the resulting Sdf type
+    NdrSdfTypeIndicator typeIndicator = GetTypeAsSdfType();
+    SdfValueTypeName typeName = typeIndicator.first;
+    _defaultValue = typeName.GetDefaultValue();
 }
 
 void
 SdrShaderProperty::_FinalizeProperty()
 {
     _defaultValue = _ConformDefaultValue(_defaultValue, _type, _arraySize,
-                                         _metadata);
+                                         _metadata, _usdEncodingVersion);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
