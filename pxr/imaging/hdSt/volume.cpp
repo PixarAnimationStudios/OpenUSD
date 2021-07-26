@@ -44,8 +44,6 @@
 
 #include "pxr/imaging/hio/glslfx.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
-
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -386,13 +384,9 @@ _ComputeMaterialShader(
             { textureName, textureType, nullptr, desc->fieldId.GetHash() });
     }
 
-    const bool bindlessTextureEnabled
-        = GlfContextCaps::GetInstance().bindlessTextureEnabled;
-
     // Get buffer specs for textures (i.e., for
     // field sampling transforms and bindless texture handles).
-    HdSt_TextureBinder::GetBufferSpecs(
-        namedTextureHandles, bindlessTextureEnabled, &bufferSpecs);
+    HdSt_TextureBinder::GetBufferSpecs(namedTextureHandles, &bufferSpecs);
 
     // Create params (so that HdGet_... are created) and buffer specs,
     // to communicate volume bounding box and sample distance to shader.

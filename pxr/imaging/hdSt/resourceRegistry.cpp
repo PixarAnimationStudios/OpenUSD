@@ -1179,12 +1179,11 @@ HdStResourceRegistry::AllocateTextureHandle(
         const HdTextureType textureType,
         HdSamplerParameters const &samplerParams,
         const size_t memoryRequest,
-        const bool createBindlessHandle,
         HdStShaderCodePtr const &shaderCode)
 {
     return _textureHandleRegistry->AllocateTextureHandle(
         textureId, textureType,
-        samplerParams, memoryRequest, createBindlessHandle,
+        samplerParams, memoryRequest,
         shaderCode);
 }
 

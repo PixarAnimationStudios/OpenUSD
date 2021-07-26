@@ -36,7 +36,7 @@ using HdBufferSpecVector = std::vector<struct HdBufferSpec>;
 ///
 /// A class helping HdStShaderCode with binding textures.
 ///
-/// This class helps binding GL texture names or populating the shader
+/// This class helps binding textures or populating the shader
 /// bar with texture sampler handles if bindless textures are used. It
 /// also includes writing texture metadata such as the sampling
 /// transform to the shader bar.
@@ -51,13 +51,9 @@ public:
     /// Add buffer specs necessary for the textures (e.g., for
     /// bindless texture sampler handles or sampling transform).
     ///
-    /// Specify whether to use the texture by binding it or by
-    /// using bindless handles with useBindlessHandles.
-    ///
     static void
     GetBufferSpecs(
         const NamedTextureHandleVector &textures,
-        bool useBindlessHandles,
         HdBufferSpecVector * specs);
 
     /// Compute buffer sources for shader bar.
@@ -68,35 +64,23 @@ public:
     /// been committed in
     /// HdStShaderCode::AddResourcesFromTextures().
     ///
-    /// Specify whether to use the texture by binding it or by
-    /// using bindless handles with useBindlessHandles.
-    ///
     static void
     ComputeBufferSources(
         const NamedTextureHandleVector &textures,
-        bool useBindlessHandles,
         HdBufferSourceSharedPtrVector * sources);
 
     /// Bind textures.
     ///
-    /// Specify whether to use the texture by binding it or by
-    /// using bindless handles with useBindlessHandles.
-    ///
     static void
     BindResources(
         HdSt_ResourceBinder const &binder,
-        bool useBindlessHandles,
         const NamedTextureHandleVector &textures);
 
     /// Unbind textures.
     ///
-    /// Specify whether to use the texture by binding it or by
-    /// using bindless handles with useBindlessHandles.
-    ///
     static void
     UnbindResources(
         HdSt_ResourceBinder const &binder,
-        bool useBindlessHandles,
         const NamedTextureHandleVector &textures);
 };
 

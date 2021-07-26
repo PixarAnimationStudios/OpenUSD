@@ -39,7 +39,6 @@
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -132,9 +131,6 @@ HdStMaterial::_ProcessTextureDescriptors(
     HdBufferSpecVector * const specs,
     HdBufferSourceSharedPtrVector * const sources)
 {
-    const bool bindlessTextureEnabled
-        = GlfContextCaps::GetInstance().bindlessTextureEnabled;
-
     for (HdStMaterialNetwork::TextureDescriptor const &desc : descs) {
         HdStTextureHandleSharedPtr const textureHandle = 
             resourceRegistry->AllocateTextureHandle(
@@ -142,7 +138,6 @@ HdStMaterial::_ProcessTextureDescriptors(
                 desc.type,
                 desc.samplerParameters,
                 desc.memoryRequest,
-                bindlessTextureEnabled,
                 shaderCode);
         
         // Note about batching hashes:
@@ -176,8 +171,7 @@ HdStMaterial::_ProcessTextureDescriptors(
                   : _GetTextureHandleHash(textureHandle) });
     }
 
-    HdSt_TextureBinder::GetBufferSpecs(
-        *texturesFromStorm, bindlessTextureEnabled, specs);
+    HdSt_TextureBinder::GetBufferSpecs(*texturesFromStorm, specs);
 }
 
 /* virtual */

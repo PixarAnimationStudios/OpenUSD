@@ -89,7 +89,6 @@ public:
         const HdSamplerParameters &samplerParams,
         /// memoryRequest in bytes.
         size_t memoryRequest,
-        bool createBindlessHandle,
         HdStShaderCodePtr const &shaderCode);
 
     /// Mark texture dirty (thread-safe).

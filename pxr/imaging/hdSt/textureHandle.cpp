@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/hdSt/textureHandleRegistry.h"
 
+#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/samplerObject.h"
 #include "pxr/imaging/hdSt/samplerObjectRegistry.h"
 
@@ -36,13 +37,11 @@ HdStTextureHandle::HdStTextureHandle(
     HdStTextureObjectSharedPtr const &textureObject,
     const HdSamplerParameters &samplerParams,
     const size_t memoryRequest,
-    const bool createBindlessHandle,
     HdStShaderCodePtr const & shaderCode,
     HdSt_TextureHandleRegistry *textureHandleRegistry)
   : _textureObject(textureObject)
   , _samplerParams(samplerParams)
   , _memoryRequest(memoryRequest)
-  , _createBindlessHandle(createBindlessHandle)
   , _shaderCode(shaderCode)
   , _textureHandleRegistry(textureHandleRegistry)
 {
@@ -65,7 +64,7 @@ void
 HdStTextureHandle::ReallocateSamplerIfNecessary()
 {
     if (_samplerObject) {
-        if (!_createBindlessHandle) {
+        if (!HdSt_ResourceBinder::UseBindlessHandles()) {
             // There is no setter for sampler parameters,
             // so we only need to create a sampler once...
             return;
@@ -88,7 +87,7 @@ HdStTextureHandle::ReallocateSamplerIfNecessary()
 
     _samplerObject =
         samplerObjectRegistry->AllocateSampler(
-            _textureObject, _samplerParams, _createBindlessHandle);
+            _textureObject, _samplerParams);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

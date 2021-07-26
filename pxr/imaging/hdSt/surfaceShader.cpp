@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -36,8 +34,6 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
-
-#include "pxr/imaging/glf/contextCaps.h"
 
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/envSetting.h"
@@ -147,13 +143,7 @@ HdStSurfaceShader::BindResources(const int program,
                                  HdSt_ResourceBinder const &binder,
                                  HdRenderPassState const &state)
 {
-    const bool bindlessTextureEnabled =
-        GlfContextCaps::GetInstance().bindlessTextureEnabled;
-
-    HdSt_TextureBinder::BindResources(
-        binder, bindlessTextureEnabled, _namedTextureHandles);
-
-    glActiveTexture(GL_TEXTURE0);
+    HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
 
     binder.BindShaderResources(this);
 }
@@ -165,13 +155,7 @@ HdStSurfaceShader::UnbindResources(const int program,
 {
     binder.UnbindShaderResources(this);
 
-    const bool bindlessTextureEnabled =
-        GlfContextCaps::GetInstance().bindlessTextureEnabled;
-
-    HdSt_TextureBinder::UnbindResources(
-        binder, bindlessTextureEnabled, _namedTextureHandles);
-
-    glActiveTexture(GL_TEXTURE0);
+    HdSt_TextureBinder::UnbindResources(binder, _namedTextureHandles);
 }
 /*virtual*/
 void
@@ -353,7 +337,7 @@ HdStSurfaceShader::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
         return false;
     }
 
-    if (!GlfContextCaps::GetInstance().bindlessTextureEnabled) {
+    if (HdSt_ResourceBinder::UseBindlessHandles()) {
         if (shaderA->ComputeTextureSourceHash() !=
                 shaderB->ComputeTextureSourceHash()) {
             return false;
@@ -447,15 +431,12 @@ _CollectPrimvarNames(const HdSt_MaterialParamVector &params)
 void
 HdStSurfaceShader::AddResourcesFromTextures(ResourceContext &ctx) const
 {
-    const bool bindlessTextureEnabled =
-        GlfContextCaps::GetInstance().bindlessTextureEnabled;
-
     // Add buffer sources for bindless texture handles (and
     // other texture metadata such as the sampling transform for
     // a field texture).
     HdBufferSourceSharedPtrVector result;
     HdSt_TextureBinder::ComputeBufferSources(
-        GetNamedTextureHandles(), bindlessTextureEnabled, &result);
+        GetNamedTextureHandles(), &result);
 
     if (!result.empty()) {
         ctx.AddSources(GetShaderData(), std::move(result));

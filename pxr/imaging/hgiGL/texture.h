@@ -50,6 +50,10 @@ public:
     /// Returns the OpenGL id / name of the texture.
     uint32_t GetTextureId() const {return _textureId;}
 
+    /// Returns the bindless gpu handle (caller must verify extension support)
+    HGIGL_API
+    uint64_t GetBindlessHandle();
+
 protected:
     friend class HgiGL;
 
@@ -65,6 +69,7 @@ private:
     HgiGLTexture(const HgiGLTexture&) = delete;
 
     uint32_t _textureId;
+    uint64_t _bindlessHandle;
 };
 
 

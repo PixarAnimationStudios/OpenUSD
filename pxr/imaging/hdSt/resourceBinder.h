@@ -29,7 +29,7 @@
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hgi/shaderProgram.h"
+#include "pxr/imaging/hgi/handle.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -49,6 +49,10 @@ using HdStBufferArrayRangeSharedPtr =
 using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
 using HdStShaderCodeSharedPtrVector = std::vector<HdStShaderCodeSharedPtr>;
 using HdBindingRequestVector = std::vector<class HdBindingRequest>;
+
+using HgiTextureHandle = HgiHandle<class HgiTexture>;
+using HgiSamplerHandle = HgiHandle<class HgiSampler>;
+using HgiShaderProgramHandle = HgiHandle<class HgiShaderProgram>;
 
 /// Suffixes appended to material param names for a binding name.
 ///
@@ -417,6 +421,40 @@ public:
     int GetNumReservedTextureUnits() const {
         return _numReservedTextureUnits;
     }
+
+    /// Returns \c true if textures and samplers for material
+    /// networks use bindless texture and sampler handles.
+    HDST_API
+    static bool UseBindlessHandles();
+
+    /// Returns the bindless handle for \p textureHandle using \p samplerHandle
+    HDST_API
+    static uint64_t GetSamplerBindlessHandle(
+        HgiSamplerHandle const &samplerHandle,
+        HgiTextureHandle const &textureHandle);
+
+    /// Returns the bindless handle for \p textureHandle w/o separate sampler
+    HDST_API
+    static uint64_t GetTextureBindlessHandle(
+        HgiTextureHandle const &textureHandle);
+
+    /// Binds the sampler and texture for \p name
+    /// Does nothing if the named resource is a bindless resource.
+    HDST_API
+    void BindTexture(const TfToken &name,
+                     HgiSamplerHandle const &samplerHandle,
+                     HgiTextureHandle const &textureHandle,
+                     const bool bind) const;
+
+    /// Binds the sampler and texture for \p name along with an additional
+    /// layout texture as needed for Ptex or UDIM textures.
+    /// Does nothing if the named resource is a bindless resource.
+    HDST_API
+    void BindTextureWithLayout(TfToken const &name,
+                               HgiSamplerHandle const &texelSampler,
+                               HgiTextureHandle const &texelTexture,
+                               HgiTextureHandle const &layoutTexture,
+                               const bool bind) const;
 
 private:
     // for batch execution
