@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hgiVulkan/blitCmds.h"
 #include "pxr/imaging/hgiVulkan/buffer.h"
+#include "pxr/imaging/hgiVulkan/capabilities.h"
 #include "pxr/imaging/hgiVulkan/commandQueue.h"
 #include "pxr/imaging/hgiVulkan/computeCmds.h"
 #include "pxr/imaging/hgiVulkan/computePipeline.h"
@@ -250,6 +251,13 @@ HgiVulkan::DestroyComputePipeline(HgiComputePipelineHandle* pipeHandle)
 TfToken const&
 HgiVulkan::GetAPIName() const {
     return HgiTokens->Vulkan;
+}
+
+/* Multi threaded */
+HgiVulkanCapabilities const*
+HgiVulkan::GetCapabilities() const
+{
+    return &_device->GetDeviceCapabilities();
 }
 
 /* Single threaded */

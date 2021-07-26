@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Pixar
+// Copyright 2021 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -19,39 +19,20 @@
 // distributed under the Apache License with the above modification is
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// language governing permissions and limitations under thApache License.
 //
-#ifndef PXR_IMAGING_HGI_METAL_CAPABILITIES_H
-#define PXR_IMAGING_HGI_METAL_CAPABILITIES_H
+#include "pxr/imaging/hgiGL/capabilities.h"
 
-#include <Metal/Metal.h>
-#include "pxr/pxr.h"
-#include "pxr/imaging/hgiMetal/api.h"
-#include "pxr/imaging/hgi/capabilities.h"
+#include "pxr/imaging/garch/glApi.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-///
-/// \class HgiMetalCapabilities
-///
-/// Reports the capabilities of the Metal device.
-///
-class HgiMetalCapabilities final : public HgiCapabilities
+HgiGLCapabilities::HgiGLCapabilities()
 {
-public:
-    HGIMETAL_API
-    ~HgiMetalCapabilities() override;
+    _SetFlag(HgiDeviceCapabilitiesBitsBindlessBuffers,
+        GARCH_GLAPI_HAS(NV_shader_buffer_load));
+}
 
-    MTLResourceOptions defaultStorageMode;
-
-protected:
-    friend class HgiMetal;
-
-    HGIMETAL_API
-    HgiMetalCapabilities(id<MTLDevice> device);
-};
+HgiGLCapabilities::~HgiGLCapabilities() = default;
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif
-

@@ -123,8 +123,7 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
 
     id<MTLDevice> device = _hgi->GetPrimaryDevice();
 
-    MTLResourceOptions options =
-        _hgi->GetCapabilities().defaultStorageMode;
+    MTLResourceOptions options = _hgi->GetCapabilities()->defaultStorageMode;
 
     size_t bytesPerPixel = HgiGetDataSizeOfFormat(texDesc.format);
     id<MTLBuffer> cpuBuffer =

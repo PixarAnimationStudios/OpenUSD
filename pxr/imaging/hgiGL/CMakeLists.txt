@@ -25,6 +25,7 @@ pxr_library(hgiGL
     PUBLIC_CLASSES
         blitCmds
         buffer
+        capabilities
         computeCmds
         computePipeline
         device

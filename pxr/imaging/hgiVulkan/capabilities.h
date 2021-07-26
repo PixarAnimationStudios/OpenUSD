@@ -25,6 +25,7 @@
 #define PXR_IMAGING_HGIVULKAN_CAPABILITIES_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hgi/capabilities.h"
 #include "pxr/imaging/hgiVulkan/api.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 
@@ -37,7 +38,7 @@ class HgiVulkanDevice;
 ///
 /// Reports the capabilities of the Vulkan device.
 ///
-class HgiVulkanCapabilities final
+class HgiVulkanCapabilities final : public HgiCapabilities
 {
 public:
     HGIVULKAN_API
@@ -57,4 +58,3 @@ public:
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
-

@@ -911,7 +911,8 @@ HgiInteropMetal::CompositeToInterop(
     
     id<MTLComputeCommandEncoder> computeEncoder;
     
-    if (_hgiMetal->GetCapabilities().concurrentDispatchSupported) {
+    if (_hgiMetal->GetCapabilities()->
+                        IsSet(HgiDeviceCapabilitiesBitsConcurrentDispatch)) {
         computeEncoder = [commandBuffer
          computeCommandEncoderWithDispatchType:MTLDispatchTypeConcurrent];
     }

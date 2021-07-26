@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Pixar
+// Copyright 2021 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,40 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hgiMetal/capabilities.h"
-
-#include "pxr/base/arch/defines.h"
-#include <Metal/Metal.h>
+#include "pxr/imaging/hgi/capabilities.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
-{
-    if (@available(macOS 10.14.5, ios 12.0, *)) {
-        _SetFlag(HgiDeviceCapabilitiesBitsConcurrentDispatch, true);
-    }
-
-    defaultStorageMode = MTLResourceStorageModeShared;
-    bool unifiedMemory = false;
-    if (@available(macOS 100.100, ios 12.0, *)) {
-        unifiedMemory = true;
-    } else if (@available(macOS 10.15, ios 13.0, *)) {
-#if defined(ARCH_OS_IOS) || (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15)
-        unifiedMemory = [device hasUnifiedMemory];
-#else
-        unifiedMemory = [device isLowPower];
-#endif
-    }
-
-    _SetFlag(HgiDeviceCapabilitiesBitsUnifiedMemory, unifiedMemory);
-
-#if defined(ARCH_OS_MACOS)
-    if (!unifiedMemory) {
-        defaultStorageMode = MTLResourceStorageModeManaged;
-    }
-#endif
-}
-
-HgiMetalCapabilities::~HgiMetalCapabilities() = default;
+HgiCapabilities::~HgiCapabilities() = default;
 
 PXR_NAMESPACE_CLOSE_SCOPE

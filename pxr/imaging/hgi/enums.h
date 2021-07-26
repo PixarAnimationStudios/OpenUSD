@@ -40,11 +40,20 @@ using HgiBits = uint32_t;
 /// <ul>
 /// <li>HgiDeviceCapabilitiesBitsPresentation:
 ///   The device must be capable of presenting graphics to screen</li>
+/// <li>HgiDeviceCapabilitiesBitsBindlessBuffers:
+///   THe device can access GPU buffers using bindless handles</li>
+/// <li>HgiDeviceCapabilitiesBitsConcurrentDispatch:
+///   The device can execute commands concurrently</li>
+/// <li>HgiDeviceCapabilitiesBitsUnifiedMemory:
+///   The device shares all GPU and CPU memory</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
 {
-    HgiDeviceCapabilitiesBitsPresentation = 1 << 0,
+    HgiDeviceCapabilitiesBitsPresentation       = 1 << 0,
+    HgiDeviceCapabilitiesBitsBindlessBuffers    = 1 << 1,
+    HgiDeviceCapabilitiesBitsConcurrentDispatch = 1 << 2,
+    HgiDeviceCapabilitiesBitsUnifiedMemory      = 1 << 3,
 };
 
 using HgiDeviceCapabilities = HgiBits;
