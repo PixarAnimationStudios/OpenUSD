@@ -182,7 +182,8 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
     sdrNodeMetadata = sdrNode.GetMetadata()
 
     if SchemaDefiningKeys.SCHEMA_NAME not in sdrNodeMetadata:
-        Tf.Warn("Sdr Node does not define a schema name metadata.")
+        Tf.Warn("Sdr Node (%s) does not define a schema name metadata." \
+                %(sdrNode.GetName()))
         return
     schemaName = sdrNodeMetadata[SchemaDefiningKeys.SCHEMA_NAME]
     if not Tf.IsValidIdentifier(schemaName):
