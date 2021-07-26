@@ -78,6 +78,7 @@ pxr_library(hd
         repr
         resource
         resourceRegistry
+        retainedDataSource
         rprim
         rprimCollection
         rprimSharedData
