@@ -37,6 +37,7 @@ pxr_library(hd
         compExtCompInputSource
         computation
         coordSys
+        dataSourceLocator
         debugCodes
         dirtyList
         drawingCoord
