@@ -340,6 +340,25 @@ _LessThanNotPrefix(const HdDataSourceLocator &a, const HdDataSourceLocator &b)
 }
 
 void
+HdDataSourceLocatorSet::_InsertAndDeleteSuffixes(
+    _Locators::iterator *position,
+    const HdDataSourceLocator &locator)
+{
+    *position = _locators.insert(*position, locator);
+
+    // If we inserted anything, we need to walk forward and delete any
+    // suffixes of the inserted item.
+    auto deleteStart = *position + 1;
+    auto deleteEnd = deleteStart;
+    while (deleteEnd != _locators.end() && deleteEnd->HasPrefix(**position)) {
+        deleteEnd++;
+    }
+    if (deleteEnd != deleteStart) {
+        *position = _locators.erase(deleteStart, deleteEnd) - 1;
+    }
+}
+
+void
 HdDataSourceLocatorSet::insert(const HdDataSourceLocator &locator)
 {
     if (_locators.empty()) {
@@ -362,17 +381,8 @@ HdDataSourceLocatorSet::insert(const HdDataSourceLocator &locator)
     if (it != _locators.end() && locator.HasPrefix(*it)) {
         return;
     }
-    it = _locators.insert(it, locator);
-    // If we inserted locator, we need to walk forward and delete any
-    // suffixes of the inserted item.
-    auto deleteStart = it + 1;
-    auto deleteEnd = deleteStart;
-    while (deleteEnd != _locators.end() && deleteEnd->HasPrefix(*it)) {
-        deleteEnd++;
-    }
-    if (deleteEnd != deleteStart) {
-        it = _locators.erase(deleteStart, deleteEnd) - 1;
-    }
+    // Otherwise, we need to add it.
+    _InsertAndDeleteSuffixes(&it, locator);
 }
 
 void
@@ -415,17 +425,7 @@ HdDataSourceLocatorSet::insert(const HdDataSourceLocatorSet &locatorSet)
              continue;
          }
          // Otherwise, we need to add it.
-         thisIt = _locators.insert(thisIt, *otherIt);
-         // If we inserted anything, we need to walk forward and delete any
-         // suffixes of the inserted item.
-         auto deleteStart = thisIt + 1;
-         auto deleteEnd = deleteStart;
-         while (deleteEnd != _locators.end() && deleteEnd->HasPrefix(*thisIt)) {
-             deleteEnd++;
-         }
-         if (deleteEnd != deleteStart) {
-             thisIt = _locators.erase(deleteStart, deleteEnd) - 1;
-         }
+         _InsertAndDeleteSuffixes(&thisIt, *otherIt);
     }
 }
 

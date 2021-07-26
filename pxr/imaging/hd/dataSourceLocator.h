@@ -234,8 +234,8 @@ public:
     bool IsEmpty() const;
 
 private:
-    // Merges redundant locators.
-    void _Flatten();
+    void _InsertAndDeleteSuffixes(_Locators::iterator *position,
+                                  const HdDataSourceLocator &locator);
 
     _Locators _locators;
 };
