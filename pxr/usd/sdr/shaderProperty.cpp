@@ -125,85 +125,64 @@ namespace {
 
     // -------------------------------------------------------------------------
 
+    // Returns true if the arraySize or the metadata indicate that the property
+    // has an array type
+    bool
+    _IsArray(size_t arraySize, const NdrTokenMap &metadata)
+    {
+        bool isDynamicArray =
+            IsTruthy(SdrPropertyMetadata->IsDynamicArray, metadata);
+        return arraySize > 0 || isDynamicArray;
+    }
 
     // Determines if the metadata contains a key identifying the property as an
     // asset identifier
-    bool _IsAssetIdentifier(const NdrTokenMap& metadata)
+    bool
+    _IsAssetIdentifier(const NdrTokenMap& metadata)
     {
         return metadata.count(SdrPropertyMetadata->IsAssetIdentifier);
     }
 
-
-    bool _IsDefaultInput(const NdrTokenMap &metadata)
+    // Returns true is this property is a default input on the shader node
+    bool
+    _IsDefaultInput(const NdrTokenMap &metadata)
     {
         return metadata.count(SdrPropertyMetadata->DefaultInput);
     }
 
-    // -------------------------------------------------------------------------
-
-
-    // Helper to convert array types to Sdf types. Shouldn't be used directly;
-    // use `_GetTypeAsSdfType()` instead
-    const NdrSdfTypeIndicator _GetTypeAsSdfArrayType(
-        const TfToken& type, size_t arraySize)
+    // Returns the type indicator based on the type mappings defined in
+    // GetTokenTypeToSdfType and GetTokenTypeToSdfArrayType. If the type can't
+    // be found the SdfType will be returned as Token with the original type as
+    // a hint.
+    const NdrSdfTypeIndicator
+    _GetTypeIndicatorFromDefaultMapping(const TfToken& type, bool isArray)
     {
-        SdfValueTypeName convertedType = SdfValueTypeNames->Token;
-        bool conversionSuccessful = false;
+        const TokenToSdfTypeMap& tokenTypeToSdfType =
+            isArray ? GetTokenTypeToSdfArrayType() : GetTokenTypeToSdfType();
 
-        // We prefer more specific types, so if the array size is 2, 3, or 4,
-        // then try to convert to a fixed-dimension float array.
-        // In the future if we change this to not return a fixed-size array,
-        // all the parsers need to be updated to not return a fixed-size array
-        // as well.
-        if (type == SdrPropertyTypes->Float) {
-            if (arraySize == 2) {
-                convertedType = SdfValueTypeNames->Float2;
-                conversionSuccessful = true;
-            } else if (arraySize == 3) {
-                convertedType = SdfValueTypeNames->Float3;
-                conversionSuccessful = true;
-            } else if (arraySize == 4) {
-                convertedType = SdfValueTypeNames->Float4;
-                conversionSuccessful = true;
-            }
+        TokenToSdfTypeMap::const_iterator it = tokenTypeToSdfType.find(type);
+        if (it != tokenTypeToSdfType.end()) {
+            return std::make_pair(it->second, TfToken());
         }
 
-        // If no float array conversion was done, try converting to an array
-        // type without a fixed dimension
-        if (!conversionSuccessful) {
-            const TokenToSdfTypeMap& tokenTypeToSdfArrayType = 
-                GetTokenTypeToSdfArrayType();
-            TokenToSdfTypeMap::const_iterator it =
-                tokenTypeToSdfArrayType.find(type);
-
-            if (it != tokenTypeToSdfArrayType.end()) {
-                convertedType = it->second;
-                conversionSuccessful = true;
-            }
-        }
-
-        return std::make_pair(
-            convertedType,
-            conversionSuccessful ? TfToken() : type
-        );
+        // If there is no clean mapping, it defaults to the 'Token' type
+        return std::make_pair(SdfValueTypeNames->Token, type);
     }
 
-
     // -------------------------------------------------------------------------
 
-
-    // Helper to convert the type to an Sdf type (this will call
-    // `_GetTypeAsSdfArrayType()` if an array type is detected)
+    // Helper to convert the type to an Sdf type
     const NdrSdfTypeIndicator _GetTypeAsSdfType(
         const TfToken& type, size_t arraySize, const NdrTokenMap& metadata)
     {
+        bool isArray = _IsArray(arraySize, metadata);
+
         // There is one Sdf type (Asset) that is not included in the type
         // mapping because it is determined dynamically
         if (_IsAssetIdentifier(metadata)) {
-            if (arraySize > 0) {
-                return std::make_pair(SdfValueTypeNames->AssetArray, TfToken());
-            }
-            return std::make_pair(SdfValueTypeNames->Asset, TfToken());
+            return std::make_pair(isArray ? SdfValueTypeNames->AssetArray
+                                          : SdfValueTypeNames->Asset,
+                                  TfToken());
         }
 
         // We have several special SdrPropertyTypes that we want to map to
@@ -216,28 +195,22 @@ namespace {
             return std::make_pair(SdfValueTypeNames->Token, type);
         }
 
-        bool conversionSuccessful = false;
-
-        // If the conversion can't be made, it defaults to the 'Token' type
-        SdfValueTypeName convertedType = SdfValueTypeNames->Token;
-
-        bool isDynamicArray =
-            IsTruthy(SdrPropertyMetadata->IsDynamicArray, metadata);
-        if (arraySize > 0 || isDynamicArray) {
-            return _GetTypeAsSdfArrayType(type, arraySize);
+        // We prefer more specific types, so if the arraySize is 2, 3, or 4,
+        // then try to convert to a fixed-dimension float array.
+        // In the future if we change this to not return a fixed-size array,
+        // all the parsers need to be updated to not return a fixed-size
+        // array as well.
+        if (type == SdrPropertyTypes->Float) {
+            if (arraySize == 2) {
+                return std::make_pair(SdfValueTypeNames->Float2, TfToken());
+            } else if (arraySize == 3) {
+                return std::make_pair(SdfValueTypeNames->Float3, TfToken());
+            } else if (arraySize == 4) {
+                return std::make_pair(SdfValueTypeNames->Float4, TfToken());
+            }
         }
 
-        const TokenToSdfTypeMap& tokenTypeToSdfType = GetTokenTypeToSdfType();
-        TokenToSdfTypeMap::const_iterator it = tokenTypeToSdfType.find(type);
-        if (it != tokenTypeToSdfType.end()) {
-            conversionSuccessful = true;
-            convertedType = it->second;
-        }
-
-        return std::make_pair(
-            convertedType,
-            conversionSuccessful ? TfToken() : type
-        );
+        return _GetTypeIndicatorFromDefaultMapping(type, isArray);
     }
 
     // -------------------------------------------------------------------------
