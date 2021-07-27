@@ -646,7 +646,8 @@ HgiGLOps::DrawIndirect(
 
         glMultiDrawArraysIndirect(
             HgiGLConversions::GetPrimitiveType(primitiveType),
-            reinterpret_cast<const void*>(drawBufferOffset),
+            reinterpret_cast<const void*>(
+                static_cast<uintptr_t>(drawBufferOffset)),
             drawCount,
             stride);
 
@@ -680,7 +681,8 @@ HgiGLOps::DrawIndexed(
             HgiGLConversions::GetPrimitiveType(primitiveType),
             indexCount,
             GL_UNSIGNED_INT,
-            (void*)(uintptr_t(indexBufferByteOffset)),
+            reinterpret_cast<const void*>(
+                static_cast<uintptr_t>(indexBufferByteOffset)),
             instanceCount,
             vertexOffset);
 
@@ -717,7 +719,8 @@ HgiGLOps::DrawIndexedIndirect(
         glMultiDrawElementsIndirect(
             HgiGLConversions::GetPrimitiveType(primitiveType),
             GL_UNSIGNED_INT,
-            reinterpret_cast<const void*>(drawBufferOffset),
+            reinterpret_cast<const void*>(
+                static_cast<uintptr_t>(drawBufferOffset)),
             drawCount,
             stride);
 
