@@ -1725,6 +1725,8 @@ HdSt_ResourceBinder::BindTexture(
     const GLuint samplerName =
         (bind && glSampler) ? glSampler->GetSamplerId() : 0;
     glBindSampler(samplerUnit, samplerName);
+
+    glActiveTexture(GL_TEXTURE0);
 }
 
 void
