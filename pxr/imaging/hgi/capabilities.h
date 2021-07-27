@@ -42,15 +42,18 @@ public:
     virtual ~HgiCapabilities() = 0;
 
     bool IsSet(HgiDeviceCapabilities mask) const {
-        return bool(_flags & mask);
+        return (_flags & mask) != 0;
     }
 
 protected:
     HgiCapabilities() : _flags(0) {}
 
     void _SetFlag(HgiDeviceCapabilities mask, bool value) {
-        _flags &= ~mask;
-        _flags |= (value) ? mask : 0;
+        if (value) {
+            _flags |= mask;
+        } else {
+            _flags &= ~mask;
+        }
     }
 
 private:
