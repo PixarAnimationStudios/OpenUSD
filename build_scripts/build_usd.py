@@ -982,10 +982,10 @@ PTEX = Dependency("Ptex", InstallPtex, "include/PtexVersion.h")
 ############################################################
 # BLOSC (Compression used by OpenVDB)
 
-# Using latest blosc since neither the version OpenVDB recommends
-# (1.5) nor the version we test against (1.6.1) compile on Mac OS X
-# Sierra (10.12) or Mojave (10.14).
-BLOSC_URL = "https://github.com/Blosc/c-blosc/archive/v1.17.0.zip"
+# Using blosc v1.20.1 to avoid build errors on macOS Catalina (10.15)
+# related to implicit declaration of functions in zlib. See:
+# https://github.com/Blosc/python-blosc/issues/229
+BLOSC_URL = "https://github.com/Blosc/c-blosc/archive/v1.20.1.zip"
 
 def InstallBLOSC(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(BLOSC_URL, context, force)):
