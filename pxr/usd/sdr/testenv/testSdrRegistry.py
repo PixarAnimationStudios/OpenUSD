@@ -21,6 +21,7 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
+from __future__ import print_function
 
 from pxr import Plug
 from pxr import Sdf
@@ -249,13 +250,13 @@ class TestShaderNode(unittest.TestCase):
                 sdrType = prop.GetType()
                 sdfType, sdfHint = prop.GetTypeAsSdfType()
                 expectedSdrType, expectedSdfType = expectedTypes[prop.GetName()]
-                print "  ", prop.GetName(), sdrType, str(sdfType), 'vs expected', \
-                      expectedSdrType, str(expectedSdfType)
+                print("  ", prop.GetName(), sdrType, str(sdfType), 'vs expected', \
+                      expectedSdrType, str(expectedSdfType))
                 if not (sdrType == expectedSdrType and sdfType == expectedSdfType):
-                    print "     MISMATCH"
+                    print("     MISMATCH")
                 assert sdrType == expectedSdrType and sdfType == expectedSdfType
 
-        print "Current USD encoding:"
+        print("Current USD encoding:")
         expectedTypes = {
            'IntProperty': (Sdr.PropertyTypes.Int, Sdf.ValueTypeNames.Int),
            'StringProperty': (Sdr.PropertyTypes.String, Sdf.ValueTypeNames.String),
@@ -275,7 +276,7 @@ class TestShaderNode(unittest.TestCase):
         }
         _CheckTypes(nodeNew, expectedTypes)
 
-        print "Version 0 USD encoding:"
+        print("Version 0 USD encoding:")
         # These are the differences relative to the public encoding
         expectedTypes.update({
            'StructProperty': (Sdr.PropertyTypes.Struct, Sdf.ValueTypeNames.String),
