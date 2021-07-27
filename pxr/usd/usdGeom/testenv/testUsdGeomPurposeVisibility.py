@@ -25,7 +25,7 @@
 from __future__ import print_function
 
 import sys, os, unittest
-from pxr import Sdf, Usd, UsdGeom
+from pxr import Sdf, Tf, Usd, UsdGeom
 
 class TestUsdGeomPurposeVisibility(unittest.TestCase):
     def test_ComputeVisibility(self):
@@ -104,6 +104,38 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
                 UsdGeom.Tokens.invisible, 
                 i_leaf.GetPrim().GetPath())
         
+
+    def test_ComputePurposeVisibility(self):
+        """
+        Test purpose visibility functionality, which allows purpose-specific
+        visibility control.
+        """
+
+        stage = Usd.Stage.CreateInMemory()
+
+        root = stage.DefinePrim("/Root", "Scope")
+        imageable = stage.DefinePrim("/Root/Imageable", "Scope")
+        nonImageable = stage.DefinePrim("/Root/NonImageable")
+
+        # Test that GeomPurposeVisibilityAPI can only apply to Imageable
+        # prims.
+        self.assertTrue(UsdGeom.PurposeVisibilityAPI.CanApply(imageable))
+        self.assertFalse(UsdGeom.PurposeVisibilityAPI.CanApply(nonImageable))
+        
+        # Test that GeomPurposeVisibilityAPI adds the expected purpose
+        # visibility attributes.
+        UsdGeom.PurposeVisibilityAPI.Apply(imageable)
+        guideVisibility = \
+            imageable.GetAttribute(UsdGeom.Tokens.guideVisibility)
+        self.assertTrue(guideVisibility)
+        proxyVisibility = \
+            imageable.GetAttribute(UsdGeom.Tokens.proxyVisibility)
+        self.assertTrue(proxyVisibility)
+        renderVisibility = \
+            imageable.GetAttribute(UsdGeom.Tokens.renderVisibility)
+        self.assertTrue(renderVisibility)
+
+
     def test_ComputePurpose(self):
         stage = Usd.Stage.CreateInMemory()
 

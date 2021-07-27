@@ -113,6 +113,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "fromTexture", UsdGeomTokens->fromTexture);
     _AddToken(cls, "fStop", UsdGeomTokens->fStop);
     _AddToken(cls, "guide", UsdGeomTokens->guide);
+    _AddToken(cls, "guideVisibility", UsdGeomTokens->guideVisibility);
     _AddToken(cls, "height", UsdGeomTokens->height);
     _AddToken(cls, "hermite", UsdGeomTokens->hermite);
     _AddToken(cls, "holeIndices", UsdGeomTokens->holeIndices);
@@ -170,10 +171,12 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "prototypes", UsdGeomTokens->prototypes);
     _AddToken(cls, "proxy", UsdGeomTokens->proxy);
     _AddToken(cls, "proxyPrim", UsdGeomTokens->proxyPrim);
+    _AddToken(cls, "proxyVisibility", UsdGeomTokens->proxyVisibility);
     _AddToken(cls, "purpose", UsdGeomTokens->purpose);
     _AddToken(cls, "radius", UsdGeomTokens->radius);
     _AddToken(cls, "ranges", UsdGeomTokens->ranges);
     _AddToken(cls, "render", UsdGeomTokens->render);
+    _AddToken(cls, "renderVisibility", UsdGeomTokens->renderVisibility);
     _AddToken(cls, "right", UsdGeomTokens->right);
     _AddToken(cls, "rightHanded", UsdGeomTokens->rightHanded);
     _AddToken(cls, "scales", UsdGeomTokens->scales);
@@ -208,6 +211,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "verticalApertureOffset", UsdGeomTokens->verticalApertureOffset);
     _AddToken(cls, "vForm", UsdGeomTokens->vForm);
     _AddToken(cls, "visibility", UsdGeomTokens->visibility);
+    _AddToken(cls, "visible", UsdGeomTokens->visible);
     _AddToken(cls, "vKnots", UsdGeomTokens->vKnots);
     _AddToken(cls, "vOrder", UsdGeomTokens->vOrder);
     _AddToken(cls, "vRange", UsdGeomTokens->vRange);

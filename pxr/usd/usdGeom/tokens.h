@@ -258,6 +258,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomImageable::GetPurposeAttr()
     const TfToken guide;
+    /// \brief "guideVisibility"
+    /// 
+    /// UsdGeomPurposeVisibilityAPI
+    const TfToken guideVisibility;
     /// \brief "height"
     /// 
     /// UsdGeomCone, UsdGeomCapsule, UsdGeomCylinder
@@ -292,7 +296,7 @@ struct UsdGeomTokensType {
     const TfToken indices;
     /// \brief "inherited"
     /// 
-    /// Possible value for UsdGeomModelAPI::GetModelDrawModeAttr(), Default value for UsdGeomModelAPI::GetModelDrawModeAttr(), Possible value for UsdGeomImageable::GetVisibilityAttr(), Default value for UsdGeomImageable::GetVisibilityAttr()
+    /// Possible value for UsdGeomModelAPI::GetModelDrawModeAttr(), Default value for UsdGeomModelAPI::GetModelDrawModeAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetGuideVisibilityAttr(), Default value for UsdGeomPurposeVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetProxyVisibilityAttr(), Default value for UsdGeomPurposeVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetRenderVisibilityAttr(), Default value for UsdGeomPurposeVisibilityAPI::GetRenderVisibilityAttr(), Possible value for UsdGeomImageable::GetVisibilityAttr(), Default value for UsdGeomImageable::GetVisibilityAttr()
     const TfToken inherited;
     /// \brief "interpolateBoundary"
     /// 
@@ -304,7 +308,7 @@ struct UsdGeomTokensType {
     const TfToken interpolation;
     /// \brief "invisible"
     /// 
-    /// Possible value for UsdGeomImageable::GetVisibilityAttr()
+    /// Possible value for UsdGeomPurposeVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetRenderVisibilityAttr(), Possible value for UsdGeomImageable::GetVisibilityAttr()
     const TfToken invisible;
     /// \brief "invisibleIds"
     /// 
@@ -486,6 +490,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomImageable
     const TfToken proxyPrim;
+    /// \brief "proxyVisibility"
+    /// 
+    /// UsdGeomPurposeVisibilityAPI
+    const TfToken proxyVisibility;
     /// \brief "purpose"
     /// 
     /// UsdGeomImageable
@@ -502,6 +510,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomImageable::GetPurposeAttr()
     const TfToken render;
+    /// \brief "renderVisibility"
+    /// 
+    /// UsdGeomPurposeVisibilityAPI
+    const TfToken renderVisibility;
     /// \brief "right"
     /// 
     /// Possible value for UsdGeomCamera::GetStereoRoleAttr()
@@ -638,6 +650,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomImageable
     const TfToken visibility;
+    /// \brief "visible"
+    /// 
+    /// Possible value for UsdGeomPurposeVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetRenderVisibilityAttr()
+    const TfToken visible;
     /// \brief "vKnots"
     /// 
     /// UsdGeomNurbsPatch

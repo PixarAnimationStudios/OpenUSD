@@ -47,6 +47,7 @@ pxr_library(usdGeom
         points
         primvar
         primvarsAPI
+        purposeVisibilityAPI
         scope
         sphere
         subset
@@ -90,6 +91,7 @@ pxr_library(usdGeom
         wrapPoints.cpp
         wrapPrimvar.cpp
         wrapPrimvarsAPI.cpp
+        wrapPurposeVisibilityAPI.cpp
         wrapScope.cpp
         wrapSphere.cpp
         wrapSubset.cpp
