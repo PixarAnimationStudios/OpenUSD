@@ -50,6 +50,7 @@
 //           HdResourceRegistry.
 // 38 -> 39: Removed garbage collection API from HdChangeTracker and
 //           HdResourceRegistry.
+//           Added HdSceneDelegate::GetInstancerPrototypes.
 // 39 -> 40: Removed Bind and Unbind API from HdRenderPassState.
 // 40 -> 41: Renamed HdDelegate::GetMaterialNeworkselector() to 
 //           GetMaterialRenderContexts(). It now returns a TfTokenVector.
