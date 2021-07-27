@@ -156,7 +156,11 @@ struct HdPrimvarDescriptor {
     /// before calling "GetIndexedPrimvar"
     bool indexed;
 
-    HdPrimvarDescriptor() {}
+    HdPrimvarDescriptor()
+    : interpolation(HdInterpolationConstant)
+    , role(HdPrimvarRoleTokens->none)
+    , indexed(false)
+    {}
     HdPrimvarDescriptor(TfToken const& name_,
                         HdInterpolation interp_,
                         TfToken const& role_=HdPrimvarRoleTokens->none,
