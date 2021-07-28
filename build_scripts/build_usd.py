@@ -930,6 +930,7 @@ def InstallOpenEXR(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OPENEXR_URL, context, force)):
         RunCMake(context, force, 
                  ['-DOPENEXR_BUILD_PYTHON_LIBS=OFF',
+                  '-DOPENEXR_PACKAGE_PREFIX="{}"'.format(context.instDir),
                   '-DOPENEXR_ENABLE_TESTS=OFF'] + buildArgs)
 
 OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
