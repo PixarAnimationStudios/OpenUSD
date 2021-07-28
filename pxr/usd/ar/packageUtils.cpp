@@ -85,11 +85,11 @@ _FindMatchingOpeningDelimiter(
 {
     size_t numOpenNeeded = 1;
     std::string::const_reverse_iterator revIt(closingDelimIt);
-    for (; revIt != path.rend() && numOpenNeeded != 0; ++revIt) {
+    for (const auto rend = path.rend(); revIt != rend && numOpenNeeded != 0; ++revIt) {
         if (*revIt == '[' || *revIt == ']') {
             // Ignore this delimiter if it's been escaped.
             auto prevCharIt = revIt + 1;
-            if (prevCharIt != path.rend() && *prevCharIt == '\\') {
+            if (prevCharIt != rend && *prevCharIt == '\\') {
                 continue;
             }
             numOpenNeeded += (*revIt == '[') ? -1 : 1;

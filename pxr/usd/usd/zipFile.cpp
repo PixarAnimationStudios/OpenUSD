@@ -37,7 +37,9 @@
 
 #include <cstdint>
 #include <ctime>
+#include <shared_mutex>
 #include <vector>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -133,141 +135,16 @@ private:
 
 // ------------------------------------------------------------
 
-// Local file header for each file in the zip archive.
-//
-// See section 4.3.7 in zip file specification for more details.
-struct _LocalFileHeader
-{
-    static const uint32_t Signature = 0x04034b50;
-
-    struct Fixed {
-        uint32_t signature;
-        uint16_t versionForExtract;
-        uint16_t bits;
-        uint16_t compressionMethod;
-        uint16_t lastModTime;
-        uint16_t lastModDate;
-        uint32_t crc32;
-        uint32_t compressedSize;
-        uint32_t uncompressedSize;
-        uint16_t filenameLength;
-        uint16_t extraFieldLength;
-    };
-    
-    static const size_t FixedSize = 
-        sizeof(uint32_t) * 4 + sizeof(uint16_t) * 7;
-    static_assert(sizeof(Fixed) >= FixedSize, "");
-
-    // Fixed-length header
-    Fixed f;
-
-    // NOTE: 
-    // const char* values below do not point to null-terminated strings.
-    // Use indicated memory ranges.
-
-    // Filename in [filenameStart, filenameStart + f.filenameLength)
-    const char* filenameStart;
-    // Extra data in [extraFieldStart, extraFieldStart + f.extraFieldLength)
-    const char* extraFieldStart;
-    // File data in [dataStart, dataStart + f.compressedSize)
-    const char* dataStart;
-
-    // Return true if the required signature is stored in this header.
-    bool IsValid() const
-    {
-        return f.signature == Signature;
-    }
-};
-
-// Read _LocalFileHeader from input stream. Returns an invalid _LocalFileHeader
-// if an error occurs or the input stream is too small.
-_LocalFileHeader
-_ReadLocalFileHeader(_InputStream& src)
-{
-    // If the source does not have enough bytes to accommodate the
-    // fixed-sized portion of the header, bail out so we don't try to
-    // read off the end of the source.
-    if (src.RemainingSize() < _LocalFileHeader::FixedSize) {
-        return _LocalFileHeader();
-    }
-
-    _LocalFileHeader h;
-
-    // If signature is not the expected value, reset the source back to
-    // its original position and bail.
-    src.Read(&h.f.signature);
-    if (!h.IsValid()) {
-        src.Advance(-sizeof(decltype(h.f.signature)));
-        return _LocalFileHeader();
-    }
-
-    src.Read(&h.f.versionForExtract);
-    src.Read(&h.f.bits);
-    src.Read(&h.f.compressionMethod);
-    src.Read(&h.f.lastModTime);
-    src.Read(&h.f.lastModDate);
-    src.Read(&h.f.crc32);
-    src.Read(&h.f.compressedSize);
-    src.Read(&h.f.uncompressedSize);
-    src.Read(&h.f.filenameLength);
-    src.Read(&h.f.extraFieldLength);
-
-    if (src.RemainingSize() < h.f.filenameLength) {
-        return _LocalFileHeader();
-    }
-
-    h.filenameStart = src.TellMemoryAddress();
-    src.Advance(h.f.filenameLength);
-
-    if (src.RemainingSize() < h.f.extraFieldLength) {
-        return _LocalFileHeader();
-    }
-
-    h.extraFieldStart = src.TellMemoryAddress();
-    src.Advance(h.f.extraFieldLength);
-
-    if (src.RemainingSize() < h.f.compressedSize) {
-        return _LocalFileHeader();
-    }
-
-    h.dataStart = src.TellMemoryAddress();
-    src.Advance(h.f.compressedSize);
-
-    return h;
-}
-
-// Write given _LocalFileHeader to given output stream.
-void
-_WriteLocalFileHeader(_OutputStream& out, const _LocalFileHeader& h)
-{
-    out.Write(h.f.signature);
-    out.Write(h.f.versionForExtract);
-    out.Write(h.f.bits);
-    out.Write(h.f.compressionMethod);
-    out.Write(h.f.lastModTime);
-    out.Write(h.f.lastModDate);
-    out.Write(h.f.crc32);
-    out.Write(h.f.compressedSize);
-    out.Write(h.f.uncompressedSize);
-    out.Write(h.f.filenameLength);
-    out.Write(h.f.extraFieldLength);
-    out.Write(h.filenameStart, h.f.filenameLength);
-    out.Write(h.extraFieldStart, h.f.extraFieldLength);
-    out.Write(h.dataStart, h.f.compressedSize);
-}
-
-// ------------------------------------------------------------
-
 // Central directory header for each file in the zip archive. These headers
 // are stored after the data for the last file.
 //
 // See section 4.3.12 in zip file specification for more details.
 struct _CentralDirectoryHeader
 {
-    static const uint32_t Signature = 0x02014b50;
+    static constexpr uint32_t Signature = 0x02014b50;
 
     struct Fixed {
-        uint32_t signature;
+        uint32_t signature = 0; // Make sure default constructor doesn't use Signature
         uint16_t versionMadeBy;
         uint16_t versionForExtract;
         uint16_t bits;
@@ -344,10 +221,10 @@ _WriteCentralDirectoryHeader(
 // after the last central directory header.
 struct _EndOfCentralDirectoryRecord
 {
-    static const uint32_t Signature = 0x06054b50;
+    static constexpr uint32_t Signature = 0x06054b50;
 
     struct Fixed {
-        uint32_t signature;
+        uint32_t signature = 0; // Make sure default constructor doesn't use Signature
         uint16_t diskNumber;
         uint16_t diskNumberForCentralDir;
         uint16_t numCentralDirEntriesOnDisk;
@@ -460,21 +337,230 @@ _PrepareExtraFieldPadding(
 
 // ------------------------------------------------------------
 
+// Local file header for each file in the zip archive.
+//
+// See section 4.3.7 in zip file specification for more details.
+struct UsdZipFile::_LocalFileHeader
+{
+    static constexpr uint32_t Signature = 0x04034b50;
+
+    struct Fixed {
+        uint32_t signature = 0; // Make sure default constructor doesn't use Signature
+        uint16_t versionForExtract;
+        uint16_t bits;
+        uint16_t compressionMethod;
+        uint16_t lastModTime;
+        uint16_t lastModDate;
+        uint32_t crc32;
+        uint32_t compressedSize;
+        uint32_t uncompressedSize;
+        uint16_t filenameLength;
+        uint16_t extraFieldLength;
+    };
+
+    static const size_t FixedSize =
+        sizeof(uint32_t) * 4 + sizeof(uint16_t) * 7;
+    static_assert(sizeof(Fixed) >= FixedSize, "");
+
+    // Fixed-length header
+    Fixed f;
+
+    // NOTE: 
+    // const char* values below do not point to null-terminated strings.
+    // Use indicated memory ranges.
+
+    // Filename in [filenameStart, filenameStart + f.filenameLength)
+    const char* filenameStart = nullptr;
+    // Extra data in [extraFieldStart, extraFieldStart + f.extraFieldLength)
+    const char* extraFieldStart = nullptr;
+    // File data in [dataStart, dataStart + f.compressedSize)
+    const char* dataStart = nullptr;
+    // Total length of the _LocalFileHeader read from file
+    size_t nextHeader = 0;
+
+    // Return true if the required signature is stored in this header.
+    bool IsValid() const
+    {
+        return f.signature == Signature;
+    }
+
+    // Read _LocalFileHeader from input stream. Returns an invalid _LocalFileHeader
+    // if an error occurs or the input stream is too small.
+    static std::unique_ptr<_LocalFileHeader> _ReadLocalFileHeader(_InputStream& src)
+    {
+        // If the source does not have enough bytes to accommodate the
+        // fixed-sized portion of the header, bail out so we don't try to
+        // read off the end of the source.
+        if (src.RemainingSize() < _LocalFileHeader::FixedSize) {
+            return {};
+        }
+
+        std::unique_ptr<_LocalFileHeader> h(new _LocalFileHeader);
+
+        // If signature is not the expected value, reset the source back to
+        // its original position and bail.
+        src.Read(&h->f.signature);
+        if (!h->IsValid()) {
+            src.Advance(-sizeof(decltype(h->f.signature)));
+            return {};
+        }
+
+        src.Read(&h->f.versionForExtract);
+        src.Read(&h->f.bits);
+        src.Read(&h->f.compressionMethod);
+        src.Read(&h->f.lastModTime);
+        src.Read(&h->f.lastModDate);
+        src.Read(&h->f.crc32);
+        src.Read(&h->f.compressedSize);
+        src.Read(&h->f.uncompressedSize);
+        src.Read(&h->f.filenameLength);
+        src.Read(&h->f.extraFieldLength);
+
+        if (src.RemainingSize() < h->f.filenameLength) {
+            return {};
+        }
+
+        h->filenameStart = src.TellMemoryAddress();
+        src.Advance(h->f.filenameLength);
+
+        if (src.RemainingSize() < h->f.extraFieldLength) {
+            return {};
+        }
+
+        h->extraFieldStart = src.TellMemoryAddress();
+        src.Advance(h->f.extraFieldLength);
+
+        if (src.RemainingSize() < h->f.compressedSize) {
+            return {};
+        }
+
+        h->dataStart = src.TellMemoryAddress();
+        src.Advance(h->f.compressedSize);
+
+        // Record the offset to the next header for iterator advancement
+        h->nextHeader = src.Tell();
+
+        return h;
+    }
+
+    // Write this _LocalFileHeader to given output stream.
+    void _WriteLocalFileHeader(_OutputStream& out) const
+    {
+        out.Write(f.signature);
+        out.Write(f.versionForExtract);
+        out.Write(f.bits);
+        out.Write(f.compressionMethod);
+        out.Write(f.lastModTime);
+        out.Write(f.lastModDate);
+        out.Write(f.crc32);
+        out.Write(f.compressedSize);
+        out.Write(f.uncompressedSize);
+        out.Write(f.filenameLength);
+        out.Write(f.extraFieldLength);
+        out.Write(filenameStart, f.filenameLength);
+        out.Write(extraFieldStart, f.extraFieldLength);
+        out.Write(dataStart, f.compressedSize);
+    }
+};
+
+// ------------------------------------------------------------
+
 class UsdZipFile::_Impl
 {
+    std::shared_ptr<const char> storage;
+
+    // Cached mapping of filename to buffer
+    std::unordered_map<std::string, Iterator> _cached_paths;
+    // Iterator to start on when adding to the cached mapping
+    std::unique_ptr<Iterator> _cached_path_it;
+    // UsdZipFile::begin is called often, so might as well cache it too
+    std::unique_ptr<Iterator> _cached_begin_it;
+    // Use a single mutex as there doesn't look to be much contention from
+    // calling through via UsdZipFile::begin() and UsdZipFile::Find()
+    std::shared_timed_mutex _rw_mutex;
+
+    void
+    _SetupIterators()
+    {
+        _cached_begin_it.reset(new Iterator(this));
+        _cached_path_it.reset(new Iterator(*_cached_begin_it));
+    }
+
 public:
+    // This is the same as storage.get(), but saved separately to simplify
+    // code so they don't have to call storage.get() all the time.
+    const char* buffer;
+    size_t size;
+
     _Impl(std::shared_ptr<const char>&& buffer_, size_t size_)
         : storage(std::move(buffer_))
         , buffer(storage.get())
         , size(size_)
     { }
 
-    std::shared_ptr<const char> storage;
+    Iterator
+    CachedBegin()
+    {
+        {
+            std::shared_lock<std::shared_timed_mutex> l(_rw_mutex);
+            if (_cached_begin_it) {
+                return *_cached_begin_it;
+            }
+        }
+        std::unique_lock<std::shared_timed_mutex> l(_rw_mutex);
+        _SetupIterators();
+        return *_cached_begin_it;
+    }
 
-    // This is the same as storage.get(), but saved separately to simplify
-    // code so they don't have to call storage.get() all the time.
-    const char* buffer;
-    size_t size;
+    Iterator
+    Find(const std::string& path)
+    {
+        const Iterator vend;
+        // ReadOnly lock to lookup if this item has already been found
+        {
+            std::shared_lock<std::shared_timed_mutex> l(_rw_mutex);
+            auto cached = _cached_paths.find(path);
+            if (cached != _cached_paths.end()) {
+                return cached->second;
+            }
+            // Early exit if _cached_path_it exists and is at end
+            if (_cached_path_it && *_cached_path_it == vend) {
+                return vend;
+            }
+        }
+        // Simplest implementation to lock and iterate linearly until found,
+        // filling in cache along the way was chosen as all other 'more
+        // 'more complicated' attempts with less contention/blocking didn't
+        // add much savings in performance/time.
+
+        // WriteLock for linear traversal saving into cache
+        {
+            std::unique_lock<std::shared_timed_mutex> l(_rw_mutex);
+            if (!_cached_path_it) {
+                _SetupIterators();
+            }
+            for (Iterator& itr = *_cached_path_it; itr != vend;) {
+                auto added = _cached_paths.emplace(*itr, itr).first;
+                ++itr;
+                if (path == added->first) {
+                    return added->second;
+                }
+            }
+        }
+        // ReadOnly lock in case a different thread cached _cached_paths[path]
+        // Need to spin here until all work is complete
+        Iterator itr;
+        do {
+            std::shared_lock<std::shared_timed_mutex> l(_rw_mutex);
+            auto cached = _cached_paths.find(path);
+            if (cached != _cached_paths.end()) {
+                return cached->second;
+            }
+            itr = *_cached_path_it;
+        } while (itr != vend);
+
+        return vend;
+    }
 };
 
 UsdZipFile
@@ -539,21 +625,21 @@ UsdZipFile::DumpContents() const
 }
 
 UsdZipFile::Iterator
+UsdZipFile::end() const
+{
+    return Iterator();
+}
+
+UsdZipFile::Iterator
 UsdZipFile::Find(const std::string& path) const
 {
-    return std::find(begin(), end(), path);
+    return _impl ? _impl->Find(path) : end();
 }
 
 UsdZipFile::Iterator 
 UsdZipFile::begin() const
 {
-    return Iterator(_impl.get());
-}
-
-UsdZipFile::Iterator 
-UsdZipFile::end() const
-{
-    return Iterator();
+    return _impl ? _impl->CachedBegin() : end();
 }
 
 UsdZipFile::Iterator::Iterator()
@@ -562,22 +648,30 @@ UsdZipFile::Iterator::Iterator()
 {
 }
 
-UsdZipFile::Iterator::Iterator(const _Impl* impl)
+UsdZipFile::Iterator::Iterator(const _Impl* impl, size_t offset)
     : _impl(impl)
-    , _offset(0)
+    , _offset(offset)
 {
     _InputStream src(_impl->buffer, _impl->size, _offset);
-    if (!_ReadLocalFileHeader(src).IsValid()) {
-        *this = Iterator();
+    _fileHeader = _LocalFileHeader::_ReadLocalFileHeader(src);
+    if (!_fileHeader || !_fileHeader->IsValid()) {
+        _impl = nullptr;
+        _offset = 0;
+        _fileHeader.reset();
     }
+}
+
+UsdZipFile::Iterator::~Iterator()
+{
 }
 
 UsdZipFile::Iterator::reference 
 UsdZipFile::Iterator::operator*() const
 {
-    _InputStream src(_impl->buffer, _impl->size, _offset);
-    _LocalFileHeader h = _ReadLocalFileHeader(src);
-    return std::string(h.filenameStart, h.f.filenameLength);
+    if (_fileHeader) {
+        return std::string(_fileHeader->filenameStart, _fileHeader->f.filenameLength);
+    }
+    return std::string();
 }
 
 UsdZipFile::Iterator::pointer
@@ -592,16 +686,8 @@ UsdZipFile::Iterator::operator++()
     // Advance past the file the iterator is currently pointing
     // to, then check if we can read the next file header. If not,
     // we've hit the end.
-    _InputStream src(_impl->buffer, _impl->size, _offset);
-    _ReadLocalFileHeader(src);
-
-    size_t newOffset = src.Tell();
-    const _LocalFileHeader newHeader = _ReadLocalFileHeader(src);
-    if (newHeader.IsValid()) {
-        _offset = newOffset;
-    }
-    else {
-        *this = Iterator();
+    if (_fileHeader) {
+        *this = Iterator(_impl, _fileHeader->nextHeader);
     }
     return *this;
 }
@@ -609,8 +695,11 @@ UsdZipFile::Iterator::operator++()
 UsdZipFile::Iterator
 UsdZipFile::Iterator::operator++(int)
 {
-    Iterator it(*this);
-    ++*this;
+    Iterator it;
+    if (_fileHeader) {
+        it = std::move(*this);
+        *this = Iterator(_impl, it._fileHeader->nextHeader);
+    }
     return it;
 }
 
@@ -629,23 +718,20 @@ UsdZipFile::Iterator::operator!=(const Iterator& rhs) const
 const char*
 UsdZipFile::Iterator::GetFile() const
 {
-    _InputStream src(_impl->buffer, _impl->size, _offset);
-    const _LocalFileHeader h = _ReadLocalFileHeader(src);
-    return h.dataStart;
+    return _fileHeader ? _fileHeader->dataStart : nullptr;
 }
 
 UsdZipFile::FileInfo 
 UsdZipFile::Iterator::GetFileInfo() const
 {
-    _InputStream src(_impl->buffer, _impl->size, _offset);
-    const _LocalFileHeader h = _ReadLocalFileHeader(src);
-
     FileInfo f;
-    f.dataOffset = h.dataStart - _impl->buffer;
-    f.size = h.f.compressedSize;
-    f.uncompressedSize = h.f.uncompressedSize;
-    f.compressionMethod = h.f.compressionMethod;
-    f.encrypted = h.f.bits & 0x1; // Per 4.4.4, bit 0 is set if encrypted
+    if (_fileHeader) {
+        f.dataOffset = _fileHeader->dataStart - _impl->buffer;
+        f.size = _fileHeader->f.compressedSize;
+        f.uncompressedSize = _fileHeader->f.uncompressedSize;
+        f.compressionMethod = _fileHeader->f.compressionMethod;
+        f.encrypted = _fileHeader->f.bits & 0x1; // Per 4.4.4, bit 0 is set if encrypted
+    }
     return f;
 }
 
@@ -733,7 +819,7 @@ public:
     //  - Fixed portion of local file header
     //  - Offset from beginning of zip file to start of local file header
     using _Record = 
-        std::tuple<std::string, _LocalFileHeader::Fixed, uint32_t>;
+        std::tuple<std::string, UsdZipFile::_LocalFileHeader::Fixed, uint32_t>;
     std::vector<_Record> addedFiles;
 };
 
@@ -818,8 +904,8 @@ UsdZipFileWriter::AddFile(
     }
 
     // Set up local file header
-    _LocalFileHeader h;
-    h.f.signature = _LocalFileHeader::Signature;
+    UsdZipFile::_LocalFileHeader h;
+    h.f.signature = UsdZipFile::_LocalFileHeader::Signature;
     h.f.versionForExtract = 10; // Default value
     h.f.bits = 0;
     h.f.compressionMethod = 0; // No compression
@@ -831,7 +917,7 @@ UsdZipFileWriter::AddFile(
     
     const uint32_t offset = outStream.Tell();
     const size_t dataOffset = 
-        offset + _LocalFileHeader::FixedSize + h.f.filenameLength;
+        offset + UsdZipFile::_LocalFileHeader::FixedSize + h.f.filenameLength;
     h.f.extraFieldLength = _ComputeExtraFieldPaddingSize(dataOffset);
 
     h.filenameStart = zipFilePath.data();
@@ -842,7 +928,7 @@ UsdZipFileWriter::AddFile(
 
     h.dataStart = mapping.get();
 
-    _WriteLocalFileHeader(outStream, h);
+    h._WriteLocalFileHeader(outStream);
     _impl->addedFiles.emplace_back(zipFilePath, h.f, offset);
 
     return zipFilePath;
@@ -863,7 +949,7 @@ UsdZipFileWriter::Save()
 
     for (const _Impl::_Record& record : _impl->addedFiles) {
         const std::string& fileToZip = std::get<0>(record);
-        const _LocalFileHeader::Fixed& localHeader = std::get<1>(record);
+        const UsdZipFile::_LocalFileHeader::Fixed& localHeader = std::get<1>(record);
         uint32_t offset = std::get<2>(record);
 
         _CentralDirectoryHeader h;
