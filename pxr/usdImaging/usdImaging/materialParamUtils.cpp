@@ -25,6 +25,7 @@
 
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/imaging/hd/material.h"
+#include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdr/registry.h"
@@ -165,11 +166,21 @@ _ResolveAssetAttribute(
     }
 
     // Find first tile.
-    const std::string firstTilePath =
+    std::string firstTilePackage;
+    std::string firstTilePath =
         _ResolvedPathForFirstTile(splitPath, _FindLayerHandle(attr, time));
 
     if (firstTilePath.empty()) {
         return assetPath;
+    }
+
+    // If the resolved path of the first tile is located in a packaged asset,
+    // like /foo/bar/baz.usdz[myImage.0001.exr], we need to separate the
+    // paths to restore the "<UDIM>" prefix to the image filename in the
+    // code below, then join the path back togther before we return.
+    if (ArIsPackageRelativePath(firstTilePath)) {
+        std::tie(firstTilePackage, firstTilePath) =
+            ArSplitPackageRelativePathInner(firstTilePath);
     }
 
     // Construct the file path /filePath/myImage.<UDIM>.exr by using
@@ -191,10 +202,14 @@ _ResolveAssetAttribute(
     const std::string::size_type prefixLength =
         firstTilePath.size() - suffix.size() - UDIM_TILE_NUMBER_LENGTH;
 
-    return
-        SdfAssetPath( 
-            assetPath.GetAssetPath(),
-            firstTilePath.substr(0, prefixLength) + UDIM_PATTERN + suffix);
+    firstTilePath = 
+        firstTilePath.substr(0, prefixLength) + UDIM_PATTERN + suffix;
+
+    return SdfAssetPath( 
+        assetPath.GetAssetPath(),
+        firstTilePackage.empty() ? 
+            firstTilePath : 
+            ArJoinPackageRelativePath(firstTilePackage, firstTilePath));
 }
 
 VtValue
