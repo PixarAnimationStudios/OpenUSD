@@ -192,7 +192,7 @@ class "PurposeVisibilityAPI"
     """
 )
 {
-    uniform token guideVisibility = "inherited" (
+    uniform token guideVisibility = "invisible" (
         allowedTokens = ["inherited", "invisible", "visible"]
         doc = """
         This attribute controls visibility for geometry with purpose "guide".

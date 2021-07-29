@@ -296,7 +296,7 @@ struct UsdGeomTokensType {
     const TfToken indices;
     /// \brief "inherited"
     /// 
-    /// Possible value for UsdGeomModelAPI::GetModelDrawModeAttr(), Default value for UsdGeomModelAPI::GetModelDrawModeAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetGuideVisibilityAttr(), Default value for UsdGeomPurposeVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetProxyVisibilityAttr(), Default value for UsdGeomPurposeVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetRenderVisibilityAttr(), Default value for UsdGeomPurposeVisibilityAPI::GetRenderVisibilityAttr(), Possible value for UsdGeomImageable::GetVisibilityAttr(), Default value for UsdGeomImageable::GetVisibilityAttr()
+    /// Possible value for UsdGeomModelAPI::GetModelDrawModeAttr(), Default value for UsdGeomModelAPI::GetModelDrawModeAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetProxyVisibilityAttr(), Default value for UsdGeomPurposeVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetRenderVisibilityAttr(), Default value for UsdGeomPurposeVisibilityAPI::GetRenderVisibilityAttr(), Possible value for UsdGeomImageable::GetVisibilityAttr(), Default value for UsdGeomImageable::GetVisibilityAttr()
     const TfToken inherited;
     /// \brief "interpolateBoundary"
     /// 
@@ -308,7 +308,7 @@ struct UsdGeomTokensType {
     const TfToken interpolation;
     /// \brief "invisible"
     /// 
-    /// Possible value for UsdGeomPurposeVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetRenderVisibilityAttr(), Possible value for UsdGeomImageable::GetVisibilityAttr()
+    /// Possible value for UsdGeomPurposeVisibilityAPI::GetGuideVisibilityAttr(), Default value for UsdGeomPurposeVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetRenderVisibilityAttr(), Possible value for UsdGeomImageable::GetVisibilityAttr()
     const TfToken invisible;
     /// \brief "invisibleIds"
     /// 

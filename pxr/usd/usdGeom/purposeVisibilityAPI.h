@@ -217,7 +217,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `uniform token guideVisibility = "inherited"` |
+    /// | Declaration | `uniform token guideVisibility = "invisible"` |
     /// | C++ Type | TfToken |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |

@@ -125,15 +125,21 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         # Test that GeomPurposeVisibilityAPI adds the expected purpose
         # visibility attributes.
         UsdGeom.PurposeVisibilityAPI.Apply(imageable)
+
         guideVisibility = \
             imageable.GetAttribute(UsdGeom.Tokens.guideVisibility)
         self.assertTrue(guideVisibility)
+        self.assertEqual(guideVisibility.Get(), UsdGeom.Tokens.invisible)
+
         proxyVisibility = \
             imageable.GetAttribute(UsdGeom.Tokens.proxyVisibility)
         self.assertTrue(proxyVisibility)
+        self.assertEqual(proxyVisibility.Get(), UsdGeom.Tokens.inherited)
+
         renderVisibility = \
             imageable.GetAttribute(UsdGeom.Tokens.renderVisibility)
         self.assertTrue(renderVisibility)
+        self.assertEqual(renderVisibility.Get(), UsdGeom.Tokens.inherited)
 
 
     def test_ComputePurpose(self):
