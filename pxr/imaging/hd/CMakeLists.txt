@@ -52,6 +52,7 @@ pxr_library(hd
         extComputationContext
         extComputationUtils
         field
+        filteringSceneIndex
         flatNormals
         geomSubset
         instancer
@@ -84,6 +85,8 @@ pxr_library(hd
         rprimSharedData
         sceneDelegate
         sceneExtCompInputSource
+        sceneIndex
+        sceneIndexObserver
         selection
         smoothNormals
         sortedIds                   
