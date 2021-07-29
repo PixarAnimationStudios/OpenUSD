@@ -304,10 +304,6 @@ HdSt_RenderPass::_UpdateDrawItems(TfTokenVector const& renderTags)
                 collection, renderTags, GetRenderIndex(), _drawItems);
         
         if (_drawItems != cachedEntry) {
-            // XXX The metric below should be renamed. It tracks the number
-            // of times the draw items have to be refetched.
-            HD_PERF_COUNTER_INCR(HdPerfTokens->collectionsRefreshed);
-
             _drawItems = cachedEntry;
             _drawItemsChanged = true;
             _drawItemCount = _drawItems->size();
@@ -338,8 +334,6 @@ HdSt_RenderPass::_UpdateDrawItems(TfTokenVector const& renderTags)
         _materialTagsVersion != materialTagsVersion;
 
     if (collectionChanged || renderTagsChanged || materialTagsChanged) {
-        HD_PERF_COUNTER_INCR(HdPerfTokens->collectionsRefreshed);
-
         if (TfDebug::IsEnabled(HDST_DRAW_ITEM_GATHER)) {
             if (collectionChanged) {
                 TfDebug::Helper::Msg(
@@ -367,6 +361,7 @@ HdSt_RenderPass::_UpdateDrawItems(TfTokenVector const& renderTags)
         if (renderParam->HasMaterialTag(collection.GetMaterialTag())) {
             _drawItems = std::make_shared<HdDrawItemConstPtrVector>(
                 GetRenderIndex()->GetDrawItems(collection, renderTags));
+            HD_PERF_COUNTER_INCR(HdStPerfTokens->drawItemsFetched);
         } else {
             // No need to even call GetDrawItems when we know that
             // there is no prim with the desired material tag.

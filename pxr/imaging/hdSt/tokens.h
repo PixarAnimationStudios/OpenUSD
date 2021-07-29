@@ -124,7 +124,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (copyBufferCpuToGpu)                        \
     (drawItemsCacheHit)                         \
     (drawItemsCacheMiss)                        \
-    (drawItemsCacheStale)
+    (drawItemsCacheStale)                       \
+    (drawItemsFetched)
 
 TF_DECLARE_PUBLIC_TOKENS(HdStGLSLProgramTokens, HDST_API,
                          HDST_GLSL_PROGRAM_TOKENS);

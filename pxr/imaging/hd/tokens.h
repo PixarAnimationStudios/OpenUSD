@@ -135,9 +135,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (adjacencyBufSize)                          \
     (basisCurvesTopology)                       \
     (bufferSourcesResolved)                     \
-    (bufferArrayRangeMigrated)                    \
+    (bufferArrayRangeMigrated)                  \
     (bufferArrayRangeContainerResized)          \
-    (collectionsRefreshed)                      \
     (computationsCommited)                      \
     (drawBatches)                               \
     (drawCalls)                                 \
