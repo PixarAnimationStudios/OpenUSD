@@ -65,6 +65,7 @@ pxr_library(hd
         perfLog
         pluginRenderDelegateUniqueHandle
         points
+        prefixingSceneIndex
         primGather
         primTypeIndex
         renderBuffer
@@ -80,6 +81,7 @@ pxr_library(hd
         resource
         resourceRegistry
         retainedDataSource
+        retainedSceneIndex
         rprim
         rprimCollection
         rprimSharedData
