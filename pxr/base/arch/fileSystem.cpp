@@ -74,13 +74,17 @@ static inline HANDLE _FileToWinHANDLE(FILE *file)
 
 FILE* ArchOpenFile(char const* fileName, char const* mode)
 {
+#if defined(ARCH_OS_WINDOWS)
+    return _wfopen(ArchWindowsUtf8ToUtf16(fileName).c_str(), ArchWindowsUtf8ToUtf16(mode).c_str());
+#else
     return fopen(fileName, mode);
+#endif
 }
 
 #if defined(ARCH_OS_WINDOWS)
 int ArchRmDir(const char* path)
 {
-    return RemoveDirectory(path) ? 0 : -1;
+    return RemoveDirectoryW(ArchWindowsUtf8ToUtf16(path).c_str()) ? 0 : -1;
 }
 #endif
 
@@ -110,7 +114,7 @@ ArchGetModificationTime(const char* pathname, double* time)
 {
     ArchStatType st;
 #if defined(ARCH_OS_WINDOWS)
-    if (_stat64(pathname, &st) == 0)
+    if (_wstat64(ArchWindowsUtf8ToUtf16(pathname).c_str(), &st) == 0)
 #else
     if (stat(pathname, &st) == 0)
 #endif
@@ -338,9 +342,10 @@ ArchAbsPath(const string& path)
     }
 
 #if defined(ARCH_OS_WINDOWS)
-    char buffer[ARCH_PATH_MAX];
-    if (GetFullPathName(path.c_str(), ARCH_PATH_MAX, buffer, nullptr)) {
-        return buffer;
+    // @TODO support 32,767 long paths on windows by prepending "\\?\" to the path
+    wchar_t buffer[ARCH_PATH_MAX];
+    if (GetFullPathNameW(ArchWindowsUtf8ToUtf16(path).c_str(), ARCH_PATH_MAX, buffer, nullptr)) {
+        return ArchWindowsUtf16ToUtf8(buffer);
     }
     else {
         return path;
@@ -444,7 +449,7 @@ ArchGetFileLength(const char* fileName)
     // Open a handle with 0 as the desired access and full sharing.
     // This opens the file even if exclusively locked.
     HANDLE handle =
-        CreateFile(fileName, 0,
+        CreateFileW(ArchWindowsUtf8ToUtf16(fileName).c_str(), 0,
                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                    nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (handle) {
@@ -585,7 +590,7 @@ ArchMakeTmpFile(const std::string& tmpdir,
     int fd = -1;
     auto cTemplate =
         MakeUnique(sTemplate, [&fd](const char* name){
-            _sopen_s(&fd, name, _O_CREAT | _O_EXCL | _O_RDWR | _O_BINARY,
+                    _wsopen_s(&fd, ArchWindowsUtf8ToUtf16(name).c_str(), _O_CREAT | _O_EXCL | _O_RDWR | _O_BINARY,
                      _SH_DENYNO, _S_IREAD | _S_IWRITE);
             return fd != -1;
         });
@@ -627,7 +632,7 @@ ArchMakeTmpSubdir(const std::string& tmpdir,
 #if defined(ARCH_OS_WINDOWS)
     retstr =
         MakeUnique(sTemplate, [](const char* name){
-            return CreateDirectory(name, NULL) != FALSE;
+                    return CreateDirectoryW(ArchWindowsUtf8ToUtf16(name).c_str(), NULL) != FALSE;
         });
 #else
     // Copy template to a writable buffer.
@@ -655,10 +660,10 @@ void
 Arch_InitTmpDir()
 {
 #if defined(ARCH_OS_WINDOWS)
-    char tmpPath[MAX_PATH];
+    wchar_t tmpPath[MAX_PATH];
 
     // On Windows, let GetTempPath use the standard env vars, not our own.
-    int sizeOfPath = GetTempPath(MAX_PATH - 1, tmpPath);
+    int sizeOfPath = GetTempPathW(MAX_PATH - 1, tmpPath);
     if (sizeOfPath > MAX_PATH || sizeOfPath == 0) {
         ARCH_ERROR("Call to GetTempPath failed.");
         _TmpDir = ".";
@@ -667,7 +672,7 @@ Arch_InitTmpDir()
 
     // Strip the trailing slash
     tmpPath[sizeOfPath-1] = 0;
-    _TmpDir = _strdup(tmpPath);
+    _TmpDir = _strdup(ArchWindowsUtf16ToUtf8(tmpPath).c_str());
 #else
     const std::string tmpdir = ArchGetEnv("TMPDIR");
     if (!tmpdir.empty()) {
@@ -1030,8 +1035,9 @@ static int Arch_FileAccessError()
 int ArchFileAccess(const char* path, int mode)
 {
     // Simple existence check is handled specially.
+    std::wstring wpath{ ArchWindowsUtf8ToUtf16(path) };
     if (mode == F_OK) {
-        return (GetFileAttributes(path) != INVALID_FILE_ATTRIBUTES)
+        return (GetFileAttributesW(wpath.c_str()) != INVALID_FILE_ATTRIBUTES)
                 ? 0 : Arch_FileAccessError();
     }
 
@@ -1041,7 +1047,7 @@ int ArchFileAccess(const char* path, int mode)
 
     // Get the SECURITY_DESCRIPTOR size.
     DWORD length = 0;
-    if (!GetFileSecurity(path, securityInfo, NULL, 0, &length)) {
+    if (!GetFileSecurityW(wpath.c_str(), securityInfo, NULL, 0, &length)) {
         if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
             return Arch_FileAccessError();
         }
@@ -1050,7 +1056,7 @@ int ArchFileAccess(const char* path, int mode)
     // Get the SECURITY_DESCRIPTOR.
     std::unique_ptr<unsigned char[]> buffer(new unsigned char[length]);
     PSECURITY_DESCRIPTOR security = (PSECURITY_DESCRIPTOR)buffer.get();
-    if (!GetFileSecurity(path, securityInfo, security, length, &length)) {
+    if (!GetFileSecurityW(wpath.c_str(), securityInfo, security, length, &length)) {
         return Arch_FileAccessError();
     }
 
@@ -1142,7 +1148,7 @@ typedef struct _REPARSE_DATA_BUFFER {
 
 std::string ArchReadLink(const char* path)
 {
-    HANDLE handle = ::CreateFile(path, GENERIC_READ, FILE_SHARE_READ,
+    HANDLE handle = ::CreateFileW(ArchWindowsUtf8ToUtf16(path).c_str(), GENERIC_READ, 0,
         NULL, OPEN_EXISTING,
         FILE_FLAG_OPEN_REPARSE_POINT |
         FILE_FLAG_BACKUP_SEMANTICS, NULL);
