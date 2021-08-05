@@ -92,6 +92,7 @@ pxr_library(hd
         pluginRenderDelegateUniqueHandle
         points
         prefixingSceneIndex
+        primDataSourceOverlayCache
         primGather
         primTypeIndex
         primvarSchema
@@ -104,6 +105,7 @@ pxr_library(hd
         rendererPluginHandle
         rendererPluginRegistry
         renderIndex
+        renderIndexPrepSceneIndex
         renderPass
         renderPassState
         renderThread
