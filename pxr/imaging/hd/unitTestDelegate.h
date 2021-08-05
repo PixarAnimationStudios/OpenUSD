@@ -389,6 +389,10 @@ public:
                                           SdfPath const& prototypeId) override;
 
     HD_API
+    virtual SdfPathVector GetInstancerPrototypes(SdfPath const& instancerId)
+        override;
+
+    HD_API
     virtual GfMatrix4d GetInstancerTransform(SdfPath const& instancerId)
         override;
 

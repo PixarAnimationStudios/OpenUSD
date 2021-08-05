@@ -837,6 +837,18 @@ HdUnitTestDelegate::GetInstanceIndices(SdfPath const& instancerId,
 }
 
 /*virtual*/
+SdfPathVector
+HdUnitTestDelegate::GetInstancerPrototypes(SdfPath const& instancerId)
+{
+    HD_TRACE_FUNCTION();
+
+    if (_Instancer *instancer = TfMapLookupPtr(_instancers, instancerId)) {
+        return instancer->prototypes;
+    }
+    return SdfPathVector();
+}
+
+/*virtual*/
 GfMatrix4d
 HdUnitTestDelegate::GetInstancerTransform(SdfPath const& instancerId)
 {
