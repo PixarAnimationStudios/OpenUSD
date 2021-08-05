@@ -28,7 +28,7 @@
 
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/types.h"
-#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/graphicsPipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
@@ -158,9 +158,10 @@ private:
 
     // Internal draw method
     void _Draw(TextureMap const& textures, 
-              HgiTextureHandle const& colorDst,
-              HgiTextureHandle const& depthDst,
-              bool depthWrite);
+               HgiTextureHandle const& colorDst,
+               HgiTextureHandle const& depthDst,
+               GfVec4i const &viewport,
+               bool depthWrite);
     
     static HgiShaderFunctionDesc GetFullScreenVertexDesc();
 
