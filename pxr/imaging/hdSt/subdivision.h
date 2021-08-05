@@ -226,8 +226,7 @@ public:
         TfToken const &primvarName,
         HdType type,
         HdSt_GpuStencilTableSharedPtr const & gpuStencilTable,
-        HdSt_MeshTopology::Interpolation interpolation,
-        int fvarChannel = 0);
+        HdSt_MeshTopology::Interpolation interpolation);
     ~HdSt_OsdRefineComputationGPU() override;
 
     void Execute(HdBufferArrayRangeSharedPtr const &range,
@@ -241,7 +240,6 @@ private:
     TfToken _primvarName;
     HdSt_GpuStencilTableSharedPtr _gpuStencilTable;
     HdSt_MeshTopology::Interpolation _interpolation;
-    int _fvarChannel;
 };
 
 

@@ -668,13 +668,11 @@ HdSt_OsdRefineComputationGPU::HdSt_OsdRefineComputationGPU(
     TfToken const &primvarName,
     HdType type,
     HdSt_GpuStencilTableSharedPtr const & gpuStencilTable,
-    HdSt_MeshTopology::Interpolation interpolation,
-    int fvarChannel)
+    HdSt_MeshTopology::Interpolation interpolation)
     : _topology(topology)
     , _primvarName(primvarName)
     , _gpuStencilTable(gpuStencilTable)
     , _interpolation(interpolation)
-    , _fvarChannel(fvarChannel)
 {
 }
 
@@ -967,7 +965,7 @@ HdSt_Subdivision::CreateRefineComputationGPU(
                             resourceRegistry, interpolation, fvarChannel);
 
     return std::make_shared<HdSt_OsdRefineComputationGPU>(
-        topology, name, dataType, gpuStencilTable, interpolation, fvarChannel);
+        topology, name, dataType, gpuStencilTable, interpolation);
 }
 
 HdBufferSourceSharedPtr
