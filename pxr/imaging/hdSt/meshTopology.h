@@ -215,7 +215,17 @@ public:
         HdStResourceRegistry *resourceRegistry,
         Interpolation interpolation,
         int fvarChannel = 0);
-    
+
+    /// Returns the mapping from base face to refined face indices.
+    HdBufferSourceSharedPtr GetOsdBaseFaceToRefinedFacesMapComputation(
+        HdStResourceRegistry *resourceRegistry);
+
+    /// @}
+
+    ///
+    /// \name Geom Subsets
+    /// @{
+
     /// Returns the indices subset computation for unrefined indices.
     HdBufferSourceSharedPtr GetIndexSubsetComputation(
         HdBufferSourceSharedPtr indexBuilderSource, 
@@ -236,6 +246,12 @@ public:
     HdBufferSourceSharedPtr GetGeomSubsetFaceIndexHelperComputation(
         bool refined, 
         bool quadrangulated);
+
+    /// @}
+
+    ///
+    /// \name Face-varying Topologies
+    /// @{
 
     /// Sets the face-varying topologies.
     void SetFvarTopologies(std::vector<VtIntArray> const &fvarTopologies) {
@@ -262,6 +278,7 @@ private:
     RefineMode _refineMode;
     std::unique_ptr<HdSt_Subdivision> _subdivision;
     HdBufferSourceWeakPtr _osdTopologyBuilder;
+    HdBufferSourceWeakPtr _osdBaseFaceToRefinedFacesMap;
 
     std::vector<VtIntArray> _fvarTopologies;
 

@@ -113,6 +113,9 @@ public:
         HdSt_MeshTopology::Interpolation interpolation,
         int fvarChannel = 0);
 
+    HdBufferSourceSharedPtr CreateBaseFaceToRefinedFacesMapComputation(
+        HdBufferSourceSharedPtr const &osdTopology);
+
     /// Returns true if the subdivision for \a scheme generates triangles,
     /// instead of quads.
     static bool RefinesToTriangles(TfToken const &scheme);
@@ -138,10 +141,6 @@ public:
     PatchTable const *GetPatchTable() const {
         return _patchTable.get();
     }
-
-    /// Returns mapping of base face index (after quadrangulation/triangulation)
-    /// to refined face indices
-    std::vector<std::vector<int>> const & GetBaseFaceToRefinedFacesMap();
 
 private:
     HdSt_GpuStencilTableSharedPtr
@@ -172,8 +171,6 @@ private:
     HdSt_GpuStencilTableSharedPtr _gpuVertexStencils;
     HdSt_GpuStencilTableSharedPtr  _gpuVaryingStencils;
     std::vector<HdSt_GpuStencilTableSharedPtr> _gpuFaceVaryingStencils;
-
-    std::vector<std::vector<int>> _baseFaceToRefinedFacesMap;
 };
 
 // ---------------------------------------------------------------------------

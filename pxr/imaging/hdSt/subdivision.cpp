@@ -73,6 +73,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (offsets)
     (indices)
     (weights)
+    (baseFaceToRefinedFacesMap)
+    (refinedFaceCounts)
 );
 
 // The stencil table data is managed using two buffer array ranges
@@ -183,6 +185,30 @@ protected:
 private:
     HdSt_MeshTopology *_topology;
     SdfPath const _id;
+};
+
+// ---------------------------------------------------------------------------
+/// \class HdSt_OsdBaseFaceToRefinedFacesMapComputation
+class HdSt_OsdBaseFaceToRefinedFacesMapComputation final : 
+    public HdComputedBufferSource
+{
+public:
+    HdSt_OsdBaseFaceToRefinedFacesMapComputation(
+        HdSt_Subdivision const *subdivision,
+        HdBufferSourceSharedPtr const &osdTopology);
+
+    bool HasChainedBuffer() const override;
+    bool Resolve() override;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    HdBufferSourceSharedPtrVector GetChainedBuffers() const override;
+
+protected:
+    bool _CheckValid() const override;
+
+private:
+    HdSt_Subdivision const *_subdivision;
+    HdBufferSourceSharedPtr _osdTopology;
+    HdBufferSourceSharedPtr _refinedFaceCounts;
 };
 
 // ---------------------------------------------------------------------------
@@ -440,37 +466,6 @@ HdSt_Subdivision::RefinesToBoxSplineTrianglePatches(TfToken const &scheme)
     }
 #endif
     return false;
-}
-
-std::vector<std::vector<int>> const &
-HdSt_Subdivision::GetBaseFaceToRefinedFacesMap()
-{ 
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    const size_t numPatches = _patchTable ? 
-        _patchTable->GetPatchParamTable().size() : 0;
-
-    // If we have not filled the map yet, do so now.
-    if (numPatches != 0 && _baseFaceToRefinedFacesMap.empty()) {
-        // Take a guess at the size of the resulting map.
-        _baseFaceToRefinedFacesMap.resize(numPatches);
-
-        for (size_t i = 0; i < numPatches; ++i) {
-            OpenSubdiv::Far::PatchParam const &patchParam =
-                _patchTable->GetPatchParamTable()[i];
-            const int patchFaceIndex = patchParam.GetFaceId();
-
-            // Topological holes cause discrepency between number of patches
-            // and patch face indices
-            if (patchFaceIndex >= (int)_baseFaceToRefinedFacesMap.size()) {
-                _baseFaceToRefinedFacesMap.resize(patchFaceIndex + 1);
-            }
-            _baseFaceToRefinedFacesMap[patchFaceIndex].push_back(i);
-        }
-    }
-
-    return _baseFaceToRefinedFacesMap;
 }
 
 // ---------------------------------------------------------------------------
@@ -973,6 +968,14 @@ HdSt_Subdivision::CreateRefineComputationGPU(
 
     return std::make_shared<HdSt_OsdRefineComputationGPU>(
         topology, name, dataType, gpuStencilTable, interpolation, fvarChannel);
+}
+
+HdBufferSourceSharedPtr
+HdSt_Subdivision::CreateBaseFaceToRefinedFacesMapComputation(
+    HdBufferSourceSharedPtr const &osdTopology)
+{
+    return std::make_shared<HdSt_OsdBaseFaceToRefinedFacesMapComputation>(
+        this, osdTopology);
 }
 
 // ---------------------------------------------------------------------------
@@ -1548,6 +1551,94 @@ HdSt_OsdFvarIndexComputation::GetChainedBuffers() const
 
 bool
 HdSt_OsdFvarIndexComputation::_CheckValid() const {
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+
+HdSt_OsdBaseFaceToRefinedFacesMapComputation::
+    HdSt_OsdBaseFaceToRefinedFacesMapComputation(
+        HdSt_Subdivision const *subdivision,
+        HdBufferSourceSharedPtr const &osdTopology) :
+    _subdivision(subdivision), _osdTopology(osdTopology)
+{}
+
+void HdSt_OsdBaseFaceToRefinedFacesMapComputation::GetBufferSpecs(
+    HdBufferSpecVector *specs) const
+{
+    specs->emplace_back(_tokens->baseFaceToRefinedFacesMap, 
+        HdTupleType {HdTypeInt32, 1});
+    specs->emplace_back(_tokens->refinedFaceCounts, 
+        HdTupleType {HdTypeInt32, 1});
+}
+
+bool
+HdSt_OsdBaseFaceToRefinedFacesMapComputation::Resolve()
+{
+    if (_osdTopology && !_osdTopology->IsResolved()) return false;
+
+    if (!_TryLock()) return false;
+
+    if (!TF_VERIFY(_subdivision)) {
+        _SetResolved();
+        return true;
+    }
+    
+    HdSt_Subdivision::PatchTable const *patchTable =
+        _subdivision->GetPatchTable();
+    const size_t numPatches = patchTable ? 
+        patchTable->GetPatchParamTable().size() : 0;
+    const size_t numBaseFaces = patchTable ? 
+        patchTable->GetNumPtexFaces() : 0;
+
+    std::vector<std::vector<int>> baseFaceToRefinedFacesMap(numBaseFaces);
+
+    for (size_t i = 0; i < numPatches; ++i) {
+        OpenSubdiv::Far::PatchParam const &patchParam =
+            patchTable->GetPatchParamTable()[i];
+        baseFaceToRefinedFacesMap[patchParam.GetFaceId()].push_back(i);
+    }
+
+    VtIntArray baseFaceToRefinedFacesArr;
+    VtIntArray refinedFaceCounts(numBaseFaces);
+    size_t currRefinedFaceCount = 0;
+
+    for (size_t i = 0; i < numBaseFaces; ++i) {
+        std::vector<int> refinedFaces = baseFaceToRefinedFacesMap[i];
+        currRefinedFaceCount += refinedFaces.size();
+        
+        for (size_t j = 0; j < refinedFaces.size(); ++j) {
+            baseFaceToRefinedFacesArr.push_back(refinedFaces[j]);
+        }
+        refinedFaceCounts[i] = currRefinedFaceCount;
+    }
+
+    HdBufferSourceSharedPtr source = std::make_shared<HdVtBufferSource>(
+        _tokens->baseFaceToRefinedFacesMap, VtValue(baseFaceToRefinedFacesArr));
+    _SetResult(source);
+
+    _refinedFaceCounts = std::make_shared<HdVtBufferSource>(
+        _tokens->refinedFaceCounts, VtValue(refinedFaceCounts));
+
+    _SetResolved();
+    return true;
+}
+
+bool
+HdSt_OsdBaseFaceToRefinedFacesMapComputation::HasChainedBuffer() const
+{
+    return true;
+}
+
+HdBufferSourceSharedPtrVector
+HdSt_OsdBaseFaceToRefinedFacesMapComputation::GetChainedBuffers() const
+{
+    return { _refinedFaceCounts };
+}
+
+bool
+HdSt_OsdBaseFaceToRefinedFacesMapComputation::_CheckValid() const
+{
     return true;
 }
 
