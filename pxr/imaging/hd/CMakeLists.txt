@@ -23,6 +23,7 @@ pxr_library(hd
         aov
         basisCurves
         basisCurvesTopology
+        basisCurvesTopologySchema
         binding
         bprim
         bufferArray
@@ -32,14 +33,19 @@ pxr_library(hd
         bufferSource
         bufferSpec
         camera
+        cameraSchema
+        categoriesSchema
         changeTracker
         command
         compExtCompInputSource
         computation
         coordSys
+        coordSysBindingSchema
         dataSource
         dataSourceLocator
         debugCodes
+        dependenciesSchema
+        dependencySchema
         dirtyList
         drawingCoord
         drawItem
@@ -50,17 +56,37 @@ pxr_library(hd
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
+        extComputationInputComputationSchema
+        extComputationOutputSchema
+        extComputationPrimvarSchema
+        extComputationPrimvarsSchema
+        extComputationSchema
         extComputationUtils
+        extentSchema
         field
         filteringSceneIndex
         flatNormals
         geomSubset
+        geomSubsetSchema
+        geomSubsetsSchema
+        instanceCategoriesSchema
+        instancedBySchema
         instancer
         instanceRegistry
+        instancerTopologySchema
+        instanceSchema
+        legacyDisplayStyleSchema
         light
+        lightSchema
         material
+        materialBindingSchema
+        materialConnectionSchema
+        materialNetworkSchema
+        materialNodeSchema
+        materialSchema
         mesh
         meshTopology
+        meshTopologySchema
         meshUtil
         perfLog
         pluginRenderDelegateUniqueHandle
@@ -68,14 +94,18 @@ pxr_library(hd
         prefixingSceneIndex
         primGather
         primTypeIndex
+        primvarSchema
+        primvarsSchema
+        purposeSchema
         renderBuffer
+        renderBufferSchema
         renderDelegate
-        renderIndex
-        renderPass
-        renderPassState
         rendererPlugin
         rendererPluginHandle
         rendererPluginRegistry
+        renderIndex
+        renderPass
+        renderPassState
         renderThread
         repr
         resource
@@ -89,11 +119,13 @@ pxr_library(hd
         sceneExtCompInputSource
         sceneIndex
         sceneIndexObserver
+        schema
         selection
         smoothNormals
-        sortedIds                   
+        sortedIds
         sprim
         strategyBase
+        subdivisionTagsSchema
         task
         timeSampleArray
         tokens
@@ -104,8 +136,12 @@ pxr_library(hd
         unitTestNullRenderDelegate
         unitTestNullRenderPass
         vertexAdjacency
+        visibilitySchema
         volume
+        volumeFieldBindingSchema
+        volumeFieldSchema
         vtBufferSource
+        xformSchema
 
     PUBLIC_HEADERS
         api.h
