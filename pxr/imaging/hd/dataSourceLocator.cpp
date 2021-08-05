@@ -223,8 +223,13 @@ HdDataSourceLocator::GetCommonPrefix(const HdDataSourceLocator &other) const
 bool
 HdDataSourceLocator::Intersects(const HdDataSourceLocator &other) const
 {
-    //XXX: Note we can be more efficient here if we unrolled this code.
-    return HasPrefix(other) || other.HasPrefix(*this);
+    const size_t commonLength = std::min(other._tokens.size(), _tokens.size());
+    for (size_t i = 0; i < commonLength; ++i) {
+        if (other._tokens[i] != _tokens[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 HdDataSourceLocator
