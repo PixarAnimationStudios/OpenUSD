@@ -434,6 +434,17 @@ HdDataSourceLocatorSet::insert(const HdDataSourceLocatorSet &locatorSet)
     }
 }
 
+void
+HdDataSourceLocatorSet::append(const HdDataSourceLocator &locator)
+{
+    if (_locators.size() == 0 ||
+        _LessThanNotPrefix(_locators.back(), locator)) {
+        _locators.push_back(locator);
+    } else {
+        insert(locator);
+    }
+}
+
 HdDataSourceLocatorSet::const_iterator
 HdDataSourceLocatorSet::begin() const
 {

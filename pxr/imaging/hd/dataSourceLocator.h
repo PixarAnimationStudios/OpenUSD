@@ -218,6 +218,10 @@ public:
     void insert(const HdDataSourceLocator &locator);
     void insert(const HdDataSourceLocatorSet &locatorSet);
 
+    /// append() is semantically equivalent to insert(), but works much faster
+    /// if \p locator would be added to the end of the set, lexicographically.
+    void append(const HdDataSourceLocator &locator);
+
     bool operator==(const HdDataSourceLocatorSet &rhs) const {
         return _locators == rhs._locators;
     }
