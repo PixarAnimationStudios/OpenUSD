@@ -225,6 +225,10 @@ public:
     ///
     /// \name Geom Subsets
     /// @{
+    
+    /// Processes geom subsets to remove those with empty indices or empty 
+    /// material id. Will initialize _nonSubsetFaces if there are geom subsets.
+    void SanitizeGeomSubsets();
 
     /// Returns the indices subset computation for unrefined indices.
     HdBufferSourceSharedPtr GetIndexSubsetComputation(
@@ -252,6 +256,10 @@ public:
     ///
     /// \name Face-varying Topologies
     /// @{
+    /// Returns the face indices of faces not used in any geom subsets.
+    std::vector<int> const *GetNonSubsetFaces() const {
+        return _nonSubsetFaces.get();
+    }
 
     /// Sets the face-varying topologies.
     void SetFvarTopologies(std::vector<VtIntArray> const &fvarTopologies) {
@@ -281,6 +289,10 @@ private:
     HdBufferSourceWeakPtr _osdBaseFaceToRefinedFacesMap;
 
     std::vector<VtIntArray> _fvarTopologies;
+
+    // When using geom subsets, the indices of faces that are not contained
+    // within the geom subsets. Populated by SanitizeGeomSubsets().
+    std::unique_ptr<std::vector<int>> _nonSubsetFaces;
 
     // Must be created through factory
     explicit HdSt_MeshTopology(

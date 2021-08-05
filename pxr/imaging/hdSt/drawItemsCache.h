@@ -121,12 +121,14 @@ private:
         _CacheValue()
         : collectionVersion(0),
           renderTagsVersion(0),
-          materialTagsVersion(0) {}
+          materialTagsVersion(0),
+          geomSubsetDrawItemsVersion(0) {}
         
         HdDrawItemConstPtrVectorSharedPtr drawItems;
         size_t collectionVersion;
         size_t renderTagsVersion;
         size_t materialTagsVersion;
+        size_t geomSubsetDrawItemsVersion;
     };
 
     bool _IsCacheEntryStale(_CacheValue const &val,

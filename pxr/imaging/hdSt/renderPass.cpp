@@ -94,6 +94,14 @@ _GetMaterialTagsVersion(HdRenderIndex *renderIndex)
     return stRenderParam->GetMaterialTagsVersion();
 }
 
+unsigned int
+_GetGeomSubsetDrawItemsVersion(HdRenderIndex *renderIndex)
+{
+    HdStRenderParam *stRenderParam = static_cast<HdStRenderParam*>(
+        renderIndex->GetRenderDelegate()->GetRenderParam());
+
+    return stRenderParam->GetGeomSubsetDrawItemsVersion();
+}
 
 HdSt_RenderPass::HdSt_RenderPass(HdRenderIndex *index,
                                  HdRprimCollection const &collection)
@@ -102,6 +110,7 @@ HdSt_RenderPass::HdSt_RenderPass(HdRenderIndex *index,
     , _useTinyPrimCulling(false)
     , _collectionVersion(0)
     , _materialTagsVersion(0)
+    , _geomSubsetDrawItemsVersion(0)
     , _collectionChanged(false)
     , _drawItemCount(0)
     , _drawItemsChanged(false)
@@ -325,6 +334,9 @@ HdSt_RenderPass::_UpdateDrawItems(TfTokenVector const& renderTags)
     const unsigned int materialTagsVersion =
         _GetMaterialTagsVersion(GetRenderIndex());
 
+    const unsigned int geomSubsetDrawItemsVersion =
+        _GetGeomSubsetDrawItemsVersion(GetRenderIndex());
+
     const bool collectionChanged = _collectionChanged ||
         (_collectionVersion != collectionVersion);
 
@@ -333,7 +345,11 @@ HdSt_RenderPass::_UpdateDrawItems(TfTokenVector const& renderTags)
     const bool materialTagsChanged =
         _materialTagsVersion != materialTagsVersion;
 
-    if (collectionChanged || renderTagsChanged || materialTagsChanged) {
+    const bool geomSubsetDrawItemsChanged =
+        _geomSubsetDrawItemsVersion != geomSubsetDrawItemsVersion;
+
+    if (collectionChanged || renderTagsChanged || materialTagsChanged ||
+        geomSubsetDrawItemsChanged) {
         if (TfDebug::IsEnabled(HDST_DRAW_ITEM_GATHER)) {
             if (collectionChanged) {
                 TfDebug::Helper::Msg(
@@ -352,6 +368,11 @@ HdSt_RenderPass::_UpdateDrawItems(TfTokenVector const& renderTags)
                 TfDebug::Helper::Msg(
                     "MaterialTagsChanged (version = %d -> %d)\n",
                     _materialTagsVersion, materialTagsVersion);
+            }
+            if (geomSubsetDrawItemsChanged) {
+                TfDebug::Helper::Msg(
+                    "GeomSubsetDrawItemsChanged (version = %d -> %d)\n",
+                    _geomSubsetDrawItemsVersion, geomSubsetDrawItemsVersion);
             }
         }
 
@@ -375,6 +396,7 @@ HdSt_RenderPass::_UpdateDrawItems(TfTokenVector const& renderTags)
 
         _renderTagVersion = renderTagVersion;
         _materialTagsVersion = materialTagsVersion;
+        _geomSubsetDrawItemsVersion = geomSubsetDrawItemsVersion;
     }
 }
 

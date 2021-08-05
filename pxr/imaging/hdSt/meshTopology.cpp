@@ -142,7 +142,9 @@ HdSt_MeshTopology::HdSt_MeshTopology(
  , _subdivision(nullptr)
  , _osdTopologyBuilder()
  , _osdBaseFaceToRefinedFacesMap()
+ , _nonSubsetFaces(nullptr)
 {
+    SanitizeGeomSubsets();
 }
 
 HdSt_MeshTopology::~HdSt_MeshTopology() = default;
@@ -315,6 +317,68 @@ HdSt_MeshTopology::GetOsdTopologyComputation(SdfPath const &id)
         _subdivision->CreateTopologyComputation(this, id);
     _osdTopologyBuilder = builder; // retain weak ptr
     return builder;
+}
+
+void
+HdSt_MeshTopology::SanitizeGeomSubsets()
+{
+    const HdGeomSubsets &geomSubsets = GetGeomSubsets();
+    if (geomSubsets.empty()) {
+        return;
+    }
+    const size_t numFaces = GetNumFaces();
+
+    // Keep track of faces that are used within the geom subsets
+    std::vector<bool> unusedFaces(numFaces, true);
+    size_t numUnusedFaces = numFaces;
+
+    HdGeomSubsets sanitizedGeomSubsets;
+    for (const HdGeomSubset &geomSubset : geomSubsets) {
+        HdGeomSubset sanitizedGeomSubset = geomSubset;
+
+        // We only care about subsets that will with non-empty indices and
+        // material id
+        const VtIntArray faceIndices = geomSubset.indices;
+        if (!faceIndices.empty() && !geomSubset.materialId.IsEmpty()) {                    
+            VtIntArray sanitizedFaceIndices;
+            for (size_t i = 0; i < faceIndices.size(); ++i) {
+                const int index = faceIndices[i];
+                // Skip out-of-bound face indices.
+                if (index >= (int)numFaces) {
+                    TF_WARN("Geom subset index %d is larger than number of "
+                        "faces (%d), removing.", index, (int)numFaces);
+                    continue;
+                }
+                sanitizedFaceIndices.push_back(index);
+                if (unusedFaces[index]) {
+                    unusedFaces[index] = false;
+                    numUnusedFaces--;
+                } else {
+                    // Warn about duplicated face indices.
+                    TF_WARN("Face index %d is repeated between geom subsets", 
+                        index);;
+                }
+            }
+            sanitizedGeomSubset.indices = sanitizedFaceIndices;
+            sanitizedGeomSubsets.push_back(sanitizedGeomSubset);
+        }
+    }
+
+    _nonSubsetFaces = std::make_unique<std::vector<int>>();
+    _nonSubsetFaces->resize(numUnusedFaces);
+
+    if (numUnusedFaces) {
+        size_t count = 0;
+        for (size_t i = 0; i < unusedFaces.size() && count < numUnusedFaces; 
+             ++i) {
+            if (unusedFaces[i]) {
+                (*_nonSubsetFaces)[count] = i;
+                count++;
+            }
+        }
+    }
+    
+    SetGeomSubsets(sanitizedGeomSubsets);
 }
 
 HdBufferSourceSharedPtr

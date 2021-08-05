@@ -334,7 +334,7 @@ static void Usage(int argc, char *argv[])
 "                           [-camera pathToCamera]\n"
 "                           [-complexity complexity]\n"
 "                           [-renderer rendererName]\n"
-"                           [-shading [flat|smooth|wire|wireOnSurface]]\n"
+"                           [-shading [flat|smooth|wire|wireOnSurface|points]]\n"
 "                           [-frameAll]\n"
 "                           [-clipPlane clipPlane1 ... clipPlane4]\n"
 "                           [-complexities complexities1 complexities2 ...]\n"
@@ -364,7 +364,7 @@ static void Usage(int argc, char *argv[])
 "                      use the specified renderer plugin []\n"
 "  -shading [flat|smooth|wire|wireOnSurface]\n"
 "                      force specific type of shading\n"
-"                      [flat|smooth|wire|wireOnSurface] []\n"
+"                      [flat|smooth|wire|wireOnSurface|points] []\n"
 "  -frameAll           set the view to frame all root prims on the stage\n"
 "  -clipPlane clipPlane1 ... clipPlane4\n"
 "                      set an additional camera clipping plane [()]\n"
@@ -713,6 +713,8 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
         _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_FLAT;
     } else if (args.shading.compare("wire") == 0 ) {
         _drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
+    } else if (args.shading.compare("points") == 0 ) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_POINTS;
     } else {
         TF_WARN("Draw mode %s not supported!", args.shading.c_str());
     }

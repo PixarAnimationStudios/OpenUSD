@@ -65,6 +65,14 @@ public:
     HDST_API
     unsigned int GetMaterialTagsVersion() const;
 
+    /// Marks geom subsets draw items dirty, meaning that the draw items 
+    /// associated with the collection of a render pass need to be re-gathered.
+    HDST_API
+    void MarkGeomSubsetDrawItemsDirty();
+
+    HDST_API
+    unsigned int GetGeomSubsetDrawItemsVersion() const;
+
     // ---------------------------------------------------------------------- //
     /// Material tag tracking
     // ---------------------------------------------------------------------- /
@@ -105,6 +113,7 @@ private:
 
     std::atomic_uint _drawBatchesVersion;
     std::atomic_uint _materialTagsVersion;
+    std::atomic_uint _geomSubsetDrawItemsVersion;
     bool _needsGarbageCollection; // Doesn't need to be atomic since parallel
                                   // sync might only set it (and not clear).
 

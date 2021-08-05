@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/rprim.h"
 
 #include <memory>
 #include <string>
@@ -65,6 +66,9 @@ HDST_API
 void HdStMarkMaterialTagsDirty(HdRenderParam *renderParam);
 
 HDST_API
+void HdStMarkGeomSubsetDrawItemsDirty(HdRenderParam *renderParam);
+
+HDST_API
 void HdStMarkGarbageCollectionNeeded(HdRenderParam *renderParam);
 
 // Mark garbage collection needed and update materialTag count.
@@ -82,7 +86,11 @@ HdStGetPrimvarDescriptors(
     HdRprim const * prim,
     HdStDrawItem const * drawItem,
     HdSceneDelegate * delegate,
-    HdInterpolation interpolation);
+    HdInterpolation interpolation,
+    const HdReprSharedPtr &repr = nullptr,
+    HdMeshGeomStyle descGeomStyle = HdMeshGeomStyleInvalid,
+    int geomSubsetDescIndex = 0,
+    size_t numGeomSubsets = 0);
 
 // Get filtered instancer primvar descriptors for drawItem
 HDST_API
@@ -117,6 +125,13 @@ HdStShaderCodeSharedPtr
 HdStGetMaterialShader(
     HdRprim const * prim,
     HdSceneDelegate * delegate);
+
+HDST_API
+HdStShaderCodeSharedPtr
+HdStGetMaterialShader(
+    HdRprim const * prim,
+    HdSceneDelegate * delegate,
+    SdfPath const & materialId);
 
 // -----------------------------------------------------------------------------
 // Primvar processing and BAR allocation utilities

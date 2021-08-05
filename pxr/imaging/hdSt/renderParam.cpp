@@ -29,6 +29,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdStRenderParam::HdStRenderParam()
     : _drawBatchesVersion(1)
     , _materialTagsVersion(1)
+    , _geomSubsetDrawItemsVersion(1)
     , _needsGarbageCollection(false)
 {
 }
@@ -61,6 +62,20 @@ HdStRenderParam::GetMaterialTagsVersion() const
     // Can use relaxed ordering because render passes are expected to
     // only read the value, and that too in a single threaded fashion.
     return _materialTagsVersion.load(std::memory_order_relaxed);
+}
+
+void
+HdStRenderParam::MarkGeomSubsetDrawItemsDirty()
+{
+    ++_geomSubsetDrawItemsVersion; // uses std::memory_order_seq_cst 
+}
+
+unsigned int
+HdStRenderParam::GetGeomSubsetDrawItemsVersion() const
+{
+    // Can use relaxed ordering because render passes are expected to
+    // only read the value, and that too in a single threaded fashion.
+    return _geomSubsetDrawItemsVersion.load(std::memory_order_relaxed);
 }
 
 static

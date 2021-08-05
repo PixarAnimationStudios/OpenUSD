@@ -61,6 +61,15 @@ _GetMaterialTagsVersion(HdRenderIndex *renderIndex)
     return size_t(stRenderParam->GetMaterialTagsVersion());
 }
 
+static size_t
+_GetGeomSubsetDrawItemsVersion(HdRenderIndex *renderIndex)
+{
+    HdStRenderParam *stRenderParam = static_cast<HdStRenderParam*>(
+        renderIndex->GetRenderDelegate()->GetRenderParam());
+
+    return size_t(stRenderParam->GetGeomSubsetDrawItemsVersion());
+}
+
 //------------------------------------------------------------------------------
 
 HdDrawItemConstPtrVectorSharedPtr
@@ -159,10 +168,14 @@ HdSt_DrawItemsCache::_IsCacheEntryStale(
         val.renderTagsVersion != tracker.GetRenderTagVersion();
     const bool materialTagsVersionChanged =
         val.materialTagsVersion != _GetMaterialTagsVersion(renderIndex);
+    const bool geomSubsetDrawItemsChanged =
+        val.geomSubsetDrawItemsVersion != _GetGeomSubsetDrawItemsVersion(
+            renderIndex);
 
     return collectionVersionChanged ||
            renderTagsVersionChanged ||
-           materialTagsVersionChanged;
+           materialTagsVersionChanged ||
+           geomSubsetDrawItemsChanged;
 }
 
 void
@@ -180,6 +193,8 @@ HdSt_DrawItemsCache::_UpdateCacheEntry(
         tracker.GetCollectionVersion(collection.GetName());
     val->renderTagsVersion = tracker.GetRenderTagVersion();
     val->materialTagsVersion = _GetMaterialTagsVersion(renderIndex);
+    val->geomSubsetDrawItemsVersion = _GetGeomSubsetDrawItemsVersion(
+        renderIndex);
 
     const HdStRenderParam * const renderParam =
         static_cast<HdStRenderParam *>(

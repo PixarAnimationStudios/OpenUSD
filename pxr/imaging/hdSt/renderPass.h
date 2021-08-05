@@ -87,6 +87,9 @@ private:
     // The version number of the material tags (of the rprims).
     unsigned int _materialTagsVersion;
 
+    // The version number of the geom subset draw items.
+    unsigned int _geomSubsetDrawItemsVersion;
+
     // A flag indicating that the held collection changed since this renderPass
     // was last drawn.
     //
