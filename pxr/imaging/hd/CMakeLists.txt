@@ -42,6 +42,7 @@ pxr_library(hd
         coordSys
         coordSysBindingSchema
         dataSource
+        dataSourceLegacyPrim
         dataSourceLocator
         debugCodes
         dependenciesSchema
@@ -88,6 +89,7 @@ pxr_library(hd
         meshTopology
         meshTopologySchema
         meshUtil
+        overlayContainerDataSource
         perfLog
         pluginRenderDelegateUniqueHandle
         points
