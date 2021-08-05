@@ -805,11 +805,10 @@ void HgiMetalShaderGenerator::_BuildBufferShaderSections(
 
         //Shader section vector on the generator
         // owns all sections, point to it in the vector
-        HgiMetalBufferShaderSection * const section =
-            CreateShaderSection<HgiMetalBufferShaderSection>(
-                    bufName,
-                    bufType,
-                    attributes);
+        CreateShaderSection<HgiMetalBufferShaderSection>(
+            bufName,
+            bufType,
+            attributes);
     }
 }
 
@@ -827,7 +826,6 @@ void HgiMetalShaderGenerator::_BuildKeywordInputShaderSections(
         descriptor.stageInputs;
     for (size_t i = 0; i < inputs.size(); ++i) {
         const HgiShaderFunctionParamDesc &p(inputs[i]);
-        const std::string &role = p.role;
 
         //check if has a role
         if(!p.role.empty()) {
@@ -841,11 +839,10 @@ void HgiMetalShaderGenerator::_BuildKeywordInputShaderSections(
 
                 //Shader section vector on the generator
                 // owns all sections, point to it in the vector
-                HgiMetalKeywordInputShaderSection * const section =
-                    CreateShaderSection<HgiMetalKeywordInputShaderSection>(
-                            keywordName,
-                            p.type,
-                            attributes);
+                CreateShaderSection<HgiMetalKeywordInputShaderSection>(
+                    keywordName,
+                    p.type,
+                    attributes);
 
             }
         }

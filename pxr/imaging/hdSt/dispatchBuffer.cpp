@@ -98,14 +98,8 @@ public:
         return 0;
     }
 
-    /// Returns the capacity of allocated area for this range
-    virtual int GetCapacity() const {
-        TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
-        return 0;
-    }
-
     /// Returns the version of the buffer array.
-    virtual size_t GetVersion() const {
+    size_t GetVersion() const override {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
         return 0;
     }
