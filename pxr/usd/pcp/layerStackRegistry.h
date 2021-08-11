@@ -132,7 +132,7 @@ private:
     const Pcp_MutedLayers& _GetMutedLayers() const;
 
     // PcpLayerStack can access private _GetFileFormatTarget(), 
-    // _Remove(), and _SetLayers().
+    // _SetLayersAndRemove(), and _SetLayers().
     friend class PcpLayerStack;
 
 private:
