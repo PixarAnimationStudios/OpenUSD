@@ -244,9 +244,13 @@ Pcp_LayerStackRegistry::_SetLayersAndRemove(
     // map if a FindOrCreate call intercedes between the moment when the
     // layer stack's ref count drops to zero and the time the layer stack
     // destructor is called (which is how we get into this method).
+    // Always call _SetLayers to clear this (now empty) layer stack's
+    // pointer from the maps inside _data, even if a new layer stack with the
+    // same identifier has already been added to the identifierToLayerStack
+    // map.
+    _SetLayers(layerStack);
     if (i != _data->identifierToLayerStack.end() &&
         i->second.operator->() == layerStack) {
-        _SetLayers(layerStack);
         _data->identifierToLayerStack.erase(identifier);
     }
 }
