@@ -66,6 +66,7 @@ pxr_library(hd
         extentSchema
         field
         filteringSceneIndex
+        flatteningSceneIndex
         flatNormals
         geomSubset
         geomSubsetSchema
@@ -77,6 +78,7 @@ pxr_library(hd
         instancerTopologySchema
         instanceSchema
         legacyDisplayStyleSchema
+        legacyPrimSceneIndex
         light
         lightSchema
         material
