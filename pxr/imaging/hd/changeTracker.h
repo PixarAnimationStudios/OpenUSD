@@ -37,6 +37,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdRetainedSceneIndex;
 
 /// \class HdChangeTracker
 ///
@@ -616,6 +617,30 @@ private:
 
     // Used to detect changes to the set of active render tags
     unsigned _renderTagVersion;
+
+    // Allow HdRenderIndex to provide a scene index to forward dirty
+    // information. This is necessary to accommodate legacy HdSceneDelegate
+    // based applications that rely on the HdChangeTracker for invalidating
+    // state on Hydra prims.
+    friend class HdRenderIndex;
+    // Does not take ownership. The HdRenderIndex manages the lifetime of this
+    // scene index.
+    HdRetainedSceneIndex * _emulationSceneIndex;
+    void _SetTargetSceneIndex(HdRetainedSceneIndex *emulationSceneIndex);
+
+    // Private methods which implement the behaviors of their public
+    // equivalents. The public versions check to see if legacy emulation is
+    // active. If so, they dirty the HdRetainedSceneIndex member instead
+    // of directly acting. If legacy render delegate emulation is active, these
+    // will eventually make their way back to the private methods via
+    // HdSceneIndexAdapterSceneDelegate. This prevents dirtying cycles while
+    // allowing single HdRenderIndex/HdChangeTracker instances to be used for
+    // both ends of emulation.
+    friend class HdSceneIndexAdapterSceneDelegate;
+    void _MarkRprimDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
+    void _MarkSprimDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
+    void _MarkBprimDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
+    void _MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
 };
 
 

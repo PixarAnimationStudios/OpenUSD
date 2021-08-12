@@ -27,6 +27,10 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hd/dataSourceLocator.h"
+#include "pxr/imaging/hd/dirtyBitsTranslator.h"
+#include "pxr/imaging/hd/sceneIndex.h"
+
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/token.h"
 
@@ -55,6 +59,7 @@ HdChangeTracker::HdChangeTracker()
     , _sceneStateVersion(1)
     , _visChangeCount(1)
     , _renderTagVersion(1)
+    , _emulationSceneIndex(nullptr)
 {
     /*NOTHING*/
 }
@@ -97,7 +102,6 @@ HdChangeTracker::RprimRemoved(SdfPath const& id)
     ++_rprimIndexVersion;
 }
 
-
 void 
 HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
 {
@@ -106,11 +110,40 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
         return;
     }
 
-    // XXX: During the migration, "DirtyPrimvar" implies DirtyPoints/etc.
-    if (bits & DirtyPrimvar) {
-        bits |= DirtyPoints | DirtyNormals | DirtyWidths;
-    }
+    if (_emulationSceneIndex) {
+        // We need to dispatch based on prim type.
+        HdSceneIndexPrim prim = _emulationSceneIndex->GetPrim(id);
+        HdDataSourceLocatorSet locators;
+        HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(
+                prim.primType, bits, &locators);
+        if (!locators.IsEmpty()) {
+            _emulationSceneIndex->DirtyPrims({{id, locators}});
+        }
 
+        // There's a set of dirty bits that are used as internal signalling
+        // in hydra, and aren't related to scene data.  These, we need to
+        // pass through directly.
+        const HdDirtyBits internalDirtyBits =
+            HdChangeTracker::InitRepr |
+            HdChangeTracker::Varying |
+            HdChangeTracker::NewRepr |
+            // CustomBitsBegin -> CustomBitsEnd
+            0x7f << 24;
+
+        if (bits & internalDirtyBits) {
+            _MarkRprimDirty(id, bits & internalDirtyBits);
+        }
+    } else {
+        // XXX: During the migration, "DirtyPrimvar" implies DirtyPoints/etc.
+        if (bits & DirtyPrimvar) {
+            bits |= DirtyPoints | DirtyNormals | DirtyWidths;
+        }
+        _MarkRprimDirty(id, bits);
+    }
+}
+
+void HdChangeTracker::_MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
+{
     _IDStateMap::iterator it = _rprimState.find(id);
     if (!TF_VERIFY(it != _rprimState.end(), "%s\n", id.GetText())) {
         return;
@@ -382,6 +415,23 @@ HdChangeTracker::MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
         return;
     }
 
+    if (_emulationSceneIndex) {
+        // We need to dispatch based on prim type.
+        HdSceneIndexPrim prim = _emulationSceneIndex->GetPrim(id);
+        HdDataSourceLocatorSet locators;
+        HdDirtyBitsTranslator::InstancerDirtyBitsToLocatorSet(
+                prim.primType, bits, &locators);
+        if (!locators.IsEmpty()) {
+            _emulationSceneIndex->DirtyPrims({{id, locators}});
+        }
+    } else {
+        _MarkInstancerDirty(id, bits);
+    }
+}
+
+void
+HdChangeTracker::_MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
+{
     _IDStateMap::iterator it = _instancerState.find(id);
     if (!TF_VERIFY(it != _instancerState.end()))
         return;
@@ -483,6 +533,23 @@ HdChangeTracker::MarkSprimDirty(SdfPath const& id, HdDirtyBits bits)
         return;
     }
 
+    if (_emulationSceneIndex) {
+        // We need to dispatch based on prim type.
+        HdSceneIndexPrim prim = _emulationSceneIndex->GetPrim(id);
+        HdDataSourceLocatorSet locators;
+        HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(
+                prim.primType, bits, &locators);
+        if (!locators.IsEmpty()) {
+            _emulationSceneIndex->DirtyPrims({{id, locators}});
+        }
+    } else {
+        _MarkSprimDirty(id, bits);
+    }
+}
+
+void
+HdChangeTracker::_MarkSprimDirty(SdfPath const& id, HdDirtyBits bits)
+{
     _IDStateMap::iterator it = _sprimState.find(id);
     if (!TF_VERIFY(it != _sprimState.end()))
         return;
@@ -538,6 +605,23 @@ HdChangeTracker::MarkBprimDirty(SdfPath const& id, HdDirtyBits bits)
         return;
     }
 
+    if (_emulationSceneIndex) {
+        // We need to dispatch based on prim type.
+        HdSceneIndexPrim prim = _emulationSceneIndex->GetPrim(id);
+        HdDataSourceLocatorSet locators;
+        HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(
+                prim.primType, bits, &locators);
+        if (!locators.IsEmpty()) {
+            _emulationSceneIndex->DirtyPrims({{id, locators}});
+        }
+    } else {
+        _MarkBprimDirty(id, bits);
+    }
+}
+
+void
+HdChangeTracker::_MarkBprimDirty(SdfPath const& id, HdDirtyBits bits)
+{
     _IDStateMap::iterator it = _bprimState.find(id);
     if (!TF_VERIFY(it != _bprimState.end()))
         return;
@@ -1068,6 +1152,12 @@ HdChangeTracker::DumpDirtyBits(HdDirtyBits dirtyBits)
         << "DirtyBits:"
         << HdChangeTracker::StringifyDirtyBits(dirtyBits)
         << "\n";
+}
+
+void
+HdChangeTracker::_SetTargetSceneIndex(HdRetainedSceneIndex *emulationSceneIndex)
+{
+    _emulationSceneIndex = emulationSceneIndex;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -47,6 +47,7 @@ pxr_library(hd
         debugCodes
         dependenciesSchema
         dependencySchema
+        dirtyBitsTranslator
         dirtyList
         drawingCoord
         drawItem
@@ -124,6 +125,7 @@ pxr_library(hd
         sceneDelegate
         sceneExtCompInputSource
         sceneIndex
+        sceneIndexAdapterSceneDelegate
         sceneIndexObserver
         schema
         selection

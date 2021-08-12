@@ -34,6 +34,9 @@
 #include "pxr/imaging/hd/sortedIds.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/legacyPrimSceneIndex.h"
+
 #include "pxr/imaging/hf/perfLog.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -402,6 +405,37 @@ private:
     template <typename T>
     static inline const TfToken & _GetTypeId();
 
+
+    // Private versions of equivalent public methods which insert and remove
+    // from this render index.
+    // 
+    // The public versions check to see if scene delegate emulation is active.
+    // If not, they call through to these. Otherwise, they forward to the
+    // the HdLegacyPrimSceneIndex member. If a legacy render delegate is also
+    // in use, the scene index chain will terminate with a
+    // HdSceneIndexAdapterSceneDelegate. That will call the private versions
+    // directly so that the internal render index tables are updated.
+    // 
+    // This prevents cyclic insertion/removals while allowing a single 
+    // HdRenderIndex to be used for both front and back-end emulation.
+    friend class HdSceneIndexAdapterSceneDelegate;
+    void _InsertRprim(TfToken const& typeId,
+                      HdSceneDelegate* sceneDelegate,
+                      SdfPath const& rprimId);
+    void _InsertSprim(TfToken const& typeId,
+                      HdSceneDelegate* delegate,
+                      SdfPath const& sprimId);
+    void _InsertBprim(TfToken const& typeId,
+                      HdSceneDelegate* delegate,
+                      SdfPath const& bprimId);
+    void _InsertInstancer(HdSceneDelegate* delegate,
+                          SdfPath const &id);
+
+    void _RemoveRprim(SdfPath const& id);
+    void _RemoveSprim(TfToken const& typeId, SdfPath const& id);
+    void _RemoveBprim(TfToken const& typeId, SdfPath const& id);
+    void _RemoveInstancer(SdfPath const& id);
+    void _RemoveSubtree(SdfPath const& id, HdSceneDelegate* sceneDelegate);
     void _RemoveRprimSubtree(const SdfPath &root,
                              HdSceneDelegate* sceneDelegate);
     void _RemoveInstancerSubtree(const SdfPath &root,
@@ -418,6 +452,9 @@ private:
         HdSceneDelegate *sceneDelegate;
         HdRprim *rprim;
     };
+
+    HdLegacyPrimSceneIndexRefPtr _emulationSceneIndex;
+    std::unique_ptr<class HdSceneIndexAdapterSceneDelegate> _siSd;
 
     struct _TaskInfo {
         HdSceneDelegate *sceneDelegate;
