@@ -81,8 +81,14 @@ private:
     // The version number of the currently held collection.
     int _collectionVersion;
 
-    // The version number of the currently active render tags
-    int _renderTagVersion;
+    // The version number of the render tag opinion of rprims
+    int _rprimRenderTagVersion;
+
+    // The version number of the render tags opinion of tasks.
+    int _taskRenderTagsVersion;
+    
+    // Cache the render tags parameter passed to _Execute().
+    TfTokenVector _renderTags;
 
     // The version number of the material tags (of the rprims).
     unsigned int _materialTagsVersion;

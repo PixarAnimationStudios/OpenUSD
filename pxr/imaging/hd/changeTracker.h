@@ -155,7 +155,7 @@ public:
     /// The idea is that from frame to frame (update iteration), the set of
     /// dirty rprims and their dirty bits do not change; that is, the same
     /// rprims get dirtied with the same dirty bits.. The change tracker can
-    /// leverage this and build stable sets of dirty lists and reduce the
+    /// leverage this help build a stable dirty list and reduce the
     /// overall cost of an update iteration.
     HD_API
     void ResetVaryingState();
@@ -323,18 +323,14 @@ public:
     HD_API
     void MarkTaskClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
-    /// Called to flag when the set of active render tags have changed.
-    /// This can either be because either the Task's opinion (which
-    /// resolves both view and render pass opinions) and a Prims opinion.
-    ///
-    /// Calling this means that any cached prim gathers that filter by render
-    /// tag need to invalidated.
-    HD_API
-    void MarkRenderTagsDirty();
-
-    /// Retrieve the current version number of the render tag set
+    /// Retrieve the current version number of the rprim render tag set
+    /// XXX Rename to GetRprimRenderTagVersion
     HD_API
     unsigned GetRenderTagVersion() const;
+
+    /// Retrieve the current version number of the task's render tags opinion.
+    HD_API
+    unsigned GetTaskRenderTagsVersion() const;
 
     // ---------------------------------------------------------------------- //
     /// @}
@@ -615,8 +611,11 @@ private:
     // Used to detect that visibility changed somewhere in the render index.
     unsigned _visChangeCount;
 
-    // Used to detect changes to the set of active render tags
-    unsigned _renderTagVersion;
+    // Used to detect changes to the render tag opinion of rprims.
+    unsigned _rprimRenderTagVersion;
+
+    // Used to detect changes to the render tags opinion of tasks.
+    unsigned _taskRenderTagsVersion;
 
     // Allow HdRenderIndex to provide a scene index to forward dirty
     // information. This is necessary to accommodate legacy HdSceneDelegate

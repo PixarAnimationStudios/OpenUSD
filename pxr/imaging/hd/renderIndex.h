@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/imaging/hd/dirtyList.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/primTypeIndex.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
@@ -64,16 +65,14 @@ class VtValue;
 class HdInstancer;
 class HdDriver;
 
-using HdDirtyListSharedPtr = std::shared_ptr<class HdDirtyList>;
-
+using HdDriverVector = std::vector<HdDriver*>;
+using HdRprimCollectionVector = std::vector<HdRprimCollection>;
 using HdTaskSharedPtr = std::shared_ptr<class HdTask>;
-
 using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
 using HdTaskSharedPtrVector = std::vector<HdTaskSharedPtr>;
 using HdTaskContext = std::unordered_map<TfToken,
                            VtValue,
                            TfToken::HashFunctor>;
-using HdDriverVector = std::vector<HdDriver*>;
 
 /// \class HdRenderIndex
 ///
@@ -158,21 +157,16 @@ public:
     /// \name Synchronization
     // ---------------------------------------------------------------------- //
 
-    /// Adds the dirty list to the sync queue. The actual processing of the
-    /// dirty list happens later in SyncAll().
+    /// Hydra's core currently needs to know the collections used by tasks
+    /// to aggregate the reprs that need to be synced for the dirty Rprims.
     /// 
-    /// This is typically called from HdRenderPass::Sync. However, the current
-    /// call chain ties it to SyncAll, i.e.
-    /// HdRenderIndex::SyncAll > .... > HdRenderPass::Sync > HdRenderIndex::Sync
     HD_API
-    void EnqueuePrimsToSync(
-        HdDirtyListSharedPtr const &dirtyList,
-        HdRprimCollection const &collection);
+    void EnqueueCollectionToSync(HdRprimCollection const &collection);
 
-    /// Syncs input tasks, B & S prims, (external) computations and processes 
-    /// all pending dirty lists (which syncs the R prims). At the end of this
-    /// step, all the resources that need to be updated have handles to their
-    /// data sources.
+    /// Syncs input tasks, B & S prims, (external) computations and updates the
+    /// Rprim dirty list to then sync the Rprims.
+    /// At the end of this step, all the resources that need to be updated have
+    /// handles to their data sources.
     /// This is the first phase in Hydra's execution. See HdEngine::Execute
     HD_API
     void SyncAll(HdTaskSharedPtrVector *tasks, HdTaskContext *taskContext);
@@ -483,39 +477,16 @@ private:
     typedef TfHashMap<SdfPath, HdInstancer*, SdfPath::Hash> _InstancerMap;
     _InstancerMap _instancerMap;
 
-    struct _SyncQueueEntry {
-        HdDirtyListSharedPtr dirtyList;
-        HdRprimCollection collection;
-
-    };
-    typedef std::vector<_SyncQueueEntry> _SyncQueue;
-    _SyncQueue _syncQueue;
-
-    /// With the removal of task-based collection include/exclude path
-    /// filtering, HdDirtyLists were generating their lists of dirty rprim IDs
-    /// by looking through every rprim in the render index. When the number of
-    /// tasks/render passes/dirty lists grew large, this resulted in
-    /// significant overhead and lots of duplication of work.
-    /// Instead, the render index itself now takes care of generating the
-    /// complete list of dirty rprim IDs when requested by the HdDirtyList.
-    /// During SyncAll(), the first HdDirtyList to request the list of dirty
-    /// IDs for a given HdDirtyBits mask triggers the render index to produce
-    /// that list and cache it in a map. Subsequent requests reuse the cached
-    /// list. At the end of SyncAll(), the map is cleared in preparation for
-    /// the next sync.
-    std::unordered_map<HdDirtyBits, const SdfPathVector> _dirtyRprimIdsMap;
-
-    friend class HdDirtyList;
-    const SdfPathVector& _GetDirtyRprimIds(HdDirtyBits mask);
-
     HdRenderDelegate *_renderDelegate;
     HdDriverVector _drivers;
 
     // ---------------------------------------------------------------------- //
     // Sync State
     // ---------------------------------------------------------------------- //
-    TfTokenVector _activeRenderTags;
-    unsigned int  _renderTagVersion;
+    HdRprimCollectionVector _collectionsToSync;
+    HdDirtyList _rprimDirtyList;
+
+    // ---------------------------------------------------------------------- //
 
     /// Register the render delegate's list of supported prim types.
     void _InitPrimTypes();
@@ -525,8 +496,6 @@ private:
 
     /// Release the fallback prims.
     void _DestroyFallbackPrims();
-
-    void _GatherRenderTags(const HdTaskSharedPtrVector *tasks);
 
     typedef tbb::enumerable_thread_specific<HdDrawItemPtrVector>
         _ConcurrentDrawItems;

@@ -58,7 +58,8 @@ HdChangeTracker::HdChangeTracker()
     , _instancerIndexVersion(1)
     , _sceneStateVersion(1)
     , _visChangeCount(1)
-    , _renderTagVersion(1)
+    , _rprimRenderTagVersion(1)
+    , _taskRenderTagsVersion(1)
     , _emulationSceneIndex(nullptr)
 {
     /*NOTHING*/
@@ -162,7 +163,7 @@ void HdChangeTracker::_MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
         }
     }
 
-    // used ensure the repr has been created. don't touch scene state version
+    // Used to ensure the repr has been created. Don't touch scene state version
     if (bits == HdChangeTracker::InitRepr) {
         it->second |= HdChangeTracker::InitRepr;
         return;
@@ -187,7 +188,7 @@ void HdChangeTracker::_MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
     }
 
     if ((bits & DirtyRenderTag) != 0) {
-        ++_renderTagVersion;
+        ++_rprimRenderTagVersion;
     }
 
     if ((bits & (DirtyRenderTag | DirtyRepr)) != 0) {
@@ -353,9 +354,8 @@ HdChangeTracker::MarkTaskDirty(SdfPath const& id, HdDirtyBits bits)
         return;
     }
 
-    if (((bits & DirtyRenderTags) != 0) &&
-        ((it->second & DirtyRenderTags) == 0)) {
-        MarkRenderTagsDirty();
+    if ((bits & DirtyRenderTags) && (it->second & DirtyRenderTags) == 0) {
+        ++_taskRenderTagsVersion;
     }
 
     it->second = it->second | bits;
@@ -381,17 +381,16 @@ HdChangeTracker::MarkTaskClean(SdfPath const& id, HdDirtyBits newBits)
     it->second = (it->second & Varying) | newBits;
 }
 
-void
-HdChangeTracker::MarkRenderTagsDirty()
-{
-    ++_renderTagVersion;
-    ++_sceneStateVersion;
-}
-
 unsigned
 HdChangeTracker::GetRenderTagVersion() const
 {
-    return _renderTagVersion;
+    return _rprimRenderTagVersion;
+}
+
+unsigned
+HdChangeTracker::GetTaskRenderTagsVersion() const
+{
+    return _taskRenderTagsVersion;
 }
 
 // -------------------------------------------------------------------------- //
@@ -880,7 +879,7 @@ HdChangeTracker::MarkAllRprimsDirty(HdDirtyBits bits)
     // This function runs similar to calling MarkRprimDirty on every prim.
     // First it checks to see if the request will set any new dirty bits that
     // are not already set on the prim.  If there are, it will set the new bits
-    // as see if the prim is in the varying state.  If it is not it will
+    // as see if the prim is in the varying state.  If i t is not it will
     // transition the prim to varying.
     //
     // If any prim was transitioned to varying then the varying state version
@@ -929,7 +928,7 @@ HdChangeTracker::MarkAllRprimsDirty(HdDirtyBits bits)
         ++_visChangeCount;
     }
     if ((bits & DirtyRenderTag) != 0) {
-        ++_renderTagVersion;
+        ++_rprimRenderTagVersion;
     }
     if ((bits & (DirtyRenderTag | DirtyRepr)) != 0) {
         // Render tags affect dirty lists and batching, so they need to be

@@ -191,3 +191,15 @@ pxr_build_test(testHdTimeSampleArray
 pxr_register_test(testHdTimeSampleArray
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTimeSampleArray"
 )
+
+pxr_build_test(testHdDirtyList
+    LIBRARIES
+        hd
+
+    CPPFILES
+        testenv/testHdDirtyList.cpp
+)
+
+pxr_register_test(testHdDirtyList
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDirtyList"
+)
