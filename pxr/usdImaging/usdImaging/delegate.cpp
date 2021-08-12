@@ -500,6 +500,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
 void
 UsdImagingDelegate::PostSyncCleanup()
 {
+    TRACE_FUNCTION();
     _primvarDescCache.GarbageCollect();
 }
 

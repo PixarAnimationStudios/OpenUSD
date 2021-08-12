@@ -207,7 +207,9 @@ void HdChangeTracker::_MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
 
 void
 HdChangeTracker::ResetVaryingState()
-{ 
+{
+    TRACE_FUNCTION();
+
     ++_varyingStateVersion;
 
     // reset all variability bit
