@@ -54,7 +54,8 @@
 // 39 -> 40: Removed Bind and Unbind API from HdRenderPassState.
 // 40 -> 41: Renamed HdDelegate::GetMaterialNeworkselector() to 
 //           GetMaterialRenderContexts(). It now returns a TfTokenVector.
-#define HD_API_VERSION 41
+// 41 -> 42: Removed GetMaterialTag() from HdRenderIndex.
+#define HD_API_VERSION 42
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

@@ -195,7 +195,7 @@ public:
     /// We also assume that the geom subset draw items for a repr desc are all
     /// added one after the other before moving onto the next repr desc. 
     /// Thus the order of draw items in the _drawItems member might go something
-    /// like (assuming three geom subsets in this example):
+    /// like (assuming two repr descs and three geom subsets in this example):
     /// [ main DI for desc 1, main DI for desc 2, GS1 DI for desc 1, 
     ///   GS2 DI for desc 1, GS3 DI for desc 1, GS1 DI for desc 2, 
     ///   GS2 DI for desc 2, GS3 DI for desc 2 ]

@@ -71,11 +71,6 @@ void HdStMarkGeomSubsetDrawItemsDirty(HdRenderParam *renderParam);
 HDST_API
 void HdStMarkGarbageCollectionNeeded(HdRenderParam *renderParam);
 
-// Mark garbage collection needed and update materialTag count.
-HDST_API
-void HdStFinalizeRprim(HdRprim * rprim,
-                       HdRenderParam * renderParam);
-
 // -----------------------------------------------------------------------------
 // Primvar descriptor filtering utilities
 // -----------------------------------------------------------------------------
@@ -109,13 +104,14 @@ void HdStSetMaterialId(HdSceneDelegate *delegate,
 
 HDST_API
 void HdStSetMaterialTag(HdRenderParam *renderParam,
-                        HdRprim *rprim,
+                        HdDrawItem *drawItem,
                         const TfToken &materialTag);
 
 HDST_API
 void HdStSetMaterialTag(HdSceneDelegate *delegate,
                         HdRenderParam *renderParam,
-                        HdRprim *rprim,
+                        HdDrawItem *drawItem,
+                        SdfPath const & materialId,
                         bool hasDisplayOpacityPrimvar,
                         bool occludedSelectionShowsThrough);
 // Resolves the material shader for the given prim (using a fallback

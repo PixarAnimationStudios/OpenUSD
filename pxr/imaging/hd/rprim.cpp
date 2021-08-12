@@ -180,12 +180,6 @@ HdRprim::SetMaterialId(SdfPath const& materialId)
     _materialId = materialId;
 }
 
-void 
-HdRprim::SetMaterialTag(TfToken const& materialTag)
-{
-    _sharedData.materialTag = materialTag;
-}
-
 bool
 HdRprim::IsDirty(HdChangeTracker &changeTracker) const
 {

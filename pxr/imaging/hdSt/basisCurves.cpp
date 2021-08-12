@@ -34,6 +34,7 @@
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/primUtils.h"
+#include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
@@ -74,13 +75,14 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
                       HdDirtyBits     *dirtyBits,
                       TfToken const   &reprToken)
 {
-    bool updateMaterialTag = false;
+    bool updateMaterialTags = false;
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         HdStSetMaterialId(delegate, renderParam, this);
-        updateMaterialTag = true;
+        updateMaterialTags = true;
     }
-    if (*dirtyBits & HdChangeTracker::DirtyDisplayStyle) {
-        updateMaterialTag = true;
+    if (*dirtyBits & (HdChangeTracker::DirtyDisplayStyle|
+                      HdChangeTracker::NewRepr)) {
+        updateMaterialTags = true;
     }
 
     // Check if either the material or geometric shaders need updating for
@@ -102,11 +104,9 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
     bool displayOpacity = _displayOpacity;
     _UpdateRepr(delegate, renderParam, reprToken, dirtyBits);
 
-    if (updateMaterialTag || 
+    if (updateMaterialTags || 
         (GetMaterialId().IsEmpty() && displayOpacity != _displayOpacity)) { 
-
-        HdStSetMaterialTag(delegate, renderParam, this, _displayOpacity,
-                           _occludedSelectionShowsThrough);
+        _UpdateMaterialTagsForAllReprs(delegate, renderParam);
     }
 
     if (updateMaterialShader || updateGeometricShader) {
@@ -125,7 +125,27 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
 void
 HdStBasisCurves::Finalize(HdRenderParam *renderParam)
 {
-    HdStFinalizeRprim(this, renderParam);
+    HdStMarkGarbageCollectionNeeded(renderParam);
+
+    HdStRenderParam * const stRenderParam =
+        static_cast<HdStRenderParam*>(renderParam);
+
+    // Decrement material tag counts for each draw item material tag
+    for (auto const& reprPair : _reprs) {
+        const TfToken &reprToken = reprPair.first;
+        _BasisCurvesReprConfig::DescArray const &descs =
+            _GetReprDesc(reprToken);
+        HdReprSharedPtr repr = reprPair.second;
+        int drawItemIndex = 0;
+        for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+            if (descs[descIdx].geomStyle == HdBasisCurvesGeomStyleInvalid) {
+                continue;
+            }
+            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                repr->GetDrawItem(drawItemIndex++));
+            stRenderParam->DecreaseMaterialTagCount(drawItem->GetMaterialTag());
+        }
+    }
 }
 
 void
@@ -513,6 +533,34 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                 _UpdateDrawItemGeometricShader(
                     sceneDelegate, renderParam, drawItem, descs[descIdx]);
             }
+        }
+    }
+}
+
+void
+HdStBasisCurves::_UpdateMaterialTagsForAllReprs(HdSceneDelegate *sceneDelegate,
+                                                HdRenderParam *renderParam)
+{
+    TF_DEBUG(HD_RPRIM_UPDATED). Msg(
+        "(%s) - Updating material tags for draw items of all reprs.\n", 
+        GetId().GetText());
+
+    for (auto const& reprPair : _reprs) {
+        const TfToken &reprToken = reprPair.first;
+        _BasisCurvesReprConfig::DescArray const &descs =
+            _GetReprDesc(reprToken);
+        HdReprSharedPtr repr = reprPair.second;
+        int drawItemIndex = 0;
+        for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+            if (descs[descIdx].geomStyle == HdBasisCurvesGeomStyleInvalid) {
+                continue;
+            }
+            HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                repr->GetDrawItem(drawItemIndex++));
+
+            HdStSetMaterialTag(sceneDelegate, renderParam, drawItem, 
+                this->GetMaterialId(), _displayOpacity, 
+                _occludedSelectionShowsThrough);
         }
     }
 }

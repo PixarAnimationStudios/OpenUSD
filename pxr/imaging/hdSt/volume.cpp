@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdSt/field.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/primUtils.h"
+#include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
@@ -125,7 +126,11 @@ HdStVolume::Sync(HdSceneDelegate *delegate,
 {
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         HdStSetMaterialId(delegate, renderParam, this);
-        HdStSetMaterialTag(renderParam, this, HdStMaterialTagTokens->volume);
+
+        HdStDrawItem * const drawItem = static_cast<HdStDrawItem*>(
+            _volumeRepr->GetDrawItem(0));
+        HdStSetMaterialTag(renderParam, drawItem, 
+            HdStMaterialTagTokens->volume);
     }
 
     _UpdateRepr(delegate, renderParam, reprToken, dirtyBits);
@@ -141,7 +146,13 @@ HdStVolume::Sync(HdSceneDelegate *delegate,
 void
 HdStVolume::Finalize(HdRenderParam *renderParam)
 {
-    HdStFinalizeRprim(this, renderParam);
+    HdStMarkGarbageCollectionNeeded(renderParam);
+
+    HdStRenderParam * const stRenderParam =
+        static_cast<HdStRenderParam*>(renderParam);
+
+    // Decrement material tag count for volume material tag
+    stRenderParam->DecreaseMaterialTagCount(HdStMaterialTagTokens->volume);
 }
 
 void

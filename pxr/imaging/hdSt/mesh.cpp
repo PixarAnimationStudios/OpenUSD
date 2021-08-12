@@ -37,6 +37,7 @@
 #include "pxr/imaging/hdSt/meshTopology.h"
 #include "pxr/imaging/hdSt/primUtils.h"
 #include "pxr/imaging/hdSt/quadrangulate.h"
+#include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/smoothNormals.h"
 #include "pxr/imaging/hdSt/surfaceShader.h"
@@ -117,13 +118,14 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
                HdDirtyBits     *dirtyBits,
                TfToken const   &reprToken)
 {
-    bool updateMaterialTag = false;
+    bool updateMaterialTags = false;
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         HdStSetMaterialId(delegate, renderParam, this);
-        updateMaterialTag = true;
+        updateMaterialTags = true;
     }
-    if (*dirtyBits & HdChangeTracker::DirtyDisplayStyle) {
-        updateMaterialTag = true;
+    if (*dirtyBits & (HdChangeTracker::DirtyDisplayStyle|
+                      HdChangeTracker::NewRepr)) {
+        updateMaterialTags = true;
     }
 
     // Check if either the material or geometric shaders need updating for
@@ -153,11 +155,9 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
         updateGeometricShader = true;
     }
 
-    if (updateMaterialTag || 
+    if (updateMaterialTags || 
         (GetMaterialId().IsEmpty() && displayOpacity != _displayOpacity)) {
-
-         HdStSetMaterialTag(delegate, renderParam, this, _displayOpacity,
-                            _occludedSelectionShowsThrough);
+        _UpdateMaterialTagsForAllReprs(delegate, renderParam);
     }
 
     if (updateMaterialShader || updateGeometricShader) {
@@ -178,7 +178,50 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
 void
 HdStMesh::Finalize(HdRenderParam *renderParam)
 {
-    HdStFinalizeRprim(this, renderParam);
+    HdStMarkGarbageCollectionNeeded(renderParam);
+
+    HdStRenderParam * const stRenderParam =
+        static_cast<HdStRenderParam*>(renderParam);
+
+    // Decrement material tag counts for each draw item material tag
+    for (auto const& reprPair : _reprs) {
+        const TfToken &reprToken = reprPair.first;
+        _MeshReprConfig::DescArray const &descs =
+            _GetReprDesc(reprToken);
+        HdReprSharedPtr repr = reprPair.second;
+        int drawItemIndex = 0;
+        int geomSubsetDescIndex = 0;
+        for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+            if (descs[descIdx].geomStyle == HdMeshGeomStyleInvalid) {
+                continue;
+            }
+
+            {
+                HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                    repr->GetDrawItem(drawItemIndex++));
+                stRenderParam->DecreaseMaterialTagCount(
+                    drawItem->GetMaterialTag());
+            }
+
+            if (descs[descIdx].geomStyle == HdMeshGeomStylePoints) {
+                continue;
+            }
+
+            const HdGeomSubsets &geomSubsets = _topology->GetGeomSubsets();
+            const size_t numGeomSubsets = geomSubsets.size();
+            for (size_t i = 0; i < numGeomSubsets; ++i) {
+                HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                    repr->GetDrawItemForGeomSubset(
+                        geomSubsetDescIndex, numGeomSubsets, i));
+                if (!TF_VERIFY(drawItem)) {
+                    continue;
+                }
+                stRenderParam->DecreaseMaterialTagCount(
+                    drawItem->GetMaterialTag());
+            }
+            geomSubsetDescIndex++;
+        }
+    }
 }
 
 HdMeshTopologySharedPtr
@@ -345,6 +388,33 @@ HdStMesh::_UpdateDrawItemsForGeomSubsets(HdSceneDelegate *sceneDelegate,
 
             // Clear all previous geom subset draw items.
             currRepr->ClearGeomSubsetDrawItems();
+            
+            if (oldNumGeomSubsets != 0) {
+                // Adjust material tag count for removed geom subset draw items.
+                HdStRenderParam * const stRenderParam =
+                    static_cast<HdStRenderParam*>(renderParam);
+                size_t geomSubsetDescIndex = 0;
+                for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+                    const HdMeshReprDesc &desc = descs[descIdx];
+                    if (desc.geomStyle == HdMeshGeomStyleInvalid ||
+                        desc.geomStyle == HdMeshGeomStylePoints) {
+                        continue;
+                    }
+
+                    for (size_t i = 0; i < oldNumGeomSubsets; ++i) {
+                        HdStDrawItem *subsetDrawItem = static_cast<HdStDrawItem*>(
+                            currRepr->GetDrawItemForGeomSubset(
+                                geomSubsetDescIndex, oldNumGeomSubsets, i));
+                        if (!TF_VERIFY(subsetDrawItem)) {
+                            continue;
+                        }
+                        stRenderParam->DecreaseMaterialTagCount(subsetDrawItem->GetMaterialTag());
+                    }
+                    geomSubsetDescIndex++;
+                }
+                // Clear all previous geom subset draw items.
+                currRepr->ClearGeomSubsetDrawItems();
+            }
 
             int mainDrawItemIndex = 0;
             for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
@@ -407,7 +477,7 @@ HdStMesh::_UpdateDrawItemsForGeomSubsets(HdSceneDelegate *sceneDelegate,
         HdStMarkGeomSubsetDrawItemsDirty(renderParam);
     } else {
         // If number of geom subsets requiring draw items is the same, but geom
-        // subsets have changed, we might need to update their material ids.
+        // subsets have changed, we might need to update their material shaders.
         _MeshReprConfig::DescArray descs = _GetReprDesc(reprToken);
         size_t geomSubsetDescIndex = 0;
         for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
@@ -546,7 +616,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             _UpdateDrawItemsForGeomSubsets(sceneDelegate, renderParam, drawItem,
                 reprToken, repr, geomSubsets, oldGeomSubsets.size());
         }
-        
+
         if (refineLevel > 0) {
             // add subdiv tags before compute hash
             topology->SetSubdivTags(GetSubdivTags(sceneDelegate));
@@ -2721,6 +2791,61 @@ HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                     _UpdateDrawItemGeometricShader(sceneDelegate, renderParam,
                         drawItem, descs[descIdx], materialId);
                 }
+            }
+            geomSubsetDescIndex++;
+        }
+    }
+}
+
+void
+HdStMesh::_UpdateMaterialTagsForAllReprs(HdSceneDelegate *sceneDelegate,
+                                         HdRenderParam *renderParam)
+{
+    TF_DEBUG(HD_RPRIM_UPDATED). Msg(
+        "(%s) - Updating material tags for draw items of all reprs.\n", 
+        GetId().GetText());
+
+    for (auto const& reprPair : _reprs) {
+        const TfToken &reprToken = reprPair.first;
+        _MeshReprConfig::DescArray descs = _GetReprDesc(reprToken);
+        HdReprSharedPtr repr = reprPair.second;
+
+        int drawItemIndex = 0;
+        int geomSubsetDescIndex = 0;
+        // For each desc
+        for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+            if (descs[descIdx].geomStyle == HdMeshGeomStyleInvalid) {
+                continue;
+            }
+
+            // Update original draw item
+            {
+                HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                    repr->GetDrawItem(drawItemIndex++));
+                HdStSetMaterialTag(sceneDelegate, renderParam, drawItem, 
+                    this->GetMaterialId(), _displayOpacity, 
+                    _occludedSelectionShowsThrough);
+            }
+
+            // Update geom subset draw items if they exist 
+            if (descs[descIdx].geomStyle == HdMeshGeomStylePoints) {
+                continue;
+            }
+
+            const HdGeomSubsets &geomSubsets = _topology->GetGeomSubsets();
+            const size_t numGeomSubsets = geomSubsets.size();
+            for (size_t i = 0; i < numGeomSubsets; ++i) {
+                const SdfPath &materialId = geomSubsets[i].materialId;
+
+                HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
+                    repr->GetDrawItemForGeomSubset(
+                        geomSubsetDescIndex, numGeomSubsets, i));
+                if (!TF_VERIFY(drawItem)) {
+                    continue;
+                }
+                HdStSetMaterialTag(sceneDelegate, renderParam, drawItem,
+                    materialId, _displayOpacity, 
+                    _occludedSelectionShowsThrough);
             }
             geomSubsetDescIndex++;
         }

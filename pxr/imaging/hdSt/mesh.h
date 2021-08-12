@@ -140,6 +140,9 @@ protected:
                                    HdRenderParam *renderParam,
                                    bool updateMaterialShader,
                                    bool updateGeometricShader);
+    
+    void _UpdateMaterialTagsForAllReprs(HdSceneDelegate *sceneDelegate,
+                                        HdRenderParam *renderParam);
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
                            HdRenderParam *renderParam,

@@ -86,9 +86,6 @@ struct HdRprimSharedData {
     // The owning Rprim's identifier.
     SdfPath rprimID;
 
-    // Used to organize drawItems into collections based on material properties.
-    TfToken materialTag;
-
     // Data structure containing the face-varying topologies of an rprim (mesh
     // only) and each of the topology's associated face-varying primvar names.
     // Used in drawing to determine which primvar uses which face-varying

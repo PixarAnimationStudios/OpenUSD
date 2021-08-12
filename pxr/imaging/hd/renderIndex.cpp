@@ -752,7 +752,6 @@ HdRenderIndex::_ConfigureReprs()
 
 
 struct _FilterParam {
-    const HdRprimCollection &collection;
     const TfTokenVector     &renderTags;
     const HdRenderIndex     *renderIndex;
 };
@@ -763,50 +762,32 @@ _DrawItemFilterPredicate(const SdfPath &rprimID, const void *predicateParam)
     const _FilterParam *filterParam =
                               static_cast<const _FilterParam *>(predicateParam);
 
-    const HdRprimCollection &collection  = filterParam->collection;
     const TfTokenVector     &renderTags  = filterParam->renderTags;
     const HdRenderIndex     *renderIndex = filterParam->renderIndex;
 
     //
     // Render Tag Filter
     //
-    bool passedRenderTagFilter = false;
     if (renderTags.empty()) {
         // An empty render tag set means everything passes the filter
         // Primary user is tests, but some single task render delegates
         // that don't support render tags yet also use it.
-        passedRenderTagFilter = true;
+        return true;
     } else {
         // As the number of tags is expected to be low (<10)
         // use a simple linear search.
         TfToken primRenderTag = renderIndex->GetRenderTag(rprimID);
         size_t numRenderTags = renderTags.size();
         size_t tagNum = 0;
-        while (!passedRenderTagFilter && tagNum < numRenderTags) {
+        while (tagNum < numRenderTags) {
             if (renderTags[tagNum] == primRenderTag) {
-                passedRenderTagFilter = true;
+                return true;
             }
             ++tagNum;
         }
     }
 
-    //
-    // Material Tag Filter
-    //
-    bool passedMaterialTagFilter = false;
-
-    // Filter out rprims that do not match the collection's materialTag.
-    // E.g. We may want to gather only opaque or translucent prims.
-    // An empty materialTag on collection means: ignore material-tags.
-    // This is important for tasks such as the selection-task which wants
-    // to ignore materialTags and receive all prims in its collection.
-    TfToken const& collectionMatTag = collection.GetMaterialTag();
-    if (collectionMatTag.IsEmpty() ||
-        renderIndex->GetMaterialTag(rprimID) == collectionMatTag) {
-        passedMaterialTagFilter = true;
-    }
-
-   return (passedRenderTagFilter && passedMaterialTagFilter);
+   return false;
 }
 
 HdRenderIndex::HdDrawItemPtrVector
@@ -821,7 +802,7 @@ HdRenderIndex::GetDrawItems(HdRprimCollection const& collection,
     const SdfPathVector &includePaths = collection.GetRootPaths();
     const SdfPathVector &excludePaths = collection.GetExcludePaths();
 
-    _FilterParam filterParam = {collection, renderTags, this};
+    _FilterParam filterParam = {renderTags, this};
 
     HdPrimGather gather;
 
@@ -867,17 +848,6 @@ HdRenderIndex::GetRenderTag(SdfPath const& id) const
     }
 
     return info->rprim->GetRenderTag(info->sceneDelegate);
-}
-
-TfToken
-HdRenderIndex::GetMaterialTag(SdfPath const& id) const
-{
-    _RprimInfo const* info = TfMapLookupPtr(_rprimMap, id);
-    if (info == nullptr) {
-        return HdMaterialTagTokens->defaultMaterialTag;
-    }
-
-    return info->rprim->GetMaterialTag();
 }
 
 SdfPathVector
@@ -1807,33 +1777,71 @@ HdRenderIndex::_AppendDrawItems(
 {
     HdReprSelector const& colReprSelector = collection.GetReprSelector();
     bool forceColRepr = collection.IsForcedRepr();
-
-    // Get draw items for this thread.
+    TfToken const& materialTag = collection.GetMaterialTag();
+    
     HdDrawItemPtrVector &drawItems = result->local();
 
-    for (size_t idNum = begin; idNum < end; ++idNum)
-    {
-        const SdfPath &rprimId = rprimIds[idNum];
+    if (materialTag.IsEmpty()) {
+        // Get draw items for this thread.
+        for (size_t idNum = begin; idNum < end; ++idNum)
+        {
+            const SdfPath &rprimId = rprimIds[idNum];
 
-        _RprimMap::const_iterator it = _rprimMap.find(rprimId);
-        if (it != _rprimMap.end()) {
-            const _RprimInfo &rprimInfo = it->second;
-            HdRprim *rprim = rprimInfo.rprim;
+            _RprimMap::const_iterator it = _rprimMap.find(rprimId);
+            if (it != _rprimMap.end()) {
+                const _RprimInfo &rprimInfo = it->second;
+                HdRprim *rprim = rprimInfo.rprim;
 
-            // Append the draw items for each valid repr in the resolved
-            // composite representation to the command buffer.
-            HdReprSelector reprSelector = _GetResolvedReprSelector(
-                                                rprim->GetReprSelector(),
-                                                colReprSelector,
-                                                forceColRepr);
+                // Append the draw items for each valid repr in the resolved
+                // composite representation to the command buffer.
+                HdReprSelector reprSelector = _GetResolvedReprSelector(
+                                                    rprim->GetReprSelector(),
+                                                    colReprSelector,
+                                                    forceColRepr);
 
-            for (size_t i = 0; i < HdReprSelector::MAX_TOPOLOGY_REPRS; ++i) {
-                if (reprSelector.IsActiveRepr(i)) {
-                    TfToken const& reprToken = reprSelector[i];
+                for (size_t i = 0; i < HdReprSelector::MAX_TOPOLOGY_REPRS; ++i)
+                {
+                    if (reprSelector.IsActiveRepr(i)) {
+                        TfToken const& reprToken = reprSelector[i];
 
-                    for (const HdRepr::DrawItemUniquePtr &rprimDrawItem
-                             : rprim->GetDrawItems(reprToken)) {
-                        drawItems.push_back(rprimDrawItem.get());
+                        for (const HdRepr::DrawItemUniquePtr &rprimDrawItem
+                                : rprim->GetDrawItems(reprToken)) {
+                            drawItems.push_back(rprimDrawItem.get());
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        // Filter draw items by material tag.
+        for (size_t idNum = begin; idNum < end; ++idNum)
+        {
+            const SdfPath &rprimId = rprimIds[idNum];
+
+            _RprimMap::const_iterator it = _rprimMap.find(rprimId);
+            if (it != _rprimMap.end()) {
+                const _RprimInfo &rprimInfo = it->second;
+                HdRprim *rprim = rprimInfo.rprim;
+
+                // Append the draw items for each valid repr in the resolved
+                // composite representation to the command buffer.
+                HdReprSelector reprSelector = _GetResolvedReprSelector(
+                                                    rprim->GetReprSelector(),
+                                                    colReprSelector,
+                                                    forceColRepr);
+
+                for (size_t i = 0; i < HdReprSelector::MAX_TOPOLOGY_REPRS; ++i)
+                {
+                    if (reprSelector.IsActiveRepr(i)) {
+                        TfToken const& reprToken = reprSelector[i];
+
+                        for (const HdRepr::DrawItemUniquePtr &rprimDrawItem
+                                : rprim->GetDrawItems(reprToken)) {
+                            if (rprimDrawItem->GetMaterialTag() == materialTag)
+                            {
+                                drawItems.push_back(rprimDrawItem.get());
+                            }   
+                        }
                     }
                 }
             }
