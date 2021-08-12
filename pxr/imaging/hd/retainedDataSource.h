@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/dataSource.h"
 
 #include "pxr/base/tf/smallVector.h"
@@ -46,23 +47,28 @@ class HdRetainedContainerDataSource : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE_ABSTRACT(HdRetainedContainerDataSource);
 
+    HD_API
     static Handle New();
 
+    HD_API
     static Handle New(
         size_t count, 
         const TfToken *names,
         const HdDataSourceBaseHandle *values);
 
+    HD_API
     static Handle New(
         const TfToken &name1,
         const HdDataSourceBaseHandle &value1);
 
+    HD_API
     static Handle New(
         const TfToken &name1,
         const HdDataSourceBaseHandle &value1,
         const TfToken &name2,
         const HdDataSourceBaseHandle &value2);
 
+    HD_API 
     static Handle New(
         const TfToken &name1,
         const HdDataSourceBaseHandle &value1,
@@ -71,6 +77,7 @@ public:
         const TfToken &name3,
         const HdDataSourceBaseHandle &value3);
 
+    HD_API
     static Handle New(
         const TfToken &name1,
         const HdDataSourceBaseHandle &value1,
@@ -81,6 +88,7 @@ public:
         const TfToken &name4,
         const HdDataSourceBaseHandle &value4);
 
+    HD_API
     static Handle New(
         const TfToken &name1,
         const HdDataSourceBaseHandle &value1,
@@ -93,6 +101,7 @@ public:
         const TfToken &name5,
         const HdDataSourceBaseHandle &value5);
 
+    HD_API
     static Handle New(
         const TfToken &name1,
         const HdDataSourceBaseHandle &value1,

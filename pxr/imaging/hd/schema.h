@@ -25,6 +25,8 @@
 #ifndef PXR_IMAGING_HD_SCHEMA_H
 #define PXR_IMAGING_HD_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -45,7 +47,9 @@ public:
 
 
     /// Returns the container data source that this schema is interpreting.
+    HD_API
     HdContainerDataSourceHandle GetContainer();
+    HD_API
     bool IsDefined() const;
 
     /// Returns \c true if this schema is applied on top of a non-null

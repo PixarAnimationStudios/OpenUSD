@@ -168,6 +168,19 @@ pxr_library(hd
         overview.dox
 )
 
+pxr_build_test(testHdDirtyList
+    LIBRARIES
+        hd
+
+    CPPFILES
+        testenv/testHdDirtyList.cpp
+)
+
+pxr_register_test(testHdDirtyList
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDirtyList"
+)
+
+
 pxr_build_test(testHdExtComputationUtils
     LIBRARIES
         hd
@@ -180,6 +193,18 @@ pxr_register_test(testHdExtComputationUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdExtComputationUtils"
 )
 
+pxr_build_test(testHdSceneIndex
+    LIBRARIES
+        hd
+
+    CPPFILES
+        testenv/testHdSceneIndex.cpp
+)
+
+pxr_register_test(testHdSceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdSceneIndex"
+)
+
 pxr_build_test(testHdTimeSampleArray
     LIBRARIES
         hd
@@ -190,16 +215,4 @@ pxr_build_test(testHdTimeSampleArray
 
 pxr_register_test(testHdTimeSampleArray
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTimeSampleArray"
-)
-
-pxr_build_test(testHdDirtyList
-    LIBRARIES
-        hd
-
-    CPPFILES
-        testenv/testHdDirtyList.cpp
-)
-
-pxr_register_test(testHdDirtyList
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDirtyList"
 )

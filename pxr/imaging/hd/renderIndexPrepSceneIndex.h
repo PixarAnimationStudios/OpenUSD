@@ -24,6 +24,8 @@
 #ifndef PXR_IMAGING_HD_RENDER_INDEX_PREP_SCENE_INDEX_H
 #define PXR_IMAGING_HD_RENDER_INDEX_PREP_SCENE_INDEX_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/primDataSourceOverlayCache.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
@@ -54,6 +56,7 @@ public:
     TfTokenVector GetChildPrimNames(const SdfPath &primPath) const override;
 
 protected:
+    HD_API
     HdRenderIndexPrepSceneIndex(HdSceneIndexBaseRefPtr inputScene);
 
     // satisfying HdSingleInputFilteringSceneIndexBase
@@ -105,7 +108,7 @@ private:
     (__primvarDescriptors)                      \
     (__extComputationPrimvarDescriptors)        \
 
-TF_DECLARE_PUBLIC_TOKENS(HdPrimvarDescriptorsSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdPrimvarDescriptorsSchemaTokens, HD_API,
         HDPRIMVARDESCRIPTORSSCHEMA_TOKENS);
 
 template <typename T>

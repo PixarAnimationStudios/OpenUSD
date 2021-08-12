@@ -24,6 +24,8 @@
 #ifndef PXR_IMAGING_HD_FLATTENING_SCENE_H
 #define PXR_IMAGING_HD_FLATTENING_SCENE_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
 #include "pxr/usd/sdf/pathTable.h"
@@ -54,14 +56,19 @@ public:
         return TfCreateRefPtr(new HdFlatteningSceneIndex(inputScene));
     }
 
+    HD_API
     ~HdFlatteningSceneIndex() override;
 
     // satisfying HdSceneIndexBase
+    HD_API 
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
+
+    HD_API 
     TfTokenVector GetChildPrimNames(const SdfPath &primPath) const override;
 
 protected:
 
+    HD_API
     HdFlatteningSceneIndex(const HdSceneIndexBaseRefPtr &inputScene);
 
     // satisfying HdSingleInputFilteringSceneIndexBase

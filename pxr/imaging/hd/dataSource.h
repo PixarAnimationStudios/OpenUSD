@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
 
 #include "pxr/base/tf/token.h"
@@ -85,6 +86,7 @@ class HdDataSourceBase
 public:
     HD_DECLARE_DATASOURCE_ABSTRACT(HdDataSourceBase)
     
+    HD_API 
     virtual ~HdDataSourceBase() = 0;
 };
 
@@ -119,6 +121,7 @@ public:
     /// identified by \p locator, which may be at any depth. Returns
     /// \p container itself on an empty locator, or null if \p locator doesn't
     /// identify a valid descendant.
+    HD_API 
     static HdDataSourceBaseHandle Get(
         const Handle &container,
         const HdDataSourceLocator &locator);

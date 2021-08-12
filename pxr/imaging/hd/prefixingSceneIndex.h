@@ -24,6 +24,7 @@
 #ifndef PXR_IMAGING_HD_PREFIXING_SCENE_INDEX_H
 #define PXR_IMAGING_HD_PREFIXING_SCENE_INDEX_H
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -50,12 +51,16 @@ public:
     }
 
     // satisfying HdSceneIndexBase
+    HD_API 
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
+
+    HD_API 
     TfTokenVector GetChildPrimNames(const SdfPath &primPath) const override;
 
 
 protected:
 
+    HD_API
     HdPrefixingSceneIndex(const HdSceneIndexBaseRefPtr &inputScene,
         const SdfPath &prefix);
 

@@ -34,6 +34,7 @@
 
 #include "pxr/usd/sdf/path.h"
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
 #include "pxr/imaging/hd/sceneIndexObserver.h"
@@ -62,6 +63,7 @@ class HdSceneIndexBase : public TfRefBase, public TfWeakBase
 {
 public:
 
+    HD_API
     virtual ~HdSceneIndexBase();
 
     // ------------------------------------------------------------------------
@@ -74,6 +76,7 @@ public:
     /// index; the calling code is responsible for updating observer state
     /// if the scene index has already been populated. This function is not
     /// threadsafe.
+    HD_API
     void AddObserver(const HdSceneIndexObserverPtr &observer);
 
     /// Removes an observer from this scene index; the given observer will no
@@ -81,6 +84,7 @@ public:
     /// notices as a result of being detached from this scene index. If
     /// \p observer is not registered on this scene index, this call does
     /// nothing. This function is not threadsafe.
+    HD_API
     void RemoveObserver(const HdSceneIndexObserverPtr &observer);
 
     // ------------------------------------------------------------------------

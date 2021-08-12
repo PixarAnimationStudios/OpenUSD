@@ -86,6 +86,7 @@ public:
 
 protected:
 
+    HD_API
     HdRetainedSceneIndex();
 
 private:

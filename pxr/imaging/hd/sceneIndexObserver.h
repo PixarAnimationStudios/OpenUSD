@@ -30,6 +30,7 @@
 
 #include "pxr/usd/sdf/path.h"
 
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -48,6 +49,7 @@ class HdSceneIndexObserver : public TfWeakBase
 {
 public:
 
+    HD_API
     virtual ~HdSceneIndexObserver();
 
     /// A notice indicating a prim of a given type was added to the scene.
