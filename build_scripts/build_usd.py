@@ -146,6 +146,10 @@ def IsVisualStudioVersionOrGreater(desiredVersion):
         return version >= desiredVersion
     return False
 
+def IsVisualStudio2022OrGreater():
+    VISUAL_STUDIO_2022_VERSION = (17, 0)
+    return IsVisualStudioVersionOrGreater(VISUAL_STUDIO_2022_VERSION)
+
 def IsVisualStudio2019OrGreater():
     VISUAL_STUDIO_2019_VERSION = (16, 0)
     return IsVisualStudioVersionOrGreater(VISUAL_STUDIO_2019_VERSION)
@@ -377,7 +381,9 @@ def RunCMake(context, force, extraArgs = None):
     # building a 64-bit project. (Surely there is a better way to do this?)
     # TODO: figure out exactly what "vcvarsall.bat x64" sets to force x64
     if generator is None and Windows():
-        if IsVisualStudio2019OrGreater():
+        if IsVisualStudio2022OrGreater():
+            generator = "Visual Studio 17 2022"
+        elif IsVisualStudio2019OrGreater():
             generator = "Visual Studio 16 2019"
         elif IsVisualStudio2017OrGreater():
             generator = "Visual Studio 15 2017 Win64"
@@ -387,7 +393,7 @@ def RunCMake(context, force, extraArgs = None):
     if generator is not None:
         generator = '-G "{gen}"'.format(gen=generator)
 
-    if IsVisualStudio2019OrGreater():
+    if generator and 'Visual Studio' in generator and IsVisualStudio2019OrGreater():
         generator = generator + " -A x64"
 
     toolset = context.cmakeToolset
@@ -689,13 +695,17 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 ############################################################
 # boost
 
+# At Autodesk our Jenkins VM Mac builds have trouble downloading (using curl) this file.
+# Therefore we have temporarily placed it in Artifactory and download from there.
+
 if MacOS():
     # This version of boost resolves Python3 compatibilty issues on Big Sur and Monterey and is
     # compatible with Python 2.7 through Python 3.10
     BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Linux():
-    BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
+    #BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
+    BOOST_URL = "https://art-bobcat.autodesk.com:443/artifactory/oss-prd-generic/boost/1.70/boost_1_70_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Windows():
     # The default installation of boost on Windows puts headers in a versioned 
@@ -705,7 +715,8 @@ elif Windows():
     #
     # boost 1.70 is required for Visual Studio 2019. For simplicity, we use
     # this version for all older Visual Studio versions as well.
-    BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
+    #BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
+    BOOST_URL = "https://art-bobcat.autodesk.com:443/artifactory/oss-prd-generic/boost/1.70/boost_1_70_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost-1_70/boost/version.hpp"
 
 def InstallBoost_Helper(context, force, buildArgs):
@@ -848,6 +859,8 @@ def InstallBoost_Helper(context, force, buildArgs):
                 b2_settings.append("toolset=msvc-14.1")
             elif context.cmakeToolset == "v140":
                 b2_settings.append("toolset=msvc-14.0")
+            elif IsVisualStudio2022OrGreater():
+                b2_settings.append("toolset=msvc-14.3")
             elif IsVisualStudio2019OrGreater():
                 b2_settings.append("toolset=msvc-14.2")
             elif IsVisualStudio2017OrGreater():
@@ -1604,7 +1617,10 @@ PYSIDE = PythonDependency("PySide", GetPySideInstructions,
 ############################################################
 # HDF5
 
-HDF5_URL = "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0-patch1/src/hdf5-1.10.0-patch1.zip"
+# At Autodesk our Jenkins VM Mac builds have trouble downloading (using curl) this file.
+# Therefore we have temporarily placed it in Artifactory and download from there.
+#HDF5_URL = "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0-patch1/src/hdf5-1.10.0-patch1.zip"
+HDF5_URL = "https://art-bobcat.autodesk.com:443/artifactory/team-mayausd-dev-generic/staging/ecg-usd-build/3rd-party/hdf5-1.10.0-patch1.zip"
 
 def InstallHDF5(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(HDF5_URL, context, force)):
