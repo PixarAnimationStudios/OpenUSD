@@ -23,6 +23,9 @@ pxr_library(hioOpenVDB
     PUBLIC_CLASSES
         vdbAssetInterface
 
+    PUBLIC_HEADERS
+        api.h
+
     PRIVATE_CLASSES
         debugCodes
         vdbTextureData

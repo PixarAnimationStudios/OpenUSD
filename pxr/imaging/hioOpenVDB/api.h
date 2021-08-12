@@ -21,36 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HIO_OPENVDB_ASSET_INTERFACE_H
-#define PXR_IMAGING_HIO_OPENVDB_ASSET_INTERFACE_H
+#ifndef PXR_IMAGING_HIOOPENVDB_API_H
+#define PXR_IMAGING_HIOOPENVDB_API_H
 
-/// \file hioOpenVDB/vdbAssetInterface.h
+#include "pxr/base/arch/export.h"
 
-#include "pxr/pxr.h"
-#include "pxr/usd/ar/asset.h"
+#if defined(PXR_STATIC)
+#   define HIOOPENVDB_API
+#   define HIOOPENVDB_API_TEMPLATE_CLASS(...)
+#   define HIOOPENVDB_API_TEMPLATE_STRUCT(...)
+#   define HIOOPENVDB_LOCAL
+#else
+#   if defined(HIOOPENVDB_EXPORTS)
+#       define HIOOPENVDB_API ARCH_EXPORT
+#       define HIOOPENVDB_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define HIOOPENVDB_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define HIOOPENVDB_API ARCH_IMPORT
+#       define HIOOPENVDB_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define HIOOPENVDB_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define HIOOPENVDB_LOCAL ARCH_HIDDEN
+#endif
 
-#include "openvdb/openvdb.h"
-
-#include "pxr/imaging/hioOpenVDB/api.h"
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-/// \class HioOpenVDBArAssetInterface
-///
-/// Interface for an ArAsset subclass that enables direct access to
-/// OpenVDB grids.
-class HioOpenVDBArAssetInterface : public ArAsset
-{
-public:
-    /// Empty virtual destructor to prevent build errors with some compilers.
-    HIOOPENVDB_API
-    virtual ~HioOpenVDBArAssetInterface();
-
-    /// Return a shared pointer to an OpenVDB grid with /p name,
-    /// or nullptr if no grid matching /p name exists.
-    virtual openvdb::GridBase::Ptr GetGrid(const std::string& name) const = 0;
-};
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // PXR_IMAGING_HIO_OPENVDB_ASSET_INTERFACE_H
+#endif
