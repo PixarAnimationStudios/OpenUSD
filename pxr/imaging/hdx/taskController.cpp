@@ -40,6 +40,7 @@
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/simpleLightTask.h"
+#include "pxr/imaging/hdx/skydomeTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
 #include "pxr/imaging/hdx/visualizeAovTask.h"
 
@@ -67,6 +68,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (pickTask)
     (pickFromRenderBufferTask)
     (presentTask)
+    (skydomeTask)
     (visualizeAovTask)
 
     // global camera
@@ -239,6 +241,7 @@ HdxTaskController::_CreateRenderGraph()
     if (_IsStormRenderingBackend(GetRenderIndex())) {
         _CreateLightingTask();
         _CreateShadowTask();
+        _renderTaskIds.push_back(_CreateSkydomeTask());
         _renderTaskIds.push_back(_CreateRenderTask(
             HdStMaterialTagTokens->defaultMaterialTag));
         _renderTaskIds.push_back(_CreateRenderTask(
@@ -476,6 +479,31 @@ HdxTaskController::_CreateShadowTask()
     _delegate.SetParameter(_shadowTaskId, HdTokens->params,
                            HdxShadowTaskParams());
     _delegate.SetParameter(_shadowTaskId, _tokens->renderTags, renderTags);
+}
+
+SdfPath
+HdxTaskController::_CreateSkydomeTask() 
+{
+    SdfPath skydomeTaskId = GetControllerId().AppendChild(_tokens->skydomeTask);
+    GetRenderIndex()->InsertTask<HdxSkydomeTask>(&_delegate, skydomeTaskId);
+
+    // This task wil be added to the _renderTaskIds so that the AOV's are 
+    // properly cleared. This means that we need to set the parameter and
+    // collection values. (Following HdxTaskController::_CreateRenderTask())
+    HdxRenderTaskParams renderParams;
+    renderParams.camera = _freeCameraSceneDelegate->GetCameraId();
+    renderParams.viewport = _viewport;
+    renderParams.framing = _framing;
+    renderParams.overrideWindowPolicy = _overrideWindowPolicy;
+    _delegate.SetParameter(skydomeTaskId, HdTokens->params, renderParams);
+
+    HdRprimCollection collection(HdTokens->geometry,
+                                HdReprSelector(HdReprTokens->smoothHull),
+                                /*forcedRepr*/ false,
+                                HdStMaterialTagTokens->defaultMaterialTag);
+    _delegate.SetParameter(skydomeTaskId, HdTokens->collection, collection);
+
+    return skydomeTaskId;
 }
 
 void

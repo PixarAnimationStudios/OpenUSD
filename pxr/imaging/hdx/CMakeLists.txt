@@ -59,6 +59,7 @@ pxr_library(hdx
         selectionTracker
         shadowTask
         simpleLightTask
+        skydomeTask
         task
         taskController
         tokens
@@ -95,6 +96,7 @@ pxr_library(hdx
         shaders/renderPassOitVolumeShader.glslfx
         shaders/renderPassShadowShader.glslfx
         shaders/selection.glslfx
+        shaders/skydome.glslfx
         shaders/visualize.glslfx
         textures/StinsonBeach.exr
 

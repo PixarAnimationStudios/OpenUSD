@@ -576,7 +576,21 @@ HdxFullscreenShader::Draw(
     const GfVec4i vp(0, 0, dimensions[0], dimensions[1]);
 
     const bool depthWrite(depthDst);
-    _Draw(_textures, colorDst, depthDst, vp, depthWrite);
+    _Draw(_textures, colorDst, HgiTextureHandle(), depthDst, HgiTextureHandle(), 
+        vp, depthWrite);
+}
+
+void
+HdxFullscreenShader::Draw(
+    HgiTextureHandle const& colorDst,
+    HgiTextureHandle const& colorResolveDst,
+    HgiTextureHandle const& depthDst,
+    HgiTextureHandle const& depthResolveDst,
+    GfVec4i const& viewport)
+{
+    const bool depthWrite(depthDst);
+    _Draw(_textures, colorDst, colorResolveDst, depthDst, depthResolveDst, 
+        viewport, depthWrite);
 }
 
 void
@@ -592,7 +606,9 @@ void
 HdxFullscreenShader::_Draw(
     TextureMap const& textures,
     HgiTextureHandle const& colorDst,
+    HgiTextureHandle const& colorResolveDst,
     HgiTextureHandle const& depthDst,
+    HgiTextureHandle const& depthResolveDst,
     GfVec4i const &viewport,
     bool writeDepth)
 {
@@ -642,15 +658,15 @@ HdxFullscreenShader::_Draw(
         _CreateBufferResources();
     }
 
-    // create a default texture sampler (first time)
+    // Create a default texture sampler (first time)
     _CreateSampler();
 
     // Create or update the resource bindings (textures may have changed)
     _CreateResourceBindings(textures);
 
-    // create pipeline (first time)
+    // Create pipeline (first time)
     _CreatePipeline(colorDst, depthDst, writeDepth);
-    
+
     // Prepare graphics cmds.
     HgiGraphicsCmdsDesc gfxDesc;
 
@@ -658,10 +674,16 @@ HdxFullscreenShader::_Draw(
         gfxDesc.colorAttachmentDescs.push_back(_attachment0);
         gfxDesc.colorTextures.push_back(colorDst);
     }
+    if (colorResolveDst) {
+        gfxDesc.colorResolveTextures.push_back(colorResolveDst);
+    }
 
     if (depthDst) {
         gfxDesc.depthAttachmentDesc = _depthAttachment;
         gfxDesc.depthTexture = depthDst;
+    }
+    if (depthResolveDst) {
+        gfxDesc.depthResolveTexture = depthResolveDst;
     }
 
     // Begin rendering

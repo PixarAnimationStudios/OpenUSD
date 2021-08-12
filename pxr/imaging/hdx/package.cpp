@@ -163,6 +163,13 @@ HdxPackageOutlineShader()
 }
 
 TfToken
+HdxPackageSkydomeShader()
+{
+    static TfToken shader = _GetShaderPath("skydome.glslfx");
+    return shader;
+}
+
+TfToken
 HdxPackageDefaultDomeLightTexture()
 {
     static TfToken domeLightTexture = _GetTexturePath("StinsonBeach.exr");

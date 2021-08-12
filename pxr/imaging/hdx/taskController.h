@@ -270,6 +270,7 @@ private:
 
     void _CreateLightingTask();
     void _CreateShadowTask();
+    SdfPath _CreateSkydomeTask();
     SdfPath _CreateRenderTask(TfToken const& materialTag);
     void _CreateOitResolveTask();
     void _CreateSelectionTask();
