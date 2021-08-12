@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_MATERIAL_NODE_SCHEMA_H
 #define PXR_IMAGING_HD_MATERIAL_NODE_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -39,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (inputConnections) \
     (nodeIdentifier) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdMaterialNodeSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdMaterialNodeSchemaTokens, HD_API,
     HDMATERIALNODE_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -52,12 +54,16 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdContainerDataSourceHandle GetParameters();
+    HD_API
     HdContainerDataSourceHandle GetInputConnections();
+    HD_API
     HdTokenDataSourceHandle GetNodeIdentifier();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdContainerDataSourceHandle &parameters,
@@ -68,13 +74,17 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetParameters(
             const HdContainerDataSourceHandle &parameters);
+        HD_API
         Builder &SetInputConnections(
             const HdContainerDataSourceHandle &inputConnections);
+        HD_API
         Builder &SetNodeIdentifier(
             const HdTokenDataSourceHandle &nodeIdentifier);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:

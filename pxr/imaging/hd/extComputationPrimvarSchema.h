@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_EXT_COMPUTATION_PRIMVAR_SCHEMA_H
 #define PXR_IMAGING_HD_EXT_COMPUTATION_PRIMVAR_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/primvarSchema.h"
 
 
@@ -42,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (sourceComputationOutputName) \
     (valueType) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdExtComputationPrimvarSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdExtComputationPrimvarSchemaTokens, HD_API,
     HDEXTCOMPUTATIONPRIMVAR_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -55,14 +57,20 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdTokenDataSourceHandle GetInterpolation();
+    HD_API
     HdTokenDataSourceHandle GetRole();
+    HD_API
     HdPathDataSourceHandle GetSourceComputation();
+    HD_API
     HdTokenDataSourceHandle GetSourceComputationOutputName();
+    HD_API
     HdTupleTypeDataSourceHandle GetValueType();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdTokenDataSourceHandle &interpolation,
@@ -75,17 +83,23 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetInterpolation(
             const HdTokenDataSourceHandle &interpolation);
+        HD_API
         Builder &SetRole(
             const HdTokenDataSourceHandle &role);
+        HD_API
         Builder &SetSourceComputation(
             const HdPathDataSourceHandle &sourceComputation);
+        HD_API
         Builder &SetSourceComputationOutputName(
             const HdTokenDataSourceHandle &sourceComputationOutputName);
+        HD_API
         Builder &SetValueType(
             const HdTupleTypeDataSourceHandle &valueType);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:

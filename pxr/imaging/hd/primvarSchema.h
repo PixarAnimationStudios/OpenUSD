@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_PRIMVAR_SCHEMA_H
 #define PXR_IMAGING_HD_PRIMVAR_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -56,7 +58,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (TextureCoordinate) \
     (Transform) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdPrimvarSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdPrimvarSchemaTokens, HD_API,
     HDPRIMVAR_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -74,14 +76,20 @@ public:
     // GetIndexedPrimvarValue() will return the same thing. If the primvar
     // does has indices, GetPrimvarValue() will return the flattened value,
     // while GetIndexedPrimvarValue() will return the unflattened value.
+    HD_API
     HdSampledDataSourceHandle GetPrimvarValue();
+    HD_API
     HdSampledDataSourceHandle GetIndexedPrimvarValue();
+    HD_API
     HdIntArrayDataSourceHandle GetIndices();
+    HD_API
     HdTokenDataSourceHandle GetInterpolation();
+    HD_API
     HdTokenDataSourceHandle GetRole();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdSampledDataSourceHandle &primvarValue,
@@ -94,17 +102,23 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetPrimvarValue(
             const HdSampledDataSourceHandle &primvarValue);
+        HD_API
         Builder &SetIndexedPrimvarValue(
             const HdSampledDataSourceHandle &indexedPrimvarValue);
+        HD_API
         Builder &SetIndices(
             const HdIntArrayDataSourceHandle &indices);
+        HD_API
         Builder &SetInterpolation(
             const HdTokenDataSourceHandle &interpolation);
+        HD_API
         Builder &SetRole(
             const HdTokenDataSourceHandle &role);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
@@ -119,8 +133,10 @@ public:
     bool IsIndexed();
 
 
+    HD_API
     static HdTokenDataSourceHandle BuildInterpolationDataSource(
         const TfToken &interpolation);
+    HD_API
     static HdTokenDataSourceHandle BuildRoleDataSource(
         const TfToken &role);
 

@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_BASIS_CURVES_TOPOLOGY_SCHEMA_H
 #define PXR_IMAGING_HD_BASIS_CURVES_TOPOLOGY_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -42,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (type) \
     (wrap) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdBasisCurvesTopologySchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdBasisCurvesTopologySchemaTokens, HD_API,
     HDBASISCURVESTOPOLOGY_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -55,14 +57,20 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdIntArrayDataSourceHandle GetCurveVertexCounts();
+    HD_API
     HdIntArrayDataSourceHandle GetCurveIndices();
+    HD_API
     HdTokenDataSourceHandle GetBasis();
+    HD_API
     HdTokenDataSourceHandle GetType();
+    HD_API
     HdTokenDataSourceHandle GetWrap();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdIntArrayDataSourceHandle &curveVertexCounts,
@@ -75,17 +83,23 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetCurveVertexCounts(
             const HdIntArrayDataSourceHandle &curveVertexCounts);
+        HD_API
         Builder &SetCurveIndices(
             const HdIntArrayDataSourceHandle &curveIndices);
+        HD_API
         Builder &SetBasis(
             const HdTokenDataSourceHandle &basis);
+        HD_API
         Builder &SetType(
             const HdTokenDataSourceHandle &type);
+        HD_API
         Builder &SetWrap(
             const HdTokenDataSourceHandle &wrap);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
@@ -96,9 +110,11 @@ public:
         HdTokenDataSourceHandle _wrap;
     };
 
+    HD_API
     static HdBasisCurvesTopologySchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

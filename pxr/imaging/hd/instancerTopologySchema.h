@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_INSTANCER_TOPOLOGY_SCHEMA_H
 #define PXR_IMAGING_HD_INSTANCER_TOPOLOGY_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -41,7 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (mask) \
     (instanceLocations) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdInstancerTopologySchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdInstancerTopologySchemaTokens, HD_API,
     HDINSTANCERTOPOLOGY_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -91,15 +93,20 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdPathArrayDataSourceHandle GetPrototypes();
 
     // Note: expected to be a vector of HdIntArrayDataSource.
+    HD_API
     HdVectorDataSourceHandle GetInstanceIndices();
+    HD_API
     HdBoolArrayDataSourceHandle GetMask();
+    HD_API
     HdPathArrayDataSourceHandle GetInstanceLocations();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdPathArrayDataSourceHandle &prototypes,
@@ -111,15 +118,20 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetPrototypes(
             const HdPathArrayDataSourceHandle &prototypes);
+        HD_API
         Builder &SetInstanceIndices(
             const HdVectorDataSourceHandle &instanceIndices);
+        HD_API
         Builder &SetMask(
             const HdBoolArrayDataSourceHandle &mask);
+        HD_API
         Builder &SetInstanceLocations(
             const HdPathArrayDataSourceHandle &instanceLocations);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
@@ -132,9 +144,11 @@ public:
     VtArray<int> ComputeInstanceIndicesForProto(SdfPath const &path);
 
 
+    HD_API
     static HdInstancerTopologySchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

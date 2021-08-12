@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_INSTANCED_BY_SCHEMA_H
 #define PXR_IMAGING_HD_INSTANCED_BY_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -38,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (instancedBy) \
     (paths) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdInstancedBySchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdInstancedBySchemaTokens, HD_API,
     HDINSTANCEDBY_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -71,10 +73,12 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdPathArrayDataSourceHandle GetPaths();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdPathArrayDataSourceHandle &paths
@@ -83,18 +87,22 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetPaths(
             const HdPathArrayDataSourceHandle &paths);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
         HdPathArrayDataSourceHandle _paths;
     };
 
+    HD_API
     static HdInstancedBySchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

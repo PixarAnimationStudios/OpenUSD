@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_DEPENDENCY_SCHEMA_H
 #define PXR_IMAGING_HD_DEPENDENCY_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -39,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (dependedOnDataSourceLocator) \
     (affectedDataSourceLocator) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdDependencySchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdDependencySchemaTokens, HD_API,
     HDDEPENDENCY_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -52,12 +54,16 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdPathDataSourceHandle GetDependedOnPrimPath();
+    HD_API
     HdLocatorDataSourceHandle GetDependedOnDataSourceLocator();
+    HD_API
     HdLocatorDataSourceHandle GetAffectedDataSourceLocator();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdPathDataSourceHandle &dependedOnPrimPath,
@@ -68,13 +74,17 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetDependedOnPrimPath(
             const HdPathDataSourceHandle &dependedOnPrimPath);
+        HD_API
         Builder &SetDependedOnDataSourceLocator(
             const HdLocatorDataSourceHandle &dependedOnDataSourceLocator);
+        HD_API
         Builder &SetAffectedDataSourceLocator(
             const HdLocatorDataSourceHandle &affectedDataSourceLocator);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:

@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_INSTANCE_CATEGORIES_SCHEMA_H
 #define PXR_IMAGING_HD_INSTANCE_CATEGORIES_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -38,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (instanceCategories) \
     (categoriesValues) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdInstanceCategoriesSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdInstanceCategoriesSchemaTokens, HD_API,
     HDINSTANCECATEGORIES_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -51,10 +53,12 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdVectorDataSourceHandle GetCategoriesValues();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdVectorDataSourceHandle &categoriesValues
@@ -63,18 +67,22 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetCategoriesValues(
             const HdVectorDataSourceHandle &categoriesValues);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
         HdVectorDataSourceHandle _categoriesValues;
     };
 
+    HD_API
     static HdInstanceCategoriesSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

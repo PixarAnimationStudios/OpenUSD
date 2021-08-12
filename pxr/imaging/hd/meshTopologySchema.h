@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_MESH_TOPOLOGY_SCHEMA_H
 #define PXR_IMAGING_HD_MESH_TOPOLOGY_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 
 
@@ -47,7 +49,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (leftHanded) \
     (rightHanded) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdMeshTopologySchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdMeshTopologySchemaTokens, HD_API,
     HDMESHTOPOLOGY_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -60,16 +62,24 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdIntArrayDataSourceHandle GetFaceVertexCounts();
+    HD_API
     HdIntArrayDataSourceHandle GetFaceVertexIndices();
+    HD_API
     HdIntArrayDataSourceHandle GetHoleIndices();
+    HD_API
     HdTokenDataSourceHandle GetSubdivisionScheme();
+    HD_API
     HdTokenDataSourceHandle GetOrientation();
+    HD_API
     HdBoolDataSourceHandle GetDoubleSided();
+    HD_API
     HdSubdivisionTagsSchema GetSubdivisionTags();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdIntArrayDataSourceHandle &faceVertexCounts,
@@ -84,21 +94,29 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetFaceVertexCounts(
             const HdIntArrayDataSourceHandle &faceVertexCounts);
+        HD_API
         Builder &SetFaceVertexIndices(
             const HdIntArrayDataSourceHandle &faceVertexIndices);
+        HD_API
         Builder &SetHoleIndices(
             const HdIntArrayDataSourceHandle &holeIndices);
+        HD_API
         Builder &SetSubdivisionScheme(
             const HdTokenDataSourceHandle &subdivisionScheme);
+        HD_API
         Builder &SetOrientation(
             const HdTokenDataSourceHandle &orientation);
+        HD_API
         Builder &SetDoubleSided(
             const HdBoolDataSourceHandle &doubleSided);
+        HD_API
         Builder &SetSubdivisionTags(
             const HdContainerDataSourceHandle &subdivisionTags);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
@@ -111,11 +129,14 @@ public:
         HdContainerDataSourceHandle _subdivisionTags;
     };
 
+    HD_API
     static HdMeshTopologySchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
+    HD_API
     static HdTokenDataSourceHandle BuildOrientationDataSource(
         const TfToken &orientation);
 

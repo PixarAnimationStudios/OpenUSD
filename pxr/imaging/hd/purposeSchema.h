@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_PURPOSE_SCHEMA_H
 #define PXR_IMAGING_HD_PURPOSE_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -38,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (purpose) \
 
 
-TF_DECLARE_PUBLIC_TOKENS(HdPurposeSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdPurposeSchemaTokens, HD_API,
     HDPURPOSE_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -51,10 +53,12 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdTokenDataSourceHandle GetPurpose();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdTokenDataSourceHandle &purpose
@@ -63,18 +67,22 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetPurpose(
             const HdTokenDataSourceHandle &purpose);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
         HdTokenDataSourceHandle _purpose;
     };
 
+    HD_API
     static HdPurposeSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

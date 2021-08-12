@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_VOLUME_FIELD_SCHEMA_H
 #define PXR_IMAGING_HD_VOLUME_FIELD_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -42,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (fieldDataType) \
     (vectorDataRoleHint) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdVolumeFieldSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdVolumeFieldSchemaTokens, HD_API,
     HDVOLUMEFIELD_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -55,14 +57,20 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdAssetPathDataSourceHandle GetFilePath();
+    HD_API
     HdTokenDataSourceHandle GetFieldName();
+    HD_API
     HdIntDataSourceHandle GetFieldIndex();
+    HD_API
     HdTokenDataSourceHandle GetFieldDataType();
+    HD_API
     HdTokenDataSourceHandle GetVectorDataRoleHint();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdAssetPathDataSourceHandle &filePath,
@@ -75,17 +83,23 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetFilePath(
             const HdAssetPathDataSourceHandle &filePath);
+        HD_API
         Builder &SetFieldName(
             const HdTokenDataSourceHandle &fieldName);
+        HD_API
         Builder &SetFieldIndex(
             const HdIntDataSourceHandle &fieldIndex);
+        HD_API
         Builder &SetFieldDataType(
             const HdTokenDataSourceHandle &fieldDataType);
+        HD_API
         Builder &SetVectorDataRoleHint(
             const HdTokenDataSourceHandle &vectorDataRoleHint);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
@@ -96,9 +110,11 @@ public:
         HdTokenDataSourceHandle _vectorDataRoleHint;
     };
 
+    HD_API
     static HdVolumeFieldSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

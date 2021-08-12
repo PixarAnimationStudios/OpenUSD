@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_GEOM_SUBSET_SCHEMA_H
 #define PXR_IMAGING_HD_GEOM_SUBSET_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -41,7 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (typePointSet) \
     (typeCurveSet) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdGeomSubsetSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdGeomSubsetSchemaTokens, HD_API,
     HDGEOMSUBSET_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -54,11 +56,14 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdTokenDataSourceHandle GetType();
+    HD_API
     HdIntArrayDataSourceHandle GetIndices();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdTokenDataSourceHandle &type,
@@ -68,11 +73,14 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetType(
             const HdTokenDataSourceHandle &type);
+        HD_API
         Builder &SetIndices(
             const HdIntArrayDataSourceHandle &indices);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
@@ -80,6 +88,7 @@ public:
         HdIntArrayDataSourceHandle _indices;
     };
 
+    HD_API
     static HdTokenDataSourceHandle BuildTypeDataSource(
         const TfToken &type);
 

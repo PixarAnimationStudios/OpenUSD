@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_GEOM_SUBSETS_SCHEMA_H
 #define PXR_IMAGING_HD_GEOM_SUBSETS_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/geomSubsetSchema.h"
 
 
@@ -38,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDGEOMSUBSETS_SCHEMA_TOKENS \
     (geomSubsets) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdGeomSubsetsSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdGeomSubsetsSchemaTokens, HD_API,
     HDGEOMSUBSETS_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -53,9 +55,11 @@ public:
     HdGeomSubsetSchema GetGeomSubset(const TfToken & id);
 
 
+    HD_API
     static HdGeomSubsetsSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

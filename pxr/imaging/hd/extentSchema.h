@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_EXTENT_SCHEMA_H
 #define PXR_IMAGING_HD_EXTENT_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -39,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (min) \
     (max) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdExtentSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdExtentSchemaTokens, HD_API,
     HDEXTENT_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -52,11 +54,14 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdVec3dDataSourceHandle GetMin();
+    HD_API
     HdVec3dDataSourceHandle GetMax();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdVec3dDataSourceHandle &min,
@@ -66,11 +71,14 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetMin(
             const HdVec3dDataSourceHandle &min);
+        HD_API
         Builder &SetMax(
             const HdVec3dDataSourceHandle &max);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
@@ -78,9 +86,11 @@ public:
         HdVec3dDataSourceHandle _max;
     };
 
+    HD_API
     static HdExtentSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

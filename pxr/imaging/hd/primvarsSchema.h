@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_PRIMVARS_SCHEMA_H
 #define PXR_IMAGING_HD_PRIMVARS_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/primvarSchema.h"
 
 
@@ -41,7 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (normals) \
     (widths) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdPrimvarsSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdPrimvarsSchemaTokens, HD_API,
     HDPRIMVARS_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -56,13 +58,18 @@ public:
     HdPrimvarSchema GetPrimvar(TfToken name);
 
 
+    HD_API
     static HdPrimvarsSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
+    HD_API
     static const HdDataSourceLocator &GetPointsLocator();
+    HD_API
     static const HdDataSourceLocator &GetNormalsLocator();
+    HD_API
     static const HdDataSourceLocator &GetWidthsLocator();
 
 };

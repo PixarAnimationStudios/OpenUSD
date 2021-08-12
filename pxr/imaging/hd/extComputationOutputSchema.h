@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_EXT_COMPUTATION_OUTPUT_SCHEMA_H
 #define PXR_IMAGING_HD_EXT_COMPUTATION_OUTPUT_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -38,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (name) \
     (valueType) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdExtComputationOutputSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdExtComputationOutputSchemaTokens, HD_API,
     HDEXTCOMPUTATIONOUTPUT_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -51,11 +53,14 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdTokenDataSourceHandle GetName();
+    HD_API
     HdTupleTypeDataSourceHandle GetValueType();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdTokenDataSourceHandle &name,
@@ -65,11 +70,14 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetName(
             const HdTokenDataSourceHandle &name);
+        HD_API
         Builder &SetValueType(
             const HdTupleTypeDataSourceHandle &valueType);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:

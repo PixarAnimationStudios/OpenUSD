@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_XFORM_SCHEMA_H
 #define PXR_IMAGING_HD_XFORM_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -39,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (matrix) \
     (resetXformStack) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdXformSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdXformSchemaTokens, HD_API,
     HDXFORM_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -52,14 +54,17 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdMatrixDataSourceHandle GetMatrix();
 
     // The "resetXformStack" flag tells consumers that this transform doesn't
     // inherit from the parent prim's transform.
+    HD_API
     HdBoolDataSourceHandle GetResetXformStack();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdMatrixDataSourceHandle &matrix,
@@ -69,11 +74,14 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetMatrix(
             const HdMatrixDataSourceHandle &matrix);
+        HD_API
         Builder &SetResetXformStack(
             const HdBoolDataSourceHandle &resetXformStack);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
@@ -81,9 +89,11 @@ public:
         HdBoolDataSourceHandle _resetXformStack;
     };
 
+    HD_API
     static HdXformSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

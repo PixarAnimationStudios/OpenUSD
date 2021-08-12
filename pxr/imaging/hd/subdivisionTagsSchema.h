@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_SUBDIVISION_TAGS_SCHEMA_H
 #define PXR_IMAGING_HD_SUBDIVISION_TAGS_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -45,7 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (creaseLengths) \
     (creaseSharpnesses) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdSubdivisionTagsSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdSubdivisionTagsSchemaTokens, HD_API,
     HDSUBDIVISIONTAGS_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -58,17 +60,26 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdTokenDataSourceHandle GetFaceVaryingLinearInterpolation();
+    HD_API
     HdTokenDataSourceHandle GetInterpolateBoundary();
+    HD_API
     HdTokenDataSourceHandle GetTriangleSubdivisionRule();
+    HD_API
     HdIntArrayDataSourceHandle GetCornerIndices();
+    HD_API
     HdFloatArrayDataSourceHandle GetCornerSharpnesses();
+    HD_API
     HdIntArrayDataSourceHandle GetCreaseIndices();
+    HD_API
     HdIntArrayDataSourceHandle GetCreaseLengths();
+    HD_API
     HdFloatArrayDataSourceHandle GetCreaseSharpnesses();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdTokenDataSourceHandle &faceVaryingLinearInterpolation,
@@ -84,23 +95,32 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetFaceVaryingLinearInterpolation(
             const HdTokenDataSourceHandle &faceVaryingLinearInterpolation);
+        HD_API
         Builder &SetInterpolateBoundary(
             const HdTokenDataSourceHandle &interpolateBoundary);
+        HD_API
         Builder &SetTriangleSubdivisionRule(
             const HdTokenDataSourceHandle &triangleSubdivisionRule);
+        HD_API
         Builder &SetCornerIndices(
             const HdIntArrayDataSourceHandle &cornerIndices);
+        HD_API
         Builder &SetCornerSharpnesses(
             const HdFloatArrayDataSourceHandle &cornerSharpnesses);
+        HD_API
         Builder &SetCreaseIndices(
             const HdIntArrayDataSourceHandle &creaseIndices);
+        HD_API
         Builder &SetCreaseLengths(
             const HdIntArrayDataSourceHandle &creaseLengths);
+        HD_API
         Builder &SetCreaseSharpnesses(
             const HdFloatArrayDataSourceHandle &creaseSharpnesses);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
@@ -114,9 +134,11 @@ public:
         HdFloatArrayDataSourceHandle _creaseSharpnesses;
     };
 
+    HD_API
     static HdSubdivisionTagsSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

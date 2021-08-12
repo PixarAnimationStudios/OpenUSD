@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_LEGACY_DISPLAY_STYLE_SCHEMA_H
 #define PXR_IMAGING_HD_LEGACY_DISPLAY_STYLE_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -44,7 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (reprSelector) \
     (cullStyle) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdLegacyDisplayStyleSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdLegacyDisplayStyleSchemaTokens, HD_API,
     HDLEGACYDISPLAYSTYLE_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -57,16 +59,24 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdIntDataSourceHandle GetRefineLevel();
+    HD_API
     HdBoolDataSourceHandle GetFlatShadingEnabled();
+    HD_API
     HdBoolDataSourceHandle GetDisplacementEnabled();
+    HD_API
     HdBoolDataSourceHandle GetOccludedSelectionShowsThrough();
+    HD_API
     HdTokenDataSourceHandle GetShadingStyle();
+    HD_API
     HdTokenArrayDataSourceHandle GetReprSelector();
+    HD_API
     HdTokenDataSourceHandle GetCullStyle();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdIntDataSourceHandle &refineLevel,
@@ -81,21 +91,29 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetRefineLevel(
             const HdIntDataSourceHandle &refineLevel);
+        HD_API
         Builder &SetFlatShadingEnabled(
             const HdBoolDataSourceHandle &flatShadingEnabled);
+        HD_API
         Builder &SetDisplacementEnabled(
             const HdBoolDataSourceHandle &displacementEnabled);
+        HD_API
         Builder &SetOccludedSelectionShowsThrough(
             const HdBoolDataSourceHandle &occludedSelectionShowsThrough);
+        HD_API
         Builder &SetShadingStyle(
             const HdTokenDataSourceHandle &shadingStyle);
+        HD_API
         Builder &SetReprSelector(
             const HdTokenArrayDataSourceHandle &reprSelector);
+        HD_API
         Builder &SetCullStyle(
             const HdTokenDataSourceHandle &cullStyle);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
@@ -108,12 +126,16 @@ public:
         HdTokenDataSourceHandle _cullStyle;
     };
 
+    HD_API
     static HdLegacyDisplayStyleSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
+    HD_API
     static const HdDataSourceLocator &GetReprSelectorLocator();
+    HD_API
     static const HdDataSourceLocator &GetCullStyleLocator();
 
 };

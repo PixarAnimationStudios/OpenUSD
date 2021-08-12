@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_CAMERA_SCHEMA_H
 #define PXR_IMAGING_HD_CAMERA_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -46,7 +48,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (perspective) \
     (orthographic) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdCameraSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdCameraSchemaTokens, HD_API,
     HDCAMERA_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -59,16 +61,24 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdTokenDataSourceHandle GetProjection();
+    HD_API
     HdFloatDataSourceHandle GetHorizontalAperture();
+    HD_API
     HdFloatDataSourceHandle GetVerticalAperture();
+    HD_API
     HdFloatDataSourceHandle GetHorizontalApertureOffset();
+    HD_API
     HdFloatDataSourceHandle GetVerticalApertureOffset();
+    HD_API
     HdFloatDataSourceHandle GetFocalLength();
+    HD_API
     HdVec2fDataSourceHandle GetClippingRange();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdTokenDataSourceHandle &projection,
@@ -83,21 +93,29 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetProjection(
             const HdTokenDataSourceHandle &projection);
+        HD_API
         Builder &SetHorizontalAperture(
             const HdFloatDataSourceHandle &horizontalAperture);
+        HD_API
         Builder &SetVerticalAperture(
             const HdFloatDataSourceHandle &verticalAperture);
+        HD_API
         Builder &SetHorizontalApertureOffset(
             const HdFloatDataSourceHandle &horizontalApertureOffset);
+        HD_API
         Builder &SetVerticalApertureOffset(
             const HdFloatDataSourceHandle &verticalApertureOffset);
+        HD_API
         Builder &SetFocalLength(
             const HdFloatDataSourceHandle &focalLength);
+        HD_API
         Builder &SetClippingRange(
             const HdVec2fDataSourceHandle &clippingRange);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
@@ -110,11 +128,14 @@ public:
         HdVec2fDataSourceHandle _clippingRange;
     };
 
+    HD_API
     static HdCameraSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
+    HD_API
     static HdTokenDataSourceHandle BuildProjectionDataSource(
         const TfToken &projection);
 

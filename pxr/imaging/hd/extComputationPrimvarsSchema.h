@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_EXT_COMPUTATION_PRIMVARS_SCHEMA_H
 #define PXR_IMAGING_HD_EXT_COMPUTATION_PRIMVARS_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/extComputationPrimvarSchema.h"
 
 
@@ -38,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDEXTCOMPUTATIONPRIMVARS_SCHEMA_TOKENS \
     (extComputationPrimvars) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdExtComputationPrimvarsSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdExtComputationPrimvarsSchemaTokens, HD_API,
     HDEXTCOMPUTATIONPRIMVARS_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -53,9 +55,11 @@ public:
     HdExtComputationPrimvarSchema GetPrimvar(const TfToken &name);
 
 
+    HD_API
     static HdExtComputationPrimvarsSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

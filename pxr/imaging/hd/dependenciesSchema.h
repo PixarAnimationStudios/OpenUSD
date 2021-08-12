@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_DEPENDENCIES_SCHEMA_H
 #define PXR_IMAGING_HD_DEPENDENCIES_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/dependencySchema.h"
 
 
@@ -38,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDDEPENDENCIES_SCHEMA_TOKENS \
     (__dependencies) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdDependenciesSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdDependenciesSchemaTokens, HD_API,
     HDDEPENDENCIES_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -55,9 +57,11 @@ public:
     EntryVector GetEntries();
 
 
+    HD_API
     static HdDependenciesSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

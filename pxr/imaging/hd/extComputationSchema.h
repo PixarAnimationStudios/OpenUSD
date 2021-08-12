@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_EXT_COMPUTATION_SCHEMA_H
 #define PXR_IMAGING_HD_EXT_COMPUTATION_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -44,7 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (dispatchCount) \
     (elementCount) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdExtComputationSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdExtComputationSchemaTokens, HD_API,
     HDEXTCOMPUTATION_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -57,16 +59,24 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdContainerDataSourceHandle GetInputValues();
+    HD_API
     HdVectorDataSourceHandle GetInputComputations();
+    HD_API
     HdVectorDataSourceHandle GetOutputs();
+    HD_API
     HdStringDataSourceHandle GetGlslKernel();
+    HD_API
     HdDataSourceBaseHandle GetCpuCallback();
+    HD_API
     HdSizetDataSourceHandle GetDispatchCount();
+    HD_API
     HdSizetDataSourceHandle GetElementCount();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdContainerDataSourceHandle &inputValues,
@@ -81,21 +91,29 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetInputValues(
             const HdContainerDataSourceHandle &inputValues);
+        HD_API
         Builder &SetInputComputations(
             const HdVectorDataSourceHandle &inputComputations);
+        HD_API
         Builder &SetOutputs(
             const HdVectorDataSourceHandle &outputs);
+        HD_API
         Builder &SetGlslKernel(
             const HdStringDataSourceHandle &glslKernel);
+        HD_API
         Builder &SetCpuCallback(
             const HdDataSourceBaseHandle &cpuCallback);
+        HD_API
         Builder &SetDispatchCount(
             const HdSizetDataSourceHandle &dispatchCount);
+        HD_API
         Builder &SetElementCount(
             const HdSizetDataSourceHandle &elementCount);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
@@ -108,16 +126,24 @@ public:
         HdSizetDataSourceHandle _elementCount;
     };
 
+    HD_API
     static HdExtComputationSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
+    HD_API
     static const HdDataSourceLocator &GetInputValuesLocator();
+    HD_API
     static const HdDataSourceLocator &GetInputComputationsLocator();
+    HD_API
     static const HdDataSourceLocator &GetOutputsLocator();
+    HD_API
     static const HdDataSourceLocator &GetDispatchCountLocator();
+    HD_API
     static const HdDataSourceLocator &GetElementCountLocator();
+    HD_API
     static const HdDataSourceLocator &GetGlslKernelLocator();
 
 };

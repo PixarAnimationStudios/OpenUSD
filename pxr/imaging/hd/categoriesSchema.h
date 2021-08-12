@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_CATEGORIES_SCHEMA_H
 #define PXR_IMAGING_HD_CATEGORIES_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -37,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDCATEGORIES_SCHEMA_TOKENS \
     (categories) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdCategoriesSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdCategoriesSchemaTokens, HD_API,
     HDCATEGORIES_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -58,9 +60,11 @@ public:
         TfToken *excludedNames);
 
 
+    HD_API
     static HdCategoriesSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_VOLUME_FIELD_BINDING_SCHEMA_H
 #define PXR_IMAGING_HD_VOLUME_FIELD_BINDING_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -37,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDVOLUMEFIELDBINDING_SCHEMA_TOKENS \
     (volumeFieldBinding) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdVolumeFieldBindingSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdVolumeFieldBindingSchemaTokens, HD_API,
     HDVOLUMEFIELDBINDING_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -48,6 +50,7 @@ public:
     HdVolumeFieldBindingSchema(HdContainerDataSourceHandle container)
     : HdSchema(container) {}
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         size_t count,
@@ -57,9 +60,11 @@ public:
     HdPathDataSourceHandle GetVolumeFieldBinding(TfToken const &name);
 
 
+    HD_API
     static HdVolumeFieldBindingSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

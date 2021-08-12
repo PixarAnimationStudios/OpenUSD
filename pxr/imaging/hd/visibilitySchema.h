@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_VISIBILITY_SCHEMA_H
 #define PXR_IMAGING_HD_VISIBILITY_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -38,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (visibility) \
 
 
-TF_DECLARE_PUBLIC_TOKENS(HdVisibilitySchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdVisibilitySchemaTokens, HD_API,
     HDVISIBILITY_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -51,10 +53,12 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdBoolDataSourceHandle GetVisibility();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdBoolDataSourceHandle &visibility
@@ -63,18 +67,22 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetVisibility(
             const HdBoolDataSourceHandle &visibility);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
         HdBoolDataSourceHandle _visibility;
     };
 
+    HD_API
     static HdVisibilitySchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

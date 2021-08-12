@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_RENDER_BUFFER_SCHEMA_H
 #define PXR_IMAGING_HD_RENDER_BUFFER_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -40,7 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (format) \
     (multiSampled) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdRenderBufferSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdRenderBufferSchemaTokens, HD_API,
     HDRENDERBUFFER_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -53,12 +55,16 @@ public:
 
     //ACCESSORS
 
+    HD_API
     HdVec3iDataSourceHandle GetDimensions();
+    HD_API
     HdFormatDataSourceHandle GetFormat();
+    HD_API
     HdBoolDataSourceHandle GetMultiSampled();
 
     // RETRIEVING AND CONSTRUCTING
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdVec3iDataSourceHandle &dimensions,
@@ -69,13 +75,17 @@ public:
     class Builder
     {
     public:
+        HD_API
         Builder &SetDimensions(
             const HdVec3iDataSourceHandle &dimensions);
+        HD_API
         Builder &SetFormat(
             const HdFormatDataSourceHandle &format);
+        HD_API
         Builder &SetMultiSampled(
             const HdBoolDataSourceHandle &multiSampled);
 
+        HD_API
         HdContainerDataSourceHandle Build();
 
     private:
@@ -84,9 +94,11 @@ public:
         HdBoolDataSourceHandle _multiSampled;
     };
 
+    HD_API
     static HdRenderBufferSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

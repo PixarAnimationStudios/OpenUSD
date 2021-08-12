@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_MATERIAL_SCHEMA_H
 #define PXR_IMAGING_HD_MATERIAL_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -38,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (material) \
     ((universalRenderContext, "")) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdMaterialSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdMaterialSchemaTokens, HD_API,
     HDMATERIAL_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -49,6 +51,7 @@ public:
     HdMaterialSchema(HdContainerDataSourceHandle container)
     : HdSchema(container) {}
 
+    HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
         size_t count,
@@ -59,9 +62,11 @@ public:
     HdContainerDataSourceHandle GetMaterialNetwork(TfToken const &context);
 
 
+    HD_API
     static HdMaterialSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };

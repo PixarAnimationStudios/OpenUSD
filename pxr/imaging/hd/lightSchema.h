@@ -28,6 +28,8 @@
 #ifndef PXR_IMAGING_HD_LIGHT_SCHEMA_H
 #define PXR_IMAGING_HD_LIGHT_SCHEMA_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/imaging/hd/schema.h" 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -37,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDLIGHT_SCHEMA_TOKENS \
     (light) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdLightSchemaTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdLightSchemaTokens, HD_API,
     HDLIGHT_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
@@ -49,9 +51,11 @@ public:
     : HdSchema(container) {}
 
 
+    HD_API
     static HdLightSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
 };
