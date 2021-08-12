@@ -1362,7 +1362,10 @@ PYSIDE = PythonDependency("PySide", GetPySideInstructions,
 ############################################################
 # HDF5
 
-HDF5_URL = "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0-patch1/src/hdf5-1.10.0-patch1.zip"
+# At Autodesk our Jenkins VM Mac builds have trouble downloading (using curl) this file.
+# Therefore we have temporarily placed it in Artifactory and download from there.
+#HDF5_URL = "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0-patch1/src/hdf5-1.10.0-patch1.zip"
+HDF5_URL = "https://art-bobcat.autodesk.com:443/artifactory/team-mayausd-dev-generic/staging/ecg-usd-build/3rd-party/hdf5-1.10.0-patch1.zip"
 
 def InstallHDF5(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(HDF5_URL, context, force)):
