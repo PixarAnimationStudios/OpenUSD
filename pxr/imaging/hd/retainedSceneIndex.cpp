@@ -90,9 +90,10 @@ HdRetainedSceneIndex::GetPrim(const SdfPath & primPath) const {
 
 }
 
-TfTokenVector
-HdRetainedSceneIndex::GetChildPrimNames(const SdfPath & primPath) const {
-    TfTokenVector result;
+SdfPathVector
+HdRetainedSceneIndex::GetChildPrimPaths(const SdfPath &primPath) const
+{
+    SdfPathVector result;
 
     _PrimEntryTable::const_iterator it = _entries.find(primPath);
     if (it == _entries.end()) {
@@ -104,7 +105,7 @@ HdRetainedSceneIndex::GetChildPrimNames(const SdfPath & primPath) const {
     while (it != _entries.end()
             && it->first.GetParentPath() == primPath) {
 
-        result.push_back(it->first.GetNameToken());
+        result.push_back(it->first);
 
         // we want a sibling so we can't use increment
         it = it.GetNextSubtree();

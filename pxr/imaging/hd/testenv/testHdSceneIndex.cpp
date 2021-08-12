@@ -38,12 +38,12 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-static std::ostream &
-operator<<(std::ostream &out, const TfTokenVector &v)
+static std::ostream & 
+operator<<(std::ostream &out, const SdfPathVector &v)
 {
     out << "{" << std::endl;
-    for (const TfToken &token : v) {
-        out << token << std::endl;
+    for (const SdfPath &path : v) {
+        out << path << std::endl;
     }
     out << "}" << std::endl;
 
@@ -293,9 +293,8 @@ void PrintSceneIndexPrim(
         return;
     }
 
-    for (const TfToken & childName : sceneIndex.GetChildPrimNames(primPath)) {
-        PrintSceneIndexPrim(sceneIndex, primPath.AppendChild(childName), true,
-                prefix);
+    for (const SdfPath &childPath : sceneIndex.GetChildPrimPaths(primPath)) {
+        PrintSceneIndexPrim(sceneIndex, childPath, true, prefix);
     }
 }
 
@@ -556,53 +555,53 @@ TestPrefixingSceneIndex()
     }
 
     //
-    // Testing GetChildPrimNames
+    // Testing GetChildPrimPaths
     // 
-    if (!_CompareValue("TESTING GetChildPrimNames('/E/F/G/A'))",
-            prefixingSceneIndex.GetChildPrimNames(SdfPath("/E/F/G/A")), 
-            TfTokenVector({TfToken("C"), TfToken("B")})
+    if (!_CompareValue("TESTING GetChildPrimPaths('/E/F/G/A'))",
+            prefixingSceneIndex.GetChildPrimPaths(SdfPath("/E/F/G/A")), 
+            SdfPathVector({SdfPath("/E/F/G/A/C"), SdfPath("/E/F/G/A/B")})
             )) {
         return false;
     }
 
-    if (!_CompareValue("TESTING GetChildPrimNames('/E/X/Y/Z'))",
-            prefixingSceneIndex.GetChildPrimNames(SdfPath("/E/X/Y/Z")), 
-            TfTokenVector())
+    if (!_CompareValue("TESTING GetChildPrimPaths('/E/X/Y/Z'))",
+            prefixingSceneIndex.GetChildPrimPaths(SdfPath("/E/X/Y/Z")), 
+            SdfPathVector())
             ) {
         return false;
     }
 
-    if (!_CompareValue("TESTING GetChildPrimNames('/E/F'))",
-            prefixingSceneIndex.GetChildPrimNames(SdfPath("/E/F")), 
-            TfTokenVector({TfToken("G")}))
+    if (!_CompareValue("TESTING GetChildPrimPaths('/E/F'))",
+            prefixingSceneIndex.GetChildPrimPaths(SdfPath("/E/F")), 
+            SdfPathVector({SdfPath("/E/F/G")}))
             ) {
         return false;
     }
 
-    if (!_CompareValue("TESTING GetChildPrimNames('/E'))",
-            prefixingSceneIndex.GetChildPrimNames(SdfPath("/E")), 
-            TfTokenVector({TfToken("F")}))
+    if (!_CompareValue("TESTING GetChildPrimPaths('/E'))",
+            prefixingSceneIndex.GetChildPrimPaths(SdfPath("/E")), 
+            SdfPathVector({SdfPath("/E/F")}))
             ) {
         return false;
     }
 
-    if (!_CompareValue("TESTING GetChildPrimNames('/E/X'))",
-            prefixingSceneIndex.GetChildPrimNames(SdfPath("/E/X")), 
-            TfTokenVector())
+    if (!_CompareValue("TESTING GetChildPrimPaths('/E/X'))",
+            prefixingSceneIndex.GetChildPrimPaths(SdfPath("/E/X")), 
+            SdfPathVector())
             ) {
         return false;
     }
 
-    if (!_CompareValue("TESTING GetChildPrimNames(''))",
-            prefixingSceneIndex.GetChildPrimNames(SdfPath()), 
-            TfTokenVector())
+    if (!_CompareValue("TESTING GetChildPrimPaths(''))",
+            prefixingSceneIndex.GetChildPrimPaths(SdfPath()), 
+            SdfPathVector())
             ) {
         return false;
     }
 
-    if (!_CompareValue("TESTING GetChildPrimNames('/'))",
-            prefixingSceneIndex.GetChildPrimNames(SdfPath("/")), 
-            TfTokenVector({TfToken("E")}))
+    if (!_CompareValue("TESTING GetChildPrimPaths('/'))",
+            prefixingSceneIndex.GetChildPrimPaths(SdfPath("/")), 
+            SdfPathVector({SdfPath("/E")}))
             ) {
         return false;
     }

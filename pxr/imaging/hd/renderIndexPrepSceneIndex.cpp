@@ -261,10 +261,10 @@ HdRenderIndexPrepSceneIndex::GetPrim(
     return _cache->GetPrim(primPath);
 }
 
-TfTokenVector HdRenderIndexPrepSceneIndex::GetChildPrimNames(
-    const SdfPath &primPath) const
+SdfPathVector
+HdRenderIndexPrepSceneIndex::GetChildPrimPaths(const SdfPath &primPath) const
 {
-    return _GetInputSceneIndex()->GetChildPrimNames(primPath);
+    return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
 }
 
 void

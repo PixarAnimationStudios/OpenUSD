@@ -54,9 +54,8 @@ public:
     HD_API 
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
 
-    HD_API 
-    TfTokenVector GetChildPrimNames(const SdfPath &primPath) const override;
-
+    HD_API
+    SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
 protected:
 

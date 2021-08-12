@@ -70,12 +70,12 @@ HdFlatteningSceneIndex::GetPrim(const SdfPath &primPath) const
     return {TfToken(), nullptr};
 }
 
-TfTokenVector
-HdFlatteningSceneIndex::GetChildPrimNames(const SdfPath &primPath) const
+SdfPathVector
+HdFlatteningSceneIndex::GetChildPrimPaths(const SdfPath &primPath) const
 {
     // we don't change topology so we can dispatch to input
     if (_GetInputSceneIndex()) {
-        return _GetInputSceneIndex()->GetChildPrimNames(primPath);
+        return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
     }
 
     return {};

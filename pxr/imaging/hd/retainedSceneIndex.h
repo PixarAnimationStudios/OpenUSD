@@ -82,7 +82,7 @@ public:
     // HdSceneIndexBase implementations.
 
     HdSceneIndexPrim GetPrim(const SdfPath & primPath) const override;
-    TfTokenVector GetChildPrimNames(const SdfPath & primPath) const override;
+    SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
 protected:
 
