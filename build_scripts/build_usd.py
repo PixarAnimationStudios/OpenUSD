@@ -2224,7 +2224,9 @@ if context.buildDocs:
         sys.exit(1)
 
 if PYSIDE in requiredDependencies:
-    # Special case - we are given the PYSIDEUICBINARY as cmake arg.
+    # Special case - we are given the PYSIDEUICBINARY as cmake arg. For example
+    # this could be a python script rather than executable, in which case you
+    # should also pass 'PYSIDE_IS_SCRIPT=TRUE' as build arg.
     usdBuildArgs = context.GetBuildArguments(USD)
     given_pysideUic = 'PYSIDEUICBINARY' in " ".join(usdBuildArgs)
 
