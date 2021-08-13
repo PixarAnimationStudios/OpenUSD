@@ -272,14 +272,25 @@ function(_install_pyside_ui_files LIBRARY_NAME)
             # generating python output (instead of default C++ ).
             set(PYSIDEUIC_EXTRA_ARGS -g python)
         endif()
-        add_custom_command(
-            OUTPUT ${outFilePath}
-            COMMAND "${PYSIDEUICBINARY}"
-            ARGS ${PYSIDEUIC_EXTRA_ARGS} -o ${outFilePath} ${uiFilePath}
-            MAIN_DEPENDENCY "${uiFilePath}"
-            COMMENT "Generating Python for ${uiFilePath} ..."
-            VERBATIM
-        )
+        if (NOT PYSIDE_IS_SCRIPT)
+            add_custom_command(
+                OUTPUT ${outFilePath}
+                COMMAND "${PYSIDEUICBINARY}"
+                ARGS ${PYSIDEUIC_EXTRA_ARGS} -o ${outFilePath} ${uiFilePath}
+                MAIN_DEPENDENCY "${uiFilePath}"
+                COMMENT "Generating Python for ${uiFilePath} ..."
+                VERBATIM
+            )
+        else()
+            add_custom_command(
+                OUTPUT ${outFilePath}
+                COMMAND "${PYTHON_EXECUTABLE}"
+                ARGS ${PYSIDEUICBINARY} -o ${outFilePath} ${uiFilePath}
+                MAIN_DEPENDENCY "${uiFilePath}"
+                COMMENT "Generating Python for ${uiFilePath} ..."
+                VERBATIM
+            )
+        endif()
         list(APPEND uiFiles ${outFilePath})
     endforeach()
 
