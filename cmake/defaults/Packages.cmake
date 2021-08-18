@@ -71,7 +71,7 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         find_package(PythonLibs 2.7 REQUIRED)
     endif()
 
-    if(WIN32 AND PXR_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+    if(WIN32 AND PXR_USE_DEBUG_PYTHON)
         set(Boost_USE_DEBUG_PYTHON ON)
     endif()
 

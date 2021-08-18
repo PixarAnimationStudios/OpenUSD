@@ -323,7 +323,7 @@ def FormatMultiProcs(numJobs, generator):
     tag = "-j"
     if generator:
         if "Visual Studio" in generator:
-            tag = "/M:" # This will build multiple projects at once. Also add /MP to CXX_FLAGS (below).
+            tag = "/M:" # This will build multiple projects at once.
         elif "Xcode" in generator:
             tag = "-j "
 
@@ -362,9 +362,6 @@ def RunCMake(context, force, extraArgs = None):
 
     if IsVisualStudio2019OrGreater():
         generator = generator + " -A x64"
-
-    if generator and 'Visual Studio' in generator:
-        generator += ' -DCMAKE_CXX_FLAGS_INIT="/MP{procs}"'.format(procs=context.numJobs)
 
     toolset = context.cmakeToolset
     if toolset is not None:
@@ -1370,9 +1367,9 @@ def InstallUSD(context, force, buildArgs):
             # debugging into python land is not what they want which can be done by setting the 
             # debugPython
             if context.buildDebug and context.debugPython:
-                extraArgs.append('-DPXR_DEFINE_BOOST_DEBUG_PYTHON_FLAG=ON')
+                extraArgs.append('-DPXR_USE_DEBUG_PYTHON=ON')
             else:
-                extraArgs.append('-DPXR_DEFINE_BOOST_DEBUG_PYTHON_FLAG=OFF')
+                extraArgs.append('-DPXR_USE_DEBUG_PYTHON=OFF')
 
             # CMake has trouble finding the executable, library, and include
             # directories when there are multiple versions of Python installed.
@@ -1561,6 +1558,11 @@ Python. In that case, it is important that USD and the plugins for that DCC are
 built using the DCC's version of Python and not the system version. This can be
 done by running %(prog)s using the DCC's version of Python.
 
+The flag --build-python-info allows calling the %(prog)s with any python (such as
+system python) but pass in the python that you want USD to use to build the python
+bindings with. This flag takes 4 arguments: python executable, python include directory
+python library and python version.
+
 For example, to build USD on macOS for use in Maya 2019, run:
 
 /Applications/Autodesk/maya2019/Maya.app/Contents/bin/mayapy %(prog)s --no-usdview ...
@@ -1598,14 +1600,17 @@ group.add_argument("--build", type=str,
                    help=("Build directory for USD and 3rd-party dependencies " 
                          "(default: <install_dir>/build)"))
 
-group.add_argument("--build-debug", dest="build_debug", action="store_true",
-                    help="Build in Debug mode")
-
-group.add_argument("--build-release", dest="build_release", action="store_true",
-                    help="Build in Release mode")
-
-group.add_argument("--build-relwithdebug", dest="build_relwithdebug", action="store_true",
-                    help="Build in RelWithDebInfo mode")
+(BUILD_DEBUG, BUILD_RELEASE, BUILD_RELWITHDEBUG) = (0, 1, 2)
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--build-debug", dest="build_variant",
+                      action="store_const", const=BUILD_DEBUG, default=BUILD_RELWITHDEBUG,
+                      help="Build in Debug mode")
+subgroup.add_argument("--build-release", dest="build_variant",
+                      action="store_const", const=BUILD_RELEASE,
+                      help="Build in Release mode")
+subgroup.add_argument("--build-relwithdebug", dest="build_variant",
+                      action="store_const", const=BUILD_RELWITHDEBUG,
+                      help="Build in RelWithDebInfo mode (default)")
 
 group.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Custom arguments to pass to build system when "
@@ -1858,9 +1863,9 @@ class InstallContext:
             self.build_python_info['PYTHON_VERSION'] = args.build_python_info[3]
 
         # Build type
-        self.buildDebug = args.build_debug;
-        self.buildRelease = args.build_release;
-        self.buildRelWithDebug = args.build_relwithdebug;
+        self.buildDebug = (args.build_variant == BUILD_DEBUG);
+        self.buildRelease = (args.build_variant == BUILD_RELEASE);
+        self.buildRelWithDebug = (args.build_variant == BUILD_RELWITHDEBUG);
 
         self.debugPython = args.debug_python
 
@@ -2075,7 +2080,7 @@ if PYSIDE in requiredDependencies:
     # The USD build will skip building usdview if pyside2-uic or pyside-uic is
     # not found, so check for it here to avoid confusing users. This list of 
     # PySide executable names comes from cmake/modules/FindPySide.cmake
-    pyside2Uic = ["pyside2-uic", "python2-pyside2-uic", "pyside2-uic-2.7"]
+    pyside2Uic = ["pyside2-uic", "python2-pyside2-uic", "pyside2-uic-2.7", "uic"]
     found_pyside2Uic = any([which(p) for p in pyside2Uic])
     pysideUic = ["pyside-uic", "python2-pyside-uic", "pyside-uic-2.7"]
     found_pysideUic = any([which(p) for p in pysideUic])

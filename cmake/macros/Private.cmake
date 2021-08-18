@@ -84,7 +84,7 @@ function(_get_python_module_name LIBRARY_FILENAME MODULE_NAME)
     # or _tf.pyd/_tf_d.pyd for Python module libraries.
     # We want to strip off the leading "_" and the trailing "_d".
     set(LIBNAME ${LIBRARY_FILENAME})
-    if (PXR_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+    if (PXR_USE_DEBUG_PYTHON)
         string(REGEX REPLACE "_d$" "" LIBNAME ${LIBNAME})
     endif()
     string(REGEX REPLACE "^_" "" LIBNAME ${LIBNAME})
@@ -900,7 +900,7 @@ function(_pxr_python_module NAME)
         return()
     endif()
 
-    if (WIN32 AND PXR_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+    if (WIN32 AND PXR_USE_DEBUG_PYTHON)
         # On Windows when compiling with debug python the library must be named with _d.
         set(LIBRARY_NAME "_${NAME}_d")
     else()

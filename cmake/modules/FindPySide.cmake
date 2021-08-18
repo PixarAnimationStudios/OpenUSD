@@ -34,7 +34,7 @@ execute_process(
 )
 if (pySideImportResult EQUAL 0)
     set(pySideImportResult "PySide2")
-    set(pySideUIC pyside2-uic python2-pyside2-uic pyside2-uic-2.7)
+    set(pySideUIC pyside2-uic python2-pyside2-uic pyside2-uic-2.7 uic)
 endif()
 
 # PySide2 not found OR PYSIDE explicitly requested
