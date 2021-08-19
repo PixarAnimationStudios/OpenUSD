@@ -1746,7 +1746,7 @@ HdSt_ResourceBinder::BindTextureWithLayout(
 
     glActiveTexture(GL_TEXTURE0 + texelSamplerUnit);
     glBindTexture(_GetTextureTarget(texelBinding),
-                  bind ? texelTexture->GetRawResource() : 0);
+              (bind && texelTexture) ? texelTexture->GetRawResource() : 0);
 
     const HgiGLSampler * const glSampler =
         bind ? dynamic_cast<HgiGLSampler*>(texelSampler.Get()) : nullptr;
@@ -1762,7 +1762,7 @@ HdSt_ResourceBinder::BindTextureWithLayout(
 
     glActiveTexture(GL_TEXTURE0 + layoutSamplerUnit);
     glBindTexture(_GetTextureTarget(layoutBinding),
-                  bind ? layoutTexture->GetRawResource() : 0);
+              (bind && layoutTexture) ? layoutTexture->GetRawResource() : 0);
     glActiveTexture(GL_TEXTURE0);
 }
 

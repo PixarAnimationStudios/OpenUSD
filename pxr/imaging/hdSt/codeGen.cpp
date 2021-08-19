@@ -3282,16 +3282,18 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "  int shaderCoord = GetDrawingCoord().shaderCoord;\n";
             if (!it->second.inPrimvars.empty()) {
                 accessors
+                    << "  vec3 c = vec3(0.0, 0.0, 0.0);\n"
                     << "#if defined(HD_HAS_"
                     << it->second.inPrimvars[0] << ")\n"
-                    << "  vec3 c = hd_sample_udim(HdGet_"
-                    << it->second.inPrimvars[0] << "().xy);\n"
-                    << "  c.z = texelFetch(sampler1D(shaderData[shaderCoord]."
+                    << "  uvec2 handle = shaderData[shaderCoord]."
                     << it->second.name
-                    << HdSt_ResourceBindingSuffixTokens->layout
-                    << "), int(c.z), 0).x - 1;\n"
-                    << "#else\n"
-                    << "  vec3 c = vec3(0.0, 0.0, 0.0);\n"
+                    << HdSt_ResourceBindingSuffixTokens->layout << ";\n"
+                    << "  if (handle != uvec2(0)) {\n"
+                    << "    c = hd_sample_udim(HdGet_"
+                    << it->second.inPrimvars[0] << "().xy);\n"
+                    << "    c.z = "
+                    << "texelFetch(sampler1D(handle), int(c.z), 0).x - 1;\n"
+                    << "  }\n"
                     << "#endif\n";
             } else {
                 accessors
@@ -3299,9 +3301,12 @@ HdSt_CodeGen::_GenerateShaderParameters()
             }
             accessors
                 << "  vec4 ret = vec4(0, 0, 0, 0);\n"
-                << "  if (c.z >= -0.5) {"
-                << " ret = texture(sampler2DArray(shaderData[shaderCoord]."
-                << it->second.name << "), c); }\n"
+                << "  if (c.z >= -0.5) {\n"
+                << "    uvec2 handleTexels = shaderData[shaderCoord]."
+                << it->second.name << ";\n"
+                << "    if (handleTexels != uvec2(0)) {\n"
+                << "      ret = texture(sampler2DArray(handleTexels), c);\n"
+                << "    }\n  }\n"
                 << "  return (ret\n"
                 << "#ifdef HD_HAS_" << it->second.name << "_" 
                 << HdStTokens->scale << "\n"
