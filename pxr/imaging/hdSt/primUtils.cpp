@@ -112,14 +112,16 @@ _IsEnabledPrimvarFiltering(HdStDrawItem const * drawItem)
     return materialShader && materialShader->IsEnabledPrimvarFiltering();
 }
 
-static TfTokenVector
+static TfTokenVector const &
 _GetFilterNamesForMaterial(HdStDrawItem const * drawItem)
 {
     HdStShaderCodeSharedPtr materialShader = drawItem->GetMaterialShader();
     if (materialShader) {
         return materialShader->GetPrimvarNames();
     }
-    return TfTokenVector();
+
+    static const TfTokenVector fallback = TfTokenVector();
+    return fallback;
 }
 
 static TfTokenVector
@@ -129,7 +131,7 @@ _GetFilterNames(HdRprim const * prim,
 {
     TfTokenVector filterNames = prim->GetBuiltinPrimvarNames();
 
-    const TfTokenVector matPvNames = _GetFilterNamesForMaterial(drawItem);
+    const TfTokenVector &matPvNames = _GetFilterNamesForMaterial(drawItem);
     filterNames.insert(filterNames.end(), matPvNames.begin(), 
         matPvNames.end());
 
@@ -166,6 +168,8 @@ HdStGetPrimvarDescriptors(
     int geomSubsetDescIndex,
     size_t numGeomSubsets)
 {
+    HD_TRACE_FUNCTION();
+
     HdPrimvarDescriptorVector primvars =
         prim->GetPrimvarDescriptors(delegate, interpolation);
 
@@ -174,7 +178,9 @@ HdStGetPrimvarDescriptors(
         filterNames = _GetFilterNames(prim, drawItem);
     }
 
-    if (repr && descGeomStyle != HdMeshGeomStyleInvalid && 
+    if (numGeomSubsets != 0 && 
+        repr && 
+        descGeomStyle != HdMeshGeomStyleInvalid && 
         descGeomStyle != HdMeshGeomStylePoints) {
         for (size_t i = 0; i < numGeomSubsets; ++i) {
             HdStDrawItem const * subsetDrawItem =
@@ -192,7 +198,7 @@ HdStGetPrimvarDescriptors(
         }
         std::sort(filterNames.begin(), filterNames.end());
         filterNames.erase(std::unique(filterNames.begin(), filterNames.end()),
-                filterNames.end());
+            filterNames.end());
     }
 
     if (filterNames.empty()) {
