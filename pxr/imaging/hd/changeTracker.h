@@ -86,6 +86,7 @@ public:
 
         CustomBitsBegin             = 1 << 24,
         CustomBitsEnd               = 1 << 30,
+        CustomBitsMask              = 0x7f << 24,
     };
 
     // InstancerDirtybits are a subset of rprim dirty bits right now:
