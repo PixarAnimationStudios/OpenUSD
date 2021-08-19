@@ -2981,8 +2981,8 @@ SdfLayer::TransferContent(const SdfLayerHandle& layer)
 }
 
 static void
-_GatherPrimAssetReferences(const SdfPrimSpecHandle &prim,
-                       set<string> *assetReferences)
+_GatherPrimCompositionDependencies(const SdfPrimSpecHandle &prim,
+                                   set<string> *assetReferences)
 {
     if (prim != prim->GetLayer()->GetPseudoRoot()) {
         // Prim references
@@ -2999,37 +2999,51 @@ _GatherPrimAssetReferences(const SdfPrimSpecHandle &prim,
 
         // Prim variants
         SdfVariantSetsProxy variantSetMap = prim->GetVariantSets();
-        TF_FOR_ALL(varSetIt, variantSetMap) {
-            const SdfVariantSetSpecHandle &varSetSpec = varSetIt->second;
+        for (const auto &varSetIt: variantSetMap) {
+            const SdfVariantSetSpecHandle &varSetSpec = varSetIt.second;
             const SdfVariantSpecHandleVector &variants =
                 varSetSpec->GetVariantList();
-            TF_FOR_ALL(varIt, variants) {
-                _GatherPrimAssetReferences( (*varIt)->GetPrimSpec(),
-                                        assetReferences );
+            for(const SdfVariantSpecHandle &varSpec : variants) {
+                _GatherPrimCompositionDependencies( 
+                    varSpec->GetPrimSpec(), assetReferences );
             }
         }
     }
 
     // Recurse on nameChildren
-    TF_FOR_ALL(child, prim->GetNameChildren()) {
-        _GatherPrimAssetReferences(*child, assetReferences);
+    for (const SdfPrimSpecHandle &child : prim->GetNameChildren()) {
+        _GatherPrimCompositionDependencies(child, assetReferences);
     }
 }
 
 set<string>
 SdfLayer::GetExternalReferences() const
 {
+    return GetCompositionAssetDependencies();
+}
+
+bool
+SdfLayer::UpdateExternalReference(
+    const string &oldLayerPath,
+    const string &newLayerPath)
+{
+    return UpdateCompositionAssetDependency(oldLayerPath, newLayerPath);
+}
+
+set<string>
+SdfLayer::GetCompositionAssetDependencies() const
+{
     SdfSubLayerProxy subLayers = GetSubLayerPaths();
 
     set<string> results(subLayers.begin(), subLayers.end());
 
-    _GatherPrimAssetReferences(GetPseudoRoot(), &results);
+    _GatherPrimCompositionDependencies(GetPseudoRoot(), &results);
 
     return results;
 }
 
 bool
-SdfLayer::UpdateExternalReference(
+SdfLayer::UpdateCompositionAssetDependency(
     const string &oldLayerPath,
     const string &newLayerPath)
 {
@@ -3050,10 +3064,12 @@ SdfLayer::UpdateExternalReference(
         return true; // sublayers are unique, do no more...
     }
 
-    _UpdateReferencePaths(GetPseudoRoot(), oldLayerPath, newLayerPath);
+    _UpdatePrimCompositionDependencyPaths(
+        GetPseudoRoot(), oldLayerPath, newLayerPath);
 
     return true;
 }
+
 
 std::set<std::string> 
 SdfLayer::GetExternalAssetDependencies() const
@@ -3084,7 +3100,7 @@ _UpdateRefOrPayloadPath(
 }
 
 void
-SdfLayer::_UpdateReferencePaths(
+SdfLayer::_UpdatePrimCompositionDependencyPaths(
     const SdfPrimSpecHandle &prim,
     const string &oldLayerPath,
     const string &newLayerPath)
@@ -3108,14 +3124,15 @@ SdfLayer::_UpdateReferencePaths(
         const SdfVariantSpecHandleVector &variants =
             varSetSpec->GetVariantList();
         for (const auto& variantSpec : variants) {
-            _UpdateReferencePaths(
+            _UpdatePrimCompositionDependencyPaths(
                 variantSpec->GetPrimSpec(), oldLayerPath, newLayerPath);
         }
     }
 
     // Recurse on nameChildren
     for (const auto& primSpec : prim->GetNameChildren()) {
-        _UpdateReferencePaths(primSpec, oldLayerPath, newLayerPath);
+        _UpdatePrimCompositionDependencyPaths(
+            primSpec, oldLayerPath, newLayerPath);
     }
 }
 

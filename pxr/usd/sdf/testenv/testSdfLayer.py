@@ -200,7 +200,7 @@ class TestSdfLayer(unittest.TestCase):
         self.assertEqual(oldResolvedPath, newResolvedPath)
         self.assertFalse(listener.receivedNotice)
 
-    def test_UpdateExternalReference(self):
+    def test_UpdateCompositionAssetDependency(self):
         srcLayer = Sdf.Layer.CreateAnonymous()
         srcLayerStr = '''\
 #sdf 1.4.32
@@ -258,25 +258,26 @@ def "Root" (
         '''
         srcLayer.ImportFromString(srcLayerStr)
 
-        # Calling UpdateExternalReference with an empty old layer path is
-        # not allowed.
+        # Calling UpdateCompositionAssetDependency with an empty old layer path
+        # is not allowed.
         origLayer = srcLayer.ExportToString()
-        self.assertFalse(srcLayer.UpdateExternalReference("", ""))
+        self.assertFalse(srcLayer.UpdateCompositionAssetDependency("", ""))
         self.assertEqual(origLayer, srcLayer.ExportToString())
 
-        # Calling UpdateExternalReference with an asset path that does not
-        # exist should result in no changes to the layer.
-        self.assertTrue(srcLayer.UpdateExternalReference(
+        # Calling UpdateCompositionAssetDependency with an asset path that does
+        # not exist should result in no changes to the layer.
+        self.assertTrue(srcLayer.UpdateCompositionAssetDependency(
             "nonexistent.sdf", "foo.sdf"))
         self.assertEqual(origLayer, srcLayer.ExportToString())
 
         # Test renaming / removing sublayers.
-        self.assertTrue(srcLayer.UpdateExternalReference(
+        self.assertTrue(srcLayer.UpdateCompositionAssetDependency(
             "sublayer_1.sdf", "new_sublayer_1.sdf"))
         self.assertEqual(
             srcLayer.subLayerPaths, ["new_sublayer_1.sdf", "sublayer_2.sdf"])
 
-        self.assertTrue(srcLayer.UpdateExternalReference("sublayer_2.sdf", ""))
+        self.assertTrue(srcLayer.UpdateCompositionAssetDependency(
+            "sublayer_2.sdf", ""))
         self.assertEqual(srcLayer.subLayerPaths, ["new_sublayer_1.sdf"])
 
         # Test renaming / removing payloads.
@@ -293,7 +294,7 @@ def "Root" (
             ["/Root{v=x}", "/Root{v=x}ChildInVariant"]
         ]
 
-        self.assertTrue(srcLayer.UpdateExternalReference(
+        self.assertTrue(srcLayer.UpdateCompositionAssetDependency(
             "payload_1.sdf", "new_payload_1.sdf"))
         for prim in primsWithSinglePayload:
             self.assertEqual(
@@ -307,7 +308,7 @@ def "Root" (
                  Sdf.Payload("payload_2.sdf", "/Payload2")],
                 "Unexpected payloads {0} at {1}".format(prim.payloadList, prim.path))
 
-        self.assertTrue(srcLayer.UpdateExternalReference(
+        self.assertTrue(srcLayer.UpdateCompositionAssetDependency(
             "new_payload_1.sdf", ""))
         for prim in primsWithSinglePayload:
             self.assertEqual(
@@ -320,7 +321,7 @@ def "Root" (
                 "Unexpected payloads {0} at {1}".format(prim.payloadList, prim.path))
 
         # Test renaming / removing references.
-        self.assertTrue(srcLayer.UpdateExternalReference(
+        self.assertTrue(srcLayer.UpdateCompositionAssetDependency(
             "ref_1.sdf", "new_ref_1.sdf"))
         for prim in primsWithReferences:
             self.assertEqual(
@@ -330,7 +331,7 @@ def "Root" (
                 "Unexpected references {0} at {1}"
                 .format(prim.referenceList, prim.path))
 
-        self.assertTrue(srcLayer.UpdateExternalReference(
+        self.assertTrue(srcLayer.UpdateCompositionAssetDependency(
             "ref_2.sdf", ""))
         for prim in primsWithReferences:
             self.assertEqual(

@@ -102,8 +102,8 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         # it with the cone file's real path (converted to '/' on windows) and 
         # then compare against the dynamic baseline
         refConeLayerPath = procConeLayer.realPath.replace('\\', '/')
-        baselineProcLayer.UpdateExternalReference('placeholder.sdf', 
-                                                  refConeLayerPath)
+        baselineProcLayer.UpdateCompositionAssetDependency('placeholder.sdf', 
+                                                           refConeLayerPath)
         self.assertEqual(procConeLayer.ExportToString(),
                          baselineProcLayer.ExportToString())
         # Force reload the procedural layer to make sure it still works correctly
@@ -120,8 +120,8 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
         self.assertEqual(procSphereLayer.GetFileFormat().formatId,
                          "Test_PcpDynamicFileFormat")
         refSphereLayerPath = procSphereLayer.realPath.replace('\\', '/')
-        baselineProcLayer.UpdateExternalReference(refConeLayerPath, 
-                                                  refSphereLayerPath)
+        baselineProcLayer.UpdateCompositionAssetDependency(refConeLayerPath, 
+                                                           refSphereLayerPath)
         self.assertEqual(procSphereLayer.ExportToString(),
                          baselineProcLayer.ExportToString())
         # Force reload the procedural layer to make sure it still works correctly

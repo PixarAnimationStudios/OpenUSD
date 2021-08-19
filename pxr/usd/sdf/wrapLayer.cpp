@@ -668,6 +668,9 @@ void wrapLayer()
 
         .def("UpdateExternalReference", &This::UpdateExternalReference)
 
+        .def("UpdateCompositionAssetDependency", 
+             &This::UpdateCompositionAssetDependency)
+
         .def("SetMuted", &This::SetMuted)
 
         .def("IsMuted", &_WrapIsMuted)
@@ -873,17 +876,21 @@ void wrapLayer()
             "the asset/real path of all layers in the registry.")
         .staticmethod("DumpLayerInfo")
 
-        .def("GetExternalReferences", 
+        .def("GetExternalReferences",
             make_function(&This::GetExternalReferences,
-                          return_value_policy<TfPySequenceToTuple>()), 
+                          return_value_policy<TfPySequenceToTuple>()),
             "Return a list of asset paths for\n"
             "this layer.")
 
         .add_property("externalReferences",
-            make_function(&This::GetExternalReferences, 
+            make_function(&This::GetExternalReferences,
                           return_value_policy<TfPySequenceToList>()),
             "Return unique list of asset paths of external references for\n"
             "given layer.")
+
+        .def("GetCompositionAssetDependencies",
+             make_function(&This::GetCompositionAssetDependencies,
+                           return_value_policy<TfPySequenceToList>()))
 
         .def("GetExternalAssetDependencies",
              make_function(&This::GetExternalAssetDependencies,
