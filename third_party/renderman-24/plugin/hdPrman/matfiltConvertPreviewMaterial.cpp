@@ -46,6 +46,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // UsdPreviewSurface tokens
     (file)
+    (opacityThreshold)
 
     // UsdPreviewSurface conversion to Pxr nodes
     (PxrSurface)
@@ -82,7 +83,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (specularRoughnessOut)
     (presence)
     (presenceOut)
-    (allowPresenceWithGlass)
 
     // UsdUVTexture parameters
     (st)
@@ -129,12 +129,21 @@ MatfiltConvertPreviewMaterial(
                 nodePath.GetParentPath().AppendChild(
                 TfToken(nodePath.GetName() + "_PxrSurface"));
 
+            // If opacityThreshold is > 0, do not use refraction.
+            bool opacityThreshold = false;
+            for (auto const& paramIt : node.parameters) {
+                if (paramIt.first != _tokens->opacityThreshold) continue;
+
+                VtValue const& vtOpacityThreshold = paramIt.second;
+                if (vtOpacityThreshold.Get<float>() > 0.0f) {
+                    opacityThreshold = true;
+                }
+            }
+
             nodesToAdd[pxrSurfacePath] = HdMaterialNode2 {
                 _tokens->PxrSurface, 
                 // parameters:
-                {
-                    {_tokens->allowPresenceWithGlass, VtValue(1)},
-                },
+                {},
                 // connections:
                 {
                     {_tokens->bumpNormal,
@@ -149,8 +158,6 @@ MatfiltConvertPreviewMaterial(
                         {{nodePath, _tokens->glowColorOut}}},
                     {_tokens->glowGain,
                         {{nodePath, _tokens->glowGainOut}}},
-                    {_tokens->refractionGain,
-                        {{nodePath, _tokens->refractionGainOut}}},
                     {_tokens->specularFaceColor,
                         {{nodePath, _tokens->specularFaceColorOut}}},
                     {_tokens->specularEdgeColor,
@@ -169,6 +176,12 @@ MatfiltConvertPreviewMaterial(
                         {{nodePath, _tokens->presenceOut}}},
                 },
             };
+            
+            if (!opacityThreshold) {
+                nodesToAdd[pxrSurfacePath].inputConnections.insert(
+                    {_tokens->refractionGain,
+                        {{nodePath, _tokens->refractionGainOut}}});
+            }
 
         } else if (node.nodeTypeId == _tokens->UsdUVTexture) {
             // Update texture nodes that use non-native texture formats
