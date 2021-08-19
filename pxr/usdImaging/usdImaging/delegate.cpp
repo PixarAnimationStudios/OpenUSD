@@ -439,6 +439,7 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
     if (!TF_VERIFY(request)) {
         return;
     }
+
     if (!TF_VERIFY(request->IDs.size() == request->dirtyBits.size())) {
         return;
     }
@@ -449,12 +450,15 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
         // Note that the incoming ID may be prefixed with the DelegateID, so we
         // must translate it via ConvertIndexPathToCachePath.
         SdfPath cachePath = ConvertIndexPathToCachePath(request->IDs[i]);
-        HdDirtyBits dirtyFlags = request->dirtyBits[i];
-
         _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
-        if (!TF_VERIFY(primInfo != nullptr, "%s\n", cachePath.GetText())) {
+
+        // It is possible Hydra is telling this scene delegate to sync 
+        // a path that is not part of this scene delegate.
+        if (primInfo == nullptr) {
             continue;
         }
+
+        HdDirtyBits dirtyFlags = request->dirtyBits[i];
 
         // Merge UsdImaging's own dirty flags with those coming from hydra.
         primInfo->dirtyBits |= dirtyFlags;
