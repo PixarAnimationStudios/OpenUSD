@@ -881,6 +881,16 @@ HdChangeTracker::MarkAllRprimsDirty(HdDirtyBits bits)
         return;
     }
 
+    if (_emulationSceneIndex) {
+        // Since bit -> locator translation is dependent on prim type,
+        // we can't do much better than devolving to MarkRprimDirty.
+        for (_IDStateMap::iterator it  = _rprimState.begin();
+                                   it != _rprimState.end(); ++it) {
+            MarkRprimDirty(it->first, bits);
+        }
+        return;
+    }
+
     //
     // This function runs similar to calling MarkRprimDirty on every prim.
     // First it checks to see if the request will set any new dirty bits that
