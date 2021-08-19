@@ -75,6 +75,8 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
                       HdDirtyBits     *dirtyBits,
                       TfToken const   &reprToken)
 {
+    _UpdateVisibility(delegate, dirtyBits);
+
     bool updateMaterialTags = false;
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         HdStSetMaterialId(delegate, renderParam, this);
@@ -159,9 +161,6 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& id = GetId();
-
-    /* VISIBILITY */
-    _UpdateVisibility(sceneDelegate, dirtyBits);
 
     /* MATERIAL SHADER (may affect subsequent primvar population) */
     if ((*dirtyBits & HdChangeTracker::NewRepr) ||

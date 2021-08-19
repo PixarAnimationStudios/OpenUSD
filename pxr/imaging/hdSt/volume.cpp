@@ -124,6 +124,8 @@ HdStVolume::Sync(HdSceneDelegate *delegate,
                  HdDirtyBits     *dirtyBits,
                  TfToken const   &reprToken)
 {
+    _UpdateVisibility(delegate, dirtyBits);
+
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         HdStSetMaterialId(delegate, renderParam, this);
 
@@ -489,9 +491,6 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-
-    /* VISIBILITY */
-    _UpdateVisibility(sceneDelegate, dirtyBits);
 
     if (HdStShouldPopulateConstantPrimvars(dirtyBits, GetId())) {
         /* CONSTANT PRIMVARS, TRANSFORM AND EXTENT */

@@ -118,6 +118,8 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
                HdDirtyBits     *dirtyBits,
                TfToken const   &reprToken)
 {
+    _UpdateVisibility(delegate, dirtyBits);
+
     bool updateMaterialTags = false;
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         HdStSetMaterialId(delegate, renderParam, this);
@@ -2137,9 +2139,6 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
         std::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
-
-    /* VISIBILITY */
-    _UpdateVisibility(sceneDelegate, dirtyBits);
 
     /* MATERIAL SHADER (may affect subsequent primvar population) */
     if ((*dirtyBits & HdChangeTracker::NewRepr) ||
