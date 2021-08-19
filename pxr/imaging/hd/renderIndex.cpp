@@ -967,6 +967,7 @@ namespace {
 
                 HdDirtyBits dirtyBits = _r.request.dirtyBits[i];
 
+                TfTokenVector reprsSynced;
                 for (const _CollectionReprSpec& spec : _reprSpecs) {
                     // The rprim's authored repr selector is
                     // guaranteed to have been set at this point (via
@@ -976,18 +977,21 @@ namespace {
                                                  spec.reprSelector,
                                                  spec.useCollectionRepr);
 
-                    // Call Rprim::Sync(..) on each valid repr of the
-                    // resolved repr selector.
                     for (size_t i = 0;
-                            i < HdReprSelector::MAX_TOPOLOGY_REPRS; ++i) {
+                         i < HdReprSelector::MAX_TOPOLOGY_REPRS; ++i) {
 
-                        if (reprSelector.IsActiveRepr(i)) {
-                            TfToken const& reprToken = reprSelector[i];
+                        TfToken const& reprToken = reprSelector[i];
+                        // Sync valid repr tokens once.
+                        if (reprSelector.IsActiveRepr(i) &&
+                            std::find(reprsSynced.begin(), reprsSynced.end(),
+                                      reprToken) == reprsSynced.end()) {
 
                             rprim.Sync(_sceneDelegate,
                                         _renderParam,
                                         &dirtyBits,
                                         reprToken);
+
+                            reprsSynced.push_back(reprToken);
                         }
                     }
                 }
