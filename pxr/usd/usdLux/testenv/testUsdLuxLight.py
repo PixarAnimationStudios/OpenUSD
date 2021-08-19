@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import Gf, Sdf, Sdr, Tf, Usd, UsdLux, UsdShade
+from pxr import Gf, Sdf, Sdr, Tf, Usd, UsdLux, UsdShade, Plug
 import unittest, math
 
 class TestUsdLuxLight(unittest.TestCase):
@@ -306,12 +306,18 @@ class TestUsdLuxLight(unittest.TestCase):
         for lightOrFilterType in (lightTypes + lightFilterTypes):
             print("Test SdrNode for schema type " + str(lightOrFilterType))
 
-            # Every concrete light and light filter type will have an 
-            # SdrShaderNode with source type 'USD' registered for it under its 
-            # USD schema type name.
+            # Every concrete light and light filter type in usdLux domain will
+            # have an SdrShaderNode with source type 'USD' registered for it 
+            # under its USD schema type name.
+
             typeName = Usd.SchemaRegistry.GetConcreteSchemaTypeName(lightOrFilterType)
             node = Sdr.Registry().GetNodeByName(typeName, ['USD'])
-            self.assertTrue(node is not None)
+            if (Plug.Registry().GetPluginForType(lightOrFilterType).name ==
+                    "usdLux"):
+                self.assertTrue(node is not None)
+            else:
+                self.assertTrue(node is None)
+                continue
 
             # Set the prim to the light type so we can cross check node inputs
             # with the light prim built-in properties.

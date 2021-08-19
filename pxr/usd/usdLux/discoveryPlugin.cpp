@@ -28,6 +28,8 @@
 #include "pxr/usd/usdLux/lightFilter.h"
 
 #include "pxr/base/plug/registry.h"
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/tf/staticTokens.h"
 
 #include "pxr/usd/usd/schemaRegistry.h"
 
@@ -39,6 +41,12 @@ UsdLux_DiscoveryPlugin::GetSearchURIs() const
     static const NdrStringVec empty;
     return empty;
 }
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (usdLux)
+);
 
 NdrNodeDiscoveryResultVec
 UsdLux_DiscoveryPlugin::DiscoverNodes(const Context &context)
@@ -59,6 +67,14 @@ UsdLux_DiscoveryPlugin::DiscoverNodes(const Context &context)
     PlugRegistry::GetAllDerivedTypes(lightFilterType, &types);
 
     for (const TfType &type : types) {
+        static const PlugRegistry &plugRegistry = PlugRegistry::GetInstance();
+        const PlugPluginPtr &plugin = plugRegistry.GetPluginForType(type);
+        if (!plugin) {
+            continue;
+        }
+        if (_tokens->usdLux != plugin->GetName()) {
+            continue;
+        }
         const TfToken name = UsdSchemaRegistry::GetConcreteSchemaTypeName(type);
         // The type name from the schema registry will be empty if the type is 
         // not concrete (i.e. abstract); we skip abstract types.
