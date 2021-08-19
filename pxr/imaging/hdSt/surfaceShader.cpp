@@ -337,7 +337,7 @@ HdStSurfaceShader::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
         return false;
     }
 
-    if (HdSt_ResourceBinder::UseBindlessHandles()) {
+    if (!HdSt_ResourceBinder::UseBindlessHandles()) {
         if (shaderA->ComputeTextureSourceHash() !=
                 shaderB->ComputeTextureSourceHash()) {
             return false;
