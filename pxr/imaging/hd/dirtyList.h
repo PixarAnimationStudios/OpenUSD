@@ -43,7 +43,7 @@ using HdReprSelectorVector = std::vector<HdReprSelector>;
 ///
 /// Used for faster iteration of dirty Rprims by the render index.
 ///
-/// GetDirtyRprims implicitly refresh and cache the list if needed.
+/// GetDirtyRprims() implicitly refreshes and caches the list if needed.
 /// The returning prims list will be used for sync.
 ///
 /// DirtyList construction can expensive. We have 3 layer
@@ -60,10 +60,11 @@ using HdReprSelectorVector = std::vector<HdReprSelector>;
 ///   while the remaining prims (could be huge -- for example a large set)
 ///   are static.
 ///   Those animating prims can be distinguished by the Varying bit. The Varying
-///   bit is set on a prim when any dirty bit is set, and stays even after clean
-///   the dirty bit until HdChangeTracker::ResetVaryingState clears out.
+///   bit is set on a prim when any dirty bit is set, and stays even after
+///   cleaning the scene dirty bits, until HdChangeTracker::ResetVaryingState
+///   clears it out.
 ///
-///   DirtyList caches those prims in a list at the first time (described in 3.),
+///   DirtyList caches those prims in a list at the first time (described in 3),
 ///   and returns the list for the subsequent queries. Since that list is
 ///   conservatively picked by the Varying bit instead of the actual DirtyBits
 ///   needed for various reprs, consumer of DirtyList needs to check the
@@ -122,6 +123,12 @@ public:
     void UpdateRenderTagsAndReprSelectors(
         TfTokenVector const &tags, HdReprSelectorVector const &reprs);
 
+    /// Sets the flag to prune to dirty list to just the varying Rprims on
+    /// the next call to GetDirtyRprims.
+    void PruneToVaryingRprims() {
+        _pruneDirtyList = true;
+    }
+
 private:
     HdChangeTracker & _GetChangeTracker() const;
     void _UpdateDirtyIdsIfNeeded();
@@ -139,6 +146,7 @@ private:
     unsigned int _varyingStateVersion;
 
     bool _rebuildDirtyList;
+    bool _pruneDirtyList;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -88,6 +88,7 @@ HdDirtyList::HdDirtyList(HdRenderIndex & index)
     , _rprimRenderTagVersion(_GetChangeTracker().GetRenderTagVersion() - 1)
     , _varyingStateVersion(_GetChangeTracker().GetVaryingStateVersion() - 1)
     , _rebuildDirtyList(false)
+    , _pruneDirtyList(false)
 {
 }
 
@@ -101,20 +102,20 @@ HdDirtyList::GetDirtyRprims()
     // any of its prims.
     const unsigned int currentSceneStateVersion =
                         _GetChangeTracker().GetSceneStateVersion();
-    const unsigned int currentVaryingStateVersion =
-                        _GetChangeTracker().GetVaryingStateVersion();
 
-    // If the scene and varying state hasn't changed and the tracked filters
+    // If the scene state hasn't changed and the tracked filters
     // (render tags, reprs) are the same, all Rprims are up-to-date.
-    // This may happen in progressive rendering or in multi-viewer scenarios.
+    // Instead of returning the cached _dirtyIds, return an empty vector.
+    // This may happen in progressive rendering or in multi-viewer scenarios
+    // wherein the HdRenderIndex::SyncAll is invoked multiple times.
     if (_sceneStateVersion == currentSceneStateVersion &&
-        _varyingStateVersion == currentVaryingStateVersion &&
+        !_pruneDirtyList &&
         !_rebuildDirtyList) {
         // NOTE: Don't clear _dirtyIds. Its result is valuable and may be reused
         // when existing varying Rprims are alone dirtied.
         TF_DEBUG(HD_DIRTY_LIST).Msg(
-            "DirtyList: Scene (%d) and varying (%d) state version unchanged.\n",
-            _sceneStateVersion, _varyingStateVersion);
+            "DirtyList: Scene (%d) state version and filters unchanged.\n",
+            _sceneStateVersion);
 
         static SdfPathVector _EMPTY;
         return _EMPTY;
@@ -238,6 +239,7 @@ HdDirtyList::_UpdateDirtyIdsIfNeeded()
                 _rprimRenderTagVersion != currentRprimRenderTagVersion;
 
     const bool gatherVaryingRprims =
+                _pruneDirtyList ||
                 _varyingStateVersion != currentVaryingStateVersion;
 
     const bool reuseDirtyIds = !(gatherAllRprims || gatherVaryingRprims);
@@ -264,22 +266,23 @@ HdDirtyList::_UpdateDirtyIdsIfNeeded()
 
             _rprimIndexVersion = currentRprimIndexVersion;
             _rprimRenderTagVersion  = currentRprimRenderTagVersion;
+            _varyingStateVersion = currentVaryingStateVersion;
             _rebuildDirtyList = false;
-            // Set it up such that we may be able to trim down the list from
-            // all Rprim ids to just the varying ones on the next call.
-            _varyingStateVersion = currentVaryingStateVersion - 1;
+            _pruneDirtyList = true; // Trim the dirty list to just the varying
+                                    // ids on the next iteration.
 
+            // XXX: Clean is interpreted as an all-pass filter. See
+            // _DirtyRprimIdsFilterPredicate
             mask = HdChangeTracker::Clean;
 
         } else if (gatherVaryingRprims) {
-            TF_DEBUG(HD_DIRTY_LIST).Msg("DirtyList: varying state changed "
-                    "(%d -> %d)\n",
-                    _varyingStateVersion,
+            TF_DEBUG(HD_DIRTY_LIST).Msg("DirtyList: varying state version "
+                    "(%d -> %d)\n", _varyingStateVersion,
                     currentVaryingStateVersion);
 
             _varyingStateVersion = currentVaryingStateVersion;
+            _pruneDirtyList = false;
 
-            // Get list only with prims in varying state
             mask = HdChangeTracker::Varying;
         } else {
             TF_WARN("Unhandled scenario in dirty list update logic.\n");

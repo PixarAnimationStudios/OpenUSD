@@ -1301,6 +1301,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
     //    of rprims to sync for each scene delegate.
     _SceneDelegateRprimSyncRequestMap sdRprimSyncMap;
     bool resetVaryingState = false;
+    bool pruneDirtyList = false;
     {
         HF_TRACE_FUNCTION_SCOPE("Build Sync Map: Rprims");
         HdSceneDelegate* curDel = nullptr;
@@ -1314,12 +1315,12 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
             }
 
             HdDirtyBits dirtyBits = _tracker.GetRprimDirtyBits(rprimId);
-            if (HdChangeTracker::IsClean(dirtyBits)) {
-                numSkipped++;
-                continue;
-            }
             if (!HdChangeTracker::IsVarying(dirtyBits)) {
                 ++numNonVarying;
+            }
+            if (HdChangeTracker::IsClean(dirtyBits)) {
+                ++numSkipped;
+                continue;
             }
 
             const _RprimInfo &rprimInfo = it->second;
@@ -1336,35 +1337,45 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
         // Use a heuristic to determine whether or not to destroy the entire
         // dirty state.  We say that if we've skipped more than 25% of the
         // rprims that were claimed dirty, then it's time to clean up this
-        // list.
+        // list on the next iteration. This is done by resetting the varying
+        // state of all clean rprims.
+        //
         // Alternatively if the list contains more the 10% rprims that
-        // are not marked as varying.  (This can happen when prims are
-        // invisible for example).
+        // are not marked as varying (e.g., when rprims are invisible, or when 
+        // the dirty list is reset to all rprims), we flag the dirty list for
+        // pruning on the next iteration.
+        //
+        // Since both these operations can be expensive (especially the former),
+        // we use a size heuristic to avoid doing it for a small dirty list.
         //
         // This leads to performance improvements after many rprims
-        // get dirty and then cleaned one, and the steady state becomes a
+        // get dirty and then cleaned up, and the steady state becomes a
         // small number of dirty items.
-        if (!dirtyRprimIds.empty()) {
-            resetVaryingState =
-                ((float )numSkipped / (float)dirtyRprimIds.size()) > 0.25f;
+        //
+        constexpr size_t MIN_DIRTY_LIST_SIZE = 500;
+        constexpr float MIN_RATIO_RPRIMS_SKIPPED = 0.25f; // 25 %
+        constexpr float MIN_RATIO_RPRIMS_NON_VARYING = 0.10f; // 10 %
+        const size_t numDirtyRprims = dirtyRprimIds.size();
 
-            resetVaryingState |=
-                ((float )numNonVarying / (float)dirtyRprimIds.size()) > 0.10f;
-
+        if (numDirtyRprims > MIN_DIRTY_LIST_SIZE) {
+            float ratioNumSkipped = numSkipped / (float) numDirtyRprims;
+            float ratioNonVarying = numNonVarying / (float) numDirtyRprims;
+            
+            resetVaryingState = ratioNumSkipped > MIN_RATIO_RPRIMS_SKIPPED;
+            pruneDirtyList =
+                ratioNonVarying > MIN_RATIO_RPRIMS_NON_VARYING;
 
             if (TfDebug::IsEnabled(HD_VARYING_STATE)) {
-                std::cout << "Dirty List Redundancy: "
-                          << "Skipped  = "
-                          << ((float )numSkipped * 100.0f /
-                              (float)dirtyRprimIds.size())
-                          << "% (" <<  numSkipped << " / "
-                          << dirtyRprimIds.size() << ") "
-                          << "Non-Varying  = "
-                          << ((float )numNonVarying * 100.0f /
-                              (float)dirtyRprimIds.size())
-                          << "% (" <<  numNonVarying << " / "
-                          << dirtyRprimIds.size() << ")"
-                          << std::endl;
+                std::stringstream ss;
+
+                ss  << "Dirty List Redundancy: Skipped = "
+                    << ratioNumSkipped * 100.0f << "% ("
+                    <<  numSkipped << " / " << numDirtyRprims << ") "
+                    << "Non-Varying  = "
+                    << ratioNonVarying * 100.0f << "% ("
+                    << numNonVarying << " / "  << numDirtyRprims << ") \n";
+
+                TfDebug::Helper().Msg(ss.str().c_str());
             }
         }
     }
@@ -1466,6 +1477,8 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
 
         if (resetVaryingState) {
             _tracker.ResetVaryingState();
+        } else if (pruneDirtyList) {
+            _rprimDirtyList.PruneToVaryingRprims();
         }
         _collectionsToSync.clear();
     }
