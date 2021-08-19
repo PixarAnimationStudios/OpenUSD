@@ -218,7 +218,8 @@ public:
     HD_API
     bool IsPrimIdDirty(SdfPath const& id);
 
-    /// Returns true if the dirtyBits has any flags set other than the varying flag.
+    /// Returns true if the dirtyBits has any flags set other than the varying
+    /// flag.
     static bool IsDirty(HdDirtyBits dirtyBits) {
         return (dirtyBits & AllDirty) != 0;
     }
@@ -228,7 +229,7 @@ public:
         return (dirtyBits & AllDirty) == 0;
     }
 
-    /// Returns true if the dirtyBits has no flags set except the varying flag.
+    /// Returns true if the varying flag is set.
     static bool IsVarying(HdDirtyBits dirtyBits) {
         return (dirtyBits & Varying) != 0;
     }
