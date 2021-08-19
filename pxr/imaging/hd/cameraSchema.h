@@ -78,6 +78,11 @@ public:
 
     // RETRIEVING AND CONSTRUCTING
 
+    /// Builds a container data source which includes the provided child data
+    /// sources. Parameters with nullptr values are excluded. This is a
+    /// low-level interface. For cases in which it's desired to define
+    /// the container with a sparse set of child fields, the Builder class
+    /// is often more convenient and readable.
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
@@ -90,6 +95,12 @@ public:
         const HdVec2fDataSourceHandle &clippingRange
     );
 
+    /// \class HdCameraSchema::Builder
+    /// 
+    /// Utility class for setting sparse sets of child data source fields to be
+    /// filled as arguments into BuildRetained. Because all setter methods
+    /// return a reference to the instance, this can be used in the "builder
+    /// pattern" form.
     class Builder
     {
     public:
@@ -115,6 +126,7 @@ public:
         Builder &SetClippingRange(
             const HdVec2fDataSourceHandle &clippingRange);
 
+        /// Returns a container data source containing the members set thus far.
         HD_API
         HdContainerDataSourceHandle Build();
 
@@ -128,13 +140,25 @@ public:
         HdVec2fDataSourceHandle _clippingRange;
     };
 
+    /// Retrieves a container data source with the schema's default name token
+    /// "camera" from the parent container and constructs a
+    /// HdCameraSchema instance.
+    /// Because the requested container data source may not exist, the result
+    /// should be checked with IsDefined() or a bool comparison before use.
     HD_API
     static HdCameraSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the container representing this schema is found by default.
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
+    /// Returns token data source for use as projection value.
+    /// Values of...
+    /// - HdCameraSchemaTokens->perspective
+    /// - HdCameraSchemaTokens->orthographic
+    ///     ...will be stored statically and reused for future calls.
     HD_API
     static HdTokenDataSourceHandle BuildProjectionDataSource(
         const TfToken &projection);

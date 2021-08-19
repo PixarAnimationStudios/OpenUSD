@@ -55,10 +55,17 @@ public:
     HdExtComputationPrimvarSchema GetPrimvar(const TfToken &name);
 
 
+    /// Retrieves a container data source with the schema's default name token
+    /// "extComputationPrimvars" from the parent container and constructs a
+    /// HdExtComputationPrimvarsSchema instance.
+    /// Because the requested container data source may not exist, the result
+    /// should be checked with IsDefined() or a bool comparison before use.
     HD_API
     static HdExtComputationPrimvarsSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the container representing this schema is found by default.
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 

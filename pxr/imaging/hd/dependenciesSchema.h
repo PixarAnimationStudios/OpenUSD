@@ -57,10 +57,17 @@ public:
     EntryVector GetEntries();
 
 
+    /// Retrieves a container data source with the schema's default name token
+    /// "__dependencies" from the parent container and constructs a
+    /// HdDependenciesSchema instance.
+    /// Because the requested container data source may not exist, the result
+    /// should be checked with IsDefined() or a bool comparison before use.
     HD_API
     static HdDependenciesSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the container representing this schema is found by default.
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 

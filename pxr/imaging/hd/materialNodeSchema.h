@@ -63,6 +63,11 @@ public:
 
     // RETRIEVING AND CONSTRUCTING
 
+    /// Builds a container data source which includes the provided child data
+    /// sources. Parameters with nullptr values are excluded. This is a
+    /// low-level interface. For cases in which it's desired to define
+    /// the container with a sparse set of child fields, the Builder class
+    /// is often more convenient and readable.
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
@@ -71,6 +76,12 @@ public:
         const HdTokenDataSourceHandle &nodeIdentifier
     );
 
+    /// \class HdMaterialNodeSchema::Builder
+    /// 
+    /// Utility class for setting sparse sets of child data source fields to be
+    /// filled as arguments into BuildRetained. Because all setter methods
+    /// return a reference to the instance, this can be used in the "builder
+    /// pattern" form.
     class Builder
     {
     public:
@@ -84,6 +95,7 @@ public:
         Builder &SetNodeIdentifier(
             const HdTokenDataSourceHandle &nodeIdentifier);
 
+        /// Returns a container data source containing the members set thus far.
         HD_API
         HdContainerDataSourceHandle Build();
 
