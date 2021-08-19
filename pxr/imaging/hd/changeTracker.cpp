@@ -210,6 +210,10 @@ HdChangeTracker::ResetVaryingState()
 {
     TRACE_FUNCTION();
 
+    TF_DEBUG(HD_VARYING_STATE).Msg(
+        "Resetting Rprim Varying State: varyingStateVersion (%d -> %d)\n",
+        _varyingStateVersion, _varyingStateVersion + 1);
+
     ++_varyingStateVersion;
 
     // reset all variability bit
