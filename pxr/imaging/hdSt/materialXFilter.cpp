@@ -458,10 +458,9 @@ HdSt_ApplyMaterialXFilter(
     if (mtlxSdrNode) {
 
         // Load Standard Libraries/setup SearchPaths (for mxDoc and mxShaderGen)
-        mx::FilePathVec libraryFolders = { "libraries", };
+        mx::FilePathVec libraryFolders;
         mx::FileSearchPath searchPath;
         searchPath.append(mx::FilePath(PXR_MATERIALX_STDLIB_DIR));
-        searchPath.append(mx::FilePath(PXR_MATERIALX_BASE_DIR));
         mx::DocumentPtr stdLibraries = mx::createDocument();
         mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
 
