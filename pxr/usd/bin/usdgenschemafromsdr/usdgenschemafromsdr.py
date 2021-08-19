@@ -122,7 +122,9 @@ if __name__ == '__main__':
     disabled by default.
 
     The script takes 3 arguments:
-        - a json config, providing sourceType, sdrNodeIdentifiers and sublayers.
+        - a json config, providing sdrNodes via sourceType, sdrNodeIdentifiers
+          or explicit list of absolute asset file paths (sourceAssetNodes) and 
+          a list of sublayers.
         - a destination directory. Note that a schema.usda with appropriate 
           GLOBAL prim providing a libraryName in its customData, must be 
           present at this location. This is also the location where 
@@ -149,12 +151,12 @@ if __name__ == '__main__':
             type=str,
             default='./schemaConfig.json',
             help=dedent('''
-            A json config providing SourceType and SdrIdentifiers identifying
-            sdrNodes for which schema will be generated. And also
-            optionally providing a list of sublayers which the schema.usda will
-            sublayer. Code generation can also be optionally enabled via the 
-            json config, note that code generation is disabled by default.
-            [Default: %(default)s]').
+            A json config providing sdrNodes via sourceType, sdrNodeIdentifiers
+            or explicit list of absolute asset file paths (sourceAssetNodes). 
+            And also optionally providing a list of sublayers which the 
+            schema.usda will sublayer. Code generation can also be optionally 
+            enabled via the json config, note that code generation is disabled 
+            by default. [Default: %(default)s]').
             Example json config file:
                 {
                         "sdrNodes": 
@@ -163,7 +165,11 @@ if __name__ == '__main__':
                                 "sdrIdentifier1",
                                 "sdrIdentifier2",
                                 "sdrIdentifier3"
-                            ]
+                            ],
+                            "sourceAssetNodes": [
+                                "/absolutepath/to/sdrNodeIdentifyingAsset1.extension,
+                                "/absolutepath/to/sdrNodeIdentifyingAsset1.extension,
+                            ],
                         },
                         "sublayers": [
                             "usd/schema.usda", 
@@ -223,6 +229,15 @@ if __name__ == '__main__':
     if config.has_key("sdrNodes"):
         sdrRegistry = Sdr.Registry()
         for sourceType in config['sdrNodes'].keys():
+            if sourceType == "sourceAssetNodes":
+                # process sdrNodes provided by explicit sourceAssetNodes
+                for assetPath in config['sdrNodes']['sourceAssetNodes']:
+                    node = Sdr.Registry().GetShaderNodeFromAsset(assetPath)
+                    if node:
+                        sdrNodesToParse.append(node)
+                    else:
+                        Tf.Warn("Node not found at path: %s." %(assetPath))
+                continue
             for nodeId in config['sdrNodes'][sourceType]:
                 node = sdrRegistry.GetShaderNodeByNameAndType(nodeId,
                         sourceType)
