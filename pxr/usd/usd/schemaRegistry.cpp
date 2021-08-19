@@ -41,6 +41,7 @@
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/usd/sdf/schema.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/registryManager.h"
@@ -58,6 +59,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 using std::set;
 using std::string;
 using std::vector;
+
+TF_DEFINE_ENV_SETTING(
+    USD_DISABLE_PRIM_DEFINITIONS_FOR_USDGENSCHEMA, false,
+    "Set to true to disable the generation of prim definitions for schema "
+    "types in the schema registry. This is used is to prevent the processing "
+    "of generatedSchema.usda files during schema generation as it's the "
+    "process used to create, update, or fix generatedSchema.usda files. "
+    "This should only be used by usdGenSchema.py as this can cause crashes in "
+    "most contexts which expect prim definitions for schema types.");
+
+TF_DEFINE_ENV_SETTING(
+    USD_DISABLE_AUTO_APPLY_API_SCHEMAS, false,
+    "Set to true to disable the application of all auto-apply API schemas.");
 
 TF_INSTANTIATE_SINGLETON(UsdSchemaRegistry);
 
@@ -480,6 +494,11 @@ UsdSchemaRegistry::CollectAddtionalAutoApplyAPISchemasFromPlugins(
     std::map<TfToken, TfTokenVector> *autoApplyAPISchemas)
 {
     TRACE_FUNCTION();
+
+    // Skip if auto apply API schemas have been disabled.
+    if (TfGetEnvSetting(USD_DISABLE_AUTO_APPLY_API_SCHEMAS)) {
+        return;
+    }
 
     // Check all registered plugins for metadata that may supply additional
     // auto apply API schem mappings.
@@ -1159,8 +1178,10 @@ UsdSchemaRegistry::UsdSchemaRegistry()
 
     // Find and load all the generated schema in plugin libraries and build all
     // the schema prim definitions.
-    _SchemaDefInitHelper schemaDefHelper(this);
-    schemaDefHelper.FindAndBuildAllSchemaDefinitions();
+    if (!TfGetEnvSetting(USD_DISABLE_PRIM_DEFINITIONS_FOR_USDGENSCHEMA)) {
+        _SchemaDefInitHelper schemaDefHelper(this);
+        schemaDefHelper.FindAndBuildAllSchemaDefinitions();
+    }
 
     TfSingleton<UsdSchemaRegistry>::SetInstanceConstructed(*this);
     TfRegistryManager::GetInstance().SubscribeTo<UsdSchemaRegistry>();
@@ -1497,6 +1518,11 @@ Usd_GetAPISchemaPluginApplyToInfoForType(
     }
 
     if (schemaKind == UsdSchemaKind::SingleApplyAPI) {
+        // Skip if auto apply API schemas have been disabled.
+        if (TfGetEnvSetting(USD_DISABLE_AUTO_APPLY_API_SCHEMAS)) {
+            return;
+        }
+
         // For single apply API schemas, we can get the types it should auto
         // apply to.
         TfTokenVector autoApplyToTypeNames =

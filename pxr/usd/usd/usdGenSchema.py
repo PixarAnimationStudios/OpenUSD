@@ -45,6 +45,15 @@ from collections import namedtuple
 from jinja2 import Environment, FileSystemLoader
 from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError
 
+# Need to set the environment variable for disabling the schema registry's 
+# loading of schema type prim definitions before importing any pxr libraries,
+# otherwise this setting won't take. We disable this to make sure we don't try 
+# to load generatedSchema.usda files (which usdGenSchema generates) during 
+# schema generation. We expect poorly formed or incorrect generatedSchema.usda
+# to issue coding errors and we don't want those errors to cause failures in 
+# this utility which would be used to repair poorly formed or incorrect 
+# generatedSchema files.
+os.environ["USD_DISABLE_PRIM_DEFINITIONS_FOR_USDGENSCHEMA"] = "1"
 from pxr import Plug, Sdf, Usd, Vt, Tf
 
 # Object used for printing. This gives us a way to control output with regards 

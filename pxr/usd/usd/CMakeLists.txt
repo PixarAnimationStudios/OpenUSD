@@ -435,6 +435,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdAppliedAPISchemas
+    DEST testUsdAppliedAPISchemas_AutoApplyDisabled
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdStageThreading
     DEST testUsdStageThreading
 )
@@ -650,6 +655,14 @@ pxr_register_test(testUsdAppliedAPISchemas
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAppliedAPISchemas"
     EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAppliedAPISchemas_AutoApplyDisabled
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAppliedAPISchemas"
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_DISABLE_AUTO_APPLY_API_SCHEMAS=1
 )
 
 pxr_register_test(testUsdAttributeBlocking
