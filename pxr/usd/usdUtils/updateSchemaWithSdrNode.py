@@ -39,7 +39,7 @@ class SchemaDefiningKeys(ConstantsGroup):
     SCHEMA_BASE = "schemaBase"
     SCHEMA_KIND = "schemaKind"
     USD_SCHEMA_CLASS = "usdSchemaClass"
-    TF_TYPENAME_SUFFIX = "tfTypeNameSuffix" 
+    TF_TYPENAME_SUFFIX = "tfTypeNameSuffix"
 
 class SchemaDefiningMiscConstants(ConstantsGroup):
     API_SCHEMA_BASE = "APISchemaBase"
@@ -54,6 +54,8 @@ class PropertyDefiningKeys(ConstantsGroup):
     USD_SUPPRESS_PROPERTY = "usdSuppressProperty"
     SDF_VARIABILITY_UNIFORM_STRING = "Uniform"
     CONNECTABILITY = "connectability"
+    WIDGET = "widget"
+    NULL_VALUE = "null"
 
 def _CreateAttrSpecFromNodeAttribute(primSpec, prop, usdSchemaNode, 
         isInput=True):
@@ -107,6 +109,11 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, usdSchemaNode,
                             else Sdf.VariabilityVarying
     attrSpec = Sdf.AttributeSpec(primSpec, propName, attrType,
             attrVariability)
+
+    if PropertyDefiningKeys.WIDGET in prop.GetMetadata().keys():
+        if (prop.GetMetadata()[PropertyDefiningKeys.WIDGET] == \
+                PropertyDefiningKeys.NULL_VALUE):
+            attrSpec.hidden = True
 
     if prop.GetHelp():
         attrSpec.documentation = prop.GetHelp()
