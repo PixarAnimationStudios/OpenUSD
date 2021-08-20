@@ -167,7 +167,7 @@ def IsMayaPython():
 
     return False
 
-def GetPythonInfo():
+def GetPythonInfo(context):
     """Returns a tuple containing the path to the Python executable, shared
     library, and include directory corresponding to the version of Python
     currently running. Returns None if any path could not be determined.
@@ -180,6 +180,14 @@ def GetPythonInfo():
     versions installed on their machine, which is quite common now with 
     Python2 and Python3 co-existing.
     """
+
+    # If we were given build python info then just use it.
+    if context.build_python_info:
+        return (context.build_python_info['PYTHON_EXECUTABLE'],
+                context.build_python_info['PYTHON_LIBRARY'],
+                context.build_python_info['PYTHON_INCLUDE_DIR'],
+                context.build_python_info['PYTHON_VERSION'])
+
     # First we extract the information that can be uniformly dealt with across
     # the platforms:
     pythonExecPath = sys.executable
@@ -189,9 +197,10 @@ def GetPythonInfo():
     # Lib path is unfortunately special for each platform and there is no
     # config_var for it. But we can deduce it for each platform, and this
     # logic works for any Python version.
-    def _GetPythonLibraryFilename():
+    def _GetPythonLibraryFilename(context):
         if Windows():
-            return "python" + pythonVersionNoDot + ".lib"
+            suffix = '_d' if context.buildDebug and context.debugPython else ''
+            return "python" + pythonVersionNoDot + suffix + ".lib"
         elif Linux():
             return sysconfig.get_config_var("LDLIBRARY")
         elif MacOS():
@@ -215,24 +224,24 @@ def GetPythonInfo():
         pythonIncludeDir = os.path.join(pythonBaseDir, "include",
                                         "python" + pythonVersion)
         pythonLibPath = os.path.join(pythonBaseDir, "lib",
-                                     _GetPythonLibraryFilename())
+                                     _GetPythonLibraryFilename(context))
     else:
         pythonIncludeDir = sysconfig.get_config_var("INCLUDEPY")
         if Windows():
             pythonBaseDir = sysconfig.get_config_var("base")
             pythonLibPath = os.path.join(pythonBaseDir, "libs",
-                                         _GetPythonLibraryFilename())
+                                         _GetPythonLibraryFilename(context))
         elif Linux():
             pythonLibDir = sysconfig.get_config_var("LIBDIR")
             pythonMultiarchSubdir = sysconfig.get_config_var("multiarchsubdir")
             if pythonMultiarchSubdir:
                 pythonLibDir = pythonLibDir + pythonMultiarchSubdir
             pythonLibPath = os.path.join(pythonLibDir,
-                                         _GetPythonLibraryFilename())
+                                         _GetPythonLibraryFilename(context))
         elif MacOS():
             pythonBaseDir = sysconfig.get_config_var("base")
             pythonLibPath = os.path.join(pythonBaseDir, "lib",
-                                         _GetPythonLibraryFilename())
+                                         _GetPythonLibraryFilename(context))
         else:
             raise RuntimeError("Platform not supported")
 
@@ -314,7 +323,7 @@ def FormatMultiProcs(numJobs, generator):
     tag = "-j"
     if generator:
         if "Visual Studio" in generator:
-            tag = "/M:"
+            tag = "/M:" # This will build multiple projects at once.
         elif "Xcode" in generator:
             tag = "-j "
 
@@ -367,7 +376,7 @@ def RunCMake(context, force, extraArgs = None):
     # (Ninja, make), and --config for multi-configuration generators 
     # (Visual Studio); technically we don't need BOTH at the same
     # time, but specifying both is simpler than branching
-    config=("Debug" if context.buildDebug else "Release")
+    config= BuildVariant(context)
 
     with CurrentWorkingDirectory(buildDir):
         Run('cmake '
@@ -581,6 +590,16 @@ def DownloadURL(url, context, force, extractDir = None,
             raise RuntimeError("Failed to extract archive {filename}: {err}"
                                .format(filename=filename, err=e))
 
+def BuildVariant(context): 
+    if context.buildDebug:
+        return "Debug"
+    elif context.buildRelease:
+        return "Release"
+    elif context.buildRelWithDebug:
+        return "RelWithDebInfo"
+
+    return "RelWithDebInfo"
+
 ############################################################
 # 3rd-Party Dependencies
 
@@ -672,6 +691,15 @@ def InstallBoost_Helper(context, force, buildArgs):
         # b2 supports at most -j64 and will error if given a higher value.
         num_procs = min(64, context.numJobs)
 
+        # boost only accepts three variants: debug, release, profile
+        boostBuildVariant = "profile"
+        if context.buildDebug:
+            boostBuildVariant= "debug"
+        elif context.buildRelease:
+            boostBuildVariant= "release"
+        elif context.buildRelWithDebug:
+            boostBuildVariant= "profile"
+
         b2_settings = [
             '--prefix="{instDir}"'.format(instDir=context.instDir),
             '--build-dir="{buildDir}"'.format(buildDir=context.buildDir),
@@ -680,8 +708,7 @@ def InstallBoost_Helper(context, force, buildArgs):
             'link=shared',
             'runtime-link=shared',
             'threading=multi', 
-            'variant={variant}'
-                .format(variant="debug" if context.buildDebug else "release"),
+            'variant={variant}'.format(variant=boostBuildVariant),
             '--with-atomic',
             '--with-program_options',
             '--with-regex'
@@ -689,14 +716,7 @@ def InstallBoost_Helper(context, force, buildArgs):
 
         if context.buildPython:
             b2_settings.append("--with-python")
-            pythonInfo = GetPythonInfo()
-            if Windows():
-                # Unfortunately Boost build scripts require the Python folder 
-                # that contains the executable on Windows
-                pythonPath = os.path.dirname(pythonInfo[0])
-            else:
-                # While other platforms want the complete executable path
-                pythonPath = pythonInfo[0]
+            pythonInfo = GetPythonInfo(context)
             # This is the only platform-independent way to configure these
             # settings correctly and robustly for the Boost jam build system.
             # There are Python config arguments that can be passed to bootstrap 
@@ -708,11 +728,17 @@ def InstallBoost_Helper(context, force, buildArgs):
                 # backslashes for jam, hence the mods below for the path 
                 # arguments. Also, if the path contains spaces jam will not
                 # handle them well. Surround the path parameters in quotes.
-                line = 'using python : %s : "%s" : "%s" ;\n' % (pythonInfo[3], 
-                       pythonPath.replace('\\', '\\\\'), 
-                       pythonInfo[2].replace('\\', '\\\\'))
-                projectFile.write(line)
+                projectFile.write('using python : %s\n' % pythonInfo[3])
+                projectFile.write('  : "%s"\n' % pythonInfo[0].replace("\\","/"))
+                projectFile.write('  : "%s"\n' % pythonInfo[2].replace("\\","/"))
+                projectFile.write('  : "%s"\n' % os.path.dirname(pythonInfo[1]).replace("\\","/"))
+                if context.buildDebug and context.debugPython:
+                    projectFile.write('  : <python-debugging>on\n')
+                projectFile.write('  ;\n')
             b2_settings.append("--user-config=python-config.jam")
+
+            if context.buildDebug and context.debugPython:
+                b2_settings.append("python-debugging=on")
 
         if context.buildOIIO:
             b2_settings.append("--with-date_time")
@@ -763,6 +789,9 @@ def InstallBoost_Helper(context, force, buildArgs):
             # Must specify toolset=clang to ensure install_name for boost
             # libraries includes @rpath
             b2_settings.append("toolset=clang")
+
+        if context.buildDebug:
+            b2_settings.append("--debug-configuration")
 
         # Add on any user-specified extra arguments.
         b2_settings += buildArgs
@@ -1331,6 +1360,17 @@ def InstallUSD(context, force, buildArgs):
             if Python3():
                 extraArgs.append('-DPXR_USE_PYTHON_3=ON')
 
+            # Many people on Windows may not have python with the 
+            # debugging symbol ( python27_d.lib ) installed, this is the common case 
+            # where one downloads the python from official download website. Therefore we 
+            # can still let people decide to build USD with release version of python if 
+            # debugging into python land is not what they want which can be done by setting the 
+            # debugPython
+            if context.buildDebug and context.debugPython:
+                extraArgs.append('-DPXR_USE_DEBUG_PYTHON=ON')
+            else:
+                extraArgs.append('-DPXR_USE_DEBUG_PYTHON=OFF')
+
             # CMake has trouble finding the executable, library, and include
             # directories when there are multiple versions of Python installed.
             # This can lead to crashes due to USD being linked against one
@@ -1341,8 +1381,10 @@ def InstallUSD(context, force, buildArgs):
             #
             # To avoid this, we try to determine these paths from Python
             # itself rather than rely on CMake's heuristics.
-            pythonInfo = GetPythonInfo()
+            pythonInfo = GetPythonInfo(context)
             if pythonInfo:
+                # According to FindPythonLibs.cmake these are the variables
+                # to set to specify which Python installation to use.
                 extraArgs.append('-DPYTHON_EXECUTABLE="{pyExecPath}"'
                                  .format(pyExecPath=pythonInfo[0]))
                 extraArgs.append('-DPYTHON_LIBRARY="{pyLibPath}"'
@@ -1361,7 +1403,7 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DTBB_USE_DEBUG_BUILD=ON')
         else:
             extraArgs.append('-DTBB_USE_DEBUG_BUILD=OFF')
-        
+
         if context.buildDocs:
             extraArgs.append('-DPXR_BUILD_DOCUMENTATION=ON')
         else:
@@ -1516,6 +1558,11 @@ Python. In that case, it is important that USD and the plugins for that DCC are
 built using the DCC's version of Python and not the system version. This can be
 done by running %(prog)s using the DCC's version of Python.
 
+The flag --build-python-info allows calling the %(prog)s with any python (such as
+system python) but pass in the python that you want USD to use to build the python
+bindings with. This flag takes 4 arguments: python executable, python include directory
+python library and python version.
+
 For example, to build USD on macOS for use in Maya 2019, run:
 
 /Applications/Autodesk/maya2019/Maya.app/Contents/bin/mayapy %(prog)s --no-usdview ...
@@ -1552,9 +1599,25 @@ group.add_argument("-j", "--jobs", type=int, default=GetCPUCount(),
 group.add_argument("--build", type=str,
                    help=("Build directory for USD and 3rd-party dependencies " 
                          "(default: <install_dir>/build)"))
+
+(BUILD_DEBUG, BUILD_RELEASE, BUILD_RELWITHDEBUG) = (0, 1, 2)
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--build-debug", dest="build_variant",
+                      action="store_const", const=BUILD_DEBUG, default=BUILD_RELWITHDEBUG,
+                      help="Build in Debug mode")
+subgroup.add_argument("--build-release", dest="build_variant",
+                      action="store_const", const=BUILD_RELEASE,
+                      help="Build in Release mode")
+subgroup.add_argument("--build-relwithdebug", dest="build_variant",
+                      action="store_const", const=BUILD_RELWITHDEBUG,
+                      help="Build in RelWithDebInfo mode (default)")
+
 group.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Custom arguments to pass to build system when "
                          "building libraries (see docs above)"))
+group.add_argument("--build-python-info", type=str, nargs=4, default=[],
+                   metavar=('PYTHON_EXECUTABLE', 'PYTHON_INCLUDE_DIR', 'PYTHON_LIBRARY', 'PYTHON_VERSION'),
+                   help=("Specify a custom python to use during build"))
 group.add_argument("--force", type=str, action="append", dest="force_build",
                    default=[],
                    help=("Force download and build of specified library "
@@ -1587,9 +1650,6 @@ subgroup.add_argument("--build-shared", dest="build_type",
 subgroup.add_argument("--build-monolithic", dest="build_type",
                       action="store_const", const=MONOLITHIC_LIB,
                       help="Build a single monolithic shared library")
-
-group.add_argument("--debug", dest="build_debug", action="store_true",
-                    help="Build with debugging information")
 
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--tests", dest="build_tests", action="store_true",
@@ -1632,6 +1692,13 @@ subgroup.add_argument("--prefer-speed-over-safety", dest="safety_first",
                       action="store_false", help=
                       "Disable performance-impacting safety checks against "
                       "malformed input files")
+
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--debug-python", dest="debug_python", action="store_true",
+                      help="Define Boost Python Debug if your Python library comes with Debugging symbols.")
+
+subgroup.add_argument("--no-debug-python", dest="debug_python", action="store_false",
+                      help="Don't define Boost Python Debug if your Python library comes with Debugging symbols.")
 
 (NO_IMAGING, IMAGING, USD_IMAGING) = (0, 1, 2)
 
@@ -1787,8 +1854,21 @@ class InstallContext:
 
             self.buildArgs.setdefault(depName.lower(), []).append(arg)
 
+        # Build python info
+        self.build_python_info = dict()
+        if args.build_python_info:
+            self.build_python_info['PYTHON_EXECUTABLE'] = args.build_python_info[0]
+            self.build_python_info['PYTHON_INCLUDE_DIR'] = args.build_python_info[1]
+            self.build_python_info['PYTHON_LIBRARY'] = args.build_python_info[2]
+            self.build_python_info['PYTHON_VERSION'] = args.build_python_info[3]
+
         # Build type
-        self.buildDebug = args.build_debug;
+        self.buildDebug = (args.build_variant == BUILD_DEBUG);
+        self.buildRelease = (args.build_variant == BUILD_RELEASE);
+        self.buildRelWithDebug = (args.build_variant == BUILD_RELWITHDEBUG);
+
+        self.debugPython = args.debug_python
+
         self.buildShared = (args.build_type == SHARED_LIBS)
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
 
@@ -1936,16 +2016,6 @@ if "--usdview" in sys.argv:
         PrintError("Cannot build usdview when Python support is disabled.")
         sys.exit(1)
 
-# Error out if running Maya's version of Python and attempting to build
-# usdview.
-if IsMayaPython():
-    if context.buildUsdview:
-        PrintError("Cannot build usdview when building against Maya's version "
-                   "of Python. Maya does not provide access to the 'OpenGL' "
-                   "Python module. Use '--no-usdview' to disable building "
-                   "usdview.")
-        sys.exit(1)
-
 dependenciesToBuild = []
 for dep in requiredDependencies:
     if context.ForceBuildDependency(dep) or not dep.Exists(context):
@@ -2003,14 +2073,18 @@ if context.buildDocs:
         sys.exit(1)
 
 if PYSIDE in requiredDependencies:
+    # Special case - we are given the PYSIDEUICBINARY as cmake arg.
+    usdBuildArgs = context.GetBuildArguments(USD)
+    given_pysideUic = 'PYSIDEUICBINARY' in " ".join(usdBuildArgs)
+
     # The USD build will skip building usdview if pyside2-uic or pyside-uic is
     # not found, so check for it here to avoid confusing users. This list of 
     # PySide executable names comes from cmake/modules/FindPySide.cmake
-    pyside2Uic = ["pyside2-uic", "python2-pyside2-uic", "pyside2-uic-2.7"]
+    pyside2Uic = ["pyside2-uic", "python2-pyside2-uic", "pyside2-uic-2.7", "uic"]
     found_pyside2Uic = any([which(p) for p in pyside2Uic])
     pysideUic = ["pyside-uic", "python2-pyside-uic", "pyside-uic-2.7"]
     found_pysideUic = any([which(p) for p in pysideUic])
-    if not found_pyside2Uic and not found_pysideUic:
+    if not given_pysideUic and not found_pyside2Uic and not found_pysideUic:
         if Windows():
             # Windows does not support PySide2 with Python2.7
             PrintError("pyside-uic not found -- please install PySide and"
@@ -2043,7 +2117,7 @@ Building with settings:
   Downloader                    {downloader}
 
   Building                      {buildType}
-    Config                      {buildConfig}
+    Variant                     {buildVariant}
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
       OpenVDB support:          {enableOpenVDB}
@@ -2053,6 +2127,7 @@ Building with settings:
     UsdImaging                  {buildUsdImaging}
       usdview:                  {buildUsdview}
     Python support              {buildPython}
+      Python Debug:             {debugPython}
       Python 3:                 {enablePython3}
     Documentation               {buildDocs}
     Tests                       {buildTests}
@@ -2097,7 +2172,7 @@ summaryMsg = summaryMsg.format(
     buildType=("Shared libraries" if context.buildShared
                else "Monolithic shared library" if context.buildMonolithic
                else ""),
-    buildConfig=("Debug" if context.buildDebug else "Release"),
+    buildVariant=BuildVariant(context),
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     enableOpenVDB=("On" if context.enableOpenVDB else "Off"),
@@ -2107,6 +2182,7 @@ summaryMsg = summaryMsg.format(
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
     buildUsdview=("On" if context.buildUsdview else "Off"),
     buildPython=("On" if context.buildPython else "Off"),
+    debugPython=("On" if context.debugPython else "Off"),
     enablePython3=("On" if Python3() else "Off"),
     buildDocs=("On" if context.buildDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
