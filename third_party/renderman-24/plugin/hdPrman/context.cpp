@@ -1392,8 +1392,13 @@ HdPrman_Context::_InitializePrman()
 
     // Must invoke PRManBegin() before we start using Riley.
     char arg0[] = "hdPrman";
-    char* argv[] = { arg0 };
-    ri->PRManBegin(1, argv);
+    // Turning off unwanted statistics warnings
+    // TODO: Fix incorrect tear-down handling of these statistics in 
+    // interactive contexts as described in PRMAN-2353
+    char arg1[] = "-woff";
+    char woffs[] = "R56008,R56009";
+    char* argv[] = { arg0, arg1, woffs};
+    ri->PRManBegin(3, argv);
 
     // Register an Xcpt handler
     RixXcpt* rix_xcpt = (RixXcpt*)rix->GetRixInterface(k_RixXcpt);
