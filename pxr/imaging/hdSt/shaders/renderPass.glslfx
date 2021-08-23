@@ -128,6 +128,17 @@ vec4  GetIndicatorColor() {
 #endif
 }
 
+float GetDepthPriorityBias() {
+#if defined(HD_HAS_depthPriority)
+    // How much to bias it forward toward the eye. 1048576 = 2^24 / 16.
+    // Similar to 'units' parameter in glPolygonOffset.
+    // 2.0 is the depth range in NDC space. GL is [-1, +1].
+    return 2.0 * HdGet_depthPriority().x / 1048576.0;
+#else
+    return 0;
+#endif
+}
+
 bool ShouldDiscardByAlpha(vec4 color)
 {
 #if defined(HD_HAS_alphaThreshold)

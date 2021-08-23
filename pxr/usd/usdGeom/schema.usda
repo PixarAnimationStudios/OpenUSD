@@ -607,6 +607,19 @@ class "Gprim" (
         each can be independently overridden, and because shaders rarely consume
         rgba parameters."""
     )
+
+    float[] primvars:depthPriority (
+        customData = {
+            string apiName = "depthPriority"
+        }
+        doc = """It is useful to have a priority between 2 overlapping gprims.
+        The depth priority determines how much to bias the gprim forward toward
+        the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+        will win the same gprim with depthPriority=[0] in depth test in a
+        rasterizer. This primvar is typically used to address z-fighting between
+        2 overlapping gprims. A common example is mesh decal. The bias is small
+        and only meaningful for perfectly overlapping gprims."""
+    )
     
     uniform bool doubleSided = false (
         doc = """Although some renderers treat all parametric or polygonal

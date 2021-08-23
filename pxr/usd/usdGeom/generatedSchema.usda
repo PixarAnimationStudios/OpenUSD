@@ -687,6 +687,15 @@ class "Gprim" (
         generalization of orientation to composed scenes with transformation
         hierarchies."""
     )
+    float[] primvars:depthPriority (
+        doc = """It is useful to have a priority between 2 overlapping gprims.
+        The depth priority determines how much to bias the gprim forward toward
+        the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+        will win the same gprim with depthPriority=[0] in depth test in a
+        rasterizer. This primvar is typically used to address z-fighting between
+        2 overlapping gprims. A common example is mesh decal. The bias is small
+        and only meaningful for perfectly overlapping gprims."""
+    )
     color3f[] primvars:displayColor (
         doc = '''It is useful to have an "official" colorSet that can be used
         as a display or modeling color, even in the absence of any specified
@@ -790,6 +799,15 @@ class Cube "Cube" (
         Please see for a deeper explanation and
         generalization of orientation to composed scenes with transformation
         hierarchies."""
+    )
+    float[] primvars:depthPriority (
+        doc = """It is useful to have a priority between 2 overlapping gprims.
+        The depth priority determines how much to bias the gprim forward toward
+        the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+        will win the same gprim with depthPriority=[0] in depth test in a
+        rasterizer. This primvar is typically used to address z-fighting between
+        2 overlapping gprims. A common example is mesh decal. The bias is small
+        and only meaningful for perfectly overlapping gprims."""
     )
     color3f[] primvars:displayColor (
         doc = '''It is useful to have an "official" colorSet that can be used
@@ -900,6 +918,15 @@ class Sphere "Sphere" (
         Please see for a deeper explanation and
         generalization of orientation to composed scenes with transformation
         hierarchies."""
+    )
+    float[] primvars:depthPriority (
+        doc = """It is useful to have a priority between 2 overlapping gprims.
+        The depth priority determines how much to bias the gprim forward toward
+        the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+        will win the same gprim with depthPriority=[0] in depth test in a
+        rasterizer. This primvar is typically used to address z-fighting between
+        2 overlapping gprims. A common example is mesh decal. The bias is small
+        and only meaningful for perfectly overlapping gprims."""
     )
     color3f[] primvars:displayColor (
         doc = '''It is useful to have an "official" colorSet that can be used
@@ -1022,6 +1049,15 @@ class Cylinder "Cylinder" (
         generalization of orientation to composed scenes with transformation
         hierarchies."""
     )
+    float[] primvars:depthPriority (
+        doc = """It is useful to have a priority between 2 overlapping gprims.
+        The depth priority determines how much to bias the gprim forward toward
+        the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+        will win the same gprim with depthPriority=[0] in depth test in a
+        rasterizer. This primvar is typically used to address z-fighting between
+        2 overlapping gprims. A common example is mesh decal. The bias is small
+        and only meaningful for perfectly overlapping gprims."""
+    )
     color3f[] primvars:displayColor (
         doc = '''It is useful to have an "official" colorSet that can be used
         as a display or modeling color, even in the absence of any specified
@@ -1141,6 +1177,15 @@ class Capsule "Capsule" (
         Please see for a deeper explanation and
         generalization of orientation to composed scenes with transformation
         hierarchies."""
+    )
+    float[] primvars:depthPriority (
+        doc = """It is useful to have a priority between 2 overlapping gprims.
+        The depth priority determines how much to bias the gprim forward toward
+        the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+        will win the same gprim with depthPriority=[0] in depth test in a
+        rasterizer. This primvar is typically used to address z-fighting between
+        2 overlapping gprims. A common example is mesh decal. The bias is small
+        and only meaningful for perfectly overlapping gprims."""
     )
     color3f[] primvars:displayColor (
         doc = '''It is useful to have an "official" colorSet that can be used
@@ -1263,6 +1308,15 @@ class Cone "Cone" (
         Please see for a deeper explanation and
         generalization of orientation to composed scenes with transformation
         hierarchies."""
+    )
+    float[] primvars:depthPriority (
+        doc = """It is useful to have a priority between 2 overlapping gprims.
+        The depth priority determines how much to bias the gprim forward toward
+        the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+        will win the same gprim with depthPriority=[0] in depth test in a
+        rasterizer. This primvar is typically used to address z-fighting between
+        2 overlapping gprims. A common example is mesh decal. The bias is small
+        and only meaningful for perfectly overlapping gprims."""
     )
     color3f[] primvars:displayColor (
         doc = '''It is useful to have an "official" colorSet that can be used
@@ -1402,6 +1456,15 @@ class "PointBased" (
     point3f[] points (
         doc = """The primary geometry attribute for all PointBased
         primitives, describes points in (local) space."""
+    )
+    float[] primvars:depthPriority (
+        doc = """It is useful to have a priority between 2 overlapping gprims.
+        The depth priority determines how much to bias the gprim forward toward
+        the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+        will win the same gprim with depthPriority=[0] in depth test in a
+        rasterizer. This primvar is typically used to address z-fighting between
+        2 overlapping gprims. A common example is mesh decal. The bias is small
+        and only meaningful for perfectly overlapping gprims."""
     )
     color3f[] primvars:displayColor (
         doc = '''It is useful to have an "official" colorSet that can be used
@@ -1712,6 +1775,15 @@ class Mesh "Mesh" (
         doc = """The primary geometry attribute for all PointBased
         primitives, describes points in (local) space."""
     )
+    float[] primvars:depthPriority (
+        doc = """It is useful to have a priority between 2 overlapping gprims.
+        The depth priority determines how much to bias the gprim forward toward
+        the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+        will win the same gprim with depthPriority=[0] in depth test in a
+        rasterizer. This primvar is typically used to address z-fighting between
+        2 overlapping gprims. A common example is mesh decal. The bias is small
+        and only meaningful for perfectly overlapping gprims."""
+    )
     color3f[] primvars:displayColor (
         doc = '''It is useful to have an "official" colorSet that can be used
         as a display or modeling color, even in the absence of any specified
@@ -2002,6 +2074,15 @@ class NurbsPatch "NurbsPatch" (
         \\note Some DCC's pre-weight the points, but in this schema, 
         points are not pre-weighted."""
     )
+    float[] primvars:depthPriority (
+        doc = """It is useful to have a priority between 2 overlapping gprims.
+        The depth priority determines how much to bias the gprim forward toward
+        the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+        will win the same gprim with depthPriority=[0] in depth test in a
+        rasterizer. This primvar is typically used to address z-fighting between
+        2 overlapping gprims. A common example is mesh decal. The bias is small
+        and only meaningful for perfectly overlapping gprims."""
+    )
     color3f[] primvars:displayColor (
         doc = '''It is useful to have an "official" colorSet that can be used
         as a display or modeling color, even in the absence of any specified
@@ -2254,6 +2335,15 @@ class "Curves" (
     point3f[] points (
         doc = """The primary geometry attribute for all PointBased
         primitives, describes points in (local) space."""
+    )
+    float[] primvars:depthPriority (
+        doc = """It is useful to have a priority between 2 overlapping gprims.
+        The depth priority determines how much to bias the gprim forward toward
+        the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+        will win the same gprim with depthPriority=[0] in depth test in a
+        rasterizer. This primvar is typically used to address z-fighting between
+        2 overlapping gprims. A common example is mesh decal. The bias is small
+        and only meaningful for perfectly overlapping gprims."""
     )
     color3f[] primvars:displayColor (
         doc = '''It is useful to have an "official" colorSet that can be used
@@ -2624,6 +2714,15 @@ class BasisCurves "BasisCurves" (
         doc = """The primary geometry attribute for all PointBased
         primitives, describes points in (local) space."""
     )
+    float[] primvars:depthPriority (
+        doc = """It is useful to have a priority between 2 overlapping gprims.
+        The depth priority determines how much to bias the gprim forward toward
+        the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+        will win the same gprim with depthPriority=[0] in depth test in a
+        rasterizer. This primvar is typically used to address z-fighting between
+        2 overlapping gprims. A common example is mesh decal. The bias is small
+        and only meaningful for perfectly overlapping gprims."""
+    )
     color3f[] primvars:displayColor (
         doc = '''It is useful to have an "official" colorSet that can be used
         as a display or modeling color, even in the absence of any specified
@@ -2830,6 +2929,15 @@ class NurbsCurves "NurbsCurves" (
         doc = """The primary geometry attribute for all PointBased
         primitives, describes points in (local) space."""
     )
+    float[] primvars:depthPriority (
+        doc = """It is useful to have a priority between 2 overlapping gprims.
+        The depth priority determines how much to bias the gprim forward toward
+        the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+        will win the same gprim with depthPriority=[0] in depth test in a
+        rasterizer. This primvar is typically used to address z-fighting between
+        2 overlapping gprims. A common example is mesh decal. The bias is small
+        and only meaningful for perfectly overlapping gprims."""
+    )
     color3f[] primvars:displayColor (
         doc = '''It is useful to have an "official" colorSet that can be used
         as a display or modeling color, even in the absence of any specified
@@ -3009,6 +3117,15 @@ class Points "Points" (
     point3f[] points (
         doc = """The primary geometry attribute for all PointBased
         primitives, describes points in (local) space."""
+    )
+    float[] primvars:depthPriority (
+        doc = """It is useful to have a priority between 2 overlapping gprims.
+        The depth priority determines how much to bias the gprim forward toward
+        the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+        will win the same gprim with depthPriority=[0] in depth test in a
+        rasterizer. This primvar is typically used to address z-fighting between
+        2 overlapping gprims. A common example is mesh decal. The bias is small
+        and only meaningful for perfectly overlapping gprims."""
     )
     color3f[] primvars:displayColor (
         doc = '''It is useful to have an "official" colorSet that can be used
@@ -3912,6 +4029,15 @@ class HermiteCurves "HermiteCurves" (
     point3f[] points (
         doc = """The primary geometry attribute for all PointBased
         primitives, describes points in (local) space."""
+    )
+    float[] primvars:depthPriority (
+        doc = """It is useful to have a priority between 2 overlapping gprims.
+        The depth priority determines how much to bias the gprim forward toward
+        the eye. The default value is 0. e.g. a gprim with depthPriority=[1]
+        will win the same gprim with depthPriority=[0] in depth test in a
+        rasterizer. This primvar is typically used to address z-fighting between
+        2 overlapping gprims. A common example is mesh decal. The bias is small
+        and only meaningful for perfectly overlapping gprims."""
     )
     color3f[] primvars:displayColor (
         doc = '''It is useful to have an "official" colorSet that can be used

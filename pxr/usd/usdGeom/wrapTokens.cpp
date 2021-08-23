@@ -164,6 +164,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "pointWeights", UsdGeomTokens->pointWeights);
     _AddToken(cls, "positions", UsdGeomTokens->positions);
     _AddToken(cls, "power", UsdGeomTokens->power);
+    _AddToken(cls, "primvarsDepthPriority", UsdGeomTokens->primvarsDepthPriority);
     _AddToken(cls, "primvarsDisplayColor", UsdGeomTokens->primvarsDisplayColor);
     _AddToken(cls, "primvarsDisplayOpacity", UsdGeomTokens->primvarsDisplayOpacity);
     _AddToken(cls, "projection", UsdGeomTokens->projection);

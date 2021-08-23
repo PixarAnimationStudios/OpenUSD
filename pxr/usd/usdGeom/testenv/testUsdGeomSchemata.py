@@ -81,6 +81,8 @@ class TestUsdGeomSchemata(unittest.TestCase):
                 n = "displayColor"
             elif n == "primvars:displayOpacity":
                 n = "displayOpacity"
+            elif n == "primvars:depthPriority":
+                n = "depthPriority"
 
             name = n[0].upper() + n[1:]
             self.assertTrue(("Get" + name + "Attr") in dir(mesh), 

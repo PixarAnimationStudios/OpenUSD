@@ -46,6 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (coordSysBindings)                          \
     (cubic)                                     \
     (cullStyle)                                 \
+    (depthPriority)                             \
     (doubleSided)                               \
     (dispatchCount)                             \
     (displayColor)                              \

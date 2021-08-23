@@ -462,6 +462,10 @@ struct UsdGeomTokensType {
     /// 
     /// A deprecated basis token for UsdGeomBasisCurves.
     const TfToken power;
+    /// \brief "primvars:depthPriority"
+    /// 
+    /// UsdGeomGprim
+    const TfToken primvarsDepthPriority;
     /// \brief "primvars:displayColor"
     /// 
     /// UsdGeomGprim

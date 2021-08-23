@@ -161,6 +161,19 @@ public:
                            VtValue *opacity,
                            VtIntArray *indices);
 
+    /// Returns depth priority, Usd interpolation token, and optionally depth
+    /// priority indices for a given prim, taking into account surface shader
+    /// depth priority and explicitly authored depth priority on the prim. If
+    /// indices is not nullptr and the depth priority value has indices, depth
+    /// priority will be set to the unflattened depth priority value and
+    /// indices set to the depth priority value's indices.
+    USDIMAGING_API
+    static bool GetDepthPriority(UsdPrim const& prim, 
+                                 UsdTimeCode time,
+                                 TfToken *interpolation,
+                                 VtValue *depthPriority,
+                                 VtIntArray *indices);
+
     // Helper function: add a given type of rprim, potentially with instancer
     // name mangling, and add any bound shader.
     USDIMAGING_API

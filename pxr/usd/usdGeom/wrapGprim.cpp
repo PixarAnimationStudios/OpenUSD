@@ -64,6 +64,13 @@ _CreateDisplayOpacityAttr(UsdGeomGprim &self,
 }
         
 static UsdAttribute
+_CreateDepthPriorityAttr(UsdGeomGprim &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateDepthPriorityAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateDoubleSidedAttr(UsdGeomGprim &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateDoubleSidedAttr(
@@ -130,6 +137,13 @@ void wrapUsdGeomGprim()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
+        .def("GetDepthPriorityAttr",
+             &This::GetDepthPriorityAttr)
+        .def("CreateDepthPriorityAttr",
+             &_CreateDepthPriorityAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
         .def("GetDoubleSidedAttr",
              &This::GetDoubleSidedAttr)
         .def("CreateDoubleSidedAttr",
@@ -181,6 +195,11 @@ WRAP_CUSTOM {
              &UsdGeomGprim::GetDisplayOpacityPrimvar)
         .def("CreateDisplayOpacityPrimvar", 
              &UsdGeomGprim::CreateDisplayOpacityPrimvar,
+             (arg("interpolation")=TfToken(), arg("elementSize")=-1))
+        .def("GetDepthPriorityPrimvar",
+             &UsdGeomGprim::GetDepthPriorityPrimvar)
+        .def("CreateDepthPriorityPrimvar", 
+             &UsdGeomGprim::CreateDepthPriorityPrimvar,
              (arg("interpolation")=TfToken(), arg("elementSize")=-1))
         ;
 }
