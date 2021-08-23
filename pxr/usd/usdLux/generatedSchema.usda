@@ -126,6 +126,83 @@ class "Light" (
     )
 }
 
+class "LightAPI" (
+    apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
+    doc = """API schema that imparts the quality of being a light onto a prim. 
+
+    A light is any prim that has this schema applied to it.  This is true 
+    regardless of whether LightAPI is included as a built-in API of the prim 
+    type (e.g. RectLight or DistantLight) or is applied directly to a Gprim 
+    that should be treated as a light.
+
+    <b>Linking</b>
+
+    Lights can be linked to geometry.  Linking controls which geometry
+    a light illuminates, and which geometry casts shadows from the light.
+
+    Linking is specified as collections (UsdCollectionAPI) which can
+    be accessed via GetLightLinkCollection() and GetShadowLinkCollection().
+    Note that these collections have their includeRoot set to true,
+    so that lights will illuminate and cast shadows from all objects
+    by default.  To illuminate only a specific set of objects, there
+    are two options.  One option is to modify the collection paths
+    to explicitly exclude everything else, assuming it is known;
+    the other option is to set includeRoot to false and explicitly
+    include the desired objects.  These are complementary approaches
+    that may each be preferable depending on the scenario and how
+    to best express the intent of the light setup.
+    """
+)
+{
+    uniform bool collection:lightLink:includeRoot = 1
+    uniform bool collection:shadowLink:includeRoot = 1
+    rel filters (
+        doc = "Relationship to the light filters that apply to this light."
+    )
+    color3f inputs:color = (1, 1, 1) (
+        doc = "The color of emitted light, in energy-linear terms."
+    )
+    float inputs:colorTemperature = 6500 (
+        displayName = "Color Temperature"
+        doc = """Color temperature, in degrees Kelvin, representing the
+        white point.  The default is a common white point, D65.  Lower
+        values are warmer and higher values are cooler.  The valid range
+        is from 1000 to 10000. Only takes effect when
+        enableColorTemperature is set to true.  When active, the
+        computed result multiplies against the color attribute.
+        See UsdLuxBlackbodyTemperatureAsRgb()."""
+    )
+    float inputs:diffuse = 1 (
+        displayName = "Diffuse Multiplier"
+        doc = """A multiplier for the effect of this light on the diffuse
+        response of materials.  This is a non-physical control."""
+    )
+    bool inputs:enableColorTemperature = 0 (
+        displayName = "Enable Color Temperature"
+        doc = "Enables using colorTemperature."
+    )
+    float inputs:exposure = 0 (
+        doc = """Scales the power of the light exponentially as a power
+        of 2 (similar to an F-stop control over exposure).  The result
+        is multiplied against the intensity."""
+    )
+    float inputs:intensity = 1 (
+        doc = "Scales the power of the light linearly."
+    )
+    bool inputs:normalize = 0 (
+        displayName = "Normalize Power"
+        doc = """Normalizes power by the surface area of the light.
+        This makes it easier to independently adjust the power and shape
+        of the light, by causing the power to not vary with the area or
+        angular size of the light."""
+    )
+    float inputs:specular = 1 (
+        displayName = "Specular Multiplier"
+        doc = """A multiplier for the effect of this light on the specular
+        response of materials.  This is a non-physical control."""
+    )
+}
+
 class "ListAPI" (
     doc = '''API schema to support discovery and publishing of lights in a scene.
 

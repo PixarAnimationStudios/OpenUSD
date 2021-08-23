@@ -49,6 +49,7 @@ TF_WRAP_MODULE
         TF_WRAP(UsdLuxPluginLight);
         TF_WRAP(UsdLuxPortalLight);
     }
+    TF_WRAP(UsdLuxLightAPI);
     TF_WRAP(UsdLuxListAPI);
     TF_WRAP(UsdLuxShapingAPI);
     TF_WRAP(UsdLuxShadowAPI);

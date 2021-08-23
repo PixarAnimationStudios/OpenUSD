@@ -19,6 +19,7 @@ pxr_library(usdLux
         domeLight
         geometryLight
         light
+        lightAPI
         lightFilter
         lightPortal
         listAPI
@@ -49,6 +50,7 @@ pxr_library(usdLux
         wrapDomeLight.cpp
         wrapGeometryLight.cpp
         wrapLight.cpp
+        wrapLightAPI.cpp
         wrapLightFilter.cpp
         wrapLightPortal.cpp
         wrapListAPI.cpp
