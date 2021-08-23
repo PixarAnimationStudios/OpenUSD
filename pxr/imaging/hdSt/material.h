@@ -35,7 +35,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HdStSurfaceShaderSharedPtr = std::shared_ptr<class HdStSurfaceShader>;
+using HdSt_MaterialNetworkShaderSharedPtr =
+        std::shared_ptr<class HdSt_MaterialNetworkShader>;
 
 class HioGlslfx;
 
@@ -78,7 +79,7 @@ public:
     /// Obtains the GLSLFX code together with supporting information
     /// such as material params and textures to render surfaces.
     HDST_API
-    HdStShaderCodeSharedPtr GetSurfaceShader() const;
+    HdSt_MaterialNetworkShaderSharedPtr GetMaterialNetworkShader() const;
 
     /// Obtains the GLSLFLX code together with material params to
     /// render volumes.
@@ -103,7 +104,8 @@ public:
     /// Used to set the fallback shader for prim.
     /// This class takes ownership of the passed in object.
     HDST_API
-    void SetSurfaceShader(HdStSurfaceShaderSharedPtr &shaderCode);
+    void SetMaterialNetworkShader(
+        HdSt_MaterialNetworkShaderSharedPtr &shaderCode);
 
 private:
     // Processes the texture descriptors from a material network to
@@ -127,7 +129,7 @@ private:
 
     static HioGlslfx *_fallbackGlslfx;
 
-    HdStSurfaceShaderSharedPtr _surfaceShader;
+    HdSt_MaterialNetworkShaderSharedPtr _materialNetworkShader;
     VolumeMaterialData _volumeMaterialData;
 
     bool _isInitialized : 1;

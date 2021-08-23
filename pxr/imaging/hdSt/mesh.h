@@ -138,7 +138,7 @@ protected:
 
     void _UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                                    HdRenderParam *renderParam,
-                                   bool updateMaterialShader,
+                                   bool updateMaterialNetworkShader,
                                    bool updateGeometricShader);
     
     void _UpdateMaterialTagsForAllReprs(HdSceneDelegate *sceneDelegate,

@@ -33,6 +33,7 @@
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/material.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/primUtils.h"
 #include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -89,10 +90,10 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
 
     // Check if either the material or geometric shaders need updating for
     // draw items of all the reprs.
-    bool updateMaterialShader = false;
+    bool updateMaterialNetworkShader = false;
     if (*dirtyBits & (HdChangeTracker::DirtyMaterialId |
                       HdChangeTracker::NewRepr)) {
-        updateMaterialShader = true;
+        updateMaterialNetworkShader = true;
     }
 
     bool updateGeometricShader = false;
@@ -111,9 +112,9 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
         _UpdateMaterialTagsForAllReprs(delegate, renderParam);
     }
 
-    if (updateMaterialShader || updateGeometricShader) {
+    if (updateMaterialNetworkShader || updateGeometricShader) {
         _UpdateShadersForAllReprs(delegate, renderParam,
-                                  updateMaterialShader, updateGeometricShader);
+                          updateMaterialNetworkShader, updateGeometricShader);
     }
 
     // This clears all the non-custom dirty bits. This ensures that the rprim
@@ -165,7 +166,8 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* MATERIAL SHADER (may affect subsequent primvar population) */
     if ((*dirtyBits & HdChangeTracker::NewRepr) ||
         HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        drawItem->SetMaterialShader(HdStGetMaterialShader(this, sceneDelegate));
+        drawItem->SetMaterialNetworkShader(
+                HdStGetMaterialNetworkShader(this, sceneDelegate));
     }
 
     // Reset value of _displayOpacity
@@ -500,16 +502,17 @@ HdStBasisCurves::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 void
 HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                                            HdRenderParam *renderParam,
-                                           bool updateMaterialShader,
+                                           bool updateMaterialNetworkShader,
                                            bool updateGeometricShader)
 {
     TF_DEBUG(HD_RPRIM_UPDATED). Msg(
         "(%s) - Updating geometric and material shaders for draw "
         "items of all reprs.\n", GetId().GetText());
 
-    HdStShaderCodeSharedPtr materialShader;
-    if (updateMaterialShader) {
-        materialShader = HdStGetMaterialShader(this, sceneDelegate);
+    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader;
+    if (updateMaterialNetworkShader) {
+        materialNetworkShader =
+                HdStGetMaterialNetworkShader(this, sceneDelegate);
     }
 
     for (auto const& reprPair : _reprs) {
@@ -525,8 +528,8 @@ HdStBasisCurves::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
             HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
                 repr->GetDrawItem(drawItemIndex++));
 
-            if (updateMaterialShader) {
-                drawItem->SetMaterialShader(materialShader);
+            if (updateMaterialNetworkShader) {
+                drawItem->SetMaterialNetworkShader(materialNetworkShader);
             }
             if (updateGeometricShader) {
                 _UpdateDrawItemGeometricShader(

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HD_ST_SURFACE_SHADER_H
-#define PXR_IMAGING_HD_ST_SURFACE_SHADER_H
+#ifndef PXR_IMAGING_HD_ST_MATERIAL_NETWORK_SHADER_H
+#define PXR_IMAGING_HD_ST_MATERIAL_NETWORK_SHADER_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
@@ -44,26 +44,28 @@ class HdSceneDelegate;
 
 using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 
-using HdStSurfaceShaderSharedPtr = std::shared_ptr<class HdStSurfaceShader>;
+using HdSt_MaterialNetworkShaderSharedPtr =
+        std::shared_ptr<class HdSt_MaterialNetworkShader>;
 
 using HdBufferSpecVector = std::vector<struct HdBufferSpec>;
 using HdStResourceRegistrySharedPtr = 
     std::shared_ptr<class HdStResourceRegistry>;
 
-/// \class HdStSurfaceShader
+/// \class HdSt_MaterialNetworkShader
 ///
-/// A scene-based SurfaceShader object.
+/// A scene-based material network shader object.
 ///
-/// When surface shaders are expresed in the scene graph, the HdSceneDelegate
-/// can use this object to express these surface shaders in Storm. In addition
-/// to the shader itself, a binding from the Rprim to the SurfaceShader must be
-/// expressed as well.
-class HdStSurfaceShader : public HdStShaderCode {
+/// When material networks are expresed in the scene graph, the HdSceneDelegate
+/// can use this object to express these material network shaders in Storm.
+/// In addition to the material network itself, a binding from the Rprim to the
+/// material network must be expressed as well.
+class HdSt_MaterialNetworkShader : public HdStShaderCode
+{
 public:
     HDST_API
-    HdStSurfaceShader();
+    HdSt_MaterialNetworkShader();
     HDST_API
-    ~HdStSurfaceShader() override;
+    ~HdSt_MaterialNetworkShader() override;
 
 
     // ---------------------------------------------------------------------- //
@@ -180,11 +182,11 @@ private:
     TfToken _materialTag;
 
     // No copying
-    HdStSurfaceShader(const HdStSurfaceShader &)                     = delete;
-    HdStSurfaceShader &operator =(const HdStSurfaceShader &)         = delete;
+    HdSt_MaterialNetworkShader(const HdSt_MaterialNetworkShader &) = delete;
+    HdSt_MaterialNetworkShader &operator =(const HdSt_MaterialNetworkShader &) = delete;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //PXR_IMAGING_HD_ST_SURFACE_SHADER_H
+#endif //PXR_IMAGING_HD_ST_MATERIAL_NETWORK_SHADER_H

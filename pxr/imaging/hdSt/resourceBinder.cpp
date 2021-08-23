@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hdSt/tokens.h"
@@ -171,9 +172,10 @@ _GetInstancerFilterNames(HdStDrawItem const * drawItem)
 {
     TfTokenVector filterNames = HdInstancer::GetBuiltinPrimvarNames();;
 
-    HdStShaderCodeSharedPtr materialShader = drawItem->GetMaterialShader();
-    if (materialShader) {
-        TfTokenVector const & names = materialShader->GetPrimvarNames();
+    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader =
+        drawItem->GetMaterialNetworkShader();
+    if (materialNetworkShader) {
+        TfTokenVector const & names = materialNetworkShader->GetPrimvarNames();
         filterNames.insert(filterNames.end(), names.begin(), names.end());
     }
 
@@ -649,7 +651,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 std::make_pair(shaderParamBinding, sblock));
 
             //XXX:hack  we want to generalize materialParams to other shaders.
-            if ((*shader) == drawItem->GetMaterialShader()) {
+            if ((*shader) == drawItem->GetMaterialNetworkShader()) {
                 // shader parameters are interleaved into single struct.
                 _bindingMap[HdTokens->materialParams] = shaderParamBinding;
             }
@@ -659,7 +661,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         // for primvar and texture accessors
         for (HdSt_MaterialParam const& param : params) {
             const bool isMaterialShader =
-                ((*shader) == drawItem->GetMaterialShader());
+                ((*shader) == drawItem->GetMaterialNetworkShader());
 
             // renderpass texture should be bindfull (for now)
             const bool bindless = bindlessTextureEnabled && isMaterialShader;

@@ -40,7 +40,6 @@
 #include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/smoothNormals.h"
-#include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/base/arch/hash.h"
@@ -132,10 +131,10 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
 
     // Check if either the material or geometric shaders need updating for
     // draw items of all the reprs.
-    bool updateMaterialShader = false;
+    bool updateMaterialNetworkShader = false;
     if (*dirtyBits & (HdChangeTracker::DirtyMaterialId|
                       HdChangeTracker::NewRepr)) {
-        updateMaterialShader = true;
+        updateMaterialNetworkShader = true;
     }
 
     bool updateGeometricShader = false;
@@ -162,10 +161,10 @@ HdStMesh::Sync(HdSceneDelegate *delegate,
         _UpdateMaterialTagsForAllReprs(delegate, renderParam);
     }
 
-    if (updateMaterialShader || updateGeometricShader) {
+    if (updateMaterialNetworkShader || updateGeometricShader) {
         _UpdateShadersForAllReprs(delegate,
                                   renderParam,
-                                  updateMaterialShader,
+                                  updateMaterialNetworkShader,
                                   updateGeometricShader);
     }
 
@@ -441,8 +440,9 @@ HdStMesh::_UpdateDrawItemsForGeomSubsets(HdSceneDelegate *sceneDelegate,
 
                     std::unique_ptr<HdStDrawItem> subsetDrawItem =
                         std::make_unique<HdStDrawItem>(&_sharedData);
-                    subsetDrawItem->SetMaterialShader(HdStGetMaterialShader(
-                        this, sceneDelegate, geomSubset.materialId));
+                    subsetDrawItem->SetMaterialNetworkShader(
+                        HdStGetMaterialNetworkShader(
+                            this, sceneDelegate, geomSubset.materialId));
                     
                     // Each of the geom subset draw items need to have a unique
                     // topology drawing coord
@@ -497,8 +497,9 @@ HdStMesh::_UpdateDrawItemsForGeomSubsets(HdSceneDelegate *sceneDelegate,
                 if (!TF_VERIFY(subsetDrawItem)) {
                     continue;
                 }
-                subsetDrawItem->SetMaterialShader(HdStGetMaterialShader(
-                    this, sceneDelegate, geomSubset.materialId));
+                subsetDrawItem->SetMaterialNetworkShader(
+                        HdStGetMaterialNetworkShader(
+                                this, sceneDelegate, geomSubset.materialId));
             }
             geomSubsetDescIndex++;
         }
@@ -2143,7 +2144,8 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     /* MATERIAL SHADER (may affect subsequent primvar population) */
     if ((*dirtyBits & HdChangeTracker::NewRepr) ||
         HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
-        drawItem->SetMaterialShader(HdStGetMaterialShader(this, sceneDelegate));
+        drawItem->SetMaterialNetworkShader
+                (HdStGetMaterialNetworkShader(this, sceneDelegate));
 
         if (desc.geomStyle != HdMeshGeomStylePoints) {
             const HdGeomSubsets &geomSubsets = _topology ? 
@@ -2156,8 +2158,9 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                 if (!TF_VERIFY(subsetDrawItem)) {
                     continue;
                 }
-                subsetDrawItem->SetMaterialShader(HdStGetMaterialShader(
-                    this, sceneDelegate, geomSubsets[i].materialId));
+                subsetDrawItem->SetMaterialNetworkShader(
+                        HdStGetMaterialNetworkShader(
+                            this, sceneDelegate, geomSubsets[i].materialId));
             }
         }
     }
@@ -2728,14 +2731,14 @@ HdStMesh::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 void
 HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                                     HdRenderParam *renderParam,
-                                    bool updateMaterialShader,
+                                    bool updateMaterialNetworkShader,
                                     bool updateGeometricShader)
 {
     TF_DEBUG(HD_RPRIM_UPDATED). Msg(
         "(%s) - Updating geometric and material shaders for draw "
         "items of all reprs.\n", GetId().GetText());
 
-    HdStShaderCodeSharedPtr materialShader;
+    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader;
 
     for (auto const& reprPair : _reprs) {
         const TfToken &reprToken = reprPair.first;
@@ -2755,9 +2758,10 @@ HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                 HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
                     repr->GetDrawItem(drawItemIndex++));
 
-                if (updateMaterialShader) {
-                    materialShader = HdStGetMaterialShader(this, sceneDelegate);
-                    drawItem->SetMaterialShader(materialShader);
+                if (updateMaterialNetworkShader) {
+                    materialNetworkShader =
+                        HdStGetMaterialNetworkShader(this, sceneDelegate);
+                    drawItem->SetMaterialNetworkShader(materialNetworkShader);
                 }
                 if (updateGeometricShader) {
                     _UpdateDrawItemGeometricShader(sceneDelegate, renderParam,
@@ -2781,10 +2785,10 @@ HdStMesh::_UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                 if (!TF_VERIFY(drawItem)) {
                     continue;
                 }
-                if (updateMaterialShader) {
-                    materialShader = HdStGetMaterialShader(
+                if (updateMaterialNetworkShader) {
+                    materialNetworkShader = HdStGetMaterialNetworkShader(
                         this, sceneDelegate, materialId);
-                    drawItem->SetMaterialShader(materialShader);
+                    drawItem->SetMaterialNetworkShader(materialNetworkShader);
                 }
                 if (updateGeometricShader) {
                     _UpdateDrawItemGeometricShader(sceneDelegate, renderParam,

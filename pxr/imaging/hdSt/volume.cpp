@@ -24,15 +24,15 @@
 #include "pxr/imaging/hdSt/volume.h"
 
 #include "pxr/imaging/hdSt/drawItem.h"
-#include "pxr/imaging/hdSt/material.h"
-#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/field.h"
+#include "pxr/imaging/hdSt/material.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/materialParam.h"
+#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/primUtils.h"
 #include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hdSt/surfaceShader.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/volumeShader.h"
@@ -300,7 +300,7 @@ private:
 // from the bounding box of the volume.
 //
 HdSt_VolumeShaderSharedPtr
-_ComputeMaterialShader(
+_ComputeMaterialNetworkShader(
     HdSceneDelegate * const sceneDelegate,
     const SdfPath &id,
     const HdStMaterial::VolumeMaterialData &volumeMaterialData,
@@ -330,7 +330,7 @@ _ComputeMaterialShader(
              param.IsPrimvarRedirect() ||
              param.IsFallback() ) {
             // Add fallback values for parameters
-            HdStSurfaceShader::AddFallbackValueToSpecsAndSources(
+            HdSt_MaterialNetworkShader::AddFallbackValueToSpecsAndSources(
                 param, &bufferSpecs, &bufferSources);
 
             if (param.IsFieldRedirect()) {
@@ -388,7 +388,7 @@ _ComputeMaterialShader(
             TfTokenVector(),
             textureType);
 
-        HdStSurfaceShader::AddFallbackValueToSpecsAndSources(
+        HdSt_MaterialNetworkShader::AddFallbackValueToSpecsAndSources(
             param, &bufferSpecs, &bufferSources);
 
         params.push_back(param);
@@ -529,8 +529,8 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         // GLSL functions such as "float scattering(vec3)" in the volume shader
         // to evaluate physical properties of a volume at the point p.
         
-        drawItem->SetMaterialShader(
-            _ComputeMaterialShader(
+        drawItem->SetMaterialNetworkShader(
+            _ComputeMaterialNetworkShader(
                 sceneDelegate,
                 GetId(),
                 _ComputeVolumeMaterialData(material),
@@ -541,11 +541,11 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         std::static_pointer_cast<HdStResourceRegistry>(
             sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
-    HdSt_VolumeShaderSharedPtr const materialShader =
+    HdSt_VolumeShaderSharedPtr const materialNetworkShader =
         std::dynamic_pointer_cast<HdSt_VolumeShader>(
-            drawItem->GetMaterialShader());
+            drawItem->GetMaterialNetworkShader());
 
-    if (!materialShader) {
+    if (!materialNetworkShader) {
         TF_CODING_ERROR("Expected valid volume shader for draw item.");
         return;
     }
@@ -555,7 +555,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         /* FIELD TEXTURES */
         
         // (Re-)Allocate the textures associated with the field prims.
-        materialShader->UpdateTextureHandles(sceneDelegate);
+        materialNetworkShader->UpdateTextureHandles(sceneDelegate);
     }
 
     /* VERTICES */
@@ -578,11 +578,11 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
         // Let HdSt_VolumeShader know about the points bar so that it
         // can fill it with the vertices of the volume bounding box.
-        materialShader->SetPointsBar(drawItem->GetVertexPrimvarRange());
+        materialNetworkShader->SetPointsBar(drawItem->GetVertexPrimvarRange());
         
         // If HdSt_VolumeShader is not in charge of filling the points bar
         // from the volume bounding box computed from the fields, ...
-        if (!materialShader->GetFillsPointsBar()) {
+        if (!materialNetworkShader->GetFillsPointsBar()) {
             // ... fill the points from the authored extents.
             resourceRegistry->AddSource(
                 drawItem->GetVertexPrimvarRange(),

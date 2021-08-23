@@ -49,7 +49,8 @@ using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 
 using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
 using HdBufferSpecVector = std::vector<struct HdBufferSpec>;
-using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
+using HdSt_MaterialNetworkShaderSharedPtr =
+        std::shared_ptr<class HdSt_MaterialNetworkShader>;
 
 using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
 
@@ -114,17 +115,17 @@ void HdStSetMaterialTag(HdSceneDelegate *delegate,
                         SdfPath const & materialId,
                         bool hasDisplayOpacityPrimvar,
                         bool occludedSelectionShowsThrough);
-// Resolves the material shader for the given prim (using a fallback
+// Resolves the material network shader for the given prim (using a fallback
 // material as necessary).
 HDST_API
-HdStShaderCodeSharedPtr
-HdStGetMaterialShader(
+HdSt_MaterialNetworkShaderSharedPtr
+HdStGetMaterialNetworkShader(
     HdRprim const * prim,
     HdSceneDelegate * delegate);
 
 HDST_API
-HdStShaderCodeSharedPtr
-HdStGetMaterialShader(
+HdSt_MaterialNetworkShaderSharedPtr
+HdStGetMaterialNetworkShader(
     HdRprim const * prim,
     HdSceneDelegate * delegate,
     SdfPath const & materialId);

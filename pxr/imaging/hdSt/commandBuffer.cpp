@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -240,7 +241,7 @@ HdStCommandBuffer::_RebuildDrawBatches()
 
         if (!TF_VERIFY(drawItem->GetGeometricShader(), "%s",
                        drawItem->GetRprimID().GetText()) ||
-            !TF_VERIFY(drawItem->GetMaterialShader(), "%s",
+            !TF_VERIFY(drawItem->GetMaterialNetworkShader(), "%s",
                        drawItem->GetRprimID().GetText())) {
             continue;
         }
@@ -260,7 +261,8 @@ HdStCommandBuffer::_RebuildDrawBatches()
             // for the hash which does not vary over time.
             // 
             boost::hash_combine(
-                key, drawItem->GetMaterialShader()->ComputeTextureSourceHash());
+                key, drawItem->GetMaterialNetworkShader()->
+                                        ComputeTextureSourceHash());
         }
 
         // Do a quick check to see if the draw item can be batched with the

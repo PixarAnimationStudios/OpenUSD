@@ -128,7 +128,8 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     SdfPath const& id = GetId();
 
     /* MATERIAL SHADER (may affect subsequent primvar population) */
-    drawItem->SetMaterialShader(HdStGetMaterialShader(this, sceneDelegate));
+    drawItem->SetMaterialNetworkShader(
+        HdStGetMaterialNetworkShader(this, sceneDelegate));
 
     // Reset value of _displayOpacity
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {

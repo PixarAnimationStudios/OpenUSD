@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/material.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
@@ -108,16 +109,19 @@ HdStMarkGarbageCollectionNeeded(HdRenderParam *renderParam)
 static bool
 _IsEnabledPrimvarFiltering(HdStDrawItem const * drawItem)
 {
-    HdStShaderCodeSharedPtr materialShader = drawItem->GetMaterialShader();
-    return materialShader && materialShader->IsEnabledPrimvarFiltering();
+    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader =
+        drawItem->GetMaterialNetworkShader();
+    return materialNetworkShader &&
+           materialNetworkShader->IsEnabledPrimvarFiltering();
 }
 
 static TfTokenVector const &
 _GetFilterNamesForMaterial(HdStDrawItem const * drawItem)
 {
-    HdStShaderCodeSharedPtr materialShader = drawItem->GetMaterialShader();
-    if (materialShader) {
-        return materialShader->GetPrimvarNames();
+    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader =
+        drawItem->GetMaterialNetworkShader();
+    if (materialNetworkShader) {
+        return materialNetworkShader->GetPrimvarNames();
     }
 
     static const TfTokenVector fallback = TfTokenVector();
@@ -311,16 +315,16 @@ HdStSetMaterialTag(HdSceneDelegate * const delegate,
             occludedSelectionShowsThrough));
 }
 
-HdStShaderCodeSharedPtr
-HdStGetMaterialShader(
+HdSt_MaterialNetworkShaderSharedPtr
+HdStGetMaterialNetworkShader(
     HdRprim const * prim,
     HdSceneDelegate * delegate)
 {
-    return HdStGetMaterialShader(prim, delegate, prim->GetMaterialId());
+    return HdStGetMaterialNetworkShader(prim, delegate, prim->GetMaterialId());
 }
 
-HdStShaderCodeSharedPtr
-HdStGetMaterialShader(
+HdSt_MaterialNetworkShaderSharedPtr
+HdStGetMaterialNetworkShader(
     HdRprim const * prim,
     HdSceneDelegate * delegate,
     SdfPath const & materialId)
@@ -337,7 +341,7 @@ HdStGetMaterialShader(
                 renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
     }
 
-    return material->GetSurfaceShader();
+    return material->GetMaterialNetworkShader();
 }
 
 // -----------------------------------------------------------------------------

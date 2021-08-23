@@ -456,13 +456,13 @@ HdSprim *
 HdStRenderDelegate::_CreateFallbackMaterialPrim()
 {
     HioGlslfxSharedPtr glslfx =
-        std::make_shared<HioGlslfx>(HdStPackageFallbackSurfaceShader());
+        std::make_shared<HioGlslfx>(HdStPackageFallbackMaterialNetworkShader());
 
-    HdStSurfaceShaderSharedPtr fallbackShaderCode =
+    HdSt_MaterialNetworkShaderSharedPtr fallbackShaderCode =
         std::make_shared<HdStGLSLFXShader>(glslfx);
 
     HdStMaterial *material = new HdStMaterial(SdfPath::EmptyPath());
-    material->SetSurfaceShader(fallbackShaderCode);
+    material->SetMaterialNetworkShader(fallbackShaderCode);
 
     return material;
 }

@@ -30,7 +30,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 HdStGLSLFXShader::HdStGLSLFXShader(HioGlslfxSharedPtr const& glslfx)
- : HdStSurfaceShader()
+ : HdSt_MaterialNetworkShader()
     , _glslfx(glslfx)
 {
     _SetSource(HdShaderTokens->fragmentShader, _glslfx->GetSurfaceSource());

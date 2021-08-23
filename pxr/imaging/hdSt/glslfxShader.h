@@ -27,14 +27,19 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hdSt/surfaceShader.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HioGlslfxSharedPtr = std::shared_ptr<class HioGlslfx>;
 
-// XXX: DOCS!
-class HdStGLSLFXShader final : public HdStSurfaceShader {
+/// \class HdStGLSLFXShader
+///
+/// A simple specialization of HdSt_MaterialNetworkShader used to
+/// load the built-in fallback material network.
+///
+class HdStGLSLFXShader final : public HdSt_MaterialNetworkShader
+{
 public:
     HDST_API
     HdStGLSLFXShader(HioGlslfxSharedPtr const& glslfx);

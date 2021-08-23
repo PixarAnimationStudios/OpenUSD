@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdSt/surfaceShader.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
@@ -53,7 +53,7 @@ _IsEnabledMaterialPrimvarFiltering() {
 static TfTokenVector
 _CollectPrimvarNames(const HdSt_MaterialParamVector &params);
 
-HdStSurfaceShader::HdStSurfaceShader()
+HdSt_MaterialNetworkShader::HdSt_MaterialNetworkShader()
  : HdStShaderCode()
  , _fragmentSource()
  , _geometrySource()
@@ -70,10 +70,11 @@ HdStSurfaceShader::HdStSurfaceShader()
 {
 }
 
-HdStSurfaceShader::~HdStSurfaceShader() = default;
+HdSt_MaterialNetworkShader::~HdSt_MaterialNetworkShader() = default;
 
 void
-HdStSurfaceShader::_SetSource(TfToken const &shaderStageKey, std::string const &source)
+HdSt_MaterialNetworkShader::_SetSource(
+        TfToken const &shaderStageKey, std::string const &source)
 {
     if (shaderStageKey == HdShaderTokens->fragmentShader) {
         _fragmentSource = source;
@@ -90,7 +91,7 @@ HdStSurfaceShader::_SetSource(TfToken const &shaderStageKey, std::string const &
 
 /*virtual*/
 std::string
-HdStSurfaceShader::GetSource(TfToken const &shaderStageKey) const
+HdSt_MaterialNetworkShader::GetSource(TfToken const &shaderStageKey) const
 {
     if (shaderStageKey == HdShaderTokens->fragmentShader) {
         return _fragmentSource;
@@ -102,44 +103,44 @@ HdStSurfaceShader::GetSource(TfToken const &shaderStageKey) const
 }
 /*virtual*/
 HdSt_MaterialParamVector const&
-HdStSurfaceShader::GetParams() const
+HdSt_MaterialNetworkShader::GetParams() const
 {
     return _params;
 }
 void
-HdStSurfaceShader::SetEnabledPrimvarFiltering(bool enabled)
+HdSt_MaterialNetworkShader::SetEnabledPrimvarFiltering(bool enabled)
 {
     _isEnabledPrimvarFiltering =
         enabled && _IsEnabledMaterialPrimvarFiltering();
 }
 /* virtual */
 bool
-HdStSurfaceShader::IsEnabledPrimvarFiltering() const
+HdSt_MaterialNetworkShader::IsEnabledPrimvarFiltering() const
 {
     return _isEnabledPrimvarFiltering;
 }
 /*virtual*/
 TfTokenVector const&
-HdStSurfaceShader::GetPrimvarNames() const
+HdSt_MaterialNetworkShader::GetPrimvarNames() const
 {
     return _primvarNames;
 }
 /*virtual*/
 HdBufferArrayRangeSharedPtr const&
-HdStSurfaceShader::GetShaderData() const
+HdSt_MaterialNetworkShader::GetShaderData() const
 {
     return _paramArray;
 }
 
 HdStShaderCode::NamedTextureHandleVector const &
-HdStSurfaceShader::GetNamedTextureHandles() const
+HdSt_MaterialNetworkShader::GetNamedTextureHandles() const
 {
     return _namedTextureHandles;
 }
 
 /*virtual*/
 void
-HdStSurfaceShader::BindResources(const int program,
+HdSt_MaterialNetworkShader::BindResources(const int program,
                                  HdSt_ResourceBinder const &binder,
                                  HdRenderPassState const &state)
 {
@@ -149,7 +150,7 @@ HdStSurfaceShader::BindResources(const int program,
 }
 /*virtual*/
 void
-HdStSurfaceShader::UnbindResources(const int program,
+HdSt_MaterialNetworkShader::UnbindResources(const int program,
                                    HdSt_ResourceBinder const &binder,
                                    HdRenderPassState const &state)
 {
@@ -159,13 +160,13 @@ HdStSurfaceShader::UnbindResources(const int program,
 }
 /*virtual*/
 void
-HdStSurfaceShader::AddBindings(HdBindingRequestVector *customBindings)
+HdSt_MaterialNetworkShader::AddBindings(HdBindingRequestVector *customBindings)
 {
 }
 
 /*virtual*/
 HdStShaderCode::ID
-HdStSurfaceShader::ComputeHash() const
+HdSt_MaterialNetworkShader::ComputeHash() const
 {
     // All mutator methods that might affect the hash must reset this (fragile).
     if (!_isValidComputedHash) {
@@ -177,7 +178,7 @@ HdStSurfaceShader::ComputeHash() const
 
 /*virtual*/
 HdStShaderCode::ID
-HdStSurfaceShader::ComputeTextureSourceHash() const
+HdSt_MaterialNetworkShader::ComputeTextureSourceHash() const
 {
     if (!_isValidComputedTextureSourceHash) {
         _computedTextureSourceHash = _ComputeTextureSourceHash();
@@ -187,7 +188,7 @@ HdStSurfaceShader::ComputeTextureSourceHash() const
 }
 
 HdStShaderCode::ID
-HdStSurfaceShader::_ComputeHash() const
+HdSt_MaterialNetworkShader::_ComputeHash() const
 {
     size_t hash = HdSt_MaterialParam::ComputeHash(_params);
 
@@ -207,7 +208,7 @@ HdStSurfaceShader::_ComputeHash() const
 }
 
 HdStShaderCode::ID
-HdStSurfaceShader::_ComputeTextureSourceHash() const
+HdSt_MaterialNetworkShader::_ComputeTextureSourceHash() const
 {
     TRACE_FUNCTION();
 
@@ -225,21 +226,21 @@ HdStSurfaceShader::_ComputeTextureSourceHash() const
 }
 
 void
-HdStSurfaceShader::SetFragmentSource(const std::string &source)
+HdSt_MaterialNetworkShader::SetFragmentSource(const std::string &source)
 {
     _fragmentSource = source;
     _isValidComputedHash = false;
 }
 
 void
-HdStSurfaceShader::SetGeometrySource(const std::string &source)
+HdSt_MaterialNetworkShader::SetGeometrySource(const std::string &source)
 {
     _geometrySource = source;
     _isValidComputedHash = false;
 }
 
 void
-HdStSurfaceShader::SetParams(const HdSt_MaterialParamVector &params)
+HdSt_MaterialNetworkShader::SetParams(const HdSt_MaterialParamVector &params)
 {
     _params = params;
     _primvarNames = _CollectPrimvarNames(_params);
@@ -247,7 +248,7 @@ HdStSurfaceShader::SetParams(const HdSt_MaterialParamVector &params)
 }
 
 void
-HdStSurfaceShader::SetNamedTextureHandles(
+HdSt_MaterialNetworkShader::SetNamedTextureHandles(
     const NamedTextureHandleVector &namedTextureHandles)
 {
     _namedTextureHandles = namedTextureHandles;
@@ -255,7 +256,7 @@ HdStSurfaceShader::SetNamedTextureHandles(
 }
 
 void
-HdStSurfaceShader::SetBufferSources(
+HdSt_MaterialNetworkShader::SetBufferSources(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferSourceSharedPtrVector &&bufferSources,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
@@ -296,13 +297,13 @@ HdStSurfaceShader::SetBufferSources(
 }
 
 TfToken
-HdStSurfaceShader::GetMaterialTag() const
+HdSt_MaterialNetworkShader::GetMaterialTag() const
 {
     return _materialTag;
 }
 
 void
-HdStSurfaceShader::SetMaterialTag(TfToken const &tag)
+HdSt_MaterialNetworkShader::SetMaterialTag(TfToken const &tag)
 {
     _materialTag = tag;
     _isValidComputedHash = false;
@@ -310,14 +311,14 @@ HdStSurfaceShader::SetMaterialTag(TfToken const &tag)
 
 /// If the prim is based on asset, reload that asset.
 void
-HdStSurfaceShader::Reload()
+HdSt_MaterialNetworkShader::Reload()
 {
     // Nothing to do, this shader's sources are externally managed.
 }
 
 /*static*/
 bool
-HdStSurfaceShader::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
+HdSt_MaterialNetworkShader::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
                                 HdStShaderCodeSharedPtr const &shaderB)
 {
     // Can aggregate if the shaders are identical.
@@ -429,7 +430,7 @@ _CollectPrimvarNames(const HdSt_MaterialParamVector &params)
 }
 
 void
-HdStSurfaceShader::AddResourcesFromTextures(ResourceContext &ctx) const
+HdSt_MaterialNetworkShader::AddResourcesFromTextures(ResourceContext &ctx) const
 {
     // Add buffer sources for bindless texture handles (and
     // other texture metadata such as the sampling transform for
@@ -444,7 +445,7 @@ HdStSurfaceShader::AddResourcesFromTextures(ResourceContext &ctx) const
 }
 
 void
-HdStSurfaceShader::AddFallbackValueToSpecsAndSources(
+HdSt_MaterialNetworkShader::AddFallbackValueToSpecsAndSources(
     const HdSt_MaterialParam &param,
     HdBufferSpecVector * const specs,
     HdBufferSourceSharedPtrVector * const sources)
