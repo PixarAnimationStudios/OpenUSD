@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdGeom/purposeVisibilityAPI.h"
+#include "pxr/usd/usdGeom/visibilityAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/tokens.h"
@@ -34,68 +34,68 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdGeomPurposeVisibilityAPI,
+    TfType::Define<UsdGeomVisibilityAPI,
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
 
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
-    (PurposeVisibilityAPI)
+    (VisibilityAPI)
 );
 
 /* virtual */
-UsdGeomPurposeVisibilityAPI::~UsdGeomPurposeVisibilityAPI()
+UsdGeomVisibilityAPI::~UsdGeomVisibilityAPI()
 {
 }
 
 /* static */
-UsdGeomPurposeVisibilityAPI
-UsdGeomPurposeVisibilityAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdGeomVisibilityAPI
+UsdGeomVisibilityAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdGeomPurposeVisibilityAPI();
+        return UsdGeomVisibilityAPI();
     }
-    return UsdGeomPurposeVisibilityAPI(stage->GetPrimAtPath(path));
+    return UsdGeomVisibilityAPI(stage->GetPrimAtPath(path));
 }
 
 
 /* virtual */
-UsdSchemaKind UsdGeomPurposeVisibilityAPI::_GetSchemaKind() const
+UsdSchemaKind UsdGeomVisibilityAPI::_GetSchemaKind() const
 {
-    return UsdGeomPurposeVisibilityAPI::schemaKind;
+    return UsdGeomVisibilityAPI::schemaKind;
 }
 
 /* static */
 bool
-UsdGeomPurposeVisibilityAPI::CanApply(
+UsdGeomVisibilityAPI::CanApply(
     const UsdPrim &prim, std::string *whyNot)
 {
-    return prim.CanApplyAPI<UsdGeomPurposeVisibilityAPI>(whyNot);
+    return prim.CanApplyAPI<UsdGeomVisibilityAPI>(whyNot);
 }
 
 /* static */
-UsdGeomPurposeVisibilityAPI
-UsdGeomPurposeVisibilityAPI::Apply(const UsdPrim &prim)
+UsdGeomVisibilityAPI
+UsdGeomVisibilityAPI::Apply(const UsdPrim &prim)
 {
-    if (prim.ApplyAPI<UsdGeomPurposeVisibilityAPI>()) {
-        return UsdGeomPurposeVisibilityAPI(prim);
+    if (prim.ApplyAPI<UsdGeomVisibilityAPI>()) {
+        return UsdGeomVisibilityAPI(prim);
     }
-    return UsdGeomPurposeVisibilityAPI();
+    return UsdGeomVisibilityAPI();
 }
 
 /* static */
 const TfType &
-UsdGeomPurposeVisibilityAPI::_GetStaticTfType()
+UsdGeomVisibilityAPI::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdGeomPurposeVisibilityAPI>();
+    static TfType tfType = TfType::Find<UsdGeomVisibilityAPI>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdGeomPurposeVisibilityAPI::_IsTypedSchema()
+UsdGeomVisibilityAPI::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -103,19 +103,19 @@ UsdGeomPurposeVisibilityAPI::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdGeomPurposeVisibilityAPI::_GetTfType() const
+UsdGeomVisibilityAPI::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 UsdAttribute
-UsdGeomPurposeVisibilityAPI::GetGuideVisibilityAttr() const
+UsdGeomVisibilityAPI::GetGuideVisibilityAttr() const
 {
     return GetPrim().GetAttribute(UsdGeomTokens->guideVisibility);
 }
 
 UsdAttribute
-UsdGeomPurposeVisibilityAPI::CreateGuideVisibilityAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomVisibilityAPI::CreateGuideVisibilityAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdGeomTokens->guideVisibility,
                        SdfValueTypeNames->Token,
@@ -126,13 +126,13 @@ UsdGeomPurposeVisibilityAPI::CreateGuideVisibilityAttr(VtValue const &defaultVal
 }
 
 UsdAttribute
-UsdGeomPurposeVisibilityAPI::GetProxyVisibilityAttr() const
+UsdGeomVisibilityAPI::GetProxyVisibilityAttr() const
 {
     return GetPrim().GetAttribute(UsdGeomTokens->proxyVisibility);
 }
 
 UsdAttribute
-UsdGeomPurposeVisibilityAPI::CreateProxyVisibilityAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomVisibilityAPI::CreateProxyVisibilityAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdGeomTokens->proxyVisibility,
                        SdfValueTypeNames->Token,
@@ -143,13 +143,13 @@ UsdGeomPurposeVisibilityAPI::CreateProxyVisibilityAttr(VtValue const &defaultVal
 }
 
 UsdAttribute
-UsdGeomPurposeVisibilityAPI::GetRenderVisibilityAttr() const
+UsdGeomVisibilityAPI::GetRenderVisibilityAttr() const
 {
     return GetPrim().GetAttribute(UsdGeomTokens->renderVisibility);
 }
 
 UsdAttribute
-UsdGeomPurposeVisibilityAPI::CreateRenderVisibilityAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomVisibilityAPI::CreateRenderVisibilityAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdGeomTokens->renderVisibility,
                        SdfValueTypeNames->Token,
@@ -173,7 +173,7 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 
 /*static*/
 const TfTokenVector&
-UsdGeomPurposeVisibilityAPI::GetSchemaAttributeNames(bool includeInherited)
+UsdGeomVisibilityAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdGeomTokens->guideVisibility,

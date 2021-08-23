@@ -47,10 +47,10 @@ pxr_library(usdGeom
         points
         primvar
         primvarsAPI
-        purposeVisibilityAPI
         scope
         sphere
         subset
+        visibilityAPI
         xform
         xformable
         xformOp
@@ -91,11 +91,11 @@ pxr_library(usdGeom
         wrapPoints.cpp
         wrapPrimvar.cpp
         wrapPrimvarsAPI.cpp
-        wrapPurposeVisibilityAPI.cpp
         wrapScope.cpp
         wrapSphere.cpp
         wrapSubset.cpp
         wrapTokens.cpp
+        wrapVisibilityAPI.cpp
         wrapXform.cpp
         wrapXformCache.cpp
         wrapXformable.cpp

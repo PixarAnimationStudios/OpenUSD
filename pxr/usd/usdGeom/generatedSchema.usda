@@ -58,18 +58,24 @@ class "Imageable" (
     )
 }
 
-class "PurposeVisibilityAPI" (
+class "VisibilityAPI" (
     doc = '''
-    UsdGeomPurposeVisibilityAPI introduces attributes that can be used
-    to author purpose visibility opinions.
-
-    The attributes added by this schema, _guideVisibility_, _proxyVisibility_,
-    and _renderVisibility_ can each be used to control visibility for geometry
-    of the corresponding purpose values, with the overall _visibility_
-    attribute acting as an override. I.e., if _visibility_ evaluates to
-    "invisible", purpose visibility is invisible; otherwise, purpose
-    visibility is determined by the corresponding purpose visibility
-    attribute.
+    UsdGeomVisibilityAPI introduces properties that can be used to author
+    visibility opinions.
+   
+    \\note
+    Currently, this schema only introduces the attributes that are used to
+    control purpose visibility. Later, this schema will define _all_
+    visibility-related properties and UsdGeomImageable will no longer define
+    those properties.
+   
+    The purpose visibility attributes added by this schema,
+    _guideVisibility_, _proxyVisibility_, and _renderVisibility_ can each be
+    used to control visibility for geometry of the corresponding purpose
+    values, with the overall _visibility_ attribute acting as an
+    override. I.e., if _visibility_ evaluates to "invisible", purpose
+    visibility is invisible; otherwise, purpose visibility is determined by
+    the corresponding purpose visibility attribute.
 
     Note that the behavior of _guideVisibility_ is subtly different from the
     _proxyVisibility_ and _renderVisibility_ attributes, in that "guide"

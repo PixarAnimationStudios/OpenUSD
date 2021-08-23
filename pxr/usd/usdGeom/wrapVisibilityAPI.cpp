@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdGeom/purposeVisibilityAPI.h"
+#include "pxr/usd/usdGeom/visibilityAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -51,61 +51,61 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
-_CreateGuideVisibilityAttr(UsdGeomPurposeVisibilityAPI &self,
+_CreateGuideVisibilityAttr(UsdGeomVisibilityAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateGuideVisibilityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
-_CreateProxyVisibilityAttr(UsdGeomPurposeVisibilityAPI &self,
+_CreateProxyVisibilityAttr(UsdGeomVisibilityAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateProxyVisibilityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
-_CreateRenderVisibilityAttr(UsdGeomPurposeVisibilityAPI &self,
+_CreateRenderVisibilityAttr(UsdGeomVisibilityAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRenderVisibilityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
 
 static std::string
-_Repr(const UsdGeomPurposeVisibilityAPI &self)
+_Repr(const UsdGeomVisibilityAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdGeom.PurposeVisibilityAPI(%s)",
+        "UsdGeom.VisibilityAPI(%s)",
         primRepr.c_str());
 }
 
-struct UsdGeomPurposeVisibilityAPI_CanApplyResult : 
+struct UsdGeomVisibilityAPI_CanApplyResult : 
     public TfPyAnnotatedBoolResult<std::string>
 {
-    UsdGeomPurposeVisibilityAPI_CanApplyResult(bool val, std::string const &msg) :
+    UsdGeomVisibilityAPI_CanApplyResult(bool val, std::string const &msg) :
         TfPyAnnotatedBoolResult<std::string>(val, msg) {}
 };
 
-static UsdGeomPurposeVisibilityAPI_CanApplyResult
+static UsdGeomVisibilityAPI_CanApplyResult
 _WrapCanApply(const UsdPrim& prim)
 {
     std::string whyNot;
-    bool result = UsdGeomPurposeVisibilityAPI::CanApply(prim, &whyNot);
-    return UsdGeomPurposeVisibilityAPI_CanApplyResult(result, whyNot);
+    bool result = UsdGeomVisibilityAPI::CanApply(prim, &whyNot);
+    return UsdGeomVisibilityAPI_CanApplyResult(result, whyNot);
 }
 
 } // anonymous namespace
 
-void wrapUsdGeomPurposeVisibilityAPI()
+void wrapUsdGeomVisibilityAPI()
 {
-    typedef UsdGeomPurposeVisibilityAPI This;
+    typedef UsdGeomVisibilityAPI This;
 
-    UsdGeomPurposeVisibilityAPI_CanApplyResult::Wrap<UsdGeomPurposeVisibilityAPI_CanApplyResult>(
+    UsdGeomVisibilityAPI_CanApplyResult::Wrap<UsdGeomVisibilityAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
-        cls("PurposeVisibilityAPI");
+        cls("VisibilityAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))

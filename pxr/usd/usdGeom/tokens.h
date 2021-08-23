@@ -260,7 +260,7 @@ struct UsdGeomTokensType {
     const TfToken guide;
     /// \brief "guideVisibility"
     /// 
-    /// UsdGeomPurposeVisibilityAPI
+    /// UsdGeomVisibilityAPI
     const TfToken guideVisibility;
     /// \brief "height"
     /// 
@@ -296,7 +296,7 @@ struct UsdGeomTokensType {
     const TfToken indices;
     /// \brief "inherited"
     /// 
-    /// Possible value for UsdGeomModelAPI::GetModelDrawModeAttr(), Default value for UsdGeomModelAPI::GetModelDrawModeAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetProxyVisibilityAttr(), Default value for UsdGeomPurposeVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetRenderVisibilityAttr(), Default value for UsdGeomPurposeVisibilityAPI::GetRenderVisibilityAttr(), Possible value for UsdGeomImageable::GetVisibilityAttr(), Default value for UsdGeomImageable::GetVisibilityAttr()
+    /// Possible value for UsdGeomModelAPI::GetModelDrawModeAttr(), Default value for UsdGeomModelAPI::GetModelDrawModeAttr(), Possible value for UsdGeomVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomVisibilityAPI::GetProxyVisibilityAttr(), Default value for UsdGeomVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomVisibilityAPI::GetRenderVisibilityAttr(), Default value for UsdGeomVisibilityAPI::GetRenderVisibilityAttr(), Possible value for UsdGeomImageable::GetVisibilityAttr(), Default value for UsdGeomImageable::GetVisibilityAttr()
     const TfToken inherited;
     /// \brief "interpolateBoundary"
     /// 
@@ -308,7 +308,7 @@ struct UsdGeomTokensType {
     const TfToken interpolation;
     /// \brief "invisible"
     /// 
-    /// Possible value for UsdGeomPurposeVisibilityAPI::GetGuideVisibilityAttr(), Default value for UsdGeomPurposeVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetRenderVisibilityAttr(), Possible value for UsdGeomImageable::GetVisibilityAttr()
+    /// Possible value for UsdGeomVisibilityAPI::GetGuideVisibilityAttr(), Default value for UsdGeomVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomVisibilityAPI::GetRenderVisibilityAttr(), Possible value for UsdGeomImageable::GetVisibilityAttr()
     const TfToken invisible;
     /// \brief "invisibleIds"
     /// 
@@ -492,7 +492,7 @@ struct UsdGeomTokensType {
     const TfToken proxyPrim;
     /// \brief "proxyVisibility"
     /// 
-    /// UsdGeomPurposeVisibilityAPI
+    /// UsdGeomVisibilityAPI
     const TfToken proxyVisibility;
     /// \brief "purpose"
     /// 
@@ -512,7 +512,7 @@ struct UsdGeomTokensType {
     const TfToken render;
     /// \brief "renderVisibility"
     /// 
-    /// UsdGeomPurposeVisibilityAPI
+    /// UsdGeomVisibilityAPI
     const TfToken renderVisibility;
     /// \brief "right"
     /// 
@@ -652,7 +652,7 @@ struct UsdGeomTokensType {
     const TfToken visibility;
     /// \brief "visible"
     /// 
-    /// Possible value for UsdGeomPurposeVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomPurposeVisibilityAPI::GetRenderVisibilityAttr()
+    /// Possible value for UsdGeomVisibilityAPI::GetGuideVisibilityAttr(), Possible value for UsdGeomVisibilityAPI::GetProxyVisibilityAttr(), Possible value for UsdGeomVisibilityAPI::GetRenderVisibilityAttr()
     const TfToken visible;
     /// \brief "vKnots"
     /// 

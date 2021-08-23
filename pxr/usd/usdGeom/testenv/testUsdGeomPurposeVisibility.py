@@ -117,14 +117,14 @@ class TestUsdGeomPurposeVisibility(unittest.TestCase):
         imageable = stage.DefinePrim("/Root/Imageable", "Scope")
         nonImageable = stage.DefinePrim("/Root/NonImageable")
 
-        # Test that GeomPurposeVisibilityAPI can only apply to Imageable
+        # Test that GeomVisibilityAPI can only apply to Imageable
         # prims.
-        self.assertTrue(UsdGeom.PurposeVisibilityAPI.CanApply(imageable))
-        self.assertFalse(UsdGeom.PurposeVisibilityAPI.CanApply(nonImageable))
+        self.assertTrue(UsdGeom.VisibilityAPI.CanApply(imageable))
+        self.assertFalse(UsdGeom.VisibilityAPI.CanApply(nonImageable))
         
-        # Test that GeomPurposeVisibilityAPI adds the expected purpose
+        # Test that GeomVisibilityAPI adds the expected purpose
         # visibility attributes.
-        UsdGeom.PurposeVisibilityAPI.Apply(imageable)
+        UsdGeom.VisibilityAPI.Apply(imageable)
 
         guideVisibility = \
             imageable.GetAttribute(UsdGeom.Tokens.guideVisibility)

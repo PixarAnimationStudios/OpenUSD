@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDGEOM_GENERATED_PURPOSEVISIBILITYAPI_H
-#define USDGEOM_GENERATED_PURPOSEVISIBILITYAPI_H
+#ifndef USDGEOM_GENERATED_VISIBILITYAPI_H
+#define USDGEOM_GENERATED_VISIBILITYAPI_H
 
-/// \file usdGeom/purposeVisibilityAPI.h
+/// \file usdGeom/visibilityAPI.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/api.h"
@@ -47,22 +47,28 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// PURPOSEVISIBILITYAPI                                                       //
+// VISIBILITYAPI                                                              //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdGeomPurposeVisibilityAPI
+/// \class UsdGeomVisibilityAPI
 ///
 /// 
-/// UsdGeomPurposeVisibilityAPI introduces attributes that can be used
-/// to author purpose visibility opinions.
+/// UsdGeomVisibilityAPI introduces properties that can be used to author
+/// visibility opinions.
 /// 
-/// The attributes added by this schema, _guideVisibility_, _proxyVisibility_,
-/// and _renderVisibility_ can each be used to control visibility for geometry
-/// of the corresponding purpose values, with the overall _visibility_
-/// attribute acting as an override. I.e., if _visibility_ evaluates to
-/// "invisible", purpose visibility is invisible; otherwise, purpose
-/// visibility is determined by the corresponding purpose visibility
-/// attribute.
+/// \note
+/// Currently, this schema only introduces the attributes that are used to
+/// control purpose visibility. Later, this schema will define _all_
+/// visibility-related properties and UsdGeomImageable will no longer define
+/// those properties.
+/// 
+/// The purpose visibility attributes added by this schema,
+/// _guideVisibility_, _proxyVisibility_, and _renderVisibility_ can each be
+/// used to control visibility for geometry of the corresponding purpose
+/// values, with the overall _visibility_ attribute acting as an
+/// override. I.e., if _visibility_ evaluates to "invisible", purpose
+/// visibility is invisible; otherwise, purpose visibility is determined by
+/// the corresponding purpose visibility attribute.
 /// 
 /// Note that the behavior of _guideVisibility_ is subtly different from the
 /// _proxyVisibility_ and _renderVisibility_ attributes, in that "guide"
@@ -84,7 +90,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdGeomTokens->rightHanded
 /// as the value.
 ///
-class UsdGeomPurposeVisibilityAPI : public UsdAPISchemaBase
+class UsdGeomVisibilityAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -92,26 +98,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::SingleApplyAPI;
 
-    /// Construct a UsdGeomPurposeVisibilityAPI on UsdPrim \p prim .
-    /// Equivalent to UsdGeomPurposeVisibilityAPI::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdGeomVisibilityAPI on UsdPrim \p prim .
+    /// Equivalent to UsdGeomVisibilityAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdGeomPurposeVisibilityAPI(const UsdPrim& prim=UsdPrim())
+    explicit UsdGeomVisibilityAPI(const UsdPrim& prim=UsdPrim())
         : UsdAPISchemaBase(prim)
     {
     }
 
-    /// Construct a UsdGeomPurposeVisibilityAPI on the prim held by \p schemaObj .
-    /// Should be preferred over UsdGeomPurposeVisibilityAPI(schemaObj.GetPrim()),
+    /// Construct a UsdGeomVisibilityAPI on the prim held by \p schemaObj .
+    /// Should be preferred over UsdGeomVisibilityAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdGeomPurposeVisibilityAPI(const UsdSchemaBase& schemaObj)
+    explicit UsdGeomVisibilityAPI(const UsdSchemaBase& schemaObj)
         : UsdAPISchemaBase(schemaObj)
     {
     }
 
     /// Destructor.
     USDGEOM_API
-    virtual ~UsdGeomPurposeVisibilityAPI();
+    virtual ~UsdGeomVisibilityAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -120,17 +126,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdGeomPurposeVisibilityAPI holding the prim adhering to this
+    /// Return a UsdGeomVisibilityAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdGeomPurposeVisibilityAPI(stage->GetPrimAtPath(path));
+    /// UsdGeomVisibilityAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDGEOM_API
-    static UsdGeomPurposeVisibilityAPI
+    static UsdGeomVisibilityAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
@@ -155,11 +161,11 @@ public:
     CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "PurposeVisibilityAPI" to the 
+    /// This information is stored by adding "VisibilityAPI" to the 
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     /// 
-    /// \return A valid UsdGeomPurposeVisibilityAPI object is returned upon success. 
-    /// An invalid (or empty) UsdGeomPurposeVisibilityAPI object is returned upon 
+    /// \return A valid UsdGeomVisibilityAPI object is returned upon success. 
+    /// An invalid (or empty) UsdGeomVisibilityAPI object is returned upon 
     /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
     /// resulting in failure. 
     /// 
@@ -170,7 +176,7 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDGEOM_API
-    static UsdGeomPurposeVisibilityAPI 
+    static UsdGeomVisibilityAPI 
     Apply(const UsdPrim &prim);
 
 protected:
