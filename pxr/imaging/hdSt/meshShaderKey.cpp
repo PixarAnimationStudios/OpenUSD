@@ -40,6 +40,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((normalsSmooth,           "MeshNormal.Smooth"))
     ((normalsFlat,             "MeshNormal.Flat"))
     ((normalsPass,             "MeshNormal.Pass"))
+    ((normalsScreenSpaceFS,    "MeshNormal.Fragment.ScreenSpace"))
 
     ((normalsGeometryFlat,     "MeshNormal.Geometry.Flat"))
     ((normalsGeometryNoFlat,   "MeshNormal.Geometry.NoFlat"))
@@ -193,6 +194,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
      *   [VS] .Pass, [GS] .NoFlat, .Pass, [FS] .Pass
      * Flat normals:
      *   [VS] .Pass, [GS] .Flat, .Pass, [FS] .Pass
+     * Screen Space Flat normals:
+     *   [VS] .Pass, [GS] .Pass, [FS] .ScreenSpace
+     *   (geometry shader optional)
      */
     bool vsSceneNormals =
         (normalsSource == NormalSourceScene &&
@@ -288,7 +292,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     if (!useCustomDisplacement
             && (normalsSource != NormalSourceLimit)
             && (normalsSource != NormalSourceGeometryShader)
-            && (geomStyle == HdMeshGeomStyleSurf || geomStyle == HdMeshGeomStyleHull)
+            && (geomStyle == HdMeshGeomStyleSurf ||
+                geomStyle == HdMeshGeomStyleHull)
             && HdSt_GeometricShader::IsPrimTypeTriangles(primType)
             && (!forceGeometryShader)) {
             
@@ -306,10 +311,14 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     uint8_t fsIndex = 0;
     FS[fsIndex++] = _tokens->instancing;
 
-    FS[fsIndex++] = (!gsStageEnabled && normalsSource == NormalSourceFlat) ?
-        _tokens->normalsFlat :
-        ((!gsStageEnabled && gsSceneNormals) ? _tokens->normalsScene :
-         _tokens->normalsPass);
+    FS[fsIndex++] =
+        (normalsSource == NormalSourceScreenSpace)
+            ? _tokens->normalsScreenSpaceFS
+            : (!gsStageEnabled && normalsSource == NormalSourceFlat)
+                ? _tokens->normalsFlat
+                : ((!gsStageEnabled && gsSceneNormals)
+                    ? _tokens->normalsScene
+                    : _tokens->normalsPass);
 
     FS[fsIndex++] = doubleSided ?
         _tokens->normalsDoubleSidedFS : _tokens->normalsSingleSidedFS;

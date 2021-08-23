@@ -2088,6 +2088,15 @@ HdStMesh::_UseFlatNormals(const HdMeshReprDesc &desc) const
     return true;
 }
 
+static bool
+_CanUseTriangulatedFlatNormals(HdSt_MeshTopologySharedPtr const &topology)
+{
+    // For triangle subdivison or subdivision scheme "none" we
+    // can use triangulated flat normals. 
+    return topology->RefinesToTriangles() ||
+           topology->GetScheme() == PxOsdOpenSubdivTokens->none;
+}
+
 HdBufferArrayRangeSharedPtr
 HdStMesh::_GetSharedPrimvarRange(uint64_t primvarId,
     HdBufferSpecVector const &updatedOrAddedSpecs,
@@ -2203,8 +2212,9 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         *dirtyBits &= ~DirtySmoothNormals;
     }
 
-    // If the subdivision scheme is "none", disable flat normal generation.
-    if (_topology->GetScheme() == PxOsdOpenSubdivTokens->none) {
+    // If the subdivision scheme can use triangle normals,
+    // disable flat normal generation.
+    if (_CanUseTriangulatedFlatNormals(_topology)) {
         requireFlatNormals = false;
         *dirtyBits &= ~DirtyFlatNormals;
     }
@@ -2389,7 +2399,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
 
     // Should the geometric shader expect computed flat normals for this mesh?
     bool hasGeneratedFlatNormals = _UseFlatNormals(desc) &&
-        _topology->GetScheme() != PxOsdOpenSubdivTokens->none;
+         !_CanUseTriangulatedFlatNormals(_topology);
 
     // Has the draw style been forced to flat-shading?
     bool forceFlatShading =
@@ -2406,6 +2416,8 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     if (forceFlatShading) {
         if (hasGeneratedFlatNormals) {
             normalsSource = HdSt_MeshShaderKey::NormalSourceFlat;
+        } else if (_CanUseTriangulatedFlatNormals(_topology)) {
+            normalsSource = HdSt_MeshShaderKey::NormalSourceScreenSpace;
         } else {
             normalsSource = HdSt_MeshShaderKey::NormalSourceGeometryShader;
         }
