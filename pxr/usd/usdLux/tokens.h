@@ -76,11 +76,11 @@ struct UsdLuxTokensType {
     const TfToken collectionFilterLinkIncludeRoot;
     /// \brief "collection:lightLink:includeRoot"
     /// 
-    /// UsdLuxLightAPI, UsdLuxLight
+    /// UsdLuxLightAPI
     const TfToken collectionLightLinkIncludeRoot;
     /// \brief "collection:shadowLink:includeRoot"
     /// 
-    /// UsdLuxLightAPI, UsdLuxLight
+    /// UsdLuxLightAPI
     const TfToken collectionShadowLinkIncludeRoot;
     /// \brief "consumeAndContinue"
     /// 
@@ -100,7 +100,7 @@ struct UsdLuxTokensType {
     const TfToken filterLink;
     /// \brief "filters"
     /// 
-    /// UsdLuxLightAPI, UsdLuxLight
+    /// UsdLuxLightAPI
     const TfToken filters;
     /// \brief "geometry"
     /// 
@@ -116,23 +116,23 @@ struct UsdLuxTokensType {
     const TfToken inputsAngle;
     /// \brief "inputs:color"
     /// 
-    /// UsdLuxLightAPI, UsdLuxLight
+    /// UsdLuxLightAPI
     const TfToken inputsColor;
     /// \brief "inputs:colorTemperature"
     /// 
-    /// UsdLuxLightAPI, UsdLuxLight
+    /// UsdLuxLightAPI
     const TfToken inputsColorTemperature;
     /// \brief "inputs:diffuse"
     /// 
-    /// UsdLuxLightAPI, UsdLuxLight
+    /// UsdLuxLightAPI
     const TfToken inputsDiffuse;
     /// \brief "inputs:enableColorTemperature"
     /// 
-    /// UsdLuxLightAPI, UsdLuxLight
+    /// UsdLuxLightAPI
     const TfToken inputsEnableColorTemperature;
     /// \brief "inputs:exposure"
     /// 
-    /// UsdLuxLightAPI, UsdLuxLight
+    /// UsdLuxLightAPI
     const TfToken inputsExposure;
     /// \brief "inputs:height"
     /// 
@@ -140,7 +140,7 @@ struct UsdLuxTokensType {
     const TfToken inputsHeight;
     /// \brief "inputs:intensity"
     /// 
-    /// UsdLuxDistantLight, UsdLuxLightAPI, UsdLuxLight
+    /// UsdLuxDistantLight, UsdLuxLightAPI
     const TfToken inputsIntensity;
     /// \brief "inputs:length"
     /// 
@@ -148,7 +148,7 @@ struct UsdLuxTokensType {
     const TfToken inputsLength;
     /// \brief "inputs:normalize"
     /// 
-    /// UsdLuxLightAPI, UsdLuxLight
+    /// UsdLuxLightAPI
     const TfToken inputsNormalize;
     /// \brief "inputs:radius"
     /// 
@@ -204,7 +204,7 @@ struct UsdLuxTokensType {
     const TfToken inputsShapingIesNormalize;
     /// \brief "inputs:specular"
     /// 
-    /// UsdLuxLightAPI, UsdLuxLight
+    /// UsdLuxLightAPI
     const TfToken inputsSpecular;
     /// \brief "inputs:texture:file"
     /// 

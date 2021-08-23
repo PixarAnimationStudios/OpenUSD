@@ -31,7 +31,6 @@
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usdLux/tokens.h"
 
 #include "pxr/usd/usd/collectionAPI.h"
 #include "pxr/usd/usdShade/input.h"
@@ -57,23 +56,7 @@ class SdfAssetPath;
 /// \class UsdLuxLight
 ///
 /// Base class for all lights.
-/// 
-/// <b>Linking</b>
-/// 
-/// Lights can be linked to geometry.  Linking controls which geometry
-/// a light illuminates, and which geometry casts shadows from the light.
-/// 
-/// Linking is specified as collections (UsdCollectionAPI) which can
-/// be accessed via GetLightLinkCollection() and GetShadowLinkCollection().
-/// Note that these collections have their includeRoot set to true,
-/// so that lights will illuminate and cast shadows from all objects
-/// by default.  To illuminate only a specific set of objects, there
-/// are two options.  One option is to modify the collection paths
-/// to explicitly exclude everything else, assuming it is known;
-/// the other option is to set includeRoot to false and explicitly
-/// include the desired objects.  These are complementary approaches
-/// that may each be preferable depending on the scenario and how
-/// to best express the intent of the light setup.
+/// \see UsdLuxLightAPI
 /// 
 ///
 class UsdLuxLight : public UsdGeomXformable
@@ -144,6 +127,18 @@ private:
     // override SchemaBase virtuals.
     USDLUX_API
     const TfType &_GetTfType() const override;
+
+public:
+    // ===================================================================== //
+    // Feel free to add custom code below this line, it will be preserved by 
+    // the code generator. 
+    //
+    // Just remember to: 
+    //  - Close the class declaration with }; 
+    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
+    //  - Close the include guard with #endif
+    // ===================================================================== //
+    // --(BEGIN CUSTOM CODE)--
 
 public:
     // --------------------------------------------------------------------- //
@@ -348,17 +343,6 @@ public:
     USDLUX_API
     UsdRelationship CreateFiltersRel() const;
 
-public:
-    // ===================================================================== //
-    // Feel free to add custom code below this line, it will be preserved by 
-    // the code generator. 
-    //
-    // Just remember to: 
-    //  - Close the class declaration with }; 
-    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
-    //  - Close the include guard with #endif
-    // ===================================================================== //
-    // --(BEGIN CUSTOM CODE)--
 
     // -------------------------------------------------------------------------
     /// \name Conversion to and from UsdShadeConnectableAPI

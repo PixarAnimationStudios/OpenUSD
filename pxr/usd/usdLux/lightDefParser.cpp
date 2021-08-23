@@ -102,9 +102,19 @@ UsdLux_LightDefParserPlugin::Parse(
     }
 
     UsdShadeConnectableAPI connectable(prim);
-    if (!connectable) {
-        return NdrParserPlugin::GetInvalidNode(discoveryResult);
-    }
+    // XXX: We should be able to call this to verify the connectable API is 
+    // valid but this currently can cause a hang in tbb when NdrRegistry's
+    // GetNodesByFamily function is called in some contexts. This is related
+    // to an interaction with the usdShade's connectable behavior registry now
+    // that we have the LightAPI schema with registered connectable behavior.
+    // We don't need to necessarily check that the UsdShadeConnectableAPI 
+    // is valid for this code to work successfully so we're disabling this until
+    // the issue is resolved.
+    // Note that we may decide to remove this validity check anyway even after
+    // the problem is resolved.
+//  if (!connectable) {
+//      return NdrParserPlugin::GetInvalidNode(discoveryResult);
+//  }
 
     TfToken context;
     if (prim.IsA<UsdLuxLight>()) {

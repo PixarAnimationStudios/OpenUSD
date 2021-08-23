@@ -283,7 +283,8 @@ class TestUsdLuxLight(unittest.TestCase):
 
     def test_UsdLux_HasConnectableAPI(self):
         from pxr import Tf
-        self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(UsdLux.Light))
+        self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
+            UsdLux.LightAPI))
         self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
             UsdLux.LightFilter))
 

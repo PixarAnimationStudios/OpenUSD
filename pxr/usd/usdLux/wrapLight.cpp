@@ -48,7 +48,73 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-        
+
+static std::string
+_Repr(const UsdLuxLight &self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf(
+        "UsdLux.Light(%s)",
+        primRepr.c_str());
+}
+
+} // anonymous namespace
+
+void wrapUsdLuxLight()
+{
+    typedef UsdLuxLight This;
+
+    class_<This, bases<UsdGeomXformable> >
+        cls("Light");
+
+    cls
+        .def(init<UsdPrim>(arg("prim")))
+        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(TfTypePythonClass())
+
+        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .staticmethod("Get")
+
+        .def("GetSchemaAttributeNames",
+             &This::GetSchemaAttributeNames,
+             arg("includeInherited")=true,
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetSchemaAttributeNames")
+
+        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             return_value_policy<return_by_value>())
+        .staticmethod("_GetStaticTfType")
+
+        .def(!self)
+
+
+        .def("__repr__", ::_Repr)
+    ;
+
+    _CustomWrapCode(cls);
+}
+
+// ===================================================================== //
+// Feel free to add custom code below this line, it will be preserved by 
+// the code generator.  The entry point for your custom code should look
+// minimally like the following:
+//
+// WRAP_CUSTOM {
+//     _class
+//         .def("MyCustomMethod", ...)
+//     ;
+// }
+//
+// Of course any other ancillary or support code may be provided.
+// 
+// Just remember to wrap code in the appropriate delimiters:
+// 'namespace {', '}'.
+//
+// ===================================================================== //
+// --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdShade/connectableAPI.h"
+
 static UsdAttribute
 _CreateIntensityAttr(UsdLuxLight &self,
                                       object defaultVal, bool writeSparsely) {
@@ -105,45 +171,12 @@ _CreateColorTemperatureAttr(UsdLuxLight &self,
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
 
-static std::string
-_Repr(const UsdLuxLight &self)
-{
-    std::string primRepr = TfPyRepr(self.GetPrim());
-    return TfStringPrintf(
-        "UsdLux.Light(%s)",
-        primRepr.c_str());
-}
+namespace {
 
-} // anonymous namespace
-
-void wrapUsdLuxLight()
-{
+WRAP_CUSTOM {
     typedef UsdLuxLight This;
 
-    class_<This, bases<UsdGeomXformable> >
-        cls("Light");
-
-    cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
-        .def(TfTypePythonClass())
-
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
-
-        .def("GetSchemaAttributeNames",
-             &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
-
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
-
-        .def(!self)
-
-        
+    _class
         .def("GetIntensityAttr",
              &This::GetIntensityAttr)
         .def("CreateIntensityAttr",
@@ -205,59 +238,29 @@ void wrapUsdLuxLight()
              &This::GetFiltersRel)
         .def("CreateFiltersRel",
              &This::CreateFiltersRel)
-        .def("__repr__", ::_Repr)
-    ;
 
-    _CustomWrapCode(cls);
-}
-
-// ===================================================================== //
-// Feel free to add custom code below this line, it will be preserved by 
-// the code generator.  The entry point for your custom code should look
-// minimally like the following:
-//
-// WRAP_CUSTOM {
-//     _class
-//         .def("MyCustomMethod", ...)
-//     ;
-// }
-//
-// Of course any other ancillary or support code may be provided.
-// 
-// Just remember to wrap code in the appropriate delimiters:
-// 'namespace {', '}'.
-//
-// ===================================================================== //
-// --(BEGIN CUSTOM CODE)--
-
-#include "pxr/usd/usdShade/connectableAPI.h"
-
-namespace {
-
-WRAP_CUSTOM {
-    _class
         .def(init<UsdShadeConnectableAPI>(arg("connectable")))
-        .def("ConnectableAPI", &UsdLuxLight::ConnectableAPI)
+        .def("ConnectableAPI", &This::ConnectableAPI)
 
-        .def("CreateOutput", &UsdLuxLight::CreateOutput,
+        .def("CreateOutput", &This::CreateOutput,
              (arg("name"), arg("type")))
-        .def("GetOutput", &UsdLuxLight::GetOutput, arg("name"))
-        .def("GetOutputs", &UsdLuxLight::GetOutputs,
+        .def("GetOutput", &This::GetOutput, arg("name"))
+        .def("GetOutputs", &This::GetOutputs,
              (arg("onlyAuthored")=true),
              return_value_policy<TfPySequenceToList>())
 
-        .def("CreateInput", &UsdLuxLight::CreateInput,
+        .def("CreateInput", &This::CreateInput,
              (arg("name"), arg("type")))
-        .def("GetInput", &UsdLuxLight::GetInput, arg("name"))
-        .def("GetInputs", &UsdLuxLight::GetInputs,
+        .def("GetInput", &This::GetInput, arg("name"))
+        .def("GetInputs", &This::GetInputs,
              (arg("onlyAuthored")=true),
              return_value_policy<TfPySequenceToList>())
 
-        .def("ComputeBaseEmission", &UsdLuxLight::ComputeBaseEmission)
+        .def("ComputeBaseEmission", &This::ComputeBaseEmission)
         .def("GetLightLinkCollectionAPI",
-             &UsdLuxLight::GetLightLinkCollectionAPI)
+             &This::GetLightLinkCollectionAPI)
         .def("GetShadowLinkCollectionAPI",
-             &UsdLuxLight::GetShadowLinkCollectionAPI)
+             &This::GetShadowLinkCollectionAPI)
         ;
 }
 

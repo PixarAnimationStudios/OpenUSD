@@ -64,7 +64,6 @@
                         "bases": [
                             "UsdGeomXformable"
                         ], 
-                        "providesUsdShadeConnectableAPIBehavior": true, 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdLuxLightAPI": {
