@@ -276,3 +276,36 @@ class TestWithBuiltinNestedAppliedSchema "TestWithBuiltinNestedAppliedSchema" (
     )
 }
 
+class "TestAutoAppliedToAPI" (
+    apiSchemas = ["TestMultiApplyAPI:builtin"]
+    doc = "API that has other API schemas that auto apply to it"
+)
+{
+    string testAttr = "foo" (
+        allowedTokens = ["bar", "baz"]
+        doc = "Testing documentation metadata"
+    )
+    rel testRel (
+        displayGroup = "Display Group"
+        doc = "Testing documentation metadata"
+    )
+}
+
+class "TestNestedAutoAppliedToAPI" (
+    apiSchemas = ["TestMultiApplyAPI:foo"]
+    doc = """
+API that TestAutoAppliedToAPI auto applies to for testing that API schemas can 
+be nested through auto apply"""
+)
+{
+}
+
+class TestNestedAutoAppliedToAPIAppliedToPrim "TestNestedAutoAppliedToAPIAppliedToPrim" (
+    doc = """
+Typed schema that TestNestedAutoAppliedToAPI auto applies to for testing that 
+API schemas with auto applied API schemas can be correctly auto applied to prim
+type schemas"""
+)
+{
+}
+

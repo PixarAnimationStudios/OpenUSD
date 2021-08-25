@@ -46,7 +46,8 @@ class "TestSingleApplyAPI"
         string className = "SingleApplyAPI"
         token[] apiSchemaAutoApplyTo = [
             "TestTypedSchemaForAutoApplyConcreteBase", 
-            "TestTypedSchemaForAutoApplyAbstractBase"
+            "TestTypedSchemaForAutoApplyAbstractBase",
+            "TestAutoAppliedToAPI"
         ] 
     }
     doc = """Test single apply API schema"""
@@ -359,4 +360,48 @@ class TestWithBuiltinNestedAppliedSchema "TestWithBuiltinNestedAppliedSchema" (
         doc = "Testing documentation metadata"
     )
 }
+
+class "TestAutoAppliedToAPI" (
+    inherits = </APISchemaBase>
+    doc = "API that has other API schemas that auto apply to it"
+    apiSchemas = ["TestMultiApplyAPI:builtin"]
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["TestNestedAutoAppliedToAPI"] 
+    }
+)
+{
+    string testAttr = "foo" (
+        allowedTokens = ["bar", "baz"]
+        doc = "Testing documentation metadata"
+    )
+
+    rel testRel (
+        displayGroup = "Display Group"
+        doc = "Testing documentation metadata"
+    )
+}
+
+class "TestNestedAutoAppliedToAPI" (
+    inherits = </APISchemaBase>
+    doc = """
+API that TestAutoAppliedToAPI auto applies to for testing that API schemas can 
+be nested through auto apply"""
+    apiSchemas = ["TestMultiApplyAPI:foo"]
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["TestNestedAutoAppliedToAPIAppliedToPrim"] 
+    }
+)
+{
+}
+
+class TestNestedAutoAppliedToAPIAppliedToPrim "TestNestedAutoAppliedToAPIAppliedToPrim" (
+    inherits = </Typed>
+    doc = """
+Typed schema that TestNestedAutoAppliedToAPI auto applies to for testing that 
+API schemas with auto applied API schemas can be correctly auto applied to prim
+type schemas"""
+)
+{
+}
+
 
