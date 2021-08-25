@@ -777,6 +777,7 @@ void
 HdxTaskController::_SetParameters(SdfPath const& pathName, 
                                   GlfSimpleLight const& light)
 {
+    _delegate.SetParameter(pathName, HdLightTokens->intensity, VtValue(1.0f));
     _delegate.SetParameter(pathName, HdTokens->transform,
         VtValue(light.GetTransform()));
     _delegate.SetParameter(pathName, HdLightTokens->shadowParams,

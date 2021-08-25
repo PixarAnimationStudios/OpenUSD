@@ -84,6 +84,13 @@ HdStLight::_PrepareDomeLight(
     l.SetHasShadow(false);
     l.SetIsDomeLight(true);
 
+    // The intensity value is set to 0 if light is not visible
+    if (sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity)
+            .Get<float>() == 0.0) {
+        l.SetHasIntensity(false);
+        return l;
+    }
+
     {
         const VtValue v = sceneDelegate->GetLightParamValue(
                 id, HdLightTokens->textureFile);
