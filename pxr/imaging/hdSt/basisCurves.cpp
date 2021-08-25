@@ -348,13 +348,23 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
     bool hasAuthoredTopologicalVisiblity =
         (bool) drawItem->GetTopologyVisibilityRange();
 
+    // Process shadingTerminal (including shadingStyle)
+    TfToken shadingTerminal = desc.shadingTerminal;
+    if (shadingTerminal == HdBasisCurvesReprDescTokens->surfaceShader) {
+        TfToken shadingStyle =
+            sceneDelegate->GetShadingStyle(GetId()).GetWithDefault<TfToken>();
+        if (shadingStyle == HdStTokens->constantLighting) {
+            shadingTerminal = HdBasisCurvesReprDescTokens->surfaceShaderUnlit;
+        }
+    }
+
     HdSt_BasisCurvesShaderKey shaderKey(curveType,
                                         curveBasis,
                                         drawStyle,
                                         normalStyle,
                                         _basisWidthInterpolation,
                                         _basisNormalInterpolation,
-                                        desc.shadingTerminal,
+                                        shadingTerminal,
                                         hasAuthoredTopologicalVisiblity);
 
     TF_DEBUG(HD_RPRIM_UPDATED).
