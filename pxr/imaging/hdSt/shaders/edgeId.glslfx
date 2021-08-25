@@ -37,10 +37,6 @@ int GetPrimitiveEdgeId() {
     return -1;
 }
 
-bool IsFragmentOnEdge() {
-    return false;
-}
-
 float GetSelectedEdgeOpacity() {
     return 0.0;
 }
@@ -48,18 +44,9 @@ float GetSelectedEdgeOpacity() {
 --- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.Common
 
-float GetMinEdgeDistance(); // meshWire.glslfx
-
-// Returns whether a fragment is on or close to an unhidden triangle edge.
+// Determines whether a fragment is on or close to an unhidden triangle edge.
 const float edgePickRadius = 2; // in viewport pixels
 const float edgePickParametricRadius = 0.02; // in parametric space
-
-bool IsFragmentOnEdge()
-{
-    float d = GetMinEdgeDistance();
-    if (d < edgePickRadius) return true;
-    return false;
-}
 
 // For smooth looking edges, use an exponential falloff for the opacity.
 // Note: We use a slower falloff fn than in meshWire.glslfx to make the

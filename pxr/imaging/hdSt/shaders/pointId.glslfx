@@ -82,10 +82,6 @@ int GetPointId()
     return -1;
 }
 
-bool IsFragmentOnPoint() {
-    return false;
-}
-
 --- --------------------------------------------------------------------------
 -- glsl PointId.Fragment.PointParam
 
@@ -94,8 +90,4 @@ flat in int vsPointId;
 int GetPointId()
 {
     return vsPointId;
-}
-
-bool IsFragmentOnPoint() {
-    return true;
 }

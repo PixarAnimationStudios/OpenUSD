@@ -398,7 +398,7 @@ My_TestGLDrawing::OffscreenTest()
         size_t expectedHitCount[] = {
             6  /*primsAndInstances*/,
             69 /*faces*/,
-           131 /*edges*/,
+           135 /*edges*/,
             41 /*points*/};
         
         for (size_t i = 0; i < pickTargets.size(); i++) {

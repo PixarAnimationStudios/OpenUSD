@@ -2607,10 +2607,6 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                 << "  return -1;\n"
                 << "}\n";
             accessors
-                << "bool IsFragmentOnEdge() {\n"
-                << "  return false;\n"
-                << "}\n";
-            accessors
                 << "float GetSelectedEdgeOpacity() {\n"
                 << "  return 0.0;\n"
                 << "}\n";
@@ -2619,7 +2615,6 @@ HdSt_CodeGen::_GenerateElementPrimvar()
 
     declarations
         << "int GetPrimitiveEdgeId();\n"
-        << "bool IsFragmentOnEdge();\n"
         << "float GetSelectedEdgeOpacity();\n";
 
     // Uniform primvar data declarations & accessors
