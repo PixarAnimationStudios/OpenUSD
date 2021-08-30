@@ -990,6 +990,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
 
     UsdImagingDelegate::_Worker worker(this);
     UsdImagingIndexProxy indexProxy(this, &worker);
+    SdfPathSet allTrackedVariabilityPaths;
 
     if (!_usdPathsToResync.empty()) {
         // Make a copy of _usdPathsToResync but uniqued with a
@@ -1007,13 +1008,14 @@ UsdImagingDelegate::ApplyPendingUpdates()
 
         for (SdfPath const& usdPath: usdPathsToResync) {
             if (usdPath.IsPropertyPath()) {
-                _RefreshUsdObject(usdPath, TfTokenVector(), &indexProxy);
+                _RefreshUsdObject(usdPath, TfTokenVector(),
+                                  &indexProxy, allTrackedVariabilityPaths);
             } else if (usdPath.IsTargetPath()) {
                 // TargetPaths are their own path type, when they change, resync
                 // the relationship at which they're rooted; i.e. per-target
                 // invalidation is not supported.
                 _RefreshUsdObject(usdPath.GetParentPath(), TfTokenVector(),
-                               &indexProxy);
+                                  &indexProxy, allTrackedVariabilityPaths);
             } else if (usdPath.IsAbsoluteRootOrPrimPath()) {
                 _ResyncUsdPrim(usdPath, &indexProxy);
             } else {
@@ -1037,7 +1039,8 @@ UsdImagingDelegate::ApplyPendingUpdates()
             if (usdPath.IsPropertyPath() || usdPath.IsAbsoluteRootOrPrimPath()){
                 // Note that changedPrimInfoFields will be empty if the
                 // path is a property path.
-                _RefreshUsdObject(usdPath, changedPrimInfoFields, &indexProxy);
+                _RefreshUsdObject(usdPath, changedPrimInfoFields,
+                                  &indexProxy, allTrackedVariabilityPaths);
 
                 // If any objects were removed as a result of the refresh (if it
                 // internally decided to resync), they must be ejected now,
@@ -1335,7 +1338,8 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
 void 
 UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath, 
                                       TfTokenVector const& changedInfoFields,
-                                      UsdImagingIndexProxy* proxy) 
+                                      UsdImagingIndexProxy* proxy,
+                                      SdfPathSet &allTrackedVariabilityPaths) 
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1483,11 +1487,17 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
             if (dirtyBits == HdChangeTracker::Clean) {
                 // Do nothing
             } else if (dirtyBits != HdChangeTracker::AllDirty) {
-                // Update Variability
-                _timeVaryingPrimCacheValid = false;
-                primInfo->timeVaryingBits = HdChangeTracker::Clean;
-                adapter->TrackVariability(primInfo->usdPrim, affectedCachePath,
-                                          &primInfo->timeVaryingBits);
+                // Update variability, if we haven't already done so for this
+                // prim while refreshing another prim that affects this one.
+                if (allTrackedVariabilityPaths.find(affectedCachePath) ==
+                    allTrackedVariabilityPaths.end()) {
+                    _timeVaryingPrimCacheValid = false;
+                    primInfo->timeVaryingBits = HdChangeTracker::Clean;
+                    adapter->TrackVariability(primInfo->usdPrim,
+                                              affectedCachePath,
+                                              &primInfo->timeVaryingBits);
+                    allTrackedVariabilityPaths.insert(affectedCachePath);
+                }
 
                 // Propagate the dirty bits back out to the change tracker.
                 HdDirtyBits combinedBits =

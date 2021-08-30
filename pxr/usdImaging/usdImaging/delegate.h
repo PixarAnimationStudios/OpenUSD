@@ -566,7 +566,8 @@ private:
     // be refreshed.
     void _RefreshUsdObject(SdfPath const& usdPath, 
                            TfTokenVector const& changedPrimInfoFields,
-                           UsdImagingIndexProxy* proxy);
+                           UsdImagingIndexProxy* proxy,
+                           SdfPathSet &allTrackedVariabilityPaths); 
 
     // Heavy-weight invalidation of an entire prim subtree. All cached data is
     // reconstructed for all prims below \p rootPath.
