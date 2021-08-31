@@ -179,6 +179,7 @@ pxr_library(hdSt
         shaders/ptexTexture.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
+        shaders/secondaryGraphics.glslfx
         shaders/simpleLightingShader.glslfx
         shaders/terminals.glslfx
         shaders/visibility.glslfx

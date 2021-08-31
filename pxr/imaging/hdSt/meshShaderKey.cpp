@@ -114,8 +114,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainQuadGS,              "Mesh.Geometry.Quad"))
     ((mainFS,                  "Mesh.Fragment"))
 
-    // instancing related mixins
+    // instancing and secondary graphics related mixins
     ((instancing,              "Instancing.Transform"))
+    ((secondaryGraphics,       "SecondaryGraphics.Vertex.Transform"))
 
     // terminals
     ((customDisplacementGS,    "Geometry.CustomDisplacement"))
@@ -208,6 +209,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     // vertex shader
     uint8_t vsIndex = 0;
     VS[vsIndex++] = _tokens->instancing;
+    VS[vsIndex++] = _tokens->secondaryGraphics;
 
     VS[vsIndex++] = (normalsSource == NormalSourceSmooth) ?
         _tokens->normalsSmooth :

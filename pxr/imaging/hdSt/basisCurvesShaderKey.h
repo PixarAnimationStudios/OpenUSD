@@ -88,7 +88,7 @@ struct HdSt_BasisCurvesShaderKey : public HdSt_ShaderKey
 
     HdSt_GeometricShader::PrimitiveType primType;
     TfToken glslfx;
-    TfToken VS[7];
+    TfToken VS[8];
     TfToken TCS[4];
     TfToken TES[9];
     TfToken FS[8];

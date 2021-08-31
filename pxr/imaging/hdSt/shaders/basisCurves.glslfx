@@ -31,6 +31,7 @@
 #import $TOOLS/hdSt/shaders/terminals.glslfx
 #import $TOOLS/hdSt/shaders/pointId.glslfx
 #import $TOOLS/hdSt/shaders/visibility.glslfx
+#import $TOOLS/hdSt/shaders/secondaryGraphics.glslfx
 
 // Known issues:
 // * The direction of the 'v' post tessellation is inconsistent between 
@@ -77,28 +78,14 @@ void main(void)
 #if defined(HD_HAS_pixelScale)
     if (HdGet_pixelScale())
     {
-        vec4 eyeC = vec4(worldToViewMatrix * transform * vec4(0,0,0,1));
-
-        // projectionMatrix[0][0] equals to nearZ / right
-        // so that the final result equals to
-        // (eyeZ * right) / (nearZ * viewportWidth)
-        float pixelScale = abs(eyeC.z / (projectionMatrix[0][0] * GetViewport().z));
-
-        point.xyz *= pixelScale;
+        point.xyz *= pixelScaleValue(projectionMatrix, worldToViewMatrix, transform);
     }
 #endif
 
 #if defined(HD_HAS_cameraFacing)
     if (HdGet_cameraFacing())
     {
-        MAT4 objectToViewMatrix = worldToViewMatrix * transform;
-        
-        // set rotation part to identity to turn the mesh towards the camera
-        objectToViewMatrix[0].xyz = vec3(1,0,0);
-        objectToViewMatrix[1].xyz = vec3(0,1,0);
-        objectToViewMatrix[2].xyz = vec3(0,0,1);
-
-        outData.Peye = vec4(objectToViewMatrix * point);
+        outData.Peye = vec4(cameraFacingMatrix(worldToViewMatrix, transform) * point);
         outData.Neye = vec3(0, 0, 1);
     }
     else
@@ -160,28 +147,14 @@ void main(void)
 #if defined(HD_HAS_pixelScale)
     if (HdGet_pixelScale())
     {
-        vec4 eyeC = vec4(worldToViewMatrix * transform * vec4(0,0,0,1));
-
-        // projectionMatrix[0][0] equals to nearZ / right
-        // so that the final result equals to
-        // (eyeZ * right) / (nearZ * viewportWidth)
-        float pixelScale = abs(eyeC.z / (projectionMatrix[0][0] * GetViewport().z));
-
-        point.xyz *= pixelScale;
+        point.xyz *= pixelScaleValue(projectionMatrix, worldToViewMatrix, transform);
     }
 #endif
 
 #if defined(HD_HAS_cameraFacing)
     if (HdGet_cameraFacing())
     {
-        MAT4 objectToViewMatrix = worldToViewMatrix * transform;
-        
-        // set rotation part to identity to turn the mesh towards the camera
-        objectToViewMatrix[0].xyz = vec3(1,0,0);
-        objectToViewMatrix[1].xyz = vec3(0,1,0);
-        objectToViewMatrix[2].xyz = vec3(0,0,1);
-
-        outData.Peye = vec4(objectToViewMatrix * point);
+        outData.Peye = vec4(cameraFacingMatrix(worldToViewMatrix, transform) * point);
     }
     else
 #endif
