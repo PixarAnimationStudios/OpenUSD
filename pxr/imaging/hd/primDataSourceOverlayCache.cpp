@@ -23,6 +23,8 @@
 //
 #include "primDataSourceOverlayCache.h"
 
+#include "pxr/base/work/utils.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdPrimDataSourceOverlayCache::~HdPrimDataSourceOverlayCache() = default;
@@ -78,7 +80,11 @@ HdPrimDataSourceOverlayCache::HandlePrimsRemoved(
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
     for (const auto &entry : entries) {
-        _cache.erase(entry.primPath);
+        auto i = _cache.find(entry.primPath);
+        if (i != _cache.end()) {
+            WorkMoveDestroyAsync(i->second.dataSource);
+            _cache.erase(i);
+        }
     }
 }
 

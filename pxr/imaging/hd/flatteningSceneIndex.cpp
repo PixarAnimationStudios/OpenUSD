@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/work/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -130,7 +131,11 @@ HdFlatteningSceneIndex::_PrimsRemoved(
     TRACE_FUNCTION();
 
     for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
-        _prims.erase(entry.primPath);
+        auto i = _prims.find(entry.primPath);
+        if (i != _prims.end()) {
+            WorkMoveDestroyAsync(i->second.prim.dataSource);
+            _prims.erase(i);
+        }
     }
     _SendPrimsRemoved(entries);
 }
