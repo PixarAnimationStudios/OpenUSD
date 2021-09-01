@@ -115,10 +115,17 @@ private:
     TfToken _type;
     HdSceneDelegate *_sceneDelegate;
 
-    bool _primvarsBuilt;
-    bool _extComputationPrimvarsBuilt;
+    bool _primvarsBuilt : 1;
+    bool _extComputationPrimvarsBuilt : 1;
+    bool _topologyBuilt : 1;
+
+    void _CacheMeshTopology();
+    void _CacheBasisCurvesTopology();
+
     HdContainerDataSourceHandle _primvars;
     HdContainerDataSourceHandle _extComputationPrimvars;
+    HdContainerDataSourceHandle _topology;
+    HdContainerDataSourceHandle _geomSubsets;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(HdDataSourceLegacyPrim);

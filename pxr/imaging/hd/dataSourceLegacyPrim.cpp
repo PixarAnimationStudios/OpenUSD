@@ -1196,7 +1196,8 @@ HdDataSourceLegacyPrim::HdDataSourceLegacyPrim(
   _type(type),
   _sceneDelegate(sceneDelegate),
   _primvarsBuilt(false),
-  _extComputationPrimvarsBuilt(false)
+  _extComputationPrimvarsBuilt(false),
+  _topologyBuilt(false)
 {
     TF_VERIFY(_sceneDelegate);
 }
@@ -1209,6 +1210,17 @@ HdDataSourceLegacyPrim::PrimDirtied(const HdDataSourceLocatorSet &locators)
         _extComputationPrimvarsBuilt = false;
         _primvars.reset();
         _extComputationPrimvars.reset();
+    }
+
+    HdDataSourceLocatorSet topologySet = {
+        HdBasisCurvesTopologySchema::GetDefaultLocator(),
+        HdGeomSubsetsSchema::GetDefaultLocator(),
+        HdMeshTopologySchema::GetDefaultLocator(),
+    };
+    if (locators.Intersects(topologySet)) {
+        _topologyBuilt = false;
+        _topology.reset();
+        _geomSubsets.reset();
     }
 }
 
@@ -1541,92 +1553,15 @@ _ConvertHdMaterialNetworkToHdDataSources(
 HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetMeshTopologyDataSource()
 {
-    HdMeshTopology m = _sceneDelegate->GetMeshTopology(_id);
-
-    static const HdMeshTopology emptyMeshTopology;
-    if (m == emptyMeshTopology) {
-        return nullptr;
-    }
-
-    // Build the subdiv tags data source.
-    PxOsdSubdivTags t = _sceneDelegate->GetSubdivTags(_id);
-
-    HdContainerDataSourceHandle subdivTags =
-        HdSubdivisionTagsSchema::BuildRetained(
-            HdRetainedTypedSampledDataSource<TfToken>::New(
-                t.GetFaceVaryingInterpolationRule()),
-            HdRetainedTypedSampledDataSource<TfToken>::New(
-                t.GetVertexInterpolationRule()),
-            HdRetainedTypedSampledDataSource<TfToken>::New(
-                t.GetTriangleSubdivision()),
-            HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                t.GetCornerIndices()),
-            HdRetainedTypedSampledDataSource<VtFloatArray>::New(
-                t.GetCornerWeights()),
-            HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                t.GetCreaseIndices()),
-            HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                t.GetCreaseLengths()),
-            HdRetainedTypedSampledDataSource<VtFloatArray>::New(
-                t.GetCreaseWeights()));
-
-    const VtIntArray &faceVertexCounts =  m.GetFaceVertexCounts();
-    const VtIntArray &faceVertexIndices = m.GetFaceVertexIndices();
-    const VtIntArray &holeIndices = m.GetHoleIndices();
-    const TfToken &scheme = m.GetScheme();
-    const TfToken &orientation = m.GetOrientation();
-    const bool doubleSided = _sceneDelegate->GetDoubleSided(_id);
-
-
-    static const HdIntArrayDataSourceHandle emptyIntArrayDs =
-        HdRetainedTypedSampledDataSource<VtArray<int>>::New(
-            VtArray<int>({}));
-
-    HdContainerDataSourceHandle topo =
-        HdMeshTopologySchema::BuildRetained(
-            HdRetainedTypedSampledDataSource<VtArray<int>>::New(
-                faceVertexCounts),
-            HdRetainedTypedSampledDataSource<VtArray<int>>::New(
-                faceVertexIndices),
-            holeIndices.empty() 
-                ? emptyIntArrayDs
-                : HdRetainedTypedSampledDataSource<VtArray<int>>::New(
-                    holeIndices),
-            HdRetainedTypedSampledDataSource<TfToken>::New(scheme),
-            HdRetainedTypedSampledDataSource<TfToken>::New(orientation),
-            HdRetainedTypedSampledDataSource<bool>::New(doubleSided),
-            subdivTags);
-
-    return topo;
+    _CacheMeshTopology();
+    return _topology;
 }
 
 HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetBasisCurvesTopologyDataSource()
 {
-    HdBasisCurvesTopology t = _sceneDelegate->GetBasisCurvesTopology(_id);
-
-    static const HdBasisCurvesTopology emptyBasisCurvesTopology;
-    if (t == emptyBasisCurvesTopology) {
-        return nullptr;
-    }
-
-    const VtIntArray &curveVertexCounts = t.GetCurveVertexCounts();
-    const VtIntArray &curveIndices = t.GetCurveIndices();
-    const TfToken &basis = t.GetCurveBasis();
-    const TfToken &type = t.GetCurveType();
-    const TfToken &wrap = t.GetCurveWrap();
-
-    HdContainerDataSourceHandle topo = 
-        HdBasisCurvesTopologySchema::BuildRetained(
-            HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                curveVertexCounts),
-            HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                curveIndices),
-            HdRetainedTypedSampledDataSource<TfToken>::New(basis),
-            HdRetainedTypedSampledDataSource<TfToken>::New(type),
-            HdRetainedTypedSampledDataSource<TfToken>::New(wrap)
-        );
-    return topo;
+    _CacheBasisCurvesTopology();
+    return _topology;
 }
 
 HdDataSourceBaseHandle
@@ -1970,148 +1905,257 @@ HdDataSourceLegacyPrim::_GetInstanceCategoriesDataSource()
 HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetGeomSubsetsDataSource()
 {
-    TRACE_FUNCTION();
-
-    HdMeshTopology m; 
     if (_type == HdPrimTypeTokens->mesh) {
-        static const HdMeshTopology emptyMeshTopology;
-        m = _sceneDelegate->GetMeshTopology(_id);
-        if (m == emptyMeshTopology) {
-            return nullptr;
-        }
+        _CacheMeshTopology();
+    } else if (_type == HdPrimTypeTokens->basisCurves) {
+        _CacheBasisCurvesTopology();
     }
 
-    HdBasisCurvesTopology bc;
-    if (_type == HdPrimTypeTokens->basisCurves) {
-        static const HdBasisCurvesTopology emptyBasisCurvesTopology;
-        bc = _sceneDelegate->GetBasisCurvesTopology(_id);
-        if (bc == emptyBasisCurvesTopology) {
-            return nullptr;
-        }
+    return _geomSubsets;
+}
+
+void
+HdDataSourceLegacyPrim::_CacheMeshTopology()
+{
+    if (_topologyBuilt) {
+        return;
     }
 
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    HdMeshTopology m = _sceneDelegate->GetMeshTopology(_id);
+
+    static const HdMeshTopology emptyMeshTopology;
+    if (m == emptyMeshTopology) {
+        _topology = nullptr;
+        _geomSubsets = nullptr;
+        _topologyBuilt = true;
+        return;
+    }
+
+    // Build the subdiv tags data source.
+    PxOsdSubdivTags t = _sceneDelegate->GetSubdivTags(_id);
+
+    HdContainerDataSourceHandle subdivTags =
+        HdSubdivisionTagsSchema::BuildRetained(
+            HdRetainedTypedSampledDataSource<TfToken>::New(
+                t.GetFaceVaryingInterpolationRule()),
+            HdRetainedTypedSampledDataSource<TfToken>::New(
+                t.GetVertexInterpolationRule()),
+            HdRetainedTypedSampledDataSource<TfToken>::New(
+                t.GetTriangleSubdivision()),
+            HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                t.GetCornerIndices()),
+            HdRetainedTypedSampledDataSource<VtFloatArray>::New(
+                t.GetCornerWeights()),
+            HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                t.GetCreaseIndices()),
+            HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                t.GetCreaseLengths()),
+            HdRetainedTypedSampledDataSource<VtFloatArray>::New(
+                t.GetCreaseWeights()));
+
+    // Build the topology data source.
+    const VtIntArray &faceVertexCounts =  m.GetFaceVertexCounts();
+    const VtIntArray &faceVertexIndices = m.GetFaceVertexIndices();
+    const VtIntArray &holeIndices = m.GetHoleIndices();
+    const TfToken &scheme = m.GetScheme();
+    const TfToken &orientation = m.GetOrientation();
+    const bool doubleSided = _sceneDelegate->GetDoubleSided(_id);
+
+    static const HdIntArrayDataSourceHandle emptyIntArrayDs =
+        HdRetainedTypedSampledDataSource<VtArray<int>>::New(
+            VtArray<int>({}));
+
+    HdContainerDataSourceHandle topo =
+        HdMeshTopologySchema::BuildRetained(
+            HdRetainedTypedSampledDataSource<VtArray<int>>::New(
+                faceVertexCounts),
+            HdRetainedTypedSampledDataSource<VtArray<int>>::New(
+                faceVertexIndices),
+            holeIndices.empty() 
+                ? emptyIntArrayDs
+                : HdRetainedTypedSampledDataSource<VtArray<int>>::New(
+                    holeIndices),
+            HdRetainedTypedSampledDataSource<TfToken>::New(scheme),
+            HdRetainedTypedSampledDataSource<TfToken>::New(orientation),
+            HdRetainedTypedSampledDataSource<bool>::New(doubleSided),
+            subdivTags);
+
+    _topology = topo;
+
+    // Build the geom subsets datasource.
     static const TfToken invisibleFacesToken("__invisibleFaces");
     static const TfToken invisiblePointsToken("__invisiblePoints");
-    static const TfToken invisibleCurvesToken("__invisibleCurves");
 
-    // Build the geom subsets data source.
     std::vector<TfToken> names;
     std::vector<HdDataSourceBaseHandle> values;
 
-    if (_type == HdPrimTypeTokens->mesh) {
-        HdGeomSubsets gs = m.GetGeomSubsets();
-        for (const HdGeomSubset &geomSubset : gs) {
-            HdDataSourceBaseHandle materialIdDs = 
-                HdRetainedTypedSampledDataSource<SdfPath>::New(
+    HdGeomSubsets gs = m.GetGeomSubsets();
+    for (const HdGeomSubset &geomSubset : gs) {
+        HdDataSourceBaseHandle materialIdDs = 
+            HdRetainedTypedSampledDataSource<SdfPath>::New(
                     geomSubset.materialId);
-            TfToken t = HdMaterialBindingSchemaTokens->allPurpose;
+        TfToken t = HdMaterialBindingSchemaTokens->allPurpose;
 
-            HdContainerDataSourceHandle containers[2] = {
-                HdGeomSubsetSchema::BuildRetained(
+        HdContainerDataSourceHandle containers[2] = {
+            HdGeomSubsetSchema::BuildRetained(
                     HdGeomSubsetSchema::BuildTypeDataSource(
                         HdGeomSubsetSchemaTokens->typeFaceSet),
                     HdRetainedTypedSampledDataSource<VtIntArray>::New(
                         geomSubset.indices)),
 
-                    HdRetainedContainerDataSource::New(
-                        HdMaterialBindingSchemaTokens->materialBinding,
-                        HdMaterialBindingSchema::BuildRetained(
-                            1, &t, &materialIdDs))
-            };
+            HdRetainedContainerDataSource::New(
+                    HdMaterialBindingSchemaTokens->materialBinding,
+                    HdMaterialBindingSchema::BuildRetained(
+                        1, &t, &materialIdDs))
+        };
 
-            names.push_back(TfToken(geomSubset.id.GetText()));
-            values.push_back(HdOverlayContainerDataSource::New(
-                2, containers));
-        }
+        names.push_back(TfToken(geomSubset.id.GetText()));
+        values.push_back(HdOverlayContainerDataSource::New(
+                    2, containers));
+    }
 
-        VtIntArray invisibleFaces = m.GetInvisibleFaces();
-        if (!invisibleFaces.empty()) {
-            HdContainerDataSourceHandle containers[2] = {
-                HdGeomSubsetSchema::BuildRetained(
+    VtIntArray invisibleFaces = m.GetInvisibleFaces();
+    if (!invisibleFaces.empty()) {
+        HdContainerDataSourceHandle containers[2] = {
+            HdGeomSubsetSchema::BuildRetained(
                     HdGeomSubsetSchema::BuildTypeDataSource(
                         HdGeomSubsetSchemaTokens->typeFaceSet),
                     HdRetainedTypedSampledDataSource<VtIntArray>::New(
                         invisibleFaces)),
-                HdRetainedContainerDataSource::New(
+            HdRetainedContainerDataSource::New(
                     HdVisibilitySchemaTokens->visibility,
                     HdVisibilitySchema::BuildRetained(
                         HdRetainedTypedSampledDataSource<bool>::New(false))),
-            };
+        };
 
-            names.push_back(invisibleFacesToken);
-            values.push_back(HdOverlayContainerDataSource::New(
-                2, containers));
-        }
+        names.push_back(invisibleFacesToken);
+        values.push_back(HdOverlayContainerDataSource::New(
+                    2, containers));
+    }
 
-        VtIntArray invisiblePoints = m.GetInvisiblePoints();
-        if (!invisiblePoints.empty()) {
-            HdContainerDataSourceHandle containers[2] = {
-                HdGeomSubsetSchema::BuildRetained(
+    VtIntArray invisiblePoints = m.GetInvisiblePoints();
+    if (!invisiblePoints.empty()) {
+        HdContainerDataSourceHandle containers[2] = {
+            HdGeomSubsetSchema::BuildRetained(
                     HdGeomSubsetSchema::BuildTypeDataSource(
                         HdGeomSubsetSchemaTokens->typePointSet),
                     HdRetainedTypedSampledDataSource<VtIntArray>::New(
                         invisiblePoints)),
-                HdRetainedContainerDataSource::New(
+            HdRetainedContainerDataSource::New(
                     HdVisibilitySchemaTokens->visibility,
                     HdVisibilitySchema::BuildRetained(
                         HdRetainedTypedSampledDataSource<bool>::New(false))),
-            };
+        };
 
-            names.push_back(invisiblePointsToken);
-            values.push_back(HdOverlayContainerDataSource::New(
-                2, containers));
-       }
+        names.push_back(invisiblePointsToken);
+        values.push_back(HdOverlayContainerDataSource::New(
+                    2, containers));
     }
 
-    if (_type == HdPrimTypeTokens->basisCurves) {
-        VtIntArray invisibleCurves = bc.GetInvisibleCurves();
-        if (!invisibleCurves.empty()) {
-            HdContainerDataSourceHandle containers[2] = {
-                HdGeomSubsetSchema::BuildRetained(
+    if (names.empty()) {
+        _geomSubsets = nullptr;
+    } else {
+        _geomSubsets = HdRetainedContainerDataSource::New(
+            names.size(), names.data(), values.data());
+    }
+    _topologyBuilt = true;
+}
+
+void
+HdDataSourceLegacyPrim::_CacheBasisCurvesTopology()
+{
+    if (_topologyBuilt) {
+        return;
+    }
+
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    HdBasisCurvesTopology t = _sceneDelegate->GetBasisCurvesTopology(_id);
+
+    static const HdBasisCurvesTopology emptyBasisCurvesTopology;
+    if (t == emptyBasisCurvesTopology) {
+        _topology = nullptr;
+        _geomSubsets = nullptr;
+        _topologyBuilt = true;
+        return;
+    }
+
+    // Build the topology datasource.
+    const VtIntArray &curveVertexCounts = t.GetCurveVertexCounts();
+    const VtIntArray &curveIndices = t.GetCurveIndices();
+    const TfToken &basis = t.GetCurveBasis();
+    const TfToken &type = t.GetCurveType();
+    const TfToken &wrap = t.GetCurveWrap();
+
+    HdContainerDataSourceHandle topo = 
+        HdBasisCurvesTopologySchema::BuildRetained(
+            HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                curveVertexCounts),
+            HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                curveIndices),
+            HdRetainedTypedSampledDataSource<TfToken>::New(basis),
+            HdRetainedTypedSampledDataSource<TfToken>::New(type),
+            HdRetainedTypedSampledDataSource<TfToken>::New(wrap)
+        );
+
+    _topology = topo;
+
+    // Build the geom subsets datasource.
+    static const TfToken invisiblePointsToken("__invisiblePoints");
+    static const TfToken invisibleCurvesToken("__invisibleCurves");
+
+    std::vector<TfToken> names;
+    std::vector<HdDataSourceBaseHandle> values;
+
+    VtIntArray invisibleCurves = t.GetInvisibleCurves();
+    if (!invisibleCurves.empty()) {
+        HdContainerDataSourceHandle containers[2] = {
+            HdGeomSubsetSchema::BuildRetained(
                     HdGeomSubsetSchema::BuildTypeDataSource(
                         HdGeomSubsetSchemaTokens->typeCurveSet),
                     HdRetainedTypedSampledDataSource<VtIntArray>::New(
                         invisibleCurves)),
-                HdRetainedContainerDataSource::New(
+            HdRetainedContainerDataSource::New(
                     HdVisibilitySchemaTokens->visibility,
                     HdVisibilitySchema::BuildRetained(
                         HdRetainedTypedSampledDataSource<bool>::New(false))),
-            };
+        };
 
-            names.push_back(invisibleCurvesToken);
-            values.push_back(HdOverlayContainerDataSource::New(
-                2, containers));
-        }
+        names.push_back(invisibleCurvesToken);
+        values.push_back(HdOverlayContainerDataSource::New(
+                    2, containers));
+    }
 
-        VtIntArray invisiblePoints = bc.GetInvisiblePoints();
-        if (!invisiblePoints.empty()) {
-            HdContainerDataSourceHandle containers[2] = {
-                HdGeomSubsetSchema::BuildRetained(
+    VtIntArray invisiblePoints = t.GetInvisiblePoints();
+    if (!invisiblePoints.empty()) {
+        HdContainerDataSourceHandle containers[2] = {
+            HdGeomSubsetSchema::BuildRetained(
                     HdGeomSubsetSchema::BuildTypeDataSource(
                         HdGeomSubsetSchemaTokens->typePointSet),
                     HdRetainedTypedSampledDataSource<VtIntArray>::New(
                         invisiblePoints)),
-                HdRetainedContainerDataSource::New(
+            HdRetainedContainerDataSource::New(
                     HdVisibilitySchemaTokens->visibility,
                     HdVisibilitySchema::BuildRetained(
                         HdRetainedTypedSampledDataSource<bool>::New(false))),
-            };
+        };
 
-            names.push_back(invisiblePointsToken);
-            values.push_back(HdOverlayContainerDataSource::New(
-                2, containers));
-       }
+        names.push_back(invisiblePointsToken);
+        values.push_back(HdOverlayContainerDataSource::New(
+                    2, containers));
     }
 
     if (names.empty()) {
-        return nullptr;
-    }
-
-    HdContainerDataSourceHandle geomSubsets = 
-        HdRetainedContainerDataSource::New(
+        _geomSubsets = nullptr;
+    } else {
+        _geomSubsets = HdRetainedContainerDataSource::New(
             names.size(), names.data(), values.data());
-        
-    return geomSubsets;
+    }
+    _topologyBuilt = true;
 }
 
 HdDataSourceBaseHandle 
