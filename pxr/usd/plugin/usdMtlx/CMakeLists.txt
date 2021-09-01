@@ -1,10 +1,6 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdMtlx)
 
-if (MATERIALX_STDLIB_DIR)
-    add_definitions(-DPXR_MATERIALX_STDLIB_DIR="${MATERIALX_STDLIB_DIR}")
-endif()
-
 pxr_plugin(usdMtlx
     LIBRARIES
         arch

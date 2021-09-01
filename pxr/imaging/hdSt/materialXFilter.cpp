@@ -25,6 +25,7 @@
 #include "pxr/imaging/hdSt/materialXShaderGen.h"
 #include "pxr/imaging/hdMtlx/hdMtlx.h"
 
+#include "pxr/usd/usd/utils.h"
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/imaging/hio/glslfx.h"
 
@@ -458,9 +459,12 @@ HdSt_ApplyMaterialXFilter(
     if (mtlxSdrNode) {
 
         // Load Standard Libraries/setup SearchPaths (for mxDoc and mxShaderGen)
-        mx::FilePathVec libraryFolders;
+        std::string baseDir = UsdGetRootDir();
+        std::string stdlibDir = baseDir + "/libraries";
+        mx::FilePathVec libraryFolders = { "libraries" };
         mx::FileSearchPath searchPath;
-        searchPath.append(mx::FilePath(PXR_MATERIALX_STDLIB_DIR));
+        searchPath.append(mx::FilePath(baseDir));
+        searchPath.append(mx::FilePath(stdlibDir));
         mx::DocumentPtr stdLibraries = mx::createDocument();
         mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
 

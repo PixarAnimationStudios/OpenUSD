@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/plugin/usdMtlx/utils.h"
+#include "pxr/usd/usd/utils.h"
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"
@@ -195,17 +196,27 @@ UsdMtlxMergeSearchPaths(const NdrStringVec& stronger,
     return result;
 }
 
+static NdrStringVec
+_GetEmbeddedMtlxStdlibPaths()
+{
+    NdrStringVec result;
+
+    std::string usdRootDir = UsdGetRootDir();
+    std::string stdlibDir = usdRootDir + "/libraries";
+    if (TfIsDir(stdlibDir)) {
+        result.push_back(stdlibDir);
+    }
+
+    return result;
+}
+
 const NdrStringVec&
 UsdMtlxStandardLibraryPaths()
 {
     static const auto materialxLibraryPaths =
         UsdMtlxMergeSearchPaths(
             UsdMtlxGetSearchPathsFromEnvVar("PXR_USDMTLX_STDLIB_SEARCH_PATHS"),
-            NdrStringVec{
-#ifdef PXR_MATERIALX_STDLIB_DIR
-                PXR_MATERIALX_STDLIB_DIR
-#endif
-            }
+            _GetEmbeddedMtlxStdlibPaths()
         );
     return materialxLibraryPaths;
 }

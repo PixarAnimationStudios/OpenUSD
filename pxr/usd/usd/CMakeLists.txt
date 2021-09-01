@@ -67,6 +67,7 @@ pxr_library(usd
         usdaFileFormat
         usdcFileFormat
         usdzFileFormat
+        utils
         variantSets
         zipFile
 
