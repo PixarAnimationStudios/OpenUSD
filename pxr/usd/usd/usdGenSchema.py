@@ -1078,7 +1078,8 @@ def _UpdatePlugInfoWithAPISchemaApplyInfo(clsDict, cls):
         if instancesDict:
             clsDict.update({API_SCHEMA_INSTANCES: instancesDict})
 
-def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env):
+def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env,
+        skipCodeGen):
 
     #
     # Load Templates
@@ -1119,6 +1120,14 @@ def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env):
         # pull the types dictionary.
         if 'Plugins' in info:
             for pluginData in info.get('Plugins', {}):
+                # Plugin 'Type' should default to a "resource" type instead of a
+                # "library" if no code gen happens for this schema domain.
+                # Note that if any explicit cpp code is included for this schema
+                # domain, the plugin 'Type' needs to be manually updated in the 
+                # generated plugInfo.json to "library".
+                if skipCodeGen:
+                    pluginData["Type"] = "resource"
+
                 if pluginData.get('Name') == env.globals['libraryName']:
                     types = (pluginData
                              .setdefault('Info', {})
@@ -1482,7 +1491,7 @@ if __name__ == '__main__':
                          useExportAPI, j2_env, args.headerTerminatorString)
         # We always generate plugInfo and generateSchema.
         GeneratePlugInfo(templatePath, codeGenPath, classes, args.validate,
-                         j2_env)
+                         j2_env, skipCodeGen)
         GenerateRegistry(codeGenPath, schemaPath, classes, 
                          args.validate, j2_env)
     
