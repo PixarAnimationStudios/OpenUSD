@@ -242,6 +242,30 @@ static void DoUnitTest()
     table.ClearInParallel();
     TF_AXIOM(table.empty());
     TF_AXIOM(table.size() == 0);
+
+    // build a table and then parallel-iterate over it
+    for (char ch='a'; ch<='z'; ++ch) {
+        std::string value(1, ch);
+        for (char n='0'; n<='9'; ++n) {
+            char p[] = { '/', ch, n, '/', ch, n, '/', ch, n, '/', ch, n, '\0' };
+            table.insert({SdfPath(p), value});
+        }
+    }
+    // const parallel for each...
+    std::atomic_int z_count(0);
+    const Table& ctable = table;
+    ctable.ParallelForEach([&z_count](const SdfPath &p, const string &v) {
+        if (v == "z") { ++z_count; }
+    });
+    TF_AXIOM(z_count.load() == 10);
+    // non-const parallel for each...
+    table.ParallelForEach([](const SdfPath &p, string &v) {
+        if (p.GetName() == "a2") {
+            v = "found";
+        }
+    });
+    TF_AXIOM(table.find(SdfPath("/a2/a2/a2/a2"))->second == "found");
+    TF_AXIOM(table.find(SdfPath("/a3/a3/a3/a3"))->second == "a");
 }
 
 
