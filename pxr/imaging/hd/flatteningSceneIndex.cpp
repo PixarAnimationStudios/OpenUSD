@@ -27,6 +27,7 @@
 #include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -86,6 +87,8 @@ HdFlatteningSceneIndex::_PrimsAdded(
         const HdSceneIndexBase &sender,
         const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::DirtiedPrimEntries dirtyEntries;
 
     for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
@@ -124,6 +127,8 @@ HdFlatteningSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
         _prims.erase(entry.primPath);
     }
@@ -135,6 +140,8 @@ HdFlatteningSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::DirtiedPrimEntries dirtyEntries;
 
     for (const HdSceneIndexObserver::DirtiedPrimEntry &entry : entries) {

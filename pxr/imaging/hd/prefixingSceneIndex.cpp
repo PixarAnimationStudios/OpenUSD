@@ -24,6 +24,7 @@
 
 #include "pxr/imaging/hd/prefixingSceneIndex.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -211,6 +212,8 @@ HdPrefixingSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::AddedPrimEntries prefixedEntries;
     prefixedEntries.reserve(entries.size());
 
@@ -227,6 +230,8 @@ HdPrefixingSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::RemovedPrimEntries prefixedEntries;
     prefixedEntries.reserve(entries.size());
 
@@ -242,6 +247,8 @@ HdPrefixingSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::DirtiedPrimEntries prefixedEntries;
     prefixedEntries.reserve(entries.size());
 

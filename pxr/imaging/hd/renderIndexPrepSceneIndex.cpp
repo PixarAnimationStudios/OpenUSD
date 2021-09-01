@@ -272,6 +272,8 @@ HdRenderIndexPrepSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     _cache->HandlePrimsAdded(entries, _GetInputSceneIndex());
     _SendPrimsAdded(entries);
 }
@@ -281,6 +283,8 @@ HdRenderIndexPrepSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     _cache->HandlePrimsRemoved(entries);
     _SendPrimsRemoved(entries);
 }
@@ -290,6 +294,8 @@ HdRenderIndexPrepSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     _cache->HandlePrimsDirtied(entries);
     _SendPrimsDirtied(entries);
 }

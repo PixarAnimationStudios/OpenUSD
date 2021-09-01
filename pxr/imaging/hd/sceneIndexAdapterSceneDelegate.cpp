@@ -87,7 +87,6 @@ HdSceneIndexBaseRefPtr
 HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
     HdSceneIndexBaseRefPtr inputSceneIndex, SdfPath const &delegateID)
 {
-
     HdSceneIndexBaseRefPtr result = inputSceneIndex;
 
     // if no prefix, don't add HdPrefixingSceneIndex
@@ -210,6 +209,8 @@ HdSceneIndexAdapterSceneDelegate::PrimsAdded(
     const HdSceneIndexBase &sender,
     const AddedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     for (const AddedPrimEntry &entry : entries) {
         _PrimAdded(entry.primPath, entry.primType);
     }
@@ -220,6 +221,8 @@ HdSceneIndexAdapterSceneDelegate::PrimsRemoved(
     const HdSceneIndexBase &sender,
     const RemovedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     for (const RemovedPrimEntry &entry : entries) {
         GetRenderIndex()._RemoveSubtree(entry.primPath, this);
         _primCache.erase(entry.primPath);

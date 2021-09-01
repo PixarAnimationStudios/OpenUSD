@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/retainedSceneIndex.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -30,6 +31,8 @@ HdRetainedSceneIndex::HdRetainedSceneIndex() = default;
 void
 HdRetainedSceneIndex::AddPrims(const AddedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::AddedPrimEntries observerEntries;
     observerEntries.reserve(entries.size());
 
@@ -45,6 +48,8 @@ void
 HdRetainedSceneIndex::RemovePrims(
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
         _entries.erase(entry.primPath);
     }
@@ -56,6 +61,8 @@ void
 HdRetainedSceneIndex::DirtyPrims(
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     // NOTE: Filtering the DirtyPrims notices to include only paths which are
     //       present in the internal table. This is (currently) useful as
     //       front-end emulation makes use of an HdRetainedSceneIndex in order
