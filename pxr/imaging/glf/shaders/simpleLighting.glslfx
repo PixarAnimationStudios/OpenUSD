@@ -218,8 +218,14 @@ integrateLightsConstant(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 
 LightingContribution
 integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
-{
-    return integrateLightsConstant(Peye, Neye, props);
+{  
+    // If no lights, lighting contribution is zero.
+    LightingContribution result;
+    result.ambient = vec3(0.0);
+    result.diffuse = vec3(0.0);
+    result.specular = vec3(0.0);
+
+    return result;
 }
 
 #else // NUM_LIGHTS == 0
@@ -399,29 +405,6 @@ layout(std140) uniform Material {
 // lighting functions
 // ---------------------------------------------------------------------------
 
-#if NUM_LIGHTS == 0
-
-vec4
-simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint,
-               vec4 matDiffuse, vec4 matAmbient, vec4 matSpecular, float matShininess)
-{
-    return color;
-}
-
-vec4
-simpleLightingMaterial(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint)
-{
-    return material.emission + (material.sceneColor * material.ambient);
-}
-
-vec4
-simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint)
-{
-    return simpleLightingMaterial(color, Peye, Neye, Ctint);
-}
-
-#else // NUM_LIGHTS == 0
-
 
 LightingContribution
 integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props);
@@ -490,5 +473,3 @@ simpleLighting(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint)
 {
     return simpleLightingMaterial(color, Peye, Neye, Ctint);
 }
-
-#endif  // NUM_LIGHTS == 0
