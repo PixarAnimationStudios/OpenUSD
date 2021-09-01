@@ -224,8 +224,37 @@ HdSceneIndexAdapterSceneDelegate::PrimsRemoved(
     TRACE_FUNCTION();
 
     for (const RemovedPrimEntry &entry : entries) {
-        GetRenderIndex()._RemoveSubtree(entry.primPath, this);
-        _primCache.erase(entry.primPath);
+        // RenderIndex::_RemoveSubtree can be expensive, so if we're
+        // getting a remove message for a single prim it's better to
+        // spend some time detecting that and calling the single-prim remove.
+        _PrimCacheTable::iterator it = _primCache.find(entry.primPath);
+
+        if (it == _primCache.end()) {
+            continue;
+        }
+
+        const TfToken &primType = it->second.primType;
+
+        _PrimCacheTable::iterator child = it;
+        ++child;
+        if (child == _primCache.end() ||
+            child->first.GetParentPath() != it->first) {
+            // The next item after entry.primPath is not a child, so we can
+            // single-delete...
+            if (GetRenderIndex().IsRprimTypeSupported(primType)) {
+                GetRenderIndex()._RemoveRprim(entry.primPath);
+            } else if (GetRenderIndex().IsSprimTypeSupported(primType)) {
+                GetRenderIndex()._RemoveSprim(primType, entry.primPath);
+            } else if (GetRenderIndex().IsBprimTypeSupported(primType)) {
+                GetRenderIndex()._RemoveBprim(primType, entry.primPath);
+            } else if (primType == HdPrimTypeTokens->instancer) {
+                GetRenderIndex()._RemoveInstancer(entry.primPath);
+            }
+        } else {
+            // Otherwise, there's a subtree and we need to call _RemoveSubtree.
+            GetRenderIndex()._RemoveSubtree(entry.primPath, this);
+        }
+        _primCache.erase(it);
     }
 }
 

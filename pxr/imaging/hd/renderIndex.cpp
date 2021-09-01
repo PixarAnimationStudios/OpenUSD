@@ -241,7 +241,6 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
     // If we are emulating let's remove from the scene index
     // which will trigger render index removals later.
     if (_IsEnabledSceneIndexEmulation()) {
-        HdSceneIndexPrim sip = _emulationSceneIndex->GetPrim(id);
         _emulationSceneIndex->RemovePrims({id});
         return;
     }
