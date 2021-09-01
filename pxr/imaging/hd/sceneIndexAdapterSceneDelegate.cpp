@@ -78,6 +78,8 @@
 #include "pxr/imaging/hd/volumeFieldSchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 
+#include "tbb/concurrent_unordered_set.h"
+
 #include "pxr/imaging/hf/perfLog.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -109,6 +111,7 @@ HdSceneIndexAdapterSceneDelegate::HdSceneIndexAdapterSceneDelegate(
     SdfPath ownerPath)
 : HdSceneDelegate(parentIndex, delegateID)
 , _inputSceneIndex(inputSceneIndex)
+, _sceneDelegatesBuilt(false)
 {
     HdSceneIndexNameRegistry::GetInstance().RegisterNamedSceneIndex(
         "HdSceneIndexAdapterSceneDelegate scene: " + delegateID.GetString(),
@@ -214,6 +217,9 @@ HdSceneIndexAdapterSceneDelegate::PrimsAdded(
     for (const AddedPrimEntry &entry : entries) {
         _PrimAdded(entry.primPath, entry.primType);
     }
+    if (!entries.empty()) {
+        _sceneDelegatesBuilt = false;
+    }
 }
 
 void
@@ -255,6 +261,9 @@ HdSceneIndexAdapterSceneDelegate::PrimsRemoved(
             GetRenderIndex()._RemoveSubtree(entry.primPath, this);
         }
         _primCache.erase(it);
+    }
+    if (!entries.empty()) {
+        _sceneDelegatesBuilt = false;
     }
 }
 
@@ -1742,34 +1751,47 @@ HdSceneIndexAdapterSceneDelegate::Sync(HdSyncRequestVector* request)
         return;
     }
 
-    // XXX: Is it enough to iterate the request here,
-    //      instead of the _primCache?
-    std::unordered_set<HdSceneDelegate*> sds;
-    for (const auto & primPath : _primCache) {
-        HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(primPath.first);
-        if (!prim.dataSource) {
-            continue;
-        }
+    if (!_sceneDelegatesBuilt) {
+        tbb::concurrent_unordered_set<HdSceneDelegate*> sds;
+        _primCache.ParallelForEach(
+            [this, &sds](const SdfPath &k, const _PrimCacheEntry &v) {
+                HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(k);
+                if (!prim.dataSource) {
+                    return;
+                }
 
-        HdDataSourceBaseHandle ds = 
-            prim.dataSource->Get(HdSceneIndexEmulationTokens->sceneDelegate);
-        if (!ds) {
-            continue;
-        }
+                HdTypedSampledDataSource<HdSceneDelegate*>::Handle ds = 
+                    HdTypedSampledDataSource<HdSceneDelegate*>::Cast(
+                        prim.dataSource->Get(
+                            HdSceneIndexEmulationTokens->sceneDelegate));
+                if (!ds) {
+                    return;
+                }
 
-        HdTypedSampledDataSource<HdSceneDelegate*>::Handle ds2 = 
-            HdTypedSampledDataSource<HdSceneDelegate*>::Cast(ds);
-        if (!ds2) {
-            continue;
-        }
-
-        sds.insert(ds2->GetTypedValue(0));
+                sds.insert(ds->GetTypedValue(0));
+            });
+        _sceneDelegates.assign(sds.begin(), sds.end());
+        _sceneDelegatesBuilt = true;
     }
 
-    for (auto it = sds.begin(); it != sds.end(); it++) {
-        if (TF_VERIFY((*it) != nullptr)) {
-            (*it)->Sync(request);
+    for (auto sd : _sceneDelegates) {
+        if (TF_VERIFY(sd != nullptr)) {
+            sd->Sync(request);
         } 
+    }
+}
+
+void
+HdSceneIndexAdapterSceneDelegate::PostSyncCleanup()
+{
+    if (!_sceneDelegatesBuilt) {
+        return;
+    }
+
+    for (auto sd : _sceneDelegates) {
+        if (TF_VERIFY(sd != nullptr)) {
+            sd->PostSyncCleanup();
+        }
     }
 }
 

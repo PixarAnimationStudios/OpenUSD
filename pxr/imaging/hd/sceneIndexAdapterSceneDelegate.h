@@ -190,12 +190,12 @@ public:
                               HdExtComputationContext *context) override;
 
     void Sync(HdSyncRequestVector* request) override;
+    void PostSyncCleanup() override;
 
     // NOTE: The remaining scene delegate functions aren't used for emulation:
     // - GetTaskRenderTags
     // - GetScenePrimPath
     // - IsEnabled
-    // - PostSyncCleanup
 
 private:
     void _PrimAdded(
@@ -217,6 +217,9 @@ private:
 
     using _PrimCacheTable = SdfPathTable<_PrimCacheEntry>;
     _PrimCacheTable _primCache;
+
+    bool _sceneDelegatesBuilt;
+    std::vector<HdSceneDelegate*> _sceneDelegates;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
