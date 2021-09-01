@@ -479,6 +479,34 @@ class LightFilter "LightFilter" (
     )
 }
 
+class "BoundableLightBase" (
+    inherits = </Light>
+    doc = """Base class for intrinsic lights that are boundable.
+
+    The primary purpose of this class is to provide a direct API to the 
+    functions provided by LightAPI for concrete derived light types.
+    """
+    customData = {
+        string extraIncludes = """#include "pxr/usd/usdLux/lightAPI.h" """
+    }
+    prepend apiSchemas = ["LightAPI"]
+) {
+}
+
+class "NonboundableLightBase" (
+    inherits = </Light>
+    doc = """Base class for intrinsic lights that are not boundable.
+
+    The primary purpose of this class is to provide a direct API to the 
+    functions provided by LightAPI for concrete derived light types.
+    """
+    customData = {
+        string extraIncludes = """#include "pxr/usd/usdLux/lightAPI.h" """
+    }
+    prepend apiSchemas = ["LightAPI"]
+) {
+}
+
 class DistantLight "DistantLight" (
     inherits = </Light>
     doc = """Light emitted from a distant source along the -Z axis.

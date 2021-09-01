@@ -312,6 +312,8 @@ class TestUsdLuxLight(unittest.TestCase):
             # under its USD schema type name.
 
             typeName = Usd.SchemaRegistry.GetConcreteSchemaTypeName(lightOrFilterType)
+            if not typeName:
+                continue
             node = Sdr.Registry().GetNodeByName(typeName, ['USD'])
             if (Plug.Registry().GetPluginForType(lightOrFilterType).name ==
                     "usdLux"):

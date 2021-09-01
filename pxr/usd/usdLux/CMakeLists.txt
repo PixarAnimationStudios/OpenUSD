@@ -13,6 +13,7 @@ pxr_library(usdLux
 
     PUBLIC_CLASSES
         blackbody
+        boundableLightBase
         cylinderLight
         diskLight
         distantLight
@@ -23,6 +24,7 @@ pxr_library(usdLux
         lightFilter
         lightPortal
         listAPI
+        nonboundableLightBase
         pluginLight
         pluginLightFilter
         portalLight
@@ -44,6 +46,7 @@ pxr_library(usdLux
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapBoundableLightBase.cpp
         wrapCylinderLight.cpp
         wrapDiskLight.cpp
         wrapDistantLight.cpp
@@ -54,6 +57,7 @@ pxr_library(usdLux
         wrapLightFilter.cpp
         wrapLightPortal.cpp
         wrapListAPI.cpp
+        wrapNonboundableLightBase.cpp
         wrapPluginLight.cpp
         wrapPluginLightFilter.cpp
         wrapPortalLight.cpp
