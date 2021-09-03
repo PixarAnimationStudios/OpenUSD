@@ -45,6 +45,12 @@ HdInstancerTopologySchema::ComputeInstanceIndicesForProto(SdfPath const &path)
     VtArray<int> result;
     VtArray<int> matchingPrototypes;
 
+    // If we can't get the instance indices datasource, not much point...
+    HdVectorDataSourceHandle indicesVecDs = GetInstanceIndices();
+    if (!indicesVecDs) {
+        return result;
+    }
+
     // Map from path -> matchingPrototypes.
     VtArray<SdfPath> prototypes;
     if (HdPathArrayDataSourceHandle protoDs = GetPrototypes()) {
@@ -52,40 +58,35 @@ HdInstancerTopologySchema::ComputeInstanceIndicesForProto(SdfPath const &path)
     }
 
     for (size_t i = 0; i < prototypes.size(); ++i) {
-        if (path.HasPrefix(prototypes[i])) {
+        if (path.HasPrefix(prototypes.AsConst()[i])) {
             matchingPrototypes.push_back(int(i));
         }
     }
 
-    // Map from matchingPrototypes -> instanceIndices.
     VtArray<bool> mask;
     if (HdBoolArrayDataSourceHandle maskDs = GetMask()) {
         mask = maskDs->GetTypedValue(0);
     }
 
+    // Map from matchingPrototypes -> instanceIndices, taking mask into account.
     for (int protoIndex : matchingPrototypes) {
         VtArray<int> instanceIndices;
-        if (HdVectorDataSourceHandle idx1Ds = GetInstanceIndices()) {
-            if (HdIntArrayDataSourceHandle idx2Ds =
-                HdIntArrayDataSource::Cast(idx1Ds->GetElement(protoIndex))) {
-                instanceIndices = idx2Ds->GetTypedValue(0);
-            }
+        if (HdIntArrayDataSourceHandle indicesDs = HdIntArrayDataSource::Cast(
+                indicesVecDs->GetElement(protoIndex))) {
+            instanceIndices = indicesDs->GetTypedValue(0);
         }
 
-        // If mask is empty, we can just copy or append the array, which is
-        // a bit quicker than looping throught it.
-        if (mask.empty()) {
-            if (result.empty()) {
-                result = instanceIndices;
-            } else {
-                size_t oldSize = result.size();
-                size_t iiSize = instanceIndices.size();
-                // Note: we call result.data() here to break buffer sharing.
-                result.data();
-                result.resize(oldSize + iiSize);
-                for (size_t i = 0; i < iiSize; ++i) {
-                    result[oldSize + i] = instanceIndices[i];
-                }
+        // If mask is empty, we can just copy or append the array...
+        if (mask.empty() && result.empty()) {
+            result = instanceIndices;
+        } else if (mask.empty()) {
+            size_t oldSize = result.size();
+            size_t iiSize = instanceIndices.size();
+            // Note: we call result.data() here to break buffer sharing.
+            result.data();
+            result.resize(oldSize + iiSize);
+            for (size_t i = 0; i < iiSize; ++i) {
+                result[oldSize + i] = instanceIndices[i];
             }
         } else {
             for (int instanceIndex : instanceIndices) {
