@@ -413,6 +413,22 @@ public:
     HD_API
     void MarkSprimClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
+    /// Insert a dependency between \p sprimId and parent sprim
+    /// \p parentSprimId.
+    HD_API
+    void AddSprimSprimDependency(SdfPath const& parentSprimId,
+                                 SdfPath const& sprimId);
+
+    /// Remove a dependency between \p sprimId and parent sprim
+    /// \p parentSprimId.
+    HD_API
+    void RemoveSprimSprimDependency(SdfPath const& parentSprimId,
+                                    SdfPath const& sprimId);
+
+    /// Remove all dependencies involving \p sprimId as a parent or child.
+    HD_API
+    void RemoveSprimFromSprimSprimDependencies(SdfPath const& sprimId);
+
     // ---------------------------------------------------------------------- //
     /// @}
     /// \name Bprim (buffer prim: texture, buffer, ...) state Tracking
@@ -585,6 +601,14 @@ private:
     _DependencyMap _instancerRprimDependencies;
     _DependencyMap _instancerInstancerDependencies;
 
+    // Provides forward and reverse-association between sprims and the child
+    // sprims that reference them. For example, a light prim (child) who needs 
+    // to know when its light filter (parent) is modified.
+    // Maps parent sprim to child sprim.
+    _DependencyMap _sprimSprimTargetDependencies;
+    // Maps child sprim to parent sprim.
+    _DependencyMap _sprimSprimSourceDependencies;
+    
     // Dependency map helpers
     void _AddDependency(_DependencyMap &depMap,
         SdfPath const& parent, SdfPath const& child);

@@ -137,6 +137,18 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
 
     // Lighting Params
     if (bits & DirtyParams) {
+        HdChangeTracker& changeTracker =
+            sceneDelegate->GetRenderIndex().GetChangeTracker();
+
+        // Remove old dependencies
+        VtValue val = Get(HdTokens->filters);
+        if (val.IsHolding<SdfPathVector>()) {
+            SdfPathVector lightFilterPaths = val.UncheckedGet<SdfPathVector>();
+            for (SdfPath const & filterPath : lightFilterPaths) {
+                changeTracker.RemoveSprimSprimDependency(filterPath, id);
+            }
+        }
+
         if (_lightType == HdPrimTypeTokens->simpleLight) {
             _params[HdLightTokens->params] =
                 sceneDelegate->Get(id, HdLightTokens->params);
@@ -150,6 +162,15 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
         else {
             _params[HdLightTokens->params] =
                 _ApproximateAreaLight(id, sceneDelegate);
+        }
+
+        // Add new dependencies
+        val = Get(HdTokens->filters);
+        if (val.IsHolding<SdfPathVector>()) {
+            SdfPathVector lightFilterPaths = val.UncheckedGet<SdfPathVector>();
+            for (SdfPath const & filterPath : lightFilterPaths) {
+                changeTracker.AddSprimSprimDependency(filterPath, id);
+            }
         }
     }
 

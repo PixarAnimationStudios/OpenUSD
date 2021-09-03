@@ -49,6 +49,8 @@ HdChangeTracker::HdChangeTracker()
     , _collectionState()
     , _instancerRprimDependencies()
     , _instancerInstancerDependencies()
+    , _sprimSprimTargetDependencies()
+    , _sprimSprimSourceDependencies()
     // Note: Version numbers start at 1, with observers resetting theirs to 0.
     // This is to cause a version mismatch during first-time processing.
     , _varyingStateVersion(1)
@@ -310,6 +312,56 @@ HdChangeTracker::RemoveInstancerInstancerDependency(SdfPath const& parentId,
 }
 
 void
+HdChangeTracker::AddSprimSprimDependency(SdfPath const& parentSprimId,
+                                         SdfPath const& sprimId)
+{
+    _AddDependency(_sprimSprimTargetDependencies, parentSprimId, sprimId);
+    _AddDependency(_sprimSprimSourceDependencies, sprimId, parentSprimId);
+}
+
+void
+HdChangeTracker::RemoveSprimSprimDependency(SdfPath const& parentSprimId,
+                                            SdfPath const& sprimId)
+{
+    _RemoveDependency(_sprimSprimTargetDependencies, parentSprimId, sprimId);
+    _RemoveDependency(_sprimSprimSourceDependencies, sprimId, parentSprimId);
+}
+
+void
+HdChangeTracker::RemoveSprimFromSprimSprimDependencies(SdfPath const& sprimId)
+{
+    if (_sprimSprimTargetDependencies.empty()) {
+        return;
+    }
+    
+    // Remove sprim as parent
+    {
+        _DependencyMap::accessor a;
+        if (_sprimSprimTargetDependencies.find(a, sprimId)) {
+            // If sprim is parent, mark its children dirty before removing.
+            for (const SdfPath & childPath : a->second) {
+                MarkSprimDirty(childPath, ~Clean);
+                _RemoveDependency(
+                    _sprimSprimSourceDependencies, childPath, sprimId);
+            }
+            _sprimSprimTargetDependencies.erase(a);
+        }
+    }
+
+    // Remove sprim as child
+    {
+        _DependencyMap::accessor a;
+        if (_sprimSprimSourceDependencies.find(a, sprimId)) {
+            for (const SdfPath & parentPath : a->second) {
+                _RemoveDependency(
+                    _sprimSprimTargetDependencies, parentPath, sprimId);
+            }
+            _sprimSprimSourceDependencies.erase(a);
+        }
+    }
+}
+
+void
 HdChangeTracker::_AddDependency(HdChangeTracker::_DependencyMap &depMap,
         SdfPath const& parent, SdfPath const& child)
 {
@@ -564,6 +616,17 @@ HdChangeTracker::_MarkSprimDirty(SdfPath const& id, HdDirtyBits bits)
     if (!TF_VERIFY(it != _sprimState.end()))
         return;
     it->second = it->second | bits;
+
+    // Mark any associated sprims dirty. Unfortunately, we don't know what to 
+    // set dirty, so we resort to ~Clean (as we can't use the rprim AllDirty for
+    // sprims).
+    _DependencyMap::const_accessor aIR;
+    if (_sprimSprimTargetDependencies.find(aIR, id)) {
+        for (SdfPath const& dep : aIR->second) {
+            MarkSprimDirty(dep, ~Clean);
+        }
+    }
+
     ++_sceneStateVersion;
 }
 
