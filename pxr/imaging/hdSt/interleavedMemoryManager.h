@@ -52,34 +52,8 @@ struct HgiBufferCpuToGpuOp;
 /// Interleaved memory manager (base class).
 ///
 class HdStInterleavedMemoryManager : public HdAggregationStrategy {
-public:
-    /// Copy new data from CPU into staging buffer.
-    /// This reduces the amount of GPU copy commands we emit by first writing
-    /// to the CPU staging area of the buffer and only flushing it to the GPU
-    /// when we write to a non-consecutive area of a buffer.
-    void StageBufferCopy(HgiBufferCpuToGpuOp const& copyOp);
-
-    /// Flush the staging buffer to GPU.
-    /// Copy the new buffer data from staging area to GPU.
-    void Flush() override;
-
 protected:
     class _StripedInterleavedBuffer;
-
-    // BufferFlushListEntry lets use accumulate writes into the same GPU buffer
-    // into CPU staging buffers before flushing to GPU.
-    class _BufferFlushListEntry {
-        public:
-        _BufferFlushListEntry(
-            HgiBufferHandle const& buf, uint64_t start, uint64_t end);
-
-        HgiBufferHandle buffer;
-        uint64_t start;
-        uint64_t end;
-    };
-
-    using _BufferFlushMap = 
-        std::unordered_map<class HgiBuffer*, _BufferFlushListEntry>;
 
     /// specialized buffer array range
     class _StripedInterleavedBufferRange : public HdStBufferArrayRange
@@ -108,6 +82,9 @@ protected:
 
         /// Returns true if this range is marked as immutable.
         bool IsImmutable() const override;
+
+        /// Returns true if this needs a staging buffer for CPU to GPU copies.
+        bool RequiresStaging() const override;
 
         /// Resize memory area for this range. Returns true if it causes container
         /// buffer reallocation.
@@ -331,7 +308,6 @@ protected:
         VtDictionary &result) const override;
     
     HdStResourceRegistry* const _resourceRegistry;
-    _BufferFlushMap _queuedBuffers;
 };
 
 class HdStInterleavedUBOMemoryManager : public HdStInterleavedMemoryManager {

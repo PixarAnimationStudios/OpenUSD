@@ -107,6 +107,7 @@ pxr_library(hdSt
         shaderCode
         simpleLightingShader
         smoothNormals
+        stagingBuffer
         subtextureIdentifier
         textureBinder
         textureCpuData

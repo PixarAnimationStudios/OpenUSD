@@ -81,6 +81,7 @@ using HgiComputePipelineSharedPtr =
 
 class HdStTextureIdentifier;
 class HdSamplerParameters;
+class HdStStagingBuffer;
 
 /// \enum HdStComputeQueue
 ///
@@ -459,6 +460,10 @@ public:
     HDST_API
     void SubmitComputeWork(HgiSubmitWaitType wait = HgiSubmitWaitTypeNoWait);
 
+    /// Returns the staging buffer used when committing data to the GPU.
+    HDST_API
+    HdStStagingBuffer* GetStagingBuffer();
+
 public:
     //
     // Unit test API
@@ -566,7 +571,7 @@ private:
 
     typedef tbb::concurrent_vector<_PendingSource> _PendingSourceList;
     _PendingSourceList    _pendingSources;
-    std::atomic_size_t   _numBufferSourcesToResolve;
+    std::atomic_size_t    _numBufferSourcesToResolve;
     
     struct _PendingComputation{
         _PendingComputation(HdBufferArrayRangeSharedPtr const &range,
@@ -665,6 +670,8 @@ private:
 
     HgiBlitCmdsUniquePtr _blitCmds;
     HgiComputeCmdsUniquePtr _computeCmds;
+
+    std::unique_ptr<HdStStagingBuffer> _stagingBuffer;
 };
 
 

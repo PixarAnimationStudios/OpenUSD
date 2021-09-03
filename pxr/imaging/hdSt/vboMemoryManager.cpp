@@ -544,6 +544,12 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::IsImmutable() const
 }
 
 bool
+HdStVBOMemoryManager::_StripedBufferArrayRange::RequiresStaging() const
+{
+    return false;
+}
+
+bool
 HdStVBOMemoryManager::_StripedBufferArrayRange::Resize(int numElements)
 {
     HD_TRACE_FUNCTION();
