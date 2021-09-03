@@ -1291,7 +1291,8 @@ HdDataSourceLegacyPrim::HdDataSourceLegacyPrim(
   _sceneDelegate(sceneDelegate),
   _primvarsBuilt(false),
   _extComputationPrimvarsBuilt(false),
-  _topologyBuilt(false)
+  _topologyBuilt(false),
+  _instancerTopology(nullptr)
 {
     TF_VERIFY(_sceneDelegate);
 }
@@ -1315,6 +1316,11 @@ HdDataSourceLegacyPrim::PrimDirtied(const HdDataSourceLocatorSet &locators)
         _topologyBuilt = false;
         _topology.reset();
         _geomSubsets.reset();
+    }
+
+    if (locators.Intersects(HdInstancerTopologySchema::GetDefaultLocator())) {
+        HdContainerDataSourceHandle null(nullptr);
+        HdContainerDataSource::AtomicStore(_instancerTopology, null);
     }
 }
 
@@ -1870,7 +1876,22 @@ HdDataSourceLegacyPrim::_GetInstancedByDataSource()
 HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetInstancerTopologyDataSource()
 {
-    return Hd_InstancerTopologyDataSource::New(_id, _sceneDelegate);
+    TRACE_FUNCTION();
+
+    HdContainerDataSourceHandle instancerTopology =
+        HdContainerDataSource::AtomicLoad(_instancerTopology);
+
+    if (instancerTopology) {
+        return instancerTopology;
+    }
+
+    instancerTopology =
+        Hd_InstancerTopologyDataSource::New(_id, _sceneDelegate);
+
+    HdContainerDataSource::AtomicStore(
+        _instancerTopology, instancerTopology);
+
+    return instancerTopology;
 }
 
 HdDataSourceBaseHandle

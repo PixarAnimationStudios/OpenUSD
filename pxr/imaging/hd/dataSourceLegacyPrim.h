@@ -126,6 +126,11 @@ private:
     HdContainerDataSourceHandle _extComputationPrimvars;
     HdContainerDataSourceHandle _topology;
     HdContainerDataSourceHandle _geomSubsets;
+
+    // Note: _instancerTopology needs to be an atomic handle, since
+    // some downstream customers of it (render index sync, hdSt instancer sync)
+    // are not threadsafe.
+    HdContainerDataSourceAtomicHandle _instancerTopology;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(HdDataSourceLegacyPrim);
