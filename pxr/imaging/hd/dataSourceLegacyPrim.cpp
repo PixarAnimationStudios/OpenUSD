@@ -682,6 +682,8 @@ private:
 class Hd_InstanceCategoriesVectorDataSource : public HdVectorDataSource
 {
 public: 
+    HD_DECLARE_DATASOURCE(Hd_InstanceCategoriesVectorDataSource);
+
     Hd_InstanceCategoriesVectorDataSource(
             const SdfPath &id, HdSceneDelegate *sceneDelegate)
     : _id(id), _sceneDelegate(sceneDelegate), _checked(false)
@@ -740,9 +742,99 @@ private:
 
 // ----------------------------------------------------------------------------
 
+class Hd_InstancerTopologyDataSource : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_InstancerTopologyDataSource);
+
+    Hd_InstancerTopologyDataSource(
+        const SdfPath &id, HdSceneDelegate *sceneDelegate)
+    : _id(id), _sceneDelegate(sceneDelegate)
+    {
+        TF_VERIFY(_sceneDelegate);
+        SdfPathVector protos = _sceneDelegate->GetInstancerPrototypes(_id);
+        _protos.assign(protos.begin(), protos.end());
+    }
+
+    bool Has(const TfToken &name) override
+    {
+        if (name == HdInstancerTopologySchemaTokens->prototypes ||
+            name == HdInstancerTopologySchemaTokens->instanceIndices) {
+            return true;
+        }
+        return false;
+    }
+
+    TfTokenVector GetNames() override
+    {
+        TfTokenVector results;
+        results.push_back(HdInstancerTopologySchemaTokens->prototypes);
+        results.push_back(HdInstancerTopologySchemaTokens->instanceIndices);
+        return results;
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        if (name == HdInstancerTopologySchemaTokens->prototypes) {
+            return HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
+                    _protos);
+        } else if (name == HdInstancerTopologySchemaTokens->instanceIndices) {
+            return Hd_InstanceIndicesDataSource::New(
+                    _id, _sceneDelegate, _protos);
+        } else {
+            return nullptr;
+        }
+    }
+
+private:
+    class Hd_InstanceIndicesDataSource : public HdVectorDataSource
+    {
+    public:
+        HD_DECLARE_DATASOURCE(Hd_InstanceIndicesDataSource);
+
+        Hd_InstanceIndicesDataSource(
+            const SdfPath &id, HdSceneDelegate *sceneDelegate,
+            const VtArray<SdfPath> protos)
+            : _id(id), _sceneDelegate(sceneDelegate), _protos(protos)
+        {
+            TF_VERIFY(_sceneDelegate);
+        }
+
+        size_t GetNumElements() override
+        {
+            return _protos.size();
+        }
+
+        HdDataSourceBaseHandle GetElement(size_t element) override
+        {
+            if (element >= _protos.size()) {
+                return nullptr;
+            }
+
+            VtIntArray instanceIndices =
+                _sceneDelegate->GetInstanceIndices(_id, _protos[element]);
+
+            return HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                    instanceIndices);
+        }
+
+    private:
+        SdfPath _id;
+        HdSceneDelegate *_sceneDelegate;
+        const VtArray<SdfPath> _protos;
+    };
+
+    SdfPath _id;
+    HdSceneDelegate *_sceneDelegate;
+    VtArray<SdfPath> _protos;
+};
+
+// ----------------------------------------------------------------------------
+
 class Hd_GenericGetSampledDataSource : public HdSampledDataSource
 {
 public:
+    HD_DECLARE_DATASOURCE(Hd_GenericGetSampledDataSource);
 
     Hd_GenericGetSampledDataSource(
         HdSceneDelegate *sceneDelegate, const SdfPath &id, const TfToken &key)
@@ -790,6 +882,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 class Hd_LegacyDrawTargetContainerDataSource : public HdContainerDataSource
 {
 public:
+    HD_DECLARE_DATASOURCE(Hd_LegacyDrawTargetContainerDataSource);
+
     Hd_LegacyDrawTargetContainerDataSource(
         HdSceneDelegate *sceneDelegate, const SdfPath &id)
     : _sceneDelegate(sceneDelegate), _id(id) {}
@@ -809,7 +903,7 @@ public:
     HdDataSourceBaseHandle Get(const TfToken &name) override
     {
         return HdSampledDataSourceHandle(
-            new Hd_GenericGetSampledDataSource(_sceneDelegate, _id, name));
+            Hd_GenericGetSampledDataSource::New(_sceneDelegate, _id, name));
     }
 private:
     HdSceneDelegate *_sceneDelegate;
@@ -1143,7 +1237,7 @@ public:
                     rb.multiSampled);
         } else {
             return HdSampledDataSourceHandle(
-                new Hd_GenericGetSampledDataSource(_sceneDelegate, _id, name));
+                Hd_GenericGetSampledDataSource::New(_sceneDelegate, _id, name));
         }
     }
 
@@ -1776,29 +1870,7 @@ HdDataSourceLegacyPrim::_GetInstancedByDataSource()
 HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetInstancerTopologyDataSource()
 {
-    SdfPathVector protos =
-        _sceneDelegate->GetInstancerPrototypes(_id);
-
-    std::vector<HdDataSourceBaseHandle> indicesVec;
-    for (SdfPath const &proto : protos) {
-        VtIntArray instanceIndices =
-            _sceneDelegate->GetInstanceIndices(_id, proto);
-        indicesVec.push_back(
-            HdRetainedTypedSampledDataSource<VtArray<int>>::New(
-                instanceIndices));
-    }
-
-    if (protos.empty() && indicesVec.empty()) {
-        return nullptr;
-    }
-
-    VtArray<SdfPath> protosArray(protos.begin(), protos.end());
-    return HdInstancerTopologySchema::BuildRetained(
-            HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
-                protosArray),
-            HdRetainedSmallVectorDataSource::New(
-                indicesVec.size() , indicesVec.data()),
-            nullptr, nullptr);
+    return Hd_InstancerTopologyDataSource::New(_id, _sceneDelegate);
 }
 
 HdDataSourceBaseHandle
@@ -1898,7 +1970,7 @@ HdDataSourceLegacyPrim::_GetInstanceCategoriesDataSource()
 {
     return HdInstanceCategoriesSchema::BuildRetained(
         HdVectorDataSourceHandle(
-            new Hd_InstanceCategoriesVectorDataSource(_id, _sceneDelegate))
+            Hd_InstanceCategoriesVectorDataSource::New(_id, _sceneDelegate))
     );
 }
 
@@ -2211,7 +2283,7 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
         return _GetGeomSubsetsDataSource();
     } else if (name == HdPrimTypeTokens->drawTarget) {
         return HdContainerDataSourceHandle(
-            new Hd_LegacyDrawTargetContainerDataSource(_sceneDelegate, _id));
+            Hd_LegacyDrawTargetContainerDataSource::New(_sceneDelegate, _id));
     } else if (name == HdExtComputationSchemaTokens->extComputation) {
         return Hd_DataSourceLegacyExtComputation::New(_id, _sceneDelegate);
     }
