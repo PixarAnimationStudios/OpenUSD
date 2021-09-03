@@ -114,56 +114,56 @@ void wrapUsdLuxBoundableLightBase()
 // --(BEGIN CUSTOM CODE)--
 
 static UsdAttribute
-_CreateIntensityAttr(UsdLuxLight &self,
+_CreateIntensityAttr(UsdLuxBoundableLightBase &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateIntensityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateExposureAttr(UsdLuxLight &self,
+_CreateExposureAttr(UsdLuxBoundableLightBase &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateExposureAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateDiffuseAttr(UsdLuxLight &self,
+_CreateDiffuseAttr(UsdLuxBoundableLightBase &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateDiffuseAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateSpecularAttr(UsdLuxLight &self,
+_CreateSpecularAttr(UsdLuxBoundableLightBase &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateSpecularAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
-_CreateNormalizeAttr(UsdLuxLight &self,
+_CreateNormalizeAttr(UsdLuxBoundableLightBase &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateNormalizeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
-_CreateColorAttr(UsdLuxLight &self,
+_CreateColorAttr(UsdLuxBoundableLightBase &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateColorAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3f), writeSparsely);
 }
         
 static UsdAttribute
-_CreateEnableColorTemperatureAttr(UsdLuxLight &self,
+_CreateEnableColorTemperatureAttr(UsdLuxBoundableLightBase &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateEnableColorTemperatureAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
-_CreateColorTemperatureAttr(UsdLuxLight &self,
+_CreateColorTemperatureAttr(UsdLuxBoundableLightBase &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateColorTemperatureAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
