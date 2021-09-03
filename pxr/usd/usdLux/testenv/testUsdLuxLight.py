@@ -94,9 +94,13 @@ class TestUsdLuxLight(unittest.TestCase):
                       'width']
         # GetInputs returns only authored inputs by default
         self.assertEqual(light.GetInputs(), [])
-        # GetInputs(false) returns the inputs for all the built-ins.
-        self.assertEqual(light.GetInputs(onlyAuthored=False), 
-                         [light.GetInput(name) for name in inputNames])
+
+        # GetInputs(false) is a super-set of all the built-ins.
+        # There could be other inputs coming from any auto applied APISchemas.
+        allInputs = [inputName.GetBaseName() for inputName in
+                light.GetInputs(onlyAuthored=False)]
+        self.assertTrue(set(inputNames).issubset(set(allInputs)))
+
         # Verify each input's attribute is prefixed.
         for name in inputNames:
             self.assertEqual(light.GetInput(name).GetAttr().GetName(),
@@ -114,10 +118,6 @@ class TestUsdLuxLight(unittest.TestCase):
         # By default GetInputs() returns onlyAuthored inputs, of which
         # there is now 1.
         self.assertEqual(len(light.GetInputs()), 1)
-        # Passing onlyAuthored=False will return the authored input
-        # in addition to the builtins.
-        self.assertEqual(len(light.GetInputs(onlyAuthored=False)),
-            len(inputNames)+1)
         self.assertEqual(light.GetInput('newInput'), lightInput)
         self.assertEqual(lightInput.GetAttr(), 
                          light.GetPrim().GetAttribute("inputs:newInput"))

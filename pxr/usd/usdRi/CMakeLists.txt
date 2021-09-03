@@ -9,24 +9,13 @@ pxr_library(usdRi
         usd
         usdShade
         usdGeom
-        usdLux
         ${Boost_PYTHON_LIBRARY}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
-        lightAPI
-        lightFilterAPI
-        lightPortalAPI
         materialAPI
-        pxrAovLight
-        pxrBarnLightFilter
-        pxrCookieLightFilter
-        pxrEnvDayLight
-        pxrIntMultLightFilter
-        pxrRampLightFilter
-        pxrRodLightFilter
         rmanUtilities
         splineAPI
         statementsAPI
@@ -44,17 +33,7 @@ pxr_library(usdRi
 
     PYMODULE_CPPFILES
         module.cpp
-        wrapLightAPI.cpp
-        wrapLightFilterAPI.cpp
-        wrapLightPortalAPI.cpp
         wrapMaterialAPI.cpp
-        wrapPxrAovLight.cpp
-        wrapPxrBarnLightFilter.cpp
-        wrapPxrCookieLightFilter.cpp
-        wrapPxrEnvDayLight.cpp
-        wrapPxrIntMultLightFilter.cpp
-        wrapPxrRampLightFilter.cpp
-        wrapPxrRodLightFilter.cpp
         wrapRmanUtilities.cpp
         wrapSplineAPI.cpp
         wrapStatementsAPI.cpp
