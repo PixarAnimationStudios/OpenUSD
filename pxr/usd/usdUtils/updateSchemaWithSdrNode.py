@@ -26,8 +26,6 @@
 from pxr import Tf, Sdf, Sdr, Usd, UsdShade, Vt
 from pxr.UsdUtils.constantsGroup import ConstantsGroup
 
-import distutils.util
-
 class SchemaDefiningKeys(ConstantsGroup):
     API_SCHEMA_AUTO_APPLY_TO = "apiSchemaAutoApplyTo"
     API_SCHEMA_CAN_ONLY_APPLY_TO = "apiSchemaCanOnlyApplyTo"
@@ -178,6 +176,9 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
           the property should be suppressed from translation from args to 
           property spec.
     """
+
+    import distutils.util
+
     # Early exit on invalid parameters
     if not schemaLayer:
         Tf.Warn("No Schema Layer provided")
