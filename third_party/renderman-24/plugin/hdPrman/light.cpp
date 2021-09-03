@@ -589,7 +589,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
             sceneDelegate, id, _hdLightType, &lightNodes);
     }
 
-    if (lightNodes.empty()) {
+    if (lightNodes.empty() || lightNodes.back().name.Empty()) {
         TF_WARN("Could not populate shading nodes for light '%s'. Skipping.",
                 id.GetText());
         *dirtyBits = HdChangeTracker::Clean;
