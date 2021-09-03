@@ -454,6 +454,9 @@ HdCreateTypedRetainedDataSource(VtValue const &v)
     } else if (v.IsHolding<SdfPathVector>()) {
         return HdRetainedTypedSampledDataSource<SdfPathVector>::New(
                 v.UncheckedGet<SdfPathVector>());
+    } else if (v.IsHolding<std::string>()) {
+        return HdRetainedTypedSampledDataSource<std::string>::New(
+                v.UncheckedGet<std::string>());
     } else if (v.IsEmpty()) {
         return HdSampledDataSourceHandle(nullptr);
     } else {
