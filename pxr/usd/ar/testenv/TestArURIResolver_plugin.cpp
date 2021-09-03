@@ -98,14 +98,15 @@ protected:
 
     ArResolverContext _CreateDefaultContext() const final
     {
-        return ArResolverContext(_TestURIResolverContext());
+        return ArResolverContext(
+            _TestURIResolverContext("CreateDefaultContext"));
     }
 
     ArResolverContext _CreateDefaultContextForAsset(
-        const std::string& filePath) const final
+        const std::string& assetPath) const final
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(filePath), _uriScheme));
-        return ArResolverContext(_TestURIResolverContext());
+        return ArResolverContext(
+            _TestURIResolverContext(TfAbsPath(assetPath)));
     }
 
     VtValue _GetModificationTimestamp(

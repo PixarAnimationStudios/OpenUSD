@@ -166,12 +166,18 @@ public:
 
     /// Return an ArResolverContext that may be bound to this resolver
     /// to resolve assets when no other context is explicitly specified.
+    ///
+    /// The returned ArResolverContext will contain the default context 
+    /// returned by the primary resolver and all URI resolvers.
     AR_API
     ArResolverContext CreateDefaultContext() const;
 
     /// Return an ArResolverContext that may be bound to this resolver
-    /// to resolve the asset located at \p assetPath when no other context is
-    /// explicitly specified.
+    /// to resolve the asset located at \p assetPath or referenced by
+    /// that asset when no other context is explicitly specified.
+    ///
+    /// The returned ArResolverContext will contain the default context 
+    /// for \p assetPath returned by the primary resolver and all URI resolvers.
     AR_API
     ArResolverContext CreateDefaultContextForAsset(
         const std::string& assetPath) const;
@@ -521,23 +527,52 @@ protected:
     /// Return a default ArResolverContext that may be bound to this resolver
     /// to resolve assets when no other context is explicitly specified.
     ///
+    /// When CreateDefaultContext is called on the configured asset resolver,
+    /// Ar will call this method on the primary resolver and all URI resolvers
+    /// and merge the results into a single ArResolverContext that will be
+    /// returned to the consumer.
+    ///
     /// This function should not automatically bind this context, but should
     /// create one that may be used later.
     ///
     /// The default implementation returns a default-constructed
     /// ArResolverContext.
+    ///
+    /// Example uses: 
+    /// - UsdStage will call CreateDefaultContext when creating a new stage with
+    ///   an anonymous root layer and without a given context. The returned
+    ///   context will be bound when resolving asset paths on that stage.
     AR_API
     virtual ArResolverContext _CreateDefaultContext() const;
 
     /// Return an ArResolverContext that may be bound to this resolver
-    /// to resolve the asset located at \p assetPath when no other context is
-    /// explicitly specified.
+    /// to resolve the asset located at \p assetPath or referenced by
+    /// that asset when no other context is explicitly specified.
+    ///
+    /// When CreateDefaultContextForAsset is called on the configured asset
+    /// resolver, Ar will call this method on the primary resolver and all URI
+    /// resolvers and merge the results into a single ArResolverContext that
+    /// will be returned to the consumer.
+    ///
+    /// Note that this means this method may be called with asset paths that
+    /// are not associated with this resolver. For example, this method may
+    /// be called on a URI resolver with a non-URI asset path. This is to
+    /// support cases where the asset at \p assetPath references other
+    /// assets with URI schemes that differ from the URI scheme (if any)
+    /// in \p assetPath.
     ///
     /// This function should not automatically bind this context, but should
     /// create one that may be used later.
     ///
     /// The default implementation returns a default-constructed
     /// ArResolverContext.
+    ///
+    /// Example uses: 
+    /// - UsdStage will call CreateDefaultContextForAsset when creating a new
+    ///   stage with a non-anonymous root layer and without a given context. The
+    ///   resolved path of the root layer will be passed in as the
+    ///   \p assetPath. The returned context will be bound when resolving asset
+    ///   paths on that stage.
     AR_API
     virtual ArResolverContext _CreateDefaultContextForAsset(
         const std::string& assetPath) const;

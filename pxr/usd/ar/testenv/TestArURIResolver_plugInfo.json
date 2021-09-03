@@ -9,7 +9,8 @@
             "Info": {
                 "Types": {
                     "_TestURIResolverBase": {
-                        "bases": ["ArResolver"]
+                        "bases": ["ArResolver"],
+                        "implementsContexts": true
                     },
                     "_TestURIResolver": {
                         "bases": ["_TestURIResolverBase"],
