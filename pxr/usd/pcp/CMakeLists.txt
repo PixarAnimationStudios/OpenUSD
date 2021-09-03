@@ -106,6 +106,7 @@ pxr_test_scripts(
     testenv/testPcpRegressionBugs_bug90706.py
     testenv/testPcpRegressionBugs_bug92955.py
     testenv/testPcpRegressionBugs_bug101300.py
+    testenv/testPcpResolvedPathChange.py
     testenv/testPcpStreamingLayerReload.py
     testenv/testPcpCompositionResults.py
 )
@@ -1720,6 +1721,12 @@ pxr_register_test(testPcpRegressionBugs_case1
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults case1/root.sdf"
     STDOUT_REDIRECT compositionResults_case1.txt
     DIFF_COMPARE  compositionResults_case1.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testPcpResolvedPathChange
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpResolvedPathChange"
     EXPECTED_RETURN_CODE 0
 )
 
