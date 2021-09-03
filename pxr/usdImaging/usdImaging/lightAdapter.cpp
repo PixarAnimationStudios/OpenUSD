@@ -31,7 +31,7 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/usd/ar/resolverScopedCache.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
-#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/lightAPI.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -125,7 +125,7 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
 
     UsdImagingPrimvarDescCache* primvarDescCache = _GetPrimvarDescCache();
 
-    UsdLuxLight light(prim);
+    UsdLuxLightAPI light(prim);
     if (TF_VERIFY(light)) {
         UsdImaging_CollectionCache &collectionCache = _GetCollectionCache();
         collectionCache.UpdateCollection(light.GetLightLinkCollectionAPI());
@@ -223,12 +223,10 @@ UsdImagingLightAdapter::GetMaterialResource(UsdPrim const &prim,
                                             SdfPath const& cachePath, 
                                             UsdTimeCode time) const
 {
-    UsdLuxLight light(prim);
-    if (!light) {
-        TF_RUNTIME_ERROR("Expected light prim at <%s> to be a subclass of type "
-                         "'UsdLuxLight', not type '%s'; ignoring",
-                         prim.GetPath().GetText(),
-                         prim.GetTypeName().GetText());
+    if (!prim.HasAPI<UsdLuxLightAPI>()) {
+        TF_RUNTIME_ERROR("Expected light prim at <%s> to have an applied API "
+                         "of type 'UsdLuxLightAPI'; ignoring",
+                         prim.GetPath().GetText());
         return VtValue();
     }
 
@@ -242,6 +240,7 @@ UsdImagingLightAdapter::GetMaterialResource(UsdPrim const &prim,
         prim, 
         HdMaterialTerminalTokens->light,
         _GetShaderSourceTypes(),
+        _GetMaterialRenderContexts(),
         &networkMap,
         time);
 

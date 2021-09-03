@@ -58,7 +58,7 @@
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
 
-#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/lightAPI.h"
 #include "pxr/usd/usdLux/lightFilter.h"
 
 #include "pxr/base/work/loops.h"
@@ -79,6 +79,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (lightFilterType)
+    (LightAPI)
 );
 
 // This environment variable matches a set of similar ones in
@@ -239,7 +240,18 @@ UsdImagingDelegate::_AdapterLookup(UsdPrim const& prim, bool ignoreInstancing)
         adapterKey = prim.GetPrimTypeInfo().GetSchemaTypeName();
     }
 
-    return _AdapterLookup(adapterKey);
+    const UsdImagingPrimAdapterSharedPtr &adapter = _AdapterLookup(adapterKey);
+
+    // If we couldn't find an adapter and the prim has an applied UsdLuxLightAPI, 
+    // look up the adapter for LightAPI and treat the prim as a light.
+    // XXX: Note that this only works for prims that aren't renderable through
+    // another adapter. So something like a UsdGeomMesh with a LightAPI applied
+    // will not return a light adapter. Support for this is expected to be added
+    // in the future.
+    if (!adapter && prim.HasAPI<UsdLuxLightAPI>()) {
+        return _AdapterLookup(_tokens->LightAPI);
+    }
+    return adapter;
 }
 
 UsdImagingPrimAdapterSharedPtr const& 
@@ -2734,7 +2746,7 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     if (!TF_VERIFY(prim)) {
         return VtValue();
     }
-    UsdLuxLight light = UsdLuxLight(prim);
+    UsdLuxLightAPI light = UsdLuxLightAPI(prim);
     if (!light) {
         // Its ok that this is not a light. Lets assume its a light filter.
         // Asking for the lightFilterType is the render delegates way of

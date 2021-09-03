@@ -260,6 +260,7 @@ UsdImagingMaterialAdapter::GetMaterialResource(UsdPrim const &prim,
             surface.GetPrim(), 
             HdMaterialTerminalTokens->surface,
             shaderSourceTypes,
+            contextVector,
             &networkMap,
             time);
 
@@ -270,6 +271,7 @@ UsdImagingMaterialAdapter::GetMaterialResource(UsdPrim const &prim,
                 displacement.GetPrim(),
                 HdMaterialTerminalTokens->displacement,
                 shaderSourceTypes,
+                contextVector,
                 &networkMap,
                 time);
         }
@@ -282,6 +284,7 @@ UsdImagingMaterialAdapter::GetMaterialResource(UsdPrim const &prim,
             volume.GetPrim(),
             HdMaterialTerminalTokens->volume,
             shaderSourceTypes,
+            contextVector,
             &networkMap,
             time);
     }

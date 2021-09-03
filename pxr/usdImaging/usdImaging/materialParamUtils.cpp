@@ -34,6 +34,7 @@
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/nodeDefAPI.h"
+#include "pxr/usd/usdLux/lightAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -294,7 +295,8 @@ _ExtractPrimvarsFromNode(
 
 static
 TfToken _GetNodeId(UsdShadeConnectableAPI const &shadeNode,
-                   TfTokenVector const & shaderSourceTypes)
+                   TfTokenVector const & shaderSourceTypes,
+                   TfTokenVector const& renderContexts)
 {
     UsdShadeNodeDefAPI nodeDef(shadeNode.GetPrim());
     if (nodeDef) {
@@ -313,9 +315,20 @@ TfToken _GetNodeId(UsdShadeConnectableAPI const &shadeNode,
         return id;
     }
 
-    // Otherwise for connectable nodes that don't implement NodeDefAPI (such
-    // UsdLux lights and light filters) the type name of the prim is used as
-    // the node's identifier.
+    // If the node is a light that doesn't have a NodeDefAPI, then we try to 
+    // get the light shader ID from the light for the given render contexts.
+    UsdLuxLightAPI light(shadeNode);
+    if (light) {
+        TfToken id = light.GetShaderId(renderContexts);
+        if (!id.IsEmpty()) {
+            return id;
+        }
+    }
+
+    // Otherwise for connectable nodes that don't implement NodeDefAPI and we
+    // fail to get a light shader ID for, the type name of the prim is used as
+    // the node's identifier. This will currently always be the case for prims
+    // like light filters.
     return shadeNode.GetPrim().GetTypeName();
 }
 
@@ -334,6 +347,7 @@ void _WalkGraph(
     HdMaterialNetwork* materialNetwork,
     _PathSet* visitedNodes,
     TfTokenVector const & shaderSourceTypes,
+    TfTokenVector const & renderContexts,
     UsdTimeCode time)
 {
     // Store the path of the node
@@ -368,6 +382,7 @@ void _WalkGraph(
                 materialNetwork,
                 visitedNodes,
                 shaderSourceTypes,
+                renderContexts,
                 time);
 
             HdMaterialRelationship relationship;
@@ -394,7 +409,7 @@ void _WalkGraph(
     // Extract the identifier of the node.
     // GetShaderNodeForSourceType will try to find/create an Sdr node for all
     // three info cases: info:id, info:sourceAsset and info:sourceCode.
-    TfToken id = _GetNodeId(shadeNode, shaderSourceTypes);
+    TfToken id = _GetNodeId(shadeNode, shaderSourceTypes, renderContexts);
 
     if (!id.IsEmpty()) {
         node.identifier = id;
@@ -414,6 +429,7 @@ UsdImaging_BuildHdMaterialNetworkFromTerminal(
     UsdPrim const& usdTerminal,
     TfToken const& terminalIdentifier,
     TfTokenVector const& shaderSourceTypes,
+    TfTokenVector const& renderContexts,
     HdMaterialNetworkMap *materialNetworkMap,
     UsdTimeCode time)
 {
@@ -426,6 +442,7 @@ UsdImaging_BuildHdMaterialNetworkFromTerminal(
         &network,
         &visitedNodes, 
         shaderSourceTypes,
+        renderContexts,
         time);
 
     if (!TF_VERIFY(!nodes.empty())) return;
