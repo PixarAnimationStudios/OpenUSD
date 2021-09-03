@@ -62,6 +62,7 @@ HdInstancerTopologySchema::ComputeInstanceIndicesForProto(SdfPath const &path)
     if (HdBoolArrayDataSourceHandle maskDs = GetMask()) {
         mask = maskDs->GetTypedValue(0);
     }
+
     for (int protoIndex : matchingPrototypes) {
         VtArray<int> instanceIndices;
         if (HdVectorDataSourceHandle idx1Ds = GetInstanceIndices()) {
@@ -71,12 +72,27 @@ HdInstancerTopologySchema::ComputeInstanceIndicesForProto(SdfPath const &path)
             }
         }
 
-        for (int instanceIndex : instanceIndices) {
-            // If instanceIndex[i] is not masked...
-            if (mask.size() > 0 && !mask[instanceIndex]) {
-                continue;
+        // If mask is empty, we can just copy or append the array, which is
+        // a bit quicker than looping throught it.
+        if (mask.empty()) {
+            if (result.empty()) {
+                result = instanceIndices;
+            } else {
+                size_t oldSize = result.size();
+                size_t iiSize = instanceIndices.size();
+                // Note: we call result.data() here to break buffer sharing.
+                result.data();
+                result.resize(oldSize + iiSize);
+                for (size_t i = 0; i < iiSize; ++i) {
+                    result[oldSize + i] = instanceIndices[i];
+                }
             }
-            result.push_back(instanceIndex);
+        } else {
+            for (int instanceIndex : instanceIndices) {
+                if (mask[instanceIndex]) {
+                    result.push_back(instanceIndex);
+                }
+            }
         }
     }
     return result;
