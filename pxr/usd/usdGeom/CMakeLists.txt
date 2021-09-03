@@ -278,6 +278,13 @@ pxr_register_test(testUsdGeomMesh
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdGeomMetrics
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomMetrics"
+    EXPECTED_RETURN_CODE 0
+)
+
+
 pxr_register_test(testUsdGeomSubset
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomSubset"

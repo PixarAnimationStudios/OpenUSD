@@ -5,6 +5,16 @@
     "Plugins": [
         {
             "Info": {
+                "SdfMetadata": {
+                    "kilogramsPerUnit": {
+                        "appliesTo": [
+                            "layers"
+                        ], 
+                        "default": 1.0, 
+                        "displayGroup": "Stage", 
+                        "type": "double"
+                    }
+                }, 
                 "Types": {
                     "UsdPhysicsArticulationRootAPI": {
                         "alias": {

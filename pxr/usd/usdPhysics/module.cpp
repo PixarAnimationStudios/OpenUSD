@@ -43,6 +43,8 @@ TF_WRAP_MODULE
 	TF_WRAP(UsdPhysicsMaterialAPI);
 	TF_WRAP(UsdPhysicsScene);	
 
+	TF_WRAP(Metrics);
+
 	// Mass
 	TF_WRAP(UsdPhysicsMassAPI);
 
