@@ -29,6 +29,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/base/tf/declarePtrs.h"
+#include "pxr/base/tf/functionRef.h"
 #include "pxr/base/tf/refBase.h"
 
 #include <memory>
@@ -101,6 +102,10 @@ public:
 
     /// Returns every layer stack known to this registry.
     std::vector<PcpLayerStackPtr> GetAllLayerStacks() const;
+
+    /// Runs \p fn on all layer stacks known to this registry.
+    void 
+    ForEachLayerStack(const TfFunctionRef<void(const PcpLayerStackPtr&)>& fn);
 
 private:
     /// Private constructor -- see New().

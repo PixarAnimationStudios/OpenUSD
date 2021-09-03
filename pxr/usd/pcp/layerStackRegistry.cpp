@@ -228,6 +228,18 @@ Pcp_LayerStackRegistry::GetAllLayerStacks() const
     return result;
 }
 
+void 
+Pcp_LayerStackRegistry::ForEachLayerStack(
+    const TfFunctionRef<void(const PcpLayerStackPtr&)>& fn)
+{
+    // Copy all layer stacks so that we can run the callback
+    // without holding a read lock on the layer registry.
+    const std::vector<PcpLayerStackPtr> layerStacks = GetAllLayerStacks();
+    for (const PcpLayerStackPtr& layerStack : layerStacks) {
+        fn(layerStack);
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////
 // Private helper methods.
 

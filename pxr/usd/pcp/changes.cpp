@@ -1559,6 +1559,20 @@ PcpChanges::DidChangeAssetResolver(const PcpCache* cache)
         }
     );
 
+    cache->ForEachLayerStack(
+        [this, &cache, debugSummary](const PcpLayerStackPtr& layerStack) {
+            // This matches logic in _DidChange when processing changes
+            // to a layer's resolved path.
+            if (Pcp_NeedToRecomputeDueToAssetPathChange(layerStack)) {
+                _DidChangeLayerStack(
+                    TfSpan<const PcpCache*>(&cache, 1), layerStack, 
+                    /* requiresLayerStackChange = */ true, 
+                    /* requiresLayerStackOffsetChange = */ false, 
+                    /* requiresSignificantChange = */ true);
+            }
+        }
+    );
+
     if (debugSummary && !debugSummary->empty()) {
         TfDebug::Helper().Msg(
             "   Resync following in @%s@ significant due to layer "

@@ -453,6 +453,17 @@ public:
     const PcpLayerStackPtrVector&
     FindAllLayerStacksUsingLayer(const SdfLayerHandle& layer) const;
 
+    /// Run the given \p callbcack on every layer stack used by prim
+    /// indexes in the cache. The callback must have the signature:
+    /// void(const PcpLayerStackPtr&).
+    template <class Callback>
+    void
+    ForEachLayerStack(const Callback& callback) const
+    {
+        TfFunctionRef<void(const PcpLayerStackPtr&)> fn(callback);
+        _ForEachLayerStack(fn);
+    }
+
     /// Returns dependencies on the given site of scene description,
     /// as discovered by the cached index computations.
     ///
@@ -710,6 +721,10 @@ private:
     PCP_API
     void _ForEachPrimIndex(
         const TfFunctionRef<void(const PcpPrimIndex&)>& fn) const;
+
+    PCP_API
+    void _ForEachLayerStack(
+        const TfFunctionRef<void(const PcpLayerStackPtr&)>& fn) const;
 
 private:
     // Fixed evaluation parameters, set when the cache is created.  Note that
