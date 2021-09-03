@@ -205,9 +205,10 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `token light:shaderId = ""` |
+    /// | Declaration | `uniform token light:shaderId = ""` |
     /// | C++ Type | TfToken |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDLUX_API
     UsdAttribute GetShaderIdAttr() const;
 

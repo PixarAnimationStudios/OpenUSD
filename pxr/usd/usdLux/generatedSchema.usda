@@ -138,7 +138,7 @@ class "LightAPI" (
         doc = """A multiplier for the effect of this light on the specular
         response of materials.  This is a non-physical control."""
     )
-    token light:shaderId = "" (
+    uniform token light:shaderId = "" (
         doc = """Default ID for the light's shader. This defines the shader ID
         for this light when a render context specific shader ID is not 
         available.

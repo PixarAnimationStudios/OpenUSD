@@ -120,7 +120,7 @@ UsdLuxLightAPI::CreateShaderIdAttr(VtValue const &defaultValue, bool writeSparse
     return UsdSchemaBase::_CreateAttr(UsdLuxTokens->lightShaderId,
                        SdfValueTypeNames->Token,
                        /* custom = */ false,
-                       SdfVariabilityVarying,
+                       SdfVariabilityUniform,
                        defaultValue,
                        writeSparsely);
 }
