@@ -1116,6 +1116,35 @@ function(_pxr_library NAME)
         endif()
     endif()
 
+    # Figure plugin/resource install paths
+    if (isPlugin)
+        _get_install_dir("plugin" pluginInstallPrefix)
+        if (NOT PXR_INSTALL_SUBDIR)
+            # XXX --- Why this difference?
+            _get_install_dir("plugin/usd" pluginInstallPrefix)
+        endif()
+    else()
+        _get_install_dir("lib/usd" pluginInstallPrefix)
+    endif()
+    if(args_SUBDIR)
+        set(pluginInstallPrefix "${pluginInstallPrefix}/${args_SUBDIR}")
+    endif()
+
+    # ONLY add a library target, etc when there is source code associated.
+    # Example for codeless schemas, we can not add a built library and will only
+    # have the installed resources, if no source files are provided, simply
+    # install the resource files at appropriate install paths and return.
+    if (NOT (args_CPPFILES OR args_PUBLIC_HEADERS OR args_PRIVATE_HEADERS))
+        # We set the pluginToLibraryPath to an empty string, as resource only
+        # library do not have a shared library
+        _install_resource_files(
+            ${NAME}
+            "${pluginInstallPrefix}"
+            ""
+            ${args_RESOURCE_FILES})
+        return()
+    endif()
+
     # Add the target.  We also add the headers because that's the easiest
     # way to get them to appear in IDE projects.
     if(isObject)
@@ -1172,28 +1201,20 @@ function(_pxr_library NAME)
     # Compute names and paths.
     #
 
-    # Where do we install to?
+    # Where do we install library to?
     _get_install_dir("include" headerInstallDir)
     _get_install_dir("include/${PXR_PREFIX}/${NAME}" headerInstallPrefix)
     _get_install_dir("lib" libInstallPrefix)
     if(isPlugin)
-        _get_install_dir("plugin" pluginInstallPrefix)
-        if(NOT PXR_INSTALL_SUBDIR)
-            # XXX -- Why this difference?
-            _get_install_dir("plugin/usd" pluginInstallPrefix)
-        endif()
         if(NOT isObject)
             # A plugin embedded in the monolithic library is found in
             # the usual library location, otherwise plugin libraries
             # are in the plugin install location.
             set(libInstallPrefix "${pluginInstallPrefix}")
         endif()
-    else()
-        _get_install_dir("lib/usd" pluginInstallPrefix)
     endif()
     if(args_SUBDIR)
         set(libInstallPrefix "${libInstallPrefix}/${args_SUBDIR}")
-        set(pluginInstallPrefix "${pluginInstallPrefix}/${args_SUBDIR}")
     endif()
     # Return libInstallPrefix to caller.
     if(args_LIB_INSTALL_PREFIX_RESULT)
@@ -1230,13 +1251,20 @@ function(_pxr_library NAME)
     # we don't need to specify the library's location, so we leave
     # pluginToLibraryPath empty.
     if(NOT args_TYPE STREQUAL "STATIC")
-   	if(NOT (";${PXR_CORE_LIBS};" MATCHES ";${NAME};" AND _building_monolithic))
+        if(NOT (";${PXR_CORE_LIBS};" MATCHES ";${NAME};" AND _building_monolithic))
             file(RELATIVE_PATH
                 pluginToLibraryPath
                 ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}
                 ${CMAKE_INSTALL_PREFIX}/${libInstallPrefix}/${libraryFilename})
         endif()
     endif()
+
+    # Install resources for the NAME library, at appropriate paths
+    _install_resource_files(
+        ${NAME}
+        "${pluginInstallPrefix}"
+        "${pluginToLibraryPath}"
+        ${args_RESOURCE_FILES})
 
     #
     # Set up the compile/link.
@@ -1421,12 +1449,6 @@ function(_pxr_library NAME)
         endif()
 
     endif()
-
-    _install_resource_files(
-        ${NAME}
-        "${pluginInstallPrefix}"
-        "${pluginToLibraryPath}"
-        ${args_RESOURCE_FILES})
 
     #
     # Set up precompiled headers.
