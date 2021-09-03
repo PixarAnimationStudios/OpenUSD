@@ -51,6 +51,13 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
+_CreateShaderIdAttr(UsdLuxLightAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateShaderIdAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateIntensityAttr(UsdLuxLightAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateIntensityAttr(
@@ -169,6 +176,13 @@ void wrapUsdLuxLightAPI()
         .def(!self)
 
         
+        .def("GetShaderIdAttr",
+             &This::GetShaderIdAttr)
+        .def("CreateShaderIdAttr",
+             &_CreateShaderIdAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
         .def("GetIntensityAttr",
              &This::GetIntensityAttr)
         .def("CreateIntensityAttr",
@@ -257,6 +271,19 @@ void wrapUsdLuxLightAPI()
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 
+static UsdAttribute
+_CreateShaderIdAttrForRenderContext(
+    UsdLuxLightAPI &self, 
+    const TfToken &renderContext,
+    object defaultVal, 
+    bool writeSparsely) 
+{
+    return self.CreateShaderIdAttrForRenderContext(
+        renderContext,
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), 
+        writeSparsely);
+}
+
 namespace {
 
 WRAP_CUSTOM {
@@ -282,6 +309,17 @@ WRAP_CUSTOM {
              &UsdLuxLightAPI::GetLightLinkCollectionAPI)
         .def("GetShadowLinkCollectionAPI",
              &UsdLuxLightAPI::GetShadowLinkCollectionAPI)
+
+        .def("GetShaderIdAttrForRenderContext",
+             &UsdLuxLightAPI::GetShaderIdAttrForRenderContext, 
+             arg("renderContext"))
+        .def("CreateShaderIdAttrForRenderContext",
+             &_CreateShaderIdAttrForRenderContext,
+             (arg("renderContext"),
+              arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        .def("GetShaderId", 
+             &UsdLuxLightAPI::GetShaderId, arg("renderContexts"))
         ;
 }
 

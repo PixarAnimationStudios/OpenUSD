@@ -64,11 +64,11 @@ class SdfAssetPath;
 /// 02  // including those inside payloads
 /// 03  stage->Load();
 /// 04  
-/// 05  // Traverse all prims, checking if they are of type UsdLuxLight
+/// 05  // Traverse all prims, checking if they have an applied UsdLuxLightAPI
 /// 06  // (Note: ignoring instancing and a few other things for simplicity)
 /// 07  SdfPathVector lights;
 /// 08  for (UsdPrim prim: stage->Traverse()) {
-/// 09      if (prim.IsA<UsdLuxLight>()) {
+/// 09      if (prim.HasAPI<UsdLuxLightAPI>()) {
 /// 10          lights.push_back(i->GetPath());
 /// 11      }
 /// 12  }

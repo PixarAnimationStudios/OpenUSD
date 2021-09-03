@@ -94,6 +94,14 @@ class TestUsdLuxListAPI(unittest.TestCase):
         filter = UsdLux.LightFilter.Define(stage, '/World/Lights/TestFilter')
         self.assertEqual(len(listAPI.ComputeLightList(ignore)), 3)
 
+        # add an untyped prim and apply a LightAPI. Confirm that it also gets
+        # included as a light.
+        self.assertEqual(len(listAPI.ComputeLightList(ignore)), 3)
+        prim = stage.DefinePrim("/World/Lights/PrimWithLightAPI")
+        self.assertEqual(len(listAPI.ComputeLightList(ignore)), 3)
+        UsdLux.LightAPI.Apply(prim)
+        self.assertEqual(len(listAPI.ComputeLightList(ignore)), 4)
+
         # discard changes
         stage.Reload()
 

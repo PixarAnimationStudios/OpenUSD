@@ -224,7 +224,7 @@ struct UsdLuxTokensType {
     const TfToken latlong;
     /// \brief "lightLink"
     /// 
-    ///  This token represents the collection name to use with UsdCollectionAPI to represent light-linking of a UsdLuxLight prim. 
+    ///  This token represents the collection name to use with UsdCollectionAPI to represent light-linking of a prim with an applied UsdLuxLightAPI. 
     const TfToken lightLink;
     /// \brief "lightList"
     /// 
@@ -234,6 +234,10 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxListAPI
     const TfToken lightListCacheBehavior;
+    /// \brief "light:shaderId"
+    /// 
+    /// UsdLuxLightAPI
+    const TfToken lightShaderId;
     /// \brief "mirroredBall"
     /// 
     /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
@@ -248,7 +252,7 @@ struct UsdLuxTokensType {
     const TfToken portals;
     /// \brief "shadowLink"
     /// 
-    ///  This token represents the collection name to use with UsdCollectionAPI to represent shadow-linking of a UsdLuxLight prim. 
+    ///  This token represents the collection name to use with UsdCollectionAPI to represent shadow-linking of a prim with an applied UsdLuxLightAPI. 
     const TfToken shadowLink;
     /// \brief "treatAsLine"
     /// 

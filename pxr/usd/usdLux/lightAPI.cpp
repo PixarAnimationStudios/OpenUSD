@@ -109,6 +109,23 @@ UsdLuxLightAPI::_GetTfType() const
 }
 
 UsdAttribute
+UsdLuxLightAPI::GetShaderIdAttr() const
+{
+    return GetPrim().GetAttribute(UsdLuxTokens->lightShaderId);
+}
+
+UsdAttribute
+UsdLuxLightAPI::CreateShaderIdAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->lightShaderId,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdLuxLightAPI::GetIntensityAttr() const
 {
     return GetPrim().GetAttribute(UsdLuxTokens->inputsIntensity);
@@ -276,6 +293,7 @@ UsdLuxLightAPI::GetSchemaAttributeNames(bool includeInherited)
     static TfTokenVector localNames = {
         UsdLuxTokens->collectionLightLinkIncludeRoot,
         UsdLuxTokens->collectionShadowLinkIncludeRoot,
+        UsdLuxTokens->lightShaderId,
         UsdLuxTokens->inputsIntensity,
         UsdLuxTokens->inputsExposure,
         UsdLuxTokens->inputsDiffuse,
@@ -407,6 +425,59 @@ UsdCollectionAPI
 UsdLuxLightAPI::GetShadowLinkCollectionAPI() const
 {
     return UsdCollectionAPI(GetPrim(), UsdLuxTokens->shadowLink);
+}
+
+static TfToken 
+_GetShaderIdAttrName(const TfToken &renderContext)
+{
+    if (renderContext.IsEmpty()) {
+        return UsdLuxTokens->lightShaderId;
+    }
+    return TfToken(
+        SdfPath::JoinIdentifier(renderContext, UsdLuxTokens->lightShaderId));
+}
+
+UsdAttribute 
+UsdLuxLightAPI::GetShaderIdAttrForRenderContext(
+    const TfToken &renderContext) const
+{
+    return GetPrim().GetAttribute(_GetShaderIdAttrName(renderContext));
+}
+
+UsdAttribute 
+UsdLuxLightAPI::CreateShaderIdAttrForRenderContext(
+    const TfToken &renderContext, 
+    VtValue const &defaultValue, 
+    bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(_GetShaderIdAttrName(renderContext),
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+TfToken 
+UsdLuxLightAPI::GetShaderId(const TfTokenVector &renderContexts) const
+{
+    TfToken shaderId;
+    // The passed in render contexts are in priority order so return the shader
+    // ID from the first render context specific shaderId attribute that has a
+    // a non-empty value.
+    for (const TfToken &renderContext : renderContexts) {
+        if (UsdAttribute shaderIdAttr = 
+                GetShaderIdAttrForRenderContext(renderContext)) {
+            shaderIdAttr.Get(&shaderId);
+            if (!shaderId.IsEmpty()) {
+                return shaderId;
+            }
+        }
+    }
+    // Return the default shaderId attributes values if we couldn't get a value
+    // for any of the render contexts.
+    GetShaderIdAttr().Get(&shaderId);
+    return shaderId;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
