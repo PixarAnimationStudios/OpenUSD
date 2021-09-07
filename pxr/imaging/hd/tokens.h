@@ -40,6 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bezier)                                    \
     (bSpline)                                   \
     (camera)                                    \
+    (cameraFacing)                              \
     (catmullRom)                                \
     (collection)                                \
     (computeShader)                             \

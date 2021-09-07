@@ -59,11 +59,31 @@ void main(void)
 {
     ProcessPrimvars();
 
-    MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
-    vec4 point        = vec4(HdGet_points().xyz, 1);
-    outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+    MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+    vec4 point     = vec4(HdGet_points().xyz, 1);
+    
+    bool cameraFacing = false;
+#if defined(HD_HAS_cameraFacing)
+    cameraFacing = HdGet_cameraFacing();
+#endif
 
-    outData.Neye = GetNormal(vec3(0), 0); // normalized
+    if (cameraFacing)
+    {
+        transform = GetWorldToViewMatrix() * transform;
+        
+        // set rotation part to identity to turn the mesh towards the camera
+        transform[0].xyz = vec3(1,0,0);
+        transform[1].xyz = vec3(0,1,0);
+        transform[2].xyz = vec3(0,0,1);
+
+        outData.Peye = vec4(transform * point);
+        outData.Neye = vec3(0, 0, 1);
+    }
+    else
+    {
+        outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+        outData.Neye = GetNormal(vec3(0), 0); // normalized
+    }
 
     // Fill out redundantly, since at this point we don't know
     // the following stages include tessellation or geometry shader.

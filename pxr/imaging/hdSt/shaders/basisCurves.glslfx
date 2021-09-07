@@ -71,10 +71,30 @@ void main(void)
     MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
     MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
 
-    outData.Peye = vec4(GetWorldToViewMatrix() * transform *
+    bool cameraFacing = false;
+#if defined(HD_HAS_cameraFacing)
+    cameraFacing = HdGet_cameraFacing();
+#endif
+
+    if (cameraFacing)
+    {
+        transform = GetWorldToViewMatrix() * transform;
+        
+        // set rotation part to identity to turn the mesh towards the camera
+        transform[0].xyz = vec3(1,0,0);
+        transform[1].xyz = vec3(0,1,0);
+        transform[2].xyz = vec3(0,0,1);
+
+        outData.Peye = vec4(transform * vec4(HdGet_points(), 1));
+        outData.Neye = vec3(0, 0, 1);
+    }
+    else
+    {
+        outData.Peye = vec4(GetWorldToViewMatrix() * transform *
                         vec4(HdGet_points(), 1));
-    outData.Neye = getNormal(transpose(transformInv *
+        outData.Neye = getNormal(transpose(transformInv *
                                   GetWorldToViewInverseMatrix()));
+    }
 
     ProcessPrimvars();
 
@@ -121,8 +141,27 @@ void main(void)
 {
     MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
 
-    outData.Peye = vec4(GetWorldToViewMatrix() * transform *
+    bool cameraFacing = false;
+#if defined(HD_HAS_cameraFacing)
+    cameraFacing = HdGet_cameraFacing();
+#endif
+
+    if (cameraFacing)
+    {
+        transform = GetWorldToViewMatrix() * transform;
+        
+        // set rotation part to identity to turn the mesh towards the camera
+        transform[0].xyz = vec3(1,0,0);
+        transform[1].xyz = vec3(0,1,0);
+        transform[2].xyz = vec3(0,0,1);
+
+        outData.Peye = vec4(transform * vec4(HdGet_points(), 1));
+    }
+    else
+    {
+        outData.Peye = vec4(GetWorldToViewMatrix() * transform *
                         vec4(HdGet_points(), 1));
+    }
 
     ProcessPrimvars();
 
@@ -313,7 +352,7 @@ void determineLODSettings();
 void main(void)
 {
     if(gl_InvocationID == 0) {
-	     determineLODSettings();
+         determineLODSettings();
     }
 
     outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
