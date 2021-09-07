@@ -736,6 +736,16 @@ HdStPopulateConstantPrimvars(
                 camFacing);
             sources.push_back(camFacingSource);
         }
+
+        // add pixelScale primvar
+        const VtValue pixelScale = delegate->Get(id, HdTokens->pixelScale);
+        if (!pixelScale.IsEmpty())
+        {
+            HdBufferSourceSharedPtr pixelScaleSource = std::make_shared<HdVtBufferSource>(
+                HdTokens->pixelScale,
+                pixelScale);
+            sources.push_back(pixelScaleSource);
+        }
     }
 
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
@@ -792,7 +802,8 @@ HdStPopulateConstantPrimvars(
             HdTokens->bboxLocalMin,
             HdTokens->bboxLocalMax,
             HdTokens->primID,
-            HdTokens->cameraFacing
+            HdTokens->cameraFacing,
+            HdTokens->pixelScale
         };
         removedSpecs = HdStGetRemovedPrimvarBufferSpecs(bar, constantPrimvars, 
             internallyGeneratedPrimvars, id);

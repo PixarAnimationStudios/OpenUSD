@@ -59,29 +59,42 @@ void main(void)
 {
     ProcessPrimvars();
 
-    MAT4 transform = ApplyInstanceTransform(HdGet_transform());
-    vec4 point     = vec4(HdGet_points().xyz, 1);
+    const MAT4 worldToViewMatrix = GetWorldToViewMatrix();
+    const MAT4 projectionMatrix = GetProjectionMatrix();
+    const MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+    vec4 point = vec4(HdGet_points().xyz, 1);
     
-    bool cameraFacing = false;
-#if defined(HD_HAS_cameraFacing)
-    cameraFacing = HdGet_cameraFacing();
+#if defined(HD_HAS_pixelScale)
+    if (HdGet_pixelScale())
+    {
+        vec4 eyeC = vec4(worldToViewMatrix * transform * vec4(0,0,0,1));
+
+        // projectionMatrix[0][0] equals to nearZ / right
+        // so that the final result equals to
+        // (eyeZ * right) / (nearZ * viewportWidth)
+        float pixelScale = abs(eyeC.z / (projectionMatrix[0][0] * GetViewport().z));
+
+        point.xyz *= pixelScale;
+    }
 #endif
 
-    if (cameraFacing)
+#if defined(HD_HAS_cameraFacing)
+    if (HdGet_cameraFacing())
     {
-        transform = GetWorldToViewMatrix() * transform;
+        MAT4 objectToViewMatrix = worldToViewMatrix * transform;
         
         // set rotation part to identity to turn the mesh towards the camera
-        transform[0].xyz = vec3(1,0,0);
-        transform[1].xyz = vec3(0,1,0);
-        transform[2].xyz = vec3(0,0,1);
+        objectToViewMatrix[0].xyz = vec3(1,0,0);
+        objectToViewMatrix[1].xyz = vec3(0,1,0);
+        objectToViewMatrix[2].xyz = vec3(0,0,1);
 
-        outData.Peye = vec4(transform * point);
+        outData.Peye = vec4(objectToViewMatrix * point);
         outData.Neye = vec3(0, 0, 1);
     }
     else
+#endif
     {
-        outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+        outData.Peye = vec4(worldToViewMatrix * transform * point);
         outData.Neye = GetNormal(vec3(0), 0); // normalized
     }
 
@@ -96,7 +109,7 @@ void main(void)
     gl_PointSize = GetPointRasterSize(pointId);
     ProcessPointId(pointId);
 
-    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    gl_Position = vec4(projectionMatrix * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 }
 
