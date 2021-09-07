@@ -32,11 +32,21 @@
 
 float pixelScaleValue(MAT4 projectionMatrix, MAT4 worldToViewMatrix, MAT4 transform)
 {
-    vec4 eyeC = vec4(worldToViewMatrix * transform * vec4(0,0,0,1));
+    // if projectionMatrix specifies a perspective projection,
+    // eyeC is set to the model center in view space,
+    // otherwise it is set to vec4(1,1,1,1) 
+    vec4 eyeC = (projectionMatrix[3][3] == 0.f) ? 
+        vec4(worldToViewMatrix * transform * vec4(0,0,0,1)) :
+        vec4(1,1,1,1);
 
+    // if projectionMatrix specifies a perspective projection,
     // projectionMatrix[0][0] equals to nearZ / right
     // so that the final result equals to
-    // (eyeZ * right) / (nearZ * viewportWidth)
+    // (eyeZ * right) / (nearZ * viewportWidth).
+    // in case of orthogonal projection, 
+    // projectionMatrix[0][0] equals to 1 / right
+    // and the final result equals to
+    // right / viewportWidth
     return abs(eyeC.z / (projectionMatrix[0][0] * GetViewport().z));
 }
 
@@ -49,5 +59,5 @@ MAT4 cameraFacingMatrix(MAT4 worldToViewMatrix, MAT4 transform)
     objectToViewMatrix[1].xyz = vec3(0,1,0);
     objectToViewMatrix[2].xyz = vec3(0,0,1);
 
-	return objectToViewMatrix;
+    return objectToViewMatrix;
 }
