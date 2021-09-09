@@ -28,11 +28,14 @@
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/imaging/hio/glslfx.h"
 
+#include "pxr/base/arch/fileSystem.h"
+
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/matrix3d.h"
 #include "pxr/base/gf/matrix4d.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/getenv.h"
 
 #include <MaterialXGenShader/Util.h>
 #include <MaterialXGenShader/Shader.h>
@@ -457,10 +460,23 @@ HdSt_ApplyMaterialXFilter(
 
     if (mtlxSdrNode) {
 
-        // Load Standard Libraries/setup SearchPaths (for mxDoc and mxShaderGen)
-        mx::FilePathVec libraryFolders;
+        // setup searchPaths (for mxDoc and mxShaderGen)
         mx::FileSearchPath searchPath;
+        const std::string customPathString = 
+            TfGetenv("PXR_USDMTLX_STDLIB_SEARCH_PATHS");
+        if (!customPathString.empty())
+        {
+            const auto customPathArray = 
+                TfStringSplit(customPathString, ARCH_PATH_LIST_SEP);
+            for (auto customPath : customPathArray)
+            {
+                searchPath.append(mx::FilePath(customPath));
+            }
+        }
         searchPath.append(mx::FilePath(PXR_MATERIALX_STDLIB_DIR));
+
+        // Load Standard Libraries (for mxDoc and mxShaderGen)
+        mx::FilePathVec libraryFolders;
         mx::DocumentPtr stdLibraries = mx::createDocument();
         mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
 
