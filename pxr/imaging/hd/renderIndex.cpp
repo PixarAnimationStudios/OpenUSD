@@ -120,17 +120,17 @@ HdRenderIndex::HdRenderIndex(
 HdRenderIndex::~HdRenderIndex()
 {
     HD_TRACE_FUNCTION();
+    
+    // Get rid of prims first.
+    Clear();
 
+    // Delete the emulated scene index datastructures
+    // (although they should be depopulated already by Clear).
     if (_IsEnabledSceneIndexEmulation()) {
-        // Release the render index emulated prims
-        // and the scene delegate emaulator first,
-        // because they will release data in the
-        // render index 
         _emulationSceneIndex.Reset();
         _siSd.reset();
     }
 
-    Clear();
     _DestroyFallbackPrims();
 }
 
@@ -153,12 +153,13 @@ HdRenderIndex::RemoveSubtree(const SdfPath &root,
 {
     HD_TRACE_FUNCTION();
 
-    // If we are using emulation, we need to use the scene index to first 
-    // remove any prims backed by emulation and then remove any prims
-    // not backed by emulation. While both of this code paths end up calling
-    // _RemoveSubtree they do so with a different scene delegate pointer.
+    // Remove tasks here, since they aren't part of emulation.
+    _RemoveTaskSubtree(root, sceneDelegate);
+
+    // If we're using emulation, RemoveSubtree is routed through scene indices.
     if (_IsEnabledSceneIndexEmulation()) {
         _emulationSceneIndex->RemovePrims({root});
+        return;
     }
     
     _RemoveSubtree(root, sceneDelegate);
@@ -175,7 +176,6 @@ HdRenderIndex::_RemoveSubtree(
     _sprimIndex.RemoveSubtree(root, sceneDelegate, _tracker, _renderDelegate);
     _bprimIndex.RemoveSubtree(root, sceneDelegate, _tracker, _renderDelegate);
     _RemoveInstancerSubtree(root, sceneDelegate);
-    _RemoveTaskSubtree(root, sceneDelegate);
 }
 
 
@@ -365,9 +365,30 @@ void
 HdRenderIndex::Clear()
 {
     HD_TRACE_FUNCTION();
-    TF_FOR_ALL(it, _rprimMap) {
-        SdfPath const &id = it->first;
-        _RprimInfo &rprimInfo = it->second;
+
+    // Clear tasks.
+    for (const auto &pair : _taskMap) {
+        _tracker.TaskRemoved(pair.first);
+    }
+    _taskMap.clear();
+
+    // If we're using emulation, Clear is routed through scene indices.
+    if (_IsEnabledSceneIndexEmulation()) {
+        _emulationSceneIndex->RemovePrims({SdfPath::AbsoluteRootPath()});
+        return;
+    }
+
+    _Clear();
+}
+
+void
+HdRenderIndex::_Clear()
+{
+    HD_TRACE_FUNCTION();
+
+    for (const auto &pair : _rprimMap) {
+        SdfPath const &id = pair.first;
+        _RprimInfo const &rprimInfo = pair.second;
 
         SdfPath const &instancerId = rprimInfo.rprim->GetInstancerId();
         if (!instancerId.IsEmpty()) {
@@ -379,21 +400,20 @@ HdRenderIndex::Clear()
         // Ask delegate to actually delete the rprim
         rprimInfo.rprim->Finalize(_renderDelegate->GetRenderParam());
         _renderDelegate->DestroyRprim(rprimInfo.rprim);
-        rprimInfo.rprim = nullptr;
     }
     // Clear Rprims, Rprim IDs, and delegate mappings.
     _rprimMap.clear();
     _rprimIds.Clear();
-    _CompactPrimIds();
+    _rprimPrimIdMap.clear();
 
     // Clear S & B prims
     _sprimIndex.Clear(_tracker, _renderDelegate);
     _bprimIndex.Clear(_tracker, _renderDelegate);
 
     // Clear instancers.
-    TF_FOR_ALL(it, _instancerMap) {
-        SdfPath const &id = it->first;
-        HdInstancer *instancer = it->second;
+    for (const auto &pair : _instancerMap) {
+        SdfPath const &id = pair.first;
+        HdInstancer *instancer = pair.second;
 
         SdfPath const &instancerId = instancer->GetParentId();
         if (!instancerId.IsEmpty()) {
@@ -406,12 +426,6 @@ HdRenderIndex::Clear()
         _renderDelegate->DestroyInstancer(instancer);
     }
     _instancerMap.clear();
-
-    // Clear tasks.
-    TF_FOR_ALL(it, _taskMap) {
-        _tracker.TaskRemoved(it->first);
-    }
-    _taskMap.clear();
 }
 
 // -------------------------------------------------------------------------- //
@@ -1494,13 +1508,12 @@ HdRenderIndex::_CompactPrimIds()
 {
     _rprimPrimIdMap.resize(_rprimMap.size());
     int32_t nextPrimId = 0;
-    TF_FOR_ALL(it, _rprimMap) {
-        it->second.rprim->SetPrimId(nextPrimId);
-        _tracker.MarkRprimDirty(it->first, HdChangeTracker::DirtyPrimID);
-        _rprimPrimIdMap[nextPrimId] = it->first;
+    for (const auto &pair : _rprimMap) {
+        pair.second.rprim->SetPrimId(nextPrimId);
+        _tracker.MarkRprimDirty(pair.first, HdChangeTracker::DirtyPrimID);
+        _rprimPrimIdMap[nextPrimId] = pair.first;
         ++nextPrimId;
     }
-
 }
 
 void

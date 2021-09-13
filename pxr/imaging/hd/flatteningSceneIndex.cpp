@@ -131,10 +131,19 @@ HdFlatteningSceneIndex::_PrimsRemoved(
     TRACE_FUNCTION();
 
     for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
-        auto i = _prims.find(entry.primPath);
-        if (i != _prims.end()) {
-            WorkMoveDestroyAsync(i->second.prim.dataSource);
-            _prims.erase(i);
+        if (entry.primPath.IsAbsoluteRootPath()) {
+            // Special case removing the whole scene, since this is a common
+            // shutdown operation.
+            _prims.ClearInParallel();
+            TfReset(_prims);
+        } else {
+            auto startEndIt = _prims.FindSubtreeRange(entry.primPath);
+            for (auto it = startEndIt.first; it != startEndIt.second; ++it) {
+                WorkSwapDestroyAsync(it->second.prim.dataSource);
+            }
+            if (startEndIt.first != startEndIt.second) {
+                _prims.erase(startEndIt.first);
+            }
         }
     }
     _SendPrimsRemoved(entries);

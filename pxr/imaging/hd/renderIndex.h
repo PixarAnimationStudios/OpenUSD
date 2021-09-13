@@ -408,6 +408,12 @@ private:
     // 
     // This prevents cyclic insertion/removals while allowing a single 
     // HdRenderIndex to be used for both front and back-end emulation.
+    //
+    // Note: all render index users should call the public APIs; only
+    // sceneIndexAdapterSceneDelegate.cpp should call these versions, to keep
+    // state synchronized.  Note, for example, that _RemoveSubtree and _Clear
+    // don't affect the task map, since tasks aren't part of emulation, whereas
+    // RemoveSubtree and Clear do affect the task map...
     friend class HdSceneIndexAdapterSceneDelegate;
     void _InsertRprim(TfToken const& typeId,
                       HdSceneDelegate* sceneDelegate,
@@ -434,6 +440,7 @@ private:
                                       HdSceneDelegate* sceneDelegate);
     void _RemoveTaskSubtree(const SdfPath &root,
                             HdSceneDelegate* sceneDelegate);
+    void _Clear();
 
     // ---------------------------------------------------------------------- //
     // Index State

@@ -232,6 +232,15 @@ HdSceneIndexAdapterSceneDelegate::PrimsRemoved(
     TRACE_FUNCTION();
 
     for (const RemovedPrimEntry &entry : entries) {
+        // Special case Remove("/"), since this is a common shutdown operation.
+        // Note: _Clear is faster than _RemoveSubtree here.
+        if (entry.primPath.IsAbsoluteRootPath()) {
+            GetRenderIndex()._Clear();
+            _primCache.ClearInParallel();
+            TfReset(_primCache);
+            continue;
+        }
+
         // RenderIndex::_RemoveSubtree can be expensive, so if we're
         // getting a remove message for a single prim it's better to
         // spend some time detecting that and calling the single-prim remove.

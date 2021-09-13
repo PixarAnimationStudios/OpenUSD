@@ -80,10 +80,19 @@ HdPrimDataSourceOverlayCache::HandlePrimsRemoved(
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
     for (const auto &entry : entries) {
-        auto i = _cache.find(entry.primPath);
-        if (i != _cache.end()) {
-            WorkMoveDestroyAsync(i->second.dataSource);
-            _cache.erase(i);
+        if (entry.primPath.IsAbsoluteRootPath()) {
+            // Special case removing the whole scene, since this is a common
+            // shutdown operation.
+            _cache.ClearInParallel();
+            TfReset(_cache);
+        } else {
+            auto startEndIt = _cache.FindSubtreeRange(entry.primPath);
+            for (auto it = startEndIt.first; it != startEndIt.second; ++it) {
+                WorkSwapDestroyAsync(it->second.dataSource);
+            }
+            if (startEndIt.first != startEndIt.second) {
+                _cache.erase(startEndIt.first);
+            }
         }
     }
 }
