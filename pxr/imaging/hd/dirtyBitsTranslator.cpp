@@ -34,6 +34,7 @@
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 
+#include "pxr/imaging/hd/basisCurvesSchema.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
 #include "pxr/imaging/hd/cameraSchema.h"
 #include "pxr/imaging/hd/categoriesSchema.h"
@@ -57,6 +58,7 @@
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
+#include "pxr/imaging/hd/meshSchema.h"
 #include "pxr/imaging/hd/meshTopologySchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
@@ -88,9 +90,11 @@ HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(TfToken const& primType,
     // you sort the addition by locator name, so as not to slow down append.
     // Also note, this should match RprimLocatorSetToDirtyBits.
 
-    if (primType == HdPrimTypeTokens->basisCurves &&
-            (bits & HdChangeTracker::DirtyTopology)) {
-        set->append(HdBasisCurvesTopologySchema::GetDefaultLocator());
+    if (primType == HdPrimTypeTokens->basisCurves) {
+        if (bits & HdChangeTracker::DirtyTopology) {
+            // could either be topology or geomsubsets
+            set->append(HdBasisCurvesSchema::GetDefaultLocator());
+        }
     }
 
     if (bits & HdChangeTracker::DirtyDisplayStyle) {
@@ -112,10 +116,6 @@ HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(TfToken const& primType,
         set->append(HdExtComputationPrimvarsSchema::GetDefaultLocator());
     }
 
-    if (bits & HdChangeTracker::DirtyTopology) {
-        set->append(HdGeomSubsetsSchema::GetDefaultLocator());
-    }
-
     if (bits & HdChangeTracker::DirtyInstancer) {
         set->append(HdInstancedBySchema::GetDefaultLocator());
     }
@@ -128,11 +128,23 @@ HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(TfToken const& primType,
         set->append(HdMaterialBindingSchema::GetDefaultLocator());
     }
 
-    if (primType == HdPrimTypeTokens->mesh &&
-        (bits & (HdChangeTracker::DirtyTopology |
-                 HdChangeTracker::DirtySubdivTags |
-                 HdChangeTracker::DirtyDoubleSided))) {
-        set->append(HdMeshTopologySchema::GetDefaultLocator());
+    if (primType == HdPrimTypeTokens->mesh) {
+        if (bits & HdChangeTracker::DirtyDoubleSided) {
+            set->append(HdMeshSchema::GetDoubleSidedLocator());
+        }
+
+        if (bits & HdChangeTracker::DirtyTopology) {
+            set->append(HdMeshSchema::GetGeomSubsetsLocator());
+            set->append(HdMeshSchema::GetSubdivisionSchemeLocator());
+        }
+
+        if (bits & HdChangeTracker::DirtySubdivTags) {
+            set->append(HdSubdivisionTagsSchema::GetDefaultLocator());
+        }
+
+        if (bits & HdChangeTracker::DirtyTopology) {
+            set->append(HdMeshTopologySchema::GetDefaultLocator());
+        }
     }
 
     if (bits & HdChangeTracker::DirtyPrimvar) {
@@ -379,6 +391,11 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
     // mark DirtyToplogy.  it points to the next element after
     // "basisCurvesTopology", setting us up to check for displayStyle.
     if (primType == HdPrimTypeTokens->basisCurves) {
+        if (_FindLocator(HdBasisCurvesSchema::GetGeomSubsetsLocator(),
+                         end, &it)) {
+            bits |= HdChangeTracker::DirtyTopology;
+        }
+
         if (_FindLocator(HdBasisCurvesTopologySchema::GetDefaultLocator(),
                          end, &it)) {
             bits |= HdChangeTracker::DirtyTopology;
@@ -431,10 +448,6 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
         bits |= HdChangeTracker::DirtyPrimvar;
     }
 
-    if (_FindLocator(HdGeomSubsetsSchema::GetDefaultLocator(), end, &it)) {
-        bits |= HdChangeTracker::DirtyTopology;
-    }
-
     if (_FindLocator(HdInstancedBySchema::GetDefaultLocator(), end, &it)) {
         bits |= HdChangeTracker::DirtyInstancer;
     }
@@ -448,10 +461,25 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
     }
 
     if (primType == HdPrimTypeTokens->mesh) {
+
+        if (_FindLocator(HdMeshSchema::GetDoubleSidedLocator(), end, &it)) {
+            bits |= HdChangeTracker::DirtyDoubleSided;
+        }
+
+        if (_FindLocator(HdMeshSchema::GetGeomSubsetsLocator(), end, &it)) {
+            bits |= HdChangeTracker::DirtyTopology;
+        }
+
+        if (_FindLocator(HdMeshSchema::GetSubdivisionSchemeLocator(), end, &it)) {
+            bits |= HdChangeTracker::DirtyTopology;
+        }
+
+        if (_FindLocator(HdMeshSchema::GetSubdivisionTagsLocator(), end, &it)) {
+            bits |= HdChangeTracker::DirtySubdivTags;
+        }
+
         if (_FindLocator(HdMeshTopologySchema::GetDefaultLocator(), end, &it)) {
-            bits |= HdChangeTracker::DirtyTopology |
-                    HdChangeTracker::DirtySubdivTags |
-                    HdChangeTracker::DirtyDoubleSided;
+            bits |= HdChangeTracker::DirtyTopology;
         }
     }
 

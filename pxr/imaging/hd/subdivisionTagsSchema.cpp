@@ -27,7 +27,7 @@
 
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
-#include "pxr/imaging/hd/meshTopologySchema.h"
+#include "pxr/imaging/hd/meshSchema.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -172,7 +172,7 @@ const HdDataSourceLocator &
 HdSubdivisionTagsSchema::GetDefaultLocator()
 {
     static const HdDataSourceLocator locator(
-        HdMeshTopologySchemaTokens->meshTopology,
+        HdMeshSchemaTokens->mesh,
         HdSubdivisionTagsSchemaTokens->subdivisionTags
     );
     return locator;

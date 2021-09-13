@@ -37,7 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 //-----------------------------------------------------------------------------
 
 #define HDBASISCURVESTOPOLOGY_SCHEMA_TOKENS \
-    (basisCurvesTopology) \
+    (topology) \
     (curveVertexCounts) \
     (curveIndices) \
     (basis) \
@@ -123,7 +123,7 @@ public:
     };
 
     /// Retrieves a container data source with the schema's default name token
-    /// "basisCurvesTopology" from the parent container and constructs a
+    /// "topology" from the parent container and constructs a
     /// HdBasisCurvesTopologySchema instance.
     /// Because the requested container data source may not exist, the result
     /// should be checked with IsDefined() or a bool comparison before use.

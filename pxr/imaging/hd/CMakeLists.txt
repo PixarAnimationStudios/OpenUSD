@@ -22,6 +22,7 @@ pxr_library(hd
     PUBLIC_CLASSES
         aov
         basisCurves
+        basisCurvesSchema
         basisCurvesTopology
         basisCurvesTopologySchema
         binding
@@ -89,6 +90,7 @@ pxr_library(hd
         materialNodeSchema
         materialSchema
         mesh
+        meshSchema
         meshTopology
         meshTopologySchema
         meshUtil

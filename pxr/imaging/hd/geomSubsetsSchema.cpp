@@ -67,13 +67,4 @@ HdGeomSubsetsSchema::GetFromParent(
         : nullptr);
 }
 
-/*static*/
-const HdDataSourceLocator &
-HdGeomSubsetsSchema::GetDefaultLocator()
-{
-    static const HdDataSourceLocator locator(
-        HdGeomSubsetsSchemaTokens->geomSubsets
-    );
-    return locator;
-} 
 PXR_NAMESPACE_CLOSE_SCOPE

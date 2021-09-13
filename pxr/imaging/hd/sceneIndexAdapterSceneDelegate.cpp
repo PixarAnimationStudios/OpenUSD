@@ -42,6 +42,7 @@
 #include "pxr/imaging/hd/prefixingSceneIndex.h"
 #include "pxr/imaging/hd/renderIndexPrepSceneIndex.h"
 
+#include "pxr/imaging/hd/basisCurvesSchema.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
 #include "pxr/imaging/hd/cameraSchema.h"
 #include "pxr/imaging/hd/categoriesSchema.h"
@@ -67,6 +68,7 @@
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
+#include "pxr/imaging/hd/meshSchema.h"
 #include "pxr/imaging/hd/meshTopologySchema.h"
 #include "pxr/imaging/hd/primvarSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
@@ -331,8 +333,11 @@ HdSceneIndexAdapterSceneDelegate::GetMeshTopology(SdfPath const &id)
 
     HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
 
-    HdMeshTopologySchema meshTopologySchema = 
-        HdMeshTopologySchema::GetFromParent(prim.dataSource);
+
+    HdMeshSchema meshSchema = HdMeshSchema::GetFromParent(prim.dataSource);
+
+
+    HdMeshTopologySchema meshTopologySchema = meshSchema.GetTopology();
     if (!meshTopologySchema.IsDefined()) {
         return HdMeshTopology();
     }
@@ -349,7 +354,7 @@ HdSceneIndexAdapterSceneDelegate::GetMeshTopology(SdfPath const &id)
 
     TfToken scheme = PxOsdOpenSubdivTokens->none;
     if (HdTokenDataSourceHandle schemeDs = 
-            meshTopologySchema.GetSubdivisionScheme()) {
+            meshSchema.GetSubdivisionScheme()) {
         scheme = schemeDs->GetTypedValue(0.0f);
     }
 
@@ -372,8 +377,7 @@ HdSceneIndexAdapterSceneDelegate::GetMeshTopology(SdfPath const &id)
         faceVertexIndicesDataSource->GetTypedValue(0.0f),
         holeIndices);
 
-    HdGeomSubsetsSchema geomSubsets = HdGeomSubsetsSchema::GetFromParent(
-        prim.dataSource);
+    HdGeomSubsetsSchema geomSubsets = meshSchema.GetGeomSubsets();
     if (geomSubsets.IsDefined()) {
         HdGeomSubsets geomSubsetsVec;
         for (const TfToken &id : geomSubsets.GetIds()) {
@@ -452,14 +456,13 @@ HdSceneIndexAdapterSceneDelegate::GetDoubleSided(SdfPath const &id)
     HF_MALLOC_TAG_FUNCTION();
     HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
 
-    HdMeshTopologySchema meshTopologySchema = 
-        HdMeshTopologySchema::GetFromParent(prim.dataSource);
-    if (!meshTopologySchema.IsDefined()) {
+    HdMeshSchema meshSchema = 
+        HdMeshSchema::GetFromParent(prim.dataSource);
+    if (!meshSchema.IsDefined()) {
         return false;
     }
 
-    HdBoolDataSourceHandle doubleSidedDs =
-        meshTopologySchema.GetDoubleSided();
+    HdBoolDataSourceHandle doubleSidedDs = meshSchema.GetDoubleSided();
     if (!doubleSidedDs) {
         return false;
     }
@@ -540,14 +543,12 @@ HdSceneIndexAdapterSceneDelegate::GetSubdivTags(SdfPath const &id)
 
     PxOsdSubdivTags tags;
 
-    HdMeshTopologySchema meshTopologySchema = 
-        HdMeshTopologySchema::GetFromParent(prim.dataSource);
-    if (!meshTopologySchema.IsDefined()) {
+    HdMeshSchema meshSchema = HdMeshSchema::GetFromParent(prim.dataSource);
+    if (!meshSchema.IsDefined()) {
         return tags;
     }
 
-    HdSubdivisionTagsSchema subdivTagsSchema =
-        meshTopologySchema.GetSubdivisionTags();
+    HdSubdivisionTagsSchema subdivTagsSchema = meshSchema.GetSubdivisionTags();
     if (!subdivTagsSchema.IsDefined()) {
         return tags;
     }
@@ -602,9 +603,11 @@ HdSceneIndexAdapterSceneDelegate::GetBasisCurvesTopology(SdfPath const &id)
     HF_MALLOC_TAG_FUNCTION();
     HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
 
-    HdBasisCurvesTopologySchema bcTopologySchema = 
-        HdBasisCurvesTopologySchema::GetFromParent(
-            prim.dataSource);
+    HdBasisCurvesSchema basisCurvesSchema =
+        HdBasisCurvesSchema::GetFromParent(prim.dataSource);
+
+    HdBasisCurvesTopologySchema bcTopologySchema =
+        basisCurvesSchema.GetTopology();
 
     if (!bcTopologySchema.IsDefined()) {
         return HdBasisCurvesTopology();
@@ -647,8 +650,8 @@ HdSceneIndexAdapterSceneDelegate::GetBasisCurvesTopology(SdfPath const &id)
         curveVertexCountsDataSource->GetTypedValue(0.0f),
         curveIndices);
 
-    HdGeomSubsetsSchema geomSubsets = HdGeomSubsetsSchema::GetFromParent(
-        prim.dataSource);
+    HdGeomSubsetsSchema geomSubsets = basisCurvesSchema.GetGeomSubsets();
+
     if (geomSubsets.IsDefined()) {
 
         HdGeomSubsets geomSubsetsVec;

@@ -27,6 +27,7 @@
 
 #include "pxr/imaging/hd/meshTopologySchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/meshSchema.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -60,31 +61,10 @@ HdMeshTopologySchema::GetHoleIndices()
 }
 
 HdTokenDataSourceHandle
-HdMeshTopologySchema::GetSubdivisionScheme()
-{
-    return _GetTypedDataSource<HdTokenDataSource>(
-        HdMeshTopologySchemaTokens->subdivisionScheme);
-}
-
-HdTokenDataSourceHandle
 HdMeshTopologySchema::GetOrientation()
 {
     return _GetTypedDataSource<HdTokenDataSource>(
         HdMeshTopologySchemaTokens->orientation);
-}
-
-HdBoolDataSourceHandle
-HdMeshTopologySchema::GetDoubleSided()
-{
-    return _GetTypedDataSource<HdBoolDataSource>(
-        HdMeshTopologySchemaTokens->doubleSided);
-}
-
-HdSubdivisionTagsSchema
-HdMeshTopologySchema::GetSubdivisionTags()
-{
-    return HdSubdivisionTagsSchema(_GetTypedDataSource<HdContainerDataSource>(
-        HdMeshTopologySchemaTokens->subdivisionTags));
 }
 
 /*static*/
@@ -93,14 +73,11 @@ HdMeshTopologySchema::BuildRetained(
         const HdIntArrayDataSourceHandle &faceVertexCounts,
         const HdIntArrayDataSourceHandle &faceVertexIndices,
         const HdIntArrayDataSourceHandle &holeIndices,
-        const HdTokenDataSourceHandle &subdivisionScheme,
-        const HdTokenDataSourceHandle &orientation,
-        const HdBoolDataSourceHandle &doubleSided,
-        const HdContainerDataSourceHandle &subdivisionTags
+        const HdTokenDataSourceHandle &orientation
 )
 {
-    TfToken names[7];
-    HdDataSourceBaseHandle values[7];
+    TfToken names[4];
+    HdDataSourceBaseHandle values[4];
 
     size_t count = 0;
     if (faceVertexCounts) {
@@ -118,24 +95,9 @@ HdMeshTopologySchema::BuildRetained(
         values[count++] = holeIndices;
     }
 
-    if (subdivisionScheme) {
-        names[count] = HdMeshTopologySchemaTokens->subdivisionScheme;
-        values[count++] = subdivisionScheme;
-    }
-
     if (orientation) {
         names[count] = HdMeshTopologySchemaTokens->orientation;
         values[count++] = orientation;
-    }
-
-    if (doubleSided) {
-        names[count] = HdMeshTopologySchemaTokens->doubleSided;
-        values[count++] = doubleSided;
-    }
-
-    if (subdivisionTags) {
-        names[count] = HdMeshTopologySchemaTokens->subdivisionTags;
-        values[count++] = subdivisionTags;
     }
 
     return HdRetainedContainerDataSource::New(count, names, values);
@@ -149,7 +111,7 @@ HdMeshTopologySchema::GetFromParent(
     return HdMeshTopologySchema(
         fromParentContainer
         ? HdContainerDataSource::Cast(fromParentContainer->Get(
-                HdMeshTopologySchemaTokens->meshTopology))
+                HdMeshTopologySchemaTokens->topology))
         : nullptr);
 }
 
@@ -158,7 +120,8 @@ const HdDataSourceLocator &
 HdMeshTopologySchema::GetDefaultLocator()
 {
     static const HdDataSourceLocator locator(
-        HdMeshTopologySchemaTokens->meshTopology
+        HdMeshSchemaTokens->mesh,
+        HdMeshTopologySchemaTokens->topology
     );
     return locator;
 } 
@@ -208,34 +171,10 @@ HdMeshTopologySchema::Builder::SetHoleIndices(
 }
 
 HdMeshTopologySchema::Builder &
-HdMeshTopologySchema::Builder::SetSubdivisionScheme(
-    const HdTokenDataSourceHandle &subdivisionScheme)
-{
-    _subdivisionScheme = subdivisionScheme;
-    return *this;
-}
-
-HdMeshTopologySchema::Builder &
 HdMeshTopologySchema::Builder::SetOrientation(
     const HdTokenDataSourceHandle &orientation)
 {
     _orientation = orientation;
-    return *this;
-}
-
-HdMeshTopologySchema::Builder &
-HdMeshTopologySchema::Builder::SetDoubleSided(
-    const HdBoolDataSourceHandle &doubleSided)
-{
-    _doubleSided = doubleSided;
-    return *this;
-}
-
-HdMeshTopologySchema::Builder &
-HdMeshTopologySchema::Builder::SetSubdivisionTags(
-    const HdContainerDataSourceHandle &subdivisionTags)
-{
-    _subdivisionTags = subdivisionTags;
     return *this;
 }
 
@@ -246,10 +185,7 @@ HdMeshTopologySchema::Builder::Build()
         _faceVertexCounts,
         _faceVertexIndices,
         _holeIndices,
-        _subdivisionScheme,
-        _orientation,
-        _doubleSided,
-        _subdivisionTags
+        _orientation
     );
 }
 

@@ -64,10 +64,6 @@ public:
     static HdGeomSubsetsSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
-    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
-    /// where the container representing this schema is found by default.
-    HD_API
-    static const HdDataSourceLocator &GetDefaultLocator();
 
 };
 

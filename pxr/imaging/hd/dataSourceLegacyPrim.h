@@ -91,8 +91,6 @@ private:
         TfToken type, 
         HdSceneDelegate *sceneDelegate);
 
-    HdDataSourceBaseHandle _GetMeshTopologyDataSource();
-    HdDataSourceBaseHandle _GetBasisCurvesTopologyDataSource();
     HdDataSourceBaseHandle _GetPrimvarsDataSource();
     HdDataSourceBaseHandle _GetExtComputationPrimvarsDataSource();
     HdDataSourceBaseHandle _GetMaterialBindingDataSource();
@@ -108,7 +106,6 @@ private:
     HdDataSourceBaseHandle _GetExtentDataSource();
     HdDataSourceBaseHandle _GetCategoriesDataSource();
     HdDataSourceBaseHandle _GetInstanceCategoriesDataSource();
-    HdDataSourceBaseHandle _GetGeomSubsetsDataSource();
 
 private:
     SdfPath _id;
@@ -117,15 +114,9 @@ private:
 
     bool _primvarsBuilt : 1;
     bool _extComputationPrimvarsBuilt : 1;
-    bool _topologyBuilt : 1;
-
-    void _CacheMeshTopology();
-    void _CacheBasisCurvesTopology();
 
     HdContainerDataSourceHandle _primvars;
     HdContainerDataSourceHandle _extComputationPrimvars;
-    HdContainerDataSourceHandle _topology;
-    HdContainerDataSourceHandle _geomSubsets;
 
     // Note: _instancerTopology needs to be an atomic handle, since
     // some downstream customers of it (render index sync, hdSt instancer sync)

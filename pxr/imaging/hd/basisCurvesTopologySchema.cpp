@@ -27,6 +27,7 @@
 
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/basisCurvesSchema.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -123,7 +124,7 @@ HdBasisCurvesTopologySchema::GetFromParent(
     return HdBasisCurvesTopologySchema(
         fromParentContainer
         ? HdContainerDataSource::Cast(fromParentContainer->Get(
-                HdBasisCurvesTopologySchemaTokens->basisCurvesTopology))
+                HdBasisCurvesTopologySchemaTokens->topology))
         : nullptr);
 }
 
@@ -132,7 +133,8 @@ const HdDataSourceLocator &
 HdBasisCurvesTopologySchema::GetDefaultLocator()
 {
     static const HdDataSourceLocator locator(
-        HdBasisCurvesTopologySchemaTokens->basisCurvesTopology
+        HdBasisCurvesSchemaTokens->basisCurves,
+        HdBasisCurvesTopologySchemaTokens->topology
     );
     return locator;
 } 
