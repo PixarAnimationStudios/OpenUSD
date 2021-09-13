@@ -86,7 +86,7 @@ private:
 
 /// \class Sdf_RelationshipTargetListEditor
 ///
-/// List editor implementation for attribute connections.
+/// List editor implementation for relationship targets.
 ///
 class Sdf_RelationshipTargetListEditor
     : public Sdf_ConnectionListEditor<Sdf_RelationshipTargetChildPolicy>
