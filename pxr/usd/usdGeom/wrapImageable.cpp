@@ -209,6 +209,14 @@ WRAP_CUSTOM {
              (arg("parentVisibility"),
               arg("time")=UsdTimeCode::Default()))
 
+        .def("GetPurposeVisibilityAttr",
+             &UsdGeomImageable::GetPurposeVisibilityAttr,
+             (arg("purpose") = UsdGeomTokens->default_))
+        .def("ComputeEffectiveVisibility",
+             &UsdGeomImageable::ComputeEffectiveVisibility,
+             (arg("purpose") = UsdGeomTokens->default_,
+              arg("time") = UsdTimeCode::Default()))
+
         .def("ComputePurpose", 
              (TfToken (UsdGeomImageable::*)() const)
                 &UsdGeomImageable::ComputePurpose)
