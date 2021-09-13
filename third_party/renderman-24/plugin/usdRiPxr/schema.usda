@@ -51,7 +51,7 @@ class PxrAovLight "PxrAovLight" (
     customData = {
         string className = "AovLight"
     }
-    inherits = </Light>
+    inherits = </NonboundableLightBase>
 )
 {
     string inputs:ri:light:aovName = "" (
@@ -1044,7 +1044,7 @@ class PxrEnvDayLight "PxrEnvDayLight" (
     customData = {
         string className = "EnvDayLight"
     }
-    inherits = </Light>
+    inherits = </NonboundableLightBase>
 )
 {
     float inputs:diffuse = 1 (
