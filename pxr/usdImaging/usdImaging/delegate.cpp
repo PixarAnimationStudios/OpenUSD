@@ -460,20 +460,25 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
     for (size_t i = 0; i < request->IDs.size(); i++) {
 
         // Note that the incoming ID may be prefixed with the DelegateID, so we
-        // must translate it via ConvertIndexPathToCachePath.
-        SdfPath cachePath = ConvertIndexPathToCachePath(request->IDs[i]);
-        _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
-
-        // It is possible Hydra is telling this scene delegate to sync 
-        // a path that is not part of this scene delegate.
-        if (primInfo == nullptr) {
+        // must translate it via ConvertIndexPathToCachePath. It's possible
+        // request will have IDs not in this delegate, so to avoid the 
+        // fallback ReplacePrefix in ConvertIndexPath* we do the lookup
+        // ourselves.  Note also that if _index2cachePath doesn't have an entry
+        // for id, there will be no primInfo for id either, and we can safely
+        // skip that prim path.
+        SdfPathMap::const_iterator it = _index2cachePath.find(request->IDs[i]);
+        if (it == _index2cachePath.end()) {
             continue;
         }
+        SdfPath cachePath = it->second;
+        _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
 
-        HdDirtyBits dirtyFlags = request->dirtyBits[i];
+        if (!TF_VERIFY(primInfo)) {
+            return;
+        }
 
         // Merge UsdImaging's own dirty flags with those coming from hydra.
-        primInfo->dirtyBits |= dirtyFlags;
+        primInfo->dirtyBits |= request->dirtyBits[i];
 
         UsdImagingPrimAdapterSharedPtr &adapter = primInfo->adapter;
         if (TF_VERIFY(adapter, "%s\n", cachePath.GetText())) {
@@ -1021,13 +1026,13 @@ UsdImagingDelegate::ApplyPendingUpdates()
         for (SdfPath const& usdPath: usdPathsToResync) {
             if (usdPath.IsPropertyPath()) {
                 _RefreshUsdObject(usdPath, TfTokenVector(),
-                                  &indexProxy, allTrackedVariabilityPaths);
+                                  &indexProxy, &allTrackedVariabilityPaths);
             } else if (usdPath.IsTargetPath()) {
                 // TargetPaths are their own path type, when they change, resync
                 // the relationship at which they're rooted; i.e. per-target
                 // invalidation is not supported.
                 _RefreshUsdObject(usdPath.GetParentPath(), TfTokenVector(),
-                                  &indexProxy, allTrackedVariabilityPaths);
+                                  &indexProxy, &allTrackedVariabilityPaths);
             } else if (usdPath.IsAbsoluteRootOrPrimPath()) {
                 _ResyncUsdPrim(usdPath, &indexProxy);
             } else {
@@ -1052,7 +1057,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
                 // Note that changedPrimInfoFields will be empty if the
                 // path is a property path.
                 _RefreshUsdObject(usdPath, changedPrimInfoFields,
-                                  &indexProxy, allTrackedVariabilityPaths);
+                                  &indexProxy, &allTrackedVariabilityPaths);
 
                 // If any objects were removed as a result of the refresh (if it
                 // internally decided to resync), they must be ejected now,
@@ -1351,7 +1356,7 @@ void
 UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath, 
                                       TfTokenVector const& changedInfoFields,
                                       UsdImagingIndexProxy* proxy,
-                                      SdfPathSet &allTrackedVariabilityPaths) 
+                                      SdfPathSet* allTrackedVariabilityPaths) 
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1501,14 +1506,14 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
             } else if (dirtyBits != HdChangeTracker::AllDirty) {
                 // Update variability, if we haven't already done so for this
                 // prim while refreshing another prim that affects this one.
-                if (allTrackedVariabilityPaths.find(affectedCachePath) ==
-                    allTrackedVariabilityPaths.end()) {
+                if (allTrackedVariabilityPaths->find(affectedCachePath) ==
+                    allTrackedVariabilityPaths->end()) {
                     _timeVaryingPrimCacheValid = false;
                     primInfo->timeVaryingBits = HdChangeTracker::Clean;
                     adapter->TrackVariability(primInfo->usdPrim,
                                               affectedCachePath,
                                               &primInfo->timeVaryingBits);
-                    allTrackedVariabilityPaths.insert(affectedCachePath);
+                    allTrackedVariabilityPaths->insert(affectedCachePath);
                 }
 
                 // Propagate the dirty bits back out to the change tracker.
