@@ -1,8 +1,9 @@
 #usda 1.0
 (
     subLayers = [
-        @usdLux/schema.usda@,
-        @usd/schema.usda@
+        @usd/schema.usda@,
+        @usdGeom/schema.usda@,
+        @usdLux/schema.usda@
     ]
 )
 
@@ -13,6 +14,37 @@ over "GLOBAL" (
     }
 )
 {
+}
+
+class "PxrCameraProjectionAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["Camera"]
+        token[] apiSchemaCanOnlyApplyTo = ["Camera"]
+        string className = "CameraProjectionAPI"
+        dictionary extraPlugInfo = {
+            bool isUsdShadeContainer = 0
+            bool providesUsdShadeConnectableAPIBehavior = 1
+            bool requiresUsdShadeEncapsulation = 0
+        }
+        dictionary schemaTokens = {
+            dictionary projection = {
+                string doc = "Describes the <i>projection</i> output terminal"
+            }
+        }
+    }
+    doc = '''API schema that is auto-applied _only_ to UsdGeomCamera and 
+    provides a RenderMan-specific projection output terminal to UsdGeomCamera
+    '''
+    inherits = </APISchemaBase>
+)
+{
+    token outputs:ri:projection (
+        customData = {
+            string apiName = "projection"
+        }
+        displayGroup = "Outputs"
+        doc = "Represents the projection output terminal on a camera prim."
+    )
 }
 
 class PxrAovLight "PxrAovLight" (
