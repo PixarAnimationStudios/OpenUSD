@@ -373,15 +373,6 @@ public:
     USDGEOM_API
     TfToken ComputeVisibility(UsdTimeCode const &time = UsdTimeCode::Default()) const;
 
-    /// \overload 
-    /// Calculates the effective visibility of this prim, given the computed 
-    /// visibility of its parent prim at the given \p time.
-    /// 
-    /// \sa GetVisibilityAttr()
-    USDGEOM_API
-    TfToken ComputeVisibility(const TfToken &parentVisibility,
-                              UsdTimeCode const &time = UsdTimeCode::Default()) const;
-
     /// Return the attribute that is used for expressing visibility opinions
     /// for the given \p purpose.
     ///

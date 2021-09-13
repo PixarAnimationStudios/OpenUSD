@@ -275,26 +275,6 @@ UsdGeomImageable::ComputeVisibility(UsdTimeCode const &time) const
     return _ComputeVisibility(GetPrim(), time);
 }
 
-TfToken
-UsdGeomImageable::ComputeVisibility(
-    const TfToken &parentVisibility, 
-    UsdTimeCode const &time) const
-{
-    if (parentVisibility == UsdGeomTokens->invisible) {
-        return UsdGeomTokens->invisible;
-    }
-
-    TfToken localVis;
-    if (UsdGeomImageable ip = UsdGeomImageable(GetPrim())) {
-        if (ip.GetVisibilityAttr().Get(&localVis, time) && 
-            localVis == UsdGeomTokens->invisible) {
-            return UsdGeomTokens->invisible;
-        }
-    }
-
-    return UsdGeomTokens->inherited;
-}
-
 UsdAttribute
 UsdGeomImageable::GetPurposeVisibilityAttr(
     const TfToken &purpose) const
