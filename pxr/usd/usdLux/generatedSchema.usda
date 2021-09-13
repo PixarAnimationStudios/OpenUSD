@@ -906,7 +906,8 @@ class CylinderLight "CylinderLight" (
 
 class GeometryLight "GeometryLight" (
     apiSchemas = ["LightAPI"]
-    doc = """Light emitted outward from a geometric prim (UsdGeomGprim),
+    doc = """\\deprecated
+    Light emitted outward from a geometric prim (UsdGeomGprim),
     which is typically a mesh."""
 )
 {

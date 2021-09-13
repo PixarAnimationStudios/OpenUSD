@@ -517,7 +517,7 @@ class "NonboundableLightBase" (
 }
 
 class DistantLight "DistantLight" (
-    inherits = </Light>
+    inherits = </NonboundableLightBase>
     doc = """Light emitted from a distant source along the -Z axis.
     Also known as a directional light."""
 ) {
@@ -540,7 +540,7 @@ class DistantLight "DistantLight" (
 }
 
 class DiskLight "DiskLight" (
-    inherits = </Light>
+    inherits = </BoundableLightBase>
     doc = """Light emitted from one side of a circular disk.
     The disk is centered in the XY plane and emits light along the -Z axis."""
 ) {
@@ -553,7 +553,7 @@ class DiskLight "DiskLight" (
 }
 
 class RectLight "RectLight" (
-    inherits = </Light>
+    inherits = </BoundableLightBase>
     doc = """Light emitted from one side of a rectangle.
     The rectangle is centered in the XY plane and emits light along the -Z axis.
     The rectangle is 1 unit in length in the X and Y axis.  In the default 
@@ -582,7 +582,7 @@ class RectLight "RectLight" (
 }
 
 class SphereLight "SphereLight" (
-    inherits = </Light>
+    inherits = </BoundableLightBase>
     doc = """Light emitted outward from a sphere."""
 ) {
     float inputs:radius = 0.5 (
@@ -600,7 +600,7 @@ class SphereLight "SphereLight" (
 }
 
 class CylinderLight "CylinderLight" (
-    inherits = </Light>
+    inherits = </BoundableLightBase>
     doc = """Light emitted outward from a cylinder.
     The cylinder is centered at the origin and has its major axis on the X axis.
     The cylinder does not emit light from the flat end-caps.
@@ -627,8 +627,9 @@ class CylinderLight "CylinderLight" (
 }
 
 class GeometryLight "GeometryLight" (
-    inherits = </Light>
-    doc = """Light emitted outward from a geometric prim (UsdGeomGprim),
+    inherits = </NonboundableLightBase>
+    doc = """\\deprecated
+    Light emitted outward from a geometric prim (UsdGeomGprim),
     which is typically a mesh."""
 ) {
     rel geometry (
@@ -637,7 +638,7 @@ class GeometryLight "GeometryLight" (
 }
 
 class DomeLight "DomeLight" (
-    inherits = </Light>
+    inherits = </NonboundableLightBase>
     doc = """Light emitted inward from a distant external environment,
     such as a sky or IBL light probe.  The orientation of a dome light with a
     latlong texture is expected to match the OpenEXR specification for latlong 
@@ -696,7 +697,7 @@ class DomeLight "DomeLight" (
 }
 
 class PortalLight "PortalLight" (
-    inherits = </Light>
+    inherits = </BoundableLightBase>
     doc = """A rectangular portal in the local XY plane that guides sampling
     of a dome light.  Transmits light in the -Z direction.
     The rectangle is 1 unit in length."""
@@ -716,7 +717,7 @@ class LightPortal "LightPortal" (
 }
 
 class PluginLight "PluginLight" (
-    inherits = </Light>
+    inherits = </Xformable>
     doc = """Light that provides properties that allow it to identify an 
     external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
     provided to render delegates without the need to provide a schema 
@@ -724,7 +725,7 @@ class PluginLight "PluginLight" (
 
     \\see \\ref usdLux_PluginSchemas
 """
-    prepend apiSchemas = ["NodeDefAPI"]
+    prepend apiSchemas = ["NodeDefAPI", "LightAPI"]
     customData = {
         string extraIncludes = """
 #include "pxr/usd/usdShade/nodeDefAPI.h" """

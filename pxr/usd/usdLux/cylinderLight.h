@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLux/api.h"
-#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/boundableLightBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLux/tokens.h"
@@ -57,7 +57,7 @@ class SdfAssetPath;
 /// The cylinder does not emit light from the flat end-caps.
 /// 
 ///
-class UsdLuxCylinderLight : public UsdLuxLight
+class UsdLuxCylinderLight : public UsdLuxBoundableLightBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -70,7 +70,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdLuxCylinderLight(const UsdPrim& prim=UsdPrim())
-        : UsdLuxLight(prim)
+        : UsdLuxBoundableLightBase(prim)
     {
     }
 
@@ -78,7 +78,7 @@ public:
     /// Should be preferred over UsdLuxCylinderLight(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdLuxCylinderLight(const UsdSchemaBase& schemaObj)
-        : UsdLuxLight(schemaObj)
+        : UsdLuxBoundableLightBase(schemaObj)
     {
     }
 
