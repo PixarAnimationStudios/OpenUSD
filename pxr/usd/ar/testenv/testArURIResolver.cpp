@@ -180,19 +180,29 @@ TestCreateDefaultContextForAsset()
             resolver.CreateDefaultContextForAsset(assetPath);
 
         // ArDefaultResolver returns an ArDefaultResolverContext whose search
-        // path is set to the directory of the asset
-        const ArDefaultResolverContext* defaultCtx =
-        defaultContext.Get<ArDefaultResolverContext>();
-        TF_AXIOM(defaultCtx);
-        TF_AXIOM(defaultCtx->GetSearchPath() == 
-            std::vector<std::string>{ TfAbsPath("test") });
+        // path is set to the directory of the asset.
+        {
+            const ArDefaultResolverContext* defaultCtx =
+                defaultContext.Get<ArDefaultResolverContext>();
+            TF_AXIOM(defaultCtx);
+
+            const ArDefaultResolverContext expectedCtx(
+                std::vector<std::string>{ 
+                    TfGetPathName(TfAbsPath(assetPath)) });
+            TF_AXIOM(*defaultCtx == expectedCtx);
+        }
 
         // TestArURIResolver returns a _TestURIResolverContext whose data field
         // is set to the absolute path of the asset.
-        const _TestURIResolverContext* uriCtx =
-        defaultContext.Get<_TestURIResolverContext>();
-        TF_AXIOM(uriCtx);
-        TF_AXIOM(uriCtx->data == TfAbsPath("test/test.file"));
+        {
+            const _TestURIResolverContext* uriCtx =
+                defaultContext.Get<_TestURIResolverContext>();
+            TF_AXIOM(uriCtx);
+        
+            const _TestURIResolverContext expectedCtx(
+                TfAbsPath("test/test.file"));
+            TF_AXIOM(*uriCtx == expectedCtx);
+        }
     };
 
     runTest("test/test.file");
