@@ -94,24 +94,38 @@ HdFlatteningSceneIndex::_PrimsAdded(
 
     for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
         // XXX immediately calls GetPrim (for now)
-        auto wrappedDataSource = _PrimLevelWrappingDataSource::New(
-            *this, entry.primPath,
-                _GetInputSceneIndex()->GetPrim(entry.primPath).dataSource);
+        HdContainerDataSourceHandle dataSource =
+            _GetInputSceneIndex()->GetPrim(entry.primPath).dataSource;
 
-        auto iterBoolPair = _prims.insert({entry.primPath, {{
-                entry.primType, wrappedDataSource}
-        }});
+        // Ensure the prim has an entry in the map.
+        auto iterBoolPair =
+            _prims.insert({entry.primPath, {HdSceneIndexPrim()}});
+        HdSceneIndexPrim &prim = iterBoolPair.first->second.prim;
 
-        // if it's not newly inserted, we will need to dirty inherited
-        // attributes everywhere beneath.
+        // Always update the prim type.
+        prim.primType = entry.primType;
+
+        // If the wrapper exists, update the input datasource; otherwise,
+        // create it. This is both to save an allocation if the PrimsAdded
+        // message is resyncing a prim, and also to leave the cache intact for
+        // _DirtyHierarchy to invalidate (since it chooses what to invalidate
+        // based on what's been cached).
+        if (prim.dataSource) {
+            _PrimLevelWrappingDataSource::Cast(prim.dataSource)->
+                UpdateInputDataSource(dataSource);
+        } else {
+            prim.dataSource = _PrimLevelWrappingDataSource::New(
+                *this, entry.primPath, dataSource);
+        }
+
+        // If we're inserting somewhere in the existing hierarchy, we need to
+        // invalidate descendant flattened attributes.
         if (!iterBoolPair.second) {
-            iterBoolPair.first->second.prim =
-                    {entry.primType, wrappedDataSource};
-
-            HdDataSourceLocatorSet locators;
-            locators.insert(HdXformSchema::GetDefaultLocator());
-            locators.insert(HdVisibilitySchema::GetDefaultLocator());
-            locators.insert(HdPurposeSchema::GetDefaultLocator());
+            static HdDataSourceLocatorSet locators = {
+                HdXformSchema::GetDefaultLocator(),
+                HdVisibilitySchema::GetDefaultLocator(),
+                HdPurposeSchema::GetDefaultLocator(),
+            };
 
             _DirtyHierarchy(entry.primPath, locators, &dirtyEntries);
         }
@@ -178,10 +192,8 @@ HdFlatteningSceneIndex::_PrimsDirtied(
         }
     }
 
-    if (dirtyEntries.empty()) {
-        _SendPrimsDirtied(entries);
-    } else {
-        dirtyEntries.insert(dirtyEntries.end(), entries.begin(), entries.end());
+    _SendPrimsDirtied(entries);
+    if (!dirtyEntries.empty()) {
         _SendPrimsDirtied(dirtyEntries);
     }
 }
@@ -195,30 +207,29 @@ HdFlatteningSceneIndex::_DirtyHierarchy(
     // XXX: here and elsewhere, if a parent xform is dirtied and the child has
     // resetXformStack, we could skip dirtying the child...
 
-    bool dirtyXform = dirtyLocators.Intersects(
-            HdXformSchema::GetDefaultLocator());
-    bool dirtyVis = dirtyLocators.Intersects(
-            HdVisibilitySchema::GetDefaultLocator());
-    bool dirtyPurpose = dirtyLocators.Intersects(
-            HdPurposeSchema::GetDefaultLocator());
-
     auto startEndIt = _prims.FindSubtreeRange(primPath);
     auto it = startEndIt.first;
-    for (; it != startEndIt.second; ++it) {
+    for (; it != startEndIt.second; ) {
         _PrimEntry &entry = it->second;
-        dirtyEntries->emplace_back(it->first, dirtyLocators);
 
         if (_PrimLevelWrappingDataSourceHandle dataSource =
                 _PrimLevelWrappingDataSource::Cast(
                         entry.prim.dataSource)) {
-            if (dirtyXform) {
-                dataSource->SetDirtyXform();
-            }
-            if (dirtyVis) {
-                dataSource->SetDirtyVis();
-            }
-            if (dirtyPurpose) {
-                dataSource->SetDirtyPurpose();
+            if (dataSource->PrimDirtied(dirtyLocators)) {
+                // If we invalidated any data for any prim besides "primPath"
+                // (which already has a notice), generate a new PrimsDirtied
+                // notice.
+                if (it->first != primPath) {
+                    dirtyEntries->emplace_back(it->first, dirtyLocators);
+                }
+                ++it;
+            } else {
+                // If we didn't invalidate any data, we can safely assume that
+                // no downstream prims depended on this prim for their
+                // flattened result, and skip to the next subtree. This is
+                // an important optimization for (e.g.) scene population,
+                // where no data is cached yet...
+                it = it.GetNextSubtree();
             }
         }
     }
@@ -236,28 +247,42 @@ _PrimLevelWrappingDataSource::_PrimLevelWrappingDataSource(
     , _computedVisDataSource(nullptr)
     , _computedPurposeDataSource(nullptr)
 {
-
 }
 
 void
-HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::SetDirtyXform()
+HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::UpdateInputDataSource(
+        HdContainerDataSourceHandle inputDataSource)
 {
-    HdContainerDataSourceHandle null(nullptr);
-    HdContainerDataSource::AtomicStore(_computedXformDataSource, null);
+    _inputDataSource = inputDataSource;
 }
 
-void
-HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::SetDirtyVis()
+bool
+HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::PrimDirtied(
+        const HdDataSourceLocatorSet &set)
 {
+    bool anyDirtied = false;
     HdContainerDataSourceHandle null(nullptr);
-    HdContainerDataSource::AtomicStore(_computedVisDataSource, null);
-}
 
-void
-HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::SetDirtyPurpose()
-{
-    HdContainerDataSourceHandle null(nullptr);
-    HdContainerDataSource::AtomicStore(_computedPurposeDataSource, null);
+    if (set.Intersects(HdXformSchema::GetDefaultLocator())) {
+        if (HdContainerDataSource::AtomicLoad(_computedXformDataSource)) {
+            anyDirtied = true;
+        }
+        HdContainerDataSource::AtomicStore(_computedXformDataSource, null);
+    }
+    if (set.Intersects(HdVisibilitySchema::GetDefaultLocator())) {
+        if (HdContainerDataSource::AtomicLoad(_computedVisDataSource)) {
+            anyDirtied = true;
+        }
+        HdContainerDataSource::AtomicStore(_computedVisDataSource, null);
+    }
+    if (set.Intersects(HdPurposeSchema::GetDefaultLocator())) {
+        if (HdContainerDataSource::AtomicLoad(_computedPurposeDataSource)) {
+            anyDirtied = true;
+        }
+        HdContainerDataSource::AtomicStore(_computedPurposeDataSource, null);
+    }
+
+    return anyDirtied;
 }
 
 bool
@@ -465,7 +490,7 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetXform()
             // If the local xform wants to compose with the parent,
             // do so as long as both matrices are provided.
             HdMatrixDataSourceHandle parentMatrixDataSource =
-                parentXform.GetMatrix();
+                parentXform ? parentXform.GetMatrix() : nullptr;
             HdMatrixDataSourceHandle inputMatrixDataSource =
                 inputXform.GetMatrix();
 

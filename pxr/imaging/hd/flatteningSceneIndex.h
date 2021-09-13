@@ -120,9 +120,9 @@ private:
                 const SdfPath &primPath,
                 HdContainerDataSourceHandle inputDataSource);
 
-        void SetDirtyXform();
-        void SetDirtyVis();
-        void SetDirtyPurpose();
+        void UpdateInputDataSource(HdContainerDataSourceHandle inputDataSource);
+
+        bool PrimDirtied(const HdDataSourceLocatorSet &locators);
 
         bool Has(const TfToken &name) override;
         TfTokenVector GetNames() override;
