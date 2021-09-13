@@ -1118,6 +1118,14 @@ def InstallOpenColorIO(context, force, buildArgs):
                      '-DOCIO_BUILD_JNIGLUE=OFF',
                      '-DOCIO_STATIC_JNIGLUE=OFF']
 
+        # OpenImageIO v1.1.0 fails to build on Windows with the RelWithDebInfo
+        # build type because it doesn't set up the correct properties for the
+        # YAML library it relies on. This patch works around that issue.
+        if Windows() and context.buildRelWithDebug:
+            PatchFile("CMakeLists.txt",
+                      [("IMPORTED_LOCATION_RELEASE", 
+                        "IMPORTED_LOCATION_RELWITHDEBINFO")])
+
         # The OCIO build treats all warnings as errors but several come up
         # on various platforms, including:
         # - On gcc6, v1.1.0 emits many -Wdeprecated-declaration warnings for
