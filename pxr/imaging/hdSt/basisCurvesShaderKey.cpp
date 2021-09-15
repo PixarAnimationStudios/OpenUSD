@@ -106,8 +106,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((curvesFragmentWire,              "Curves.Fragment.Wire"))
     ((curvesFragmentPatch,             "Curves.Fragment.Patch"))
 
-    // instancing related mixins
+    // instancing and secondary graphics related mixins
     ((instancing,                      "Instancing.Transform"))
+    ((secondaryGraphics,               "SecondaryGraphics.Vertex.Transform"))
 
     // terminals
     ((commonFS,                        "Fragment.CommonTerminals"))
@@ -165,6 +166,7 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
 
     uint8_t vsIndex = 0;
     VS[vsIndex++]  = _tokens->instancing;
+    VS[vsIndex++]  = _tokens->secondaryGraphics;
     VS[vsIndex++]  = drawThick ? _tokens->curvesVertexPatch 
                        : _tokens->curvesVertexWire;
     VS[vsIndex++]  = oriented ? _tokens->curvesVertexNormalOriented 

@@ -725,6 +725,29 @@ HdStPopulateConstantPrimvars(
         sources.push_back(source);
     }
 
+    if ((*dirtyBits) & HdChangeTracker::DirtyPrimvar)
+    {
+        // add cameraFacing primvar
+        const VtValue camFacing = delegate->Get(id, HdTokens->cameraFacing);
+        if (!camFacing.IsEmpty())
+        {
+            HdBufferSourceSharedPtr camFacingSource = std::make_shared<HdVtBufferSource>(
+                HdTokens->cameraFacing,
+                camFacing);
+            sources.push_back(camFacingSource);
+        }
+
+        // add pixelScale primvar
+        const VtValue pixelScale = delegate->Get(id, HdTokens->pixelScale);
+        if (!pixelScale.IsEmpty())
+        {
+            HdBufferSourceSharedPtr pixelScaleSource = std::make_shared<HdVtBufferSource>(
+                HdTokens->pixelScale,
+                pixelScale);
+            sources.push_back(pixelScaleSource);
+        }
+    }
+
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
         sources.reserve(sources.size()+constantPrimvars.size());
         for (const HdPrimvarDescriptor& pv: constantPrimvars) {
@@ -778,7 +801,9 @@ HdStPopulateConstantPrimvars(
             HdTokens->isFlipped,
             HdTokens->bboxLocalMin,
             HdTokens->bboxLocalMax,
-            HdTokens->primID
+            HdTokens->primID,
+            HdTokens->cameraFacing,
+            HdTokens->pixelScale
         };
         removedSpecs = HdStGetRemovedPrimvarBufferSpecs(bar, constantPrimvars, 
             internallyGeneratedPrimvars, id);

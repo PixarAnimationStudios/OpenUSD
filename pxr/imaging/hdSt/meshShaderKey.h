@@ -107,7 +107,7 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     TfToken const *GetFS()  const override { return FS; }
 
     TfToken glslfx;
-    TfToken VS[7];
+    TfToken VS[8];
     TfToken TCS[3];
     TfToken TES[4];
     TfToken GS[10];

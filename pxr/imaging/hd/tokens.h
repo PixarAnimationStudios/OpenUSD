@@ -40,6 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bezier)                                    \
     (bSpline)                                   \
     (camera)                                    \
+    (cameraFacing)                              \
     (catmullRom)                                \
     (collection)                                \
     (computeShader)                             \
@@ -83,6 +84,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (patchParam)                                \
     (periodic)                                  \
     (pinned)                                    \
+    (pixelScale)                                \
     (points)                                    \
     (pointsIndices)                             \
     (power)                                     \

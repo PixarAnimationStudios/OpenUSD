@@ -35,6 +35,7 @@
 #import $TOOLS/hdSt/shaders/edgeId.glslfx
 #import $TOOLS/hdSt/shaders/pointId.glslfx
 #import $TOOLS/hdSt/shaders/visibility.glslfx
+#import $TOOLS/hdSt/shaders/secondaryGraphics.glslfx
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Vertex
@@ -59,11 +60,30 @@ void main(void)
 {
     ProcessPrimvars();
 
-    MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
-    vec4 point        = vec4(HdGet_points().xyz, 1);
-    outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+    const MAT4 worldToViewMatrix = GetWorldToViewMatrix();
+    const MAT4 projectionMatrix = GetProjectionMatrix();
+    const MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+    vec4 point = vec4(HdGet_points().xyz, 1);
+    
+#if defined(HD_HAS_pixelScale)
+    if (HdGet_pixelScale())
+    {
+        point.xyz *= pixelScaleValue(projectionMatrix, worldToViewMatrix, transform);
+    }
+#endif
 
-    outData.Neye = GetNormal(vec3(0), 0); // normalized
+#if defined(HD_HAS_cameraFacing)
+    if (HdGet_cameraFacing())
+    {
+        outData.Peye = vec4(cameraFacingMatrix(worldToViewMatrix, transform) * point);
+        outData.Neye = vec3(0, 0, 1);
+    }
+    else
+#endif
+    {
+        outData.Peye = vec4(worldToViewMatrix * transform * point);
+        outData.Neye = GetNormal(vec3(0), 0); // normalized
+    }
 
     // Fill out redundantly, since at this point we don't know
     // the following stages include tessellation or geometry shader.
@@ -76,7 +96,7 @@ void main(void)
     gl_PointSize = GetPointRasterSize(pointId);
     ProcessPointId(pointId);
 
-    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    gl_Position = vec4(projectionMatrix * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 }
 

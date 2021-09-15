@@ -31,6 +31,7 @@
 #import $TOOLS/hdSt/shaders/terminals.glslfx
 #import $TOOLS/hdSt/shaders/pointId.glslfx
 #import $TOOLS/hdSt/shaders/visibility.glslfx
+#import $TOOLS/hdSt/shaders/secondaryGraphics.glslfx
 
 // Known issues:
 // * The direction of the 'v' post tessellation is inconsistent between 
@@ -68,17 +69,36 @@ void ProcessPointId(int);
 
 void main(void)
 {
-    MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
-    MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
+    const MAT4 worldToViewMatrix = GetWorldToViewMatrix();
+    const MAT4 projectionMatrix = GetProjectionMatrix();
+    const MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
+    const MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
+    vec4 point = vec4(HdGet_points().xyz, 1);
 
-    outData.Peye = vec4(GetWorldToViewMatrix() * transform *
-                        vec4(HdGet_points(), 1));
-    outData.Neye = getNormal(transpose(transformInv *
+#if defined(HD_HAS_pixelScale)
+    if (HdGet_pixelScale())
+    {
+        point.xyz *= pixelScaleValue(projectionMatrix, worldToViewMatrix, transform);
+    }
+#endif
+
+#if defined(HD_HAS_cameraFacing)
+    if (HdGet_cameraFacing())
+    {
+        outData.Peye = vec4(cameraFacingMatrix(worldToViewMatrix, transform) * point);
+        outData.Neye = vec3(0, 0, 1);
+    }
+    else
+#endif
+    {
+        outData.Peye = vec4(worldToViewMatrix * transform * point);
+        outData.Neye = getNormal(transpose(transformInv *
                                   GetWorldToViewInverseMatrix()));
+    }
 
     ProcessPrimvars();
 
-    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    gl_Position = vec4(projectionMatrix * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
     int pointId = GetPointId();
@@ -119,14 +139,32 @@ void ProcessPointId(int);
 
 void main(void)
 {
-    MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
+    const MAT4 worldToViewMatrix = GetWorldToViewMatrix();
+    const MAT4 projectionMatrix = GetProjectionMatrix();
+    const MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
+    vec4 point = vec4(HdGet_points().xyz, 1);
 
-    outData.Peye = vec4(GetWorldToViewMatrix() * transform *
-                        vec4(HdGet_points(), 1));
+#if defined(HD_HAS_pixelScale)
+    if (HdGet_pixelScale())
+    {
+        point.xyz *= pixelScaleValue(projectionMatrix, worldToViewMatrix, transform);
+    }
+#endif
+
+#if defined(HD_HAS_cameraFacing)
+    if (HdGet_cameraFacing())
+    {
+        outData.Peye = vec4(cameraFacingMatrix(worldToViewMatrix, transform) * point);
+    }
+    else
+#endif
+    {
+        outData.Peye = vec4(worldToViewMatrix * transform * point);
+    }
 
     ProcessPrimvars();
 
-    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    gl_Position = vec4(projectionMatrix * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
     int pointId = GetPointId();
@@ -313,7 +351,7 @@ void determineLODSettings();
 void main(void)
 {
     if(gl_InvocationID == 0) {
-	     determineLODSettings();
+         determineLODSettings();
     }
 
     outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
