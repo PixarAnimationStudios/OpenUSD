@@ -224,8 +224,21 @@ static
 TfToken
 _MakeName(const std::string& mtlxName)
 {
-    // MaterialX names are valid USD names so we can use the name as is.
-    return TfToken(mtlxName);
+    // A MaterialX name may have a namespace name included,
+    // which then will be separated by a colon
+    auto colonPos = mtlxName.find(':');
+    if (colonPos != std::string::npos)
+    {
+        // Replace the colon with "__" to 
+        // make a valid USD name token
+        std::string modifiedName = mtlxName;
+        modifiedName.replace(colonPos, 1, "__");
+        return TfToken(modifiedName);
+    }
+    else
+    {
+        return TfToken(mtlxName);
+    }
 }
 
 // Convert a MaterialX name into a valid USD name token.

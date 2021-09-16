@@ -67,22 +67,6 @@ _GetCache()
     return cache;
 }
 
-// This exists in 1.35.5 and later as method copyContentFrom on Element.
-static
-void
-_CopyContent(mx::ElementPtr dst, const mx::ConstElementPtr& source)
-{
-    dst->setSourceUri(source->getSourceUri());
-    for (auto&& name: source->getAttributeNames()) {
-        dst->setAttribute(name, source->getAttribute(name));
-    }
-    for (auto&& child: source->getChildren()) {
-        _CopyContent(
-            dst->addChildOfCategory(child->getCategory(), child->getName()),
-            child);
-    }
-}
-
 VtValue
 _GetUsdValue(const std::string& valueString, const std::string& type)
 {
@@ -391,16 +375,11 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
             }
 
             try {
-                // Set the source URI on all (immediate) children of
-                // the root so we can find the source later.  We
-                // can't use the source URI on the document element
-                // because we won't be copying that.
-                for (auto&& element: doc->getChildren()) {
-                    element->setSourceUri(fileResult.resolvedUri);
-                }
-
-                // Merge into library.
-                _CopyContent(document, doc);
+                
+                // Merge this document into the global library
+                // This properly sets the attributes on the destination 
+                // elements, like source URI and namespace
+                document->importLibrary(doc);
             }
             catch (mx::Exception& x) {
                 TF_RUNTIME_ERROR("MaterialX error reading '%s': %s",
@@ -412,6 +391,10 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
     else {
         document = UsdMtlxReadDocument(resolvedUri);
     }
+
+    //mx::XmlWriteOptions wo;
+    //wo.writeXIncludeEnable = false;
+    //mx::writeToXmlFile(document, "d:\CopiedMtlx.mtlx", &wo);
 
     if (!m.IsClean()) {
         for (const auto& error : m) {

@@ -52,7 +52,18 @@ _GetMxNodeType(mx::DocumentPtr const& mxDoc, TfToken const& hdNodeType)
                 hdNodeType.GetText());
         return TfToken();
     }
-    return TfToken(mxNodeDef->getNodeString());
+
+    std::string namespaceName = mxNodeDef->getNamespace();
+    if (!namespaceName.empty())
+    {
+        // in case the nodedef is in a namespace, 
+        // we need to add it to the node name 
+        return TfToken(namespaceName + ":" + mxNodeDef->getNodeString());
+    }
+    else
+    {
+        return TfToken(mxNodeDef->getNodeString());
+    }
 }
 
 // Determine if the given mxInputName is of type mx::Vector3 
