@@ -392,10 +392,6 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
         document = UsdMtlxReadDocument(resolvedUri);
     }
 
-    //mx::XmlWriteOptions wo;
-    //wo.writeXIncludeEnable = false;
-    //mx::writeToXmlFile(document, "d:\CopiedMtlx.mtlx", &wo);
-
     if (!m.IsClean()) {
         for (const auto& error : m) {
             TF_DEBUG(NDR_PARSING).Msg("%s\n", error.GetCommentary().c_str());
