@@ -1995,7 +1995,8 @@ HdDataSourceLegacyPrim::Has(const TfToken &name)
     }
 
     if (_IsTypeLightLike(_type)) {
-        if (name == HdLightSchemaTokens->light) {
+        if (name == HdLightSchemaTokens->light ||
+            name == HdMaterialSchemaTokens->material) {
             return true;
         }
     }
@@ -2096,6 +2097,7 @@ HdDataSourceLegacyPrim::GetNames()
 
     if (_IsTypeLightLike(_type)) {
         result.push_back(HdLightSchemaTokens->light);
+        result.push_back(HdMaterialSchemaTokens->material);
     }
 
     if (_type == HdPrimTypeTokens->material) {
