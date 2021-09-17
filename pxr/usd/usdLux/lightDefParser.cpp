@@ -23,8 +23,9 @@
 //
 #include "pxr/usd/usdLux/lightDefParser.h"
 
-#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/boundableLightBase.h"
 #include "pxr/usd/usdLux/lightFilter.h"
+#include "pxr/usd/usdLux/nonboundableLightBase.h"
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/shaderDefUtils.h"
@@ -107,7 +108,8 @@ UsdLux_LightDefParserPlugin::Parse(
     }
 
     TfToken context;
-    if (prim.IsA<UsdLuxLight>()) {
+    if (prim.IsA<UsdLuxBoundableLightBase>() || 
+            prim.IsA<UsdLuxNonboundableLightBase>()) {
         context = SdrNodeContext->Light;
     } else if (prim.IsA<UsdLuxLightFilter>()) {
         context = SdrNodeContext->LightFilter;

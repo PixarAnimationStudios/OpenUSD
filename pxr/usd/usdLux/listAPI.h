@@ -359,8 +359,8 @@ public:
     /// the stage, optionally consulting a cached result.
     ///
     /// In ComputeModeIgnoreCache mode, caching is ignored, and this
-    /// does a prim traversal looking for prims of type UsdLuxLight
-    /// or UsdLuxLightFilter.
+    /// does a prim traversal looking for prims that have a UsdLuxLightAPI
+    /// or are of type UsdLuxLightFilter.
     ///
     /// In ComputeModeConsultModelHierarchyCache, this does a traversal
     /// only of the model hierarchy. In this traversal, any lights that

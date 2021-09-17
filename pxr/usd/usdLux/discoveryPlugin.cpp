@@ -23,9 +23,10 @@
 //
 #include "pxr/usd/usdLux/discoveryPlugin.h"
 
-#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/boundableLightBase.h"
 #include "pxr/usd/usdLux/lightDefParser.h"
 #include "pxr/usd/usdLux/lightFilter.h"
+#include "pxr/usd/usdLux/nonboundableLightBase.h"
 
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/plug/plugin.h"
@@ -54,16 +55,19 @@ UsdLux_DiscoveryPlugin::DiscoverNodes(const Context &context)
     NdrNodeDiscoveryResultVec result;
 
     // We want to discover nodes for all concrete schema types that derive from 
-    // UsdLuxLight and UsdLuxLightFilter.
-    static const TfType lightType = TfType::Find<UsdLuxLight>();
+    // UsdLuxBoundableLightBase, UsdLuxNonboundableLightBase, and 
+    // UsdLuxLightFilter.
+    static const TfType boundableLightType = 
+        TfType::Find<UsdLuxBoundableLightBase>();
+    static const TfType nonboundableLightType = 
+        TfType::Find<UsdLuxNonboundableLightBase>();
     static const TfType lightFilterType = TfType::Find<UsdLuxLightFilter>();
-    // LightFilter is a concrete type and is legit to instantiate while Light 
-    // is abstract and cannot be instantiated. However since the loop below 
-    // filters out abstract types, there's no harm in including Light in 
-    // addition to LightFilter. If Light were to be changed to be a concrete 
-    // type at any point for any reason, this code would not have to change.
-    std::set<TfType> types({lightType, lightFilterType});
-    PlugRegistry::GetAllDerivedTypes(lightType, &types);
+    // LightFilter is a concrete type and is legit to instantiate while light 
+    // base types are abstract and cannot be instantiated. LightFilter must be
+    // included in the discovery types.
+    std::set<TfType> types({lightFilterType});
+    PlugRegistry::GetAllDerivedTypes(boundableLightType, &types);
+    PlugRegistry::GetAllDerivedTypes(nonboundableLightType, &types);
     PlugRegistry::GetAllDerivedTypes(lightFilterType, &types);
 
     for (const TfType &type : types) {

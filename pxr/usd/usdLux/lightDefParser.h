@@ -35,7 +35,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \class UsdLux_LightDefParserPlugin
 /// 
 /// Parses shader definitions from the registered prim definitions for 
-/// UsdLuxLight and UsdLuxLightFilter derived schema classes.
+/// UsdLuxBoundableLightBase, UsdLuxNonboundableLightBase, and UsdLuxLightFilter
+/// derived schema classes.
 /// 
 class UsdLux_LightDefParserPlugin : public NdrParserPlugin 
 {

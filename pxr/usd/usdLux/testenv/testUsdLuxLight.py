@@ -40,45 +40,13 @@ class TestUsdLuxLight(unittest.TestCase):
         assert cool_color[2] > cool_color[0]
         assert cool_color[2] > cool_color[1]
 
-    def test_BasicLights(self):
-        stage = Usd.Stage.CreateInMemory()
-        light = UsdLux.SphereLight.Define(stage, '/light')
-
-        # Intensity is linear
-        self.assertEqual( light.ComputeBaseEmission(), Gf.Vec3f(1.0) )
-        light.CreateIntensityAttr().Set(123.0)
-        self.assertEqual( light.ComputeBaseEmission(), Gf.Vec3f(123.0) )
-
-        # Exposure is power-of-two and multiplies against intensity
-        light.CreateExposureAttr().Set(1.0)
-        self.assertEqual( light.ComputeBaseEmission(), Gf.Vec3f(246.0) )
-        light.CreateExposureAttr().Set(-1.0)
-        self.assertEqual( light.ComputeBaseEmission(), Gf.Vec3f(61.5) )
-
-        # Color multiplies the result
-        light.CreateColorAttr().Set( Gf.Vec3f(1.0, 2.0, 0.0) )
-        self.assertEqual( light.ComputeBaseEmission(),
-                          Gf.Vec3f(61.5, 123.0, 0.0))
-
-        # Color temperature further multiplies the result,
-        # but only once enabled
-        e0 = light.ComputeBaseEmission()
-        light.CreateColorTemperatureAttr().Set( 1000 )
-        e1 = light.ComputeBaseEmission()
-        self.assertEqual(e0, e1)
-        light.CreateEnableColorTemperatureAttr().Set(True)
-        e2 = light.ComputeBaseEmission()
-        self.assertNotEqual(e0, e2)
-        # Default temperature is whitepoint and approximately (1,1,1)
-        light.CreateEnableColorTemperatureAttr().Clear()
-        e3 = light.ComputeBaseEmission()
-        self.assertTrue( Gf.IsClose(e0, e3, 0.1))
-
     def test_BasicConnectableLights(self):
         stage = Usd.Stage.CreateInMemory()
-        light = UsdLux.RectLight.Define(stage, '/RectLight')
-        self.assertTrue(light)
-        self.assertTrue(light.ConnectableAPI())
+        rectLight = UsdLux.RectLight.Define(stage, '/RectLight')
+        self.assertTrue(rectLight)
+        lightAPI = rectLight.LightAPI()
+        self.assertTrue(lightAPI)
+        self.assertTrue(lightAPI.ConnectableAPI())
 
         # Rect light has the following built-in inputs attributes.
         inputNames = ['color', 
@@ -93,48 +61,48 @@ class TestUsdLuxLight(unittest.TestCase):
                       'texture:file', 
                       'width']
         # GetInputs returns only authored inputs by default
-        self.assertEqual(light.GetInputs(), [])
+        self.assertEqual(lightAPI.GetInputs(), [])
 
         # GetInputs(false) is a super-set of all the built-ins.
         # There could be other inputs coming from any auto applied APISchemas.
         allInputs = [inputName.GetBaseName() for inputName in
-                light.GetInputs(onlyAuthored=False)]
+                lightAPI.GetInputs(onlyAuthored=False)]
         self.assertTrue(set(inputNames).issubset(set(allInputs)))
 
         # Verify each input's attribute is prefixed.
         for name in inputNames:
-            self.assertEqual(light.GetInput(name).GetAttr().GetName(),
+            self.assertEqual(lightAPI.GetInput(name).GetAttr().GetName(),
                              "inputs:" + name)
         # Verify input attributes match the getter API attributes.
-        self.assertEqual(light.GetInput('color').GetAttr(), 
-                         light.GetColorAttr())
-        self.assertEqual(light.GetInput('texture:file').GetAttr(), 
-                         light.GetTextureFileAttr())
+        self.assertEqual(lightAPI.GetInput('color').GetAttr(), 
+                         rectLight.GetColorAttr())
+        self.assertEqual(lightAPI.GetInput('texture:file').GetAttr(), 
+                         rectLight.GetTextureFileAttr())
 
         # Create a new input, and verify that the input interface conforming
         # attribute is created.
-        lightInput = light.CreateInput('newInput', Sdf.ValueTypeNames.Float)
-        self.assertIn(lightInput, light.GetInputs())
+        lightInput = lightAPI.CreateInput('newInput', Sdf.ValueTypeNames.Float)
+        self.assertIn(lightInput, lightAPI.GetInputs())
         # By default GetInputs() returns onlyAuthored inputs, of which
         # there is now 1.
-        self.assertEqual(len(light.GetInputs()), 1)
-        self.assertEqual(light.GetInput('newInput'), lightInput)
+        self.assertEqual(len(lightAPI.GetInputs()), 1)
+        self.assertEqual(lightAPI.GetInput('newInput'), lightInput)
         self.assertEqual(lightInput.GetAttr(), 
-                         light.GetPrim().GetAttribute("inputs:newInput"))
+                         lightAPI.GetPrim().GetAttribute("inputs:newInput"))
 
         # Rect light has no authored outputs.
-        self.assertEqual(light.GetOutputs(), [])
+        self.assertEqual(lightAPI.GetOutputs(), [])
         # Rect light has no built-in outputs, either.
-        self.assertEqual(light.GetOutputs(onlyAuthored=False), [])
+        self.assertEqual(lightAPI.GetOutputs(onlyAuthored=False), [])
 
         # Create a new output, and verify that the output interface conforming
         # attribute is created.
-        lightOutput = light.CreateOutput('newOutput', Sdf.ValueTypeNames.Float)
-        self.assertEqual(light.GetOutputs(), [lightOutput])
-        self.assertEqual(light.GetOutputs(onlyAuthored=False), [lightOutput])
-        self.assertEqual(light.GetOutput('newOutput'), lightOutput)
+        lightOutput = lightAPI.CreateOutput('newOutput', Sdf.ValueTypeNames.Float)
+        self.assertEqual(lightAPI.GetOutputs(), [lightOutput])
+        self.assertEqual(lightAPI.GetOutputs(onlyAuthored=False), [lightOutput])
+        self.assertEqual(lightAPI.GetOutput('newOutput'), lightOutput)
         self.assertEqual(lightOutput.GetAttr(), 
-                         light.GetPrim().GetAttribute("outputs:newOutput"))
+                         lightAPI.GetPrim().GetAttribute("outputs:newOutput"))
 
         # Do the same with a light filter
         lightFilter = UsdLux.LightFilter.Define(stage, '/LightFilter')
@@ -206,7 +174,7 @@ class TestUsdLuxLight(unittest.TestCase):
         # The shaping API can add more connectable attributes to the light 
         # and implements the same connectable interface functions. We test 
         # those here.
-        shapingAPI = UsdLux.ShapingAPI.Apply(light.GetPrim())
+        shapingAPI = UsdLux.ShapingAPI.Apply(lightAPI.GetPrim())
         self.assertTrue(shapingAPI)
         self.assertTrue(shapingAPI.ConnectableAPI())
         # Verify input attributes match the getter API attributes.
@@ -226,7 +194,7 @@ class TestUsdLuxLight(unittest.TestCase):
         # The shadow API can add more connectable attributes to the light 
         # and implements the same connectable interface functions. We test 
         # those here.
-        shadowAPI = UsdLux.ShadowAPI.Apply(light.GetPrim())
+        shadowAPI = UsdLux.ShadowAPI.Apply(lightAPI.GetPrim())
         self.assertTrue(shadowAPI)
         self.assertTrue(shadowAPI.ConnectableAPI())
         # Verify input attributes match the getter API attributes.
@@ -341,8 +309,11 @@ class TestUsdLuxLight(unittest.TestCase):
         Test the automatic registration of SdrShaderNodes for all the UsdLux
         light and light filter types.
         """
-        # Get all the derived types of UsdLuxLight
-        lightTypes = Tf.Type(UsdLux.Light).GetAllDerivedTypes()
+        # Get all the derived types of UsdLuxBoundableLightBase and 
+        # UsdLuxNonboundableLightBase
+        lightTypes = (
+            Tf.Type(UsdLux.BoundableLightBase).GetAllDerivedTypes() +
+            Tf.Type(UsdLux.NonboundableLightBase).GetAllDerivedTypes())
         lightFilterTypes = Tf.Type(UsdLux.LightFilter).GetAllDerivedTypes()
         self.assertTrue(lightTypes)
         # Verify that at least one known light type is in our list to guard
@@ -373,7 +344,7 @@ class TestUsdLuxLight(unittest.TestCase):
             # Set the prim to the light type so we can cross check node inputs
             # with the light prim built-in properties.
             prim.SetTypeName(typeName)
-            lightOrFilter = UsdLux.Light(prim) or UsdLux.LightFilter(prim)
+            lightOrFilter = UsdLux.LightAPI(prim) or UsdLux.LightFilter(prim)
             self.assertTrue(lightOrFilter)
 
             # Names, identifier, and role for the node all match the USD schema
@@ -386,7 +357,7 @@ class TestUsdLuxLight(unittest.TestCase):
 
             # The context is always 'light' for lights or 'lightFilter' for 
             # light filters. Source type is 'USD'
-            if prim.IsA(UsdLux.Light):
+            if prim.HasAPI(UsdLux.LightAPI):
                 self.assertEqual(node.GetContext(), 'light')
             else:
                 self.assertEqual(node.GetContext(), 'lightFilter')
@@ -422,7 +393,7 @@ class TestUsdLuxLight(unittest.TestCase):
             self.assertEqual(node.GetPages(), [''])
 
             # Helper for comparing an SdrShaderProperty from node to the 
-            # corresponding UsdShadeInput/UsdShadeOutput from a UsdLuxLight
+            # corresponding UsdShadeInput/UsdShadeOutput from a UsdLux light
             def _CompareLightPropToNodeProp(nodeInput, primInput):
                 # Input names and default values match.
                 primDefaultValue = primInput.GetAttr().Get()
