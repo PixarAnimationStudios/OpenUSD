@@ -376,7 +376,13 @@ def RunCMake(context, force, extraArgs = None):
     # (Ninja, make), and --config for multi-configuration generators 
     # (Visual Studio); technically we don't need BOTH at the same
     # time, but specifying both is simpler than branching
-    config= BuildVariant(context)
+    config = "Release"
+    if context.buildDebug:
+        config = "Debug"
+    elif context.buildRelease:
+        config = "Release"
+    elif context.buildRelWithDebug:
+        config = "RelWithDebInfo"
 
     with CurrentWorkingDirectory(buildDir):
         Run('cmake '
@@ -589,16 +595,6 @@ def DownloadURL(url, context, force, extractDir = None,
             shutil.move(filename, filename + ".bad")
             raise RuntimeError("Failed to extract archive {filename}: {err}"
                                .format(filename=filename, err=e))
-
-def BuildVariant(context): 
-    if context.buildDebug:
-        return "Debug"
-    elif context.buildRelease:
-        return "Release"
-    elif context.buildRelWithDebug:
-        return "RelWithDebInfo"
-
-    return "RelWithDebInfo"
 
 ############################################################
 # 3rd-Party Dependencies
@@ -1609,17 +1605,13 @@ group.add_argument("--build", type=str,
                    help=("Build directory for USD and 3rd-party dependencies " 
                          "(default: <install_dir>/build)"))
 
-(BUILD_DEBUG, BUILD_RELEASE, BUILD_RELWITHDEBUG) = (0, 1, 2)
-subgroup = group.add_mutually_exclusive_group()
-subgroup.add_argument("--build-debug", dest="build_variant",
-                      action="store_const", const=BUILD_DEBUG, default=BUILD_RELWITHDEBUG,
-                      help="Build in Debug mode")
-subgroup.add_argument("--build-release", dest="build_variant",
-                      action="store_const", const=BUILD_RELEASE,
-                      help="Build in Release mode")
-subgroup.add_argument("--build-relwithdebug", dest="build_variant",
-                      action="store_const", const=BUILD_RELWITHDEBUG,
-                      help="Build in RelWithDebInfo mode (default)")
+BUILD_DEBUG = "debug"
+BUILD_RELEASE = "release"
+BUILD_RELWITHDEBUG = "relwithdebuginfo"
+group.add_argument("--build-variant", default=BUILD_RELEASE,
+                   choices=[BUILD_DEBUG, BUILD_RELEASE, BUILD_RELWITHDEBUG],
+                   help=("Build variant for USD and 3rd-party dependencies. "
+                         "(default: {})".format(BUILD_RELEASE)))
 
 group.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Custom arguments to pass to build system when "
@@ -1872,9 +1864,9 @@ class InstallContext:
             self.build_python_info['PYTHON_VERSION'] = args.build_python_info[3]
 
         # Build type
-        self.buildDebug = (args.build_variant == BUILD_DEBUG);
-        self.buildRelease = (args.build_variant == BUILD_RELEASE);
-        self.buildRelWithDebug = (args.build_variant == BUILD_RELWITHDEBUG);
+        self.buildDebug = (args.build_variant == BUILD_DEBUG)
+        self.buildRelease = (args.build_variant == BUILD_RELEASE)
+        self.buildRelWithDebug = (args.build_variant == BUILD_RELWITHDEBUG)
 
         self.debugPython = args.debug_python
 
@@ -2181,7 +2173,10 @@ summaryMsg = summaryMsg.format(
     buildType=("Shared libraries" if context.buildShared
                else "Monolithic shared library" if context.buildMonolithic
                else ""),
-    buildVariant=BuildVariant(context),
+    buildVariant=("Release" if context.buildRelease
+                  else "Debug" if context.buildDebug
+                  else "Release w/ Debug Info" if context.buildRelWithDebug
+                  else ""),
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     enableOpenVDB=("On" if context.enableOpenVDB else "Off"),
