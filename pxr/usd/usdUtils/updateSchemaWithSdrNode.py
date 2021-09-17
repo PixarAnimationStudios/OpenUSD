@@ -175,6 +175,22 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
         - USD_SUPPRESS_PROPERTY: A property level metadata which determines if 
           the property should be suppressed from translation from args to 
           property spec.
+
+    Sdr Property Metadata to SdfPropertySpec Translations
+        - A "null" value for Widget sdrProperty metadata translates to 
+          SdfPropertySpec Hidden metadata.
+        - SdrProperty's Help metadata (Label metadata if Help metadata not 
+          provided) translates to SdfPropertySpec's Documentation string 
+          metadata.
+        - SdrProperty's Page metadata translates to SdfPropertySpec's
+          DisplayGroup metadata.
+        - SdrProperty's Label metadata translates to SdfPropertySpec's
+          DisplayName metadata.
+        - SdrProperty's Options translates to SdfPropertySpec's AllowedTokens.
+        - SdrProperty's Default value translates to SdfPropertySpec's Default
+          value.
+        - Connectable input properties translates to InterfaceOnly
+          SdfPropertySpec's CONNECTABILITY.
     """
 
     import distutils.util
