@@ -62,7 +62,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(HD_ENABLE_SCENE_INDEX_EMULATION, false,
+TF_DEFINE_ENV_SETTING(HD_ENABLE_SCENE_INDEX_EMULATION, true,
                       "Enable scene index emulation in the render index.");
 
 static bool
