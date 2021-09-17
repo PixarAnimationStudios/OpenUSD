@@ -77,6 +77,10 @@ def testUsdviewInputFunction(appController):
     l = s.GetSessionLayer()
     s.SetEditTarget(l)
 
+    # Turn off the built-in camera light so Prman's default white dome light
+    # turns on 
+    appController._ambientOnlyClicked(False)
+
     _bugStep1(s)
     # Wait for usdview to catch up with changes, and since we are not interested
     # in the final image at this point, we are fine not waiting for convergence
