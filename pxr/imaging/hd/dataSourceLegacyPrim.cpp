@@ -1941,6 +1941,17 @@ HdDataSourceLegacyPrim::PrimDirtied(const HdDataSourceLocatorSet &locators)
     }
 }
 
+const HdDataSourceLocatorSet&
+HdDataSourceLegacyPrim::GetCachedLocators()
+{
+    static HdDataSourceLocatorSet locators = {
+        HdPrimvarsSchema::GetDefaultLocator(),
+        HdInstancerTopologySchema::GetDefaultLocator(),
+    };
+
+    return locators;
+}
+
 static
 bool
 _IsTypeLightLike(const TfToken &type)

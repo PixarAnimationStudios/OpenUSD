@@ -82,8 +82,11 @@ public:
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
     /// This clears internal cached values and is currently called only by
-    /// HdLegacyPrimSceneIndex in response to its own PrimsDirtied method
+    /// HdLegacyPrimSceneIndex in response to its own DirtyPrims method
     void PrimDirtied(const HdDataSourceLocatorSet &locators);
+
+    /// Return which locators PrimDirtied will respond to...
+    static const HdDataSourceLocatorSet &GetCachedLocators();
 
 private:
     HdDataSourceLegacyPrim(

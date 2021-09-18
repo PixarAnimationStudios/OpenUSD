@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hd/legacyPrimSceneIndex.h"
 #include "pxr/imaging/hd/dataSourceLegacyPrim.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,10 +39,17 @@ void
 HdLegacyPrimSceneIndex::DirtyPrims(
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     for (auto const &entry : entries) {
-        HdSceneIndexPrim prim = GetPrim(entry.primPath);
+        if (!entry.dirtyLocators.Intersects(
+                HdDataSourceLegacyPrim::GetCachedLocators())) {
+            // If none of the locators are cached by the datasource,
+            // PrimDirtied will be a no-op so we can skip the map lookup...
+            continue;
+        }
         HdDataSourceLegacyPrimHandle legacyDs =
-            HdDataSourceLegacyPrim::Cast(prim.dataSource);
+            HdDataSourceLegacyPrim::Cast(GetPrim(entry.primPath).dataSource);
         if (legacyDs) {
             legacyDs->PrimDirtied(entry.dirtyLocators);
         }
