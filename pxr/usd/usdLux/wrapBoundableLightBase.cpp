@@ -64,7 +64,7 @@ void wrapUsdLuxBoundableLightBase()
 {
     typedef UsdLuxBoundableLightBase This;
 
-    class_<This, bases<UsdLuxLight> >
+    class_<This, bases<UsdGeomBoundable> >
         cls("BoundableLightBase");
 
     cls

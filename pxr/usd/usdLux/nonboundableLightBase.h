@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLux/api.h"
-#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLux/lightAPI.h" 
@@ -58,7 +58,7 @@ class SdfAssetPath;
 /// functions provided by LightAPI for concrete derived light types.
 /// 
 ///
-class UsdLuxNonboundableLightBase : public UsdLuxLight
+class UsdLuxNonboundableLightBase : public UsdGeomXformable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -71,7 +71,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdLuxNonboundableLightBase(const UsdPrim& prim=UsdPrim())
-        : UsdLuxLight(prim)
+        : UsdGeomXformable(prim)
     {
     }
 
@@ -79,7 +79,7 @@ public:
     /// Should be preferred over UsdLuxNonboundableLightBase(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdLuxNonboundableLightBase(const UsdSchemaBase& schemaObj)
-        : UsdLuxLight(schemaObj)
+        : UsdGeomXformable(schemaObj)
     {
     }
 

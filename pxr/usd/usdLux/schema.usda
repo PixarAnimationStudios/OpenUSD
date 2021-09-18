@@ -489,7 +489,7 @@ class LightFilter "LightFilter" (
 }
 
 class "BoundableLightBase" (
-    inherits = </Light>
+    inherits = </Boundable>
     doc = """Base class for intrinsic lights that are boundable.
 
     The primary purpose of this class is to provide a direct API to the 
@@ -503,7 +503,7 @@ class "BoundableLightBase" (
 }
 
 class "NonboundableLightBase" (
-    inherits = </Light>
+    inherits = </Xformable>
     doc = """Base class for intrinsic lights that are not boundable.
 
     The primary purpose of this class is to provide a direct API to the 

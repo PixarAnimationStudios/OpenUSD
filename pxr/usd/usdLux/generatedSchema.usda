@@ -447,6 +447,19 @@ class "BoundableLightBase" (
     """
 )
 {
+    float3[] extent (
+        doc = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e. its own
+        transform not applied), without accounting for any shader-induced
+        displacement.  Whenever any geometry-affecting attribute is authored
+        for any gprim in a layer, extent must also be authored at the same
+        timesample; failure to do so will result in incorrect bounds-computation.
+        \\sa \\ref UsdGeom_Boundable_Extent.
+        
+        An authored extent on a prim which has children is expected to include
+        the extent of all children, as they will be pruned from BBox computation
+        during traversal."""
+    )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -637,6 +650,19 @@ class DiskLight "DiskLight" (
     The disk is centered in the XY plane and emits light along the -Z axis."""
 )
 {
+    float3[] extent (
+        doc = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e. its own
+        transform not applied), without accounting for any shader-induced
+        displacement.  Whenever any geometry-affecting attribute is authored
+        for any gprim in a layer, extent must also be authored at the same
+        timesample; failure to do so will result in incorrect bounds-computation.
+        \\sa \\ref UsdGeom_Boundable_Extent.
+        
+        An authored extent on a prim which has children is expected to include
+        the extent of all children, as they will be pruned from BBox computation
+        during traversal."""
+    )
     float inputs:radius = 0.5 (
         doc = "Radius of the disk."
     )
@@ -702,6 +728,19 @@ class RectLight "RectLight" (
     max coordinates at (-X, -Y)."""
 )
 {
+    float3[] extent (
+        doc = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e. its own
+        transform not applied), without accounting for any shader-induced
+        displacement.  Whenever any geometry-affecting attribute is authored
+        for any gprim in a layer, extent must also be authored at the same
+        timesample; failure to do so will result in incorrect bounds-computation.
+        \\sa \\ref UsdGeom_Boundable_Extent.
+        
+        An authored extent on a prim which has children is expected to include
+        the extent of all children, as they will be pruned from BBox computation
+        during traversal."""
+    )
     float inputs:height = 1 (
         doc = "Height of the rectangle, in the local Y axis."
     )
@@ -769,6 +808,19 @@ class SphereLight "SphereLight" (
     doc = "Light emitted outward from a sphere."
 )
 {
+    float3[] extent (
+        doc = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e. its own
+        transform not applied), without accounting for any shader-induced
+        displacement.  Whenever any geometry-affecting attribute is authored
+        for any gprim in a layer, extent must also be authored at the same
+        timesample; failure to do so will result in incorrect bounds-computation.
+        \\sa \\ref UsdGeom_Boundable_Extent.
+        
+        An authored extent on a prim which has children is expected to include
+        the extent of all children, as they will be pruned from BBox computation
+        during traversal."""
+    )
     float inputs:radius = 0.5 (
         doc = "Radius of the sphere."
     )
@@ -839,6 +891,19 @@ class CylinderLight "CylinderLight" (
     """
 )
 {
+    float3[] extent (
+        doc = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e. its own
+        transform not applied), without accounting for any shader-induced
+        displacement.  Whenever any geometry-affecting attribute is authored
+        for any gprim in a layer, extent must also be authored at the same
+        timesample; failure to do so will result in incorrect bounds-computation.
+        \\sa \\ref UsdGeom_Boundable_Extent.
+        
+        An authored extent on a prim which has children is expected to include
+        the extent of all children, as they will be pruned from BBox computation
+        during traversal."""
+    )
     float inputs:length = 1 (
         doc = "Width of the rectangle, in the local X axis."
     )
@@ -1079,6 +1144,19 @@ class PortalLight "PortalLight" (
     The rectangle is 1 unit in length."""
 )
 {
+    float3[] extent (
+        doc = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e. its own
+        transform not applied), without accounting for any shader-induced
+        displacement.  Whenever any geometry-affecting attribute is authored
+        for any gprim in a layer, extent must also be authored at the same
+        timesample; failure to do so will result in incorrect bounds-computation.
+        \\sa \\ref UsdGeom_Boundable_Extent.
+        
+        An authored extent on a prim which has children is expected to include
+        the extent of all children, as they will be pruned from BBox computation
+        during traversal."""
+    )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -1143,6 +1221,19 @@ class LightPortal "LightPortal" (
     The rectangle is 1 unit in length."""
 )
 {
+    float3[] extent (
+        doc = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e. its own
+        transform not applied), without accounting for any shader-induced
+        displacement.  Whenever any geometry-affecting attribute is authored
+        for any gprim in a layer, extent must also be authored at the same
+        timesample; failure to do so will result in incorrect bounds-computation.
+        \\sa \\ref UsdGeom_Boundable_Extent.
+        
+        An authored extent on a prim which has children is expected to include
+        the extent of all children, as they will be pruned from BBox computation
+        during traversal."""
+    )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)

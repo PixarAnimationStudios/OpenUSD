@@ -64,7 +64,7 @@ void wrapUsdLuxNonboundableLightBase()
 {
     typedef UsdLuxNonboundableLightBase This;
 
-    class_<This, bases<UsdLuxLight> >
+    class_<This, bases<UsdGeomXformable> >
         cls("NonboundableLightBase");
 
     cls

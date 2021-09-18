@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdLuxBoundableLightBase,
-        TfType::Bases< UsdLuxLight > >();
+        TfType::Bases< UsdGeomBoundable > >();
     
 }
 
@@ -90,7 +90,7 @@ UsdLuxBoundableLightBase::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
     static TfTokenVector allNames =
-        UsdLuxLight::GetSchemaAttributeNames(true);
+        UsdGeomBoundable::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;
