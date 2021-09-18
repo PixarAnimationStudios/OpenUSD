@@ -40,6 +40,7 @@ namespace {
 // Per TextureCtx user data.
 struct RtxHioImagePluginUserData {
     HioImageSharedPtr image;
+    bool flipped;
 
     std::mutex mipLevelsMutex;
     std::vector<HioImage::StorageSpec> mipLevels;
@@ -138,6 +139,7 @@ RtxHioImagePlugin::Open(TextureCtx& tCtx)
     // Parse args.
     std::string filename;
     std::string wrapS, wrapT;
+    std::string flipped;
     HioImage::SourceColorSpace sourceColorSpace = HioImage::Auto;
     for (unsigned int i = 0; i < tCtx.argc; i += 2) {
         if (strcmp(tCtx.argv[i], "filename") == 0) {
@@ -146,6 +148,8 @@ RtxHioImagePlugin::Open(TextureCtx& tCtx)
             wrapS = tCtx.argv[i + 1];
         } else if (strcmp(tCtx.argv[i], "wrapT") == 0) {
             wrapT = tCtx.argv[i + 1];
+        } else if (strcmp(tCtx.argv[i], "flipped") == 0) {
+            flipped = tCtx.argv[i + 1];
         } else if (strcmp(tCtx.argv[i], "sourceColorSpace") == 0) {
             if (strcmp(tCtx.argv[i + 1], "sRGB") == 0) {
                 sourceColorSpace = HioImage::SRGB;
@@ -226,6 +230,9 @@ RtxHioImagePlugin::Open(TextureCtx& tCtx)
     tCtx.userData = data;
     data->image = image;
 
+    // Flip vertically. The default is true.
+    data->flipped = (flipped != "false");
+
     return 0;
 }
 
@@ -237,7 +244,7 @@ RtxHioImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
 
     // Find (or create) appropriate MIP level.
     HioImage::StorageSpec level;
-    level.flipped = true;
+    level.flipped = data->flipped;
     {
         // Lock mutex while scanning or modifying mipLevels.
         std::lock_guard<std::mutex> lock(data->mipLevelsMutex);
