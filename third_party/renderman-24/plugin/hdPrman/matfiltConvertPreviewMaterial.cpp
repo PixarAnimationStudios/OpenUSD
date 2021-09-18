@@ -23,6 +23,7 @@
 //
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
 #include "hdPrman/context.h"
+#include "hdPrman/debugCodes.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/arch/library.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -250,14 +251,14 @@ MatfiltConvertPreviewMaterial(
                                     _tokens->colorSpaceAuto.GetString());
                             sourceColorSpace = TfToken(sourceColorSpaceStr);
                         }
-
-                        param.second =
+                        path =
                             TfStringPrintf("rtxplugin:%s?filename=%s"
                                            "&wrapS=%s&wrapT=%s&"
                                            "sourceColorSpace=%s",
                                            pluginName.c_str(), path.c_str(),
                                            wrapS.GetText(), wrapT.GetText(),
                                            sourceColorSpace.GetText());
+                        param.second = path;
                     } else if (ext == "tex") {
                         // USD Preview Materials use a texture coordinate
                         // convention where (0,0) is in the bottom-left;
@@ -265,6 +266,9 @@ MatfiltConvertPreviewMaterial(
                         // where (0,0) is in the top-left.
                         needInvertT = true;
                     }
+                    TF_DEBUG(HDPRMAN_IMAGE_ASSET_RESOLVE)
+                        .Msg("Resolved preview material asset path: %s\n",
+                             path.c_str());
                 }
             }
             if (needInvertT &&

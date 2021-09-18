@@ -27,7 +27,9 @@
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/rixStrings.h"
+#include "pxr/base/arch/library.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/envSetting.h"
@@ -125,6 +127,29 @@ _RtStringFromSdfAssetPath(SdfAssetPath const& ap)
     if (p.empty()) {
         p = ap.GetAssetPath();
     }
+    return RtUString(p.c_str());
+}
+
+static RtUString
+_RtStringFromLightColorMapAssetPath(SdfAssetPath const& ap)
+{
+    // Although Renderman does its own searchpath resolution,
+    // scene delegates like USD may have additional path resolver
+    // semantics, so try GetResolvedPath() first.
+    //
+    // Also, use the RtxHioImage plugin if the path is resolved and it
+    // isn't a tex file.  RtxHioImage wants to flip images by default
+    // but lightColorMap images should not be flipped.
+    std::string p = ap.GetResolvedPath();
+    if (p.empty()) {
+        p = ap.GetAssetPath();
+    }
+    else if (ArGetResolver().GetExtension(p) != "tex") {
+        p = "rtxplugin:RtxHioImage" ARCH_LIBRARY_SUFFIX
+            "?filename=" + p + "&flipped=false";
+    }
+    TF_DEBUG(HDPRMAN_IMAGE_ASSET_RESOLVE)
+        .Msg("Resolved lightColorMap asset path: %s\n", p.c_str());
     return RtUString(p.c_str());
 }
 
@@ -474,7 +499,8 @@ _PopulateNodeFromLightParams(HdSceneDelegate *sceneDelegate,
             HdLightTokens->textureFile);
         if (textureFile.IsHolding<SdfAssetPath>()) {
             SdfAssetPath ap = textureFile.UncheckedGet<SdfAssetPath>();
-            lightNode.params.SetString(us_lightColorMap, _RtStringFromSdfAssetPath(ap));
+            lightNode.params.SetString(us_lightColorMap,
+                        _RtStringFromLightColorMapAssetPath(ap));
         }
 
         VtValue colorMapGamma =
