@@ -47,6 +47,9 @@ ARCH_PRAGMA_PUSH
 ARCH_PRAGMA_UNUSED_FUNCTION
 
 #define STB_IMAGE_STATIC
+#ifdef ARCH_OS_WINDOWS
+#define STBI_WINDOWS_UTF8
+#endif
 #define STB_IMAGE_IMPLEMENTATION
 #include "pxr/imaging/hio/stb/stb_image.h"
 
@@ -55,6 +58,9 @@ ARCH_PRAGMA_UNUSED_FUNCTION
 #include "pxr/imaging/hio/stb/stb_image_resize.h"
 
 #define STB_IMAGE_WRITE_STATIC
+#ifdef ARCH_OS_WINDOWS
+#define STBIW_WINDOWS_UTF8
+#endif
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "pxr/imaging/hio/stb/stb_image_write.h"
 
