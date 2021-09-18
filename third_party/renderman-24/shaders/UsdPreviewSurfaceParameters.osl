@@ -35,7 +35,7 @@ shader UsdPreviewSurfaceParameters
     float opacity = 1.0,
     float opacityThreshold = 0.0,
     float ior = 1.5,
-    vector normalIn = vector(0.0, 0.0, 1.0),
+    normal normalIn = normal(0.0, 0.0, 1.0),
     float occlusion = 1.0,
 
     // Diffuse outputs
@@ -151,9 +151,9 @@ shader UsdPreviewSurfaceParameters
         vector Bn = normalize(cross(N, Tn));
 
         // Convert from tangent-space normal to current space
-        bumpNormalOut = -Tn * normalIn[0] +
-                     -Bn * normalIn[1] + 
-                      N * normalIn[2];
+        bumpNormalOut = Tn * normalIn[0] +
+                        Bn * normalIn[1] + 
+                         N * normalIn[2];
         bumpNormalOut = normalize(bumpNormalOut);
 
         normal Ngn = N;

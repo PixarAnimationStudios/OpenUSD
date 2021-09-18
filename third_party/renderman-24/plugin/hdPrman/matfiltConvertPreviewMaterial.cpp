@@ -46,6 +46,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // UsdPreviewSurface tokens
     (file)
+    (normal)
     (opacityThreshold)
 
     // UsdPreviewSurface conversion to Pxr nodes
@@ -71,6 +72,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (glowGainOut)
     (glowColor)
     (glowColorOut)
+    (normalIn)
     (refractionGain)
     (refractionGainOut)
     (specularEdgeColor)
@@ -89,6 +91,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (wrapS)
     (wrapT)
     (useMetadata)
+    (sourceColorSpace)
+    (sRGB)
+    (raw)
+    ((colorSpaceAuto, "auto")) 
 
     // UsdTransform2d parameters
     (in)
@@ -123,6 +129,27 @@ MatfiltConvertPreviewMaterial(
             // Modify the node to a UsdPreviewSurfaceParameters node, which
             // translates the params to outputs that feed a PxrSurface node.
             node.nodeTypeId = _tokens->UsdPreviewSurfaceParameters;
+
+            // Because UsdPreviewSurfaceParameters uses "normalIn" instead of
+            // UsdPreviewSurface's "normal", adjust that here.
+            {
+                auto it = node.parameters.find(_tokens->normal);
+                if (it != node.parameters.end()) {
+                    auto const value = std::move(it->second);
+                    node.parameters.erase(it);
+                    node.parameters.insert({_tokens->normalIn, 
+                        std::move(value)});
+                }
+            }
+            {
+                auto it = node.inputConnections.find(_tokens->normal);
+                if (it != node.inputConnections.end()) {
+                    auto const value = std::move(it->second);
+                    node.inputConnections.erase(it);
+                    node.inputConnections.insert({_tokens->normalIn, 
+                        std::move(value)});
+                }
+            }
 
             // Insert a PxrSurface and connect it to the above node.
             pxrSurfacePath =
@@ -207,11 +234,30 @@ MatfiltConvertPreviewMaterial(
                             wrapSVal.GetWithDefault(_tokens->useMetadata);
                         TfToken wrapT =
                             wrapSVal.GetWithDefault(_tokens->useMetadata);
+                            
+                        // Check for source colorspace.
+                        VtValue sourceColorSpaceVal;
+                        TfMapLookup(node.parameters, _tokens->sourceColorSpace,
+                            &sourceColorSpaceVal);
+                        // XXX: This is a workaround for Presto. If there's no
+                        // colorspace token, check if there's a colorspace
+                        // string.
+                        TfToken sourceColorSpace = 
+                            sourceColorSpaceVal.GetWithDefault(TfToken());
+                        if (sourceColorSpace.IsEmpty()) {
+                            const std::string sourceColorSpaceStr = 
+                                sourceColorSpaceVal.GetWithDefault(
+                                    _tokens->colorSpaceAuto.GetString());
+                            sourceColorSpace = TfToken(sourceColorSpaceStr);
+                        }
+
                         param.second =
                             TfStringPrintf("rtxplugin:%s?filename=%s"
-                                           "&wrapS=%s&wrapT=%s",
+                                           "&wrapS=%s&wrapT=%s&"
+                                           "sourceColorSpace=%s",
                                            pluginName.c_str(), path.c_str(),
-                                           wrapS.GetText(), wrapT.GetText());
+                                           wrapS.GetText(), wrapT.GetText(),
+                                           sourceColorSpace.GetText());
                     } else if (ext == "tex") {
                         // USD Preview Materials use a texture coordinate
                         // convention where (0,0) is in the bottom-left;

@@ -773,8 +773,16 @@ _MakeMaterialParamsForTexture(
     texParam.isPremultiplied = premultiplyTexture;
 
     // Get texture's sourceColorSpace hint 
-    const TfToken sourceColorSpace = _ResolveParameter(
-        node, sdrNode, _tokens->sourceColorSpace, HdStTokens->colorSpaceAuto);
+    // XXX: This is a workaround for Presto. If there's no colorspace token, 
+    // check if there's a colorspace string.
+    TfToken sourceColorSpace = _ResolveParameter(
+        node, sdrNode, _tokens->sourceColorSpace, TfToken());
+    if (sourceColorSpace.IsEmpty()) {
+        const std::string sourceColorSpaceStr = _ResolveParameter(
+            node, sdrNode, _tokens->sourceColorSpace, 
+            HdStTokens->colorSpaceAuto.GetString());
+        sourceColorSpace = TfToken(sourceColorSpaceStr);
+    }
 
     // Extract texture file path
     bool useTexturePrimToFindTexture = true;
