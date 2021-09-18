@@ -29,8 +29,6 @@
 
 #include "pxr/usd/sdf/pathTable.h"
 
-#include <tbb/concurrent_unordered_map.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // ----------------------------------------------------------------------------
@@ -106,8 +104,7 @@ private:
         HdContainerDataSourceHandle _parentOverlayDataSource;
         const std::weak_ptr<const HdPrimDataSourceOverlayCache> _cache;
 
-        using _OverlayMap = tbb::concurrent_unordered_map<
-            TfToken, HdDataSourceBaseHandle, TfToken::HashFunctor>;
+        using _OverlayMap = std::map<TfToken, HdDataSourceBaseHandle>;
 
         _OverlayMap _overlayMap;
         TfTokenVector _overlayNames;

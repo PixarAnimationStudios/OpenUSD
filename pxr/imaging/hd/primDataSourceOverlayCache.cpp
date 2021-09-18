@@ -128,9 +128,6 @@ void
 HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::PrimDirtied(
     const HdDataSourceLocatorSet &locators)
 {
-    // XXX: if we expect multithreaded PrimsDirtied, the unsafe_erase
-    // needs to be locked...
-
     auto cache = _cache.lock();
     if (TF_VERIFY(cache)) {
         // Refresh the overlay names.
@@ -144,7 +141,7 @@ HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::PrimDirtied(
             HdDataSourceLocatorSet dependencies =
                 cache->_GetOverlayDependencies(i->first);
             if (dependencies.Intersects(locators)) {
-                i = _overlayMap.unsafe_erase(i);
+                i = _overlayMap.erase(i);
             } else {
                 ++i;
             }
