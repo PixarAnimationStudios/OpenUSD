@@ -231,6 +231,8 @@ HdFlatteningSceneIndex::_DirtyHierarchy(
                 // where no data is cached yet...
                 it = it.GetNextSubtree();
             }
+        } else {
+            ++it;
         }
     }
 }
@@ -465,6 +467,26 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetXform()
     HdXformSchema inputXform =
             HdXformSchema::GetFromParent(_inputDataSource);
 
+    // If this xform is fully composed, early out.
+    if (inputXform) {
+        HdBoolDataSourceHandle resetXformStack =
+            inputXform.GetResetXformStack();
+        if (resetXformStack && resetXformStack->GetTypedValue(0.0f)) {
+            // Only use the local transform, or identity if no matrix was
+            // provided...
+            if (inputXform.GetMatrix()) {
+                computedXformDataSource = inputXform.GetContainer();
+            } else {
+                computedXformDataSource = _sceneIndex._identityXform;
+            }
+            HdContainerDataSource::AtomicStore(
+                _computedXformDataSource, computedXformDataSource);
+
+            return computedXformDataSource;
+        }
+    }
+
+    // Otherwise, we need to look at the parent value.
     HdXformSchema parentXform(nullptr);
     if (_primPath.GetPathElementCount()) {
         SdfPath parentPath = _primPath.GetParentPath();
@@ -475,52 +497,33 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetXform()
         }
     }
 
-    if (inputXform) {
-        HdBoolDataSourceHandle resetXformStack =
-            inputXform.GetResetXformStack();
-        if (resetXformStack && resetXformStack->GetTypedValue(0.0f)) {
-            // Only use the local transform, or identity if no matrix was
-            // provided...
-            if (inputXform.GetMatrix()) {
-                return inputXform.GetContainer();
-            } else {
-                return _sceneIndex._identityXform;
-            }
-        } else {
-            // If the local xform wants to compose with the parent,
-            // do so as long as both matrices are provided.
-            HdMatrixDataSourceHandle parentMatrixDataSource =
-                parentXform ? parentXform.GetMatrix() : nullptr;
-            HdMatrixDataSourceHandle inputMatrixDataSource =
-                inputXform.GetMatrix();
+    // Attempt to compose the local matrix with the parent matrix;
+    // note that since we got the parent matrix from _prims instead of
+    // _inputDataSource, the parent matrix should be flattened already.
+    // If either of the local or parent matrix are missing, they are
+    // interpreted to be identity.
+    HdMatrixDataSourceHandle parentMatrixDataSource =
+        parentXform ? parentXform.GetMatrix() : nullptr;
+    HdMatrixDataSourceHandle inputMatrixDataSource =
+        inputXform ? inputXform.GetMatrix() : nullptr;
 
-            if (inputMatrixDataSource && parentMatrixDataSource) {
-                GfMatrix4d parentMatrix =
-                    parentMatrixDataSource->GetTypedValue(0.0f);
+    if (inputMatrixDataSource && parentMatrixDataSource) {
+        GfMatrix4d parentMatrix =
+            parentMatrixDataSource->GetTypedValue(0.0f);
+        GfMatrix4d inputMatrix =
+            inputMatrixDataSource->GetTypedValue(0.0f);
 
-                GfMatrix4d inputMatrix =
-                    inputMatrixDataSource->GetTypedValue(0.0f);
-
-                computedXformDataSource = HdXformSchema::Builder()
-                    .SetMatrix(
-                        HdRetainedTypedSampledDataSource<GfMatrix4d>::New(
-                            inputMatrix * parentMatrix))
-                    .Build();
-            } else if (inputMatrixDataSource) {
-                computedXformDataSource = inputXform.GetContainer();
-            } else if (parentMatrixDataSource) {
-                computedXformDataSource = parentXform.GetContainer();
-            } else {
-                computedXformDataSource = _sceneIndex._identityXform;
-            }
-        }
+        computedXformDataSource = HdXformSchema::Builder()
+            .SetMatrix(
+                    HdRetainedTypedSampledDataSource<GfMatrix4d>::New(
+                        inputMatrix * parentMatrix))
+            .Build();
+    } else if (inputMatrixDataSource) {
+        computedXformDataSource = inputXform.GetContainer();
+    } else if (parentMatrixDataSource) {
+        computedXformDataSource = parentXform.GetContainer();
     } else {
-        // If there's no local xform, use the parent (or identity as fallback).
-        if (parentXform && parentXform.GetMatrix()) {
-            computedXformDataSource = parentXform.GetContainer();
-        } else {
-            computedXformDataSource = _sceneIndex._identityXform;
-        }
+        computedXformDataSource = _sceneIndex._identityXform;
     }
 
     HdContainerDataSource::AtomicStore(
