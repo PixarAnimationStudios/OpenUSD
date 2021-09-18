@@ -227,11 +227,13 @@ static GfVec4d _PiShift(
     GfVec4d result(attempt);
     for (int i = 0; i < 4; i++)
     {
-        double      mod1 = fmod(attempt[i], mul);
-        double      mod2 = fmod(hint[i], mul);
-        result[i] = (hint[i]-mod2)+mod1;
-        if (fabs(hint[i]-result[i])>mul/2.0) 
-            result[i]+=(hint[i]<0?-mul:mul);
+        while (fabs(result[i] - hint[i]) > M_PI) {
+            if (hint[i] < result[i]) {
+                result[i] -= 2*M_PI;
+            } else {
+                result[i] += 2*M_PI;
+            }
+        }
     }
     return result;
 }
