@@ -196,12 +196,16 @@ HdPrman_OfflineContext::InitializeWithDefaults()
         static const RtUString us_simpleVolume("simpleVolume");
         static const RtUString us_density("density");
         static const RtUString us_densityFloatPrimVar("densityFloatPrimVar");
+        static const RtUString us_diffuseColor("diffuseColor");
         std::vector<riley::ShadingNode> volumeMaterialNodes;
         riley::ShadingNode pxrVolume_node;
         pxrVolume_node.type = riley::ShadingNode::Type::k_Bxdf;
         pxrVolume_node.name = us_PxrVolume;
         pxrVolume_node.handle = us_simpleVolume;
         pxrVolume_node.params.SetString(us_densityFloatPrimVar, us_density);
+        // 18% albedo chosen to match Storm's fallback volume shader.
+        pxrVolume_node.params.SetColor(us_diffuseColor, 
+                                    RtColorRGB(0.18, 0.18, 0.18));
         volumeMaterialNodes.push_back(pxrVolume_node);
         _SetFallbackVolumeMaterial(volumeMaterialNodes);
     }

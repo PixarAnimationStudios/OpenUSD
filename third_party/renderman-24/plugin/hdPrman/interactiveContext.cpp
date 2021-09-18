@@ -211,13 +211,12 @@ HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
                                      resolution, 2);
         }
 
-        // Read the maxSamples out of settings (if it exists). Use a default
-        // of 1024, so we don't cut the progressive render off early.
-        // Setting a lower value here would be useful for unit tests.
+        // Read the maxSamples out of settings (if it exists).
+        // Use a low value to default to a non-expensive render.
         VtValue vtMaxSamples = renderDelegate->GetRenderSetting(
             HdRenderSettingsTokens->convergedSamplesPerPixel).Cast<int>();
         int maxSamples = TF_VERIFY(!vtMaxSamples.IsEmpty()) ?
-            vtMaxSamples.UncheckedGet<int>() : 1024;
+            vtMaxSamples.UncheckedGet<int>() : 16;
         _options.SetInteger(RixStr.k_hider_minsamples, 1);
         _options.SetInteger(RixStr.k_hider_maxsamples, maxSamples);
 
@@ -406,6 +405,9 @@ HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         pxrVolume_node.name = us_PxrVolume;
         pxrVolume_node.handle = us_simpleVolume;
         pxrVolume_node.params.SetString(us_densityFloatPrimVar, us_density);
+        // 18% albedo chosen to match Storm's fallback volume shader.
+        pxrVolume_node.params.SetColor(us_diffuseColor, 
+                                    RtColorRGB(0.18, 0.18, 0.18));
         materialNodes.push_back(pxrVolume_node);
         fallbackVolumeMaterial = riley->CreateMaterial(
             riley::UserId::DefaultId(),
