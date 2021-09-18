@@ -1974,7 +1974,6 @@ HdDataSourceLegacyPrim::Has(const TfToken &name)
             name == HdExtComputationPrimvarsSchemaTokens->extComputationPrimvars ||
             name == HdMaterialBindingSchemaTokens->materialBinding ||
             name == HdLegacyDisplayStyleSchemaTokens->displayStyle || 
-            name == HdVolumeFieldBindingSchemaTokens->volumeFieldBinding ||
             name == HdCoordSysBindingSchemaTokens->coordSysBinding ||
             name == HdPurposeSchemaTokens->purpose ||
             name == HdVisibilitySchemaTokens->visibility ||
@@ -2036,6 +2035,12 @@ HdDataSourceLegacyPrim::Has(const TfToken &name)
         }
     }
 
+    if (_type == HdPrimTypeTokens->volume) {
+        if (name == HdVolumeFieldBindingSchemaTokens->volumeFieldBinding) {
+            return true;
+        }
+    }
+
     if (_type == HdPrimTypeTokens->extComputation) {
         if (name == HdExtComputationSchemaTokens->extComputation) {
             return true;
@@ -2079,7 +2084,6 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdExtComputationPrimvarsSchemaTokens->extComputationPrimvars);
         result.push_back(HdMaterialBindingSchemaTokens->materialBinding);
         result.push_back(HdLegacyDisplayStyleSchemaTokens->displayStyle); 
-        result.push_back(HdVolumeFieldBindingSchemaTokens->volumeFieldBinding);
         result.push_back(HdCoordSysBindingSchemaTokens->coordSysBinding);
         result.push_back(HdPurposeSchemaTokens->purpose);
         result.push_back(HdVisibilitySchemaTokens->visibility);
@@ -2123,6 +2127,10 @@ HdDataSourceLegacyPrim::GetNames()
 
     if (HdLegacyPrimTypeIsVolumeField(_type)) {
         result.push_back(HdVolumeFieldSchemaTokens->volumeField);
+    }
+
+    if (_type == HdPrimTypeTokens->volume) {
+        result.push_back(HdVolumeFieldBindingSchemaTokens->volumeFieldBinding);
     }
 
     if (_type == HdPrimTypeTokens->extComputation) {
