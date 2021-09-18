@@ -81,16 +81,12 @@ private:
         }
 
     protected:
-        _OverlayCache() : HdPrimDataSourceOverlayCache(false) {}
+        _OverlayCache();
 
-        TfTokenVector _GetOverlayNames(
-            HdContainerDataSourceHandle inputDataSource) const override;
         HdDataSourceBaseHandle _ComputeOverlayDataSource(
             const TfToken &name,
             HdContainerDataSourceHandle inputDataSource,
             HdContainerDataSourceHandle parentOverlayDataSource) const override;
-        HdDataSourceLocatorSet _GetOverlayDependencies(
-            const TfToken &name) const override;
 
         HdDataSourceBaseHandle _ComputePrimvarDescriptors(
             HdContainerDataSourceHandle inputDataSource) const;

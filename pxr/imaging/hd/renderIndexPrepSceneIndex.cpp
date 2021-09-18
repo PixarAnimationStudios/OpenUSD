@@ -62,22 +62,26 @@ _InterpolationAsEnum(const TfToken&interpolationToken)
 TF_DEFINE_PUBLIC_TOKENS(HdPrimvarDescriptorsSchemaTokens,
         HDPRIMVARDESCRIPTORSSCHEMA_TOKENS);
 
-TfTokenVector
-HdRenderIndexPrepSceneIndex::_OverlayCache::_GetOverlayNames(
-        HdContainerDataSourceHandle inputDataSource) const
+HdRenderIndexPrepSceneIndex::_OverlayCache::_OverlayCache()
+    : HdPrimDataSourceOverlayCache()
 {
-    TfTokenVector result;
-    if (inputDataSource && inputDataSource->Has(
-            HdPrimvarsSchemaTokens->primvars)) {
-        result.push_back(
-            HdPrimvarDescriptorsSchemaTokens->__primvarDescriptors);
-    }
-    if (inputDataSource && inputDataSource->Has(
-            HdExtComputationPrimvarsSchemaTokens->extComputationPrimvars)) {
-        result.push_back(
-            HdPrimvarDescriptorsSchemaTokens->__extComputationPrimvarDescriptors);
-    }
-    return result;
+    _OverlayTopology topo;
+
+    _OverlayDependencies primvarDependencies;
+    primvarDependencies.onPrim.insert(
+        HdPrimvarsSchema::GetDefaultLocator());
+    topo.insert(std::make_pair(
+        HdPrimvarDescriptorsSchemaTokens->__primvarDescriptors,
+        primvarDependencies));
+
+    _OverlayDependencies extCompDependencies;
+    extCompDependencies.onPrim.insert(
+        HdExtComputationPrimvarsSchema::GetDefaultLocator());
+    topo.insert(std::make_pair(
+        HdPrimvarDescriptorsSchemaTokens->__extComputationPrimvarDescriptors,
+        extCompDependencies));
+
+    _SetOverlayTopology(topo);
 }
 
 HdDataSourceBaseHandle
@@ -233,18 +237,6 @@ HdRenderIndexPrepSceneIndex::_OverlayCache::_ComputeExtComputationPrimvarDescrip
                  count, names, values);
 }
 
-HdDataSourceLocatorSet
-HdRenderIndexPrepSceneIndex::_OverlayCache::_GetOverlayDependencies(
-    const TfToken &name) const
-{
-    if (name == HdPrimvarDescriptorsSchemaTokens->__primvarDescriptors) {
-        return { HdPrimvarsSchema::GetDefaultLocator() };
-    } else if (name == HdPrimvarDescriptorsSchemaTokens->__extComputationPrimvarDescriptors) {
-        return { HdExtComputationPrimvarsSchema::GetDefaultLocator() };
-    }
-    return HdDataSourceLocator();
-}
-
 HdRenderIndexPrepSceneIndex::HdRenderIndexPrepSceneIndex(
     HdSceneIndexBaseRefPtr inputScene)
 : HdSingleInputFilteringSceneIndexBase(inputScene)
@@ -296,8 +288,13 @@ HdRenderIndexPrepSceneIndex::_PrimsDirtied(
 {
     TRACE_FUNCTION();
 
-    _cache->HandlePrimsDirtied(entries);
+    HdSceneIndexObserver::DirtiedPrimEntries additionalDirtied;
+    _cache->HandlePrimsDirtied(entries, &additionalDirtied);
+
     _SendPrimsDirtied(entries);
+    if (!additionalDirtied.empty()) {
+        _SendPrimsDirtied(additionalDirtied);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -50,39 +50,60 @@ public:
     void HandlePrimsRemoved(
         const HdSceneIndexObserver::RemovedPrimEntries &entries);
     void HandlePrimsDirtied(
-        const HdSceneIndexObserver::DirtiedPrimEntries &entries);
+        const HdSceneIndexObserver::DirtiedPrimEntries &entries,
+        HdSceneIndexObserver::DirtiedPrimEntries *additionalDirtied);
 
 protected:
-    // The "hierarchical" flag controls whether the parent overlay data source
-    // is passed into _ComputeOverlayDataSource. This is needed for hierarchical
-    // operations like transform concatenation, but can be an unnecessary
-    // expense for other operations, so we allow derived classes to turn it off.
-    HdPrimDataSourceOverlayCache(bool hierarchical)
-        : _hierarchical(hierarchical) {}
+    HdPrimDataSourceOverlayCache() = default;
 
-    // A list of top-level datasources this overlay adds/overrides.
-    virtual TfTokenVector _GetOverlayNames(
-        HdContainerDataSourceHandle inputDataSource) const = 0;
+    // This struct provides a way for users of the cache to describe the
+    // structure of synthetic attributes. For example, if you compute
+    // "xformInverse" from "xform", the topology would look like:
+    // OverlayTopology topo = { "xformInverse" ->
+    //   { .onPrim = { "xform" }, .onParent = { }, false }
+    // }
+    // ... notably, this tells us what attributes we're adding (xformInverse,
+    // but only when xform is present); and also to dirty xformInverse when
+    // xform is dirty.
+    //
+    // For attributes we always want to add (even if their dependents are not
+    // present), dependenciesOptional lets us say as much.
+    //
+    // Note: _ComputeOverlayDataSource should respect this topology, or behavior
+    // is undefined...
+    //
+    // XXX: the "onParent" dependencies here are to support eventual inherited
+    // attribute caching, but this feature hasn't been implemented yet.
+    struct _OverlayDependencies
+    {
+        _OverlayDependencies()
+            : onPrim(), onParent(), dependenciesOptional(false) {}
+
+        HdDataSourceLocatorSet onPrim;
+        HdDataSourceLocatorSet onParent;
+        bool dependenciesOptional;
+    };
+    using _OverlayTopology = std::map<TfToken, _OverlayDependencies>;
+
+
+    // Topology should be set once, from the derived class constructor.
+    void _SetOverlayTopology(const _OverlayTopology &topology) {
+        _overlayTopology = topology;
+    }
 
     // Compute the named datasource. Note that inputDataSource comes from the
-    // source scene index, while parentOverlayDataSource comes from the cache.
-    // If _hierarchical is false, parentOverlayDataSource will be null.
+    // source scene index, while parentOverlayDataSource comes from the cache
+    // and is consequently recursively composed.
+    //
+    // XXX: the "parentOverlayDataSource" is here to support eventual inherited
+    // attribute caching, but this feature hasn't been implemented yet. For now,
+    // it will always be null.
     virtual HdDataSourceBaseHandle _ComputeOverlayDataSource(
         const TfToken &name,
         HdContainerDataSourceHandle inputDataSource,
         HdContainerDataSourceHandle parentOverlayDataSource) const = 0;
 
-    // Return the dependencies on inputDataSource that can invalidate a named
-    // overlay.
-    virtual HdDataSourceLocatorSet _GetOverlayDependencies(
-        const TfToken &name) const = 0;
-
 private:
-
-    HdContainerDataSourceHandle _AddPrim(
-        const SdfPath &primPath,
-        const HdSceneIndexBaseRefPtr &source);
-
     class _HdPrimDataSourceOverlay : public HdContainerDataSource
     {
     public:
@@ -93,7 +114,9 @@ private:
             HdContainerDataSourceHandle parentOverlayDataSource,
             const std::weak_ptr<const HdPrimDataSourceOverlayCache> cache);
 
-        void PrimDirtied(const HdDataSourceLocatorSet &locators);
+        void UpdateInputDataSource(HdContainerDataSourceHandle inputDataSource);
+
+        void PrimDirtied(const HdDataSourceLocatorSet &dirtyAttributes);
 
         bool Has(const TfToken &name) override;
         TfTokenVector GetNames() override;
@@ -107,11 +130,10 @@ private:
         using _OverlayMap = std::map<TfToken, HdDataSourceBaseHandle>;
 
         _OverlayMap _overlayMap;
-        TfTokenVector _overlayNames;
     };
 
-    const bool _hierarchical;
     SdfPathTable<HdSceneIndexPrim> _cache;
+    _OverlayTopology _overlayTopology;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

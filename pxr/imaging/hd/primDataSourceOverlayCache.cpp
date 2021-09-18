@@ -23,6 +23,7 @@
 //
 #include "primDataSourceOverlayCache.h"
 
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/work/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -40,38 +41,35 @@ HdPrimDataSourceOverlayCache::GetPrim(const SdfPath &primPath) const
     return { TfToken(), nullptr };
 }
 
-HdContainerDataSourceHandle
-HdPrimDataSourceOverlayCache::_AddPrim(
-    const SdfPath &primPath, const HdSceneIndexBaseRefPtr &source)
-{
-    HdContainerDataSourceHandle parentOverlay = nullptr;
-    if (_hierarchical && primPath != SdfPath::AbsoluteRootPath()) {
-        SdfPath parentPath = primPath.GetParentPath();
-        parentOverlay = GetPrim(parentPath).dataSource;
-        if (!parentOverlay) {
-            parentOverlay = _AddPrim(parentPath, source);
-        }
-    }
-
-    HdSceneIndexPrim inputPrim = source->GetPrim(primPath);
-    HdContainerDataSourceHandle input = inputPrim.dataSource;
-
-    HdSceneIndexPrim cached = {
-        inputPrim.primType, 
-        _HdPrimDataSourceOverlay::New(input, parentOverlay, shared_from_this()),
-    };
-
-    _cache[primPath] = cached;
-    return cached.dataSource;
-}
-
 void
 HdPrimDataSourceOverlayCache::HandlePrimsAdded(
     const HdSceneIndexObserver::AddedPrimEntries &entries,
     const HdSceneIndexBaseRefPtr &source)
 {
+    TRACE_FUNCTION();
+
     for (const auto &entry : entries) {
-        _AddPrim(entry.primPath, source);
+        HdContainerDataSourceHandle parentOverlay = nullptr;
+        HdContainerDataSourceHandle inputDataSource =
+            source->GetPrim(entry.primPath).dataSource;
+
+        auto iterBoolPair =
+            _cache.insert({entry.primPath, HdSceneIndexPrim()});
+        HdSceneIndexPrim &prim = iterBoolPair.first->second;
+
+        // Always update the prim type.
+        prim.primType = entry.primType;
+
+        // If the wrapper exists, update the input datasource;
+        // otherwise, create it.
+        if (prim.dataSource) {
+            _HdPrimDataSourceOverlay::Cast(prim.dataSource)->
+                UpdateInputDataSource(inputDataSource);
+        } else {
+            prim.dataSource = _HdPrimDataSourceOverlay::New(
+                inputDataSource, parentOverlay,
+                shared_from_this());
+        }
     }
 }
 
@@ -99,13 +97,28 @@ HdPrimDataSourceOverlayCache::HandlePrimsRemoved(
 
 void
 HdPrimDataSourceOverlayCache::HandlePrimsDirtied(
-    const HdSceneIndexObserver::DirtiedPrimEntries &entries)
+    const HdSceneIndexObserver::DirtiedPrimEntries &entries,
+    HdSceneIndexObserver::DirtiedPrimEntries *additionalDirtied)
 {
     for (const auto &entry : entries) {
+        HdDataSourceLocatorSet dirtyAttributes;
+        for (const auto &pair : _overlayTopology) {
+            if (pair.second.onPrim.Intersects(entry.dirtyLocators)) {
+                dirtyAttributes.insert(HdDataSourceLocator(pair.first));
+            }
+        }
+
+        if (dirtyAttributes.IsEmpty()) {
+            continue;
+        }
+
         const auto it = _cache.find(entry.primPath);
         if (it != _cache.end()) {
             _HdPrimDataSourceOverlay::Cast(it->second.dataSource)
-                ->PrimDirtied(entry.dirtyLocators);
+                ->PrimDirtied(dirtyAttributes);
+        }
+        if (additionalDirtied) {
+            additionalDirtied->push_back({entry.primPath, dirtyAttributes});
         }
     }
 }
@@ -118,34 +131,24 @@ HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::_HdPrimDataSourceOverlay
 , _parentOverlayDataSource(parentOverlayDataSource)
 , _cache(cache)
 {
-    auto c = _cache.lock();
-    if (TF_VERIFY(c)) {
-        _overlayNames = c->_GetOverlayNames(_inputDataSource);
-    }
+}
+
+void
+HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::UpdateInputDataSource(
+    HdContainerDataSourceHandle inputDataSource)
+{
+    _inputDataSource = inputDataSource;
+    _overlayMap.clear();
 }
 
 void
 HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::PrimDirtied(
-    const HdDataSourceLocatorSet &locators)
+    const HdDataSourceLocatorSet &dirtyAttributes)
 {
-    auto cache = _cache.lock();
-    if (TF_VERIFY(cache)) {
-        // Refresh the overlay names.
-        _overlayNames = cache->_GetOverlayNames(_inputDataSource);
+    TRACE_FUNCTION();
 
-        // If the dirty locators intersect the dependencies of any overlay,
-        // boot the cached copy.
-        for (_OverlayMap::iterator i = _overlayMap.begin();
-             i != _overlayMap.end();) {
-
-            HdDataSourceLocatorSet dependencies =
-                cache->_GetOverlayDependencies(i->first);
-            if (dependencies.Intersects(locators)) {
-                i = _overlayMap.erase(i);
-            } else {
-                ++i;
-            }
-        }
+    for (const auto &attr : dirtyAttributes) {
+        _overlayMap.erase(attr.GetFirstElement());
     }
 }
 
@@ -153,13 +156,24 @@ bool
 HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::Has(
     const TfToken &name)
 {
-    if (std::find(_overlayNames.begin(), _overlayNames.end(), name) !=
-        _overlayNames.end()) {
-        return true;
+    if (ARCH_UNLIKELY(!_inputDataSource)) {
+        return false;
     }
 
-    if (!_inputDataSource) {
-        return false;
+    auto cache = _cache.lock();
+    if (TF_VERIFY(cache)) {
+        const auto it = cache->_overlayTopology.find(name);
+        if (it != cache->_overlayTopology.end()) {
+            if (it->second.dependenciesOptional) {
+                return true;
+            }
+            for (const auto &loc : it->second.onPrim) {
+                if (!_inputDataSource->Has(loc.GetFirstElement())) {
+                    return false;
+                }
+            }
+            return false;
+        }
     }
 
     return _inputDataSource->Has(name);
@@ -168,17 +182,38 @@ HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::Has(
 TfTokenVector
 HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::GetNames()
 {
-    if (!_inputDataSource) {
+    TRACE_FUNCTION();
+
+    if (ARCH_UNLIKELY(!_inputDataSource)) {
         return {};
     }
 
     TfTokenVector names = _inputDataSource->GetNames();
-    names.insert(names.end(), _overlayNames.begin(), _overlayNames.end());
 
-    // XXX: Possibly unnecessary...
-    std::sort(names.begin(), names.end());
-    auto it = std::unique(names.begin(), names.end());
-    names.erase(it, names.end());
+    auto cache = _cache.lock();
+    if (TF_VERIFY(cache)) {
+        bool sortMe = false;
+        for (const auto overlay : cache->_overlayTopology) {
+            if (overlay.second.dependenciesOptional) {
+                names.push_back(overlay.first);
+                sortMe = true;
+                continue;
+            }
+            for (const auto &loc : overlay.second.onPrim) {
+                if (_inputDataSource->Has(loc.GetFirstElement())) {
+                    names.push_back(overlay.first);
+                    sortMe = true;
+                    break;
+                }
+            }
+        }
+        if (sortMe) {
+            // XXX: Possibly unnecessary...
+            std::sort(names.begin(), names.end());
+            auto it = std::unique(names.begin(), names.end());
+            names.erase(it, names.end());
+        }
+    }
 
     return names;
 }
@@ -187,17 +222,31 @@ HdDataSourceBaseHandle
 HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::Get(
     const TfToken &name)
 {
-    if (std::find(_overlayNames.begin(), _overlayNames.end(), name) !=
-        _overlayNames.end()) {
-        auto it = _overlayMap.find(name);
-        if (it != _overlayMap.end()) {
-            return it->second;
-        }
+    if (ARCH_UNLIKELY(!_inputDataSource)) {
+        return nullptr;
+    }
 
-        // If "name" is part of the overlays, but it's not in the overlay
-        // map, it hasn't been computed...
-        auto cache = _cache.lock();
-        if (TF_VERIFY(cache)) {
+    auto cache = _cache.lock();
+    if (TF_VERIFY(cache)) {
+        const auto topoIt = cache->_overlayTopology.find(name);
+        if (topoIt != cache->_overlayTopology.end()) {
+            auto valueIt = _overlayMap.find(name);
+            if (valueIt != _overlayMap.end()) {
+                return valueIt->second;
+            }
+
+            // If "name" is part of the overlays, but it's not in the overlay
+            // map, it hasn't been computed... First, check for dependencies.
+            if (!topoIt->second.dependenciesOptional) {
+                for (const auto &loc : topoIt->second.onPrim) {
+                    if (!_inputDataSource->Has(loc.GetFirstElement())) {
+                        _overlayMap.insert(std::make_pair(name, nullptr));
+                        return nullptr;
+                    }
+                }
+            }
+
+            // If the dependencies are ok, compute it.
             HdDataSourceBaseHandle ds =
                 cache->_ComputeOverlayDataSource(name, _inputDataSource,
                         _parentOverlayDataSource);
@@ -206,9 +255,6 @@ HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::Get(
         }
     }
 
-    if (!_inputDataSource) {
-        return nullptr;
-    }
     return _inputDataSource->Get(name);
 }
 
