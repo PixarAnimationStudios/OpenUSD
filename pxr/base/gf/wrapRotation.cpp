@@ -115,6 +115,38 @@ _DecomposeRotation(const GfMatrix4d &rot,
     return make_tuple(angle[0], angle[1], angle[2], angle[3]);
 }
 
+static tuple
+_MatchClosestEulerRotation(
+    const double targetTw,
+    const double targetFB,
+    const double targetLR,
+    const double targetSw,
+    const object &thetaTw,
+    const object &thetaFB,
+    const object &thetaLR,
+    const object &thetaSw)
+{
+    double angle[4] = {
+        thetaTw.ptr() != Py_None ?
+            boost::python::extract<double>(thetaTw) : 0.0,
+        thetaFB.ptr() != Py_None ?
+            boost::python::extract<double>(thetaFB) : 0.0,
+        thetaLR.ptr() != Py_None ?
+            boost::python::extract<double>(thetaLR) : 0.0,
+        thetaSw.ptr() != Py_None ?
+            boost::python::extract<double>(thetaSw) : 0.0
+        };
+
+    GfRotation::MatchClosestEulerRotation(
+        targetTw, targetFB, targetLR, targetSw,
+        thetaTw.ptr() != Py_None ? &(angle[0]) : nullptr,
+        thetaFB.ptr() != Py_None ? &(angle[1]) : nullptr,
+        thetaLR.ptr() != Py_None ? &(angle[2]) : nullptr,
+        thetaSw.ptr() != Py_None ? &(angle[3]) : nullptr);
+
+    return make_tuple(angle[0], angle[1], angle[2], angle[3]);
+}
+
 static string _Repr(GfRotation const &self) {
     return TF_PY_REPR_PREFIX + "Rotation(" + TfPyRepr(self.GetAxis()) + ", " +
         TfPyRepr(self.GetAngle()) + ")";
@@ -198,6 +230,9 @@ void wrapRotation()
              )
         .staticmethod("DecomposeRotation")
 
+        .def("MatchClosestEulerRotation", _MatchClosestEulerRotation)
+        .staticmethod("MatchClosestEulerRotation")
+
         .def("RotateOntoProjected", &This::RotateOntoProjected)
         .staticmethod("RotateOntoProjected")
 
@@ -227,5 +262,4 @@ void wrapRotation()
         ;
     to_python_converter<std::vector<This>,
         TfPySequenceToPython<std::vector<This> > >();
-    
 }

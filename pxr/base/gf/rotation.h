@@ -197,6 +197,20 @@ class GfRotation {
                                           const GfVec3d &v2,
                                           const GfVec3d &axis);
 
+    /// Replace the hint angles with the closest rotation of the given
+    /// rotation to the hint.
+    ///
+    /// Each angle in the rotation will be within Pi of the corresponding
+    /// hint angle and the sum of the differences with the hint will
+    /// be minimized. If a given rotation value is null then that angle will
+    /// be treated as 0.0 and ignored in the calculations.
+    ///
+    /// All angles are in radians. The rotation order is Tw/FB/LR/Sw.
+    GF_API
+    static void MatchClosestEulerRotation(
+        double targetTw, double targetFB, double targetLR, double targetSw,
+        double *thetaTw, double *thetaFB, double *thetaLR, double *thetaSw);
+
     /// Transforms row vector \p vec by the rotation, returning the result. 
     GF_API
     GfVec3f TransformDir( const GfVec3f &vec ) const;
