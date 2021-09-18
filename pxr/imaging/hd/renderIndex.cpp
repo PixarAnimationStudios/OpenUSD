@@ -1711,7 +1711,8 @@ HdRenderIndex::GetSceneDelegateForRprim(SdfPath const &id) const
             }
         } 
 
-        return nullptr;
+        // fallback value is the back-end emulation delegate
+        return _siSd.get();
     }
 
     _RprimMap::const_iterator it = _rprimMap.find(id);
