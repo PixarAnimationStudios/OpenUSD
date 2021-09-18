@@ -447,6 +447,8 @@ UsdImagingDelegate::SyncAll(bool includeUnvarying)
 void
 UsdImagingDelegate::Sync(HdSyncRequestVector* request)
 {
+    TRACE_FUNCTION();
+
     UsdImagingDelegate::_Worker worker(this);
     if (!TF_VERIFY(request)) {
         return;
