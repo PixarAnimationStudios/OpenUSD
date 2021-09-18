@@ -255,14 +255,7 @@ ArDefaultResolver::_GetModificationTimestamp(
     const std::string& path,
     const ArResolvedPath& resolvedPath) const
 {
-    // Since the default resolver always resolves paths to local
-    // paths, we can just look at the mtime of the file indicated
-    // by resolvedPath.
-    double time;
-    if (ArchGetModificationTime(resolvedPath.GetPathString().c_str(), &time)) {
-        return ArTimestamp(time);
-    }
-    return ArTimestamp();
+    return ArFilesystemAsset::GetModificationTimestamp(resolvedPath);
 }
 
 std::shared_ptr<ArAsset> 
