@@ -19,10 +19,8 @@ pxr_library(usdLux
         distantLight
         domeLight
         geometryLight
-        light
         lightAPI
         lightFilter
-        lightPortal
         listAPI
         nonboundableLightBase
         pluginLight
@@ -52,10 +50,8 @@ pxr_library(usdLux
         wrapDistantLight.cpp
         wrapDomeLight.cpp
         wrapGeometryLight.cpp
-        wrapLight.cpp
         wrapLightAPI.cpp
         wrapLightFilter.cpp
-        wrapLightPortal.cpp
         wrapListAPI.cpp
         wrapNonboundableLightBase.cpp
         wrapPluginLight.cpp
