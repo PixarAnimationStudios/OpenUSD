@@ -25,10 +25,10 @@
 from pxr import Plug, Sdf, Usd, UsdShade, Tf
 import os, unittest
 
-# Note "IsContainer or RequiresEncapsulation" calls are used here to indirectly 
-# invoke _BehaviorRegistry::GetBehavior.
-# XXX: In a subsequent change HasConnectableAPI* functions will invoke a
-# GetBehavior call which is when these can directly be used.
+def _SchemaTypeFindByName(name):
+    result = Tf.Type(Usd.SchemaBase).FindDerivedByName(name)
+    assert not result.isUnknown
+    return result
 
 class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
     @classmethod
@@ -41,11 +41,9 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
         assert testPlugins[0].name == "testUsdShadeConnectableAPIBehavior", \
                 "Failed to load expected test plugin"
         cls.AutoApplyDefaultConnectableBehaviorAPI = \
-                Tf.Type(Usd.SchemaBase).FindDerivedByName("\
-                        AutoApplyDefaultConnectableBehaviorAPI")
+                _SchemaTypeFindByName("AutoApplyDefaultConnectableBehaviorAPI")
         cls.DefaultConnectableBehaviorAPI = \
-                Tf.Type(Usd.SchemaBase).FindDerivedByName("\
-                        DefaultConnectableBehaviorAPI")
+                _SchemaTypeFindByName("DefaultConnectableBehaviorAPI")
         return True
 
     def test_UnconnectableType(self):
@@ -58,10 +56,6 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
         unconn = UsdShade.ConnectableAPI(scope)
         self.assertFalse(UsdShade.ConnectableAPI.HasConnectableAPI(
             Tf.Type.FindByName('UsdGeomScope')))
-        # Following is called to trigger a GetBehavior call.
-        unconn.IsContainer()
-        self.assertFalse(UsdShade.ConnectableAPI.HasConnectableAPI(
-            Tf.Type.FindByName('UsdGeomScope')))
 
 
     def test_AppliedSchemaWithDefaultBehavior(self):
@@ -70,7 +64,7 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
         # imparts connectability traits to UsdShadeTestTyped prim while still
         # having no connectability trails on the type itself.
         self.assertFalse(UsdShade.ConnectableAPI.HasConnectableAPI(
-            Tf.Type.FindByName('UsdShadeTestTyped')))
+            _SchemaTypeFindByName('UsdShadeTestTyped')))
         usdShadeTestTyped = stage.DefinePrim("/UsdShadeTestTyped",
             "UsdShadeTestTyped")
         usdShadeTestTypedConn = UsdShade.ConnectableAPI(usdShadeTestTyped)
@@ -81,7 +75,7 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
         self.assertTrue(usdShadeTestTypedConn)
         self.assertTrue(usdShadeTestTypedConn.RequiresEncapsulation())
         self.assertFalse(UsdShade.ConnectableAPI.HasConnectableAPI(
-            Tf.Type.FindByName('UsdShadeTestTyped')))
+            _SchemaTypeFindByName('UsdShadeTestTyped')))
 
         # modify/override connectability behavior for an already connectable
         # type
@@ -95,6 +89,7 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
         materialPrim.AddAppliedSchema("DefaultConnectableBehaviorAPI")
         # Following should also call GetBehavior and updating the registered
         # behavior for this material Prim
+        self.assertTrue(materialPrimConn)
         self.assertFalse(materialPrimConn.IsContainer())
 
     def test_AutoAppliedSchemaWithDefaultBehavior(self):
@@ -171,7 +166,7 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
         # imparts connectability traits to UsdShadeTestTyped prim while still
         # having no connectability trails on the type itself.
         self.assertFalse(UsdShade.ConnectableAPI.HasConnectableAPI(
-            Tf.Type.FindByName('UsdShadeTestTyped')))
+            _SchemaTypeFindByName('UsdShadeTestTyped')))
         usdShadeTestTyped = stage.DefinePrim("/UsdShadeTestTyped",
                 "UsdShadeTestTyped")
         connectable = UsdShade.ConnectableAPI(usdShadeTestTyped)
@@ -186,7 +181,7 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
         self.assertTrue(connectable.IsContainer())
         self.assertFalse(connectable.RequiresEncapsulation())
         self.assertFalse(UsdShade.ConnectableAPI.HasConnectableAPI(
-            Tf.Type.FindByName('UsdShadeTestTyped')))
+            _SchemaTypeFindByName('UsdShadeTestTyped')))
 
         # If multiple applied schemas provide connectableBehavior then the order
         # in which these get applied determines what drives the prim's
@@ -228,10 +223,8 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
 
         # Test a type which imparts connectableAPIBehavior through its plug
         # metadata and not having an explicit behavior registered.
-        # XXX: Enable when USD-6751 has been fixed, since it will make
-        # HasConnectableAPI call GetBehavior
-        # self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
-            # Tf.Type.FindByName("UsdShadeTestPlugConfiguredType")))
+        self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
+            _SchemaTypeFindByName("UsdShadeTestPlugConfiguredType")))
         usdShadeTestPlugConfiguredType = \
             stage.DefinePrim("/UsdShadeTestPlugConfiguredType",
                     "UsdShadeTestPlugConfiguredType")
@@ -241,10 +234,8 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
         self.assertFalse(connectable.RequiresEncapsulation())
 
         # Test a type which imparts connectableAPIBehavior through its ancestor
-        # XXX: Enable when USD-6751 has been fixed, since it will make
-        # HasConnectableAPI call GetBehavior
-        # self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
-            # Tf.Type.FindByName("UsdShadeTestAncestorConfiguredType")))
+        self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
+            _SchemaTypeFindByName("UsdShadeTestAncestorConfiguredType")))
         usdShadeTestAncestorConfiguredType = \
             stage.DefinePrim("/UsdShadeTestAncestorConfiguredType",
                     "UsdShadeTestAncestorConfiguredType")

@@ -507,18 +507,18 @@ public:
         RegisterBehaviorForType(type, behavior);
     }
 
-    const SharedConnectableAPIBehaviorPtr*
+    const UsdShadeConnectableAPIBehavior*
     GetBehaviorForPrimTypeId(const _PrimTypeId &primTypeId)
     {
         _WaitUntilInitialized();
-        _RWMutex::scoped_lock lock(_primTypeCacheMutex, /* write = */ false);
-        return TfMapLookupPtr(_primTypeIdCache, primTypeId);
+        return _GetBehaviorForPrimTypeId(primTypeId, TfType(), UsdPrim());
     }
 
-    const SharedConnectableAPIBehaviorPtr*
+    const UsdShadeConnectableAPIBehavior*
     GetBehaviorForType(const TfType &type)
     {
-        return GetBehaviorForPrimTypeId(_PrimTypeId(type));
+        _WaitUntilInitialized();
+        return _GetBehaviorForPrimTypeId(_PrimTypeId(type), type, UsdPrim());
     }
 
     bool
@@ -527,17 +527,7 @@ public:
         return bool(GetBehaviorForType(type));
     }
 
-    // Note that below functionality is such that the order of precedence for
-    // which a behavior is chosen is:
-    // 1. Behavior defined on an authored API schemas, wins over 
-    // 2. Behavior defined for a prim type, wins over
-    // 3. Behavior defined for the prim's ancestor types, wins over
-    // 4. Behavior defined for any built-in API schemas.
-    // 5. If no Behavior is found but an api schema adds
-    //    providesUsdShadeConnectableAPIBehavior plug metadata then a default
-    //    behavior is registered for the primTypeId.
-    //
-    UsdShadeConnectableAPIBehavior*
+    const UsdShadeConnectableAPIBehavior*
     GetBehavior(const UsdPrim& prim)
     {
         _WaitUntilInitialized();
@@ -552,12 +542,41 @@ public:
         }
 
         const _PrimTypeId &primTypeId = _PrimTypeId(prim.GetPrimTypeInfo());
+        return _GetBehaviorForPrimTypeId(primTypeId, primSchemaType, prim);
+    }
 
+private:
+    // Note that below functionality is such that the order of precedence for
+    // which a behavior is chosen is:
+    // 1. Behavior defined on an authored API schemas, wins over 
+    // 2. Behavior defined for a prim type, wins over
+    // 3. Behavior defined for the prim's ancestor types, wins over
+    // 4. Behavior defined for any built-in API schemas.
+    // 5. If no Behavior is found but an api schema adds
+    //    providesUsdShadeConnectableAPIBehavior plug metadata then a default
+    //    behavior is registered for the primTypeId.
+    //
+    const UsdShadeConnectableAPIBehavior*
+    _GetBehaviorForPrimTypeId(const _PrimTypeId &primTypeId,
+                              TfType primSchemaType,
+                              const UsdPrim& prim)
+    {
         SharedConnectableAPIBehaviorPtr behavior;
 
         // Has a behavior cached for this primTypeId, if so fetch it and return!
         if (_FindBehaviorForPrimTypeId(primTypeId, &behavior)) {
             return behavior.get();
+        }
+
+        // Look up the the schema type if we don't have it already.
+        // This is delayed until now in order to make the above cache
+        // check as fast as possible.
+        if (primSchemaType.IsUnknown()) {
+            primSchemaType =
+                TfType::FindByName(primTypeId.primTypeName.GetString());
+            if (primSchemaType.IsUnknown()) {
+                return nullptr;
+            }
         }
 
         // If a behavior is not found for primTypeId, we try to look for a
@@ -606,8 +625,7 @@ public:
         // overriding behavior on all explicitly authored apiSchemas on the 
         // prim. If found cache this overriding behavior against the primTypeId.
         if (behavior) {
-            for (auto& appliedSchema : 
-                    prim.GetPrimTypeInfo().GetAppliedAPISchemas()) {
+            for (auto& appliedSchema : primTypeId.appliedAPISchemas) {
                 const TfType &appliedSchemaType = 
                     UsdSchemaRegistry::GetAPITypeFromSchemaTypeName(
                             appliedSchema);
@@ -636,20 +654,21 @@ public:
         // without providing a c++ Behavior implementation, for such applied 
         // schemas, a default UsdShadeConnectableAPIBehavior is created and
         // registered/cached with the appliedSchemaType and the primTypeId.
-        for (auto& appliedSchema : prim.GetAppliedSchemas()) {
-            const TfType &appliedSchemaType = 
-                UsdSchemaRegistry::GetAPITypeFromSchemaTypeName(
-                        appliedSchema);
-            if (_FindBehaviorForApiSchema(appliedSchemaType, behavior)) {
-                RegisterBehaviorForPrimTypeId(primTypeId, behavior);
-                break;
+        if (prim) {
+            for (auto& appliedSchema : prim.GetAppliedSchemas()) {
+                const TfType &appliedSchemaType = 
+                    UsdSchemaRegistry::GetAPITypeFromSchemaTypeName(
+                            appliedSchema);
+                if (_FindBehaviorForApiSchema(appliedSchemaType, behavior)) {
+                    RegisterBehaviorForPrimTypeId(primTypeId, behavior);
+                    break;
+                }
             }
         }
 
         return behavior.get();
     }
 
-private:
     // Wait until initialization of the singleton is completed. 
     void _WaitUntilInitialized()
     {
@@ -783,7 +802,7 @@ UsdShadeConnectableAPI::CanConnect(
     // We may want to expose it in the future, especially when we have 
     // validation in USD.
     std::string reason;
-    if (UsdShadeConnectableAPIBehavior *behavior =
+    if (const UsdShadeConnectableAPIBehavior *behavior =
         _BehaviorRegistry::GetInstance().GetBehavior(input.GetPrim())) {
         return behavior->CanConnectInputToSource(input, source, &reason);
     }
@@ -799,7 +818,7 @@ UsdShadeConnectableAPI::CanConnect(
     // We may want to expose it in the future, especially when we have 
     // validation in USD.
     std::string reason;
-    if (UsdShadeConnectableAPIBehavior *behavior =
+    if (const UsdShadeConnectableAPIBehavior *behavior =
         _BehaviorRegistry::GetInstance().GetBehavior(output.GetPrim())) {
         return behavior->CanConnectOutputToSource(output, source, &reason);
     }
@@ -816,7 +835,7 @@ UsdShadeConnectableAPI::HasConnectableAPI(const TfType& schemaType)
 bool
 UsdShadeConnectableAPI::IsContainer() const
 {
-    if (UsdShadeConnectableAPIBehavior *behavior =
+    if (const UsdShadeConnectableAPIBehavior *behavior =
         _BehaviorRegistry::GetInstance().GetBehavior(GetPrim())) {
         return behavior->IsContainer();
     }
@@ -826,7 +845,7 @@ UsdShadeConnectableAPI::IsContainer() const
 bool
 UsdShadeConnectableAPI::RequiresEncapsulation() const
 {
-    if (UsdShadeConnectableAPIBehavior *behavior =
+    if (const UsdShadeConnectableAPIBehavior *behavior =
         _BehaviorRegistry::GetInstance().GetBehavior(GetPrim())) {
         return behavior->RequiresEncapsulation();
     }
