@@ -120,9 +120,9 @@ protected:
         const std::string& assetPath) const final { return ArResolvedPath(); }
     std::string _GetExtension(
         const std::string& assetPath) const final { return std::string(); }
-    VtValue _GetModificationTimestamp(
+    ArTimestamp _GetModificationTimestamp(
         const std::string& assetPath,
-        const ArResolvedPath& resolvedPath) const final { return VtValue(); }
+        const ArResolvedPath& resolvedPath) const final { return ArTimestamp(); }
     std::shared_ptr<ArAsset> _OpenAsset(
         const ArResolvedPath& resolvedPath) const final { return nullptr; }
     std::shared_ptr<ArWritableAsset> _OpenAssetForWrite(

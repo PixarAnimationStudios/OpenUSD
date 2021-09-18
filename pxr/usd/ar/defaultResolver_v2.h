@@ -133,7 +133,7 @@ protected:
         const std::string& path) const override;
 
     AR_API
-    VtValue _GetModificationTimestamp(
+    ArTimestamp _GetModificationTimestamp(
         const std::string& path,
         const ArResolvedPath& resolvedPath) const override;
 

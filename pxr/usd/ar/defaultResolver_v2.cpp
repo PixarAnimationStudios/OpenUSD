@@ -250,7 +250,7 @@ ArDefaultResolver::_ResolveForNewAsset(
     return ArResolvedPath(assetPath.empty() ? assetPath : TfAbsPath(assetPath));
 }
 
-VtValue
+ArTimestamp
 ArDefaultResolver::_GetModificationTimestamp(
     const std::string& path,
     const ArResolvedPath& resolvedPath) const
@@ -260,9 +260,9 @@ ArDefaultResolver::_GetModificationTimestamp(
     // by resolvedPath.
     double time;
     if (ArchGetModificationTime(resolvedPath.GetPathString().c_str(), &time)) {
-        return VtValue(time);
+        return ArTimestamp(time);
     }
-    return VtValue();
+    return ArTimestamp();
 }
 
 std::shared_ptr<ArAsset> 

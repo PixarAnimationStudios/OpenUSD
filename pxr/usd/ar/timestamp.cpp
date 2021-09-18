@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2021 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,25 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include "pxr/usd/ar/timestamp.h"
+#include "pxr/base/tf/diagnostic.h"
 
-TF_WRAP_MODULE
+PXR_NAMESPACE_OPEN_SCOPE
+
+void
+ArTimestamp::_IssueInvalidGetTimeError() const
 {
-    TF_WRAP(ResolvedPath);
-    TF_WRAP(Timestamp);
-
-    TF_WRAP(Resolver);
-    TF_WRAP(ResolverContext);
-    TF_WRAP(ResolverContextBinder);
-    TF_WRAP(ResolverScopedCache);
-
-    TF_WRAP(DefaultResolver);
-    TF_WRAP(DefaultResolverContext);
-
-    TF_WRAP(PackageUtils);
-    TF_WRAP(Notice);
+    TF_CODING_ERROR("Cannot call GetTime on an invalid ArTimestamp");
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

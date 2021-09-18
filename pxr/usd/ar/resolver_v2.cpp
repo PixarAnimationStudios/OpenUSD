@@ -844,7 +844,7 @@ public:
         return resolver.GetAssetInfo(assetPath, resolvedPath);
     }
 
-    VtValue _GetModificationTimestamp(
+    ArTimestamp _GetModificationTimestamp(
         const std::string& path,
         const ArResolvedPath& resolvedPath) const final
     {
@@ -1554,7 +1554,7 @@ ArResolver::GetAssetInfo(
     return _GetAssetInfo(assetPath, resolvedPath);
 }
 
-VtValue
+ArTimestamp
 ArResolver::GetModificationTimestamp(
     const std::string& assetPath,
     const ArResolvedPath& resolvedPath) const

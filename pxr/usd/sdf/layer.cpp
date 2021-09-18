@@ -981,9 +981,13 @@ SdfLayer::_Reload(bool force)
         }
 
         // Get the layer's modification timestamp.
-        VtValue timestamp = ArGetResolver().GetModificationTimestamp(
-            GetIdentifier(), resolvedPath);
+        VtValue timestamp(ArGetResolver().GetModificationTimestamp(
+            GetIdentifier(), resolvedPath));
+#if AR_VERSION == 1
         if (timestamp.IsEmpty()) {
+#else
+        if (!timestamp.UncheckedGet<ArTimestamp>().IsValid()) {
+#endif
             TF_CODING_ERROR(
                 "Unable to get modification time for '%s (%s)'",
                 GetIdentifier().c_str(), resolvedPath.GetPathString().c_str());
@@ -3255,9 +3259,13 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
     // a newly created non-serialized layer.
     if (!info.isAnonymous) {
         // Grab modification timestamp.
-        VtValue timestamp = ArGetResolver().GetModificationTimestamp(
-            info.identifier, ArResolvedPath(readFilePath));
+        VtValue timestamp(ArGetResolver().GetModificationTimestamp(
+            info.identifier, ArResolvedPath(readFilePath)));
+#if AR_VERSION == 1
         if (timestamp.IsEmpty()) {
+#else
+        if (!timestamp.UncheckedGet<ArTimestamp>().IsValid()) {
+#endif
             TF_CODING_ERROR(
                 "Unable to get modification timestamp for '%s (%s)'",
                 info.identifier.c_str(), readFilePath.c_str());
@@ -4701,9 +4709,13 @@ SdfLayer::_Save(bool force) const
     _hints = SdfLayerHints{};
 
     // Record modification timestamp.
-    VtValue timestamp = ArGetResolver().GetModificationTimestamp(
-        GetIdentifier(), path);
+    VtValue timestamp(ArGetResolver().GetModificationTimestamp(
+        GetIdentifier(), path));
+#if AR_VERSION == 1
     if (timestamp.IsEmpty()) {
+#else
+    if (!timestamp.UncheckedGet<ArTimestamp>().IsValid()) {
+#endif
         TF_CODING_ERROR(
             "Unable to get modification timestamp for '%s (%s)'",
             GetIdentifier().c_str(), path.GetPathString().c_str());

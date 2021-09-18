@@ -113,6 +113,7 @@ pxr_library(ar
         resolverContextBinder.h
         resolverScopedCache.h
         threadLocalScopedCache.h
+        timestamp.h
         ${versionedHeaders}
 
     PYTHON_PUBLIC_HEADERS
@@ -131,6 +132,7 @@ pxr_library(ar
         resolvedPath.cpp
         resolverContextBinder.cpp
         resolverScopedCache.cpp
+        timestamp.cpp
         debugCodes.cpp
         defaultResolverContext.cpp
         ${versionedCPPFiles}
@@ -147,6 +149,7 @@ pxr_library(ar
         wrapResolvedPath.cpp
         wrapResolverContextBinder.cpp
         wrapResolverScopedCache.cpp
+        wrapTimestamp.cpp
         ${versionedPymoduleCPPFiles}
 
     PYMODULE_FILES
@@ -165,6 +168,7 @@ pxr_test_scripts(
     testenv/testArPackageUtils.py
     testenv/testArResolvedPath.py
     testenv/testArResolverContext.py
+    testenv/testArTimestamp.py
 )
 
 pxr_build_test_shared_lib(TestArAdvancedAPI
@@ -341,6 +345,11 @@ pxr_register_test(testArPackageUtils
 pxr_register_test(testArResolvedPath
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArResolvedPath"
+)
+
+pxr_register_test(testArTimestamp
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArTimestamp"
 )
 
 pxr_register_test(testArResolverContext

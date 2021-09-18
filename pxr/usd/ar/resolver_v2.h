@@ -34,6 +34,7 @@
 #include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolverContext.h"
+#include "pxr/usd/ar/timestamp.h"
 
 #include <memory>
 #include <string>
@@ -279,15 +280,12 @@ public:
         const std::string& assetPath,
         const ArResolvedPath& resolvedPath) const;
 
-    /// Return a value representing the last time the asset at the given 
+    /// Returns an ArTimestamp representing the last time the asset at
     /// \p assetPath was modified. \p resolvedPath is the resolved path
     /// computed for the given \p assetPath. If a timestamp cannot be
-    /// retrieved, return an empty VtValue.
-    ///
-    /// This timestamp may be equality compared to determine if an asset
-    /// has been modified.
+    /// retrieved, return an invalid ArTimestamp.
     AR_API
-    VtValue GetModificationTimestamp(
+    ArTimestamp GetModificationTimestamp(
         const std::string& assetPath,
         const ArResolvedPath& resolvedPath) const;
 
@@ -644,17 +642,11 @@ protected:
         const std::string& assetPath,
         const ArResolvedPath& resolvedPath) const;
 
-    /// Return a value representing the last time the asset at the given 
+    /// Return an ArTimestamp representing the last time the asset at
     /// \p assetPath was modified. \p resolvedPath is the resolved path
     /// computed for the given \p assetPath. If a timestamp cannot be
-    /// retrieved, return an empty VtValue.
-    ///
-    /// Implementations may use whatever value is most appropriate
-    /// for this timestamp. The value must be equality comparable, 
-    /// and this function must return a different timestamp whenever 
-    /// an asset has been modified. For instance, if an asset is stored 
-    /// as a file on disk, the timestamp may simply be that file's mtime. 
-    virtual VtValue _GetModificationTimestamp(
+    /// retrieved, return an invalid ArTimestamp.
+    virtual ArTimestamp _GetModificationTimestamp(
         const std::string& assetPath,
         const ArResolvedPath& resolvedPath) const = 0;
 

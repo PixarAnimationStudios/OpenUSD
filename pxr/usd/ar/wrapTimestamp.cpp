@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2021 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,25 +21,51 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+
+#include "pxr/usd/ar/timestamp.h"
+
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/stringUtils.h"
+
+#include <boost/python/class.hpp>
+#include <boost/python/operators.hpp>
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+static size_t
+__hash__(const ArTimestamp &self)
+{ 
+    return TfHash()(self);
+}
+
+static std::string
+__repr__(const ArTimestamp &self)
 {
-    TF_WRAP(ResolvedPath);
-    TF_WRAP(Timestamp);
+    return TF_PY_REPR_PREFIX + "Timestamp" + 
+        (self.IsValid() ? 
+            TfStringPrintf("(%s)", TfPyRepr(self.GetTime()).c_str()) : "()");
+}
 
-    TF_WRAP(Resolver);
-    TF_WRAP(ResolverContext);
-    TF_WRAP(ResolverContextBinder);
-    TF_WRAP(ResolverScopedCache);
+void wrapTimestamp()
+{
+    class_<ArTimestamp>("Timestamp")
+        .def(init<double>())
+        .def(init<ArTimestamp>())
 
-    TF_WRAP(DefaultResolver);
-    TF_WRAP(DefaultResolverContext);
+        .def("IsValid", &ArTimestamp::IsValid)
+        .def("GetTime", &ArTimestamp::GetTime)
 
-    TF_WRAP(PackageUtils);
-    TF_WRAP(Notice);
+        .def(self == self)
+        .def(self != self)
+        .def(self < self)
+        .def(self <= self)
+        .def(self > self)
+        .def(self >= self)  
+
+        .def("__hash__", __hash__)
+        .def("__repr__", __repr__)
+        ;
 }
