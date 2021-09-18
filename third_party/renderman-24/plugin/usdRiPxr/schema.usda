@@ -1,9 +1,9 @@
 #usda 1.0
 (
     subLayers = [
-        @usd/schema.usda@,
+        @usdLux/schema.usda@,
         @usdGeom/schema.usda@,
-        @usdLux/schema.usda@
+        @usd/schema.usda@
     ]
 )
 
@@ -32,9 +32,9 @@ class "PxrCameraProjectionAPI" (
             }
         }
     }
-    doc = '''API schema that is auto-applied _only_ to UsdGeomCamera and 
+    doc = """API schema that is auto-applied _only_ to UsdGeomCamera and 
     provides a RenderMan-specific projection output terminal to UsdGeomCamera
-    '''
+    """
     inherits = </APISchemaBase>
 )
 {
