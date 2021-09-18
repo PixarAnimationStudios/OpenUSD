@@ -666,6 +666,12 @@ private:
             }
         }
 
+        // If behavior is still not found, the primTypeId is lacking one, cache
+        // a null behavior for this primTypeId
+        if (!behavior) {
+            RegisterBehaviorForPrimTypeId(primTypeId, behavior);
+        }
+
         return behavior.get();
     }
 
@@ -702,13 +708,24 @@ private:
 
     void _DidRegisterPlugins(const PlugNotice::DidRegisterPlugins& n)
     {
-        // Invalidate the _primTypeIdCache, since newly-registered plugins may
-        // provide functions that we did not see previously. This is
-        // a heavy hammer but we expect this situation to be uncommon.
+        // Erase the entries in _primTypeIdCache which have a null behavior
+        // registered, since newly-registered plugins may provide valid
+        // behavior for these primTypeId entries.
+        // Note that we retain entries which have valid connectableAPIBehavior
+        // defined.
         //
         {
             _RWMutex::scoped_lock lock(_primTypeCacheMutex, /* write = */ true);
-            _primTypeIdCache.clear();
+            _PrimTypeIdCache::iterator itr = _primTypeIdCache.begin(),
+                end = _primTypeIdCache.end();
+            while (itr != end) {
+                if (!itr->second) {
+                    itr = _primTypeIdCache.erase(itr);
+                    end = _primTypeIdCache.end();
+                    continue;
+                }
+                itr++;
+            }
         }
     }
 

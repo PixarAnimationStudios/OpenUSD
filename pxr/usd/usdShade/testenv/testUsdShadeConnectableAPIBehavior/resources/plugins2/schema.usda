@@ -1,0 +1,29 @@
+#usda 1.0
+(
+    """Test schema file for testUsdShadeConnectableAPIBehavior -- tests clearing
+    of behavior cache
+    """
+    subLayers = [
+        @usd/schema.usda@,
+        @usdShade/schema.usda@
+    ]
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "testUsdShadeConnectableAPIBehaviorClearing"
+        bool skipCodeGeneration = true
+    }
+)
+{
+}
+
+class UsdShadeClearingBehaviorTestTyped "UsdShadeClearingBehaviorTestTyped" (
+    inherits = </Typed>
+    doc = """A typed schema with no plug metadata for connectableAPIBehavior.
+    This is used just to trigger plugin registration notice, to trigger
+    _DidRegisterPlugins.
+    """
+)
+{
+}

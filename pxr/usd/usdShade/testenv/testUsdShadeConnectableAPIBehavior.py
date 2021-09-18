@@ -35,7 +35,7 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
     def setUpClass(cls):
         # Register applied schemas and auto applied schemas
         pr = Plug.Registry()
-        testPlugins = pr.RegisterPlugins(os.path.abspath("resources"))
+        testPlugins = pr.RegisterPlugins(os.path.abspath("resources/plugins1"))
         assert len(testPlugins) == 1, \
                 "Failed to load expected test plugin"
         assert testPlugins[0].name == "testUsdShadeConnectableAPIBehavior", \
@@ -47,7 +47,7 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
         return True
 
     def test_UnconnectableType(self):
-        # Test for a fix a bug where unconnectable prim types returned "True"
+        # Test for a bug-fix where unconnectable prim types returned "True"
         # for HasConnectableAPI
         stage = Usd.Stage.CreateInMemory()
         scope = stage.DefinePrim('/Scope', 'Scope')
@@ -244,7 +244,32 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
         self.assertTrue(connectable2)
         self.assertTrue(connectable2.IsContainer())
         self.assertTrue(connectable2.RequiresEncapsulation())
-        
+
+    def test_NewPluginRegistrationNotice(self):
+        # Add some behavior entries
+        self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
+                Tf.Type.FindByName('UsdShadeMaterial')))
+        self.assertFalse(UsdShade.ConnectableAPI.HasConnectableAPI(
+                _SchemaTypeFindByName("UsdShadeTestTyped")))
+
+        # check a material's behavior before registering new plugins
+        stage = Usd.Stage.CreateInMemory()
+        material = UsdShade.Material.Define(stage, "/Mat")
+        matConnectable = UsdShade.ConnectableAPI(material)
+        self.assertTrue(matConnectable)
+        self.assertTrue(matConnectable.IsContainer())
+
+        # register new plugins, to trigger a call to _DidRegisterPlugins, which
+        # should prune the behavior cache off any entry which has a null
+        # behavior defined
+        pr = Plug.Registry()
+        testPlugins = pr.RegisterPlugins(os.path.abspath("resources/plugins2"))
+        self.assertTrue(len(testPlugins) == 1)
+
+        # check material connectableAPI again if it has the correct behavior
+        # still
+        self.assertTrue(matConnectable)
+        self.assertTrue(matConnectable.IsContainer())
 
 if __name__ == "__main__":
     unittest.main()
