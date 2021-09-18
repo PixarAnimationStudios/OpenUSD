@@ -446,7 +446,7 @@ HdPrman_InteractiveRenderPass::_Execute(
         VtValue vtMaxSamples = renderDelegate->GetRenderSetting(
             HdRenderSettingsTokens->convergedSamplesPerPixel).Cast<int>();
         int maxSamples = TF_VERIFY(!vtMaxSamples.IsEmpty()) ?
-            vtMaxSamples.UncheckedGet<int>() : 1024;
+            vtMaxSamples.UncheckedGet<int>() : 64; // RenderMan default
         _interactiveContext->_options.SetInteger(RixStr.k_hider_maxsamples,
                                                  maxSamples);
 
