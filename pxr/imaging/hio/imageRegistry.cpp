@@ -37,6 +37,8 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
+#include "pxr/base/trace/trace.h"
+
 #include <set>
 #include <string>
 
@@ -66,6 +68,8 @@ HioImageRegistry::HioImageRegistry() :
 HioImageSharedPtr
 HioImageRegistry::_ConstructImage(std::string const & filename)
 {
+    TRACE_FUNCTION();
+
     static const HioImageSharedPtr NULL_IMAGE;
 
     // Lookup the plug-in type name based on the filename.
