@@ -273,7 +273,7 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
                            const double *swShift)
 {
     // Enum of which angle is being zeroed out when decomposing the roatation.
-    // This is determined by which angle output (if any) is NULL.
+    // This is determined by which angle output (if any) is nullptr.
     enum _ZeroAngle {
         ZERO_NONE = 0,
         ZERO_TW,
@@ -284,11 +284,11 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
     _ZeroAngle zeroAngle = ZERO_NONE;
 
     double angleStandin = 0.0f, hintTw=0.0f, hintFB=0.0f, hintLR=0.0f,hintSw=0.0f;
-    if (thetaTw == NULL) {
+    if (thetaTw == nullptr) {
         zeroAngle = ZERO_TW;
         thetaTw = &angleStandin;
     }
-    if (thetaFB == NULL) {
+    if (thetaFB == nullptr) {
         if (zeroAngle != ZERO_NONE) {
             TF_CODING_ERROR("Need three angles to correctly decompose rotation");
             return;
@@ -296,7 +296,7 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
         zeroAngle = ZERO_FB;
         thetaFB = &angleStandin;
     }
-    if (thetaLR == NULL) {
+    if (thetaLR == nullptr) {
         if (zeroAngle != ZERO_NONE) {
             TF_CODING_ERROR("Need three angles to correctly decompose rotation");
             return;
@@ -304,7 +304,7 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
         zeroAngle = ZERO_LR;
         thetaLR = &angleStandin;
     }
-    if (thetaSw == NULL) {
+    if (thetaSw == nullptr) {
         if (zeroAngle != ZERO_NONE) {
             TF_CODING_ERROR("Need three angles to correctly decompose rotation");
             return;

@@ -158,7 +158,7 @@ class GfRotation {
     // an equivalent rotation that is as close as possible to the hints.
     //
     // One can use this routine to generate any combination of the three 
-    // angles by passing in NULL for the angle that is to be omitted.
+    // angles by passing in nullptr for the angle that is to be omitted.
     // 
     // Passing in valid pointers for all four angles will decompose into
     // Tw, FB, and LR but allows Sw to be used for best matching of hint 
@@ -185,9 +185,9 @@ class GfRotation {
                                   double *thetaTw,
                                   double *thetaFB,
                                   double *thetaLR,
-                                  double *thetaSw = NULL,
+                                  double *thetaSw = nullptr,
                                   bool   useHint=false,
-                                  const double *swShift=NULL);
+                                  const double *swShift=nullptr);
 
     // This function projects the vectors \p v1 and \p v2 onto the plane 
     // normal to \p axis, and then returns the rotation about \p axis that 

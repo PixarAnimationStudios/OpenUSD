@@ -70,9 +70,9 @@ _DecomposeRotation3(const GfMatrix4d &rot,
                                   &(angle[0]),
                                   &(angle[1]),
                                   &(angle[2]),
-                                  NULL /* thetaSwHint */, 
+                                  nullptr /* thetaSwHint */, 
                                   useHint,
-                                  NULL /* swShift */);
+                                  nullptr /* swShift */);
 
     return make_tuple(angle[0], angle[1], angle[2]);
 }
@@ -105,12 +105,12 @@ _DecomposeRotation(const GfMatrix4d &rot,
 
     GfRotation::DecomposeRotation(
         rot, TwAxis, FBAxis, LRAxis, handedness,
-        thetaTwHint.ptr() != Py_None ? &(angle[0]) : NULL,
-        thetaFBHint.ptr() != Py_None ? &(angle[1]) : NULL,
-        thetaLRHint.ptr() != Py_None ? &(angle[2]) : NULL,
-        thetaSwHint.ptr() != Py_None ? &(angle[3]) : NULL,
+        thetaTwHint.ptr() != Py_None ? &(angle[0]) : nullptr,
+        thetaFBHint.ptr() != Py_None ? &(angle[1]) : nullptr,
+        thetaLRHint.ptr() != Py_None ? &(angle[2]) : nullptr,
+        thetaSwHint.ptr() != Py_None ? &(angle[3]) : nullptr,
         useHint,
-        swShiftIn.ptr() != Py_None ? &swShift : NULL);
+        swShiftIn.ptr() != Py_None ? &swShift : nullptr);
 
     return make_tuple(angle[0], angle[1], angle[2], angle[3]);
 }
