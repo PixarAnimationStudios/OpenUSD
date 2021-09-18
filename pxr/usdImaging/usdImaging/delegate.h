@@ -686,11 +686,10 @@ private:
     // This is done in response to toggling the purpose-based display settings.
     void _MarkRenderTagsDirty();
 
+    typedef TfHashSet<SdfPath, SdfPath::Hash> _DirtySet;
 
-    typedef TfHashSet<SdfPath, SdfPath::Hash> _InstancerSet;
-
-    // Set of cache paths representing instancers
-    _InstancerSet _instancerPrimCachePaths;
+    // Set of cache paths that are due a Sync()
+    _DirtySet _dirtyCachePaths;
 
     /// Refinement level per-USD-prim and fallback.
     typedef TfHashMap<SdfPath, int, SdfPath::Hash> _RefineLevelMap;

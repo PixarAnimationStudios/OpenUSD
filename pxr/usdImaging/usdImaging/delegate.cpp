@@ -157,7 +157,6 @@ UsdImagingDelegate::~UsdImagingDelegate()
     HdRenderIndex& index = GetRenderIndex();
     index.RemoveSubtree(GetDelegateID(), this);
 
-    _instancerPrimCachePaths.clear();
     _refineLevelMap.clear();
     _pickablesMap.clear();
     _hdPrimInfoMap.clear();
@@ -329,6 +328,12 @@ public:
         _tasks.push_back(cachePath);
     }
 
+    template <class ForwardIter>
+    typename std::enable_if<!std::is_integral<ForwardIter>::value>::type
+    AddTasks(ForwardIter begin, ForwardIter end) {
+        _tasks.insert(_tasks.end(), begin, end);
+    }
+
     size_t GetTaskCount() {
         return _tasks.size();
     }
@@ -450,72 +455,23 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
     TRACE_FUNCTION();
 
     UsdImagingDelegate::_Worker worker(this);
-    if (!TF_VERIFY(request)) {
-        return;
-    }
 
-    if (!TF_VERIFY(request->IDs.size() == request->dirtyBits.size())) {
-        return;
-    }
-
-    // Iterate over each HdSyncRequest.
-    for (size_t i = 0; i < request->IDs.size(); i++) {
-
-        // Note that the incoming ID may be prefixed with the DelegateID, so we
-        // must translate it via ConvertIndexPathToCachePath. It's possible
-        // request will have IDs not in this delegate, so to avoid the 
-        // fallback ReplacePrefix in ConvertIndexPath* we do the lookup
-        // ourselves.  Note also that if _index2cachePath doesn't have an entry
-        // for id, there will be no primInfo for id either, and we can safely
-        // skip that prim path.
-        SdfPathMap::const_iterator it = _index2cachePath.find(request->IDs[i]);
-        if (it == _index2cachePath.end()) {
-            continue;
-        }
-        SdfPath cachePath = it->second;
-        _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
-
-        if (!TF_VERIFY(primInfo)) {
-            return;
-        }
-
-        // Merge UsdImaging's own dirty flags with those coming from hydra.
-        primInfo->dirtyBits |= request->dirtyBits[i];
-
-        UsdImagingPrimAdapterSharedPtr &adapter = primInfo->adapter;
-        if (TF_VERIFY(adapter, "%s\n", cachePath.GetText())) {
+    if (TfDebug::IsEnabled(USDIMAGING_UPDATES)) {
+        for (SdfPath const& cachePath : _dirtyCachePaths) {
+            _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+            if (!TF_VERIFY(primInfo, "%s\n", cachePath.GetText())) {
+                continue;
+            }
             TF_DEBUG(USDIMAGING_UPDATES).Msg(
                     "[Sync] PREP: <%s> dirtyFlags: 0x%x [%s]\n",
                     cachePath.GetText(), 
                     primInfo->dirtyBits,
                     HdChangeTracker::StringifyDirtyBits(primInfo->dirtyBits).c_str());
-
-            worker.AddTask(cachePath);
         }
     }
 
-    // We always include instancers.
-    for (SdfPath const& cachePath: _instancerPrimCachePaths) {
-        _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
-        if (!TF_VERIFY(primInfo != nullptr, "%s\n", cachePath.GetText())) {
-            continue;
-        }
-
-        if (primInfo->dirtyBits == HdChangeTracker::Clean) {
-            continue;
-        }
-
-        UsdImagingPrimAdapterSharedPtr &adapter = primInfo->adapter;
-        if (TF_VERIFY(adapter, "%s\n", cachePath.GetText())) {
-            TF_DEBUG(USDIMAGING_UPDATES).Msg(
-                    "[Sync] PREP Instancer: <%s> dirtyFlags: 0x%x [%s]\n",
-                    cachePath.GetText(),
-                    primInfo->dirtyBits,
-                    HdChangeTracker::StringifyDirtyBits(
-                                              primInfo->dirtyBits).c_str());
-            worker.AddTask(cachePath);
-        }
-    }
+    worker.AddTasks(_dirtyCachePaths.begin(), _dirtyCachePaths.end());
+    _dirtyCachePaths.clear();
 
     _ExecuteWorkForTimeUpdate(&worker);
 }

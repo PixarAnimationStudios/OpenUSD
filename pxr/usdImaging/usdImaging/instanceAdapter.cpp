@@ -443,7 +443,6 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
             // Ask hydra to do a full refresh on this instancer.
             index->MarkInstancerDirty(depInstancerPath,
                     HdChangeTracker::DirtyPrimvar |
-                    HdChangeTracker::DirtyTransform |
                     HdChangeTracker::DirtyInstanceIndex);
 
             // Tell UsdImaging to re-run TrackVariability.

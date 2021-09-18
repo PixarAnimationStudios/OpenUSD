@@ -232,13 +232,6 @@ UsdImagingPointInstancerAdapter::_Populate(UsdPrim const& prim,
         _PopulatePrototype(protoIndex, instrData, protoRootPrim, index, &ctx);
     }
 
-    // Make sure we populate instancer data to the value cache the first time
-    // through UpdateForTime.
-    index->MarkInstancerDirty(instancerCachePath,
-        HdChangeTracker::DirtyTransform |
-        HdChangeTracker::DirtyPrimvar |
-        HdChangeTracker::DirtyInstanceIndex);
-
     return instancerCachePath;
 }
 
