@@ -98,7 +98,6 @@ private:
         typedef tbb::concurrent_queue<_MapIt>                          _QueueType;
 
         _MapType   _map;
-        _QueueType _deferredDeleteQueue;
     };
 
 
@@ -116,35 +115,6 @@ private:
             return false;
         }
         *value = it->second;
-        return true;
-    }
-
-    /// Locates the requested \p key then populates \p value, swap the value
-    /// from the entry and queues the entry up for deletion.
-    /// Returns true if found.
-    /// This function is thread-safe, but Garbage collection must be called
-    /// to perform the actual deletion.
-    /// Note: second hit on same key will be sucessful, but return whatever
-    /// value was passed into the first _Extract.
-    template <typename T>
-    bool _Extract(Key const& key, T* value) {
-        if (!TF_VERIFY(!_locked)) {
-            return false;
-        }
-      
-        typedef _TypedCache<T> Cache_t;
-        Cache_t *cache = nullptr;
-
-        _GetCache(&cache);
-        typename Cache_t::_MapIt it = cache->_map.find(key);
-
-        if (it == cache->_map.end()) {
-            return false;
-        }
-
-        // If we're going to erase the old value, swap to avoid a copy.
-        std::swap(it->second, *value);
-        cache->_deferredDeleteQueue.push(it);
         return true;
     }
 
@@ -180,20 +150,6 @@ private:
         return res.first->second;
     }
 
-    /// Removes items from the cache that are marked for deletion.
-    /// This is not thread-safe and designed to be called after
-    /// all the worker threads have been joined.
-    template <typename T>
-    void _GarbageCollect(_TypedCache<T> &cache) {
-        typedef _TypedCache<T> Cache_t;
-
-        typename Cache_t::_MapIt it;
-
-        while (cache._deferredDeleteQueue.try_pop(it)) {
-            cache._map.unsafe_erase(it);
-        }
-    }
-
 public:
 
     void EnableMutation() { _locked = false; }
@@ -210,16 +166,6 @@ public:
 
     bool FindPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) const {
         return _Find(Key::Primvars(path), value);
-    }
-
-    bool ExtractPrimvars(SdfPath const& path, HdPrimvarDescriptorVector* value) {
-        return _Extract(Key::Primvars(path), value);
-    }
-
-    /// Remove any items from the cache that are marked for defered deletion.
-    void GarbageCollect()
-    {
-        _GarbageCollect(_pviCache);
     }
 
 private:

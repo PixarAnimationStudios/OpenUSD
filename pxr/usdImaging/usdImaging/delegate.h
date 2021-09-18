@@ -105,11 +105,6 @@ public:
     USDIMAGING_API
     void SyncAll(bool includeUnvarying);
 
-    /// Opportunity for the delegate to clean itself up after
-    /// performing parallel work during sync phase
-    USDIMAGING_API
-    virtual void PostSyncCleanup() override;
-
     /// Populates the rootPrim in the HdRenderIndex.
     USDIMAGING_API
     void Populate(UsdPrim const& rootPrim);

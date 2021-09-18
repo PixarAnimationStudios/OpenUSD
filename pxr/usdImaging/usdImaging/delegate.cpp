@@ -521,13 +521,6 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
 }
 
 void
-UsdImagingDelegate::PostSyncCleanup()
-{
-    TRACE_FUNCTION();
-    _primvarDescCache.GarbageCollect();
-}
-
-void
 UsdImagingDelegate::Populate(UsdPrim const& rootPrim)
 {
     SdfPathVector empty;
