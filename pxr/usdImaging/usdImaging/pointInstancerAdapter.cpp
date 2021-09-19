@@ -387,7 +387,10 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
                     populatePrim = _GetPrim(instancerChain.at(1));
                 }
 
-                SdfPath const& materialId = GetMaterialUsdPath(instanceProxyPrim);
+                SdfPath const& materialId =
+                    populatePrim.IsInstance()
+                        ? GetMaterialUsdPath(instanceProxyPrim)
+                        : GetMaterialUsdPath(populatePrim);
                 TfToken const& drawMode = GetModelDrawMode(instanceProxyPrim);
                 TfToken const& inheritablePurpose = 
                     GetInheritablePurpose(instanceProxyPrim);
