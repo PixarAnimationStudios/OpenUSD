@@ -25,10 +25,9 @@
 
 #include "pxr/usd/usdLux/boundableLightBase.h"
 #include "pxr/usd/usdLux/lightDefParser.h"
-#include "pxr/usd/usdLux/lightFilter.h"
 #include "pxr/usd/usdLux/nonboundableLightBase.h"
 
-#include "pxr/base/plug/registry.h"
+#include "pxr/base/plug/thisPlugin.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -43,42 +42,30 @@ UsdLux_DiscoveryPlugin::GetSearchURIs() const
     return empty;
 }
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    (usdLux)
-);
-
 NdrNodeDiscoveryResultVec
 UsdLux_DiscoveryPlugin::DiscoverNodes(const Context &context)
 {
     NdrNodeDiscoveryResultVec result;
 
     // We want to discover nodes for all concrete schema types that derive from 
-    // UsdLuxBoundableLightBase, UsdLuxNonboundableLightBase, and 
-    // UsdLuxLightFilter.
+    // UsdLuxBoundableLightBase and UsdLuxNonboundableLightBase. We'll filter
+    // out types that aren't defined in UsdLux as we process them.
     static const TfType boundableLightType = 
         TfType::Find<UsdLuxBoundableLightBase>();
     static const TfType nonboundableLightType = 
         TfType::Find<UsdLuxNonboundableLightBase>();
-    static const TfType lightFilterType = TfType::Find<UsdLuxLightFilter>();
-    // LightFilter is a concrete type and is legit to instantiate while light 
-    // base types are abstract and cannot be instantiated. LightFilter must be
-    // included in the discovery types.
-    std::set<TfType> types({lightFilterType});
+
+    std::set<TfType> types;
     PlugRegistry::GetAllDerivedTypes(boundableLightType, &types);
     PlugRegistry::GetAllDerivedTypes(nonboundableLightType, &types);
-    PlugRegistry::GetAllDerivedTypes(lightFilterType, &types);
 
     for (const TfType &type : types) {
-        static const PlugRegistry &plugRegistry = PlugRegistry::GetInstance();
-        const PlugPluginPtr &plugin = plugRegistry.GetPluginForType(type);
-        if (!plugin) {
+        // Filter out types that weren't declared in the UsdLux library itself.
+        static PlugPluginPtr thisPlugin = PLUG_THIS_PLUGIN;
+        if (!thisPlugin->DeclaresType(type)) {
             continue;
         }
-        if (_tokens->usdLux != plugin->GetName()) {
-            continue;
-        }
+
         const TfToken name = UsdSchemaRegistry::GetConcreteSchemaTypeName(type);
         // The type name from the schema registry will be empty if the type is 
         // not concrete (i.e. abstract); we skip abstract types.
