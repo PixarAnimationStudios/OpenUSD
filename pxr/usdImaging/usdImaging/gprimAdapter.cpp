@@ -142,9 +142,11 @@ UsdImagingGprimAdapter::_AddRprim(TfToken const& primType,
         index->AddDependency(cachePath, usdPrim);
     }
 
-    // Allow instancer context to override the material binding.
-    SdfPath resolvedUsdMaterialPath = instancerContext ?
-        instancerContext->instancerMaterialUsdPath : materialUsdPath;
+    // If there's no local material path, fall back to the instancer material.
+    SdfPath resolvedUsdMaterialPath = materialUsdPath;
+    if (materialUsdPath.IsEmpty() && instancerContext != nullptr) {
+        resolvedUsdMaterialPath = instancerContext->instancerMaterialUsdPath;
+    }
     UsdPrim materialPrim =
         usdPrim.GetStage()->GetPrimAtPath(resolvedUsdMaterialPath);
 
