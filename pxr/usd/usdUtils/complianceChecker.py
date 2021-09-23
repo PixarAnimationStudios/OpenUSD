@@ -356,7 +356,7 @@ class ARKitShaderChecker(BaseRuleChecker):
 
         shaderId = shader.GetShaderId()
         if not shaderId or \
-           not (shaderId in ['UsdPreviewSurface', 'UsdUVTexture'] or
+           not (shaderId in ['UsdPreviewSurface', 'UsdUVTexture', 'UsdTransform2d'] or
                 shaderId.startswith('UsdPrimvarReader')) :
             self._AddFailedCheck("Shader <%s> has unsupported info:id '%s'." 
                     % (prim.GetPath(), shaderId))
