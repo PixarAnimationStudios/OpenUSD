@@ -36,7 +36,6 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
-#include <boost/format.hpp>
 #include <ostream>
 
 using namespace boost::multi_index;
@@ -365,28 +364,28 @@ operator<<(std::ostream& ostr, const Sdf_LayerRegistry& registry)
     SdfLayerHandleSet layers = registry.GetLayers();
     TF_FOR_ALL(i, layers) {
         if (SdfLayerHandle layer = *i) {
-            ostr << boost::format(
-                "%1%[ref=%2%]:\n"
-                "    format           = %3%\n"
-                "    identifier       = '%4%'\n"
-                "    repositoryPath   = '%5%'\n"
-                "    realPath         = '%6%'\n"
-                "    version          = '%7%'\n"
-                "    assetInfo        = \n'%8%'\n"
-                "    muted            = %9%\n"
-                "    anonymous        = %10%\n"
-                "\n")
-                % layer.GetUniqueIdentifier()
-                % layer->GetCurrentCount()
-                % layer->GetFileFormat()->GetFormatId()
-                % layer->GetIdentifier()
-                % layer->GetRepositoryPath()
-                % layer->GetRealPath()
-                % layer->GetVersion()
-                % layer->GetAssetInfo()
-                % (layer->IsMuted()          ? "True" : "False")
-                % (layer->IsAnonymous()      ? "True" : "False")
-                ;
+            ostr << TfStringPrintf(
+                "%p[ref=%zu]:\n"
+                "    format           = %s\n"
+                "    identifier       = '%s'\n"
+                "    repositoryPath   = '%s'\n"
+                "    realPath         = '%s'\n"
+                "    version          = '%s'\n"
+                "    assetInfo        = \n'%s'\n"
+                "    muted            = %s\n"
+                "    anonymous        = %s\n"
+                "\n"
+                , layer.GetUniqueIdentifier()
+                , layer->GetCurrentCount()
+                , layer->GetFileFormat()->GetFormatId().GetText()
+                , layer->GetIdentifier().c_str()
+                , layer->GetRepositoryPath().c_str()
+                , layer->GetRealPath().c_str()
+                , layer->GetVersion().c_str()
+                , TfStringify(layer->GetAssetInfo()).c_str()
+                , (layer->IsMuted()          ? "True" : "False")
+                , (layer->IsAnonymous()      ? "True" : "False")
+                );
         }
     }
 
