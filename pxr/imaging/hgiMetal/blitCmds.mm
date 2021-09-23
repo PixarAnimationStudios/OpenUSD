@@ -161,8 +161,10 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
                           options:blitOptions];
 
     if (@available(macOS 10.11, ios 100.100, *)) {
-        [_blitEncoder performSelector:@selector(synchronizeResource:)
-                           withObject:cpuBuffer];
+        if ([cpuBuffer storageMode] == MTLStorageModeManaged) {
+            [_blitEncoder performSelector:@selector(synchronizeResource:)
+                               withObject:cpuBuffer];
+        }
     }
     
     // Offset into the dst buffer
