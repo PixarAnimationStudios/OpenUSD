@@ -9,6 +9,8 @@ class "TestSchemaAPI" (
     inherits = </APISchemaBase>
 )
 {
+    bool[] inputs:boolArray
+    bool inputs:boolNotInt = 1
     uniform string inputs:colorMapGamma (
         connectability = "interfaceOnly"
         displayGroup = "Basic"
@@ -25,6 +27,7 @@ class "TestSchemaAPI" (
                 intensity: Itensity of the flame thrower.
                 """
     )
+    int inputs:intNotBool = 0
     color3f outputs:resultRGB
 }
 

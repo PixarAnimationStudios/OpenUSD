@@ -18,6 +18,7 @@ pxr_library(sdr
         declare.h
 
     PUBLIC_CLASSES
+        debugCodes
         registry
         shaderMetadataHelpers
         shaderNode

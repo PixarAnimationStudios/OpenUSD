@@ -22,13 +22,25 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/ndr/debugCodes.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/usd/sdf/schema.h"
+#include "pxr/usd/sdr/debugCodes.h"
 #include "pxr/usd/sdr/shaderMetadataHelpers.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(
+    SDR_DEFAULT_VALUE_AS_SDF_DEFAULT_VALUE, true,
+    "This is set to true, until all the internal codesites using "
+    "GetDefaultValue() are updated to use GetDefaultValueAsSdfType(). As "
+    "previous implementation for type conformance code would update "
+    "_defaultValue, for backward compatibility we need to set _defaultValue to "
+    "_sdfTypeDefaultValue. Following needs to be removed or set to false once "
+    "appropriate GetDefaultValue() codesite changes are made. ");
 
 TF_DEFINE_PUBLIC_TOKENS(SdrPropertyTypes, SDR_PROPERTY_TYPE_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(SdrPropertyMetadata, SDR_PROPERTY_METADATA_TOKENS);
@@ -47,7 +59,7 @@ typedef std::unordered_map<TfToken, SdfValueTypeName, TfToken::HashFunctor>
 namespace {
     // This only establishes EXACT mappings. If a mapping is not included here,
     // a one-to-one mapping isn't possible.
-    const TokenToSdfTypeMap& GetTokenTypeToSdfType()
+    const TokenToSdfTypeMap& _GetTokenTypeToSdfType()
     {
         static const TokenToSdfTypeMap tokenTypeToSdfType  = {
             {SdrPropertyTypes->Int,     SdfValueTypeNames->Int},
@@ -63,7 +75,7 @@ namespace {
     }
 
     // The array equivalent of the above map
-    const TokenToSdfTypeMap& GetTokenTypeToSdfArrayType()
+    const TokenToSdfTypeMap& _GetTokenTypeToSdfArrayType()
     { 
         static const TokenToSdfTypeMap tokenTypeToSdfArrayType  = {
             {SdrPropertyTypes->Int,     SdfValueTypeNames->IntArray},
@@ -76,6 +88,29 @@ namespace {
             {SdrPropertyTypes->Matrix,  SdfValueTypeNames->Matrix4dArray}
         };
         return tokenTypeToSdfArrayType;
+    }
+
+    // Map of SdfValueTypeName's aliases to corresponding SdfValueTypeName
+    // Refer SdfValueTypeName::GetAliasesAsTokens.
+    // This is used to determine SdfValueTypeName from the SdrUsdDefinitionType
+    // metadata.
+    const TokenToSdfTypeMap& _GetAliasesTokensToSdfValueTypeNames()
+    {
+        auto MapBuilder = []() {
+            TokenToSdfTypeMap result;
+            for (const auto& typeName : SdfSchema::GetInstance().GetAllTypes()) {
+                // Insert typeName itself as an alias
+                result.emplace(typeName.GetAsToken(), typeName);
+                // Insert all other aliases for the type
+                for (const auto& aliasToken : typeName.GetAliasesAsTokens()) {
+                    result.emplace(aliasToken, typeName);
+                }
+            }
+            return result;
+        };
+        static const TokenToSdfTypeMap &aliasesTokensToSdfValueTypeNames =
+            MapBuilder();
+        return aliasesTokensToSdfValueTypeNames;
     }
 
 
@@ -124,6 +159,31 @@ namespace {
 
     // -------------------------------------------------------------------------
 
+    SdfValueTypeName
+    _GetSdrUsdDefinitionType(const NdrTokenMap &metadata)
+    {
+        const TfToken &sdrUsdDefinitionType = 
+            TfToken(StringVal(
+                        SdrPropertyMetadata->SdrUsdDefinitionType, metadata));
+
+        if (sdrUsdDefinitionType.IsEmpty()) {
+            return SdfValueTypeName();
+        }
+
+        const TokenToSdfTypeMap &aliasesTokensToSdfValueTypeNames =
+            _GetAliasesTokensToSdfValueTypeNames();
+
+        if (aliasesTokensToSdfValueTypeNames.find(sdrUsdDefinitionType) == 
+                aliasesTokensToSdfValueTypeNames.end()) {
+            TF_WARN("Invalid SdfValueTypeName or alias provided for "
+                    "sdrUsdDefinitionType metadata: %s", 
+                    sdrUsdDefinitionType.GetText());
+            return SdfValueTypeName();
+        }
+
+        return aliasesTokensToSdfValueTypeNames.at(sdrUsdDefinitionType);
+    }
+
     // Returns true if the arraySize or the metadata indicate that the property
     // has an array type
     bool
@@ -150,14 +210,14 @@ namespace {
     }
 
     // Returns the type indicator based on the type mappings defined in
-    // GetTokenTypeToSdfType and GetTokenTypeToSdfArrayType. If the type can't
+    // _GetTokenTypeToSdfType and _GetTokenTypeToSdfArrayType. If the type can't
     // be found the SdfType will be returned as Token with the original type as
     // a hint.
     const NdrSdfTypeIndicator
     _GetTypeIndicatorFromDefaultMapping(const TfToken& type, bool isArray)
     {
         const TokenToSdfTypeMap& tokenTypeToSdfType =
-            isArray ? GetTokenTypeToSdfArrayType() : GetTokenTypeToSdfType();
+            isArray ? _GetTokenTypeToSdfArrayType() : _GetTokenTypeToSdfType();
 
         TokenToSdfTypeMap::const_iterator it = tokenTypeToSdfType.find(type);
         if (it != tokenTypeToSdfType.end()) {
@@ -211,6 +271,12 @@ namespace {
         GetTypeAsSdfType(
             const TfToken& type, size_t arraySize, const NdrTokenMap& metadata)
         {
+            const SdfValueTypeName& sdfValueTypeName = 
+                _GetSdrUsdDefinitionType(metadata);
+            if (sdfValueTypeName) {
+                return std::make_pair(sdfValueTypeName, TfToken());
+            }
+
             bool isArray = _IsArray(arraySize, metadata);
 
             // There is one Sdf type (Asset) that is not included in the type
@@ -324,6 +390,119 @@ namespace {
         return false;
     }
 
+    // This function checks if the authored _defaultValue and the sdrType 
+    // conform, without actually modifying the _defaultValue, except in the case
+    // of VtFloatArray in which case it appropriately returns GfVec2, GfVec3, 
+    // GfVec4 values depending on size of the VtFloatArray.
+    // Such a mismatch should have been handled appropriately in the parser, and
+    // hence provide a debug diagnotics for these.
+    VtValue
+    _ConformSdrDefaultValue(
+            const VtValue &sdrDefaultValue,
+            const TfToken &sdrType,
+            size_t arraySize,
+            const NdrTokenMap &metadata,
+            const TfToken &name)
+    {
+        bool isSdrValueConformed = true;
+        bool isArray = _IsArray(arraySize, metadata);
+        VtValue defaultValue = sdrDefaultValue;
+        
+        if (sdrType == SdrPropertyTypes->Int) {
+            if (!isArray) {
+                isSdrValueConformed = sdrDefaultValue.IsHolding<int>();
+            } else {
+                isSdrValueConformed = sdrDefaultValue.IsHolding<VtArray<int>>();
+            }
+        }
+        else if (sdrType == SdrPropertyTypes->String) {
+            if (!isArray) {
+                isSdrValueConformed = sdrDefaultValue.IsHolding<std::string>();
+            } else {
+                isSdrValueConformed = 
+                    sdrDefaultValue.IsHolding<VtStringArray>();
+            }
+        }
+        else if (sdrType == SdrPropertyTypes->Float) {
+            if (!isArray) {
+                isSdrValueConformed = sdrDefaultValue.IsHolding<float>();
+            } else {
+                // If the held value is a VtFloatArray We will conform float 
+                // array values to GfVec#, else specify isSdrValueConformed as
+                // False.
+                //
+                // If array size is NOT 2,3,4 we specify isSdrValueConformed as
+                // False, else its True and explicitly conformed to appropriate
+                // GfVec#
+                VtFloatArray arrayVal;
+                isSdrValueConformed = _GetValue(sdrDefaultValue, &arrayVal);
+                if (arrayVal.size() != arraySize) {
+                    isSdrValueConformed = false;
+                    TF_DEBUG(SDR_TYPE_CONFORMANCE).Msg(
+                        "Default value for fixed size float array type does not "
+                        "have the right length (%zu vs expected %zu)",
+                        arrayVal.size(), arraySize);
+                }
+                if (isSdrValueConformed) {
+                    switch (arraySize) {
+                        case 2:
+                            defaultValue = VtValue(
+                                    GfVec2f(arrayVal[0], 
+                                        arrayVal[1]));
+                            break;
+                        case 3:
+                            defaultValue = VtValue(
+                                    GfVec3f(arrayVal[0], 
+                                        arrayVal[1],
+                                        arrayVal[2]));
+                            break;
+                        case 4:
+                            defaultValue = VtValue(
+                                    GfVec4f(arrayVal[0], 
+                                        arrayVal[1],
+                                        arrayVal[2],
+                                        arrayVal[3]));
+                            break;
+                        default:
+                            TF_DEBUG(SDR_TYPE_CONFORMANCE).Msg("Invalid "
+                                    "arraySize provided. Expects 2/3/4 but %zu "
+                                    " provided.", arraySize);
+                            isSdrValueConformed = false;
+                    }
+                }
+            }
+        }
+        else if (sdrType == SdrPropertyTypes->Color ||
+                sdrType == SdrPropertyTypes->Point ||
+                sdrType == SdrPropertyTypes->Normal ||
+                sdrType == SdrPropertyTypes->Vector) {
+            if (!isArray) {
+                isSdrValueConformed = sdrDefaultValue.IsHolding<GfVec3f>();
+            } else {
+                isSdrValueConformed = sdrDefaultValue.IsHolding<VtArray<GfVec3f>>();
+            }
+        } else if (sdrType == SdrPropertyTypes->Matrix) {
+            if (!isArray) {
+                isSdrValueConformed = sdrDefaultValue.IsHolding<GfMatrix4d>();
+            } else {
+                isSdrValueConformed = 
+                    sdrDefaultValue.IsHolding<VtArray<GfMatrix4d>>();
+            }
+        } else {
+            // malformed sdrType
+            isSdrValueConformed = false;
+        }
+
+        if (!isSdrValueConformed) {
+            TF_DEBUG(SDR_TYPE_CONFORMANCE).Msg(
+                    "Expected type for defaultValue for property: %s is %s, "
+                    "but %s was provided.", name.GetText(), sdrType.GetText(), 
+                    defaultValue.GetTypeName().c_str());
+
+        }
+        return defaultValue;
+    }
+
     // This methods conforms the given default value's type with the property's
     // SdfValueTypeName.  This step is important because a Sdr parser should not
     // care about what SdfValueTypeName the parsed property will eventually map
@@ -333,16 +512,16 @@ namespace {
     // happen in this conformance step when the SdrShaderProperty is
     // instantiated.
     VtValue
-    _ConformDefaultValue(
-        const VtValue& defaultValue,
+    _ConformSdfTypeDefaultValue(
+        const VtValue& sdrDefaultValue,
         const TfToken& sdrType,
         size_t arraySize,
         const NdrTokenMap& metadata,
         int usdEncodingVersion)
     {
         // Return early if there is no value to conform
-        if (defaultValue.IsEmpty()) {
-            return defaultValue;
+        if (sdrDefaultValue.IsEmpty()) {
+            return sdrDefaultValue;
         }
 
         // Return early if no conformance issue
@@ -350,8 +529,26 @@ namespace {
             sdrType, arraySize, metadata, usdEncodingVersion);
         const SdfValueTypeName sdfType = sdfTypeIndicator.first;
 
-        if (defaultValue.GetType() == sdfType.GetType()) {
-            return defaultValue;
+        if (sdrDefaultValue.GetType() == sdfType.GetType()) {
+            return sdrDefaultValue;
+        }
+
+        // Special conformance for when SdrUsdDefinitionType is provided, we
+        // want to set the sdfTypeDefaultValue as the original parsed default 
+        // value. This assumes that the shader writer has provided 
+        // SdfValueTypeName corresponding default value in the shader since the 
+        // shader provides an explicit SdfValueTypeName by specifying a
+        // SdrUsdDefinitionType metadata, if not its possible the type and value
+        // could mismatch.
+        if (metadata.find(SdrPropertyMetadata->SdrUsdDefinitionType) !=
+                metadata.end()) {
+            // Make sure the types match, or try to extract the correct typed
+            // vtvalue from the default
+            VtValue sdfTypeValue = VtValue::CastToTypeid(sdrDefaultValue,
+                    sdfType.GetType().GetTypeid());
+            if (!sdfTypeValue.IsEmpty()) {
+                return sdfTypeValue;
+            }
         }
 
         bool isArray = _IsArray(arraySize, metadata);
@@ -362,7 +559,7 @@ namespace {
             _IsAssetIdentifier(metadata)) {
             if (isArray) {
                 VtStringArray arrayVal;
-                _GetValue(defaultValue, &arrayVal);
+                _GetValue(sdrDefaultValue, &arrayVal);
 
                 VtArray<SdfAssetPath> array;
                 array.reserve(arrayVal.size());
@@ -373,7 +570,7 @@ namespace {
                 return VtValue::Take(array);
             } else {
                 std::string val;
-                _GetValue(defaultValue, &val);
+                _GetValue(sdrDefaultValue, &val);
                 return VtValue(SdfAssetPath(val));
             }
         }
@@ -383,15 +580,15 @@ namespace {
         else if (sdrType == SdrPropertyTypes->Float &&
                  isArray) {
             VtFloatArray arrayVal;
-            _GetValue(defaultValue, &arrayVal);
+            _GetValue(sdrDefaultValue, &arrayVal);
 
             if (arrayVal.size() != arraySize) {
-                TF_DEBUG(NDR_PARSING).Msg(
+                TF_DEBUG(SDR_TYPE_CONFORMANCE).Msg(
                     "Default value for fixed size float array type does not "
                     "have the right length (%zu vs expected %zu)",
                     arrayVal.size(), arraySize);
-                return defaultValue;
-            }
+                return sdrDefaultValue;
+            } 
 
             // We return a fixed-size array for arrays with size 2, 3, or 4
             // because SdrShaderProperty::GetTypeAsSdfType returns a specific
@@ -400,16 +597,16 @@ namespace {
             // SdrShaderProperty::GetTypeAsSdfType
             if (arraySize == 2) {
                 return VtValue(
-                    GfVec2f(arrayVal[0],
+                        GfVec2f(arrayVal[0], 
                             arrayVal[1]));
             } else if (arraySize == 3) {
                 return VtValue(
-                    GfVec3f(arrayVal[0],
+                        GfVec3f(arrayVal[0],
                             arrayVal[1],
                             arrayVal[2]));
             } else if (arraySize == 4) {
                 return VtValue(
-                    GfVec4f(arrayVal[0],
+                        GfVec4f(arrayVal[0],
                             arrayVal[1],
                             arrayVal[2],
                             arrayVal[3]));
@@ -616,8 +813,18 @@ SdrShaderProperty::_ConvertToVStruct()
 void
 SdrShaderProperty::_FinalizeProperty()
 {
-    _defaultValue = _ConformDefaultValue(_defaultValue, _type, _arraySize,
-                                         _metadata, _usdEncodingVersion);
+    _sdfTypeDefaultValue = _ConformSdfTypeDefaultValue(_defaultValue, 
+            _type, _arraySize, _metadata, _usdEncodingVersion);
+
+    _defaultValue = _ConformSdrDefaultValue(_defaultValue, _type, _arraySize, 
+            _metadata, _name);
+    // XXX: Note that until all the codesites using GetDefaultValue() are
+    // updated, we need to set the _defaultValue to _sdfTypeDefaultValue.
+    // Following needs to be removed once appropriate GetDefaultValue() 
+    // codesite changes are made. (This is for backward compatibility)
+    if (TfGetEnvSetting(SDR_DEFAULT_VALUE_AS_SDF_DEFAULT_VALUE)) {
+        _defaultValue = _sdfTypeDefaultValue;
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

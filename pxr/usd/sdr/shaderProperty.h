@@ -74,6 +74,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((VstructConditionalExpr, "vstructConditionalExpr"))\
     ((IsAssetIdentifier, "__SDR__isAssetIdentifier"))\
     ((ImplementationName, "__SDR__implementationName"))\
+    ((SdrUsdDefinitionType, "sdrUsdDefinitionType"))\
     ((DefaultInput, "__SDR__defaultinput"))          \
     ((Target, "__SDR__target"))                      \
     ((Colorspace, "__SDR__colorspace"))
@@ -229,8 +230,20 @@ public:
     /// a TfToken, will be empty. In the second scenario, the Sdf type will be
     /// set to `Token` to indicate an unclean mapping, and the second element
     /// will be set to the original type returned by `GetType()`.
+    ///
+    /// \sa GetDefaultValueAsSdfType
     SDR_API
     const NdrSdfTypeIndicator GetTypeAsSdfType() const override;
+
+    /// Accessor for default value corresponding to the SdfValueTypeName
+    /// returned by GetTypeAsSdfType. Note that this could be different than
+    /// value returned by GetDefaultValue.
+    ///
+    /// \sa GetTypeAsSdfType
+    SDR_API
+    const VtValue& GetDefaultValueAsSdfType() const override {
+        return _sdfTypeDefaultValue;
+    }
 
     /// Determines if the value held by this property is an asset identifier
     /// (eg, a file path); the logic for this is left up to the parser.
@@ -283,6 +296,8 @@ protected:
     TfToken _vstructMemberOf;
     TfToken _vstructMemberName;
     TfToken _vstructConditionalExpr;
+
+    VtValue _sdfTypeDefaultValue;
 
     // Metadatum to control the behavior of GetTypeAsSdfType and indirectly
     // CanConnectTo
