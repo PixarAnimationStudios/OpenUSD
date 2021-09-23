@@ -46,11 +46,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     (UsdPrimvarReader_float3)
 
     // UsdPreviewSurface tokens
+    (displacement)
     (file)
     (normal)
     (opacityThreshold)
 
     // UsdPreviewSurface conversion to Pxr nodes
+    (PxrDisplace)
     (PxrSurface)
 
     // Usd preview shading nodes osl tokens
@@ -67,6 +69,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (diffuseGainOut)
     (diffuseColor)
     (diffuseColorOut)
+    (dispAmount)
+    (dispAmountOut)
+    (dispScalar)
+    (dispScalarOut)
     (glassIor)
     (glassIorOut)
     (glowGain)
@@ -115,6 +121,7 @@ MatfiltConvertPreviewMaterial(
     std::map<SdfPath, HdMaterialNode2> nodesToAdd;
 
     SdfPath pxrSurfacePath;
+    SdfPath pxrDisplacePath;
 
     for (auto& nodeEntry: network.nodes) {
         SdfPath const& nodePath = nodeEntry.first;
@@ -159,12 +166,26 @@ MatfiltConvertPreviewMaterial(
 
             // If opacityThreshold is > 0, do not use refraction.
             bool opacityThreshold = false;
+            bool displacement = false;
             for (auto const& paramIt : node.parameters) {
+                if (paramIt.first == _tokens->displacement) {
+                    displacement = true;
+                    continue;
+                }
                 if (paramIt.first != _tokens->opacityThreshold) continue;
 
                 VtValue const& vtOpacityThreshold = paramIt.second;
                 if (vtOpacityThreshold.Get<float>() > 0.0f) {
                     opacityThreshold = true;
+                }
+            }
+            if (!displacement) {
+                for (auto const& paramIt : node.inputConnections) {
+                    if (paramIt.first == _tokens->displacement) {
+                        displacement = true;
+                        break;
+                    }
+                    continue;
                 }
             }
 
@@ -209,6 +230,25 @@ MatfiltConvertPreviewMaterial(
                 nodesToAdd[pxrSurfacePath].inputConnections.insert(
                     {_tokens->refractionGain,
                         {{nodePath, _tokens->refractionGainOut}}});
+            }
+
+            // Need additional node, PxrDisplace, for displacement
+            if (displacement) {
+                pxrDisplacePath = nodePath.GetParentPath().AppendChild(
+                    TfToken(nodePath.GetName() + "_PxrDisplace"));
+
+                nodesToAdd[pxrDisplacePath] = HdMaterialNode2 {
+                    _tokens->PxrDisplace, 
+                    // parameters:
+                    {},
+                    // connections:
+                    {
+                        {_tokens->dispAmount,
+                            {{nodePath, _tokens->dispAmountOut}}},
+                        {_tokens->dispScalar,
+                            {{nodePath, _tokens->dispScalarOut}}},
+                    },
+                };
             }
 
         } else if (node.nodeTypeId == _tokens->UsdUVTexture) {
@@ -302,10 +342,16 @@ MatfiltConvertPreviewMaterial(
 
     network.nodes.insert(nodesToAdd.begin(), nodesToAdd.end());
     if (!pxrSurfacePath.IsEmpty()) {
-        // Use PxrSurface as sole terminal.  Displacement is not supported.
         network.terminals = {
             {HdMaterialTerminalTokens->surface, {pxrSurfacePath, TfToken()}}
         };
+
+        if (!pxrDisplacePath.IsEmpty()) {
+            network.terminals.insert(
+                {HdMaterialTerminalTokens->displacement, {pxrDisplacePath, 
+                    TfToken()}}
+            );
+        }
     }
 }
 

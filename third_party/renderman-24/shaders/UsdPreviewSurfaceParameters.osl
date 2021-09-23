@@ -36,6 +36,7 @@ shader UsdPreviewSurfaceParameters
     float opacityThreshold = 0.0,
     float ior = 1.5,
     normal normalIn = normal(0.0, 0.0, 1.0),
+    float displacement = 0.0,
     float occlusion = 1.0,
 
     // Diffuse outputs
@@ -80,6 +81,12 @@ shader UsdPreviewSurfaceParameters
 
     // Presence output    
     output float presenceOut = 1.0
+        [[ string widget = "null" ]],
+    
+    // Displacement output
+    output float dispAmountOut = 0.0
+        [[ string widget = "null" ]],
+    output float dispScalarOut = 0.0
         [[ string widget = "null" ]],
 )
 {
@@ -163,5 +170,12 @@ shader UsdPreviewSurfaceParameters
         if (dot(Ngn, bumpNormalOut) < 0.0) {
             bumpNormalOut = -bumpNormalOut;
         }
+    }
+
+    // Displacement
+    if (displacement != 0.0)
+    {
+        dispAmountOut = 0.1;
+        dispScalarOut = displacement;
     }
 }
