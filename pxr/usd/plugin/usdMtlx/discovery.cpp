@@ -46,12 +46,33 @@ TF_DEFINE_PRIVATE_TOKENS(
 // Maps a nodedef name to its NdrNode name.
 using _NameMapping = std::map<std::string, std::string>;
 
-// Return the name of the most-ancestral element.
-const std::string&
-_GetTopMostAncestralName(mx::ConstElementPtr mtlx)
+// Fill the name mapping with the shortest name found in the inheritance
+// hierarchy:
+void _FindAncestralMappings(mx::ConstElementPtr mtlx, _NameMapping& mappping)
 {
     static const std::string inheritAttr("inherit");
 
+    const std::string* shortestName = &mtlx->getName();
+
+    // Find shortest:
+    mx::ConstElementPtr current = mtlx;
+    while (true) {
+        const std::string& inherit = current->getAttribute(inheritAttr);
+        if (inherit.empty()) {
+            break;
+        }
+        if (auto inherited = current->getRoot()->getChild(inherit)) {
+            current = inherited;
+            if (current->getName().size() < shortestName->size()) {
+                shortestName = &current->getName();
+            }
+        }
+        else {
+            break;
+        }
+    }
+    // Populate mapping:
+    mappping.emplace(mtlx->getName(), *shortestName);
     while (true) {
         const std::string& inherit = mtlx->getAttribute(inheritAttr);
         if (inherit.empty()) {
@@ -59,12 +80,12 @@ _GetTopMostAncestralName(mx::ConstElementPtr mtlx)
         }
         if (auto inherited = mtlx->getRoot()->getChild(inherit)) {
             mtlx = inherited;
+            mappping.emplace(mtlx->getName(), *shortestName);
         }
         else {
             break;
         }
     }
-    return mtlx->getName();
 }
 
 // Choose an Ndr name based on compatible MaterialX nodedef names.
@@ -77,9 +98,24 @@ _ComputeNameMapping(const mx::ConstDocumentPtr& doc)
     // nodedef on the inheritance chain where top-most is the one
     // that doesn't itself inherit anything.  The 1.36 spec gives
     // guidance that this should be sufficient.
+    //
+    //    mix_float_210 (v2.1)
+    //      inherits mix_float_200 (v2.0)
+    //        inherits mix_float (original version)
+    //
+    // A versioning inheritance can also choose to keep the latest version with
+    // the official name, and tag the earlier versions:
+    //
+    //    mix_float  (v2.1 latest)
+    //      inherits mix_float_200  (v2.0)
+    //        inherits mix_float_100  (v1.0)
+    //
+    // So we need to traverse the hierarchy, and at each point pick the
+    // shortest name.
     for (auto&& mtlxNodeDef: doc->getNodeDefs()) {
-        result.emplace(mtlxNodeDef->getName(),
-                       _GetTopMostAncestralName(mtlxNodeDef));
+        if (mtlxNodeDef->hasInheritString()) {
+            _FindAncestralMappings(mtlxNodeDef, result);
+        }
     }
 
     return result;
@@ -103,25 +139,8 @@ _DiscoverNodes(
 {
     static const TfToken family = TfToken();
 
-    // MaterialX allows nodes definitions through implementation
-    // and nodegraph elements.  We scan the file for those,
-    // discarding any that don't refer to node definitions, and
-    // insert into the discovery result list.
-
-    // Get the implementations.
-    for (auto&& impl: doc->getImplementations()) {
-        auto&& nodeDef = impl->getNodeDef();
-        if (!nodeDef) {
-            continue;
-        }
-
-        // Ignore implementations that don't refer to a file.
-        // XXX -- Do we want to allow these?  The renderer will
-        //        be expected to provide the implementation.
-        if (impl->getFile().empty()) {
-            continue;
-        }
-
+    // Get the node definitions
+    for (auto&& nodeDef: doc->getNodeDefs()) {
         bool implicitDefault;
         result->emplace_back(
             NdrIdentifier(nodeDef->getName()),
@@ -131,33 +150,7 @@ _DiscoverNodes(
             fileResult.discoveryType,
             fileResult.sourceType,
             fileResult.uri,
-            fileResult.resolvedUri,
-            /* sourceCode */ "", 
-            /* metadata */ NdrTokenMap(),
-            /* blindData */ impl->getName()
-        );
-    }
-
-    // Get the nodegraphs implementing node defs.
-    for (auto&& nodeGraph: doc->getNodeGraphs()) {
-        auto&& nodeDef = nodeGraph->getNodeDef();
-        if (!nodeDef) {
-            continue;
-        }
-
-        bool implicitDefault;
-        result->emplace_back(
-            NdrIdentifier(nodeDef->getName()),
-            UsdMtlxGetVersion(nodeDef, &implicitDefault),
-            _ChooseName(nodeDef->getName(), nameMapping),
-            TfToken(nodeDef->getNodeString()),
-            fileResult.discoveryType,
-            fileResult.sourceType,
-            fileResult.uri,
-            fileResult.resolvedUri,
-            /* sourceCode */ "", 
-            /* metadata */ NdrTokenMap(),
-            /* blindData */ nodeGraph->getName()
+            fileResult.resolvedUri
         );
     }
 }
