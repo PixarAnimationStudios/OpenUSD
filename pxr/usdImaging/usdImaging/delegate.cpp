@@ -388,17 +388,21 @@ public:
             SdfPath const& cachePath = _tasks[i];
 
             _HdPrimInfo *primInfo = _delegate->_GetHdPrimInfo(cachePath);
-            if (TF_VERIFY(primInfo, "%s\n", cachePath.GetText())) {
-                UsdImagingPrimAdapterSharedPtr const& adapter=primInfo->adapter;
-                if (TF_VERIFY(adapter, "%s\n", cachePath.GetText())) {
-                    adapter->UpdateForTime(primInfo->usdPrim,
-                                           cachePath,
-                                           time,
-                                           primInfo->dirtyBits);
+            if (!primInfo) {
+                // Note: if something was invalidated and then deleted,
+                // it can still be in the _dirtyCachePaths list. This isn't
+                // an error, but there's no work to do.
+                continue;
+            }
+            UsdImagingPrimAdapterSharedPtr const& adapter=primInfo->adapter;
+            if (TF_VERIFY(adapter, "%s\n", cachePath.GetText())) {
+                adapter->UpdateForTime(primInfo->usdPrim,
+                                       cachePath,
+                                       time,
+                                       primInfo->dirtyBits);
 
-                    // Prim is now clean
-                    primInfo->dirtyBits = 0;
-                }
+                // Prim is now clean
+                primInfo->dirtyBits = 0;
             }
         }
     }
@@ -459,7 +463,10 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
     if (TfDebug::IsEnabled(USDIMAGING_UPDATES)) {
         for (SdfPath const& cachePath : _dirtyCachePaths) {
             _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
-            if (!TF_VERIFY(primInfo, "%s\n", cachePath.GetText())) {
+            if (!primInfo) {
+                // Note: if something was invalidated and then deleted,
+                // it can still be in the _dirtyCachePaths list. This isn't
+                // an error, but there's no work to do.
                 continue;
             }
             TF_DEBUG(USDIMAGING_UPDATES).Msg(
