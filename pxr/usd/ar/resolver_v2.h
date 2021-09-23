@@ -646,9 +646,19 @@ protected:
     /// \p assetPath was modified. \p resolvedPath is the resolved path
     /// computed for the given \p assetPath. If a timestamp cannot be
     /// retrieved, return an invalid ArTimestamp.
+    ///
+    /// The default implementation returns an invalid ArTimestamp.
+    ///
+    /// Example uses:
+    /// - SdfLayer will call GetModificationTimestamp when opening a
+    ///   layer and store the returned timestamp. When SdfLayer::Reload
+    ///   is called on that layer, this method will be called again.
+    ///   If the returned timestamp differs from the stored timestamp,
+    ///   or if it is invalid, the layer will be reloaded.
+    AR_API
     virtual ArTimestamp _GetModificationTimestamp(
         const std::string& assetPath,
-        const ArResolvedPath& resolvedPath) const = 0;
+        const ArResolvedPath& resolvedPath) const;
 
     /// Return an ArAsset object for the asset located at \p resolvedPath.
     /// Return an invalid std::shared_ptr if object could not be created

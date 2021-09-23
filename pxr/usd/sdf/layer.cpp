@@ -280,6 +280,50 @@ _GetExternalAssetModificationTimes(const SdfLayer& layer)
     return result;
 }
 
+#if AR_VERSION == 1
+static bool
+_ModificationTimesEqual(const VtValue& t1, const VtValue& t2)
+{
+    return t1 == t2;
+}
+
+static bool
+_ModificationTimesEqual(const VtDictionary& t1, const VtDictionary& t2)
+{
+    return t1 == t2;
+}
+#else
+static bool
+_ModificationTimesEqual(const VtValue& v1, const VtValue& v2)
+{
+    if (!v1.IsHolding<ArTimestamp>() || !v2.IsHolding<ArTimestamp>()) {
+        return false;
+    }
+
+    const ArTimestamp& t1 = v1.UncheckedGet<ArTimestamp>();
+    const ArTimestamp& t2 = v2.UncheckedGet<ArTimestamp>();
+    return t1.IsValid() && t2.IsValid() && t1 == t2;
+}
+
+static bool
+_ModificationTimesEqual(const VtDictionary& t1, const VtDictionary& t2)
+{
+    if (t1.size() != t2.size()) {
+        return false;
+    }
+
+    for (const auto& e1 : t1) {
+        const auto t2Iter = t2.find(e1.first);
+        if (t2Iter == t2.end() || 
+            !_ModificationTimesEqual(e1.second, t2Iter->second)) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+#endif
+
 SdfLayerRefPtr
 SdfLayer::CreateAnonymous(
     const string& tag, const FileFormatArguments& args)
@@ -985,14 +1029,12 @@ SdfLayer::_Reload(bool force)
             GetIdentifier(), resolvedPath));
 #if AR_VERSION == 1
         if (timestamp.IsEmpty()) {
-#else
-        if (!timestamp.UncheckedGet<ArTimestamp>().IsValid()) {
-#endif
             TF_CODING_ERROR(
                 "Unable to get modification time for '%s (%s)'",
                 GetIdentifier().c_str(), resolvedPath.GetPathString().c_str());
             return _ReloadFailed;
         }
+#endif
 
         // Ask the current external asset dependency state.
         VtDictionary externalAssetTimestamps = 
@@ -1001,8 +1043,9 @@ SdfLayer::_Reload(bool force)
         // See if we can skip reloading.
         if (!force && !IsDirty()
             && (resolvedPath == oldResolvedPath)
-            && (timestamp == _assetModificationTime)
-            && (externalAssetTimestamps == _externalAssetModificationTimes)) {
+            && (_ModificationTimesEqual(timestamp, _assetModificationTime))
+            && (_ModificationTimesEqual(
+                    externalAssetTimestamps, _externalAssetModificationTimes))){
             return _ReloadSkipped;
         }
 
@@ -2513,8 +2556,9 @@ SdfLayer::SetIdentifier(const string &identifier)
 #else
         const ArTimestamp timestamp = ArGetResolver().GetModificationTimestamp(
             GetIdentifier(), newResolvedPath);
-        _assetModificationTime = 
-            timestamp.IsValid() ? VtValue(timestamp) : VtValue();
+        _assetModificationTime =
+            (timestamp.IsValid() || Sdf_ResolvePath(GetIdentifier())) ?
+            VtValue(timestamp) : VtValue();
 #endif
     }
 }
@@ -3270,15 +3314,13 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
             info.identifier, ArResolvedPath(readFilePath)));
 #if AR_VERSION == 1
         if (timestamp.IsEmpty()) {
-#else
-        if (!timestamp.UncheckedGet<ArTimestamp>().IsValid()) {
-#endif
             TF_CODING_ERROR(
                 "Unable to get modification timestamp for '%s (%s)'",
                 info.identifier.c_str(), readFilePath.c_str());
             layer->_FinishInitialization(/* success = */ false);
             return TfNullPtr;
         }
+#endif
         
         layer->_assetModificationTime.Swap(timestamp);
     }
@@ -4720,14 +4762,12 @@ SdfLayer::_Save(bool force) const
         GetIdentifier(), path));
 #if AR_VERSION == 1
     if (timestamp.IsEmpty()) {
-#else
-    if (!timestamp.UncheckedGet<ArTimestamp>().IsValid()) {
-#endif
         TF_CODING_ERROR(
             "Unable to get modification timestamp for '%s (%s)'",
             GetIdentifier().c_str(), path.GetPathString().c_str());
         return false;
     }
+#endif
     _assetModificationTime.Swap(timestamp);
 
     SdfNotice::LayerDidSaveLayerToFile().Send(_self);

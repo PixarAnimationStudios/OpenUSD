@@ -109,14 +109,6 @@ protected:
             _TestURIResolverContext(TfAbsPath(assetPath)));
     }
 
-    ArTimestamp _GetModificationTimestamp(
-        const std::string& path,
-        const ArResolvedPath& resolvedPath) const final
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), _uriScheme));
-        return ArTimestamp();
-    }
-
     std::shared_ptr<ArAsset> _OpenAsset(
         const ArResolvedPath& resolvedPath) const final
     {

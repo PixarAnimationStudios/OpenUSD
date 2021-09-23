@@ -218,12 +218,7 @@ protected:
         const std::string& assetPath,
         const ArResolvedPath& resolvedPath) const final
     {
-        double time;
-        if (ArchGetModificationTime(
-                resolvedPath.GetPathString().c_str(), &time)) {
-            return ArTimestamp(time);
-        }
-        return ArTimestamp();
+        return ArFilesystemAsset::GetModificationTimestamp(resolvedPath);
     }
 
     std::shared_ptr<ArAsset> _OpenAsset(

@@ -1679,6 +1679,14 @@ ArResolver::_GetAssetInfo(
     return ArAssetInfo();
 }
 
+ArTimestamp
+ArResolver::_GetModificationTimestamp(
+    const std::string& assetPath,
+    const ArResolvedPath& resolvedPath) const
+{
+    return ArTimestamp();
+}
+
 bool
 ArResolver::_CanWriteAssetToPath(
     const ArResolvedPath& resolvedPath,
