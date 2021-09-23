@@ -2507,8 +2507,15 @@ SdfLayer::SetIdentifier(const string &identifier)
     // new location yet.
     const ArResolvedPath newResolvedPath = GetResolvedPath();
     if (oldResolvedPath != newResolvedPath) {
+#if AR_VERSION == 1
         _assetModificationTime = ArGetResolver().GetModificationTimestamp(
             GetIdentifier(), newResolvedPath);
+#else
+        const ArTimestamp timestamp = ArGetResolver().GetModificationTimestamp(
+            GetIdentifier(), newResolvedPath);
+        _assetModificationTime = 
+            timestamp.IsValid() ? VtValue(timestamp) : VtValue();
+#endif
     }
 }
 

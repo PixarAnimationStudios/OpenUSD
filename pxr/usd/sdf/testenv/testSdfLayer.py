@@ -771,5 +771,23 @@ def "Root"
         self.assertTrue('x' in rootSpec.variantSetNameList.prependedItems)
         self.assertTrue(len(rootSpec.variantSetNameList.addedItems) == 0)
 
+    def test_ReloadAfterSetIdentifier(self):
+        layer = Sdf.Layer.CreateNew('TestReloadAfterSetIdentifier.sdf')
+        
+        # CreateNew creates a new empty layer on disk. Modifying it and
+        # then reloading should reset the layer back to its original
+        # empty state.
+        prim = Sdf.CreatePrimInLayer(layer, '/test')
+        self.assertTrue(layer.Reload())
+        self.assertFalse(prim)
+
+        # However, changing a layer's identifier does not immediately
+        # save the layer under its new filename. Because of that, there's
+        # nothing for Reload to reload from, so it does nothing.
+        prim = Sdf.CreatePrimInLayer(layer, '/test')
+        layer.identifier = 'TestReloadAfterSetIdentifier_renamed.sdf'
+        self.assertFalse(layer.Reload())
+        self.assertTrue(prim)
+
 if __name__ == "__main__":
     unittest.main()
