@@ -169,14 +169,15 @@ MatfiltConvertPreviewMaterial(
             bool displacement = false;
             for (auto const& paramIt : node.parameters) {
                 if (paramIt.first == _tokens->displacement) {
-                    displacement = true;
-                    continue;
-                }
-                if (paramIt.first != _tokens->opacityThreshold) continue;
-
-                VtValue const& vtOpacityThreshold = paramIt.second;
-                if (vtOpacityThreshold.Get<float>() > 0.0f) {
-                    opacityThreshold = true;
+                    VtValue const& vtDisplacement = paramIt.second;
+                    if (vtDisplacement.Get<float>() != 0.0f) {
+                        displacement = true;
+                    }
+                } else if (paramIt.first == _tokens->opacityThreshold) {
+                    VtValue const& vtOpacityThreshold = paramIt.second;
+                    if (vtOpacityThreshold.Get<float>() > 0.0f) {
+                        opacityThreshold = true;
+                    }
                 }
             }
             if (!displacement) {
