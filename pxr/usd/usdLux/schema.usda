@@ -171,6 +171,34 @@ class "LightAPI" (
     )
 }
 
+class "MeshLightAPI" (
+    inherits = </APISchemaBase>
+    doc = """This is the preferred API schema to apply to 
+    \\ref UsdGeomMesh "Mesh" type prims when adding light behaviors to a mesh. 
+    At its base, this API schema has the built-in behavior of applying LightAPI 
+    to the mesh. But, it additionally serves as a hook for plugins to attach 
+    additional properties to "mesh lights" through the creation of API schemas 
+    which are authored to auto-apply to MeshLightAPI.
+    \\see \\ref Usd_AutoAppliedAPISchemas
+    """
+    prepend apiSchemas = ["LightAPI"]
+) {
+}
+
+class "VolumeLightAPI" (
+    inherits = </APISchemaBase>
+    doc = """This is the preferred API schema to apply to 
+    \\ref UsdVolVolume "Volume" type prims when adding light behaviors to a 
+    volume. At its base, this API schema has the built-in behavior of applying 
+    LightAPI to the mesh. But, it additionally serves as a hook for plugins to 
+    attach additional properties to "volume lights" through the creation of 
+    API schemas which are authored to auto-apply to VolumeLightAPI.
+    \\see \\ref Usd_AutoAppliedAPISchemas
+    """
+    prepend apiSchemas = ["LightAPI"]
+) {
+}
+
 class "ListAPI" (
     inherits = </APISchemaBase>
     doc = """API schema to support discovery and publishing of lights in a scene.

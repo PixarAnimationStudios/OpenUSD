@@ -22,6 +22,7 @@ pxr_library(usdLux
         lightAPI
         lightFilter
         listAPI
+        meshLightAPI
         nonboundableLightBase
         pluginLight
         pluginLightFilter
@@ -31,6 +32,7 @@ pxr_library(usdLux
         shapingAPI
         sphereLight
         tokens
+        volumeLightAPI
 
     PUBLIC_HEADERS
         api.h
@@ -53,6 +55,7 @@ pxr_library(usdLux
         wrapLightAPI.cpp
         wrapLightFilter.cpp
         wrapListAPI.cpp
+        wrapMeshLightAPI.cpp
         wrapNonboundableLightBase.cpp
         wrapPluginLight.cpp
         wrapPluginLightFilter.cpp
@@ -62,6 +65,7 @@ pxr_library(usdLux
         wrapShapingAPI.cpp
         wrapSphereLight.cpp
         wrapTokens.cpp
+        wrapVolumeLightAPI.cpp
 
     PYMODULE_FILES 
         __init__.py
