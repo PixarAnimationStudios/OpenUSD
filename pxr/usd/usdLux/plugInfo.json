@@ -24,6 +24,7 @@
                         "bases": [
                             "UsdLuxBoundableLightBase"
                         ], 
+                        "implementsComputeExtent": true, 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxDiskLight": {
@@ -34,6 +35,7 @@
                         "bases": [
                             "UsdLuxBoundableLightBase"
                         ], 
+                        "implementsComputeExtent": true, 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxDistantLight": {
@@ -146,6 +148,7 @@
                         "bases": [
                             "UsdLuxBoundableLightBase"
                         ], 
+                        "implementsComputeExtent": true, 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxShadowAPI": {
@@ -176,6 +179,7 @@
                         "bases": [
                             "UsdLuxBoundableLightBase"
                         ], 
+                        "implementsComputeExtent": true, 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLux_DiscoveryPlugin": {

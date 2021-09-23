@@ -525,6 +525,11 @@ class DistantLight "DistantLight" (
 }
 
 class DiskLight "DiskLight" (
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = 1
+        }
+    }
     inherits = </BoundableLightBase>
     doc = """Light emitted from one side of a circular disk.
     The disk is centered in the XY plane and emits light along the -Z axis."""
@@ -538,6 +543,11 @@ class DiskLight "DiskLight" (
 }
 
 class RectLight "RectLight" (
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = 1
+        }
+    }
     inherits = </BoundableLightBase>
     doc = """Light emitted from one side of a rectangle.
     The rectangle is centered in the XY plane and emits light along the -Z axis.
@@ -567,6 +577,11 @@ class RectLight "RectLight" (
 }
 
 class SphereLight "SphereLight" (
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = 1
+        }
+    }
     inherits = </BoundableLightBase>
     doc = """Light emitted outward from a sphere."""
 ) {
@@ -585,6 +600,11 @@ class SphereLight "SphereLight" (
 }
 
 class CylinderLight "CylinderLight" (
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = 1
+        }
+    }
     inherits = </BoundableLightBase>
     doc = """Light emitted outward from a cylinder.
     The cylinder is centered at the origin and has its major axis on the X axis.

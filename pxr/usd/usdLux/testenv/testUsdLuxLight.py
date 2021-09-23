@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import Gf, Sdf, Sdr, Tf, Usd, UsdLux, UsdShade, Plug
+from pxr import Gf, Sdf, Sdr, Tf, Usd, UsdGeom, UsdLux, UsdShade, Plug
 import unittest, math
 
 class TestUsdLuxLight(unittest.TestCase):
@@ -225,7 +225,6 @@ class TestUsdLuxLight(unittest.TestCase):
         self.assertFalse(shapingAPI.ConnectableAPI())
 
     def test_DomeLight_OrientToStageUpAxis(self):
-        from pxr import UsdGeom
         stage = Usd.Stage.CreateInMemory()
         # Try Y-up first.  Explicitly set this to override any site-level
         # override.
@@ -250,7 +249,6 @@ class TestUsdLuxLight(unittest.TestCase):
         self.assertEqual(ops[0].GetAttr().Get(), 90.0)
 
     def test_UsdLux_HasConnectableAPI(self):
-        from pxr import Tf
         self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
             UsdLux.LightAPI))
         self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
@@ -303,6 +301,67 @@ class TestUsdLuxLight(unittest.TestCase):
         self.assertEqual(light.GetShaderId(["other", "ri"]), "SphereLight")
         self.assertEqual(light.GetShaderId(["ri"]), "SphereLight")
         self.assertEqual(light.GetShaderId(["other"]), "DefaultLight")
+
+    def test_LightExtentAndBBox(self):
+        # Test extent and bbox computations for the boundable lights.
+
+        # Helper for computing the extent and bounding boxes for a light and
+        # comparing against an expect extent pair.
+        def _VerifyExtentAndBBox(light, expectedExtent):
+            time = Usd.TimeCode.Default()
+            self.assertEqual(
+                UsdGeom.Boundable.ComputeExtentFromPlugins(light, time),
+                expectedExtent)
+            self.assertEqual(
+                light.ComputeLocalBound(time, "default"),
+                Gf.BBox3d(
+                    Gf.Range3d(
+                        Gf.Vec3d(expectedExtent[0]), 
+                        Gf.Vec3d(expectedExtent[1])), 
+                    Gf.Matrix4d(1.0)))
+
+        # Create a prim of each boundable light type.
+        stage = Usd.Stage.CreateInMemory()
+        rectLight = UsdLux.RectLight.Define(stage, "/RectLight")
+        self.assertTrue(rectLight)
+        diskLight = UsdLux.DiskLight.Define(stage, "/DiskLight")
+        self.assertTrue(diskLight)
+        cylLight = UsdLux.CylinderLight.Define(stage, "/CylLight")
+        self.assertTrue(cylLight)
+        sphereLight = UsdLux.SphereLight.Define(stage, "/SphereLight")
+        self.assertTrue(sphereLight)
+
+        # Verify the extent and bbox computations for each light given its
+        # fallback attribute values.
+        _VerifyExtentAndBBox(rectLight, [(-0.5, -0.5, 0.0), (0.5, 0.5, 0.0)])
+        _VerifyExtentAndBBox(diskLight, [(-0.5, -0.5, 0.0), (0.5, 0.5, 0.0)])
+        _VerifyExtentAndBBox(cylLight, [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)])
+        _VerifyExtentAndBBox(sphereLight, [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)])
+
+        # Change the size related attribute of each light and verify the extents
+        # and bounding boxes are updated.
+        rectLight.CreateWidthAttr(4.0)
+        rectLight.CreateHeightAttr(6.0)
+        _VerifyExtentAndBBox(rectLight, [(-2.0, -3.0, 0.0), (2.0, 3.0, 0.0)])
+
+        diskLight.CreateRadiusAttr(5.0)
+        _VerifyExtentAndBBox(diskLight, [(-5.0, -5.0, 0.0), (5.0, 5.0, 0.0)])
+
+        cylLight.CreateRadiusAttr(4.0)
+        cylLight.CreateLengthAttr(10.0)
+        _VerifyExtentAndBBox(cylLight, [(-4.0, -4.0, -5.0), (4.0, 4.0, 5.0)])
+
+        sphereLight.CreateRadiusAttr(3.0)
+        _VerifyExtentAndBBox(sphereLight, [(-3.0, -3.0, -3.0), (3.0, 3.0, 3.0)])
+
+        # For completeness verify that distant and dome lights are not 
+        # boundable.
+        domeLight = UsdLux.DomeLight.Define(stage, "/DomeLight")
+        self.assertTrue(domeLight)
+        self.assertFalse(UsdGeom.Boundable(domeLight))
+        distLight = UsdLux.DistantLight.Define(stage, "/DistLight")
+        self.assertTrue(distLight)
+        self.assertFalse(UsdGeom.Boundable(distLight))
 
     def test_SdrShaderNodesForLights(self):
         """
