@@ -1461,6 +1461,146 @@ private:
 
 // ----------------------------------------------------------------------------
 
+class Hd_DisplayStyleDataSource : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_DisplayStyleDataSource);
+
+    Hd_DisplayStyleDataSource(
+        HdSceneDelegate *sceneDelegate, const SdfPath &id)
+    : _sceneDelegate(sceneDelegate), _id(id), _displayStyleRead(false)
+    {
+        TF_VERIFY(_sceneDelegate);
+    }
+
+    bool Has(const TfToken &name) override
+    {
+        if (name == HdLegacyDisplayStyleSchemaTokens->refineLevel ||
+            name == HdLegacyDisplayStyleSchemaTokens->flatShadingEnabled ||
+            name == HdLegacyDisplayStyleSchemaTokens->displacementEnabled ||
+            name == HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough ||
+            name == HdLegacyDisplayStyleSchemaTokens->shadingStyle ||
+            name == HdLegacyDisplayStyleSchemaTokens->reprSelector ||
+            name == HdLegacyDisplayStyleSchemaTokens->cullStyle) {
+            return true;
+        }
+        return false;
+    }
+
+    TfTokenVector GetNames() override
+    {
+        TfTokenVector results;
+        results.push_back(HdLegacyDisplayStyleSchemaTokens->refineLevel);
+        results.push_back(HdLegacyDisplayStyleSchemaTokens->flatShadingEnabled);
+        results.push_back(HdLegacyDisplayStyleSchemaTokens->displacementEnabled);
+        results.push_back(HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough);
+        results.push_back(HdLegacyDisplayStyleSchemaTokens->shadingStyle);
+        results.push_back(HdLegacyDisplayStyleSchemaTokens->reprSelector);
+        results.push_back(HdLegacyDisplayStyleSchemaTokens->cullStyle);
+        return results;
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        if (name == HdLegacyDisplayStyleSchemaTokens->refineLevel) {
+            if (!_displayStyleRead) {
+                _displayStyle = _sceneDelegate->GetDisplayStyle(_id);
+                _displayStyleRead = true;
+            }
+            return (_displayStyle.refineLevel != 0)
+                ? HdRetainedTypedSampledDataSource<int>::New(
+                        _displayStyle.refineLevel)
+                : nullptr;
+        } else if (name == HdLegacyDisplayStyleSchemaTokens->flatShadingEnabled) {
+            if (!_displayStyleRead) {
+                _displayStyle = _sceneDelegate->GetDisplayStyle(_id);
+                _displayStyleRead = true;
+            }
+            return HdRetainedTypedSampledDataSource<bool>::New(
+                    _displayStyle.flatShadingEnabled);
+        } else if (name == HdLegacyDisplayStyleSchemaTokens->displacementEnabled) {
+            if (!_displayStyleRead) {
+                _displayStyle = _sceneDelegate->GetDisplayStyle(_id);
+                _displayStyleRead = true;
+            }
+            return HdRetainedTypedSampledDataSource<bool>::New(
+                    _displayStyle.displacementEnabled);
+        } else if (name == HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough) {
+            if (!_displayStyleRead) {
+                _displayStyle = _sceneDelegate->GetDisplayStyle(_id);
+                _displayStyleRead = true;
+            }
+            return HdRetainedTypedSampledDataSource<bool>::New(
+                    _displayStyle.occludedSelectionShowsThrough);
+        } else if (name == HdLegacyDisplayStyleSchemaTokens->shadingStyle) {
+            TfToken shadingStyle = _sceneDelegate->GetShadingStyle(_id)
+                .GetWithDefault<TfToken>();
+            if (shadingStyle.IsEmpty()) {
+                return nullptr;
+            }
+            return HdRetainedTypedSampledDataSource<TfToken>::New(shadingStyle);
+        } else if (name == HdLegacyDisplayStyleSchemaTokens->reprSelector) {
+            HdReprSelector repr = _sceneDelegate->GetReprSelector(_id);
+            HdTokenArrayDataSourceHandle reprSelectorDs = nullptr;
+            bool empty = true;
+            for (size_t i = 0; i < HdReprSelector::MAX_TOPOLOGY_REPRS; ++i) {
+                if (!repr[i].IsEmpty()) {
+                    empty = false;
+                    break;
+                }
+            }
+            if (!empty) {
+                VtArray<TfToken> array(HdReprSelector::MAX_TOPOLOGY_REPRS);
+                for (size_t i = 0; i < HdReprSelector::MAX_TOPOLOGY_REPRS; ++i) {
+                    array[i] = repr[i];
+                }
+                reprSelectorDs =
+                    HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
+                            array);
+            }
+            return reprSelectorDs;
+        } else if (name == HdLegacyDisplayStyleSchemaTokens->cullStyle) {
+            HdCullStyle cullStyle = _sceneDelegate->GetCullStyle(_id);
+            if (cullStyle == HdCullStyleDontCare) {
+                return nullptr;
+            }
+            TfToken cullStyleToken;
+            switch(cullStyle) {
+                case HdCullStyleNothing:
+                    cullStyleToken = HdCullStyleTokens->nothing;
+                    break;
+                case HdCullStyleBack:
+                    cullStyleToken = HdCullStyleTokens->back;
+                    break;
+                case HdCullStyleFront:
+                    cullStyleToken = HdCullStyleTokens->front;
+                    break;
+                case HdCullStyleBackUnlessDoubleSided:
+                    cullStyleToken = HdCullStyleTokens->backUnlessDoubleSided;
+                    break;
+                case HdCullStyleFrontUnlessDoubleSided:
+                    cullStyleToken = HdCullStyleTokens->frontUnlessDoubleSided;
+                    break;
+                default:
+                    cullStyleToken = HdCullStyleTokens->dontCare;
+                    break;
+            }
+            return HdRetainedTypedSampledDataSource<TfToken>::New(cullStyleToken);
+        } else {
+            return nullptr;
+        }
+    }
+
+private:
+    HdSceneDelegate *_sceneDelegate;
+    SdfPath _id;
+
+    HdDisplayStyle _displayStyle;
+    bool _displayStyleRead;
+};
+
+// ----------------------------------------------------------------------------
+
 class Hd_GenericGetSampledDataSource : public HdSampledDataSource
 {
 public:
@@ -2410,75 +2550,7 @@ HdDataSourceLegacyPrim::_GetMaterialDataSource()
 HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetDisplayStyleDataSource()
 {
-    HdDisplayStyle displayStyle = _sceneDelegate->GetDisplayStyle(_id);
-    HdCullStyle cullStyle = _sceneDelegate->GetCullStyle(_id);
-    HdReprSelector repr = _sceneDelegate->GetReprSelector(_id);
-    TfToken shadingStyle = _sceneDelegate->GetShadingStyle(_id)
-        .GetWithDefault<TfToken>();
-
-    HdTokenArrayDataSourceHandle reprSelectorDs = nullptr;
-    bool empty = true;
-    for (size_t i = 0; i < HdReprSelector::MAX_TOPOLOGY_REPRS; ++i) {
-        if (!repr[i].IsEmpty()) {
-            empty = false;
-            break;
-        }
-    }
-    if (!empty) {
-        VtArray<TfToken> array(HdReprSelector::MAX_TOPOLOGY_REPRS);
-        for (size_t i = 0; i < HdReprSelector::MAX_TOPOLOGY_REPRS; ++i) {
-            array[i] = repr[i];
-        }
-        reprSelectorDs =
-            HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
-                array);
-    }
-
-    TfToken cullStyleToken;
-    switch(cullStyle) {
-        case HdCullStyleNothing:
-            cullStyleToken = HdCullStyleTokens->nothing;
-            break;
-        case HdCullStyleBack:
-            cullStyleToken = HdCullStyleTokens->back;
-            break;
-        case HdCullStyleFront:
-            cullStyleToken = HdCullStyleTokens->front;
-            break;
-        case HdCullStyleBackUnlessDoubleSided:
-            cullStyleToken = HdCullStyleTokens->backUnlessDoubleSided;
-            break;
-        case HdCullStyleFrontUnlessDoubleSided:
-            cullStyleToken = HdCullStyleTokens->frontUnlessDoubleSided;
-            break;
-        default:
-            cullStyleToken = HdCullStyleTokens->dontCare;
-            break;
-    }
-
-    return HdLegacyDisplayStyleSchema::BuildRetained(
-        displayStyle.refineLevel != 0
-            ? HdRetainedTypedSampledDataSource<int>::New(
-                displayStyle.refineLevel)
-            : nullptr,
-        displayStyle.flatShadingEnabled
-            ? HdRetainedTypedSampledDataSource<bool>::New(true)
-            : nullptr,
-        !displayStyle.displacementEnabled
-            ? HdRetainedTypedSampledDataSource<bool>::New(false)
-            : nullptr,
-        displayStyle.occludedSelectionShowsThrough
-            ? HdRetainedTypedSampledDataSource<bool>::New(true)
-            : nullptr,
-        !shadingStyle.IsEmpty()
-            ? HdRetainedTypedSampledDataSource<TfToken>::New(
-                shadingStyle)
-            : nullptr,
-        reprSelectorDs,
-        cullStyle != HdCullStyleDontCare
-            ? HdRetainedTypedSampledDataSource<TfToken>::New(
-                cullStyleToken)
-            : nullptr);
+    return Hd_DisplayStyleDataSource::New(_sceneDelegate, _id);
 }
 
 HdDataSourceBaseHandle
