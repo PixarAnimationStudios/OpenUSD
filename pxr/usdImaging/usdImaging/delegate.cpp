@@ -458,6 +458,10 @@ UsdImagingDelegate::Sync(HdSyncRequestVector* request)
 {
     TRACE_FUNCTION();
 
+    if (_dirtyCachePaths.empty()) {
+        return;
+    }
+
     UsdImagingDelegate::_Worker worker(this);
 
     if (TfDebug::IsEnabled(USDIMAGING_UPDATES)) {
