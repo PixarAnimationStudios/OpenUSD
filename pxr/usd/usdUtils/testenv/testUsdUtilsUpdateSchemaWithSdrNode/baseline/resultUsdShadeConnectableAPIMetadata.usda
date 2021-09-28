@@ -12,6 +12,9 @@ class "TestUsdShadeConnectableAPIMetadataAPI" (
     inherits = </APISchemaBase>
 )
 {
+    uniform token myRenderContext:usda:shaderId = "TestUsdShadeConnectableAPIMetadataAPI" (
+        displayGroup = "Internal"
+    )
     color3f outputs:resultRGB
 }
 

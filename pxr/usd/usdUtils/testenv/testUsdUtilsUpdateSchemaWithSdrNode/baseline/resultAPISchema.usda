@@ -28,6 +28,9 @@ class "TestSchemaAPI" (
                 """
     )
     int inputs:intNotBool = 0
+    uniform token myRenderContext:usda:shaderId = "TestSchemaAPI" (
+        displayGroup = "Internal"
+    )
     color3f outputs:resultRGB
 }
 

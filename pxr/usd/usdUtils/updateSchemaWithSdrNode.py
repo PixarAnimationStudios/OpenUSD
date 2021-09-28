@@ -52,8 +52,10 @@ class PropertyDefiningKeys(ConstantsGroup):
     USD_SUPPRESS_PROPERTY = "usdSuppressProperty"
     SDF_VARIABILITY_UNIFORM_STRING = "Uniform"
     CONNECTABILITY = "connectability"
+    SHADER_ID = "shaderId"
     WIDGET = "widget"
     NULL_VALUE = "null"
+    INTERNAL_DISPLAY_GROUP = "Internal"
 
 def _CreateAttrSpecFromNodeAttribute(primSpec, prop, usdSchemaNode, 
         isInput=True):
@@ -132,10 +134,27 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, usdSchemaNode,
                 UsdShade.Tokens.interfaceOnly)
 
 
-def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
+def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
+        overrideIdentifier=""):
     """
     Updates the given schemaLayer with primSpec and propertySpecs from sdrNode
-    metadata. It consumes the following attributes (that manifest as Sdr 
+    metadata. 
+
+    A renderContext can be provided which is used in determining the
+    shaderId namespace, which follows the pattern: 
+    "<renderContext>:<SdrShaderNodeContext>:shaderId". Note that we are using a
+    node's context (SDR_NODE_CONTEXT_TOKENS) here to construct the shaderId
+    namespace, so shader parsers should make sure to use appropriate
+    SDR_NODE_CONTEXT_TOKENS in the node definitions.
+
+    overrideIdentifier parameter is the identifier which should be used when 
+    the identifier of the node being processed differs from the one Sdr will 
+    discover at runtime, such as when this function is def a node constructed 
+    from an explicit asset path. This should only be used when clients know the 
+    identifier being passed is the true identifier which sdr Runtime will 
+    provide when querying using GetShaderNodeByNameAndType, etc.
+
+    It consumes the following attributes (that manifest as Sdr 
     metadata) in addition to many of the standard Sdr metadata
     specified and parsed (via its parser plugin).
 
@@ -194,6 +213,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
     """
 
     import distutils.util
+    import os
 
     # Early exit on invalid parameters
     if not schemaLayer:
@@ -348,6 +368,22 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
         _CreateAttrSpecFromNodeAttribute(primSpec, sdrNode.GetOutput(propName), 
                 usdSchemaNode, False)
 
+    # Create token shaderId attrSpec
+    shaderIdAttrName = Sdf.Path.JoinIdentifier( \
+            [renderContext, sdrNode.GetContext(), PropertyDefiningKeys.SHADER_ID])
+    shaderIdAttrSpec = Sdf.AttributeSpec(primSpec, shaderIdAttrName,
+            Sdf.ValueTypeNames.Token, Sdf.VariabilityUniform)
+
+    # Since users shouldn't need to be aware of shaderId attribute, we put this
+    # in "Internal" displayGroup.
+    shaderIdAttrSpec.displayGroup = PropertyDefiningKeys.INTERNAL_DISPLAY_GROUP
+
+    # Use the identifier if explicitly provided, (it could be a shader node
+    # queried using an explicit path), else use sdrNode's registered identifier.
+    nodeIdentifier = overrideIdentifier if overrideIdentifier else \
+            sdrNode.GetIdentifier()
+    shaderIdAttrSpec.default = nodeIdentifier
+
     # Extra attrSpec
     schemaBasePrimDefinition = \
         Usd.SchemaRegistry().FindConcretePrimDefinition(schemaBase)
@@ -357,6 +393,6 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode):
             infoIdAttrSpec = Sdf.AttributeSpec(primSpec, \
                     UsdShade.Tokens.infoId, Sdf.ValueTypeNames.Token, \
                     Sdf.VariabilityUniform)
-            infoIdAttrSpec.default = sdrNode.GetIdentifier()
+            infoIdAttrSpec.default = nodeIdentifier
 
     schemaLayer.Save()

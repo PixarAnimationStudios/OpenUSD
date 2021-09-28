@@ -134,6 +134,9 @@ class PxrAovLight "PxrAovLight" (
                 want a more solid mask.
             """
     )
+    uniform token ri:light:shaderId = "PxrAovLight" (
+        displayGroup = "Internal"
+    )
 }
 
 class "PxrCylinderLightAPI" (
@@ -271,124 +274,8 @@ class "PxrCylinderLightAPI" (
                 This parameter will be ignored if Manifold Walk is enabled.
             """
     )
-    color3f inputs:shadow:color = (0, 0, 0) (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Color"
-        doc = """
-                shadowColor:  The color of the shadows cast by emitted light.
-            """
-    )
-    float inputs:shadow:distance = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Max Distance"
-        doc = """
-                shadowDistance: Limits the shadow distance.
-                -1.0 is unset which will use the distance between the point being
-                shaded and the point on the light. You may use this control to artificially reduce
-                the distance shadows are cast. This may also increase render speed by not
-                calculating shadows outside this distance.
-            """
-    )
-    bool inputs:shadow:enable = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Enable Shadows"
-        doc = """
-                enableShadows: Enable raytraced shadows.
-            """
-    )
-    float inputs:shadow:falloff = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff"
-        doc = """
-                shadowFalloff: the distance from the light at which shadow falloff begins.
-                -1.0 turns off shadow falloff. This is used along with Shadow Max Distance to
-                create a false fade for shadows that are reduced or cut off by the Shadow Max
-                Distance parameter.
-            """
-    )
-    float inputs:shadow:falloffGamma = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff Gamma"
-        doc = """
-                shadowFalloffGamma: The gamma of the shadow strength in the falloff zone. This
-                requires the use of Shadow Max Distance and Shadow Falloff.
-            """
-    )
-    float inputs:shaping:cone:angle = 90 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Cone Angle"
-        doc = """
-                coneAngle: Angle of the virtual flaps on the light to turn it into a spot light.
-                This does not affect IES Profiles (should you be using one).
-            """
-    )
-    float inputs:shaping:cone:softness = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Cone Softness"
-        doc = """
-                coneSoftness: Softness of the cut-off of the cone angle.
-                The regular range is from 0 (hard cut-off) to 1
-                (full smooth transition), but it can be set higher than 1 for
-                additional gradation.
-            """
-    )
-    float inputs:shaping:focus = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus"
-        doc = """
-                emissionFocus: Off-axis cosine power exponent to shape the emission.
-
-                This controls the spread of the light.  Higher number will start focusing
-                the light towards the center and thus narrowing the light spread.
-            """
-    )
-    color3f inputs:shaping:focusTint = (0, 0, 0) (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus Tint"
-        doc = """
-                emissionFocusTint: Off-axis light color tint.
-
-                This tints the emission in the falloff region starting from the
-                off-angle direction of the light towards the center.
-                By default, the tint color is black (none). In addition to tinting, value greater
-                than white will also increase the intensity of the falloff region.
-            """
-    )
-    float inputs:shaping:ies:angleScale = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Light Profile"
-        displayName = "Profile Scale"
-        doc = """
-                Rescales the angular distribution of the ies profiles. Values
-                larger than 0 scale the profile to the front of the light,
-                values less than 0 scale the profile to the back.
-            """
-    )
-    asset inputs:shaping:ies:file = @@ (
-        connectability = "interfaceOnly"
-        displayGroup = "Light Profile"
-        displayName = "IES Profile"
-        doc = """
-                iesProfile: Name of the IES light profile.
-            """
-    )
-    bool inputs:shaping:ies:normalize = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Light Profile"
-        displayName = "Profile Normalization"
-        doc = """
-                Scales the amplitude of the IES profile data so that the profile
-                does not change the total energy output of the light.
-            """
+    uniform token ri:light:shaderId = "PxrCylinderLight" (
+        displayGroup = "Internal"
     )
 }
 
@@ -527,126 +414,8 @@ class "PxrDiskLightAPI" (
                 This parameter will be ignored if Manifold Walk is enabled.
             """
     )
-    color3f inputs:shadow:color = (0, 0, 0) (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Color"
-        doc = """
-                shadowColor:  The color of the shadows cast by emitted light.
-            """
-    )
-    float inputs:shadow:distance = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Max Distance"
-        doc = """
-                shadowDistance: The maximum distance of the shadow starting from the position of the point
-                being shaded. -1.0 is unset which will use the distance between the point being shaded and
-                the point on the light. You may use this control to artificially reduce the distance
-                shadows are cast. This may also increase render speed by not calculating shadows outside
-                this distance.
-            """
-    )
-    bool inputs:shadow:enable = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Enable Shadows"
-        doc = """
-                enableShadows: Enable raytraced shadows.
-            """
-    )
-    float inputs:shadow:falloff = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff"
-        doc = """
-                shadowFalloff: the distance from the light at which shadow falloff begins.
-                -1.0 turns off shadow falloff. This is used along with Shadow Max Distance to create
-                a false fade for shadows that are reduced or cut off by the Shadow Max Distance
-                parameter.
-            """
-    )
-    float inputs:shadow:falloffGamma = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff Gamma"
-        doc = """
-                shadowFalloffGamma: The gamma of the shadow strength in the falloff zone. This
-                requires the use of Shadow Max Distance and Shadow Falloff.
-            """
-    )
-    float inputs:shaping:cone:angle = 90 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Cone Angle"
-        doc = """
-                coneAngle: Angle of the virtual flaps on the light to turn it
-                into a spot light. This does not affect IES Profiles (should you be
-                using one).
-            """
-    )
-    float inputs:shaping:cone:softness = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Cone Softness"
-        doc = """
-                coneSoftness: Softness of the cut-off of the cone angle.
-                The regular range is from 0 (hard cut-off) to 1
-                (full smooth transition), but it can be set higher than 1 for
-                additional gradation.
-            """
-    )
-    float inputs:shaping:focus = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus"
-        doc = """
-                emissionFocus: Off-axis cosine power exponent to shape the emission.
-
-                This controls the spread of the light.  Higher number will start focusing
-                the light towards the center and thus narrowing the light spread.
-            """
-    )
-    color3f inputs:shaping:focusTint = (0, 0, 0) (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus Tint"
-        doc = """
-                emissionFocusTint: Off-axis light color tint.
-
-                This tints the emission in the falloff region starting from the
-                off-angle direction of the light towards the center.  By default, the tint
-                color is black (none). In addition to tinting, value greater than white
-                will also increase the intensity of the falloff region. When using White
-                the emission focus nearly appears to be off.
-            """
-    )
-    float inputs:shaping:ies:angleScale = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Light Profile"
-        displayName = "Profile Scale"
-        doc = """
-                Rescales the angular distribution of the ies profiles. Values
-                larger than 0 scale the profile to the front of the light,
-                values less than 0 scale the profile to the back.
-            """
-    )
-    asset inputs:shaping:ies:file = @@ (
-        connectability = "interfaceOnly"
-        displayGroup = "Light Profile"
-        displayName = "IES Profile"
-        doc = """
-                iesProfile: Name of the IES light profile.
-            """
-    )
-    bool inputs:shaping:ies:normalize = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Light Profile"
-        displayName = "Profile Normalization"
-        doc = """
-                Scales the amplitude of the IES profile data so that the profile
-                does not change the total energy output of the light.
-            """
+    uniform token ri:light:shaderId = "PxrDiskLight" (
+        displayGroup = "Internal"
     )
 }
 
@@ -776,84 +545,8 @@ class "PxrDistantLightAPI" (
                 This parameter will be ignored if Manifold Walk is enabled.
             """
     )
-    color3f inputs:shadow:color = (0, 0, 0) (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Color"
-        doc = """
-                shadowColor:  The color of the shadows cast by emitted light.
-            """
-    )
-    float inputs:shadow:distance = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Max Distance"
-        doc = """
-                shadowDistance: The maximum distance of the shadow starting from the position
-                of the point being shaded.
-                -1.0 is unset which will use the distance between the point being
-                shaded and the point on the light. You may use this control to artificially
-                reduce the distance shadows are cast. This may also increase render speed by
-                not calculating shadows outside this distance.
-            """
-    )
-    bool inputs:shadow:enable = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Enable Shadows"
-        doc = """
-                enableShadows: Enable raytraced shadows.
-            """
-    )
-    float inputs:shadow:falloff = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff"
-        doc = """
-                shadowFalloff: the distance from the light at which shadow falloff begins.
-                -1.0 turns off shadow falloff. This is used along with Shadow Max Distance to
-                create a false fade for shadows that are reduced or cut off by the Shadow Max
-                Distance parameter
-            """
-    )
-    float inputs:shadow:falloffGamma = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff Gamma"
-        doc = """
-                shadowFalloffGamma: The gamma of the shadow strength in the falloff zone.
-                This requires the use of Shadow Max Distance and Shadow Falloff.
-            """
-    )
-    float inputs:shaping:focus = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus"
-        doc = """
-                emissionFocus: Off-axis cosine power exponent to shape the emission.
-
-                This controls the spread of the light.  Higher number will start focusing
-                the light towards the center and thus narrowing the light spread.
-
-                For the PxrDistantLight it will appear to dim the lighting as you increase
-                the parameter. To alter the shadowing to appear larger/softer you should
-                use Angle Extent.
-            """
-    )
-    color3f inputs:shaping:focusTint = (0, 0, 0) (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus Tint"
-        doc = """
-                emissionFocusTint: Off-axis light color tint.
-
-                This tints the emission in the falloff region starting from the
-                off-angle direction of the light towards the center.
-                By default, the tint color is black (none). In addition to tinting, value greater
-                than white will also increase the intensity of the falloff region.
-                For the PxrDistantLight this will tint the color of the light. Higher Emission
-                Focus settings will increase the saturation of the chosen color.
-            """
+    uniform token ri:light:shaderId = "PxrDistantLight" (
+        displayGroup = "Internal"
     )
 }
 
@@ -988,55 +681,8 @@ class "PxrDomeLightAPI" (
                 This parameter will be ignored if Manifold Walk is enabled.
             """
     )
-    color3f inputs:shadow:color = (0, 0, 0) (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Color"
-        doc = """
-                shadowColor:  The color of the shadows cast by emitted light.
-            """
-    )
-    float inputs:shadow:distance = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Max Distance"
-        doc = """
-                shadowDistance: The maximum distance of the shadow starting from the position
-                of the point being shaded.
-                -1.0 is unset which will use the distance between the point being
-                shaded and the point on the light. You may use this control to artificially reduce
-                the distance shadows are cast. This may also increase render speed by not
-                calculating shadows outside this distance.
-            """
-    )
-    bool inputs:shadow:enable = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Enable Shadows"
-        doc = """
-                enableShadows: Enable raytraced shadows.
-            """
-    )
-    float inputs:shadow:falloff = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff"
-        doc = """
-                shadowFalloff: the distance from the light at which shadow falloff begins.
-                -1.0 turns off shadow falloff. This is used along with Shadow Max Distance to
-                create a false fade for shadows that are reduced or cut off by the Shadow Max
-                Distance parameter.
-            """
-    )
-    float inputs:shadow:falloffGamma = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff Gamma"
-        doc = """
-                shadowFalloffGamma: The gamma of the shadow strength in the falloff zone. This
-                requires the use of Shadow Max Distance and Shadow Falloff. The falloff is more
-                obvious as the value decreases.
-            """
+    uniform token ri:light:shaderId = "PxrDomeLight" (
+        displayGroup = "Internal"
     )
 }
 
@@ -1384,6 +1030,9 @@ class PxrEnvDayLight "PxrEnvDayLight" (
                 light for your scene objects and avoid adding highlights.
             """
     )
+    uniform token ri:light:shaderId = "PxrEnvDayLight" (
+        displayGroup = "Internal"
+    )
 }
 
 class "PxrGeometryLightAPI" (
@@ -1495,50 +1144,8 @@ class "PxrGeometryLightAPI" (
                 This parameter will be ignored if Cheap Caustics is enabled.
             """
     )
-    color3f inputs:shadow:color = (0, 0, 0) (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Color"
-        doc = """
-                shadowColor:  The color of the shadows cast by emitted light.
-            """
-    )
-    float inputs:shadow:distance = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Max Distance"
-        doc = """
-                shadowDistance: The maximum distance of the shadow starting from the position of the point
-                being shaded. You may use this control to artificially reduce the distance shadows are
-                cast. This may also increase render speed by not calculating shadows outside this distance.
-            """
-    )
-    bool inputs:shadow:enable = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Enable Shadows"
-        doc = """
-                enableShadows: Enable raytraced shadows.
-            """
-    )
-    float inputs:shadow:falloff = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff"
-        doc = """
-                shadowFalloff: the distance from the light at which shadow falloff begins.
-                -1.0 turns off shadow falloff. This is used along with Shadow Max Distance to create a
-                false fade for shadows that are reduced or cut off by the Shadow Max Distance parameter.
-            """
-    )
-    float inputs:shadow:falloffGamma = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff Gamma"
-        doc = """
-                shadowFalloffGamma: The gamma of the shadow strength in the falloff zone. This requires
-                the use of Shadow Max Distance and Shadow Falloff.
-            """
+    uniform token ri:light:shaderId = "PxrMeshLight" (
+        displayGroup = "Internal"
     )
 }
 
@@ -1703,55 +1310,8 @@ class "PxrPortalLightAPI" (
                 This parameter will be ignored if Manifold Walk is enabled.
             """
     )
-    color3f inputs:shadow:color = (0, 0, 0) (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Color"
-        doc = """
-                shadowColor:  The color of the shadows cast by emitted light.
-            """
-    )
-    float inputs:shadow:distance = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Max Distance"
-        doc = """
-                shadowDistance: The maximum distance of the shadow starting from the position
-                of the point being shaded.
-                -1.0 is unset which will use the distance between the point being
-                shaded and the point on the light.  You may use this control to artificially
-                reduce the distance shadows are cast. This may also increase render speed by
-                not calculating shadows outside this distance.
-            """
-    )
-    bool inputs:shadow:enable = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Enable Shadows"
-        doc = """
-                enableShadows: Enable raytraced shadows.
-            """
-    )
-    float inputs:shadow:falloff = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff"
-        doc = """
-                shadowFalloff: the distance from the light at which shadow falloff begins.
-                -1.0 turns off shadow falloff. This is used along with Shadow Max Distance to
-                create a false fade for shadows that are reduced or cut off by the Shadow Max
-                Distance parameter. Note this parameter may impact performance on complex
-                lighting setups.
-            """
-    )
-    float inputs:shadow:falloffGamma = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff Gamma"
-        doc = """
-                shadowFalloffGamma: The gamma of the shadow strength in the falloff zone. This
-                requires the use of Shadow Max Distance and Shadow Falloff.
-            """
+    uniform token ri:light:shaderId = "PxrPortalLight" (
+        displayGroup = "Internal"
     )
 }
 
@@ -1907,122 +1467,8 @@ class "PxrRectLightAPI" (
                 This parameter will be ignored if Manifold Walk is enabled.
             """
     )
-    color3f inputs:shadow:color = (0, 0, 0) (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Color"
-        doc = """
-                shadowColor:  The color of the shadows cast by emitted light.
-            """
-    )
-    float inputs:shadow:distance = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Max Distance"
-        doc = """
-                shadowDistance: The maximum distance of the shadow starting from the position of the point
-                being shaded. You may use this control to artificially reduce the distance shadows are
-                cast. This may also increase render speed by not calculating shadows outside this distance.
-            """
-    )
-    bool inputs:shadow:enable = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Enable Shadows"
-        doc = """
-                enableShadows: Enable raytraced shadows.
-            """
-    )
-    float inputs:shadow:falloff = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff"
-        doc = """
-                shadowFalloff: the distance from the light at which shadow falloff begins.
-                -1.0 turns off shadow falloff. This is used along with Shadow Max Distance to create a
-                false fade for shadows that are reduced or cut off by the Shadow Max Distance parameter.
-            """
-    )
-    float inputs:shadow:falloffGamma = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff Gamma"
-        doc = """
-                shadowFalloffGamma: The gamma of the shadow strength in the falloff zone. This requires
-                the use of Shadow Max Distance and Shadow Falloff.
-            """
-    )
-    float inputs:shaping:cone:angle = 90 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Cone Angle"
-        doc = """
-                coneAngle: Angle of the virtual flaps on the light to turn it into a spot light.
-                This does not affect IES Profiles (should you be using one).
-            """
-    )
-    float inputs:shaping:cone:softness = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Cone Softness"
-        doc = """
-                coneSoftness: Softness of the cut-off of the cone angle.
-                The regular range is from 0 (hard cut-off) to 1
-                (full smooth transition), but it can be set higher than 1 for
-                additional gradation.
-            """
-    )
-    float inputs:shaping:focus = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus"
-        doc = """
-                emissionFocus: Off-axis cosine power exponent to shape the emission.
-
-                This controls the spread of the light.  Higher number will start focusing
-                the light towards the center and thus narrowing the light spread.
-            """
-    )
-    color3f inputs:shaping:focusTint = (0, 0, 0) (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus Tint"
-        doc = """
-                emissionFocusTint: Off-axis light color tint.
-
-                This tints the emission in the falloff region starting from the
-                off-angle direction of the light towards the center.
-                By default, the tint color is black (none). In addition to tinting, value greater
-                than white will also increase the intensity of the falloff region.  Notice when
-                using White the emission focus nearly appears to be off.
-            """
-    )
-    float inputs:shaping:ies:angleScale = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Light Profile"
-        displayName = "Profile Scale"
-        doc = """
-                Rescales the angular distribution of the ies profiles. Values
-                larger than 0 scale the profile to the front of the light,
-                values less than 0 scale the profile to the back.
-            """
-    )
-    asset inputs:shaping:ies:file = @@ (
-        connectability = "interfaceOnly"
-        displayGroup = "Light Profile"
-        displayName = "IES Profile"
-        doc = """
-                iesProfile: Name of the IES light profile.
-            """
-    )
-    bool inputs:shaping:ies:normalize = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Light Profile"
-        displayName = "Profile Normalization"
-        doc = """
-                Scales the amplitude of the IES profile data so that the profile
-                does not change the total energy output of the light.
-            """
+    uniform token ri:light:shaderId = "PxrRectLight" (
+        displayGroup = "Internal"
     )
 }
 
@@ -2161,124 +1607,8 @@ class "PxrSphereLightAPI" (
                 This parameter will be ignored if Manifold Walk is enabled.
             """
     )
-    color3f inputs:shadow:color = (0, 0, 0) (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Color"
-        doc = """
-                shadowColor:  The color of the shadows cast by emitted light.
-            """
-    )
-    float inputs:shadow:distance = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Max Distance"
-        doc = """
-                shadowDistance: Limits the shadow distance.
-                -1.0 is unset which will use the distance between the point being
-                shaded and the point on the light. You may use this control to artificially reduce
-                the distance shadows are cast. This may also increase render speed by not
-                calculating shadows outside this distance.
-            """
-    )
-    bool inputs:shadow:enable = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Enable Shadows"
-        doc = """
-                enableShadows: Enable raytraced shadows.
-            """
-    )
-    float inputs:shadow:falloff = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff"
-        doc = """
-                shadowFalloff: the distance from the light at which shadow falloff begins.
-                -1.0 turns off shadow falloff. This is used along with Shadow Max Distance to
-                create a false fade for shadows that are reduced or cut off by the Shadow Max
-                Distance parameter.
-            """
-    )
-    float inputs:shadow:falloffGamma = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff Gamma"
-        doc = """
-                shadowFalloffGamma: The gamma of the shadow strength in the falloff zone. This
-                requires the use of Shadow Max Distance and Shadow Falloff.
-            """
-    )
-    float inputs:shaping:cone:angle = 90 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Cone Angle"
-        doc = """
-                coneAngle: Angle of the virtual flaps on the light to turn it into a spot light.
-                This does not affect IES Profiles (should you be using one).
-            """
-    )
-    float inputs:shaping:cone:softness = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Cone Softness"
-        doc = """
-                coneSoftness: Softness of the cut-off of the cone angle.
-                The regular range is from 0 (hard cut-off) to 1
-                (full smooth transition), but it can be set higher than 1 for
-                additional gradation.
-            """
-    )
-    float inputs:shaping:focus = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus"
-        doc = """
-                emissionFocus: Off-axis cosine power exponent to shape the emission.
-
-                This controls the spread of the light.  Higher number will start focusing
-                the light towards the center and thus narrowing the light spread.
-            """
-    )
-    color3f inputs:shaping:focusTint = (0, 0, 0) (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus Tint"
-        doc = """
-                emissionFocusTint: Off-axis light color tint.
-
-                This tints the emission in the falloff region starting from the
-                off-angle direction of the light towards the center.
-                By default, the tint color is black (none). In addition to tinting, value greater
-                than white will also increase the intensity of the falloff region.
-            """
-    )
-    float inputs:shaping:ies:angleScale = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Light Profile"
-        displayName = "Profile Scale"
-        doc = """
-                Rescales the angular distribution of the ies profiles. Values
-                larger than 0 scale the profile to the front of the light,
-                values less than 0 scale the profile to the back.
-            """
-    )
-    asset inputs:shaping:ies:file = @@ (
-        connectability = "interfaceOnly"
-        displayGroup = "Light Profile"
-        displayName = "IES Profile"
-        doc = """
-                iesProfile: Name of the IES light profile.
-            """
-    )
-    bool inputs:shaping:ies:normalize = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Light Profile"
-        displayName = "Profile Normalization"
-        doc = """
-                Scales the amplitude of the IES profile data so that the profile
-                does not change the total energy output of the light.
-            """
+    uniform token ri:light:shaderId = "PxrSphereLight" (
+        displayGroup = "Internal"
     )
 }
 
@@ -2570,6 +1900,9 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
         displayName = "Width"
         doc = "width: Width of the inner region of the barn (x axis)."
     )
+    uniform token ri:lightFilter:shaderId = "PxrBarnLightFilter" (
+        displayGroup = "Internal"
+    )
 }
 
 class PxrBlockerLightFilter "PxrBlockerLightFilter" (
@@ -2722,6 +2055,9 @@ class PxrBlockerLightFilter "PxrBlockerLightFilter" (
         displayName = "Width"
         doc = "width: Width of inner region of the rod (x axis)."
     )
+    uniform token ri:lightFilter:shaderId = "PxrBlockerLightFilter" (
+        displayGroup = "Internal"
+    )
 }
 
 class PxrCombinerLightFilter "PxrCombinerLightFilter" (
@@ -2763,6 +2099,9 @@ class PxrCombinerLightFilter "PxrCombinerLightFilter" (
             Screen operation is similar to the max operation, but it combines gradients
             in a smoother way.
         '''
+    )
+    uniform token ri:lightFilter:shaderId = "PxrCombinerLightFilter" (
+        displayGroup = "Internal"
     )
 }
 
@@ -3153,6 +2492,9 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
         displayName = "Width"
         doc = "width: Width of the rect the light is shining through."
     )
+    uniform token ri:lightFilter:shaderId = "PxrCookieLightFilter" (
+        displayGroup = "Internal"
+    )
 }
 
 class PxrGoboLightFilter "PxrGoboLightFilter" (
@@ -3320,6 +2662,9 @@ class PxrGoboLightFilter "PxrGoboLightFilter" (
         displayName = "Width"
         doc = "width: Width of the rect the light is shining through."
     )
+    uniform token ri:lightFilter:shaderId = "PxrGoboLightFilter" (
+        displayGroup = "Internal"
+    )
 }
 
 class PxrIntMultLightFilter "PxrIntMultLightFilter" (
@@ -3406,6 +2751,9 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
         displayGroup = "Multiplier"
         displayName = "Specular"
         doc = "specular: How much this light filter affects specular lighting."
+    )
+    uniform token ri:lightFilter:shaderId = "PxrIntMultLightFilter" (
+        displayGroup = "Internal"
     )
 }
 
@@ -3547,6 +2895,9 @@ class PxrRampLightFilter "PxrRampLightFilter" (
         displayGroup = "Multiplier"
         displayName = "Specular"
         doc = "specular: How much this light filter affects specular lighting."
+    )
+    uniform token ri:lightFilter:shaderId = "PxrRampLightFilter" (
+        displayGroup = "Internal"
     )
 }
 
@@ -3801,6 +3152,9 @@ class PxrRodLightFilter "PxrRodLightFilter" (
         displayGroup = "Rod Shape"
         displayName = "Width"
         doc = "width: Width of the inner region of the rod (X-axis)."
+    )
+    uniform token ri:lightFilter:shaderId = "PxrRodLightFilter" (
+        displayGroup = "Internal"
     )
 }
 
