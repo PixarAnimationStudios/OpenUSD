@@ -49,8 +49,10 @@ Tf_AtomicRenameFileOver(std::string const &srcFileName,
 {
     bool result = true;
 #if defined(ARCH_OS_WINDOWS)
-    bool moved = MoveFileEx(srcFileName.c_str(),
-                            dstFileName.c_str(),
+    const std::wstring wsrc{ ArchWindowsUtf8ToUtf16(srcFileName) };
+    const std::wstring wdst{ ArchWindowsUtf8ToUtf16(dstFileName) };
+    bool moved = MoveFileExW(wsrc.c_str(),
+                            wdst.c_str(),
                             MOVEFILE_REPLACE_EXISTING |
                             MOVEFILE_COPY_ALLOWED) != FALSE;
     if (!moved) {
