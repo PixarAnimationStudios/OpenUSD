@@ -1625,18 +1625,14 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
-    string inputs:ri:light:__lightFilterParentShader = "" (
-        connectability = "interfaceOnly"
-        hidden = true
-    )
-    float inputs:ri:light:apex = 25 (
+    float inputs:ri:lightFilter:apex = 25 (
         connectability = "interfaceOnly"
         displayGroup = "Projection"
         displayName = "Apex"
         doc = """apex: Distance between center of barn and center of projection.
             """
     )
-    int inputs:ri:light:barnMode = 0 (
+    int inputs:ri:lightFilter:barnMode = 0 (
         connectability = "interfaceOnly"
         displayName = "Barn Mode"
         doc = """barnMode:
@@ -1649,13 +1645,13 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
         falloff controls.
         """
     )
-    float inputs:ri:light:bottom = 0 (
+    float inputs:ri:lightFilter:bottom = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape.Refine Shape"
         displayName = "Bottom"
         doc = "bottom: Additional offset of the bottom region (-y axis)."
     )
-    float inputs:ri:light:bottomEdge = 1 (
+    float inputs:ri:lightFilter:bottomEdge = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape.Scale Edges"
         displayName = "Bottom Edge"
@@ -1663,26 +1659,26 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
                     bottomEdge: When edge is > 0, this scales the edge of the bottom region (-y axis).
                 """
     )
-    int inputs:ri:light:colorRamp = 4 (
+    int inputs:ri:lightFilter:colorRamp = 4 (
         displayGroup = "Color Ramp"
         doc = """colorRamp: This is Optional.  This sets the color gradient 
                   for the transition.
             """
     )
-    color3f[] inputs:ri:light:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
+    color3f[] inputs:ri:lightFilter:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
         displayGroup = "Color Ramp"
         hidden = true
     )
-    token inputs:ri:light:colorRamp_Interpolation = "linear" (
+    token inputs:ri:lightFilter:colorRamp_Interpolation = "linear" (
         allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
         displayGroup = "Color Ramp"
         hidden = true
     )
-    float[] inputs:ri:light:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+    float[] inputs:ri:lightFilter:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
         displayGroup = "Color Ramp"
         hidden = true
     )
-    token inputs:ri:light:combineMode = "mult" (
+    token inputs:ri:lightFilter:combineMode = "mult" (
         allowedTokens = ["mult", "max", "min", "screen"]
         connectability = "interfaceOnly"
         displayName = "Combine Mode"
@@ -1709,53 +1705,49 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
         </p>
 """
     )
-    string inputs:ri:light:coordsys = "" (
-        connectability = "interfaceOnly"
-        hidden = true
-    )
-    float inputs:ri:light:density = 1 (
+    float inputs:ri:lightFilter:density = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Density"
         doc = "density: How much effect the component has (0-1)."
     )
-    float inputs:ri:light:densityFar = 10 (
+    float inputs:ri:lightFilter:densityFar = 10 (
         connectability = "interfaceOnly"
         displayGroup = "Density Falloff"
         displayName = "Density Far"
         doc = "densityFar: Distance from the barn where the density interpolation ends."
     )
-    float inputs:ri:light:densityFarVal = 1 (
+    float inputs:ri:lightFilter:densityFarVal = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Density Falloff"
         displayName = "Density Far Val"
         doc = "densityFarVal: Density multiplier where the blur interpolation ends."
     )
-    float inputs:ri:light:densityNear = 0 (
+    float inputs:ri:lightFilter:densityNear = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Density Falloff"
         displayName = "Density Near"
         doc = "densityNear: Distance from the barn where the density interpolation starts."
     )
-    float inputs:ri:light:densityNearVal = 1 (
+    float inputs:ri:lightFilter:densityNearVal = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Density Falloff"
         displayName = "Density Near Val"
         doc = "densityNearVal: Density multiplier where the blur interpolation starts."
     )
-    float inputs:ri:light:densityPow = 1 (
+    float inputs:ri:lightFilter:densityPow = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Density Falloff"
         displayName = "Density Exponent"
         doc = "densityPow: Exponent of the density interpolation."
     )
-    float inputs:ri:light:diffuse = 1 (
+    float inputs:ri:lightFilter:diffuse = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Diffuse"
         doc = "diffuse: How much this light filter affects diffuse lighting."
     )
-    bool inputs:ri:light:directional = 0 (
+    bool inputs:ri:lightFilter:directional = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Projection"
         displayName = "Directional"
@@ -1763,7 +1755,7 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
             out from a point.
             """
     )
-    float inputs:ri:light:edge = 0 (
+    float inputs:ri:lightFilter:edge = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape"
         displayName = "Edge Thickness"
@@ -1771,20 +1763,20 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
                   more softness to the edges of the barn shape.
             """
     )
-    float inputs:ri:light:height = 1 (
+    float inputs:ri:lightFilter:height = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape"
         displayName = "Height"
         doc = "height: Height of the inner region of the barn (y axis)."
     )
-    float inputs:ri:light:intensity = 0 (
+    float inputs:ri:lightFilter:intensity = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Intensity"
         doc = """intensity: Multiplier for both the diffuse and specular result.
             """
     )
-    bool inputs:ri:light:invert = 0 (
+    bool inputs:ri:lightFilter:invert = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Invert"
@@ -1792,13 +1784,13 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
                   filter.
             """
     )
-    float inputs:ri:light:left = 0 (
+    float inputs:ri:lightFilter:left = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape.Refine Shape"
         displayName = "Left"
         doc = "left: Additional offset of the left region (-x axis)."
     )
-    float inputs:ri:light:leftEdge = 1 (
+    float inputs:ri:lightFilter:leftEdge = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape.Scale Edges"
         displayName = "Left Edge"
@@ -1806,33 +1798,29 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
                     leftEdge: When edge is > 0, this scales the edge of the left region (-x axis).
                 """
     )
-    string inputs:ri:light:linkingGroups = "" (
-        connectability = "interfaceOnly"
-        hidden = true
-    )
-    string inputs:ri:light:notes = "" (
+    string inputs:ri:lightFilter:notes = "" (
         displayGroup = "Notes"
         doc = "General comment field for this light filter."
     )
-    int inputs:ri:light:preBarn = 2 (
+    int inputs:ri:lightFilter:preBarn = 2 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape"
         displayName = "Pre Barn Effect"
         doc = "preBarn: The effect on the light before it reaches the barn."
     )
-    float inputs:ri:light:radius = 0.5 (
+    float inputs:ri:lightFilter:radius = 0.5 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape"
         displayName = "Radius"
         doc = "radius: Radius of the corners of the inner barn square."
     )
-    float inputs:ri:light:right = 0 (
+    float inputs:ri:lightFilter:right = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape.Refine Shape"
         displayName = "Right"
         doc = "right: Additional offset of the right region (+x axis)."
     )
-    float inputs:ri:light:rightEdge = 1 (
+    float inputs:ri:lightFilter:rightEdge = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape.Scale Edges"
         displayName = "Right Edge"
@@ -1840,7 +1828,7 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
                     rightEdge: When edge is > 0, this scales the edge of the right region (+x axis).
                 """
     )
-    float inputs:ri:light:scaleHeight = 1 (
+    float inputs:ri:lightFilter:scaleHeight = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape.Scale"
         displayName = "Scale Height"
@@ -1849,7 +1837,7 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
                    This includes scaling the radius.
                 """
     )
-    float inputs:ri:light:scaleWidth = 1 (
+    float inputs:ri:lightFilter:scaleWidth = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape.Scale"
         displayName = "Scale Width"
@@ -1858,31 +1846,31 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
                     This includes scaling the radius.
                 """
     )
-    float inputs:ri:light:shearX = 0 (
+    float inputs:ri:lightFilter:shearX = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Projection"
         displayName = "Shear X"
         doc = "shearX: Shear the projection along the x-axis."
     )
-    float inputs:ri:light:shearY = 0 (
+    float inputs:ri:lightFilter:shearY = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Projection"
         displayName = "Shear Y"
         doc = "shearY: Shear the projection along the y-axis."
     )
-    float inputs:ri:light:specular = 1 (
+    float inputs:ri:lightFilter:specular = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Specular"
         doc = "specular: How much this light filter affects specular lighting."
     )
-    float inputs:ri:light:top = 0 (
+    float inputs:ri:lightFilter:top = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape.Refine Shape"
         displayName = "Top"
         doc = "top: Additional offset of the top region (+y axis)."
     )
-    float inputs:ri:light:topEdge = 1 (
+    float inputs:ri:lightFilter:topEdge = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape.Scale Edges"
         displayName = "Top Edge"
@@ -1890,7 +1878,7 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
                     topEdge: When edge is > 0, this scales the edge of the top region (+y axis).
                 """
     )
-    bool inputs:ri:light:useLightDirection = 0 (
+    bool inputs:ri:lightFilter:useLightDirection = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Projection"
         displayName = "Use Light Direction"
@@ -1900,7 +1888,7 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
                    WARNING: this does not work with dome and geometric area lights.
             """
     )
-    float inputs:ri:light:width = 1 (
+    float inputs:ri:lightFilter:width = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape"
         displayName = "Width"
@@ -1967,26 +1955,26 @@ class PxrBlockerLightFilter "PxrBlockerLightFilter" (
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
-    int inputs:ri:light:colorRamp = 4 (
+    int inputs:ri:lightFilter:colorRamp = 4 (
         displayGroup = "Color Ramp"
         doc = """colorRamp: This is Optional.  It sets the color gradient
                   for the transition.
            """
     )
-    color3f[] inputs:ri:light:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
+    color3f[] inputs:ri:lightFilter:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
         displayGroup = "Color Ramp"
         hidden = true
     )
-    token inputs:ri:light:colorRamp_Interpolation = "linear" (
+    token inputs:ri:lightFilter:colorRamp_Interpolation = "linear" (
         allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
         displayGroup = "Color Ramp"
         hidden = true
     )
-    float[] inputs:ri:light:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+    float[] inputs:ri:lightFilter:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
         displayGroup = "Color Ramp"
         hidden = true
     )
-    token inputs:ri:light:combineMode = "mult" (
+    token inputs:ri:lightFilter:combineMode = "mult" (
         allowedTokens = ["mult", "max", "min", "screen"]
         connectability = "interfaceOnly"
         displayName = "Combine Mode"
@@ -2013,98 +2001,91 @@ class PxrBlockerLightFilter "PxrBlockerLightFilter" (
         </p>
 """
     )
-    string inputs:ri:light:coordsys = "" (
-        hidden = true
-    )
-    float inputs:ri:light:density = 1 (
+    float inputs:ri:lightFilter:density = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Density"
         doc = "density: How much effect the filter has (0-1)."
     )
-    float inputs:ri:light:depth = 0 (
+    float inputs:ri:lightFilter:depth = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape"
         displayName = "Depth"
         doc = "depth: Depth of inner region of the rod (z axis)."
     )
-    float inputs:ri:light:diffuse = 1 (
+    float inputs:ri:lightFilter:diffuse = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Diffuse"
         doc = "diffuse: How much this light filter affects diffuse lighting."
     )
-    float inputs:ri:light:edge = 0.25 (
+    float inputs:ri:lightFilter:edge = 0.25 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape"
         displayName = "Edge"
         doc = "edge: Thickness of edge region."
     )
-    int inputs:ri:light:falloff = 6 (
+    int inputs:ri:lightFilter:falloff = 6 (
         connectability = "interfaceOnly"
         displayGroup = "Falloff"
         doc = "falloff: Controls the transition from the core to the edge."
     )
-    float[] inputs:ri:light:falloff_Floats = [0, 0, 0.2, 0.8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+    float[] inputs:ri:lightFilter:falloff_Floats = [0, 0, 0.2, 0.8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
         displayGroup = "Falloff"
         hidden = true
     )
-    token inputs:ri:light:falloff_Interpolation = "bspline" (
+    token inputs:ri:lightFilter:falloff_Interpolation = "bspline" (
         allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
         displayGroup = "Falloff"
         hidden = true
     )
-    float[] inputs:ri:light:falloff_Knots = [0, 0, 0.3, 0.7, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+    float[] inputs:ri:lightFilter:falloff_Knots = [0, 0, 0.3, 0.7, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
         displayGroup = "Falloff"
         hidden = true
     )
-    float inputs:ri:light:height = 0 (
+    float inputs:ri:lightFilter:height = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape"
         displayName = "Height"
         doc = "height: Height of inner region of the rod (y axis)."
     )
-    float inputs:ri:light:intensity = 0 (
+    float inputs:ri:lightFilter:intensity = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Intensity"
         doc = """intensity: Multiplier for both the diffuse and specular result.
             """
     )
-    bool inputs:ri:light:invert = 0 (
+    bool inputs:ri:lightFilter:invert = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Invert"
         doc = "invert: Inverts the entire effect of the filter."
     )
-    string inputs:ri:light:linkingGroups = "" (
-        connectability = "interfaceOnly"
-        hidden = true
-    )
-    string inputs:ri:light:notes = "" (
+    string inputs:ri:lightFilter:notes = "" (
         displayGroup = "Notes"
         doc = "General comment field for this light filter."
     )
-    float inputs:ri:light:radius = 1 (
+    float inputs:ri:lightFilter:radius = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape"
         displayName = "Radius"
         doc = "radius: Radius of corners of inner rod box."
     )
-    float inputs:ri:light:saturation = 1 (
+    float inputs:ri:lightFilter:saturation = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Saturation"
         doc = """saturation: Saturation of the light before hitting the surface
                   (0=greyscale,1=normal,>1=boosted colors)."""
     )
-    float inputs:ri:light:specular = 1 (
+    float inputs:ri:lightFilter:specular = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Specular"
         doc = "specular: How much this light filter affects specular lighting."
     )
-    float inputs:ri:light:width = 0 (
+    float inputs:ri:lightFilter:width = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape"
         displayName = "Width"
@@ -2171,32 +2152,32 @@ class PxrCombinerLightFilter "PxrCombinerLightFilter" (
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
-    bool inputs:ri:light:combineShadows = 0 (
+    bool inputs:ri:lightFilter:combineShadows = 0 (
         connectability = "interfaceOnly"
         displayName = "Combine shadows"
         doc = """
             Enables the shadow manipulation abilities of any connected light filters.
         """
     )
-    token inputs:ri:light:max (
+    token inputs:ri:lightFilter:max (
         displayName = "Max"
         doc = """
             max: Combining light filters by returning the maximum result.
         """
     )
-    token inputs:ri:light:min (
+    token inputs:ri:lightFilter:min (
         displayName = "Min"
         doc = """
             min: Combining light filters by returning the mininum result.
         """
     )
-    token inputs:ri:light:mult (
+    token inputs:ri:lightFilter:mult (
         displayName = "Mult"
         doc = """
             mult: Combining light filters by multiplying.
         """
     )
-    token inputs:ri:light:screen (
+    token inputs:ri:lightFilter:screen (
         displayName = "Screen"
         doc = '''
             screen: Combining light filters by returning the "screen" result.
@@ -2265,18 +2246,14 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
-    string inputs:ri:light:__lightFilterParentShader = "" (
-        connectability = "interfaceOnly"
-        hidden = true
-    )
-    float inputs:ri:light:apex = 25 (
+    float inputs:ri:lightFilter:apex = 25 (
         connectability = "interfaceOnly"
         displayGroup = "Projection"
         displayName = "Apex"
         doc = """apex: Distance between the center of cookie and the center of projection.
             """
     )
-    float inputs:ri:light:blur = 0 (
+    float inputs:ri:lightFilter:blur = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Blur"
         displayName = "Blur"
@@ -2284,49 +2261,49 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
                 blur: Blurriness of texture (0-1, multiplied by blurNear/blurFar interp).
             """
     )
-    float inputs:ri:light:blurFarDist = 10 (
+    float inputs:ri:lightFilter:blurFarDist = 10 (
         connectability = "interfaceOnly"
         displayGroup = "Blur"
         displayName = "Blur Far Dist"
         doc = "blurFarDist: Distance from the cookie where the blur interpolation ends."
     )
-    float inputs:ri:light:blurFarVal = 1 (
+    float inputs:ri:lightFilter:blurFarVal = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Blur"
         displayName = "Blur Far Value"
         doc = "blurFarVal: Blur multiplier where the blur interpolation ends."
     )
-    float inputs:ri:light:blurMidpoint = 0.5 (
+    float inputs:ri:lightFilter:blurMidpoint = 0.5 (
         connectability = "interfaceOnly"
         displayGroup = "Blur"
         displayName = "Blur Midpoint"
         doc = "blurMidpoint: Distance between near and far, where the midValue is located."
     )
-    float inputs:ri:light:blurMidVal = 1 (
+    float inputs:ri:lightFilter:blurMidVal = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Blur"
         displayName = "Blur Mid Value"
         doc = "blurMidVal: Blur multiplier in the middle of the blur interpolation."
     )
-    float inputs:ri:light:blurNearDist = 0 (
+    float inputs:ri:lightFilter:blurNearDist = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Blur"
         displayName = "Blur Near Dist"
         doc = "blurNearDist: Distance from the cookie where the blur interpolation starts."
     )
-    float inputs:ri:light:blurNearVal = 1 (
+    float inputs:ri:lightFilter:blurNearVal = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Blur"
         displayName = "Blur Near Value"
         doc = "blurNearVal: Blur multiplier where the blur interpolation starts."
     )
-    float inputs:ri:light:blurPow = 1 (
+    float inputs:ri:lightFilter:blurPow = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Blur"
         displayName = "Blur Exponent"
         doc = "blurPow: Exponent of the blur interpolation."
     )
-    token inputs:ri:light:combineMode = "mult" (
+    token inputs:ri:lightFilter:combineMode = "mult" (
         allowedTokens = ["mult", "max", "min", "screen"]
         connectability = "interfaceOnly"
         displayName = "Combine Mode"
@@ -2353,7 +2330,7 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
         </p>
 """
     )
-    float inputs:ri:light:contrast = 1 (
+    float inputs:ri:lightFilter:contrast = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Saturation/Contrast/Tint"
         displayName = "Contrast"
@@ -2362,7 +2339,7 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
                 larger than 1 = contrast increase).
             """
     )
-    int inputs:ri:light:cookieMode = 0 (
+    int inputs:ri:lightFilter:cookieMode = 0 (
         connectability = "interfaceOnly"
         displayName = "Cookie Mode"
         doc = """
@@ -2377,65 +2354,61 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
             blur and falloff controls.
         """
     )
-    string inputs:ri:light:coordsys = "" (
-        connectability = "interfaceOnly"
-        hidden = true
-    )
-    float inputs:ri:light:density = 1 (
+    float inputs:ri:lightFilter:density = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Density"
         doc = "density: Controls the strength of the projected effect."
     )
-    float inputs:ri:light:densityFarDist = 10 (
+    float inputs:ri:lightFilter:densityFarDist = 10 (
         connectability = "interfaceOnly"
         displayGroup = "Density Falloff"
         displayName = "Density Far Dist"
         doc = "densityFarDist: Distance from the cookie where the density interpolation ends."
     )
-    float inputs:ri:light:densityFarVal = 1 (
+    float inputs:ri:lightFilter:densityFarVal = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Density Falloff"
         displayName = "Density Far Value"
         doc = "densityFarVal: Density multiplier where the blur interpolation ends."
     )
-    float inputs:ri:light:densityMidpoint = 0.5 (
+    float inputs:ri:lightFilter:densityMidpoint = 0.5 (
         connectability = "interfaceOnly"
         displayGroup = "Density Falloff"
         displayName = "Density Midpoint"
         doc = "densityMidpoint: Distance between near and far, where the midValue is located."
     )
-    float inputs:ri:light:densityMidVal = 1 (
+    float inputs:ri:lightFilter:densityMidVal = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Density Falloff"
         displayName = "Density Mid Value"
         doc = "densityMidVal: Density multiplier in the middle of the density interpolation."
     )
-    float inputs:ri:light:densityNearDist = 0 (
+    float inputs:ri:lightFilter:densityNearDist = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Density Falloff"
         displayName = "Density Near Dist"
         doc = "densityNearDist: Distance from the cookie where the density interpolation starts."
     )
-    float inputs:ri:light:densityNearVal = 1 (
+    float inputs:ri:lightFilter:densityNearVal = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Density Falloff"
         displayName = "Density Near Value"
         doc = "densityNearVal: Density multiplier where the blur interpolation starts."
     )
-    float inputs:ri:light:densityPow = 1 (
+    float inputs:ri:lightFilter:densityPow = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Density Falloff"
         displayName = "Density Exponent"
         doc = "densityPow: Exponent of the density interpolation."
     )
-    float inputs:ri:light:diffuse = 1 (
+    float inputs:ri:lightFilter:diffuse = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Diffuse"
         doc = "diffuse: How much this light filter affects diffuse lighting."
     )
-    bool inputs:ri:light:directional = 0 (
+    bool inputs:ri:lightFilter:directional = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Projection"
         displayName = "Directional"
@@ -2444,7 +2417,7 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
                   the texture projects using a focal point specified by the Apex.
             """
     )
-    color3f inputs:ri:light:fillColor = (1, 1, 1) (
+    color3f inputs:ri:lightFilter:fillColor = (1, 1, 1) (
         connectability = "interfaceOnly"
         displayGroup = "Map"
         displayName = "Fill Color"
@@ -2453,76 +2426,72 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
                 color for the region outside of and behind the projected rectangle.
             """
     )
-    float inputs:ri:light:height = 1 (
+    float inputs:ri:lightFilter:height = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Map"
         displayName = "Height"
         doc = "height: Height of the rect the light is shining through."
     )
-    float inputs:ri:light:intensity = 1 (
+    float inputs:ri:lightFilter:intensity = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Intensity"
         doc = """intensity: Multiplier for both the diffuse and specular result.
             """
     )
-    bool inputs:ri:light:invert = 0 (
+    bool inputs:ri:lightFilter:invert = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Invert"
         doc = """invert: When this is on, the texture will be inverted before it is applied.
             """
     )
-    bool inputs:ri:light:invertU = 0 (
+    bool inputs:ri:lightFilter:invertU = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Texture Mapping"
         displayName = "Invert U"
         doc = "invertU: flip the texture from left to right."
     )
-    bool inputs:ri:light:invertV = 0 (
+    bool inputs:ri:lightFilter:invertV = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Texture Mapping"
         displayName = "Invert V"
         doc = "invertV: flip the texture from bottom to top."
     )
-    bool inputs:ri:light:linearize = 0 (
+    bool inputs:ri:lightFilter:linearize = 0 (
         displayGroup = "Map"
         displayName = "Linearize"
         doc = "Linearize the texture, assuming an sRGB transfer function."
     )
-    string inputs:ri:light:linkingGroups = "" (
-        connectability = "interfaceOnly"
-        hidden = true
-    )
-    asset inputs:ri:light:map = @ratGrid.tex@ (
+    asset inputs:ri:lightFilter:map = @ratGrid.tex@ (
         connectability = "interfaceOnly"
         displayGroup = "Map"
         displayName = "Map"
         doc = "map: Filename of the projected texture."
     )
-    float inputs:ri:light:midpoint = 0.18 (
+    float inputs:ri:lightFilter:midpoint = 0.18 (
         connectability = "interfaceOnly"
         displayGroup = "Saturation/Contrast/Tint"
         displayName = "Midpoint"
         doc = "midpoint: Midpoint for the contrast control."
     )
-    string inputs:ri:light:notes = "" (
+    string inputs:ri:lightFilter:notes = "" (
         displayGroup = "Notes"
         doc = "General comment field for this light filter."
     )
-    float inputs:ri:light:offsetU = 0 (
+    float inputs:ri:lightFilter:offsetU = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Texture Mapping"
         displayName = "Offset U"
         doc = "offsetU: Offset of the texture in the U direction"
     )
-    float inputs:ri:light:offsetV = 0 (
+    float inputs:ri:lightFilter:offsetV = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Texture Mapping"
         displayName = "Offset V"
         doc = "offsetV: Offset of the texture in the V direction"
     )
-    bool inputs:ri:light:premultipliedAlpha = 1 (
+    bool inputs:ri:lightFilter:premultipliedAlpha = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Map"
         displayName = "Premultiplied Alpha"
@@ -2531,7 +2500,7 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
                 the case, uncheck this.
             """
     )
-    int inputs:ri:light:refreshMap = 0 (
+    int inputs:ri:lightFilter:refreshMap = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Map"
         doc = """
@@ -2539,7 +2508,7 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
                 Live Rendering.
             """
     )
-    float inputs:ri:light:saturation = 1 (
+    float inputs:ri:lightFilter:saturation = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Saturation/Contrast/Tint"
         displayName = "Saturation"
@@ -2547,49 +2516,49 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
                 saturation: Saturation of the result (0=greyscale,1=normal,>1=boosted colors).
             """
     )
-    float inputs:ri:light:sBlurMult = 1 (
+    float inputs:ri:lightFilter:sBlurMult = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Blur"
         displayName = "S Blur Mult"
         doc = "sBlurMult: Blur multiplier in S direction."
     )
-    float inputs:ri:light:scaleU = 1 (
+    float inputs:ri:lightFilter:scaleU = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Texture Mapping"
         displayName = "Scale U"
         doc = "scaleU: Scale of the texture in the U direction"
     )
-    float inputs:ri:light:scaleV = 1 (
+    float inputs:ri:lightFilter:scaleV = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Texture Mapping"
         displayName = "Scale V"
         doc = "scaleV: Scale of the texture in the V direction"
     )
-    float inputs:ri:light:shearX = 0 (
+    float inputs:ri:lightFilter:shearX = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Projection"
         displayName = "Shear X"
         doc = "shearX: Shear the projection along the x-axis."
     )
-    float inputs:ri:light:shearY = 0 (
+    float inputs:ri:lightFilter:shearY = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Projection"
         displayName = "Shear Y"
         doc = "shearY: Shear the projection along the y-axis."
     )
-    float inputs:ri:light:specular = 1 (
+    float inputs:ri:lightFilter:specular = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Specular"
         doc = "specular: How much this light filter affects specular lighting."
     )
-    float inputs:ri:light:tBlurMult = 1 (
+    float inputs:ri:lightFilter:tBlurMult = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Blur"
         displayName = "T Blur Mult"
         doc = "tBlurMult: Blur multiplier in T direction."
     )
-    int inputs:ri:light:tileMode = 0 (
+    int inputs:ri:lightFilter:tileMode = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Texture Mapping"
         displayName = "Tile Mode"
@@ -2599,13 +2568,13 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
                 "Tile"        - texture repeats (tileable texture).
             '''
     )
-    color3f inputs:ri:light:tint = (1, 1, 1) (
+    color3f inputs:ri:lightFilter:tint = (1, 1, 1) (
         connectability = "interfaceOnly"
         displayGroup = "Saturation/Contrast/Tint"
         displayName = "Tint"
         doc = "tint: Tint of the resulting color after saturation, contrast and clamp."
     )
-    int inputs:ri:light:useAlpha = 1 (
+    int inputs:ri:lightFilter:useAlpha = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Map"
         displayName = "Use Alpha"
@@ -2620,7 +2589,7 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
             """
         hidden = true
     )
-    bool inputs:ri:light:useLightDirection = 0 (
+    bool inputs:ri:lightFilter:useLightDirection = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Projection"
         displayName = "Use Light Direction"
@@ -2633,13 +2602,13 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
                 PxrDomeLight and PxrMeshLight.
             """
     )
-    float inputs:ri:light:whitepoint = 1 (
+    float inputs:ri:lightFilter:whitepoint = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Saturation/Contrast/Tint"
         displayName = "White Point"
         doc = "whitepoint: White point for the contrast control if (contrast > 1.0)."
     )
-    float inputs:ri:light:width = 1 (
+    float inputs:ri:lightFilter:width = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Map"
         displayName = "Width"
@@ -2706,11 +2675,7 @@ class PxrGoboLightFilter "PxrGoboLightFilter" (
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
-    string inputs:ri:light:__lightFilterParentShader = "" (
-        connectability = "interfaceOnly"
-        hidden = true
-    )
-    token inputs:ri:light:combineMode = "mult" (
+    token inputs:ri:lightFilter:combineMode = "mult" (
         allowedTokens = ["mult", "max", "min", "screen"]
         connectability = "interfaceOnly"
         displayName = "Combine Mode"
@@ -2737,23 +2702,19 @@ class PxrGoboLightFilter "PxrGoboLightFilter" (
         </p>
 """
     )
-    string inputs:ri:light:coordsys = "" (
-        connectability = "interfaceOnly"
-        hidden = true
-    )
-    float inputs:ri:light:density = 1 (
+    float inputs:ri:lightFilter:density = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Density"
         doc = "density: Controls the strength of the projected effect."
     )
-    float inputs:ri:light:diffuse = 1 (
+    float inputs:ri:lightFilter:diffuse = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Diffuse"
         doc = "diffuse: How much this light filter affects diffuse lighting."
     )
-    color3f inputs:ri:light:fillColor = (1, 1, 1) (
+    color3f inputs:ri:lightFilter:fillColor = (1, 1, 1) (
         connectability = "interfaceOnly"
         displayGroup = "Map"
         displayName = "Fill Color"
@@ -2762,58 +2723,54 @@ class PxrGoboLightFilter "PxrGoboLightFilter" (
                 color for the region outside of and behind the projected rectangle.
             """
     )
-    float inputs:ri:light:height = 1 (
+    float inputs:ri:lightFilter:height = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Map"
         displayName = "Height"
         doc = "height: Height of the rect the light is shining through."
     )
-    float inputs:ri:light:intensity = 1 (
+    float inputs:ri:lightFilter:intensity = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Intensity"
         doc = """intensity: Multiplier for both the diffuse and specular result.
             """
     )
-    bool inputs:ri:light:invert = 0 (
+    bool inputs:ri:lightFilter:invert = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Invert"
         doc = """invert: When this is on, the texture will be inverted before it is applied.
             """
     )
-    bool inputs:ri:light:linearize = 0 (
+    bool inputs:ri:lightFilter:linearize = 0 (
         displayGroup = "Map"
         displayName = "Linearize"
         doc = "Linearize the texture, assuming an sRGB transfer function."
     )
-    string inputs:ri:light:linkingGroups = "" (
-        connectability = "interfaceOnly"
-        hidden = true
-    )
-    asset inputs:ri:light:map = @ratGrid.tex@ (
+    asset inputs:ri:lightFilter:map = @ratGrid.tex@ (
         connectability = "interfaceOnly"
         displayGroup = "Map"
         displayName = "Map"
         doc = "map: Filename of the projected texture."
     )
-    string inputs:ri:light:notes = "" (
+    string inputs:ri:lightFilter:notes = "" (
         displayGroup = "Notes"
         doc = "General comment field for this light filter."
     )
-    float inputs:ri:light:offsetU = 0 (
+    float inputs:ri:lightFilter:offsetU = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Texture Mapping"
         displayName = "Offset U"
         doc = "offsetU: Offset of the texture in the U direction"
     )
-    float inputs:ri:light:offsetV = 0 (
+    float inputs:ri:lightFilter:offsetV = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Texture Mapping"
         displayName = "Offset V"
         doc = "offsetV: Offset of the texture in the V direction"
     )
-    bool inputs:ri:light:premultipliedAlpha = 1 (
+    bool inputs:ri:lightFilter:premultipliedAlpha = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Map"
         displayName = "Premultiplied Alpha"
@@ -2822,7 +2779,7 @@ class PxrGoboLightFilter "PxrGoboLightFilter" (
                 the case, uncheck this.
             """
     )
-    int inputs:ri:light:refreshMap = 0 (
+    int inputs:ri:lightFilter:refreshMap = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Map"
         doc = """
@@ -2830,25 +2787,25 @@ class PxrGoboLightFilter "PxrGoboLightFilter" (
                 Live Rendering.
             """
     )
-    float inputs:ri:light:scaleU = 1 (
+    float inputs:ri:lightFilter:scaleU = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Texture Mapping"
         displayName = "Scale U"
         doc = "scaleU: Scale of the texture in the U direction"
     )
-    float inputs:ri:light:scaleV = 1 (
+    float inputs:ri:lightFilter:scaleV = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Texture Mapping"
         displayName = "Scale V"
         doc = "scaleV: Scale of the texture in the V direction"
     )
-    float inputs:ri:light:specular = 1 (
+    float inputs:ri:lightFilter:specular = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Specular"
         doc = "specular: How much this light filter affects specular lighting."
     )
-    int inputs:ri:light:tileMode = 0 (
+    int inputs:ri:lightFilter:tileMode = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Texture Mapping"
         displayName = "Tile Mode"
@@ -2858,7 +2815,7 @@ class PxrGoboLightFilter "PxrGoboLightFilter" (
                 "Tile"        - texture repeats (tileable texture).
             '''
     )
-    float inputs:ri:light:width = 1 (
+    float inputs:ri:lightFilter:width = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Map"
         displayName = "Width"
@@ -2925,7 +2882,7 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
-    token inputs:ri:light:combineMode = "mult" (
+    token inputs:ri:lightFilter:combineMode = "mult" (
         allowedTokens = ["mult", "max", "min", "screen"]
         connectability = "interfaceOnly"
         displayName = "Combine Mode"
@@ -2952,25 +2909,25 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
         </p>
 """
     )
-    float inputs:ri:light:diffuse = 1 (
+    float inputs:ri:lightFilter:diffuse = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Diffuse"
         doc = "diffuse: How much this light filter affects diffuse lighting."
     )
-    float inputs:ri:light:exposure = 0 (
+    float inputs:ri:lightFilter:exposure = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Exposure"
         doc = "exposure: Exposure control for the multiplier."
     )
-    float inputs:ri:light:intensity = 1 (
+    float inputs:ri:lightFilter:intensity = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Intensity"
         doc = "intensity: Multiplier for the light intensity."
     )
-    bool inputs:ri:light:invert = 0 (
+    bool inputs:ri:lightFilter:invert = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Invert"
@@ -2981,15 +2938,11 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
                 intensity.
             """
     )
-    string inputs:ri:light:linkingGroups = "" (
-        connectability = "interfaceOnly"
-        hidden = true
-    )
-    string inputs:ri:light:notes = "" (
+    string inputs:ri:lightFilter:notes = "" (
         displayGroup = "Notes"
         doc = "General comment field for this light filter."
     )
-    float inputs:ri:light:saturation = 1 (
+    float inputs:ri:lightFilter:saturation = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Color Saturation"
@@ -2997,7 +2950,7 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
                   (0=greyscale,1=normal,>1=boosted colors).
             """
     )
-    float inputs:ri:light:specular = 1 (
+    float inputs:ri:lightFilter:specular = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Specular"
@@ -3064,32 +3017,32 @@ class PxrRampLightFilter "PxrRampLightFilter" (
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
-    float inputs:ri:light:beginDist = 0 (
+    float inputs:ri:lightFilter:beginDist = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Ramp Direction"
         displayName = "Begin Distance"
         doc = "beginDist: Distance where the ramp starts."
     )
-    int inputs:ri:light:colorRamp = 4 (
+    int inputs:ri:lightFilter:colorRamp = 4 (
         connectability = "interfaceOnly"
         displayGroup = "Color Ramp"
         displayName = "Color Ramp"
         doc = "Color Ramp"
     )
-    color3f[] inputs:ri:light:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
+    color3f[] inputs:ri:lightFilter:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
         displayGroup = "Color Ramp"
         hidden = true
     )
-    token inputs:ri:light:colorRamp_Interpolation = "linear" (
+    token inputs:ri:lightFilter:colorRamp_Interpolation = "linear" (
         allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
         displayGroup = "Color Ramp"
         hidden = true
     )
-    float[] inputs:ri:light:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+    float[] inputs:ri:lightFilter:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
         displayGroup = "Color Ramp"
         hidden = true
     )
-    token inputs:ri:light:combineMode = "mult" (
+    token inputs:ri:lightFilter:combineMode = "mult" (
         allowedTokens = ["mult", "max", "min", "screen"]
         connectability = "interfaceOnly"
         displayName = "Combine Mode"
@@ -3116,81 +3069,73 @@ class PxrRampLightFilter "PxrRampLightFilter" (
         </p>
 """
     )
-    string inputs:ri:light:coordsys = "" (
-        connectability = "interfaceOnly"
-        hidden = true
-    )
-    float inputs:ri:light:density = 1 (
+    float inputs:ri:lightFilter:density = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Density"
         doc = "density: How much effect the filter has (0-1)."
     )
-    float inputs:ri:light:diffuse = 1 (
+    float inputs:ri:lightFilter:diffuse = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Diffuse"
         doc = "diffuse: How much this light filter affects diffuse lighting."
     )
-    float inputs:ri:light:endDist = 10 (
+    float inputs:ri:lightFilter:endDist = 10 (
         connectability = "interfaceOnly"
         displayGroup = "Ramp Direction"
         displayName = "End Distance"
         doc = "endDist: Distance where the ramp ends."
     )
-    float inputs:ri:light:intensity = 1 (
+    float inputs:ri:lightFilter:intensity = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Intensity"
         doc = "intensity: Multiplier for both the diffuse and specular result."
     )
-    bool inputs:ri:light:invert = 0 (
+    bool inputs:ri:lightFilter:invert = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Invert"
         doc = "invert: If the multipliers should be inverted"
     )
-    string inputs:ri:light:linkingGroups = "" (
-        connectability = "interfaceOnly"
-        hidden = true
-    )
-    string inputs:ri:light:notes = "" (
+    string inputs:ri:lightFilter:notes = "" (
         displayGroup = "Notes"
         doc = "General comment field for this light filter."
     )
-    int inputs:ri:light:ramp = 4 (
+    int inputs:ri:lightFilter:ramp = 4 (
         connectability = "interfaceOnly"
         displayGroup = "Float Ramp"
         displayName = "Ramp"
         doc = "Ramp"
     )
-    float[] inputs:ri:light:ramp_Floats = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+    float[] inputs:ri:lightFilter:ramp_Floats = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
         displayGroup = "Float Ramp"
         hidden = true
     )
-    token inputs:ri:light:ramp_Interpolation = "linear" (
+    token inputs:ri:lightFilter:ramp_Interpolation = "linear" (
         allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
         displayGroup = "Float Ramp"
         hidden = true
     )
-    float[] inputs:ri:light:ramp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+    float[] inputs:ri:lightFilter:ramp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
         displayGroup = "Float Ramp"
         hidden = true
     )
-    int inputs:ri:light:rampType = 0 (
+    int inputs:ri:lightFilter:rampType = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Ramp Direction"
         displayName = "Ramp Type"
         doc = "rampType: In which direction the ramp is applied."
     )
-    float inputs:ri:light:saturation = 1 (
+    float inputs:ri:lightFilter:saturation = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Saturation"
         doc = """saturation: Saturation of the light before hitting the surface
                   (0=greyscale,1=normal,>1=boosted colors). From Begin to End Distance, the value will ramp between the original light color and the Saturation adjusted color (and opposite if the ramp is inverted)."""
     )
-    float inputs:ri:light:specular = 1 (
+    float inputs:ri:lightFilter:specular = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Specular"
@@ -3257,13 +3202,13 @@ class PxrRodLightFilter "PxrRodLightFilter" (
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
-    float inputs:ri:light:back = 0 (
+    float inputs:ri:lightFilter:back = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape.Refine Shape"
         displayName = "Back"
         doc = "back: Additional size of the back region (-Z axis)."
     )
-    float inputs:ri:light:backEdge = 1 (
+    float inputs:ri:lightFilter:backEdge = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape.Scale Edges"
         displayName = "Back Edge"
@@ -3271,13 +3216,13 @@ class PxrRodLightFilter "PxrRodLightFilter" (
                     backEdge: When edge is > 0, this scales the back edge up or down (-z axis).
                 """
     )
-    float inputs:ri:light:bottom = 0 (
+    float inputs:ri:lightFilter:bottom = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape.Refine Shape"
         displayName = "Bottom"
         doc = "bottom: Additional size of the bottom region (-Y axis)."
     )
-    float inputs:ri:light:bottomEdge = 1 (
+    float inputs:ri:lightFilter:bottomEdge = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape.Scale Edges"
         displayName = "Bottom Edge"
@@ -3285,26 +3230,26 @@ class PxrRodLightFilter "PxrRodLightFilter" (
                     bottomEdge: When edge is > 0, this scales the bottom edge up or down (-y axis).
                 """
     )
-    int inputs:ri:light:colorRamp = 4 (
+    int inputs:ri:lightFilter:colorRamp = 4 (
         displayGroup = "Color Ramp"
         doc = """colorRamp: This is Optional.  This sets the color gradient
                   for the transition.
             """
     )
-    color3f[] inputs:ri:light:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
+    color3f[] inputs:ri:lightFilter:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
         displayGroup = "Color Ramp"
         hidden = true
     )
-    token inputs:ri:light:colorRamp_Interpolation = "linear" (
+    token inputs:ri:lightFilter:colorRamp_Interpolation = "linear" (
         allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
         displayGroup = "Color Ramp"
         hidden = true
     )
-    float[] inputs:ri:light:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+    float[] inputs:ri:lightFilter:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
         displayGroup = "Color Ramp"
         hidden = true
     )
-    token inputs:ri:light:combineMode = "mult" (
+    token inputs:ri:lightFilter:combineMode = "mult" (
         allowedTokens = ["mult", "max", "min", "screen"]
         connectability = "interfaceOnly"
         displayName = "Combine Mode"
@@ -3331,58 +3276,55 @@ class PxrRodLightFilter "PxrRodLightFilter" (
         </p>
 """
     )
-    string inputs:ri:light:coordsys = "" (
-        hidden = true
-    )
-    float inputs:ri:light:density = 1 (
+    float inputs:ri:lightFilter:density = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Density"
         doc = "density: How much effect the filter has (0-1)."
     )
-    float inputs:ri:light:depth = 0 (
+    float inputs:ri:lightFilter:depth = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape"
         displayName = "Depth"
         doc = "depth: Depth of the inner region of the rod (Z-axis)."
     )
-    float inputs:ri:light:diffuse = 1 (
+    float inputs:ri:lightFilter:diffuse = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Diffuse"
         doc = "diffuse: How much this light filter affects diffuse lighting."
     )
-    float inputs:ri:light:edge = 0.25 (
+    float inputs:ri:lightFilter:edge = 0.25 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape"
         displayName = "Edge Thickness"
         doc = "edge: Thickness of the edge region."
     )
-    int inputs:ri:light:falloff = 6 (
+    int inputs:ri:lightFilter:falloff = 6 (
         connectability = "interfaceOnly"
         displayGroup = "Falloff"
         doc = "falloff: Controls the transition from the core to the edge."
     )
-    float[] inputs:ri:light:falloff_Floats = [0, 0, 0.2, 0.8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+    float[] inputs:ri:lightFilter:falloff_Floats = [0, 0, 0.2, 0.8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
         displayGroup = "Falloff"
         hidden = true
     )
-    token inputs:ri:light:falloff_Interpolation = "bspline" (
+    token inputs:ri:lightFilter:falloff_Interpolation = "bspline" (
         allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
         displayGroup = "Falloff"
         hidden = true
     )
-    float[] inputs:ri:light:falloff_Knots = [0, 0, 0.3, 0.7, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+    float[] inputs:ri:lightFilter:falloff_Knots = [0, 0, 0.3, 0.7, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
         displayGroup = "Falloff"
         hidden = true
     )
-    float inputs:ri:light:front = 0 (
+    float inputs:ri:lightFilter:front = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape.Refine Shape"
         displayName = "Front"
         doc = "front: Additional size of the frontal region (+Z axis)."
     )
-    float inputs:ri:light:frontEdge = 1 (
+    float inputs:ri:lightFilter:frontEdge = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape.Scale Edges"
         displayName = "Front Edge"
@@ -3390,32 +3332,32 @@ class PxrRodLightFilter "PxrRodLightFilter" (
                     frontEdge: When edge is > 0, this scales the frontal edge up or down (+z axis).
                 """
     )
-    float inputs:ri:light:height = 0 (
+    float inputs:ri:lightFilter:height = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape"
         displayName = "Height"
         doc = "height: Height of the inner region of the rod (Y-axis)."
     )
-    float inputs:ri:light:intensity = 0 (
+    float inputs:ri:lightFilter:intensity = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Intensity"
         doc = """intensity: Multiplier for both the diffuse and specular result.
             """
     )
-    bool inputs:ri:light:invert = 0 (
+    bool inputs:ri:lightFilter:invert = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Invert"
         doc = "invert: Inverts the entire effect of the filter."
     )
-    float inputs:ri:light:left = 0 (
+    float inputs:ri:lightFilter:left = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape.Refine Shape"
         displayName = "Left"
         doc = "left: Additional size of the left region (-X axis)."
     )
-    float inputs:ri:light:leftEdge = 1 (
+    float inputs:ri:lightFilter:leftEdge = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape.Scale Edges"
         displayName = "Left Edge"
@@ -3423,27 +3365,23 @@ class PxrRodLightFilter "PxrRodLightFilter" (
                    leftEdge: When edge is > 0, this scales the left edge up or down (-x axis).
                 """
     )
-    string inputs:ri:light:linkingGroups = "" (
-        connectability = "interfaceOnly"
-        hidden = true
-    )
-    string inputs:ri:light:notes = "" (
+    string inputs:ri:lightFilter:notes = "" (
         displayGroup = "Notes"
         doc = "General comment field for this light filter."
     )
-    float inputs:ri:light:radius = 1 (
+    float inputs:ri:lightFilter:radius = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape"
         displayName = "Radius"
         doc = "radius: Radius of the corners of the inner rod box."
     )
-    float inputs:ri:light:right = 0 (
+    float inputs:ri:lightFilter:right = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape.Refine Shape"
         displayName = "Right"
         doc = "right: Additional size of the right region (+X axis)."
     )
-    float inputs:ri:light:rightEdge = 1 (
+    float inputs:ri:lightFilter:rightEdge = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape.Scale Edges"
         displayName = "Right Edge"
@@ -3451,44 +3389,44 @@ class PxrRodLightFilter "PxrRodLightFilter" (
                     rightEdge: When edge is > 0, this scales the right edge up or down (+x axis).
                 """
     )
-    float inputs:ri:light:saturation = 1 (
+    float inputs:ri:lightFilter:saturation = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Color Saturation"
         doc = """saturation: Saturation of the light before hitting the surface
                   (0=greyscale,1=normal,>1=boosted colors)."""
     )
-    float inputs:ri:light:scaleDepth = 1 (
+    float inputs:ri:lightFilter:scaleDepth = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape.Scale"
         displayName = "Scale Depth"
         doc = "scaleDepth: Scale the depth of the inner rod shape (Z axis)."
     )
-    float inputs:ri:light:scaleHeight = 1 (
+    float inputs:ri:lightFilter:scaleHeight = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape.Scale"
         displayName = "Scale Height"
         doc = "scaleHeight: Scale the height of the inner rod shape (Y axis)."
     )
-    float inputs:ri:light:scaleWidth = 1 (
+    float inputs:ri:lightFilter:scaleWidth = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape.Scale"
         displayName = "Scale Width"
         doc = "scaleWidth: Scale the width of the inner rod shape (X axis)."
     )
-    float inputs:ri:light:specular = 1 (
+    float inputs:ri:lightFilter:specular = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
         displayName = "Specular"
         doc = "specular: How much this light filter affects specular lighting."
     )
-    float inputs:ri:light:top = 0 (
+    float inputs:ri:lightFilter:top = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape.Refine Shape"
         displayName = "Top"
         doc = "top: Additional size of the top region (+Y axis)."
     )
-    float inputs:ri:light:topEdge = 1 (
+    float inputs:ri:lightFilter:topEdge = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape.Scale Edges"
         displayName = "Top Edge"
@@ -3496,7 +3434,7 @@ class PxrRodLightFilter "PxrRodLightFilter" (
                     topEdge: When edge is > 0, this scales the top edge up or down (+y axis).
                 """
     )
-    float inputs:ri:light:width = 0 (
+    float inputs:ri:lightFilter:width = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape"
         displayName = "Width"
