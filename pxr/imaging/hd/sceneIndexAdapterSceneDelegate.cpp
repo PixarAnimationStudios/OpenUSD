@@ -40,7 +40,6 @@
 
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/prefixingSceneIndex.h"
-#include "pxr/imaging/hd/renderIndexPrepSceneIndex.h"
 
 #include "pxr/imaging/hd/basisCurvesSchema.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
@@ -98,8 +97,9 @@ HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
         result = HdPrefixingSceneIndex::New(result, delegateID);
     }
 
-    result = HdRenderIndexPrepSceneIndex::New(result);
-    result = HdFlatteningSceneIndex::New(result);
+    // disabling flattening as it's not yet needed for pure emulation
+    //result = HdFlatteningSceneIndex::New(result);
+
 
     return result;
 }
@@ -328,6 +328,20 @@ HdSceneIndexAdapterSceneDelegate::PrimsDirtied(
                 GetRenderIndex().GetChangeTracker()._MarkInstancerDirty(
                     indexPath, dirtyBits);
             }
+        }
+
+        if (entry.dirtyLocators.Intersects(
+                HdPrimvarsSchema::GetDefaultLocator())) {
+            it->second.primvarDescriptors.clear();
+            it->second.primvarDescriptorsState.store(
+                _PrimCacheEntry::ReadStateUnread);
+        }
+
+        if (entry.dirtyLocators.Intersects(
+                HdExtComputationPrimvarsSchema::GetDefaultLocator())) {
+            it->second.extCmpPrimvarDescriptors.clear();
+            it->second.extCmpPrimvarDescriptorsState.store(
+                _PrimCacheEntry::ReadStateUnread);
         }
     }
 }
@@ -1058,6 +1072,29 @@ HdSceneIndexAdapterSceneDelegate::GetLightParamValue(
     return valueDs->GetValue(0);
 }
 
+
+static
+HdInterpolation
+Hd_InterpolationAsEnum(const TfToken &interpolationToken)
+{
+    if (interpolationToken == HdPrimvarSchemaTokens->constant) {
+        return HdInterpolationConstant;
+    } else if (interpolationToken == HdPrimvarSchemaTokens->uniform) {
+        return HdInterpolationUniform;
+    } else if (interpolationToken == HdPrimvarSchemaTokens->varying) {
+        return HdInterpolationVarying;
+    } else if (interpolationToken == HdPrimvarSchemaTokens->vertex) {
+        return HdInterpolationVertex;
+    } else if (interpolationToken == HdPrimvarSchemaTokens->faceVarying) {
+        return HdInterpolationFaceVarying;
+    } else if (interpolationToken == HdPrimvarSchemaTokens->instance) {
+        return HdInterpolationInstance;
+    }
+
+    return HdInterpolation(-1);
+}
+
+
 HdPrimvarDescriptorVector
 HdSceneIndexAdapterSceneDelegate::GetPrimvarDescriptors(
     SdfPath const &id, HdInterpolation interpolation)
@@ -1066,17 +1103,71 @@ HdSceneIndexAdapterSceneDelegate::GetPrimvarDescriptors(
     HF_MALLOC_TAG_FUNCTION();
     HdPrimvarDescriptorVector result;
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
-    HdPrimvarDescriptorsSchema pvdSchema =
-            HdPrimvarDescriptorsSchema::GetFromParent(prim.dataSource);
-
-    if (HdPrimvarDescriptorsSchema::DataSourceType::Handle pvdsDs =
-            pvdSchema.GetPrimvarDescriptorsForInterpolation(interpolation)) {
-        HdPrimvarDescriptorsSchema::Type value = pvdsDs->GetTypedValue(0.0f);
-        result.assign(value.begin(), value.end());
+    _PrimCacheTable::iterator it = _primCache.find(id);
+    if (it == _primCache.end()) {
+        return result;
     }
 
-    return result;
+    if (it->second.primvarDescriptorsState.load() ==
+            _PrimCacheEntry::ReadStateRead) {
+        return it->second.primvarDescriptors[interpolation];
+    }
+
+    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    if (!prim.dataSource) {
+        it->second.primvarDescriptorsState.store(
+            _PrimCacheEntry::ReadStateRead);
+        return result;
+    }
+
+    std::map<HdInterpolation, HdPrimvarDescriptorVector> descriptors;
+    if (HdPrimvarsSchema primvars =
+        HdPrimvarsSchema::GetFromParent(prim.dataSource)) {
+        for (const TfToken &name : primvars.GetPrimvarNames()) {
+            HdPrimvarSchema primvar = primvars.GetPrimvar(name);
+            if (!primvar) {
+                continue;
+            }
+
+            HdTokenDataSourceHandle interpolationDataSource =
+                primvar.GetInterpolation();
+
+            if (!interpolationDataSource) {
+                continue;
+            }
+
+            TfToken interpolationToken =
+                interpolationDataSource->GetTypedValue(0.0f);
+            HdInterpolation interpolation =
+                Hd_InterpolationAsEnum(interpolationToken);
+
+            TfToken roleToken;
+            if (HdTokenDataSourceHandle roleDataSource =
+                    primvar.GetRole()) {
+                roleToken = roleDataSource->GetTypedValue(0.0f);
+            }
+
+            bool indexed = primvar.IsIndexed();
+
+            descriptors[interpolation].push_back(
+                {name, interpolation, roleToken, indexed});
+        }
+    }
+
+    if (it->second.primvarDescriptorsState.load() ==
+            _PrimCacheEntry::ReadStateUnread) {
+        it->second.primvarDescriptorsState.store(
+            _PrimCacheEntry::ReadStateReading);
+        it->second.primvarDescriptors = std::move(descriptors);
+        it->second.primvarDescriptorsState.store(
+            _PrimCacheEntry::ReadStateRead);
+    } else {
+        // if someone is in the process of filling the entry, just
+        // return our value instead of trying to assign
+        return descriptors[interpolation];
+    }
+    
+    return it->second.primvarDescriptors[interpolation];
 }
 
 HdExtComputationPrimvarDescriptorVector
@@ -1087,18 +1178,91 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationPrimvarDescriptors(
     HF_MALLOC_TAG_FUNCTION();
     HdExtComputationPrimvarDescriptorVector result;
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
-    HdExtComputationPrimvarDescriptorsSchema pvdSchema =
-        HdExtComputationPrimvarDescriptorsSchema::GetFromParent(prim.dataSource);
-
-    if (HdExtComputationPrimvarDescriptorsSchema::DataSourceType::Handle
-        pvdsDs = pvdSchema.GetPrimvarDescriptorsForInterpolation(interpolation)) {
-        HdExtComputationPrimvarDescriptorsSchema::Type value =
-            pvdsDs->GetTypedValue(0);
-        result.assign(value.begin(), value.end());
+    _PrimCacheTable::iterator it = _primCache.find(id);
+    if (it == _primCache.end()) {
+        return result;
     }
 
-    return result;
+    if (it->second.extCmpPrimvarDescriptorsState.load() ==
+            _PrimCacheEntry::ReadStateRead) {
+        return it->second.extCmpPrimvarDescriptors[interpolation];
+    }
+
+    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    if (!prim.dataSource) {
+        it->second.extCmpPrimvarDescriptorsState.store(
+            _PrimCacheEntry::ReadStateRead);
+        return result;
+    }
+
+    std::map<HdInterpolation, HdExtComputationPrimvarDescriptorVector>
+        descriptors;
+    if (HdExtComputationPrimvarsSchema primvars =
+        HdExtComputationPrimvarsSchema::GetFromParent(prim.dataSource)) {
+        for (const TfToken &name : primvars.GetExtComputationPrimvarNames()) {
+            HdExtComputationPrimvarSchema primvar = primvars.GetPrimvar(name);
+            if (!primvar) {
+                continue;
+            }
+
+            HdTokenDataSourceHandle interpolationDataSource =
+                primvar.GetInterpolation();
+            if (!interpolationDataSource) {
+                continue;
+            }
+
+            TfToken interpolationToken =
+                interpolationDataSource->GetTypedValue(0.0f);
+            HdInterpolation interpolation =
+                Hd_InterpolationAsEnum(interpolationToken);
+
+            TfToken roleToken;
+            if (HdTokenDataSourceHandle roleDataSource =
+                    primvar.GetRole()) {
+                roleToken = roleDataSource->GetTypedValue(0.0f);
+            }
+
+            SdfPath sourceComputation;
+            if (HdPathDataSourceHandle sourceComputationDs =
+                    primvar.GetSourceComputation()) {
+                sourceComputation = sourceComputationDs->GetTypedValue(0.0f);
+            }
+
+            TfToken sourceComputationOutputName;
+            if (HdTokenDataSourceHandle sourceComputationOutputDs =
+                    primvar.GetSourceComputationOutputName()) {
+                sourceComputationOutputName =
+                    sourceComputationOutputDs->GetTypedValue(0.0f);
+            }
+
+            HdTupleType valueType;
+            if (HdTupleTypeDataSourceHandle valueTypeDs =
+                    primvar.GetValueType()) {
+                valueType = valueTypeDs->GetTypedValue(0.0f);
+            }
+
+            descriptors[interpolation].push_back(
+                    {name, interpolation, roleToken, sourceComputation,
+                     sourceComputationOutputName, valueType});
+        }
+    }
+
+    if (it->second.extCmpPrimvarDescriptorsState.load() ==
+            _PrimCacheEntry::ReadStateUnread) {
+        it->second.extCmpPrimvarDescriptorsState.store(
+            _PrimCacheEntry::ReadStateReading);
+        it->second.extCmpPrimvarDescriptors = std::move(descriptors);
+        it->second.extCmpPrimvarDescriptorsState.store(
+            _PrimCacheEntry::ReadStateRead);
+    } else {
+        // if someone is in the process of filling the entry, just
+        // return our value instead of trying to assign
+        return descriptors[interpolation];
+    }
+    
+    return it->second.extCmpPrimvarDescriptors[interpolation];
+
+
 }
 
 VtValue 

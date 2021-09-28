@@ -212,7 +212,33 @@ private:
 
     struct _PrimCacheEntry
     {
+        _PrimCacheEntry()
+        : primvarDescriptorsState(ReadStateUnread)
+        , extCmpPrimvarDescriptorsState(ReadStateUnread)
+        {}
+
+        _PrimCacheEntry(const _PrimCacheEntry &rhs)
+        {
+            primType = rhs.primType;
+            primvarDescriptorsState.store(rhs.primvarDescriptorsState.load());
+            extCmpPrimvarDescriptorsState.store(
+                rhs.extCmpPrimvarDescriptorsState.load());
+        }
+
         TfToken primType;
+
+        enum ReadState : unsigned char {
+            ReadStateUnread = 0,
+            ReadStateReading,
+            ReadStateRead,
+        };
+
+        std::atomic<ReadState> primvarDescriptorsState;
+        std::atomic<ReadState> extCmpPrimvarDescriptorsState;
+        std::map<HdInterpolation, HdPrimvarDescriptorVector>
+            primvarDescriptors;
+        std::map<HdInterpolation, HdExtComputationPrimvarDescriptorVector> 
+            extCmpPrimvarDescriptors;
     };
 
     using _PrimCacheTable = SdfPathTable<_PrimCacheEntry>;

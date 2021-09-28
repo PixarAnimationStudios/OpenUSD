@@ -28,9 +28,9 @@
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/prefixingSceneIndex.h"
-#include "pxr/imaging/hd/renderIndexPrepSceneIndex.h"
 
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/retainedSceneIndex.h"
 
 #include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
@@ -611,73 +611,6 @@ TestPrefixingSceneIndex()
 
 //-----------------------------------------------------------------------------
 
-static void 
-Print(const HdPrimvarDescriptor & pvd)
-{
-    std::cout << pvd.name << ", " << pvd.interpolation << ", " << pvd.role <<
-            ", " << pvd.indexed << std::endl;
-}
-
-bool TestRenderIndexPrepSceneIndex()
-{
-    auto dummyMeshPrimDataSource = HdRetainedContainerDataSource::New(
-        HdPrimvarsSchemaTokens->primvars,
-        HdRetainedContainerDataSource::New(
-            TfToken("taco"),
-            HdPrimvarSchema::Builder()
-                .SetInterpolation(
-                    HdPrimvarSchema::BuildInterpolationDataSource(
-                        HdPrimvarSchemaTokens->constant))
-                .Build(),
-            TfToken("chicken"),
-            HdPrimvarSchema::Builder()
-                .SetInterpolation(
-                    HdPrimvarSchema::BuildInterpolationDataSource(
-                        HdPrimvarSchemaTokens->vertex))
-                .Build()
-        )
-    );
-
-    HdRetainedSceneIndexRefPtr sceneIndex_ = HdRetainedSceneIndex::New();
-    HdRetainedSceneIndex &sceneIndex = *sceneIndex_;
-
-
-    HdRenderIndexPrepSceneIndexRefPtr prepSceneIndex_ =
-        HdRenderIndexPrepSceneIndex::New(sceneIndex_);
-    HdRenderIndexPrepSceneIndex &prepSceneIndex = *prepSceneIndex_;
-
-    sceneIndex.AddPrims({{SdfPath("/A"), TfToken("pretendMesh"),
-            dummyMeshPrimDataSource}});
-
-    HdSceneIndexPrim prim = prepSceneIndex.GetPrim(SdfPath("/A"));
-
-    HdPrimvarDescriptorsSchema pvdSchema =
-            HdPrimvarDescriptorsSchema::GetFromParent(prim.dataSource);
-
-    std::cout << "vertex primvars {" << std::endl;
-    if (auto vertexPvdDs = pvdSchema.GetVertexPrimvarDescriptors()) {
-        for (const HdPrimvarDescriptor & pvd : 
-                vertexPvdDs->GetTypedValue(0.0f)) {
-            Print(pvd);
-        }
-    }
-    std::cout << "}" << std::endl;
-
-
-    std::cout << "constant primvars {" << std::endl;
-    if (auto constantPvdDs = pvdSchema.GetConstantPrimvarDescriptors()) {
-        for (const HdPrimvarDescriptor & pvd : 
-                constantPvdDs->GetTypedValue(0.0f)) {
-            Print(pvd);
-        }
-    }
-    std::cout << "}" << std::endl;
-
-    return true;
-}
-
-//-----------------------------------------------------------------------------
-
 #define xstr(s) str(s)
 #define str(s) #s
 #define TEST(X) std::cout << (++i) << ") " <<  str(X) << "..." << std::endl; \
@@ -693,7 +626,6 @@ main(int argc, char**argv)
     int i = 0;
     TEST(TestFlatteningSceneIndex);
     TEST(TestPrefixingSceneIndex);
-    TEST(TestRenderIndexPrepSceneIndex);
 
     //--------------------------------------------------------------------------
     std::cout << "DONE testHdSceneIndex" << std::endl;
