@@ -281,13 +281,13 @@ UsdLuxLightAPI::CreateColorTemperatureAttr(VtValue const &defaultValue, bool wri
 UsdRelationship
 UsdLuxLightAPI::GetFiltersRel() const
 {
-    return GetPrim().GetRelationship(UsdLuxTokens->filters);
+    return GetPrim().GetRelationship(UsdLuxTokens->lightFilters);
 }
 
 UsdRelationship
 UsdLuxLightAPI::CreateFiltersRel() const
 {
-    return GetPrim().CreateRelationship(UsdLuxTokens->filters,
+    return GetPrim().CreateRelationship(UsdLuxTokens->lightFilters,
                        /* custom = */ false);
 }
 

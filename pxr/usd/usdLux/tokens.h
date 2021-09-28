@@ -118,10 +118,6 @@ struct UsdLuxTokensType {
     /// 
     ///  This token represents the collection name to use with UsdCollectionAPI to represent filter-linking of a UsdLuxLightFilter prim. 
     const TfToken filterLink;
-    /// \brief "filters"
-    /// 
-    /// UsdLuxLightAPI
-    const TfToken filters;
     /// \brief "geometry"
     /// 
     /// UsdLuxGeometryLight
@@ -246,6 +242,10 @@ struct UsdLuxTokensType {
     /// 
     /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
     const TfToken latlong;
+    /// \brief "light:filters"
+    /// 
+    /// UsdLuxLightAPI
+    const TfToken lightFilters;
     /// \brief "lightLink"
     /// 
     ///  This token represents the collection name to use with UsdCollectionAPI to represent light-linking of a prim with an applied UsdLuxLightAPI. 

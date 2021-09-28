@@ -33,9 +33,6 @@ class "LightAPI" (
 {
     uniform bool collection:lightLink:includeRoot = 1
     uniform bool collection:shadowLink:includeRoot = 1
-    rel filters (
-        doc = "Relationship to the light filters that apply to this light."
-    )
     color3f inputs:color = (1, 1, 1) (
         doc = "The color of emitted light, in energy-linear terms."
     )
@@ -77,6 +74,9 @@ class "LightAPI" (
         displayName = "Specular Multiplier"
         doc = """A multiplier for the effect of this light on the specular
         response of materials.  This is a non-physical control."""
+    )
+    rel light:filters (
+        doc = "Relationship to the light filters that apply to this light."
     )
     uniform token light:materialSyncMode = "noMaterialResponse" (
         allowedTokens = ["materialGlowTintsLight", "independent", "noMaterialResponse"]

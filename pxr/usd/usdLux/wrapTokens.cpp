@@ -78,7 +78,6 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "domeLight", UsdLuxTokens->domeLight);
     _AddToken(cls, "extent", UsdLuxTokens->extent);
     _AddToken(cls, "filterLink", UsdLuxTokens->filterLink);
-    _AddToken(cls, "filters", UsdLuxTokens->filters);
     _AddToken(cls, "geometry", UsdLuxTokens->geometry);
     _AddToken(cls, "ignore", UsdLuxTokens->ignore);
     _AddToken(cls, "independent", UsdLuxTokens->independent);
@@ -110,6 +109,7 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "inputsTextureFormat", UsdLuxTokens->inputsTextureFormat);
     _AddToken(cls, "inputsWidth", UsdLuxTokens->inputsWidth);
     _AddToken(cls, "latlong", UsdLuxTokens->latlong);
+    _AddToken(cls, "lightFilters", UsdLuxTokens->lightFilters);
     _AddToken(cls, "lightLink", UsdLuxTokens->lightLink);
     _AddToken(cls, "lightList", UsdLuxTokens->lightList);
     _AddToken(cls, "lightListCacheBehavior", UsdLuxTokens->lightListCacheBehavior);

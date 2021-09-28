@@ -212,8 +212,11 @@ class "LightAPI" (
             token apiName = "colorTemperature"
         }
     )
-    rel filters (
+    rel light:filters (
         doc = """Relationship to the light filters that apply to this light."""
+        customData = {
+            token apiName = "filters"
+        }
     )
 }
 
