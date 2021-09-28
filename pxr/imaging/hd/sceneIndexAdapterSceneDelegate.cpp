@@ -114,6 +114,9 @@ HdSceneIndexAdapterSceneDelegate::HdSceneIndexAdapterSceneDelegate(
 : HdSceneDelegate(parentIndex, delegateID)
 , _inputSceneIndex(inputSceneIndex)
 , _sceneDelegatesBuilt(false)
+, _cachedLocatorSet()
+, _cachedDirtyBits(0)
+, _cachedPrimType()
 {
     HdSceneIndexNameRegistry::GetInstance().RegisterNamedSceneIndex(
         "HdSceneIndexAdapterSceneDelegate scene: " + delegateID.GetString(),
@@ -297,9 +300,17 @@ HdSceneIndexAdapterSceneDelegate::PrimsDirtied(
         const TfToken & primType = (*it).second.primType;
 
         if (GetRenderIndex().IsRprimTypeSupported(primType)) {
-            HdDirtyBits dirtyBits =
-                HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
-                        primType, entry.dirtyLocators);
+            HdDirtyBits dirtyBits = 0;
+            if (entry.dirtyLocators == _cachedLocatorSet &&
+                primType == _cachedPrimType) {
+                dirtyBits = _cachedDirtyBits;
+            } else {
+                dirtyBits = HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
+                    primType, entry.dirtyLocators);
+                _cachedLocatorSet = entry.dirtyLocators;
+                _cachedPrimType = primType;
+                _cachedDirtyBits = dirtyBits;
+            }
             if (dirtyBits != HdChangeTracker::Clean) {
                 GetRenderIndex().GetChangeTracker()._MarkRprimDirty(
                     indexPath, dirtyBits);

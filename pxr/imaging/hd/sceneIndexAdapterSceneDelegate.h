@@ -246,6 +246,11 @@ private:
 
     bool _sceneDelegatesBuilt;
     std::vector<HdSceneDelegate*> _sceneDelegates;
+
+    // Cache for rprim locator set -> dirty bits translation.
+    HdDataSourceLocatorSet _cachedLocatorSet;
+    HdDirtyBits _cachedDirtyBits;
+    TfToken _cachedPrimType;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
