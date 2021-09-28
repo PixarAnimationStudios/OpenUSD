@@ -40,6 +40,7 @@ pxr_library(tf
         error
         errorMark
         errorTransport
+        exception
         expiryNotifier
         fastCompression
         fileUtils
@@ -191,6 +192,7 @@ pxr_library(tf
         wrapEnum.cpp
         wrapEnvSetting.cpp
         wrapError.cpp
+        wrapException.cpp
         wrapFileUtils.cpp
         wrapFunction.cpp
         wrapMallocTag.cpp
@@ -335,6 +337,7 @@ pxr_build_test(testTf
         testenv/enum.cpp
         testenv/error.cpp
         testenv/envSetting.cpp
+        testenv/exception.cpp
         testenv/fastCompression.cpp
         testenv/fileUtils.cpp
         testenv/functionRef.cpp
