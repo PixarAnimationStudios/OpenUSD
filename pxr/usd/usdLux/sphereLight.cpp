@@ -154,6 +154,7 @@ const TfTokenVector&
 UsdLuxSphereLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdLuxTokens->lightShaderId,
         UsdLuxTokens->inputsRadius,
         UsdLuxTokens->treatAsPoint,
     };

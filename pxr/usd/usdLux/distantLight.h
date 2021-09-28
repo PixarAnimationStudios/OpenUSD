@@ -55,6 +55,11 @@ class SdfAssetPath;
 /// Light emitted from a distant source along the -Z axis.
 /// Also known as a directional light.
 ///
+/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
+/// that are text/tokens, the actual token is published and defined in \ref UsdLuxTokens.
+/// So to set an attribute to the value "rightHanded", use UsdLuxTokens->rightHanded
+/// as the value.
+///
 class UsdLuxDistantLight : public UsdLuxNonboundableLightBase
 {
 public:

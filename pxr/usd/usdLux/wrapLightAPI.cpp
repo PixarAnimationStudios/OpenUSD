@@ -58,6 +58,13 @@ _CreateShaderIdAttr(UsdLuxLightAPI &self,
 }
         
 static UsdAttribute
+_CreateMaterialSyncModeAttr(UsdLuxLightAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateMaterialSyncModeAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateIntensityAttr(UsdLuxLightAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateIntensityAttr(
@@ -180,6 +187,13 @@ void wrapUsdLuxLightAPI()
              &This::GetShaderIdAttr)
         .def("CreateShaderIdAttr",
              &_CreateShaderIdAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetMaterialSyncModeAttr",
+             &This::GetMaterialSyncModeAttr)
+        .def("CreateMaterialSyncModeAttr",
+             &_CreateMaterialSyncModeAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

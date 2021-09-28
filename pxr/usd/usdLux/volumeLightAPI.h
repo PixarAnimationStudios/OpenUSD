@@ -31,6 +31,7 @@
 #include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdLux/tokens.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -54,11 +55,18 @@ class SdfAssetPath;
 /// This is the preferred API schema to apply to 
 /// \ref UsdVolVolume "Volume" type prims when adding light behaviors to a 
 /// volume. At its base, this API schema has the built-in behavior of applying 
-/// LightAPI to the mesh. But, it additionally serves as a hook for plugins to 
-/// attach additional properties to "volume lights" through the creation of 
-/// API schemas which are authored to auto-apply to VolumeLightAPI.
+/// LightAPI to the volume and overriding the default materialSyncMode to allow 
+/// the emission/glow of the bound material to affect the color of the light. 
+/// But, it additionally serves as a hook for plugins to attach additional 
+/// properties to "volume lights" through the creation of API schemas which are 
+/// authored to auto-apply to VolumeLightAPI.
 /// \see \ref Usd_AutoAppliedAPISchemas
 /// 
+///
+/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
+/// that are text/tokens, the actual token is published and defined in \ref UsdLuxTokens.
+/// So to set an attribute to the value "rightHanded", use UsdLuxTokens->rightHanded
+/// as the value.
 ///
 class UsdLuxVolumeLightAPI : public UsdAPISchemaBase
 {

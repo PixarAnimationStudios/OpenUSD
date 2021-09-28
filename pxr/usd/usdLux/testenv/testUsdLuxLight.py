@@ -305,10 +305,11 @@ class TestUsdLuxLight(unittest.TestCase):
     def test_LightExtentAndBBox(self):
         # Test extent and bbox computations for the boundable lights.
 
+        time = Usd.TimeCode.Default()
+
         # Helper for computing the extent and bounding boxes for a light and
         # comparing against an expect extent pair.
         def _VerifyExtentAndBBox(light, expectedExtent):
-            time = Usd.TimeCode.Default()
             self.assertEqual(
                 UsdGeom.Boundable.ComputeExtentFromPlugins(light, time),
                 expectedExtent)
@@ -353,6 +354,19 @@ class TestUsdLuxLight(unittest.TestCase):
 
         sphereLight.CreateRadiusAttr(3.0)
         _VerifyExtentAndBBox(sphereLight, [(-3.0, -3.0, -3.0), (3.0, 3.0, 3.0)])
+
+        # Special case for portal light. Portal lights don't have any attributes
+        # that affect their extent, but they do have a constant extent defined
+        # for a unit rectangle in the XY plane.
+        portalLight = UsdLux.PortalLight.Define(stage, "/PortalLight")
+        self.assertTrue(portalLight)
+        self.assertIsNone(
+            UsdGeom.Boundable.ComputeExtentFromPlugins(portalLight, time))
+        self.assertEqual(
+            portalLight.ComputeLocalBound(time, "default"),
+            Gf.BBox3d(
+                Gf.Range3d(Gf.Vec3d(-0.5, -0.5, 0.0), Gf.Vec3d(0.5, 0.5, 0.0)), 
+                Gf.Matrix4d(1.0)))
 
         # For completeness verify that distant and dome lights are not 
         # boundable.

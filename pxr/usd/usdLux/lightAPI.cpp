@@ -126,6 +126,23 @@ UsdLuxLightAPI::CreateShaderIdAttr(VtValue const &defaultValue, bool writeSparse
 }
 
 UsdAttribute
+UsdLuxLightAPI::GetMaterialSyncModeAttr() const
+{
+    return GetPrim().GetAttribute(UsdLuxTokens->lightMaterialSyncMode);
+}
+
+UsdAttribute
+UsdLuxLightAPI::CreateMaterialSyncModeAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->lightMaterialSyncMode,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdLuxLightAPI::GetIntensityAttr() const
 {
     return GetPrim().GetAttribute(UsdLuxTokens->inputsIntensity);
@@ -294,6 +311,7 @@ UsdLuxLightAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdLuxTokens->collectionLightLinkIncludeRoot,
         UsdLuxTokens->collectionShadowLinkIncludeRoot,
         UsdLuxTokens->lightShaderId,
+        UsdLuxTokens->lightMaterialSyncMode,
         UsdLuxTokens->inputsIntensity,
         UsdLuxTokens->inputsExposure,
         UsdLuxTokens->inputsDiffuse,

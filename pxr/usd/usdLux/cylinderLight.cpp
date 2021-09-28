@@ -171,6 +171,7 @@ const TfTokenVector&
 UsdLuxCylinderLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdLuxTokens->lightShaderId,
         UsdLuxTokens->inputsLength,
         UsdLuxTokens->inputsRadius,
         UsdLuxTokens->treatAsLine,

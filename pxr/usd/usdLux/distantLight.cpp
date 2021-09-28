@@ -154,6 +154,7 @@ const TfTokenVector&
 UsdLuxDistantLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdLuxTokens->lightShaderId,
         UsdLuxTokens->inputsAngle,
         UsdLuxTokens->inputsIntensity,
     };
