@@ -94,6 +94,12 @@ HdPrmanMaterial::SetFilterChain(MatfiltFilterChain const& chain)
     *_filterChain = chain;
 }
 
+HdMaterialNetwork2 const&
+HdPrmanMaterial::GetMaterialNetwork() const
+{
+    return _materialNetwork;
+}
+
 HdPrmanMaterial::HdPrmanMaterial(SdfPath const& id)
     : HdMaterial(id)
     , _materialId(riley::MaterialId::InvalidId())
@@ -688,13 +694,13 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
         VtValue hdMatVal = sceneDelegate->GetMaterialResource(id);
         if (hdMatVal.IsHolding<HdMaterialNetworkMap>()) {
             // Convert HdMaterial to HdMaterialNetwork2 form.
-            HdMaterialNetwork2 matNetwork2;
             HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
-                hdMatVal.UncheckedGet<HdMaterialNetworkMap>(), &matNetwork2);
+                hdMatVal.UncheckedGet<HdMaterialNetworkMap>(), 
+                &_materialNetwork);
             // Apply material filter chain to the network.
             if (!_filterChain->empty()) {
                 std::vector<std::string> errors;
-                MatfiltExecFilterChain(*_filterChain, id, matNetwork2, {},
+                MatfiltExecFilterChain(*_filterChain, id, _materialNetwork, {},
                                        *_sourceTypes, &errors);
                 if (!errors.empty()) {
                     TF_RUNTIME_ERROR("HdPrmanMaterial: %s\n",
@@ -703,9 +709,9 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
                 }
             }
             if (TfDebug::IsEnabled(HDPRMAN_MATERIALS)) {
-                HdPrman_DumpNetwork(matNetwork2, id);
+                HdPrman_DumpNetwork(_materialNetwork, id);
             }
-            _ConvertHdMaterialNetwork2ToRman(context, id, matNetwork2,
+            _ConvertHdMaterialNetwork2ToRman(context, id, _materialNetwork,
                                              &_materialId, &_displacementId);
         } else {
             TF_WARN("HdPrmanMaterial: Expected material resource "

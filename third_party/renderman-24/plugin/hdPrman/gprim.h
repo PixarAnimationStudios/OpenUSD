@@ -211,6 +211,10 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
         RtPrimVarList primvars = _ConvertGeometry(context, sceneDelegate, id,
                          &primType, &geomSubsets);
 
+        // Transfer material opinions of primvars.
+        HdPrman_TransferMaterialPrimvarOpinions(sceneDelegate, hdMaterialId, 
+            primvars);
+
         // Adjust _prototypeIds array.
         const size_t oldCount = _prototypeIds.size();
         const size_t newCount = std::max((size_t) 1, geomSubsets.size());

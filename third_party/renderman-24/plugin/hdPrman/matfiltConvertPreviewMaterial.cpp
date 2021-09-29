@@ -108,6 +108,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     (scale)
     (translation)
     (result)
+
+    // Dummy node used to express material primvar opinions
+    (PrimvarPass)
+
+    // Primvars set by the material
+    ((displacementBoundSphere, "displacementbound:sphere"))
 );
 
 void
@@ -122,6 +128,7 @@ MatfiltConvertPreviewMaterial(
 
     SdfPath pxrSurfacePath;
     SdfPath pxrDisplacePath;
+    SdfPath primvarPassPath;
 
     for (auto& nodeEntry: network.nodes) {
         SdfPath const& nodePath = nodeEntry.first;
@@ -252,6 +259,27 @@ MatfiltConvertPreviewMaterial(
                 };
             }
 
+            // One additional "dummy" node to author primvar opinions on the
+            // material, to be passed to the gprim.
+            primvarPassPath = nodePath.GetParentPath().AppendChild(
+                TfToken(nodePath.GetName() + "_PrimvarPass"));
+
+            nodesToAdd[primvarPassPath] = HdMaterialNode2 {
+                _tokens->PrimvarPass, 
+                // parameters:
+                {
+                    // We wish to always set this primvar on meshes using 
+                    // UsdPreviewSurface, regardless of the material's
+                    // displacement value. The primvar should have no effect if
+                    // there is no displacement on the material, and we
+                    // currently do not have the capabilities to efficiently
+                    // resync the mesh if the value of its UsdPreviewSurface's 
+                    // displacement input changes.
+                    {_tokens->displacementBoundSphere, VtValue(1.f)}
+                },
+                // connections:
+                {},
+            };
         } else if (node.nodeTypeId == _tokens->UsdUVTexture) {
             // Update texture nodes that use non-native texture formats
             // to read them via a Renderman texture plugin.

@@ -247,6 +247,12 @@ HdPrman_ConvertPrimvars(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                         RtPrimVarList& primvars, int numUniform, int numVertex,
                         int numVarying, int numFaceVarying);
 
+// Check for any primvar opinions on the material that should be Riley primvars.
+void
+HdPrman_TransferMaterialPrimvarOpinions(HdSceneDelegate *sceneDelegate,
+                                        SdfPath const& hdMaterialId,
+                                        RtPrimVarList& primvars);
+
 // Resolve Hd material ID to the corresponding Riley material & displacement
 bool
 HdPrman_ResolveMaterial(HdSceneDelegate *sceneDelegate,

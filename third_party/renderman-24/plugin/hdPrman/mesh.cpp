@@ -309,15 +309,6 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_Context *context,
     HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, nverts.size(),
         npoints, npoints, verts.size());
 
-    // If mesh does not have the displacementbound:sphere primvar, add it here
-    // in case the bound material is a UsdPreviewSurface using displacment.
-    float value;
-    if (!primvars.GetFloat(
-            RtUString(_tokens->displacementBoundSphere.GetText()), value)) {
-        primvars.SetFloat(
-            RtUString(_tokens->displacementBoundSphere.GetText()), 1.0f);
-    }
-
     return primvars;
 }
 

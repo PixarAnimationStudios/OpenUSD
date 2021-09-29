@@ -54,6 +54,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (PrimvarPass)
+);
+
 TF_MAKE_STATIC_DATA(std::vector<HdPrman_Context::IntegratorCameraCallback>,
                     _integratorCameraCallbacks)
 {
@@ -933,6 +938,39 @@ HdPrman_ConvertPrimvars(HdSceneDelegate *sceneDelegate, SdfPath const& id,
     for (size_t i = 0; i < modeCount; ++i) {
         _Convert(sceneDelegate, id, hdInterpValues[i], primvars,
                  _ParamTypePrimvar, primvarSizes[i]);
+    }
+}
+
+void
+HdPrman_TransferMaterialPrimvarOpinions(HdSceneDelegate *sceneDelegate,
+                                        SdfPath const& materialId,
+                                        RtPrimVarList& primvars)
+{
+    if (!materialId.IsEmpty()) {
+        if (const HdSprim *sprim = sceneDelegate->GetRenderIndex().GetSprim(
+            HdPrimTypeTokens->material, materialId)) {
+            const HdPrmanMaterial *material =
+                dynamic_cast<const HdPrmanMaterial*>(sprim);
+            if (material && material->IsValid()) {
+                const HdMaterialNetwork2 & matNetwork = 
+                    material->GetMaterialNetwork();
+                for (const auto & nodeIt : matNetwork.nodes) {
+                    const HdMaterialNode2 & node = nodeIt.second;
+                    if (node.nodeTypeId == _tokens->PrimvarPass) {
+                        for (const auto &param : node.parameters) {
+                            uint32_t paramId;
+                            RtUString paramName = 
+                                RtUString(param.first.GetText());
+                            if (!primvars.GetParamId(paramName, paramId)) {
+                                _SetPrimVarValue(paramName, param.second,
+                                    RtDetailType::k_constant,
+                                    /*role*/TfToken(), primvars);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
