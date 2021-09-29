@@ -50,13 +50,6 @@ protected:
     {
     }
 
-    std::string _GetExtension(
-        const std::string& path) const final
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), _uriScheme));
-        return TfGetExtension(path);
-    }
-
     std::string _CreateIdentifier(
         const std::string& assetPath,
         const ArResolvedPath& anchorAssetPath) const final

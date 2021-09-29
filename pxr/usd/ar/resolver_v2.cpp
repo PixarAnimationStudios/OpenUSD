@@ -41,6 +41,7 @@
 #include "pxr/base/js/value.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/scoped.h"
 #include "pxr/base/tf/staticData.h"
@@ -1669,6 +1670,13 @@ ArResolverContext
 ArResolver::_GetCurrentContext() const
 {
     return ArResolverContext();
+}
+
+std::string
+ArResolver::_GetExtension(
+    const std::string& assetPath) const
+{
+    return TfGetExtension(assetPath);
 }
 
 ArAssetInfo

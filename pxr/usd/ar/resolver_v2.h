@@ -670,8 +670,15 @@ protected:
 
     /// Return the file extension for the given \p assetPath. This extension
     /// should not include a "." at the beginning of the string.
+    ///
+    /// The default implementation returns the string after the last "."
+    /// in \p assetPath. If \p assetPath begins with a ".", the extension
+    /// will be empty unless there is another "." in the path. If 
+    /// \p assetPath has components separated by '/' (or '\' on Windows),
+    /// only the last component will be considered.
+    AR_API
     virtual std::string _GetExtension(
-        const std::string& assetPath) const = 0;
+        const std::string& assetPath) const;
 
     /// Return an ArAssetInfo populated with additional metadata (if any)
     /// about the asset at the given \p assetPath. \p resolvedPath is the

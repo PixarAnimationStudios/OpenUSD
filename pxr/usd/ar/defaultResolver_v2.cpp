@@ -174,12 +174,6 @@ ArDefaultResolver::_CreateIdentifierForNewAsset(
     return TfNormPath(assetPath);
 }
 
-std::string
-ArDefaultResolver::_GetExtension(const std::string& path) const
-{
-    return TfGetExtension(path);
-}
-
 static ArResolvedPath
 _ResolveAnchored(
     const std::string& anchorPath,

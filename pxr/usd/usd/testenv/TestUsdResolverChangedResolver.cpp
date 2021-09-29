@@ -209,11 +209,6 @@ protected:
         return ArResolvedPath();
     }
 
-    std::string _GetExtension(const std::string& assetPath) const final
-    {
-        return TfGetExtension(assetPath);
-    }
-
     ArTimestamp _GetModificationTimestamp(
         const std::string& assetPath,
         const ArResolvedPath& resolvedPath) const final
