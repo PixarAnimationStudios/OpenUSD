@@ -6,12 +6,6 @@
     }
 )
 
-class "DerivedSingleApplyAPI" (
-    apiSchemas = ["BuiltinAPI"]
-)
-{
-}
-
 class DerivedTestPxHairman "DerivedTestPxHairman"
 {
     float attrWithoutGeneratedAccessorAPI (

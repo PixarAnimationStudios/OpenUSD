@@ -81,17 +81,6 @@ class "MultipleApplyAPI" (
     double testAttrTwo
 }
 
-class "DerivedMultipleApplyAPI" (
-    inherits = </MultipleApplyAPI>
-    customData = {
-        token apiSchemaType = "multipleApply"
-        token propertyNamespacePrefix = "derived"
-    }
-)
-{
-    int testAttrThree
-}
-
 class "PublicMultipleApplyAPI" (
     inherits = </APISchemaBase>
     customData = {
