@@ -1,0 +1,12 @@
+#usda 1.0
+
+def "Buzz" (
+    assetInfo = {
+        string version = "1"
+    }
+)
+{
+    def "Geom"
+    {
+    }
+}

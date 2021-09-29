@@ -1,0 +1,19 @@
+#usda 1.0
+
+def "World"
+{
+    def "chars"
+    {
+        def "Buzz" (
+            references = @asset:Buzz/Buzz.usd@
+        )
+        {
+        }
+
+        def "Woody" (
+            references = @asset:Woody/Woody.usd@
+        )
+        {
+        }
+    }
+}
