@@ -319,6 +319,38 @@ def CopyDirectory(context, srcDir, destDir):
                        .format(srcDir=srcDir, destDir=instDestDir))
     shutil.copytree(srcDir, instDestDir)
 
+def AppendCXX11ABIArg(buildFlag, context, buildArgs):
+    """Append a build argument that defines _GLIBCXX_USE_CXX11_ABI
+    based on the settings in the context. This may either do nothing
+    or append an entry to buildArgs like:
+
+      <buildFlag>="-D_GLIBCXX_USE_CXX11_ABI={0, 1}"
+
+    If buildArgs contains settings for buildFlag, those settings will
+    be merged with the above define."""
+    if context.useCXX11ABI is None:
+        return
+
+    cxxFlags = ["-D_GLIBCXX_USE_CXX11_ABI={}".format(context.useCXX11ABI)]
+    
+    # buildArgs might look like:
+    # ["-DFOO=1", "-DBAR=2", ...] or ["-DFOO=1 -DBAR=2 ...", ...]
+    #
+    # See if any of the arguments in buildArgs start with the given
+    # buildFlag. If so, we want to take whatever that buildFlag has
+    # been set to and merge it in with the cxxFlags above.
+    #
+    # For example, if buildArgs = ['-DCMAKE_CXX_FLAGS="-w"', ...]
+    # we want to add "-w" to cxxFlags.
+    splitArgs = [shlex.split(a) for a in buildArgs]
+    for p in [item for arg in splitArgs for item in arg]:
+        if p.startswith(buildFlag):
+            (_, _, flags) = p.partition("=")
+            cxxFlags.append(flags)
+
+    buildArgs.append('{flag}="{flags}"'.format(
+        flag=buildFlag, flags=" ".join(cxxFlags)))
+
 def FormatMultiProcs(numJobs, generator):
     tag = "-j"
     if generator:
@@ -383,6 +415,9 @@ def RunCMake(context, force, extraArgs = None):
         config = "Release"
     elif context.buildRelWithDebug:
         config = "RelWithDebInfo"
+
+    # Append extra argument controlling libstdc++ ABI if specified.
+    AppendCXX11ABIArg("-DCMAKE_CXX_FLAGS", context, extraArgs)
 
     with CurrentWorkingDirectory(buildDir):
         Run('cmake '
@@ -792,6 +827,9 @@ def InstallBoost_Helper(context, force, buildArgs):
         # Add on any user-specified extra arguments.
         b2_settings += buildArgs
 
+        # Append extra argument controlling libstdc++ ABI if specified.
+        AppendCXX11ABIArg("cxxflags", context, b2_settings)
+
         b2 = "b2" if Windows() else "./b2"
         Run('{b2} {options} install'
             .format(b2=b2, options=" ".join(b2_settings)))
@@ -837,7 +875,6 @@ def InstallTBB_Windows(context, force, buildArgs):
         TBB_ROOT_DIR_NAME)):
         # On Windows, we simply copy headers and pre-built DLLs to
         # the appropriate location.
-
         if buildArgs:
             PrintWarning("Ignoring build arguments {}, TBB is "
                          "not built from source on this platform."
@@ -856,6 +893,10 @@ def InstallTBB_LinuxOrMacOS(context, force, buildArgs):
         if MacOS():
             PatchFile("build/macos.inc", 
                     [("shell clang -v ", "shell clang --version ")])
+
+        # Append extra argument controlling libstdc++ ABI if specified.
+        AppendCXX11ABIArg("CXXFLAGS", context, buildArgs)
+
         # TBB does not support out-of-source builds in a custom location.
         Run('make -j{procs} {buildArgs}'
             .format(procs=context.numJobs, 
@@ -1576,6 +1617,17 @@ Note that this is primarily an issue on macOS, where a DCC's version of Python
 is likely to conflict with the version provided by the system. On other
 platforms, %(prog)s *should* be run using the system Python and *should not*
 be run using the DCC's Python.
+
+- C++11 ABI Compatibility:
+On Linux, the --use-cxx11-abi parameter can be used to specify whether to use
+the C++11 ABI for libstdc++ when building USD and any dependencies. The value
+given to this parameter will be used to define _GLIBCXX_USE_CXX11_ABI for
+all builds.
+
+If this parameter is not specified, the compiler's default ABI will be used.
+
+For more details see:
+https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html
 """.format(
     libraryList=" ".join(sorted([d.name for d in AllDependencies])))
 
@@ -1631,6 +1683,10 @@ group.add_argument("--generator", type=str,
 group.add_argument("--toolset", type=str,
                    help=("CMake toolset to use when building libraries with "
                          "cmake"))
+
+if Linux():
+    group.add_argument("--use-cxx11-abi", type=int, choices=[0, 1],
+                       help=("Use C++11 ABI for libstdc++. (see docs above)"))
 
 group = parser.add_argument_group(title="3rd Party Dependency Build Options")
 group.add_argument("--src", type=str,
@@ -1874,6 +1930,7 @@ class InstallContext:
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
 
         # Build options
+        self.useCXX11ABI = args.use_cxx11_abi
         self.safetyFirst = args.safety_first
 
         # Dependencies that are forced to be built
@@ -2118,6 +2175,14 @@ Building with settings:
   Downloader                    {downloader}
 
   Building                      {buildType}
+""" 
+
+if context.useCXX11ABI is not None:
+    summaryMsg += """\
+    Use C++11 ABI               {useCXX11ABI}
+"""
+
+summaryMsg += """\
     Variant                     {buildVariant}
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
@@ -2170,6 +2235,7 @@ summaryMsg = summaryMsg.format(
     dependencies=("None" if not dependenciesToBuild else 
                   ", ".join([d.name for d in dependenciesToBuild])),
     buildArgs=FormatBuildArguments(context.buildArgs),
+    useCXX11ABI=("On" if context.useCXX11ABI else "Off"),
     buildType=("Shared libraries" if context.buildShared
                else "Monolithic shared library" if context.buildMonolithic
                else ""),
