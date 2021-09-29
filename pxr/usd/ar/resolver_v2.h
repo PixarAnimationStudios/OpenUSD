@@ -426,25 +426,56 @@ protected:
     ///
     /// @{
 
-    /// Return an identifier for the given \p assetPath. If \p anchorAssetPath
-    /// is non-empty, it should be used as the anchoring asset if \p assetPath
-    /// is relative.
+    /// Return an identifier for the asset at the given \p assetPath. 
+    /// See \ref ArResolver_identifier "Identifiers" for more information.
     ///
-    /// Two different (assetPath, anchorAssetPath) inputs should return the
-    /// same identifier only if they refer to the same asset. Identifiers may 
-    /// be compared to determine given paths refer to the same asset, so
-    /// implementations should take care to canonicalize and normalize the
-    /// returned identifier to a consistent format.
+    /// If \p anchorAssetPath is non-empty, it should be used as the anchoring 
+    /// asset if \p assetPath is relative. For example, for a filesystem-based
+    /// implementation _CreateIdentifier might return:
+    ///
+    /// _CreateIdentifier(
+    ///     /* assetPath = */ "/abs/path/to/model.usd",
+    ///     /* anchorAssetPath = */ ArResolvedPath("/abs/path/to/shot.usd"))
+    ///      => "/abs/path/to/model.usd"
+    ///
+    /// _CreateIdentifier(
+    ///     /* assetPath = */ "relative/model.usd",
+    ///     /* anchorAssetPath = */ ArResolvedPath("/abs/path/to/shot.usd"))
+    ///      => "/abs/path/to/relative/model.usd"
+    ///
+    /// Identifiers may be compared to determine if given paths refer to the
+    /// same asset, so implementations should take care to canonicalize and
+    /// normalize the returned identifier to a consistent format.
+    ///
+    /// If either \p assetPath or \p anchorAssetPath have a URI scheme, this
+    /// function will be called on the resolver associated with that URI scheme,
+    /// if any.
+    ///
+    /// Example uses:
+    /// - When opening a layer via SdfLayer::FindOrOpen or Find,
+    ///   CreateIdentifier will be called with the asset path given to those
+    ///   functions and no anchoring asset path.  The result will be used as the
+    ///   layer's identifier.
+    ///
+    /// - When processing composition arcs that refer to other layers, this
+    ///   function will be called with the asset path of the referenced layer
+    ///   and the resolved path of the layer where the composition arc was
+    ///   authored. The result will be passed to SdfLayer::FindOrOpen to
+    ///   open the referenced layer.
     virtual std::string _CreateIdentifier(
         const std::string& assetPath,
         const ArResolvedPath& anchorAssetPath) const = 0;
 
-    /// Return an identifier for a new asset at the given \p assetPath.  If
-    /// \p anchorAssetPath is non-empty, it should be used as the anchoring
-    /// asset if \p assetPath is relative.
+    /// Return an identifier for a new asset at the given \p assetPath.
     ///
     /// This is similar to _CreateIdentifier but is used to create identifiers
-    /// for new assets that are being created.
+    /// for assets that may not exist yet and are being created.
+    ///
+    /// Example uses:
+    /// - When creating a new layer via SdfLayer::CreateNew,
+    ///   CreateIdentifierForNewAsset will be called with the asset path given
+    ///   to the function. The result will be used as the new layer's
+    ///   identifier.
     virtual std::string _CreateIdentifierForNewAsset(
         const std::string& assetPath,
         const ArResolvedPath& anchorAssetPath) const = 0;
@@ -616,6 +647,15 @@ protected:
     /// Resolve is called, false otherwise.
     ///
     /// The default implementation returns false.
+    ///
+    /// Example uses:
+    /// - SdfLayer will call this function to check if the identifier given
+    ///   to SdfLayer::Find or SdfLayer::FindOrOpen is context-dependent.
+    ///   If it is and a layer exists with the same identifier, SdfLayer
+    ///   can return it without resolving the identifier. If it is not,
+    ///   SdfLayer must resolve the identifier and search for a layer with
+    ///   the same resolved path, even if a layer exists with the same
+    ///   identifier.
     AR_API
     virtual bool _IsContextDependentPath(
         const std::string& assetPath) const;
