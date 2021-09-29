@@ -238,6 +238,7 @@ void
 HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
                                     VtVec3fArray const &points,
                                     VtIntArray const &curveVertexCounts,
+                                    VtIntArray const &curveIndices,
                                     VtVec3fArray const &normals,
                                     TfToken const &type,
                                     TfToken const &basis,
@@ -254,7 +255,7 @@ HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
     HdRenderIndex& index = GetRenderIndex();
     index.InsertRprim(HdPrimTypeTokens->basisCurves, this, id);
 
-    _curves[id] = _Curves(points, curveVertexCounts, 
+    _curves[id] = _Curves(points, curveVertexCounts, curveIndices,
                           type,
                           basis);
 
@@ -749,7 +750,7 @@ HdUnitTestDelegate::GetBasisCurvesTopology(SdfPath const& id)
                                  curve.basis,
                                  HdTokens->nonperiodic,
                                  curve.curveVertexCounts,
-                                 VtIntArray());
+                                 curve.curveIndices);
 }
 
 /*virtual*/
@@ -1616,6 +1617,7 @@ HdUnitTestDelegate::AddCurves(
         _BuildArray(points, sizeof(points)/sizeof(points[0])),
         _BuildArray(curveVertexCounts,
                     sizeof(curveVertexCounts)/sizeof(curveVertexCounts[0])),
+        /*curveIndices=*/VtIntArray(),
         authNormals,
         type,
         basis,
@@ -1975,6 +1977,7 @@ HdUnitTestDelegate::PopulateInvalidPrimsSet()
     // empty curve
     AddBasisCurves(SdfPath("/empty_curve"),
                             VtVec3fArray(),
+                            VtIntArray(),
                             VtIntArray(),
                             VtVec3fArray(),
                             HdTokens->linear,

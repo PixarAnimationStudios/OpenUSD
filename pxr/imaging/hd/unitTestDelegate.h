@@ -183,6 +183,7 @@ public:
     void AddBasisCurves(SdfPath const &id,
                         VtVec3fArray const &points,
                         VtIntArray const &curveVertexCounts,
+                        VtIntArray const &curveIndices,
                         VtVec3fArray const &normals,
                         TfToken const &type,
                         TfToken const &basis,
@@ -456,13 +457,15 @@ private:
         _Curves() { }
         _Curves(VtVec3fArray const &points,
                 VtIntArray const &curveVertexCounts,
+                VtIntArray const &curveIndices,
                 TfToken const &type,
                 TfToken const &basis) :
             points(points), curveVertexCounts(curveVertexCounts), 
-            type(type), basis(basis) { }
+            curveIndices(curveIndices), type(type), basis(basis) { }
 
         VtVec3fArray points;
         VtIntArray curveVertexCounts;
+        VtIntArray curveIndices;
         TfToken type;
         TfToken basis;
     };

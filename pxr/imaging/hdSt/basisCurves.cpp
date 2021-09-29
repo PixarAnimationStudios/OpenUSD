@@ -400,7 +400,8 @@ HdStBasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
     // propagate scene-based dirtyBits into rprim-custom dirtyBits
     if (bits & HdChangeTracker::DirtyTopology) {
         bits |= _customDirtyBitsInUse &
-            (DirtyIndices|DirtyHullIndices|DirtyPointsIndices);
+            (DirtyIndices|DirtyHullIndices|DirtyPointsIndices|
+                HdChangeTracker::DirtyPrimvar);
     }
 
     return bits;
