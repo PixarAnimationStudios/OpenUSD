@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/hdSt/materialXShaderGen.h"
 #include "pxr/imaging/hdSt/materialXFilter.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -235,6 +236,43 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
             emitComment("Uniform block: " + uniforms.getName(), mxStage);
             emitVariableDeclarations(uniforms, mx::EMPTY_STRING, 
                                      mx::Syntax::SEMICOLON, mxContext, mxStage);
+            emitLineBreak(mxStage);
+        }
+    }
+
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
+    if (caps.bindlessTextureEnabled) {
+        // if we're using bindlessTextures, we can just use non-uniform
+        // samplers (which simply won't be assigned to if we're not using
+        // domeLightIrradiance)
+        emitLine("sampler2D u_envIrradiance", mxStage);
+        emitLine("sampler2D u_envRadiance", mxStage);
+    }
+    else {
+        // If we're not using bindless textures, we can't declare non-uniform
+        // sampler2D vars, but we still need to map the names that mx uses to our
+        // names - do that with #defines
+
+        emitLine("#ifdef HD_HAS_domeLightIrradiance", mxStage, false);
+        emitLine("#define u_envIrradiance HdGetSampler_domeLightIrradiance()", mxStage, false);
+        emitLine("#define u_envRadiance HdGetSampler_domeLightPrefilter()", mxStage, false);
+        emitLine("#else", mxStage, false);
+        // If HD isn't using domeLightIrradiance, we still need to define
+        // u_envRadiance / u_envIrradiance, because mx will use them - declare
+        // them as uniforms (which will likely never get set)
+        emitLine("uniform sampler2D u_envIrradiance", mxStage);
+        emitLine("uniform sampler2D u_envRadiance", mxStage);
+        emitLine("#endif", mxStage, false);
+        emitLineBreak(mxStage);
+
+        if (!_mxHdTextureMap.empty()) {
+            emitComment("Define MaterialX->Hydra sampler name mappings", mxStage);
+            for (auto texturePair : _mxHdTextureMap) {
+                emitLine(TfStringPrintf("#define %s_file HdGetSampler_%s()",
+                                        texturePair.first.c_str(),
+                                        texturePair.second.c_str()),
+                        mxStage, false);
+            }
             emitLineBreak(mxStage);
         }
     }
@@ -455,15 +493,23 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
     emitLineBreak(mxStage);
 
     // Initialize the Indirect Light Textures
+
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
+
+    // Initialize MaterialX Texture samplers with HdGetSampler equivalents
+    // ...not needed if we're not using bindless textures, because then all
+    // sampler "variables" are actually just #defines at top-level
+
     emitLine("#ifdef HD_HAS_domeLightIrradiance", mxStage, false);
-    emitLine("u_envIrradiance = HdGetSampler_domeLightIrradiance()", mxStage);
-    emitLine("u_envRadiance = HdGetSampler_domeLightPrefilter()", mxStage);
+    if (caps.bindlessTextureEnabled) {
+        emitLine("u_envIrradiance = HdGetSampler_domeLightIrradiance()", mxStage);
+        emitLine("u_envRadiance = HdGetSampler_domeLightPrefilter()", mxStage);
+    }
     emitLine("u_envRadianceMips = textureQueryLevels(u_envRadiance)", mxStage);
     emitLine("#endif", mxStage, false);
     emitLineBreak(mxStage);
 
-    // Initialize MaterialX Texture samplers with HdGetSampler equivalents
-    if (!_mxHdTextureMap.empty()) {
+    if (!_mxHdTextureMap.empty() && caps.bindlessTextureEnabled) {
         emitComment("Initialize Material Textures", mxStage);
         for (auto texturePair : _mxHdTextureMap) {
             emitLine(texturePair.first + "_file = "
@@ -597,9 +643,22 @@ HdStMaterialXShaderGen::emitVariableDeclarations(
         mx::HW::T_ALBEDO_TABLE      // BRDF texture
     };
 
+    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
+
     for (size_t i = 0; i < block.size(); ++i)
     {
         emitLineBegin(stage);
+
+        if (!caps.bindlessTextureEnabled &&
+            block[i]->getType() == mx::Type::FILENAME) {
+            // If we're not using bindless textures, we can only have uniform
+            // sampler2D variables - otherwise, we get this:
+            //     error C7554: OpenGL requires sampler variables to be
+            //     explicitly declared as uniform
+            // In that case, the mx sampler names are mapped to the hydra
+            // names elsewhere... skip...
+            continue;
+        }
 
         // Only declare the variables that we need to initialize with Hd Data
         if (MxHdVariables.count(block[i]->getName())) {
