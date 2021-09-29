@@ -62,6 +62,12 @@ private:
     friend class UsdLux_DiscoveryPlugin;
     static const TfToken &_GetSourceType();
     static const TfToken &_GetDiscoveryType();
+
+    // Mapping of shaderId to Typenames for API schemas which we want to have a
+    // sdr representation like concrete UsdLux light types.
+    using ShaderIdToAPITypeNameMap = 
+        std::unordered_map<TfToken, TfToken, TfToken::HashFunctor>;
+    static const ShaderIdToAPITypeNameMap& _GetShaderIdToAPITypeNameMap();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -142,6 +142,9 @@ class "MeshLightAPI" (
 )
 {
     uniform token light:materialSyncMode = "materialGlowTintsLight"
+    uniform token light:shaderId = "MeshLight" (
+        displayGroup = "Internal"
+    )
 }
 
 class "VolumeLightAPI" (
@@ -159,6 +162,9 @@ class "VolumeLightAPI" (
 )
 {
     uniform token light:materialSyncMode = "materialGlowTintsLight"
+    uniform token light:shaderId = "VolumeLight" (
+        displayGroup = "Internal"
+    )
 }
 
 class "ListAPI" (
@@ -1020,6 +1026,9 @@ class GeometryLight "GeometryLight" (
 {
     rel geometry (
         doc = "Relationship to the geometry to use as the light source."
+    )
+    uniform token light:shaderId = "GeometryLight" (
+        displayGroup = "Internal"
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a

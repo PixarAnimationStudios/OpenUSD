@@ -234,6 +234,12 @@ class "MeshLightAPI" (
     """
     prepend apiSchemas = ["LightAPI"]
 ) {
+    uniform token light:shaderId = "MeshLight" (
+        customData = {
+            token apiName = ""
+        }
+        displayGroup = "Internal"
+    )
     uniform token light:materialSyncMode = "materialGlowTintsLight" (
         customData = {
             token apiName = ""
@@ -255,6 +261,12 @@ class "VolumeLightAPI" (
     """
     prepend apiSchemas = ["LightAPI"]
 ) {
+    uniform token light:shaderId = "VolumeLight" (
+        customData = {
+            token apiName = ""
+        }
+        displayGroup = "Internal"
+    )
     uniform token light:materialSyncMode = "materialGlowTintsLight" (
         customData = {
             token apiName = ""
@@ -776,6 +788,12 @@ class GeometryLight "GeometryLight" (
 ) {
     rel geometry (
         doc = """Relationship to the geometry to use as the light source."""
+    )
+    uniform token light:shaderId = "GeometryLight"  (
+        customData = {
+            token apiName = ""
+        }
+        displayGroup = "Internal"
     )
 }
 

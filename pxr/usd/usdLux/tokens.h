@@ -122,6 +122,10 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxGeometryLight
     const TfToken geometry;
+    /// \brief "GeometryLight"
+    /// 
+    /// Default value for UsdLuxGeometryLight schema attribute light:shaderId
+    const TfToken geometryLight;
     /// \brief "ignore"
     /// 
     /// Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
@@ -268,12 +272,16 @@ struct UsdLuxTokensType {
     const TfToken lightMaterialSyncMode;
     /// \brief "light:shaderId"
     /// 
-    /// UsdLuxPortalLight, UsdLuxDomeLight, UsdLuxCylinderLight, UsdLuxSphereLight, UsdLuxRectLight, UsdLuxDiskLight, UsdLuxDistantLight, UsdLuxLightAPI
+    /// UsdLuxPortalLight, UsdLuxDomeLight, UsdLuxGeometryLight, UsdLuxCylinderLight, UsdLuxSphereLight, UsdLuxRectLight, UsdLuxDiskLight, UsdLuxDistantLight, UsdLuxVolumeLightAPI, UsdLuxMeshLightAPI, UsdLuxLightAPI
     const TfToken lightShaderId;
     /// \brief "materialGlowTintsLight"
     /// 
     /// Default value for UsdLuxVolumeLightAPI schema attribute light:materialSyncMode, Default value for UsdLuxMeshLightAPI schema attribute light:materialSyncMode, Possible value for UsdLuxLightAPI::GetMaterialSyncModeAttr()
     const TfToken materialGlowTintsLight;
+    /// \brief "MeshLight"
+    /// 
+    /// Default value for UsdLuxMeshLightAPI schema attribute light:shaderId
+    const TfToken meshLight;
     /// \brief "mirroredBall"
     /// 
     /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
@@ -314,6 +322,10 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxSphereLight
     const TfToken treatAsPoint;
+    /// \brief "VolumeLight"
+    /// 
+    /// Default value for UsdLuxVolumeLightAPI schema attribute light:shaderId
+    const TfToken volumeLight;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

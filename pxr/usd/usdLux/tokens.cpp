@@ -41,6 +41,7 @@ UsdLuxTokensType::UsdLuxTokensType() :
     extent("extent", TfToken::Immortal),
     filterLink("filterLink", TfToken::Immortal),
     geometry("geometry", TfToken::Immortal),
+    geometryLight("GeometryLight", TfToken::Immortal),
     ignore("ignore", TfToken::Immortal),
     independent("independent", TfToken::Immortal),
     inputsAngle("inputs:angle", TfToken::Immortal),
@@ -79,6 +80,7 @@ UsdLuxTokensType::UsdLuxTokensType() :
     lightMaterialSyncMode("light:materialSyncMode", TfToken::Immortal),
     lightShaderId("light:shaderId", TfToken::Immortal),
     materialGlowTintsLight("materialGlowTintsLight", TfToken::Immortal),
+    meshLight("MeshLight", TfToken::Immortal),
     mirroredBall("mirroredBall", TfToken::Immortal),
     noMaterialResponse("noMaterialResponse", TfToken::Immortal),
     orientToStageUpAxis("orientToStageUpAxis", TfToken::Immortal),
@@ -89,6 +91,7 @@ UsdLuxTokensType::UsdLuxTokensType() :
     sphereLight("SphereLight", TfToken::Immortal),
     treatAsLine("treatAsLine", TfToken::Immortal),
     treatAsPoint("treatAsPoint", TfToken::Immortal),
+    volumeLight("VolumeLight", TfToken::Immortal),
     allTokens({
         angular,
         automatic,
@@ -105,6 +108,7 @@ UsdLuxTokensType::UsdLuxTokensType() :
         extent,
         filterLink,
         geometry,
+        geometryLight,
         ignore,
         independent,
         inputsAngle,
@@ -143,6 +147,7 @@ UsdLuxTokensType::UsdLuxTokensType() :
         lightMaterialSyncMode,
         lightShaderId,
         materialGlowTintsLight,
+        meshLight,
         mirroredBall,
         noMaterialResponse,
         orientToStageUpAxis,
@@ -152,7 +157,8 @@ UsdLuxTokensType::UsdLuxTokensType() :
         shadowLink,
         sphereLight,
         treatAsLine,
-        treatAsPoint
+        treatAsPoint,
+        volumeLight
     })
 {
 }

@@ -59,6 +59,19 @@ UsdLux_DiscoveryPlugin::DiscoverNodes(const Context &context)
     PlugRegistry::GetAllDerivedTypes(boundableLightType, &types);
     PlugRegistry::GetAllDerivedTypes(nonboundableLightType, &types);
 
+    // We include certain API schema types in the discovery results.
+    // - MeshLightAPI
+    // - VolumeLightAPI
+    // Current UsdLux OM specified MeshLightAPI and VolumeLightAPI as basically 
+    // the types for MeshLight and VolumeLight, also notice shaderId defined for
+    // these API types is MeshLight and VolumeLight respectively.
+    const UsdLux_LightDefParserPlugin::ShaderIdToAPITypeNameMap 
+        &shaderIdToAPITypeNameMap = 
+            UsdLux_LightDefParserPlugin::_GetShaderIdToAPITypeNameMap();
+
+    // Collect all typenames for which we need to associate discovered nodes.
+    TfTokenVector typeNames;
+    typeNames.reserve(types.size() + shaderIdToAPITypeNameMap.size());
     for (const TfType &type : types) {
         // Filter out types that weren't declared in the UsdLux library itself.
         static PlugPluginPtr thisPlugin = PLUG_THIS_PLUGIN;
@@ -67,22 +80,32 @@ UsdLux_DiscoveryPlugin::DiscoverNodes(const Context &context)
         }
 
         const TfToken name = UsdSchemaRegistry::GetConcreteSchemaTypeName(type);
+
         // The type name from the schema registry will be empty if the type is 
         // not concrete (i.e. abstract); we skip abstract types.
         if (!name.IsEmpty()) {
-            // The schema type name is the name and identifier. The URIs are 
-            // left empty as these nodes can be populated from the schema
-            // registry prim definitions. 
-            result.emplace_back(
-                /*identifier=*/ name,
+            // The schema type name is the name and identifier.  
+            typeNames.push_back(name);
+        }
+    }
+
+    for (const auto& shaderIdAPITypeNamePair : shaderIdToAPITypeNameMap) {
+        typeNames.push_back(shaderIdAPITypeNamePair.first);
+    }
+
+    result.reserve(typeNames.size());
+    for(const TfToken &typeName : typeNames) {
+        // The URIs are left empty as these nodes can be populated from the 
+        // schema registry prim definitions.
+        result.emplace_back(
+                typeName,
                 NdrVersion().GetAsDefault(),
-                name,
-                /*family=*/ TfToken(), 
+                typeName,
+                /*family*/ TfToken(),
                 UsdLux_LightDefParserPlugin::_GetDiscoveryType(),
                 UsdLux_LightDefParserPlugin::_GetSourceType(),
-                /*uri=*/ "", 
+                /*uri=*/ "",
                 /*resolvedUri=*/ "");
-        }
     }
 
     return result;

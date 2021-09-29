@@ -1071,7 +1071,7 @@ class PxrEnvDayLight "PxrEnvDayLight" (
     )
 }
 
-class "PxrGeometryLightAPI"
+class "PxrMeshLightAPI"
 {
     bool inputs:ri:light:cheapCaustics = 0 (
         connectability = "interfaceOnly"

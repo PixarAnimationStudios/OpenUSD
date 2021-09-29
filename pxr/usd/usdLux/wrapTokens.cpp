@@ -79,6 +79,7 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "extent", UsdLuxTokens->extent);
     _AddToken(cls, "filterLink", UsdLuxTokens->filterLink);
     _AddToken(cls, "geometry", UsdLuxTokens->geometry);
+    _AddToken(cls, "geometryLight", UsdLuxTokens->geometryLight);
     _AddToken(cls, "ignore", UsdLuxTokens->ignore);
     _AddToken(cls, "independent", UsdLuxTokens->independent);
     _AddToken(cls, "inputsAngle", UsdLuxTokens->inputsAngle);
@@ -117,6 +118,7 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "lightMaterialSyncMode", UsdLuxTokens->lightMaterialSyncMode);
     _AddToken(cls, "lightShaderId", UsdLuxTokens->lightShaderId);
     _AddToken(cls, "materialGlowTintsLight", UsdLuxTokens->materialGlowTintsLight);
+    _AddToken(cls, "meshLight", UsdLuxTokens->meshLight);
     _AddToken(cls, "mirroredBall", UsdLuxTokens->mirroredBall);
     _AddToken(cls, "noMaterialResponse", UsdLuxTokens->noMaterialResponse);
     _AddToken(cls, "orientToStageUpAxis", UsdLuxTokens->orientToStageUpAxis);
@@ -127,4 +129,5 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "sphereLight", UsdLuxTokens->sphereLight);
     _AddToken(cls, "treatAsLine", UsdLuxTokens->treatAsLine);
     _AddToken(cls, "treatAsPoint", UsdLuxTokens->treatAsPoint);
+    _AddToken(cls, "volumeLight", UsdLuxTokens->volumeLight);
 }

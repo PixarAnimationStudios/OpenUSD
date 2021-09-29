@@ -44,9 +44,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sourceType, "USD"))
     ((discoveryType, "usd-schema-gen"))
 
+    (MeshLight)
+    (MeshLightAPI)
     (LightAPI)
     (ShadowAPI)
     (ShapingAPI)
+    (VolumeLight)
+    (VolumeLightAPI)
 );
 
 /*static*/
@@ -61,6 +65,17 @@ const TfToken &
 UsdLux_LightDefParserPlugin::_GetDiscoveryType()
 {
     return _tokens->discoveryType;
+}
+
+/*static*/
+const UsdLux_LightDefParserPlugin::ShaderIdToAPITypeNameMap&
+UsdLux_LightDefParserPlugin::_GetShaderIdToAPITypeNameMap() {
+    static const UsdLux_LightDefParserPlugin::ShaderIdToAPITypeNameMap 
+        shaderIdToAPITypeNameMap = {
+        {_tokens->MeshLight, _tokens->MeshLightAPI},
+        {_tokens->VolumeLight, _tokens->VolumeLightAPI}
+    };
+    return shaderIdToAPITypeNameMap;
 }
 
 static
@@ -130,6 +145,19 @@ UsdLux_LightDefParserPlugin::Parse(
 {
     TRACE_FUNCTION();
 
+    const UsdLux_LightDefParserPlugin::ShaderIdToAPITypeNameMap
+        &shaderIdToAPITypeNameMap = _GetShaderIdToAPITypeNameMap();
+
+    // If discoveryResult identifier is a shaderId corresponding to one of the
+    // API schemas for which we are generating sdr representation, then go and
+    // fetch the name of the API schema which will then be used to extract
+    // properties from the generatedSchema
+    const TfToken &primTypeName = 
+        (shaderIdToAPITypeNameMap.find(discoveryResult.identifier) == 
+         shaderIdToAPITypeNameMap.end()) ? 
+            discoveryResult.identifier : 
+            shaderIdToAPITypeNameMap.at(discoveryResult.identifier);
+
     // This parser wants to pull all the shader properties from the schema
     // defined properties of the base UsdLux light type as well as the shader 
     // properties that can be included via applying the Shadow and Shaping APIs.
@@ -154,7 +182,7 @@ UsdLux_LightDefParserPlugin::Parse(
     // spec where we'll add all the properties.
     SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usd");
     SdfPrimSpecHandle primSpec = SdfPrimSpec::New(
-        layer, discoveryResult.identifier, SdfSpecifierDef);
+        layer, primTypeName, SdfSpecifierDef);
 
     // All of the UsdLux intrinsic lights will directly include LightAPI so it
     // will have all the properties from LightAPI as well as any it defines 
@@ -165,7 +193,7 @@ UsdLux_LightDefParserPlugin::Parse(
     // have properties that override properties that come from the LightAPI. 
     const TfTokenVector schemas({
         _tokens->LightAPI, 
-        discoveryResult.identifier,
+        primTypeName,
         _tokens->ShadowAPI, 
         _tokens->ShapingAPI});
     for (const TfToken &schemaName : schemas) {

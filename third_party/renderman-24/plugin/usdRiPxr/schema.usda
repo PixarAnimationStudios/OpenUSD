@@ -1035,11 +1035,11 @@ class PxrEnvDayLight "PxrEnvDayLight" (
     )
 }
 
-class "PxrGeometryLightAPI" (
+class "PxrMeshLightAPI" (
     customData = {
-        token[] apiSchemaAutoApplyTo = ["GeometryLight"]
+        token[] apiSchemaAutoApplyTo = ["MeshLightAPI", "VolumeLightAPI"]
         string apiSchemaType = "singleApply"
-        string className = "GeometryLightAPI"
+        string className = "MeshLightAPI"
     }
     inherits = </APISchemaBase>
 )

@@ -355,8 +355,34 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
     usdSchemaNode = None
     if usdSchemaClass:
         reg = Sdr.Registry()
-        usdSchemaNode = reg.GetNodeByIdentifierAndType(usdSchemaClass, 
-                SchemaDefiningMiscConstants.USD_SOURCE_TYPE)
+        if usdSchemaClass.endswith(SchemaDefiningMiscConstants.API_STRING):
+            # This usd schema is an API schema, we need to extract the shader
+            # identifier from its primDef's shaderId field.
+            primDef = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
+                    usdSchemaClass)
+            if primDef:
+                # We are dealing with USD source type here, hence no render
+                # context is required but we can still borrow node context
+                # information from the sdrNode in question, since the usd source
+                # type node should also belong to the same context.
+                shaderIdAttrName = Sdf.Path.JoinIdentifier( \
+                        sdrNode.GetContext(), PropertyDefiningKeys.SHADER_ID)
+                sdrIdentifier = primDef.GetAttributeFallbackValue(
+                        shaderIdAttrName)
+                if sdrIdentifier is not "":
+                    usdSchemaNode = reg.GetNodeByIdentifierAndType(
+                            sdrIdentifier,
+                            SchemaDefiningMiscConstants.USD_SOURCE_TYPE)
+                else:
+                    Tf.Warn("No sourceId authored for '%s'." %(usdSchemaClass))
+            else:
+                Tf.Warn("Illegal API schema provided for the usdSchemaClass "
+                        "metadata. No prim definition registered for '%s'" %(
+                            usdSchemaClass))
+                
+        else:
+            usdSchemaNode = reg.GetNodeByIdentifierAndType(usdSchemaClass, 
+                    SchemaDefiningMiscConstants.USD_SOURCE_TYPE)
 
     # Create attrSpecs from input parameters
     for propName in sdrNode.GetInputNames():

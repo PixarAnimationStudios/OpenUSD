@@ -453,59 +453,67 @@ class TestUsdLuxLight(unittest.TestCase):
             'GeometryLight' : [],
             'PortalLight' : [],
             'RectLight' : ['width', 'height', 'texture:file'],
-            'SphereLight' : ['radius']
+            'SphereLight' : ['radius'],
+            'MeshLight' : [],
+            'VolumeLight' : []
             }
 
         # Get all the derived types of UsdLuxBoundableLightBase and 
-        # UsdLuxNonboundableLightBase
-        lightTypes = (
+        # UsdLuxNonboundableLightBase that are defined in UsdLux
+        lightTypes = list(filter(
+            Plug.Registry().GetPluginWithName("usdLux").DeclaresType,
             Tf.Type(UsdLux.BoundableLightBase).GetAllDerivedTypes() +
-            Tf.Type(UsdLux.NonboundableLightBase).GetAllDerivedTypes())
+            Tf.Type(UsdLux.NonboundableLightBase).GetAllDerivedTypes()))
         self.assertTrue(lightTypes)
+
+        # Augment lightTypes to include MeshLightAPI and VolumeLightAPI
+        lightTypes.append(
+            Tf.Type.FindByName('UsdLuxMeshLightAPI'))
+        lightTypes.append(
+            Tf.Type.FindByName('UsdLuxVolumeLightAPI'))
+
         # Verify that at least one known light type is in our list to guard
         # against this giving false positives if no light types are available.
         self.assertIn(UsdLux.RectLight, lightTypes)
+        self.assertEqual(len(lightTypes), len(expectedLightNodes))
 
         stage = Usd.Stage.CreateInMemory()
         prim = stage.DefinePrim("/Prim")
 
+        usdSchemaReg = Usd.SchemaRegistry()
         for lightType in lightTypes:
 
             print("Test SdrNode for schema type " + str(lightType))
-
-            typeName = Usd.SchemaRegistry.GetConcreteSchemaTypeName(lightType)
-            if not typeName:
-                continue
-
-            # Every concrete light type in usdLux domain will have an 
-            # SdrShaderNode with source type 'USD' registered for it under its 
-            # USD schema type name. Light types not in usdLux will not.
-            node = Sdr.Registry().GetNodeByName(typeName, ['USD'])
-            if (Plug.Registry().GetPluginForType(lightType).name == "usdLux"):
-                self.assertTrue(node is not None)
-                self.assertIn(typeName, expectedLightNodes)
+            
+            if usdSchemaReg.IsAppliedAPISchema(lightType):
+                prim.ApplyAPI(lightType)
             else:
-                self.assertTrue(node is None)
-                self.assertNotIn(typeName, expectedLightNodes)
-                continue
-
-            # Set the prim to the light type so we can cross check node inputs
-            # with the light prim built-in properties. Also apply the shadow
-            # and shaping APIs as the shaders inputs from these APIs will be
-            # included in the node inputs.
-            prim.SetTypeName(typeName)
+                typeName = usdSchemaReg.GetConcreteSchemaTypeName(lightType)
+                if not typeName:
+                    continue
+                prim.SetTypeName(typeName)
             light = UsdLux.LightAPI(prim)
             self.assertTrue(light)
+            sdrIdentifier = light.GetShaderId([])
+            self.assertTrue(sdrIdentifier)
             prim.ApplyAPI(UsdLux.ShadowAPI)
             prim.ApplyAPI(UsdLux.ShapingAPI)
 
+            # Every concrete light type and some API schemas (with appropriate
+            # shaderId as sdr Identifier) in usdLux domain will have an 
+            # SdrShaderNode with source type 'USD' registered for it under its 
+            # USD schema type name. 
+            node = Sdr.Registry().GetNodeByName(sdrIdentifier, ['USD'])
+            self.assertTrue(node is not None)
+            self.assertIn(sdrIdentifier, expectedLightNodes)
+
             # Names, identifier, and role for the node all match the USD schema
             # type name
-            self.assertEqual(node.GetIdentifier(), typeName)
-            self.assertEqual(node.GetName(), typeName)
-            self.assertEqual(node.GetImplementationName(), typeName)
-            self.assertEqual(node.GetRole(), typeName)
-            self.assertTrue(node.GetInfoString().startswith(typeName))
+            self.assertEqual(node.GetIdentifier(), sdrIdentifier)
+            self.assertEqual(node.GetName(), sdrIdentifier)
+            self.assertEqual(node.GetImplementationName(), sdrIdentifier)
+            self.assertEqual(node.GetRole(), sdrIdentifier)
+            self.assertTrue(node.GetInfoString().startswith(sdrIdentifier))
 
             # The context is always 'light' for lights. 
             # Source type is 'USD'
@@ -577,7 +585,7 @@ class TestUsdLuxLight(unittest.TestCase):
             # that the node has ONLY the expected inputs and the prim at least
             # has those input proerties.
             expectedInputNames = \
-                expectedLightInputNames + expectedLightNodes[typeName]
+                expectedLightInputNames + expectedLightNodes[sdrIdentifier]
             # Verify node has exactly the expected inputs.
             self.assertEqual(sorted(expectedInputNames),
                              sorted(node.GetInputNames()))
