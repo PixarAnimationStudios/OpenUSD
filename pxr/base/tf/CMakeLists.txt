@@ -487,6 +487,10 @@ pxr_register_test(TfEnvSetting
     STDERR_REDIRECT debugTfEnvSettingStderr.txt
     DIFF_COMPARE debugTfEnvSettingStderr.txt
 )
+pxr_register_test(TfException
+    ENV TF_FATAL_THROW=0
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfException"
+)
 pxr_register_test(TfFileUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfFileUtils"
 )
