@@ -107,7 +107,7 @@ set(PXR_OBJECT_LIBS ""
     "Aggregation of all core libraries built as OBJECT libraries."
 )
 
-set(PXR_LIB_PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX}
+set(PXR_LIB_PREFIX "${CMAKE_SHARED_LIBRARY_PREFIX}usd_"
     CACHE
     STRING
     "Prefix for build library name"
