@@ -562,6 +562,22 @@ class LightFilter "LightFilter" (
             token apiName = ""
         }
     )
+    uniform token lightFilter:shaderId = "" (
+        doc = """Default ID for the light filter's shader. 
+        This defines the shader ID for this light filter when a render context 
+        specific shader ID is not available. 
+
+        \\see GetShaderId
+        \\see GetShaderIdAttrForRenderContext
+        \\see SdrRegistry::GetShaderNodeByIdentifier
+        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
+        """
+        customData = {
+            token apiName = "shaderId"
+        }
+        displayGroup = "Internal"
+    )
+
 }
 
 class "BoundableLightBase" (

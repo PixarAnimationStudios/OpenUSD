@@ -48,6 +48,13 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
+        
+static UsdAttribute
+_CreateShaderIdAttr(UsdLuxLightFilter &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateShaderIdAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
 
 static std::string
 _Repr(const UsdLuxLightFilter &self)
@@ -90,6 +97,13 @@ void wrapUsdLuxLightFilter()
 
         .def(!self)
 
+        
+        .def("GetShaderIdAttr",
+             &This::GetShaderIdAttr)
+        .def("CreateShaderIdAttr",
+             &_CreateShaderIdAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -118,6 +132,19 @@ void wrapUsdLuxLightFilter()
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 
+static UsdAttribute
+_CreateShaderIdAttrForRenderContext(
+    UsdLuxLightFilter &self, 
+    const TfToken &renderContext,
+    object defaultVal, 
+    bool writeSparsely) 
+{
+    return self.CreateShaderIdAttrForRenderContext(
+        renderContext,
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), 
+        writeSparsely);
+}
+
 namespace {
 
 WRAP_CUSTOM {
@@ -141,6 +168,17 @@ WRAP_CUSTOM {
 
         .def("GetFilterLinkCollectionAPI",
              &UsdLuxLightFilter::GetFilterLinkCollectionAPI)
+
+        .def("GetShaderIdAttrForRenderContext",
+             &UsdLuxLightFilter::GetShaderIdAttrForRenderContext, 
+             arg("renderContext"))
+        .def("CreateShaderIdAttrForRenderContext",
+             &_CreateShaderIdAttrForRenderContext,
+             (arg("renderContext"),
+              arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        .def("GetShaderId", 
+             &UsdLuxLightFilter::GetShaderId, arg("renderContexts"))
         ;
 }
 

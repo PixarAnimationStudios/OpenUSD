@@ -246,6 +246,10 @@ struct UsdLuxTokensType {
     /// 
     /// UsdLuxLightAPI
     const TfToken lightFilters;
+    /// \brief "lightFilter:shaderId"
+    /// 
+    /// UsdLuxLightFilter
+    const TfToken lightFilterShaderId;
     /// \brief "lightLink"
     /// 
     ///  This token represents the collection name to use with UsdCollectionAPI to represent light-linking of a prim with an applied UsdLuxLightAPI. 

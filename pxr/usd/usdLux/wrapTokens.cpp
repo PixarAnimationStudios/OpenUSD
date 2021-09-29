@@ -110,6 +110,7 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "inputsWidth", UsdLuxTokens->inputsWidth);
     _AddToken(cls, "latlong", UsdLuxTokens->latlong);
     _AddToken(cls, "lightFilters", UsdLuxTokens->lightFilters);
+    _AddToken(cls, "lightFilterShaderId", UsdLuxTokens->lightFilterShaderId);
     _AddToken(cls, "lightLink", UsdLuxTokens->lightLink);
     _AddToken(cls, "lightList", UsdLuxTokens->lightList);
     _AddToken(cls, "lightListCacheBehavior", UsdLuxTokens->lightListCacheBehavior);

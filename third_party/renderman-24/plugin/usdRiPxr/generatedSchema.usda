@@ -1894,6 +1894,18 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
         displayName = "Width"
         doc = "width: Width of the inner region of the barn (x axis)."
     )
+    uniform token lightFilter:shaderId = "" (
+        displayGroup = "Internal"
+        doc = """Default ID for the light filter's shader. 
+        This defines the shader ID for this light filter when a render context 
+        specific shader ID is not available. 
+
+        \\see GetShaderId
+        \\see GetShaderIdAttrForRenderContext
+        \\see SdrRegistry::GetShaderNodeByIdentifier
+        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
+        """
+    )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -2091,6 +2103,18 @@ class PxrBlockerLightFilter "PxrBlockerLightFilter" (
         displayName = "Width"
         doc = "width: Width of inner region of the rod (x axis)."
     )
+    uniform token lightFilter:shaderId = "" (
+        displayGroup = "Internal"
+        doc = """Default ID for the light filter's shader. 
+        This defines the shader ID for this light filter when a render context 
+        specific shader ID is not available. 
+
+        \\see GetShaderId
+        \\see GetShaderIdAttrForRenderContext
+        \\see SdrRegistry::GetShaderNodeByIdentifier
+        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
+        """
+    )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -2184,6 +2208,18 @@ class PxrCombinerLightFilter "PxrCombinerLightFilter" (
             Screen operation is similar to the max operation, but it combines gradients
             in a smoother way.
         '''
+    )
+    uniform token lightFilter:shaderId = "" (
+        displayGroup = "Internal"
+        doc = """Default ID for the light filter's shader. 
+        This defines the shader ID for this light filter when a render context 
+        specific shader ID is not available. 
+
+        \\see GetShaderId
+        \\see GetShaderIdAttrForRenderContext
+        \\see SdrRegistry::GetShaderNodeByIdentifier
+        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
+        """
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -2614,6 +2650,18 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
         displayName = "Width"
         doc = "width: Width of the rect the light is shining through."
     )
+    uniform token lightFilter:shaderId = "" (
+        displayGroup = "Internal"
+        doc = """Default ID for the light filter's shader. 
+        This defines the shader ID for this light filter when a render context 
+        specific shader ID is not available. 
+
+        \\see GetShaderId
+        \\see GetShaderIdAttrForRenderContext
+        \\see SdrRegistry::GetShaderNodeByIdentifier
+        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
+        """
+    )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -2821,6 +2869,18 @@ class PxrGoboLightFilter "PxrGoboLightFilter" (
         displayName = "Width"
         doc = "width: Width of the rect the light is shining through."
     )
+    uniform token lightFilter:shaderId = "" (
+        displayGroup = "Internal"
+        doc = """Default ID for the light filter's shader. 
+        This defines the shader ID for this light filter when a render context 
+        specific shader ID is not available. 
+
+        \\see GetShaderId
+        \\see GetShaderIdAttrForRenderContext
+        \\see SdrRegistry::GetShaderNodeByIdentifier
+        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
+        """
+    )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -2955,6 +3015,18 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
         displayGroup = "Multiplier"
         displayName = "Specular"
         doc = "specular: How much this light filter affects specular lighting."
+    )
+    uniform token lightFilter:shaderId = "" (
+        displayGroup = "Internal"
+        doc = """Default ID for the light filter's shader. 
+        This defines the shader ID for this light filter when a render context 
+        specific shader ID is not available. 
+
+        \\see GetShaderId
+        \\see GetShaderIdAttrForRenderContext
+        \\see SdrRegistry::GetShaderNodeByIdentifier
+        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
+        """
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -3140,6 +3212,18 @@ class PxrRampLightFilter "PxrRampLightFilter" (
         displayGroup = "Multiplier"
         displayName = "Specular"
         doc = "specular: How much this light filter affects specular lighting."
+    )
+    uniform token lightFilter:shaderId = "" (
+        displayGroup = "Internal"
+        doc = """Default ID for the light filter's shader. 
+        This defines the shader ID for this light filter when a render context 
+        specific shader ID is not available. 
+
+        \\see GetShaderId
+        \\see GetShaderIdAttrForRenderContext
+        \\see SdrRegistry::GetShaderNodeByIdentifier
+        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
+        """
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
@@ -3439,6 +3523,18 @@ class PxrRodLightFilter "PxrRodLightFilter" (
         displayGroup = "Rod Shape"
         displayName = "Width"
         doc = "width: Width of the inner region of the rod (X-axis)."
+    )
+    uniform token lightFilter:shaderId = "" (
+        displayGroup = "Internal"
+        doc = """Default ID for the light filter's shader. 
+        This defines the shader ID for this light filter when a render context 
+        specific shader ID is not available. 
+
+        \\see GetShaderId
+        \\see GetShaderIdAttrForRenderContext
+        \\see SdrRegistry::GetShaderNodeByIdentifier
+        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
+        """
     )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a

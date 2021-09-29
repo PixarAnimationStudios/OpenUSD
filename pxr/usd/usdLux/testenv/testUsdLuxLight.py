@@ -254,53 +254,83 @@ class TestUsdLuxLight(unittest.TestCase):
         self.assertTrue(UsdShade.ConnectableAPI.HasConnectableAPI(
             UsdLux.LightFilter))
 
-    def test_LightAPI_ShaderId(self):
+    def test_GetShaderId(self):
         # Test the LightAPI shader ID API 
 
-        # Create an untyped prim with a LightAPI applied
+        # UsdLuxLightAPI and UsdLuxLightFilter implement the same API for 
+        # their shaderId attributes so we can test them using the same function.
+        def _TestShaderIDs(lightOrFilter, shaderIdAttrName):
+            # The default render context's shaderId attribute does exist in the 
+            # API. These attributes do not yet exist for other contexts.
+            self.assertEqual(
+                lightOrFilter.GetShaderIdAttrForRenderContext("").GetName(),
+                shaderIdAttrName)
+            self.assertFalse(
+                lightOrFilter.GetShaderIdAttrForRenderContext("ri"))
+            self.assertFalse(
+                lightOrFilter.GetShaderIdAttrForRenderContext("other"))
+
+            # By default LightAPI shader IDs are empty for all render contexts.
+            self.assertEqual(lightOrFilter.GetShaderId([]), "")
+            self.assertEqual(lightOrFilter.GetShaderId(["other", "ri"]), "")
+
+            # Set a value in the default shaderID attr.
+            lightOrFilter.GetShaderIdAttr().Set("DefaultLight")
+            # No new attributes were created.
+            self.assertEqual(
+                lightOrFilter.GetShaderIdAttrForRenderContext("").GetName(),
+                shaderIdAttrName)
+            self.assertFalse(
+                lightOrFilter.GetShaderIdAttrForRenderContext("ri"))
+            self.assertFalse(
+                lightOrFilter.GetShaderIdAttrForRenderContext("other"))
+
+            # The default value is now the shaderID returned for all render 
+            # contexts since no render contexts define their own shader ID
+            self.assertEqual(
+                lightOrFilter.GetShaderId([]), "DefaultLight")
+            self.assertEqual(
+                lightOrFilter.GetShaderId(["other", "ri"]), "DefaultLight")
+
+            # Create a shaderID attr for the "ri" render context with a new ID 
+            # value.
+            lightOrFilter.CreateShaderIdAttrForRenderContext("ri", "SphereLight")
+            # The shaderId attr for "ri" now exists
+            self.assertEqual(
+                lightOrFilter.GetShaderIdAttrForRenderContext("").GetName(),
+                shaderIdAttrName)
+            self.assertEqual(
+                lightOrFilter.GetShaderIdAttrForRenderContext("ri").GetName(),
+                "ri:" + shaderIdAttrName)
+            self.assertFalse(
+                lightOrFilter.GetShaderIdAttrForRenderContext("other"))
+
+            # When passed no render contexts we still return the default 
+            # shader ID.
+            self.assertEqual(lightOrFilter.GetShaderId([]), "DefaultLight")
+            # Since we defined a shader ID for "ri" but not "other", the "ri" 
+            # shader ID is returned when queryring for both. Querying for just 
+            # "other" falls back to the default shaderID
+            self.assertEqual(
+                lightOrFilter.GetShaderId(["other", "ri"]), "SphereLight")
+            self.assertEqual(
+                lightOrFilter.GetShaderId(["ri"]), "SphereLight")
+            self.assertEqual(
+                lightOrFilter.GetShaderId(["other"]), "DefaultLight")
+
+        # Create an untyped prim with a LightAPI applied and test the ShaderId
+        # functions of UsdLux.LightAPI
         stage = Usd.Stage.CreateInMemory()
         prim = stage.DefinePrim("/PrimLight")
         light = UsdLux.LightAPI.Apply(prim)
         self.assertTrue(light)
+        _TestShaderIDs(light, "light:shaderId")
 
-        # The default render context's shaderId attribute does exist in the 
-        # API. These attributes do not yet exist for other contexts.
-        self.assertTrue(light.GetShaderIdAttrForRenderContext(""))
-        self.assertFalse(light.GetShaderIdAttrForRenderContext("ri"))
-        self.assertFalse(light.GetShaderIdAttrForRenderContext("other"))
-
-        # By default LightAPI shader IDs are empty for all render contexts.
-        self.assertEqual(light.GetShaderId([]), "")
-        self.assertEqual(light.GetShaderId(["other", "ri"]), "")
-
-        # Set a value in the default shaderID attr.
-        light.GetShaderIdAttr().Set("DefaultLight")
-        # No new attributes were created.
-        self.assertTrue(light.GetShaderIdAttrForRenderContext(""))
-        self.assertFalse(light.GetShaderIdAttrForRenderContext("ri"))
-        self.assertFalse(light.GetShaderIdAttrForRenderContext("other"))
-
-        # The default value is now the shaderID returned for all render 
-        # contexts since no render contexts define their own shader ID
-        self.assertEqual(light.GetShaderId([]), "DefaultLight")
-        self.assertEqual(light.GetShaderId(["other", "ri"]), "DefaultLight")
-
-        # Create a shaderID attr for the "ri" render context with a new ID 
-        # value.
-        light.CreateShaderIdAttrForRenderContext("ri", "SphereLight")
-        # The shaderId attr for "ri" now exists
-        self.assertTrue(light.GetShaderIdAttrForRenderContext(""))
-        self.assertTrue(light.GetShaderIdAttrForRenderContext("ri"))
-        self.assertFalse(light.GetShaderIdAttrForRenderContext("other"))
-
-        # When passed no render contexts we still return the default shader ID.
-        self.assertEqual(light.GetShaderId([]), "DefaultLight")
-        # Since we defined a shader ID for "ri" but not "other", the "ri" 
-        # shader ID is returned when queryring for both. Querying for just 
-        # "other" falls back to the default shaderID
-        self.assertEqual(light.GetShaderId(["other", "ri"]), "SphereLight")
-        self.assertEqual(light.GetShaderId(["ri"]), "SphereLight")
-        self.assertEqual(light.GetShaderId(["other"]), "DefaultLight")
+        # Create a LightFilter prim  and test the ShaderId functions of 
+        # UsdLux.LightFilter
+        lightFilter = UsdLux.LightFilter.Define(stage, "/PrimLightFilter")
+        self.assertTrue(lightFilter)
+        _TestShaderIDs(lightFilter, "lightFilter:shaderId")
 
     def test_LightExtentAndBBox(self):
         # Test extent and bbox computations for the boundable lights.

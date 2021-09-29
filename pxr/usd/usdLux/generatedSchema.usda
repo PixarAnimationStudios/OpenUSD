@@ -400,6 +400,18 @@ class LightFilter "LightFilter" (
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
+    uniform token lightFilter:shaderId = "" (
+        displayGroup = "Internal"
+        doc = """Default ID for the light filter's shader. 
+        This defines the shader ID for this light filter when a render context 
+        specific shader ID is not available. 
+
+        \\see GetShaderId
+        \\see GetShaderIdAttrForRenderContext
+        \\see SdrRegistry::GetShaderNodeByIdentifier
+        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
+        """
+    )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
@@ -1313,6 +1325,18 @@ class PluginLightFilter "PluginLightFilter" (
 )
 {
     uniform bool collection:filterLink:includeRoot = 1
+    uniform token lightFilter:shaderId = "" (
+        displayGroup = "Internal"
+        doc = """Default ID for the light filter's shader. 
+        This defines the shader ID for this light filter when a render context 
+        specific shader ID is not available. 
+
+        \\see GetShaderId
+        \\see GetShaderIdAttrForRenderContext
+        \\see SdrRegistry::GetShaderNodeByIdentifier
+        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
+        """
+    )
     rel proxyPrim (
         doc = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)

@@ -35,6 +35,7 @@
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/nodeDefAPI.h"
 #include "pxr/usd/usdLux/lightAPI.h"
+#include "pxr/usd/usdLux/lightFilter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -315,13 +316,25 @@ TfToken _GetNodeId(UsdShadeConnectableAPI const &shadeNode,
         return id;
     }
 
-    // If the node is a light that doesn't have a NodeDefAPI, then we try to 
-    // get the light shader ID from the light for the given render contexts.
-    UsdLuxLightAPI light(shadeNode);
-    if (light) {
-        TfToken id = light.GetShaderId(renderContexts);
+    // If the node is a light filter that doesn't have a NodeDefAPI, then we 
+    // try to get the light shader ID from the light filter for the given 
+    // render contexts.
+    UsdLuxLightFilter lightFilter(shadeNode);
+    if (lightFilter) {
+        TfToken id = lightFilter.GetShaderId(renderContexts);
         if (!id.IsEmpty()) {
             return id;
+        }
+    } else {
+        // Otherwise, if the node is a light that doesn't have a NodeDefAPI, 
+        // then we try to get the light shader ID from the light for the given 
+        // render contexts.
+        UsdLuxLightAPI light(shadeNode);
+        if (light) {
+            TfToken id = light.GetShaderId(renderContexts);
+            if (!id.IsEmpty()) {
+                return id;
+            }
         }
     }
 
