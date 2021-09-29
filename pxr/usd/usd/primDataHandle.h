@@ -42,7 +42,7 @@ void intrusive_ptr_release(const class Usd_PrimData *prim);
 
 // Forward declarations for Usd_PrimDataHandle's use.  Defined in primData.h.
 USD_API
-void Usd_IssueFatalPrimAccessError(Usd_PrimData const *p);
+void Usd_ThrowExpiredPrimAccessError(Usd_PrimData const *p);
 bool Usd_IsDead(Usd_PrimData const *p);
 
 // convenience typedefs for raw ptrs.
@@ -88,8 +88,9 @@ public:
     element_type *operator->() const {
         element_type *p = _p.get();
 #ifdef USD_CHECK_ALL_PRIM_ACCESSES
-        if (!p || Usd_IsDead(p))
-            Usd_IssueFatalPrimAccessError(p);
+        if (!p || Usd_IsDead(p)) {
+            Usd_ThrowExpiredPrimAccessError(p);
+        }
 #endif
         return p;
     }

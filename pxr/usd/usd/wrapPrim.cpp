@@ -42,6 +42,7 @@
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
 #include <boost/python/operators.hpp>
 
 #include <string>
@@ -167,6 +168,13 @@ _WrapCanApplyAPI_2(
     bool result = prim.CanApplyAPI(schemaType, instanceName, &whyNot);
     return Usd_PrimCanApplyAPIResult(result, whyNot);
 }
+
+static UsdStageWeakPtr
+_UnsafeGetStageForTesting(UsdObject const &obj)
+{
+    return obj.GetStage();
+}
+
 } // anonymous namespace 
 
 void wrapUsdPrim()
@@ -450,4 +458,11 @@ void wrapUsdPrim()
                         TfPySequenceToPython<std::vector<UsdPrim>>>();
 
     TfPyRegisterStlSequencesFromPython<UsdPrim>();
+
+    // This is wrapped in order to let python call an API that will get through
+    // our usual Python API guards to access an invalid prim and throw an
+    // exception.
+    boost::python::def(
+        "_UnsafeGetStageForTesting", &_UnsafeGetStageForTesting);
+    
 }

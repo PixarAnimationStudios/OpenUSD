@@ -340,7 +340,7 @@ private:
     }
 
     USD_API
-    friend void Usd_IssueFatalPrimAccessError(Usd_PrimData const *p);
+    friend void Usd_ThrowExpiredPrimAccessError(Usd_PrimData const *p);
     friend std::string
     Usd_DescribePrimData(const Usd_PrimData *p, SdfPath const &proxyPrimPath);
 

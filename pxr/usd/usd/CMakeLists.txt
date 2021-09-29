@@ -32,6 +32,7 @@ pxr_library(usd
         debugCodes
         editContext
         editTarget
+        errors
         flattenUtils
         inherits
         interpolation
@@ -211,6 +212,7 @@ pxr_test_scripts(
     testenv/testUsdCreateProperties.py
     testenv/testUsdDataFormats.py
     testenv/testUsdExternalAssetDependencies.py
+    testenv/testUsdErrors.py
     testenv/testUsdFallbackPrimTypes.py
     testenv/testUsdFileFormats.py
     testenv/testUsdFlatten.py
@@ -685,6 +687,13 @@ pxr_register_test(testUsdAttributeConnections
 pxr_register_test(testUsdAttributeQuery
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeQuery"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdErrors
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdErrors"
+    ENV TF_FATAL_THROW=0
     EXPECTED_RETURN_CODE 0
 )
 
