@@ -37,6 +37,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class ArAsset;
 
 /// \class Usd_CrateData
 ///
@@ -50,8 +51,14 @@ public:
     static TfToken const &GetSoftwareVersionToken();
 
     static bool CanRead(const std::string &assetPath);
+    static bool CanRead(const std::string &assetPath,
+                        const std::shared_ptr<ArAsset> &asset);
+
     bool Save(const std::string &fileName);
+
     bool Open(const std::string &assetPath);
+    bool Open(const std::string &assetPath, 
+              const std::shared_ptr<ArAsset> &asset);
 
     virtual bool StreamsData() const;
     virtual void CreateSpec(const SdfPath &path, 

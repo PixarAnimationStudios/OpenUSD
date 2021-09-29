@@ -2102,14 +2102,19 @@ struct CrateFile::_ValueHandler : public _ArrayValueHandlerBase<T> {};
 ////////////////////////////////////////////////////////////////////////
 // CrateFile
 
-/*static*/ bool
-CrateFile::CanRead(string const &assetPath) {
+/*static*/
+bool
+CrateFile::CanRead(string const &assetPath)
+{
     // Fetch the asset from Ar.
     auto asset = ArGetResolver().OpenAsset(ArResolvedPath(assetPath));
-    if (!asset) {
-        return false;
-    }
+    return asset && CanRead(assetPath, asset);
+}
 
+/*static*/
+bool
+CrateFile::CanRead(string const &assetPath, ArAssetSharedPtr const &asset)
+{
     // If the asset has a file, mark it random access to avoid prefetch.
     FILE *file; size_t offset;
     std::tie(file, offset) = asset->GetFileUnsafe();
@@ -2183,11 +2188,17 @@ std::unique_ptr<CrateFile>
 CrateFile::Open(string const &assetPath)
 {
     TfAutoMallocTag tag2("Usd_CrateFile::CrateFile::Open");
+    return Open(
+        assetPath, ArGetResolver().OpenAsset(ArResolvedPath(assetPath)));
+}
+
+std::unique_ptr<CrateFile>
+CrateFile::Open(string const &assetPath, ArAssetSharedPtr const &asset)
+{
+    TfAutoMallocTag tag2("Usd_CrateFile::CrateFile::Open");
 
     std::unique_ptr<CrateFile> result;
 
-    // Fetch the asset from Ar.
-    auto asset = ArGetResolver().OpenAsset(ArResolvedPath(assetPath));
     if (!asset) {
         TF_RUNTIME_ERROR("Failed to open asset '%s'", assetPath.c_str());
         return result;

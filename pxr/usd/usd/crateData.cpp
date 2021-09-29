@@ -191,12 +191,14 @@ public:
         return false;
     }
 
-    bool Open(string const &assetPath) {
+    template <class ...Args>
+    bool Open(string const& assetPath, Args&&... args) {
         TfAutoMallocTag tag("Usd_CrateDataImpl::Open");
 
         TF_DESCRIBE_SCOPE("Opening usd binary asset @%s@", assetPath.c_str());
         
-        if (auto newData = CrateFile::Open(assetPath)) {
+        if (auto newData = 
+                CrateFile::Open(assetPath, std::forward<Args>(args)...)) {
             _crateFile = std::move(newData);
             return _PopulateFromCrateFile();
         }
@@ -1278,6 +1280,14 @@ Usd_CrateData::CanRead(string const &assetPath)
     return CrateFile::CanRead(assetPath);
 }
 
+/* static */
+bool
+Usd_CrateData::CanRead(string const &assetPath,
+                       std::shared_ptr<ArAsset> const &asset)
+{
+    return CrateFile::CanRead(assetPath, asset);
+}
+
 bool
 Usd_CrateData::Save(string const &fileName)
 {
@@ -1301,6 +1311,13 @@ bool
 Usd_CrateData::Open(const std::string &assetPath)
 {
     return _impl->Open(assetPath);
+}
+
+bool
+Usd_CrateData::Open(const std::string &assetPath,
+                    const std::shared_ptr<ArAsset> &asset)
+{
+    return _impl->Open(assetPath, asset);
 }
 
 // ------------------------------------------------------------------------- //
