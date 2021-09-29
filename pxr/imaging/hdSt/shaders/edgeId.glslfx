@@ -55,35 +55,12 @@ float SelectedEdgeFalloff(float d) {
     return exp2(-1 * d * d);
 }
 
-vec4 GetPatchCoord(int localIndex); // codeGen
-
-vec3 GetEdgeParamTriangle()
-{
-    // Expand barycentric coordinates
-    vec2 param = GetPatchCoord(0).xy;
-    vec3 barycentric = vec3(param.x, param.y, 1 - param.x - param.y);
-
-    // Match triangle edge order
-    return barycentric.yzx;
-}
-
-vec4 GetEdgeParamQuad()
-{
-    // Expand coordinates to opposite corners of quad
-    vec2 leftBottom = GetPatchCoord(0).xy;
-    vec2 rightTop = vec2(1.0) - leftBottom;
-
-    // Match quad edge order
-    return vec4(leftBottom.y, rightTop.x, rightTop.y, leftBottom.x);
-}
-
 --- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.TriangleSurface
 
 vec3 ComputeBaseFaceEdgeDistanceTriangle()
 {
-    vec3 param = GetEdgeParamTriangle();
-    return max(vec3(0.0), param / fwidth(param));
+    return GetEdgeDistanceTriangle();
 }
 
 --- --------------------------------------------------------------------------
@@ -162,8 +139,7 @@ int GetPrimitiveEdgeId()
 
 vec4 ComputeBaseFaceEdgeDistanceQuad()
 {
-    vec4 param = GetEdgeParamQuad();
-    return max(vec4(0.0), param / fwidth(param));
+    return GetEdgeDistanceQuad();
 }
 
 --- --------------------------------------------------------------------------

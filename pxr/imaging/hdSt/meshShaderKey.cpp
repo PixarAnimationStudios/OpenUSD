@@ -62,6 +62,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((edgeMaskNoneFS,          "MeshWire.Fragment.EdgeMaskNone"))
 
     ((edgeCommonFS,            "MeshWire.Fragment.EdgeCommon"))
+    ((edgeParamFS,             "MeshWire.Fragment.EdgeParam"))
 
     ((edgeOnlyGS,              "MeshWire.Geometry.Edge"))
     ((edgeOnlyBlendFS,         "MeshWire.Fragment.EdgeOnlyBlendColor"))
@@ -343,6 +344,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             FS[fsIndex++] = _tokens->edgeMaskQuadFS;
         }
         FS[fsIndex++] = _tokens->edgeCommonFS;
+        FS[fsIndex++] = _tokens->edgeParamFS;
         if (isPrimTypePatches) {
             FS[fsIndex++] = _tokens->patchEdgeOnlyFS;
         } else {
@@ -365,6 +367,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             FS[fsIndex++] = _tokens->edgeMaskQuadFS;
         }
         FS[fsIndex++] = _tokens->edgeCommonFS;
+        FS[fsIndex++] = _tokens->edgeParamFS;
         if (isPrimTypeTris || isPrimTypePatchesBoxSplineTriangle) {
             FS[fsIndex++] = _tokens->patchEdgeTriangleFS;
         } else {
@@ -378,6 +381,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     } else {
         FS[fsIndex++] = _tokens->edgeNoneFS;
+        FS[fsIndex++] = _tokens->edgeParamFS;
     }
 
     // Shading terminal mixin
