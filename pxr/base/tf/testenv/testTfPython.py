@@ -143,10 +143,13 @@ class TestPython(unittest.TestCase):
             Tf._doErrors()
 
     def test_CppException(self):
-        with self.assertRaises(Tf.CppException):
+        with self.assertRaises(Tf.CppException) as cm:
             Tf._ThrowTest('hello')
-        with self.assertRaises(Tf.CppException):
+        print(cm.exception)
+
+        with self.assertRaises(Tf.CppException) as cm:
             Tf._CallThrowTest(lambda : Tf._ThrowTest('py-to-cpp-to-py'))
+        print(cm.exception)
 
     def test_StaticMethodPosting(self):
         with self.assertRaises(Tf.ErrorException):

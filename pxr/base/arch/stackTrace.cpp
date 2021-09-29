@@ -1344,10 +1344,10 @@ void
 ArchGetStackFrames(size_t maxdepth, size_t skip, vector<uintptr_t> *frames)
 {
     void* stack[MAX_STACK_DEPTH];
-    size_t frameCount = CaptureStackBackTrace(0, MAX_STACK_DEPTH, stack, NULL);
+    size_t frameCount = CaptureStackBackTrace(skip, MAX_STACK_DEPTH, stack, NULL);
     frameCount = std::min(frameCount, maxdepth);
     frames->reserve(frameCount);
-    for (size_t frame = skip; frame != frameCount; ++frame) {
+    for (size_t frame = 0; frame < frameCount; ++frame) {
         frames->push_back(reinterpret_cast<uintptr_t>(stack[frame]));
     }
 }
@@ -1361,7 +1361,7 @@ ArchGetStackFrames(size_t maxdepth, size_t skip, vector<uintptr_t> *frames)
     const size_t frameCount =
         backtrace(stack, std::max((size_t)MAX_STACK_DEPTH, maxdepth));
     frames->reserve(frameCount);
-    for (size_t frame = skip; frame != frameCount; ++frame) {
+    for (size_t frame = skip; frame < frameCount; ++frame) {
         frames->push_back(reinterpret_cast<uintptr_t>(stack[frame]));
     }
 }
