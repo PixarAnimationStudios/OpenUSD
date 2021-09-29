@@ -336,8 +336,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    ProcessBarycentricCoordTriangle(index);
-
     ProcessPrimvars(index, tesTessCoord[index]);
 
     EmitVertex();
@@ -468,8 +466,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    ProcessBarycentricCoordTriangle(index);
-
     ProcessPrimvars(index);
 
     EmitVertex();
@@ -558,8 +554,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
-
-    ProcessBarycentricCoordQuad(index);
 
     ProcessPrimvars(index);
 

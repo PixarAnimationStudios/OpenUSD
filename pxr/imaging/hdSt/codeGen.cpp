@@ -719,6 +719,15 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchBasisShaderSource();
     }
 
+    // Barycentric coordinates
+    if (hasGS) {
+        _genGS << "noperspective out vec3 hd_barycentricCoord;\n";
+        _genFS << "noperspective in vec3 hd_barycentricCoord;\n"
+                  "vec3 GetBarycentricCoord() {\n"
+                  "  return hd_barycentricCoord;\n"
+                  "}\n";
+    }
+
     // prep interstage plumbing function
     _procVS  << "void ProcessPrimvars() {\n";
     _procTCS << "void ProcessPrimvars() {\n";
@@ -745,6 +754,36 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         {
             _procGS << "void ProcessPrimvars(int index, vec2 tessST) {\n"
                     << "  vec2 localST = tessST;\n";
+            break;
+        }
+        default: // points, basis curves
+            // do nothing. no additional code needs to be generated.
+            ;
+    }
+    switch(_geometricShader->GetPrimitiveType())
+    {
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BSPLINE:
+        {
+            // These correspond to built-in fragment shader barycentric coords
+            // except reversed for the second triangle in the quad. Each quad is
+            // split into two triangles with indices (3,0,2) and (1,2,0).
+            _procGS << "  const vec3 coords[4] = vec3[](\n"
+                    << "   vec3(0,0,1), vec3(1,0,0), vec3(0,1,0), vec3(1,0,0)\n"
+                    << "  );\n"
+                    << "  hd_barycentricCoord = coords[index];\n";
+            break;
+        }
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
+        {
+            // These correspond to built-in fragment shader barycentric coords.
+            _procGS << "  const vec3 coords[3] = vec3[](\n"
+                    << "   vec3(1,0,0), vec3(0,1,0), vec3(0,0,1)\n"
+                    << "  );\n"
+                    << "  hd_barycentricCoord = coords[index];\n";
             break;
         }
         default: // points, basis curves

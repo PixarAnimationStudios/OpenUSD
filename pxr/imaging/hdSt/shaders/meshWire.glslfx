@@ -28,49 +28,6 @@
 --- #import $TOOLS/hdSt/shaders/meshWire.glslfx
 
 --- --------------------------------------------------------------------------
--- glsl MeshWire.Geometry.NoEdge
-
-void
-ProcessBarycentricCoordTriangle(int index)
-{
-    // do nothing.
-}
-
-void
-ProcessBarycentricCoordQuad(int index)
-{
-    // do nothing.
-}
-
---- --------------------------------------------------------------------------
--- glsl MeshWire.Geometry.Edge
-
-out EdgeData
-{
-    noperspective out vec3 barycentricCoord;
-} outEdgeData;
-
-void ProcessBarycentricCoordTriangle(int index)
-{
-    // These correspond to built-in fragment shader barycentric coords.
-    const vec3 barycentricCoords[3] = vec3[](
-        vec3(1,0,0), vec3(0,1,0), vec3(0,0,1)
-    );
-    outEdgeData.barycentricCoord = barycentricCoords[index];
-}
-
-void ProcessBarycentricCoordQuad(int index)
-{
-    // These correspond to built-in fragment shader barycentric coords
-    // except reversed for the second triangle in the quad. Each quad is
-    // split into two triangles with indices (3,0,2) and (1,2,0).
-    const vec3 barycentricCoords[4] = vec3[](
-        vec3(0,0,1), vec3(1,0,0), vec3(0,1,0), vec3(1,0,0)
-    );
-    outEdgeData.barycentricCoord = barycentricCoords[index];
-}
-
---- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.EdgeMaskTriangle
 
 vec3 GetPrimitiveEdgeMask()
@@ -138,18 +95,14 @@ vec3 GetPrimitiveEdgeMask()
 --- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.EdgeCommon
 
-in EdgeData
-{
-    // Could be vec2 but vec3 matches built-in barycentric coord
-    noperspective vec3 barycentricCoord;
-} inEdgeData;
+vec3 GetBarycentricCoord(); // codeGen
 
 // Returns the distance of the current fragment (in viewport pixel units) from
 // the nearest edge.
 float GetMinEdgeDistance()
 {
     // Hide triangle edges by adding edge mask.
-    vec3 param = inEdgeData.barycentricCoord + GetPrimitiveEdgeMask();
+    vec3 param = GetBarycentricCoord() + GetPrimitiveEdgeMask();
     vec3 edgeDistance = max(vec3(0.0), param / fwidth(param));
     return min(edgeDistance.x,
                min(edgeDistance.y,

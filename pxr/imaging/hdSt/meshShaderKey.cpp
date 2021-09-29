@@ -53,7 +53,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((faceCullDoubleSidedFS,   "MeshFaceCull.Fragment.DoubleSided"))
 
     // wireframe mixins
-    ((edgeNoneGS,              "MeshWire.Geometry.NoEdge"))
     ((edgeNoneFS,              "MeshWire.Fragment.NoEdge"))
 
     ((edgeMaskTriangleFS,      "MeshWire.Fragment.EdgeMaskTriangle"))
@@ -64,11 +63,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((edgeCommonFS,            "MeshWire.Fragment.EdgeCommon"))
     ((edgeParamFS,             "MeshWire.Fragment.EdgeParam"))
 
-    ((edgeOnlyGS,              "MeshWire.Geometry.Edge"))
     ((edgeOnlyBlendFS,         "MeshWire.Fragment.EdgeOnlyBlendColor"))
     ((edgeOnlyNoBlendFS,       "MeshWire.Fragment.EdgeOnlyNoBlend"))
 
-    ((edgeOnSurfGS,            "MeshWire.Geometry.Edge"))
     ((edgeOnSurfFS,            "MeshWire.Fragment.EdgeOnSurface"))
     ((patchEdgeTriangleFS,     "MeshPatchWire.Fragment.PatchEdgeTriangle"))
     ((patchEdgeQuadFS,         "MeshPatchWire.Fragment.PatchEdgeQuad"))
@@ -256,14 +253,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
    
     GS[gsIndex++] = (normalsSource == NormalSourceGeometryShader) ?
             _tokens->normalsGeometryFlat : _tokens->normalsGeometryNoFlat;
-
-    GS[gsIndex++] = ((geomStyle == HdMeshGeomStyleEdgeOnly ||
-                            geomStyle == HdMeshGeomStyleHullEdgeOnly)
-                        ? _tokens->edgeOnlyGS
-                        : (geomStyle == HdMeshGeomStyleEdgeOnSurf ||
-                           geomStyle == HdMeshGeomStyleHullEdgeOnSurf)
-                            ? _tokens->edgeOnSurfGS
-                            : _tokens->edgeNoneGS);
 
     const bool renderWireframe = geomStyle == HdMeshGeomStyleEdgeOnly ||
                                  geomStyle == HdMeshGeomStyleHullEdgeOnly;    
