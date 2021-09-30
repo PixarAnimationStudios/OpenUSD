@@ -420,6 +420,9 @@ HdStMaterialXShaderGen::_EmitMxSurfaceShader(
                 emitLine(finalOutputReturn + outputValue, mxStage);
             }
         }
+
+        // Emit color overrides (mainly for selection highlighting)
+        emitLine("mxOut = ApplyColorOverrides(mxOut)", mxStage);
     }
     emitLine("return mxOut", mxStage);
 
