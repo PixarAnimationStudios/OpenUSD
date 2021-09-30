@@ -3,6 +3,8 @@
     customLayerData = {
         asset baseAsset = @base_a.usd@
     }
+    defaultPrim = "foo"
+    metersPerUnit = 0.01
     upAxis = "Y"
 )
 
