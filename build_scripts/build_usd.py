@@ -1930,7 +1930,8 @@ class InstallContext:
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
 
         # Build options
-        self.useCXX11ABI = args.use_cxx11_abi
+        self.useCXX11ABI = \
+            (args.use_cxx11_abi if hasattr(args, "use_cxx11_abi") else None)
         self.safetyFirst = args.safety_first
 
         # Dependencies that are forced to be built
