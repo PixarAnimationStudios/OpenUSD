@@ -888,10 +888,15 @@ pxr_register_test(testUsdMetadataCpp
 )
 
 if (PXR_USE_AR_2)
-    pxr_register_test(testUsdResolverChanged
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdResolverChanged"
-        EXPECTED_RETURN_CODE 0
-    )
+    # This test relies on a plugin built specifically for this test.
+    # The build system currently doesn't support this for static library
+    # builds, so we only enable this test on shared library builds.
+    if (BUILD_SHARED_LIBS)
+        pxr_register_test(testUsdResolverChanged
+            COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdResolverChanged"
+            EXPECTED_RETURN_CODE 0
+        )
+    endif()
 endif()
 
 pxr_register_test(testUsdStageNoPython
