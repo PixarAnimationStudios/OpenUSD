@@ -1,0 +1,227 @@
+#usda 1.0
+(
+    defaultPrim = "hasColorSet"
+    doc = "Exported from: /home/belal/maya/projects/default/untitled"
+    endTimeCode = 0
+    startTimeCode = 0
+    upAxis = "Y"
+)
+
+def Mesh "hasColorSet"
+{
+    float3[] extent.timeSamples = {
+        0: [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)],
+    }
+    int[] faceVertexCounts.timeSamples = {
+        0: [4, 4, 4, 4, 4, 4],
+    }
+    int[] faceVertexIndices.timeSamples = {
+        0: [2, 3, 1, 0, 4, 5, 3, 2, 6, 7, 5, 4, 0, 1, 7, 6, 3, 5, 7, 1, 4, 2, 0, 6],
+    }
+    normal3f[] normals (
+        interpolation = "faceVarying"
+    )
+    normal3f[] normals.timeSamples = {
+        0: [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)],
+    }
+    uniform token orientation = "leftHanded"
+    point3f[] points (
+        interpolation = "vertex"
+    )
+    point3f[] points.timeSamples = {
+        0: [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)],
+    }
+    custom color3f[] primvars:colorSet (
+        interpolation = "faceVarying"
+    )
+    color3f[] primvars:colorSet.timeSamples = {
+        0: [(1, 1, 1)],
+    }
+    custom uint[] primvars:colorSet:indices
+    uint[] primvars:colorSet:indices.timeSamples = {
+        0: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    }
+    custom int[] primvars:rman_subdivFacevaryingInterp
+    int[] primvars:rman_subdivFacevaryingInterp.timeSamples = {
+        0: [3],
+    }
+    custom int[] primvars:rman_subdivInterp
+    int[] primvars:rman_subdivInterp.timeSamples = {
+        0: [1],
+    }
+    custom int[] primvars:rman_subdivScheme
+    int[] primvars:rman_subdivScheme.timeSamples = {
+        0: [0],
+    }
+    texCoord2f[] primvars:st (
+        interpolation = "faceVarying"
+    )
+    texCoord2f[] primvars:st.timeSamples = {
+        0: [(0.375, 0), (0.625, 0), (0.375, 0.25), (0.625, 0.25), (0.375, 0.5), (0.625, 0.5), (0.375, 0.75), (0.625, 0.75), (0.375, 1), (0.625, 1), (0.875, 0), (0.875, 0.25), (0.125, 0), (0.125, 0.25)],
+    }
+    int[] primvars:st:indices (
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices.timeSamples = {
+        0: [2, 3, 1, 0, 4, 5, 3, 2, 6, 7, 5, 4, 8, 9, 7, 6, 3, 11, 10, 1, 13, 2, 0, 12],
+    }
+    custom color3f[] primvars:vary
+    color3f[] primvars:vary.timeSamples = {
+        0: [(0.6061388, 0.80782884, 0.73636574)],
+    }
+    uniform token subdivisionScheme = "none"
+    custom string userProperties:ast
+    string userProperties:ast.timeSamples = {
+        0: "usdAttr",
+    }
+    custom vector3d userProperties:astPos
+    vector3d userProperties:astPos.timeSamples = {
+        0: (-0.291868483303249, 0.04075033237193182, 0),
+    }
+    custom string userProperties:born
+    string userProperties:born.timeSamples = {
+        0: "TASK00016161",
+    }
+    custom string userProperties:category
+    string userProperties:category.timeSamples = {
+        0: "props",
+    }
+    custom string userProperties:context
+    string userProperties:context.timeSamples = {
+        0: "model",
+    }
+    custom string userProperties:mat
+    string userProperties:mat.timeSamples = {
+        0: "",
+    }
+    custom string userProperties:name
+    string userProperties:name.timeSamples = {
+        0: "hasColorSet",
+    }
+    custom string userProperties:phz
+    string userProperties:phz.timeSamples = {
+        0: "TASK00016161.usdAttr.model.v001",
+    }
+    custom string userProperties:shd
+    string userProperties:shd.timeSamples = {
+        0: "",
+    }
+    custom string userProperties:version
+    string userProperties:version.timeSamples = {
+        0: "001",
+    }
+    matrix4d xformOp:transform.timeSamples = {
+        0: ( (4.13739892044428, 0, 0, 0), (0, 4.13739892044428, 0, 0), (0, 0, 4.13739892044428, 0), (3.0579145030432717, 2.109449792594072, 0, 1) ),
+    }
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Mesh "hasColorSetCalledVals"
+{
+    float3[] extent.timeSamples = {
+        0: [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)],
+    }
+    int[] faceVertexCounts.timeSamples = {
+        0: [4, 4, 4, 4, 4, 4],
+    }
+    int[] faceVertexIndices.timeSamples = {
+        0: [2, 3, 1, 0, 4, 5, 3, 2, 6, 7, 5, 4, 0, 1, 7, 6, 3, 5, 7, 1, 4, 2, 0, 6],
+    }
+    normal3f[] normals (
+        interpolation = "faceVarying"
+    )
+    normal3f[] normals.timeSamples = {
+        0: [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, 0, -1), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0)],
+    }
+    uniform token orientation = "leftHanded"
+    point3f[] points (
+        interpolation = "vertex"
+    )
+    point3f[] points.timeSamples = {
+        0: [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)],
+    }
+    custom int[] primvars:rman_subdivFacevaryingInterp
+    int[] primvars:rman_subdivFacevaryingInterp.timeSamples = {
+        0: [3],
+    }
+    custom int[] primvars:rman_subdivInterp
+    int[] primvars:rman_subdivInterp.timeSamples = {
+        0: [1],
+    }
+    custom int[] primvars:rman_subdivScheme
+    int[] primvars:rman_subdivScheme.timeSamples = {
+        0: [0],
+    }
+    texCoord2f[] primvars:st (
+        interpolation = "faceVarying"
+    )
+    texCoord2f[] primvars:st.timeSamples = {
+        0: [(0.375, 0), (0.625, 0), (0.375, 0.25), (0.625, 0.25), (0.375, 0.5), (0.625, 0.5), (0.375, 0.75), (0.625, 0.75), (0.375, 1), (0.625, 1), (0.875, 0), (0.875, 0.25), (0.125, 0), (0.125, 0.25)],
+    }
+    int[] primvars:st:indices (
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices.timeSamples = {
+        0: [2, 3, 1, 0, 4, 5, 3, 2, 6, 7, 5, 4, 8, 9, 7, 6, 3, 11, 10, 1, 13, 2, 0, 12],
+    }
+    custom color3f[] primvars:vals (
+        interpolation = "faceVarying"
+    )
+    color3f[] primvars:vals.timeSamples = {
+        0: [(1, 1, 1)],
+    }
+    custom uint[] primvars:vals:indices
+    uint[] primvars:vals:indices.timeSamples = {
+        0: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    }
+    custom color3f[] primvars:vary
+    color3f[] primvars:vary.timeSamples = {
+        0: [(0.07901141, 0.01605987, 0.87536705)],
+    }
+    uniform token subdivisionScheme = "none"
+    custom string userProperties:ast
+    string userProperties:ast.timeSamples = {
+        0: "usdAttr",
+    }
+    custom vector3d userProperties:astPos
+    vector3d userProperties:astPos.timeSamples = {
+        0: (-0.291868483303249, 0.04075033237193182, 0),
+    }
+    custom string userProperties:born
+    string userProperties:born.timeSamples = {
+        0: "TASK00016161",
+    }
+    custom string userProperties:category
+    string userProperties:category.timeSamples = {
+        0: "props",
+    }
+    custom string userProperties:context
+    string userProperties:context.timeSamples = {
+        0: "model",
+    }
+    custom string userProperties:mat
+    string userProperties:mat.timeSamples = {
+        0: "",
+    }
+    custom string userProperties:name
+    string userProperties:name.timeSamples = {
+        0: "hasColorSetCalledVals",
+    }
+    custom string userProperties:phz
+    string userProperties:phz.timeSamples = {
+        0: "TASK00016161.usdAttr.model.v001",
+    }
+    custom string userProperties:shd
+    string userProperties:shd.timeSamples = {
+        0: "",
+    }
+    custom string userProperties:version
+    string userProperties:version.timeSamples = {
+        0: "001",
+    }
+    matrix4d xformOp:transform.timeSamples = {
+        0: ( (4.13739892044428, 0, 0, 0), (0, 4.13739892044428, 0, 0), (0, 0, 4.13739892044428, 0), (-3.641651469649769, 2.109449792594072, 0, 1) ),
+    }
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
