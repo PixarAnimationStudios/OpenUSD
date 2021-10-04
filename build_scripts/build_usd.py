@@ -367,7 +367,7 @@ def RunCMake(context, force, extraArgs = None):
     config=("Debug" if context.buildDebug else "Release")
 
     with CurrentWorkingDirectory(buildDir):
-        Run('cmake3 '
+        Run('{cmake} '
             '-DCMAKE_INSTALL_PREFIX="{instDir}" '
             '-DCMAKE_PREFIX_PATH="{depsInstDir}" '
             '-DCMAKE_BUILD_TYPE={config} '
@@ -376,7 +376,8 @@ def RunCMake(context, force, extraArgs = None):
             '{toolset} '
             '{extraArgs} '
             '"{srcDir}"'
-            .format(instDir=instDir,
+            .format(cmake=os.environ.get("CMAKE","cmake3")),
+                    instDir=instDir,
                     depsInstDir=context.instDir,
                     config=config,
                     srcDir=srcDir,
@@ -384,8 +385,9 @@ def RunCMake(context, force, extraArgs = None):
                     generator=(generator or ""),
                     toolset=(toolset or ""),
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
-        Run("cmake3 --build . --config {config} --target install -- {multiproc}"
-            .format(config=config,
+        Run("{cmake} --build . --config {config} --target install -- {multiproc}"
+            .format(cmake=os.environ.get("CMAKE","cmake3"),
+                    config=config,
                     multiproc=FormatMultiProcs(context.numJobs, generator)))
 
 def GetCMakeVersion():
@@ -395,7 +397,7 @@ def GetCMakeVersion():
     parsing its output.
     """
 
-    output_string = GetCommandOutput("cmake3 --version")
+    output_string = GetCommandOutput("{cmake} --version".format(cmake=os.environ.get("CMAKE","cmake3")))
     if not output_string:
         PrintWarning("Could not determine cmake version -- please install it "
                      "and adjust your PATH")
