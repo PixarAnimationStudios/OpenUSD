@@ -214,7 +214,7 @@ pxr_register_test(testUsdAbcIndexedProperties
 pxr_register_test(testUsdAbcIndexedGeomArb
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcIndexedGeomArb"
-        DIFF_COMPARE bad_primvars_namespace_before_fix.usda
+        DIFF_COMPARE good_primvars_namespace_after_fix.usda
         EXPECTED_RETURN_CODE 0
         ENV
         USD_ABC_TESTSUFFIX=def
