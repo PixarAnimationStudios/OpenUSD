@@ -149,6 +149,9 @@ int
 HdStGLConversions::GetGLAttribType(HdType type)
 {
     switch (type) {
+    case HdTypeHalfFloatVec2:
+    case HdTypeHalfFloatVec4:
+        return GL_HALF_FLOAT;
     case HdTypeInt32:
     case HdTypeInt32Vec2:
     case HdTypeInt32Vec3:
@@ -210,6 +213,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (uvec4)
 
     (packed_2_10_10_10)
+    (packed_half2)
+    (packed_half4)
 );
 
 TfToken
@@ -223,6 +228,12 @@ HdStGLConversions::GetGLSLTypename(HdType type)
     // Packed types (require special handling in codegen)...
     case HdTypeInt32_2_10_10_10_REV:
         return _glTypeNames->packed_2_10_10_10;
+    // XXX: Note that we don't support half or half3, since we can't
+    // index-address them...
+    case HdTypeHalfFloatVec2:
+        return _glTypeNames->packed_half2;
+    case HdTypeHalfFloatVec4:
+        return _glTypeNames->packed_half4;
 
     case HdTypeBool:
         return _glTypeNames->_bool;

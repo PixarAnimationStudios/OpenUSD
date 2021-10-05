@@ -338,6 +338,10 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             // so expand them out to their target type for the shader binding.
             if (valueType.type == HdTypeInt32_2_10_10_10_REV) {
                 valueType.type = HdTypeFloatVec4;
+            } else if (valueType.type == HdTypeHalfFloatVec2) {
+                valueType.type = HdTypeFloatVec2;
+            } else if (valueType.type == HdTypeHalfFloatVec4) {
+                valueType.type = HdTypeFloatVec4;
             }
             TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
             metaDataOut->vertexData[vertexPrimvarBinding] =

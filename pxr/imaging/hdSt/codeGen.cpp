@@ -58,6 +58,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((_double, "double"))
     ((_float, "float"))
     ((_int, "int"))
+    ((_uint, "uint"))
     (hd_vec3)
     (hd_vec3_get)
     (hd_vec3_set)
@@ -75,7 +76,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     (hd_dmat3_set)
     (hd_vec4_2_10_10_10_get)
     (hd_vec4_2_10_10_10_set)
+    (hd_half2_get)
+    (hd_half2_set)
+    (hd_half4_get)
+    (hd_half4_set)
     (inPrimvars)
+    (uvec2)
+    (uvec3)
+    (uvec4)
     (ivec2)
     (ivec3)
     (ivec4)
@@ -91,6 +99,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (dmat3)
     (dmat4)
     (packed_2_10_10_10)
+    (packed_half2)
+    (packed_half4)
     ((ptexTextureSampler, "ptexTextureSampler"))
     (isamplerBuffer)
     (samplerBuffer)
@@ -272,7 +282,17 @@ _GetPackedTypeDefinitions()
            "    return ( (int(v.x * 511.0) & 0x3ff) |\n"
            "            ((int(v.y * 511.0) & 0x3ff) << 10) |\n"
            "            ((int(v.z * 511.0) & 0x3ff) << 20) |\n"
-           "            ((int(v.w) & 0x1) << 30)); }\n";
+           "            ((int(v.w) & 0x1) << 30)); }\n"
+        // half2 and half4 accessors (note that half and half3 are unsupported)
+           "vec2 hd_half2_get(uint v) {\n"
+           "    return unpackHalf2x16(v); }\n"
+           "uint hd_half2_set(vec2 v) {\n"
+           "    return packHalf2x16(v); }\n"
+           "vec4 hd_half4_get(uvec2 v) {\n"
+           "    return vec4(unpackHalf2x16(v.x), unpackHalf2x16(v.y)); }\n"
+           "uvec2 hd_half4_set(vec4 v) {\n"
+           "    return uvec2(packHalf2x16(v.xy), packHalf2x16(v.zw)); }\n"
+           ;
 }
 
 static TfToken const &
@@ -294,6 +314,12 @@ _GetPackedType(TfToken const &token, bool packedAlignment)
     if (token == _tokens->packed_2_10_10_10) {
         return _tokens->_int;
     }
+    if (token == _tokens->packed_half2) {
+        return _tokens->_uint;
+    }
+    if (token == _tokens->packed_half4) {
+        return _tokens->uvec2;
+    }
     return token;
 }
 
@@ -301,6 +327,12 @@ static TfToken const &
 _GetUnpackedType(TfToken const &token, bool packedAlignment)
 {
     if (token == _tokens->packed_2_10_10_10) {
+        return _tokens->vec4;
+    }
+    if (token == _tokens->packed_half2) {
+        return _tokens->vec2;
+    }
+    if (token == _tokens->packed_half4) {
         return _tokens->vec4;
     }
     return token;
@@ -325,6 +357,12 @@ _GetPackedTypeAccessor(TfToken const &token, bool packedAlignment)
     if (token == _tokens->packed_2_10_10_10) {
         return _tokens->hd_vec4_2_10_10_10_get;
     }
+    if (token == _tokens->packed_half2) {
+        return _tokens->hd_half2_get;
+    }
+    if (token == _tokens->packed_half4) {
+        return _tokens->hd_half4_get;
+    }
     return token;
 }
 
@@ -346,6 +384,12 @@ _GetPackedTypeMutator(TfToken const &token, bool packedAlignment)
     }
     if (token == _tokens->packed_2_10_10_10) {
         return _tokens->hd_vec4_2_10_10_10_set;
+    }
+    if (token == _tokens->packed_half2) {
+        return _tokens->hd_half2_set;
+    }
+    if (token == _tokens->packed_half4) {
+        return _tokens->hd_half4_set;
     }
     return token;
 }

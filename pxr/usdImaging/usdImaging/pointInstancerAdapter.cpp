@@ -1875,20 +1875,7 @@ UsdImagingPointInstancerAdapter::Get(UsdPrim const& usdPrim,
             UsdGeomPointInstancer instancer(usdPrim);
             VtQuathArray orientations;
             if (instancer.GetOrientationsAttr().Get(&orientations, time)) {
-                // convert to Vec4Array that hydra instancer requires.
-                // Also note that hydra's instancer takes GfQuaterion layout
-                // (real, imaginary) which differs from GfQuath's
-                // (imaginary, real)
-                VtVec4fArray rotations;
-                rotations.reserve(orientations.size());
-                for (const GfQuath& orientation : orientations) {
-                    rotations.push_back(
-                        GfVec4f(orientation.GetReal(),
-                                orientation.GetImaginary()[0],
-                                orientation.GetImaginary()[1],
-                                orientation.GetImaginary()[2]));
-                }
-                return VtValue(rotations);
+                return VtValue(orientations);
             }
 
         } else if (key == _tokens->scale) {
