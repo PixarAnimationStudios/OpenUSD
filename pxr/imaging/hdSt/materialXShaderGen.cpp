@@ -472,6 +472,33 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
         emitLineBreak(mxStage);
     }
 
+    // Initialize MaterialX parameters with HdGet_ equivalents
+    emitComment("Initialize Material Parameters", mxStage);
+    const auto& paramsBlock = mxStage.getUniformBlock("PublicUniforms");
+    for (size_t i = 0; i < paramsBlock.size(); ++i)
+    {
+        auto variable = paramsBlock[i];
+        auto varType = variable->getType();
+
+        bool canInit = false;
+        if (varType->getBaseType() == mx::TypeDesc::BASETYPE_FLOAT) {
+            canInit = true;
+        }
+        else if (varType->getBaseType() == mx::TypeDesc::BASETYPE_INTEGER)
+        {
+            if (varType->getSize() == 1) {
+                canInit = true;
+            }
+        }
+        
+        if (canInit)
+        {
+            emitLine(variable->getName() + " = HdGet_" +
+                variable->getName() + "()", mxStage);
+        }
+    }
+    emitLineBreak(mxStage);
+
     // Gather Direct light data from Hydra and apply the Hydra transformation 
     // matrix to the environment map matrix (u_envMatrix) to account for the
     // domeLight's transform. 

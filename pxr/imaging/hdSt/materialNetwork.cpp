@@ -1228,7 +1228,8 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
         if (!isVolume) {
             HdSt_ApplyMaterialXFilter(&surfaceNetwork, materialId,
-                                      *surfTerminal, surfTerminalPath);
+                                      *surfTerminal, surfTerminalPath,
+                                      &_materialParams);
         }
 #endif
         // Extract the glslfx and metadata for surface/volume.

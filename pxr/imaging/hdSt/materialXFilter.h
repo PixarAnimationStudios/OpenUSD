@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hdSt/materialNetwork.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/usd/sdf/path.h"
 #include <MaterialXCore/Document.h>
@@ -52,13 +53,8 @@ void HdSt_ApplyMaterialXFilter(
     HdMaterialNetwork2* hdNetwork,
     SdfPath const& materialPath,
     HdMaterialNode2 const& terminalNode,
-    SdfPath const& terminalNodePath);
-
-// Generates the glsfx source code for the given MaterialX Document
-std::string HdSt_GenMaterialXShaderCode(
-    MaterialX::DocumentPtr const& mxDoc,
-    MaterialX::FileSearchPath const& searchPath,
-    MxHdInfo const& mxHdInfo=MxHdInfo());
+    SdfPath const& terminalNodePath,
+    HdSt_MaterialParamVector* materialParams);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
