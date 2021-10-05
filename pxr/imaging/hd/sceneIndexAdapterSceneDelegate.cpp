@@ -1387,9 +1387,23 @@ HdSceneIndexAdapterSceneDelegate::_GetPrimvar(SdfPath const &id,
                     return valueDataSource->GetValue(0.0f);
                 }
             }
-            
         }
     }
+
+    // Fallback for unknown prim conventions provided by emulated scene
+    // delegate (for non-indexed cases).
+    if (!outIndices) {
+        if (HdTypedSampledDataSource<HdSceneDelegate*>::Handle sdDs =
+                HdTypedSampledDataSource<HdSceneDelegate*>::Cast(
+                    prim.dataSource->Get(
+                        HdSceneIndexEmulationTokens->sceneDelegate))) {
+
+            if (HdSceneDelegate *delegate = sdDs->GetTypedValue(0.0f)) {
+                return delegate->Get(id, key);
+            }
+        }
+    }
+
 
     return VtValue();
 }
