@@ -258,6 +258,11 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdExtComputation::DirtyOutputDesc) {
             set->append(HdExtComputationSchema::GetOutputsLocator());
         }
+    } else {
+        // unknown prim type, use AllDirty for anything
+        if (bits) {
+            set->append(HdDataSourceLocator());
+        }
     }
 }
 
@@ -632,6 +637,11 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
                 } while(it != end && it->Intersects(
                             HdExtComputationSchema::GetDefaultLocator()));
             }
+        }
+    } else {
+        // unknown prim type, use AllDirty for anything
+        if (_FindLocator(HdDataSourceLocator(), end, &it)) {
+            bits |= HdChangeTracker::AllDirty;
         }
     }
 
