@@ -115,10 +115,10 @@ private:
     TfToken _type;
     HdSceneDelegate *_sceneDelegate;
 
-    bool _primvarsBuilt : 1;
+    std::atomic_bool _primvarsBuilt;
     bool _extComputationPrimvarsBuilt : 1;
 
-    HdContainerDataSourceHandle _primvars;
+    HdContainerDataSourceAtomicHandle _primvars;
     HdContainerDataSourceHandle _extComputationPrimvars;
 
     // Note: _instancerTopology needs to be an atomic handle, since

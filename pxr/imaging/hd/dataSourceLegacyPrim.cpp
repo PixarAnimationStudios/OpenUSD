@@ -2069,9 +2069,10 @@ void
 HdDataSourceLegacyPrim::PrimDirtied(const HdDataSourceLocatorSet &locators)
 {
     if (locators.Intersects(HdPrimvarsSchema::GetDefaultLocator())) {
-        _primvarsBuilt = false;
+        _primvarsBuilt.store(false);
         _extComputationPrimvarsBuilt = false;
-        _primvars.reset();
+        HdContainerDataSourceHandle null(nullptr);
+        HdContainerDataSource::AtomicStore(_primvars, null);
         _extComputationPrimvars.reset();
     }
 
@@ -2427,8 +2428,8 @@ _ConvertHdMaterialNetworkToHdDataSources(
 HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetPrimvarsDataSource()
 {
-    if (_primvarsBuilt) {
-        return _primvars;
+    if (_primvarsBuilt.load()) {
+        return HdContainerDataSource::AtomicLoad(_primvars);
     }
 
     TRACE_FUNCTION();
@@ -2456,9 +2457,11 @@ HdDataSourceLegacyPrim::_GetPrimvarsDataSource()
         }
     }
 
-    _primvars = primvarsDs;
-    _primvarsBuilt = true;
-    return _primvars;
+    HdContainerDataSourceHandle ds = primvarsDs;
+    HdContainerDataSource::AtomicStore(_primvars, ds);
+    _primvarsBuilt.store(true);
+
+    return primvarsDs;
 }
 
 HdDataSourceBaseHandle
