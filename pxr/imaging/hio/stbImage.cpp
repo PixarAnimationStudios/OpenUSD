@@ -39,12 +39,16 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 
+ARCH_PRAGMA_PUSH
 // To avoid exporting the stb_* functions from our shared library
 // we define the STB_IMAGE_..._STATIC macros so that stb marks
 // them as static. This causes many "unused function" warnings,
 // so we use ARCH_PRAGMA_UNUSED_FUNCTION to suppress them.
-ARCH_PRAGMA_PUSH
 ARCH_PRAGMA_UNUSED_FUNCTION
+// We also turn off the "maybe uninitialized" warning because the version of
+// stb we are currently using produces these warnings, though the particular
+// case in question appears to be benign.
+ARCH_PRAGMA_MAYBE_UNINITIALIZED
 
 #define STB_IMAGE_STATIC
 #ifdef ARCH_OS_WINDOWS
