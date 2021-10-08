@@ -34,6 +34,15 @@ class "NonAppliedAPI" (
 {
 }
 
+class "DerivedNonAppliedAPI" (
+    inherits = </NonAppliedAPI>
+    customData = {
+        token apiSchemaType = "nonApplied"
+    }
+)
+{
+}
+
 class "SingleApplyAPI" (
     inherits = </APISchemaBase>
     apiSchemas = ["BuiltinAPI"]

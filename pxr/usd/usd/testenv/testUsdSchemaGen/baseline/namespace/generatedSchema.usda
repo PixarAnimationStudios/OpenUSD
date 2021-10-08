@@ -17,6 +17,10 @@ class "NonAppliedAPI"
 {
 }
 
+class "DerivedNonAppliedAPI"
+{
+}
+
 class "SingleApplyAPI" (
     apiSchemas = ["BuiltinAPI"]
 )

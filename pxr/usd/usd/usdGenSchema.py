@@ -556,11 +556,17 @@ class ClassInfo(object):
                         sdfPrim.path)
         
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
-            self.parentCppClassName != "UsdAPISchemaBase":
-            raise _GetSchemaDefException(
-                "API schemas must explicitly inherit directly from "
-                "APISchemaBase.", 
-                sdfPrim.path)
+                self.parentCppClassName != "UsdAPISchemaBase":
+            if self.isAppliedAPISchema: 
+                raise _GetSchemaDefException(
+                    "Applied API schemas must explicitly inherit directly from "
+                    "APISchemaBase.", 
+                    sdfPrim.path)
+            elif parentCustomData.get(API_SCHEMA_TYPE) != NON_APPLIED:
+                raise _GetSchemaDefException(
+                    "Non-applied API schemas must inherit directly from "
+                    "APISchemaBase or another non-applied API schema.", 
+                    sdfPrim.path)
 
         if not self.isApi and self.isAppliedAPISchema:
             raise _GetSchemaDefException(
