@@ -138,7 +138,10 @@ def main():
             print("Failed!")
             return 1
 
-    print("Success!")
+    if len(warnings) > 0:
+        print("Success with warnings...")
+    else:
+        print("Success!")
     return 0
 
 if __name__ == '__main__':
