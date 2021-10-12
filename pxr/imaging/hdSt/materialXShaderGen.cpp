@@ -195,6 +195,26 @@ HdStMaterialXShaderGen::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
     emitLineBreak(mxStage);
 }
 
+static bool _IsHardcodedPublicUniform(const mx::TypeDesc& varType)
+{
+    // all major types of public uniforms are set through 
+    // HdSt_MaterialParamVector in the function _AddMaterialXParams
+    // The rest is hardcoded in the shader
+
+    if (varType.getBaseType() != mx::TypeDesc::BASETYPE_FLOAT &&
+        varType.getBaseType() != mx::TypeDesc::BASETYPE_INTEGER)
+    {
+        return true;
+    }
+
+    if (varType.getSize() < 1 || varType.getSize() > 4)
+    {
+        return true;
+    }
+
+    return false;
+}
+
 // Similar to GlslShaderGenerator::emitPixelStage() with alterations and 
 // additions to match Pxr's codeGen
 void
@@ -474,27 +494,16 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
 
     // Initialize MaterialX parameters with HdGet_ equivalents
     emitComment("Initialize Material Parameters", mxStage);
-    const auto& paramsBlock = mxStage.getUniformBlock("PublicUniforms");
+    const auto& paramsBlock = mxStage.getUniformBlock(mx::HW::PUBLIC_UNIFORMS);
     for (size_t i = 0; i < paramsBlock.size(); ++i)
     {
         auto variable = paramsBlock[i];
         auto varType = variable->getType();
-
-        bool canInit = false;
-        if (varType->getBaseType() == mx::TypeDesc::BASETYPE_FLOAT) {
-            canInit = true;
-        }
-        else if (varType->getBaseType() == mx::TypeDesc::BASETYPE_INTEGER)
-        {
-            if (varType->getSize() == 1) {
-                canInit = true;
-            }
-        }
         
-        if (canInit)
+        if (!_IsHardcodedPublicUniform(*varType))
         {
-            emitLine(variable->getName() + " = HdGet_" +
-                variable->getName() + "()", mxStage);
+            emitLine(variable->getVariable() + " = HdGet_" +
+                variable->getVariable() + "()", mxStage);
         }
     }
     emitLineBreak(mxStage);
@@ -624,18 +633,27 @@ HdStMaterialXShaderGen::emitVariableDeclarations(
         mx::HW::T_ALBEDO_TABLE      // BRDF texture
     };
 
+    // most public uniforms are set from outside the shader
+    const bool arePublicUniforms = block.getName() == mx::HW::PUBLIC_UNIFORMS;
+
     for (size_t i = 0; i < block.size(); ++i)
     {
         emitLineBegin(stage);
 
+        auto variable    = block[i];
+        auto varType     = variable->getType();
+        bool onlyDeclare = 
+            (arePublicUniforms && !_IsHardcodedPublicUniform(*varType)) ||
+            (MxHdVariables.count(variable->getName()));
+
         // Only declare the variables that we need to initialize with Hd Data
-        if (MxHdVariables.count(block[i]->getName())) {
-            emitVariableDeclaration(block[i], mx::EMPTY_STRING,
+        if (onlyDeclare) {
+            emitVariableDeclaration(variable, mx::EMPTY_STRING,
                                     context, stage, false);
         }
         // Otherwise assign the value from MaterialX
         else {
-            emitVariableDeclaration(block[i], qualifier, 
+            emitVariableDeclaration(variable, qualifier,
                                     context, stage, assignValue);
         }
         emitString(separator, stage);

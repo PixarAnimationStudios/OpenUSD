@@ -446,35 +446,66 @@ void _AddMaterialXParams(mx::ShaderPtr glslfxShader,
     }
 
     mx::ShaderStage& pixelStage = glslfxShader->getStage(mx::Stage::PIXEL);
-    const auto& paramsBlock = pixelStage.getUniformBlock("PublicUniforms");
+    const auto& paramsBlock = pixelStage.getUniformBlock(mx::HW::PUBLIC_UNIFORMS);
 
     for (size_t i = 0; i < paramsBlock.size(); ++i)
     {
         auto variable = paramsBlock[i];
+        auto varValue = variable->getValue();
+        std::istringstream valueStream(
+            varValue ? varValue->getValueString() : std::string());
+        std::string separator;
 
         HdSt_MaterialParam param;
         param.paramType = HdSt_MaterialParam::ParamTypeFallback;
-        param.name = TfToken(variable->getName());
+        param.name = TfToken(variable->getVariable());
 
         auto varType = variable->getType();
         if (varType->getBaseType() == mx::TypeDesc::BASETYPE_FLOAT) {
             if (varType->getSize() == 1) {
-                param.fallbackValue = VtValue(float(0.f));
+                float val;
+                valueStream >> val;
+                param.fallbackValue = VtValue(val);
             }
             else if (varType->getSize() == 2) {
-                param.fallbackValue = VtValue(GfVec2f(0.f, 0.f));
+                GfVec2f val;
+                valueStream >> val[0] >> separator >> val[1];
+                param.fallbackValue = VtValue(val);
             }
             else if (varType->getSize() == 3) {
-                param.fallbackValue = VtValue(GfVec3f(0.f, 0.f, 0.f));
+                GfVec3f val;
+                valueStream >> val[0] >> separator >> val[1] >> separator >> val[2];
+                param.fallbackValue = VtValue(val);
             }
             else if (varType->getSize() == 4) {
-                param.fallbackValue = VtValue(GfVec4f(0.f, 0.f, 0.f, 0.f));
+                GfVec4f val;
+                valueStream >> val[0] >> separator >> val[1] >> separator
+                            >> val[2] >> separator >> val[3];
+                param.fallbackValue = VtValue(val);
             }
         }
         else if (varType->getBaseType() == mx::TypeDesc::BASETYPE_INTEGER)
         {
             if (varType->getSize() == 1) {
-                param.fallbackValue = VtValue(int(0.f));
+                int val;
+                valueStream >> val;
+                param.fallbackValue = VtValue(val);
+            }
+            else if (varType->getSize() == 2) {
+                GfVec2i val;
+                valueStream >> val[0] >> separator >> val[1];
+                param.fallbackValue = VtValue(val);
+            }
+            else if (varType->getSize() == 3) {
+                GfVec3i val;
+                valueStream >> val[0] >> separator >> val[1] >> separator >> val[2];
+                param.fallbackValue = VtValue(val);
+            }
+            else if (varType->getSize() == 4) {
+                GfVec4i val;
+                valueStream >> val[0] >> separator >> val[1] >> separator
+                    >> val[2] >> separator >> val[3];
+                param.fallbackValue = VtValue(val);
             }
         }
 
