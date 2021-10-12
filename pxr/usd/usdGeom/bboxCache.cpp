@@ -46,6 +46,8 @@
 #include <tbb/enumerable_thread_specific.h>
 #include <algorithm>
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 

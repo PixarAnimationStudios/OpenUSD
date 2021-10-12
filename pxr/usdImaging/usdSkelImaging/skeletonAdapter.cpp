@@ -53,6 +53,7 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/work/loops.h"
 
+TRACE_CUSTOM_CALLBACK_DEFINE
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(

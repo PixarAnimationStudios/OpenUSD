@@ -55,6 +55,8 @@
 
 #include <boost/get_pointer.hpp>
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::vector;

@@ -34,6 +34,8 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/debug.h"
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 

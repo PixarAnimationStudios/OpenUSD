@@ -58,6 +58,8 @@ using std::pair;
 using std::string;
 using std::vector;
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 typedef TfHashMap< std::string, PlugPluginRefPtr, TfHash > _PluginMap;

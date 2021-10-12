@@ -46,6 +46,8 @@
 
 using namespace boost::python;
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {

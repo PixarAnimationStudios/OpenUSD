@@ -37,6 +37,8 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 namespace {
 
 template <typename R>

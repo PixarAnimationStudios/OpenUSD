@@ -65,15 +65,28 @@ public:
     constexpr TraceStaticKeyData(const StringLiteral name) 
         : _name(name.str) {}
     
-    /// Constructor for a function (\p func, \p prettyFunc) and optional 
+    /// Constructor for a function \p file, \p line and scope \p name.
+    constexpr TraceStaticKeyData(
+        const StringLiteral file,
+        const int line,
+        const StringLiteral name)
+        : _name(name.str)
+        , _file(file.str)
+        , _line(line) {}
+
+    /// Constructor for a function (\p file, \p line, \p func, \p prettyFunc) and optional 
     /// scope \p name.
     constexpr TraceStaticKeyData(
+        const StringLiteral file,
+        const int line,
         const StringLiteral func,
         const StringLiteral prettyFunc,
         const StringLiteral name = StringLiteral())
         : _funcName(func.str)
         , _prettyFuncName(prettyFunc.str)
-        , _name(name.str) {}
+        , _name(name.str)
+        , _file(file.str)
+        , _line(line) {}
 
     /// Equality comparison.  Inequality is also defined.
     TRACE_API
@@ -87,14 +100,23 @@ public:
     TRACE_API
     std::string GetString() const;
 
+    /// Accessors for custom callbacks
+    inline const char* GetFunction() const { return _funcName; }
+    inline const char* GetPrettyFunction() const { return _prettyFuncName; }
+    inline const char* GetName() const { return _name; }
+    inline const char* GetFile() const { return _file; }
+    inline int GetLine() const { return _line; }
 private:
     TraceStaticKeyData() {}
 
     const char* _funcName = nullptr;
     const char* _prettyFuncName = nullptr;
     const char* _name = nullptr;
-
+    const char* _file = nullptr;
+    int _line = 0;
+    
     friend class TraceDynamicKey;
+    friend class TraceScopeAuto;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

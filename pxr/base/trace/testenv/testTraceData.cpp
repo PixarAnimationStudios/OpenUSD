@@ -36,6 +36,8 @@
 #include <boost/preprocessor/seq/transform.hpp>
 #include <boost/preprocessor/variadic/to_seq.hpp>
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 #if !defined(TRACE_FUNCTION_ARGS)
@@ -44,7 +46,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 /// destructed, using the name of the function or method as the key for the
 /// scope. The macro arguments must come in key value pairs.
 #define TRACE_FUNCTION_ARGS(...) \
-        TRACE_FUNCTION_ARGS_INSTANCE(__LINE__, __ARCH_FUNCTION__, \
+        TRACE_FUNCTION_ARGS_INSTANCE(__FILE__, __LINE__, __ARCH_FUNCTION__, \
             __ARCH_PRETTY_FUNCTION__, __VA_ARGS__)
 #endif
 
@@ -53,7 +55,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 /// destructed, using \a name as the key. The macro data arguments must come in
 /// key value pairs.
 #define TRACE_SCOPE_ARGS(name, ...) \
-        TRACE_SCOPE_ARGS_INSTANCE(__LINE__, name, __VA_ARGS__)
+        TRACE_SCOPE_ARGS_INSTANCE(__FILE__, __LINE__, name, __VA_ARGS__)
 #endif
 
 /// Records a data event using the name as the data key. The value can be a 
@@ -62,22 +64,49 @@ PXR_NAMESPACE_USING_DIRECTIVE
 #define TRACE_DATA(name, value) \
     TraceCollector::GetInstance().StoreData(name, value);
 
-#define TRACE_FUNCTION_ARGS_INSTANCE(instance, name, prettyName, ...) \
-constexpr static TraceStaticKeyData BOOST_PP_CAT(TraceKeyData_, instance)( \
-    name, prettyName); \
-_TRACE_ARGS_TO_STATIC_VARS(BOOST_PP_CAT(TraceKeyData_, instance), __VA_ARGS__); \
-TraceScopeAuto BOOST_PP_CAT(TraceScopeAuto_, instance)(\
-        BOOST_PP_CAT(TraceKeyData_, instance), \
-        _TRACE_ARGS_TO_FUNC_PARAMS(BOOST_PP_CAT(TraceKeyData_, instance), \
+#if(TRACE_CUSTOM_CALLBACK)
+
+#define TRACE_FUNCTION_ARGS_INSTANCE(file, line, name, prettyName, ...) \
+constexpr static TraceStaticKeyData BOOST_PP_CAT(TraceKeyData_, line)( \
+    file, line, name, prettyName); \
+static void* BOOST_PP_CAT(TraceKeyCallbackData_, line) = nullptr; \
+_TRACE_ARGS_TO_STATIC_VARS(BOOST_PP_CAT(TraceKeyData_, line), __VA_ARGS__); \
+TraceScopeAuto BOOST_PP_CAT(TraceScopeAuto_, line)(\
+        BOOST_PP_CAT(TraceKeyData_, line), \
+        &BOOST_PP_CAT(TraceKeyCallbackData_, line), \
+        _TRACE_ARGS_TO_FUNC_PARAMS(BOOST_PP_CAT(TraceKeyData_, line), \
             __VA_ARGS__));
 
-#define TRACE_SCOPE_ARGS_INSTANCE(instance, name, ...) \
-constexpr static TraceStaticKeyData BOOST_PP_CAT(TraceKeyData_, instance)(name); \
-_TRACE_ARGS_TO_STATIC_VARS(BOOST_PP_CAT(TraceKeyData_, instance), __VA_ARGS__); \
-TraceScopeAuto BOOST_PP_CAT(TraceScopeAuto_, instance)(\
-        BOOST_PP_CAT(TraceKeyData_, instance), \
-        _TRACE_ARGS_TO_FUNC_PARAMS(BOOST_PP_CAT(TraceKeyData_, instance), \
+#define TRACE_SCOPE_ARGS_INSTANCE(file, line, name, ...) \
+constexpr static TraceStaticKeyData BOOST_PP_CAT(TraceKeyData_, line)(file, line, name); \
+static void* BOOST_PP_CAT(TraceKeyCallbackData_, line) = nullptr; \
+_TRACE_ARGS_TO_STATIC_VARS(BOOST_PP_CAT(TraceKeyData_, line), __VA_ARGS__); \
+TraceScopeAuto BOOST_PP_CAT(TraceScopeAuto_, line)(\
+        BOOST_PP_CAT(TraceKeyData_, line), \
+        &BOOST_PP_CAT(TraceKeyCallbackData_, line), \
+        _TRACE_ARGS_TO_FUNC_PARAMS(BOOST_PP_CAT(TraceKeyData_, line), \
             __VA_ARGS__));
+
+#else // TRACE_CUSTOM_CALLBACK
+
+#define TRACE_FUNCTION_ARGS_INSTANCE(file, line, name, prettyName, ...) \
+constexpr static TraceStaticKeyData BOOST_PP_CAT(TraceKeyData_, line)( \
+    file, line, name, prettyName); \
+_TRACE_ARGS_TO_STATIC_VARS(BOOST_PP_CAT(TraceKeyData_, line), __VA_ARGS__); \
+TraceScopeAuto BOOST_PP_CAT(TraceScopeAuto_, line)(\
+        BOOST_PP_CAT(TraceKeyData_, line), \
+        _TRACE_ARGS_TO_FUNC_PARAMS(BOOST_PP_CAT(TraceKeyData_, line), \
+            __VA_ARGS__));
+
+#define TRACE_SCOPE_ARGS_INSTANCE(file, line, name, ...) \
+constexpr static TraceStaticKeyData BOOST_PP_CAT(TraceKeyData_, line)(file, line, name); \
+_TRACE_ARGS_TO_STATIC_VARS(BOOST_PP_CAT(TraceKeyData_, line), __VA_ARGS__); \
+TraceScopeAuto BOOST_PP_CAT(TraceScopeAuto_, line)(\
+        BOOST_PP_CAT(TraceKeyData_, line), \
+        _TRACE_ARGS_TO_FUNC_PARAMS(BOOST_PP_CAT(TraceKeyData_, line), \
+            __VA_ARGS__));
+
+#endif // TRACE_CUSTOM_CALLBACK
 
 #define _TRACE_KEY_FROM_TUPLE(r, data, elem) BOOST_PP_TUPLE_ELEM(2, 0, elem)
 #define _TRACE_VALUE_FROM_TUPLE(r, data, elem) BOOST_PP_TUPLE_ELEM(2, 1, elem)

@@ -31,6 +31,8 @@
 #include <vector>
 #include <fenv.h>
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 uint64_t observableValue;

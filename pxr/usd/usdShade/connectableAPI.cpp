@@ -29,6 +29,8 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Register the schema with the TfType system.

@@ -31,6 +31,8 @@
 #include <iostream>
 #include <thread>
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 std::atomic<int> threadStarted;

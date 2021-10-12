@@ -73,6 +73,8 @@
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/tf/stl.h"
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {

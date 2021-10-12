@@ -52,6 +52,7 @@ option(PXR_PREFER_SAFETY_OVER_SPEED
         ON)
 option(PXR_USE_AR_2 "Use Asset Resolver (Ar) 2.0" ON)
 
+option(PXR_ENABLE_TRACE_CUSTOM_CALLBACK "Enable custom callback for profiling trace." OFF)
 # Determine GFX api
 # Metal only valid on Apple platforms
 set(pxr_enable_metal "OFF")

@@ -37,6 +37,8 @@
 
 #include "pxr/base/tf/type.h"
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // XXX: These primvar names are known here so that they may be exempted from 

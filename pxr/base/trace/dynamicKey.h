@@ -41,9 +41,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// a static constexpr TraceStaticKeyData instance instead.
 class TraceDynamicKey {
 public:
+    /// Constructor for \file, \line and \name as TfToken.
+    TraceDynamicKey(const char* file, int line, TfToken name) : _key(std::move(name)) {
+        _data._name = _key.GetText();
+        _data._file = file;
+        _data._line = line;
+    }
+
     /// Constructor for TfToken.
     TraceDynamicKey(TfToken name) : _key(std::move(name)) {
         _data._name = _key.GetText();
+    }
+
+    /// Constructor for \file, \line and \name as string.
+    TraceDynamicKey(const char* file, int line, const std::string& name) : _key(name) {
+        _data._name = _key.GetText();
+        _data._file = file;
+        _data._line = line;
     }
 
     /// Constructor for string.
@@ -76,6 +90,9 @@ public:
 
     /// Returns a reference to TraceStaticKeyData.
     const TraceStaticKeyData& GetData() const { return _data; }
+
+    /// Returns the name token
+    const TfToken& GetName() const { return _key; }
 
 private:
     TraceStaticKeyData _data;

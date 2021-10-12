@@ -25,6 +25,9 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/pyModule.h"
+#include "pxr/base/trace/trace.h"
+
+TRACE_CUSTOM_CALLBACK_DEFINE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

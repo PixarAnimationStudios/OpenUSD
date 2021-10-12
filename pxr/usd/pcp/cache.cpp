@@ -67,6 +67,8 @@ using std::make_pair;
 using std::pair;
 using std::vector;
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(

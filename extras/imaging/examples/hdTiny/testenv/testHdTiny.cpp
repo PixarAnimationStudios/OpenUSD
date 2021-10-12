@@ -34,6 +34,8 @@
 
 #include <iostream>
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void RunHydra()

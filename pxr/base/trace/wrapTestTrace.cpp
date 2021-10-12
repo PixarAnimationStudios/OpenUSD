@@ -78,19 +78,19 @@ TestNesting()
 static void
 TestAutoFunc2()
 {
-    TraceAuto t(TF_FUNC_NAME());
+    TraceAuto t(__FILE__, __LINE__, TF_FUNC_NAME());
 }
 
 static void
 TestAutoFunc3()
 {
-    TraceAuto t(TF_FUNC_NAME());
+    TraceAuto t(__FILE__, __LINE__, TF_FUNC_NAME());
 }
 
 static void
 TestAutoFunc1()
 {
-    TraceAuto t(TF_FUNC_NAME());
+    TraceAuto t(__FILE__, __LINE__, TF_FUNC_NAME());
     TestAutoFunc2();
     TestAutoFunc3();
 }
@@ -98,7 +98,7 @@ TestAutoFunc1()
 static void
 TestAuto()
 {
-    TraceAuto t(TF_FUNC_NAME());
+    TraceAuto t(__FILE__, __LINE__, TF_FUNC_NAME());
     TestAutoFunc1();
 }
 

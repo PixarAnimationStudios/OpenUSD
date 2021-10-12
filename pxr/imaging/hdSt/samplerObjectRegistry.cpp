@@ -30,6 +30,8 @@
 
 #include "pxr/base/trace/trace.h"
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdSt_SamplerObjectRegistry::HdSt_SamplerObjectRegistry(

@@ -32,6 +32,8 @@
 
 #include <boost/preprocessor/seq/for_each.hpp>
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 

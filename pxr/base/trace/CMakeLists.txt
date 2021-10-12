@@ -38,6 +38,7 @@ pxr_library(trace
         serialization
         staticKeyData
         threads
+        customCallback
 
     PRIVATE_CLASSES
         aggregateTreeBuilder

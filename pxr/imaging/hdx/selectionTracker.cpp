@@ -35,6 +35,8 @@
 #include <iomanip>
 #include <iostream>
 
+TRACE_CUSTOM_CALLBACK_DEFINE
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdxSelectionTracker::HdxSelectionTracker()
