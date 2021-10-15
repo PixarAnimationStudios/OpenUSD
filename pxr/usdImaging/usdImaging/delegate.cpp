@@ -2551,16 +2551,13 @@ UsdImagingDelegate::GetPrimvarDescriptors(SdfPath const& id,
 {
     HD_TRACE_FUNCTION();
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
-    HdPrimvarDescriptorVector primvars;
+
     HdPrimvarDescriptorVector allPrimvars;
-    // We expect to populate an entry always (i.e., we don't use a slow path
-    // fetch)
-    if (!TF_VERIFY(_primvarDescCache.FindPrimvars(cachePath, &allPrimvars), 
-                   "<%s> interpolation: %s", cachePath.GetText(),
-                   TfEnum::GetName(interpolation).c_str())) {
-        return primvars;
-    }
-    // It's valid to have no authored primvars (they could be computed)
+    _primvarDescCache.FindPrimvars(cachePath, &allPrimvars);
+
+    // Filter to only primvars of the right interpolation.
+    // Note: it's valid to have no authored primvars (they could be computed)
+    HdPrimvarDescriptorVector primvars;
     for (HdPrimvarDescriptor const& pv: allPrimvars) {
         // Filter the stored primvars to just ones of the requested type.
         if (pv.interpolation == interpolation) {
