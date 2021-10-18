@@ -277,7 +277,7 @@ _GatherUpstreamNodes(
 
     // Initilize the mxNodeGraph if needed
     if (!(*mxNodeGraph)) {
-        const std::string & nodeGraphName  = hdNodePath.GetParentPath().GetName();
+        std::string nodeGraphName = hdNodePath.GetParentPath().GetName() + "_Graph";
         *mxNodeGraph = mxDoc->addNodeGraph(nodeGraphName);
     }
     
