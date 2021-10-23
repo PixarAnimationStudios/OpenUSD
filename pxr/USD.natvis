@@ -119,28 +119,28 @@
   <Type Name="pxrInternal_v0_21__pxrReserved__::UsdPrim">
     <DisplayString>{_prim-&gt;_path}</DisplayString>
   </Type>
-  
+
   <!--
     UsdSchemaBase for typed prims
   -->
   <Type Name="pxrInternal_v0_21__pxrReserved__::UsdSchemaBase">
     <DisplayString>{_primData}</DisplayString>
   </Type>
-  
+
   <!--
     Following types are for SdfPath display
   -->
   <Type Name="pxrInternal_v0_21__pxrReserved__::Sdf_PathNodeHandleImpl&lt;*&gt;">
     <DisplayString>{_poolHandle}</DisplayString>
   </Type>
-  
+
   <Type Name="pxrInternal_v0_21__pxrReserved__::RootNode">
     <DisplayString>/</DisplayString>
   </Type>
 
   <Type Name="pxrInternal_v0_21__pxrReserved__::Sdf_PrimPathNode">
     <Intrinsic Name="GetParentPrim" Expression="(pxrInternal_v0_21__pxrReserved__::Sdf_PrimPathNode*)node-&gt;_parent.px">
-      <Parameter Name="node" Type="const pxrInternal_v0_21__pxrReserved__::Sdf_PathNode*"/>
+      <Parameter Name="node" Type="const pxrInternal_v0_21__pxrReserved__::Sdf_PathNode*" />
     </Intrinsic>
     <DisplayString Condition="_elementCount == 0">/</DisplayString>
     <DisplayString Condition="_elementCount == 1">/{_name,sb}</DisplayString>
@@ -184,18 +184,18 @@
   </Type>
 
   <Type Name="pxrInternal_v0_21__pxrReserved__::Sdf_Pool&lt;*,*,*,*&gt;::Handle">
-    <Intrinsic Name="GetRegionMask" Expression="(1 &lt;&lt; $T3) - 1"/>
-    <Intrinsic Name="GetRegion" Expression="value &amp; GetRegionMask()"/>
-    <Intrinsic Name="GetIndex" Expression="value &gt;&gt; $T3"/>
-    <Intrinsic Name="GetPtr" Expression="sdf.dll!pxrInternal_v0_21__pxrReserved__::Sdf_Pool&lt;$T1,$T2,$T3,$T4&gt;::_regionStarts[GetRegion()] + (GetIndex() * $T2)"/>
-    <Intrinsic Name="GetPathNode" Expression="(pxrInternal_v0_21__pxrReserved__::Sdf_PathNode*)GetPtr()"/>
-    <Intrinsic Name="GetNodeType" Expression="(pxrInternal_v0_21__pxrReserved__::Sdf_PathNode::NodeType)GetPathNode()-&gt;_nodeType"/>
-    <Intrinsic Name="GetPrimNode" Expression="(pxrInternal_v0_21__pxrReserved__::Sdf_PrimPathNode*)GetPtr()"/>
+    <Intrinsic Name="GetRegionMask" Expression="(1 &lt;&lt; $T3) - 1" />
+    <Intrinsic Name="GetRegion" Expression="value &amp; GetRegionMask()" />
+    <Intrinsic Name="GetIndex" Expression="value &gt;&gt; $T3" />
+    <Intrinsic Name="GetPtr" Expression="sdf.dll!pxrInternal_v0_21__pxrReserved__::Sdf_Pool&lt;$T1,$T2,$T3,$T4&gt;::_regionStarts[GetRegion()] + (GetIndex() * $T2)" />
+    <Intrinsic Name="GetPathNode" Expression="(pxrInternal_v0_21__pxrReserved__::Sdf_PathNode*)GetPtr()" />
+    <Intrinsic Name="GetNodeType" Expression="(pxrInternal_v0_21__pxrReserved__::Sdf_PathNode::NodeType)GetPathNode()-&gt;_nodeType" />
+    <Intrinsic Name="GetPrimNode" Expression="(pxrInternal_v0_21__pxrReserved__::Sdf_PrimPathNode*)GetPtr()" />
     <Intrinsic Name="GetParent" Expression="node-&gt;_parent.px">
-      <Parameter Name="node" Type="const pxrInternal_v0_21__pxrReserved__::Sdf_PathNode*"/>
+      <Parameter Name="node" Type="const pxrInternal_v0_21__pxrReserved__::Sdf_PathNode*" />
     </Intrinsic>
     <Intrinsic Name="GetParentPrim" Expression="(pxrInternal_v0_21__pxrReserved__::Sdf_PrimPathNode*)node-&gt;_parent.px">
-      <Parameter Name="node" Type="const pxrInternal_v0_21__pxrReserved__::Sdf_PathNode*"/>
+      <Parameter Name="node" Type="const pxrInternal_v0_21__pxrReserved__::Sdf_PathNode*" />
     </Intrinsic>
     <DisplayString Condition="GetPtr() == nullptr">null</DisplayString>
     <DisplayString Condition="GetNodeType() == pxrInternal_v0_21__pxrReserved__::Sdf_PathNode::RootNode">/</DisplayString>
@@ -236,12 +236,55 @@
     <DisplayString Condition="_propPart._poolHandle.value == 0">{_primPart,sb}</DisplayString>
   </Type>
 
+  <!--
+  Array Types
+  -->
+  <Type Name="pxrInternal_v0_21__pxrReserved__::VtArray&lt;*&gt;">
+    <DisplayString>{{ size={_shapeData.totalSize} }}</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>_shapeData.totalSize</Size>
+        <ValuePointer>_data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!--
+  Expand GfVecX types so that you can see its values with one less click
+  -->
+  <Type Name="pxrInternal_v0_21__pxrReserved__::GfVec2d">
+    <DisplayString>{{ x = {_data[0]}, y = {_data[1]} }}</DisplayString>
+  </Type>
+  <Type Name="pxrInternal_v0_21__pxrReserved__::GfVec3d">
+    <DisplayString>{{ x = {_data[0]}, y = {_data[1]}, z = {_data[2]} }}</DisplayString>
+  </Type>
+  <Type Name="pxrInternal_v0_21__pxrReserved__::GfVec4d">
+    <DisplayString>{{ x = {_data[0]}, y = {_data[1]}, z = {_data[2]}, w = {_data[3]} }}</DisplayString>
+  </Type>
+  <Type Name="pxrInternal_v0_21__pxrReserved__::GfVec2f">
+    <DisplayString>{{ x = {_data[0]}, y = {_data[1]} }}</DisplayString>
+  </Type>
+  <Type Name="pxrInternal_v0_21__pxrReserved__::GfVec3f">
+    <DisplayString>{{ x = {_data[0]}, y = {_data[1]}, z = {_data[2]} }}</DisplayString>
+  </Type>
+  <Type Name="pxrInternal_v0_21__pxrReserved__::GfVec4f">
+    <DisplayString>{{ x = {_data[0]}, y = {_data[1]}, z = {_data[2]}, w = {_data[3]} }}</DisplayString>
+  </Type>
+  <Type Name="pxrInternal_v0_21__pxrReserved__::GfVec2i">
+    <DisplayString>{{ x = {_data[0]}, y = {_data[1]} }}</DisplayString>
+  </Type>
+  <Type Name="pxrInternal_v0_21__pxrReserved__::GfVec3i">
+    <DisplayString>{{ x = {_data[0]}, y = {_data[1]}, z = {_data[2]} }}</DisplayString>
+  </Type>
+  <Type Name="pxrInternal_v0_21__pxrReserved__::GfVec4i">
+    <DisplayString>{{ x = {_data[0]}, y = {_data[1]}, z = {_data[2]}, w = {_data[3]} }}</DisplayString>
+  </Type>
 
   <!--
         Boost intrusive_ptr, maybe it doesn't belong here but USD uses it
         Commented out for now, probably better to use one of the boost packages from VS Marketplace
       -->
-      <!--
+  <!--
         <Type Name="boost::intrusive_ptr&lt;*&gt;">
     <SmartPointer Usage="Full">
       px
