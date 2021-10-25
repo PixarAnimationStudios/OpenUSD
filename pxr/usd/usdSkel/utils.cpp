@@ -920,7 +920,8 @@ _ValidateArrayShape(size_t size, int numInfluencesPerComponent)
 
 bool
 UsdSkelNormalizeWeights(TfSpan<float> weights,
-                        int numInfluencesPerComponent)
+                        int numInfluencesPerComponent,
+                        float eps)
 {
     TRACE_FUNCTION();
     
@@ -943,7 +944,7 @@ UsdSkelNormalizeWeights(TfSpan<float> weights,
                     sum += weightSet[j];
                 }
 
-                if (std::abs(sum) > std::numeric_limits<float>::epsilon()) {
+                if (std::abs(sum) > eps) {
                     for(int j = 0; j < numInfluencesPerComponent; ++j) {
                         weightSet[j] /= sum;
                     }
