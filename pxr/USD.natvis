@@ -280,6 +280,68 @@
     <DisplayString>{{ x = {_data[0]}, y = {_data[1]}, z = {_data[2]}, w = {_data[3]} }}</DisplayString>
   </Type>
 
+  <Type Name="pxrInternal_v0_21__pxrReserved__::GfMatrix4d">
+    <Expand>
+      <Synthetic Name="[Row 0]">
+        <DisplayString>{_mtx._data[0]},     {_mtx._data[1]},     {_mtx._data[2]},     {_mtx._data[3]}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[Row 1]">
+        <DisplayString>{_mtx._data[4]},     {_mtx._data[5]},     {_mtx._data[6]},     {_mtx._data[7]}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[Row 2]">
+        <DisplayString>{_mtx._data[8]},     {_mtx._data[9]},     {_mtx._data[10]},     {_mtx._data[11]}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[Row 3]">
+        <DisplayString>{_mtx._data[12]},     {_mtx._data[13]},     {_mtx._data[14]},     {_mtx._data[15]}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+
+  <Type Name="pxrInternal_v0_21__pxrReserved__::GfMatrix4f">
+    <Expand>
+      <Synthetic Name="[Row 0]">
+        <DisplayString>{_mtx._data[0]},     {_mtx._data[1]},     {_mtx._data[2]},     {_mtx._data[3]}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[Row 1]">
+        <DisplayString>{_mtx._data[4]},     {_mtx._data[5]},     {_mtx._data[6]},     {_mtx._data[7]}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[Row 2]">
+        <DisplayString>{_mtx._data[8]},     {_mtx._data[9]},     {_mtx._data[10]},     {_mtx._data[11]}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[Row 3]">
+        <DisplayString>{_mtx._data[12]},     {_mtx._data[13]},     {_mtx._data[14]},     {_mtx._data[15]}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+
+  <Type Name="pxrInternal_v0_21__pxrReserved__::GfMatrix3d">
+    <Expand>
+      <Synthetic Name="[Row 0]">
+        <DisplayString>{_mtx._data[0]},     {_mtx._data[1]},     {_mtx._data[2]},     {_mtx._data[3]}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[Row 1]">
+        <DisplayString>{_mtx._data[4]},     {_mtx._data[5]},     {_mtx._data[6]},     {_mtx._data[7]}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[Row 2]">
+        <DisplayString>{_mtx._data[8]},     {_mtx._data[9]},     {_mtx._data[10]},     {_mtx._data[11]}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+
+  <Type Name="pxrInternal_v0_21__pxrReserved__::GfMatrix3f">
+    <Expand>
+      <Synthetic Name="[Row 0]">
+        <DisplayString>{_mtx._data[0]},     {_mtx._data[1]},     {_mtx._data[2]},     {_mtx._data[3]}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[Row 1]">
+        <DisplayString>{_mtx._data[4]},     {_mtx._data[5]},     {_mtx._data[6]},     {_mtx._data[7]}</DisplayString>
+      </Synthetic>
+      <Synthetic Name="[Row 2]">
+        <DisplayString>{_mtx._data[8]},     {_mtx._data[9]},     {_mtx._data[10]},     {_mtx._data[11]}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+
   <!--
         Boost intrusive_ptr, maybe it doesn't belong here but USD uses it
         Commented out for now, probably better to use one of the boost packages from VS Marketplace
