@@ -613,6 +613,8 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
 
     std::vector<UsdPrim> primsToPopulateWithoutInstancing;
 
+    bool anyPrimRemoved = false;
+
     for (SdfPath const& usdPath: usdPathsToRepopulate) {
 
         // _Populate should never be called on prototype prims or prims in
@@ -651,6 +653,42 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
                             "due to prim type <%s>\n",
                             iter->GetPath().GetText(),
                             iter->GetTypeName().GetText());
+
+                // Use this iteration of the subtree to check for any newly added material
+                // that should be reconnected to a gprim
+                if (iter->IsA<UsdShadeMaterial>()) {
+                    TRACE_SCOPE("Material re-assigment detection")
+                    // Check if any existing gprim has this material assigned
+                    for (const auto& dep : _dependencyInfo) {
+                        if (dep.first != dep.second) {
+                            // Only consider self dependencies as they can
+                            // indicate a missing material assignment
+                            continue;
+                        }
+                        _HdPrimInfo *primInfo = _GetHdPrimInfo(dep.second);
+                        if (primInfo == nullptr || primInfo->adapter == nullptr) {
+                            continue;
+                        }
+                        UsdPrim& prim = primInfo->usdPrim;
+                        if (!prim.IsA<UsdGeomImageable>()) {
+                            continue;
+                        }
+                        if (_materialBindingCache.GetValue(prim) == iter->GetPath()) {
+                            // found a prim that uses this material, need to repopulate the prim
+                            // first remove it
+                            proxy->RemoveRprim(dep.second);
+                            anyPrimRemoved = true;
+
+                            // then re-add it
+                            if (UsdImagingPrimAdapterSharedPtr adapter = _AdapterLookup(prim)) {
+                                TF_DEBUG(USDIMAGING_CHANGES).Msg("[Repopulate] re-resolving material bindings on %s\n",
+                                    prim.GetPath().GetText());
+                                leafPaths.push_back(std::make_pair(prim, adapter));
+                            }
+                        }
+                    }
+                }
+
                 continue;
             }
 
@@ -760,6 +798,11 @@ UsdImagingDelegate::_Populate(UsdImagingIndexProxy* proxy)
                 }
             }
         }
+    }
+
+    if (anyPrimRemoved) {
+        // Process late removals from material re-assignments
+        proxy->_ProcessRemovals();
     }
 
     // Populate the RenderIndex while we're still discovering material bindings.
