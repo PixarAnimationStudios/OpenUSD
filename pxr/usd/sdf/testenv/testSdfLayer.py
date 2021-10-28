@@ -24,11 +24,11 @@
 
 import os, platform, itertools, sys, unittest
 
-# Initialize Ar to use ArDefaultResolver unless a different implementation
+# Initialize Ar to use Sdf_TestResolver unless a different implementation
 # is specified via the TEST_SDF_LAYER_RESOLVER to allow testing with other
 # filesystem-based resolvers.
 preferredResolver = os.environ.get(
-    "TEST_SDF_LAYER_RESOLVER", "ArDefaultResolver")
+    "TEST_SDF_LAYER_RESOLVER", "Sdf_TestResolver")
 
 from pxr import Ar
 Ar.SetPreferredResolver(preferredResolver)

@@ -193,9 +193,9 @@ Sdf_ComputeAssetInfoFromIdentifier(
         assetInfo->identifier = identifier;
 #endif
 
+        string layerPath, arguments;
+        Sdf_SplitIdentifier(assetInfo->identifier, &layerPath, &arguments);
         if (filePath.empty()) {
-            string layerPath, arguments;
-            Sdf_SplitIdentifier(assetInfo->identifier, &layerPath, &arguments);
             assetInfo->resolvedPath = 
                 Sdf_ComputeFilePath(layerPath, &resolveInfo);
         } else {
@@ -211,7 +211,7 @@ Sdf_ComputeAssetInfoFromIdentifier(
             &resolveInfo);
 #else
         resolveInfo = ArGetResolver().GetAssetInfo(
-            assetInfo->identifier, assetInfo->resolvedPath);
+            layerPath, assetInfo->resolvedPath);
 #endif
     }
 

@@ -207,7 +207,9 @@ Sdf_LayerRegistry::Find(
         // If the layer path depends on context there may be multiple
         // layers with the same identifier but different resolved paths.
         // In this case we need to look up the layer by resolved path.
-        if (!resolver.IsContextDependentPath(layerPath)) {
+        string assetPath, args;
+        Sdf_SplitIdentifier(inputLayerPath, &assetPath, &args);
+        if (!resolver.IsContextDependentPath(assetPath)) {
             foundLayer = FindByIdentifier(layerPath);
         }
 #endif
@@ -215,7 +217,11 @@ Sdf_LayerRegistry::Find(
         // If the layer path is in repository form and we haven't yet
         // found the layer via the identifier, attempt to look up the
         // layer by repository path.
+#if AR_VERSION == 1
         const bool isRepositoryPath = resolver.IsRepositoryPath(layerPath);
+#else
+        const bool isRepositoryPath = resolver.IsRepositoryPath(assetPath);
+#endif
         if (!foundLayer && isRepositoryPath)
             foundLayer = FindByRepositoryPath(layerPath);
 
