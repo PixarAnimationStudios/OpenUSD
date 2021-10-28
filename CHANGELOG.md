@@ -1,6 +1,6 @@
 # Change Log
 
-## [21.11] - 2021-10-26
+## [21.11] - 2021-11-01
 
 Ar 2.0 is enabled by default as of this release. Ar 1.0 is deprecated and will
 be removed in a subsequent release. During this transition, Ar 1.0 may still be
@@ -16,7 +16,7 @@ enabled by setting `PXR_USE_AR_2=OFF` when running CMake.
 
 - Libraries are now prefixed with "libusd_" on Linux and macOS and "usd_" on
   Windows to avoid name conflicts with other packages. The previous behavior can
-  be restored by setting `PXR_LIB_PREFIX="lib_"` on Linux and macOS or 
+  be restored by setting `PXR_LIB_PREFIX="lib"` on Linux and macOS or 
   `PXR_LIB_PREFIX=""` on Windows when running CMake.
   (Issue: [#1615](https://github.com/PixarAnimationStudios/USD/issues/1615))
 
