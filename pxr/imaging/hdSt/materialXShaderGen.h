@@ -49,6 +49,14 @@ public:
                            MaterialX::ElementPtr mxElement,
                            MaterialX::GenContext& mxContext) const override;
 
+    void emitLine(const std::string& str, 
+            MaterialX::ShaderStage& stage, 
+            bool semicolon = true) const override;
+
+    void setEmittingSurfaceNode(bool emittingSurfaceNode) {
+        _emittingSurfaceNode = emittingSurfaceNode;
+    }
+
 protected:
     void _EmitGlslfxShader(const MaterialX::ShaderGraph& mxGraph,
                            MaterialX::GenContext& mxContext,
@@ -97,6 +105,8 @@ private:
     MaterialX::StringMap _mxHdPrimvarMap;
     std::string _defaultTexcoordName;
     std::string _materialTag;
+
+    bool _emittingSurfaceNode = false;
 };
 
 

@@ -26,6 +26,7 @@
 #include "pxr/base/tf/stringUtils.h"
 
 #include <MaterialXCore/Value.h>
+#include <MaterialXGenGlsl/Nodes/SurfaceNodeGlsl.h>
 #include <MaterialXGenShader/Shader.h>
 #include <MaterialXGenShader/ShaderGenerator.h>
 #include <MaterialXGenShader/Syntax.h>
@@ -34,6 +35,29 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// Create a customized version of the class mx::SurfaceNodeGlsl
+// to be able to notify the shader generator when we start/end
+// emitting the code for the surface node
+class HdStMaterialXSurfaceNodeGen : public mx::SurfaceNodeGlsl
+{
+public:
+    static mx::ShaderNodeImplPtr create() {
+        return std::make_shared<HdStMaterialXSurfaceNodeGen>();
+    }
+
+    void emitFunctionCall(
+        const mx::ShaderNode& node, 
+        mx::GenContext& context,
+        mx::ShaderStage& stage) const override
+    {
+        HdStMaterialXShaderGen& shadergen = 
+            static_cast<HdStMaterialXShaderGen&>(context.getShaderGenerator());
+        
+        shadergen.setEmittingSurfaceNode(true);
+        mx::SurfaceNodeGlsl::emitFunctionCall(node, context, stage);
+        shadergen.setEmittingSurfaceNode(false);
+    }
+};
 
 static const std::string MxHdTangentString = 
 R"(
@@ -89,6 +113,16 @@ R"(#if NUM_LIGHTS > 0
 #endif
 )";
 
+static const std::string MxHdShadowString =
+R"(#if USE_SHADOWS
+        vec4 Peye = vec4(ComputeScreenSpacePeye(), 1.f);
+        for (int i = 0; i < NUM_LIGHTS; ++i) {
+            occlusion *= (lightSource[i].hasShadow) ?
+            shadowing(i, Peye) : 1.0;
+        }
+#endif
+)";
+
 HdStMaterialXShaderGen::HdStMaterialXShaderGen(
     MxHdInfo const& mxHdInfo)
     : GlslShaderGenerator(), 
@@ -98,6 +132,10 @@ HdStMaterialXShaderGen::HdStMaterialXShaderGen(
 {
     _defaultTexcoordName = (mxHdInfo.defaultTexcoordName == mx::EMPTY_STRING) ?
                             "st" : mxHdInfo.defaultTexcoordName;
+
+    // register the customized version of the surface node generator
+    registerImplementation("IM_surface_" + GlslShaderGenerator::TARGET, 
+        HdStMaterialXSurfaceNodeGen::create);
 }
 
 // Based on GlslShaderGenerator::generate()
@@ -223,6 +261,10 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
             mxStage, false);
     emitLineBreak(mxStage);
     emitTypeDefinitions(mxContext, mxStage);
+    
+    // Add forward declarations
+    emitLine("vec3 ComputeScreenSpacePeye()", mxStage);
+    emitLineBreak(mxStage);
 
     // Add all constants
     const mx::VariableBlock& constants = mxStage.getConstantBlock();
@@ -625,5 +667,22 @@ HdStMaterialXShaderGen::emitVariableDeclarations(
     }
 }
 
+void 
+HdStMaterialXShaderGen::emitLine(
+    const std::string& str, 
+    MaterialX::ShaderStage& stage, 
+    bool semicolon) const
+{
+    mx::GlslShaderGenerator::emitLine(str, stage, semicolon);
+
+    // When emitting the code for the surface node, the variable
+    // 'occlusion' represents shadow occlusion. We don't use 
+    // MaterialX's shadow implementation (hwShadowMap is false).
+    // Instead, we plug in our own shadowing code
+    if (_emittingSurfaceNode && str == "float occlusion = 1.0")
+    {
+        emitString(MxHdShadowString, stage);
+    }
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
