@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<materialx version="1.38">
+<materialx version="1.38" namespace="UsdMtlxTestNamespace">
   <nodedef name="nd_integer" node="UsdMtlxTestNode">
     <input name="in" type="integer" />
     <input name="note" type="string" value="" uniform="true" />
