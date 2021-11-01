@@ -30,13 +30,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdPrimDefinition::UsdPrimDefinition(const SdfPrimSpecHandle &primSpec, 
-                                     bool isAPISchema) 
+UsdPrimDefinition::UsdPrimDefinition(
+    const SdfPath &schematicsPrimPath, bool isAPISchema)
+    : _schematicsPrimPath(schematicsPrimPath)
 {
-    // Cache the property names and the paths to each property spec from the
-    // prim spec. For API schemas, the prim spec will not provide metadata for
-    // the prim itself.
-    _SetPrimSpec(primSpec, /*providesPrimMetadata =*/ !isAPISchema);
+    // If this prim definition is not for an API schema, the primary prim spec 
+    // will provide the prim metadata. map the empty property name to the prim 
+    // path in the schematics for the field accessor functions.
+    // Note that this mapping aids the efficiency of value resolution by 
+    // allowing UsdStage to access fallback metadata from both prims and 
+    // properties through the same code path without extra conditionals.
+    if (!isAPISchema) {
+        _propPathMap.emplace(TfToken(), _schematicsPrimPath);
+    }
 }
 
 std::string 
@@ -45,9 +51,13 @@ UsdPrimDefinition::GetDocumentation() const
     // Special case for prim documentation. Pure API schemas don't map their
     // prim spec paths to the empty token as they aren't meant to provide 
     // metadata fallbacks so _HasField will always return false. To get 
-    // documentation for an API schema, we have to ask the prim spec (which
-    // will work for all definitions).
-    return _primSpec ? _primSpec->GetDocumentation() : std::string();
+    // documentation for an API schema, we have to get the documentation
+    // field from the schematics for the prim path (which we store for all 
+    // definitions specifically to access the documentation).
+    std::string docString;
+    _GetSchematics()->HasField(
+        _schematicsPrimPath, SdfFieldKeys->Documentation, &docString);
+    return docString;
 }
 
 std::string 
@@ -77,46 +87,60 @@ UsdPrimDefinition::_ListMetadataFields(const TfToken &propName) const
 }
 
 void 
-UsdPrimDefinition::_SetPrimSpec(
-    const SdfPrimSpecHandle &primSpec, bool providesPrimMetadata)
+UsdPrimDefinition::_ComposePropertiesFromPrimSpec(
+    const SdfPrimSpecHandle &weakerPrimSpec, const std::string &propPrefix)
 {
-    _primSpec = primSpec;
+    const SdfPropertySpecView specProperties = weakerPrimSpec->GetProperties();
+    _properties.reserve(_properties.size() + specProperties.size());
 
-    // If there are no properties yet, we can just copy them all from the prim
-    // spec without worrying about handling duplicates. Otherwise we have to
-    // _AddProperty.
-    if (_propPathMap.empty()) {
-        for (SdfPropertySpecHandle prop: primSpec->GetProperties()) {
-            _propPathMap[prop->GetNameToken()] = prop->GetPath();
-            _properties.push_back(prop->GetNameToken());
+    // Map each spec property name to the property spec path and add it to the
+    // list of properties if it hasn't already been added.
+    if (propPrefix.empty()) {
+        for (const SdfPropertySpecHandle &prop : specProperties) {
+            if (_propPathMap.emplace(
+                    prop->GetNameToken(), prop->GetPath()).second) {
+                _properties.push_back(prop->GetNameToken());
+            }
         }
     } else {
-        for (SdfPropertySpecHandle prop: primSpec->GetProperties()) {
-            _AddProperty(prop->GetNameToken(), prop->GetPath());
+        for (const SdfPropertySpecHandle &prop : specProperties) {
+            // Apply the prefix to each property name before adding it.
+            const TfToken prefixedPropName(
+                SdfPath::JoinIdentifier(propPrefix, prop->GetNameToken()));
+            if (_propPathMap.emplace(
+                    prefixedPropName, prop->GetPath()).second) {
+                _properties.push_back(prefixedPropName);
+            }
         }
-    }
-
-    // If this prim spec will provide the prim metadata, map the empty property
-    // name to the prim path for the field accessor functions.
-    if (providesPrimMetadata) {
-        _propPathMap[TfToken()] = primSpec->GetPath();
     }
 }
 
 void 
-UsdPrimDefinition::_ApplyPropertiesFromPrimDef(
-    const UsdPrimDefinition &primDef, const std::string &propPrefix)
+UsdPrimDefinition::_ComposePropertiesFromPrimDef(
+    const UsdPrimDefinition &weakerPrimDef, const std::string &propPrefix)
 {
+    _properties.reserve(_properties.size() + weakerPrimDef._properties.size());
+
+    // Copy over property to path mappings from the weaker prim definition that 
+    // aren't already in this prim definition.
     if (propPrefix.empty()) {
-        for (const auto &it : primDef._propPathMap) {
-            _AddProperty(it.first, it.second);
+        for (const auto &it : weakerPrimDef._propPathMap) {
+            // Note that the prop name may be empty as we use the empty path to
+            // map to the spec containing the prim level metadata. We need to 
+            // make sure we don't add the empty name to properties list if 
+            // we successfully insert a metadata mapping.
+            if (_propPathMap.insert(it).second && !it.first.IsEmpty()){
+                _properties.push_back(it.first);
+            }
         }
     } else {
-        for (const auto &it : primDef._propPathMap) {
+        for (const auto &it : weakerPrimDef._propPathMap) {
             // Apply the prefix to each property name before adding it.
             const TfToken prefixedPropName(
                 SdfPath::JoinIdentifier(propPrefix, it.first.GetString()));
-            _AddProperty(prefixedPropName, it.second);
+            if (_propPathMap.emplace(prefixedPropName, it.second).second) {
+                _properties.push_back(prefixedPropName);
+            }
         }
     }
 }

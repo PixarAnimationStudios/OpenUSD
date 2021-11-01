@@ -36,11 +36,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStGLConversions {
 public:
-    /// Returns the size of glDataType.
-    /// For example: sizeof(GLuint)
-    HDST_API
-    static size_t GetComponentSize(int glDataType);
-
     HDST_API
     static GLenum GetGlDepthFunc(HdCompareFunction func);
 

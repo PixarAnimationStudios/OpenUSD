@@ -89,6 +89,16 @@ HdxFullscreenShader::~HdxFullscreenShader()
         return;
     }
 
+    // Pipeline and resource bindings reference program, buffers and sampler,
+    // so delete them first.
+    if (_resourceBindings) {
+        _hgi->DestroyResourceBindings(&_resourceBindings);
+    }
+
+    if (_pipeline) {
+        _hgi->DestroyGraphicsPipeline(&_pipeline);
+    }
+
     if (_vertexBuffer) {
         _hgi->DestroyBuffer(&_vertexBuffer);
     }
@@ -99,14 +109,6 @@ HdxFullscreenShader::~HdxFullscreenShader()
 
     if (_shaderProgram) {
         _DestroyShaderProgram();
-    }
-
-    if (_resourceBindings) {
-        _hgi->DestroyResourceBindings(&_resourceBindings);
-    }
-
-    if (_pipeline) {
-        _hgi->DestroyGraphicsPipeline(&_pipeline);
     }
 
     if (_sampler) {
@@ -128,6 +130,9 @@ HdxFullscreenShader::SetProgram(
     _glslfx = glslfx;
     _shaderName = shaderName;
 
+    if (_pipeline) {
+        _hgi->DestroyGraphicsPipeline(&_pipeline);
+    }
     if (_shaderProgram) {
         _DestroyShaderProgram();
     }
@@ -254,6 +259,12 @@ HdxFullscreenShader::SetShaderConstants(
     uint32_t byteSize,
     const void* data)
 {
+    if (byteSize != _constantsData.size()) {
+        if (_pipeline) {
+            _hgi->DestroyGraphicsPipeline(&_pipeline);
+        }
+    }
+
     _constantsData.resize(byteSize);
     if (byteSize > 0) {
         memcpy(&_constantsData[0], data, byteSize);
@@ -410,9 +421,21 @@ HdxFullscreenShader::_CreateVertexBufferDescriptor()
 
     _vboDesc.bindingIndex = bindSlots++;
     _vboDesc.vertexStride = sizeof(float) * 6; // pos, uv
-    _vboDesc.vertexAttributes.clear();
-    _vboDesc.vertexAttributes.push_back(posAttr);
-    _vboDesc.vertexAttributes.push_back(uvAttr);
+    _vboDesc.vertexAttributes = { posAttr, uvAttr };
+}
+
+static
+bool
+_MatchesFormatAndSampleCount(
+    HgiTextureHandle const &texture,
+    const HgiFormat format,
+    const HgiSampleCount sampleCount)
+{
+    if (texture) {
+        const HgiTextureDesc &desc = texture->GetDescriptor();
+        return format == desc.format && sampleCount == desc.sampleCount;
+    }
+    return format == HgiFormatInvalid;
 }
 
 bool
@@ -422,10 +445,13 @@ HdxFullscreenShader::_CreatePipeline(
     bool depthWrite)
 {
     if (_pipeline) {
-        if ((!colorDst || (_attachment0.format ==
-                          colorDst.Get()->GetDescriptor().format)) &&
-            (!depthDst || (_depthAttachment.format ==
-                           depthDst.Get()->GetDescriptor().format))) {
+        const HgiSampleCount sampleCount =
+            _pipeline->GetDescriptor().multiSampleState.sampleCount;
+
+        if ( _MatchesFormatAndSampleCount(
+                 colorDst, _attachment0.format, sampleCount) &&
+             _MatchesFormatAndSampleCount(
+                 depthDst, _depthAttachment.format, sampleCount)) {
             return true;
         }
 
@@ -443,24 +469,32 @@ HdxFullscreenShader::_CreatePipeline(
     _attachment0.dstAlphaBlendFactor = _dstAlphaBlendFactor;
     _attachment0.alphaBlendOp = _alphaBlendOp;
     if (colorDst) {
-        _attachment0.format = colorDst.Get()->GetDescriptor().format;
-        _attachment0.usage = colorDst.Get()->GetDescriptor().usage;
+        _attachment0.format = colorDst->GetDescriptor().format;
+        _attachment0.usage = colorDst->GetDescriptor().usage;
+    } else {
+        _attachment0.format = HgiFormatInvalid;
     }
 
     _depthAttachment.loadOp = HgiAttachmentLoadOpDontCare;
     _depthAttachment.storeOp = HgiAttachmentStoreOpStore;
     if (depthDst) {
-        _depthAttachment.format = depthDst.Get()->GetDescriptor().format;
-        _depthAttachment.usage = depthDst.Get()->GetDescriptor().usage;
+        _depthAttachment.format = depthDst->GetDescriptor().format;
+        _depthAttachment.usage = depthDst->GetDescriptor().usage;
+    } else {
+        _depthAttachment.format = HgiFormatInvalid;
     }
 
     HgiGraphicsPipelineDesc desc;
     desc.debugName = _debugName + " Pipeline";
     desc.shaderProgram = _shaderProgram;
-    desc.colorAttachmentDescs.push_back(_attachment0);
+    if (_attachment0.format != HgiFormatInvalid) {
+        desc.colorAttachmentDescs.push_back(_attachment0);
+    }
     desc.depthAttachmentDesc = _depthAttachment;
 
-    desc.vertexBuffers.push_back(_vboDesc);
+    // Ignore user provided vertex buffers. The VBO must always match the
+    // vertex attributes we setup for the fullscreen triangle.
+    desc.vertexBuffers = {_vboDesc};
 
     // User can provide custom depth state, but DepthWrite is controlled by the
     // presence of the depth attachment.
@@ -480,16 +514,9 @@ HdxFullscreenShader::_CreatePipeline(
     // Set the shaders
     desc.shaderProgram = _shaderProgram;
 
-    // Ignore user provided vertex buffers. The VBO must always match the
-    // vertex attributes we setup for the fullscreen triangle.
-    desc.vertexBuffers.clear();
-    desc.vertexBuffers.push_back(_vboDesc);
-
     // shader constants
-    if (!_constantsData.empty()) {
-        desc.shaderConstantsDesc.byteSize = _constantsData.size();
-        desc.shaderConstantsDesc.stageUsage = HgiShaderStageFragment;
-    }
+    desc.shaderConstantsDesc.byteSize = _constantsData.size();
+    desc.shaderConstantsDesc.stageUsage = HgiShaderStageFragment;
 
     _pipeline = _hgi->CreateGraphicsPipeline(desc);
 
@@ -522,15 +549,53 @@ HdxFullscreenShader::Draw(
     HgiTextureHandle const& colorDst,
     HgiTextureHandle const& depthDst)
 {
-    bool depthWrite = depthDst.Get() != nullptr;
-    _Draw(_textures, colorDst, depthDst, depthWrite);
+    HgiTextureHandle dimensionSrc = colorDst;
+    if (!dimensionSrc) {
+        dimensionSrc = depthDst;
+    }
+    if (!dimensionSrc) {
+        auto const& it = _textures.find(HdAovTokens->color);
+        if (it != _textures.end()) {
+            dimensionSrc = it->second;
+        }
+    }
+
+    // If a destination color target is provided we can use it as the
+    // dimensions of the backbuffer. If no destination textures are provided
+    // it means we are rendering to the framebuffer.
+    // In that case we use one of the provided input texture dimensions.
+    // XXX Remove this once HgiInterop is in place in PresentTask. We should
+    // error out if 'colorDst' is not provided.
+    GfVec3i dimensions = GfVec3i(1);
+    if (dimensionSrc) {
+        dimensions = dimensionSrc->GetDescriptor().dimensions;
+    } else {
+        TF_CODING_ERROR("Could not determine the backbuffer dimensions");
+    }
+
+    const GfVec4i vp(0, 0, dimensions[0], dimensions[1]);
+
+    const bool depthWrite(depthDst);
+    _Draw(_textures, colorDst, HgiTextureHandle(), depthDst, HgiTextureHandle(), 
+        vp, depthWrite);
+}
+
+void
+HdxFullscreenShader::Draw(
+    HgiTextureHandle const& colorDst,
+    HgiTextureHandle const& colorResolveDst,
+    HgiTextureHandle const& depthDst,
+    HgiTextureHandle const& depthResolveDst,
+    GfVec4i const& viewport)
+{
+    const bool depthWrite(depthDst);
+    _Draw(_textures, colorDst, colorResolveDst, depthDst, depthResolveDst, 
+        viewport, depthWrite);
 }
 
 void
 HdxFullscreenShader::_DestroyShaderProgram()
 {
-    if (!_shaderProgram) return;
-
     for (HgiShaderFunctionHandle fn : _shaderProgram->GetShaderFunctions()) {
         _hgi->DestroyShaderFunction(&fn);
     }
@@ -541,7 +606,10 @@ void
 HdxFullscreenShader::_Draw(
     TextureMap const& textures,
     HgiTextureHandle const& colorDst,
+    HgiTextureHandle const& colorResolveDst,
     HgiTextureHandle const& depthDst,
+    HgiTextureHandle const& depthResolveDst,
+    GfVec4i const &viewport,
     bool writeDepth)
 {
     // If the user has not set a custom shader program, pick default program.
@@ -590,35 +658,14 @@ HdxFullscreenShader::_Draw(
         _CreateBufferResources();
     }
 
-    // create a default texture sampler (first time)
+    // Create a default texture sampler (first time)
     _CreateSampler();
 
     // Create or update the resource bindings (textures may have changed)
     _CreateResourceBindings(textures);
 
-    // create pipeline (first time)
+    // Create pipeline (first time)
     _CreatePipeline(colorDst, depthDst, writeDepth);
-    
-    // If a destination color target is provided we can use it as the
-    // dimensions of the backbuffer. If not destination textures are provided
-    // it means we are rendering to the framebuffer.
-    // In that case we use one of the provided input texture dimensions.
-    // XXX Remove this once HgiInterop is in place in PresentTask. We should
-    // error out if 'colorDst' is not provided.
-    HgiTextureHandle dimensionSrc = colorDst;
-    if (!dimensionSrc) {
-        auto const& it = textures.find(HdAovTokens->color);
-        if (it != textures.end()) {
-            dimensionSrc = it->second;
-        }
-    }
-
-    GfVec3i dimensions = GfVec3i(1);
-    if (dimensionSrc) {
-        dimensions = dimensionSrc->GetDescriptor().dimensions;
-    } else {
-        TF_CODING_ERROR("Could not determine the backbuffer dimensions");
-    }
 
     // Prepare graphics cmds.
     HgiGraphicsCmdsDesc gfxDesc;
@@ -627,10 +674,16 @@ HdxFullscreenShader::_Draw(
         gfxDesc.colorAttachmentDescs.push_back(_attachment0);
         gfxDesc.colorTextures.push_back(colorDst);
     }
+    if (colorResolveDst) {
+        gfxDesc.colorResolveTextures.push_back(colorResolveDst);
+    }
 
     if (depthDst) {
         gfxDesc.depthAttachmentDesc = _depthAttachment;
         gfxDesc.depthTexture = depthDst;
+    }
+    if (depthResolveDst) {
+        gfxDesc.depthResolveTexture = depthResolveDst;
     }
 
     // Begin rendering
@@ -639,8 +692,7 @@ HdxFullscreenShader::_Draw(
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);
     gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
-    const GfVec4i vp(0, 0, dimensions[0], dimensions[1]);
-    gfxCmds->SetViewport(vp);
+    gfxCmds->SetViewport(viewport);
 
     if (!_constantsData.empty()) {
         gfxCmds->SetConstantValues(
@@ -658,8 +710,6 @@ HdxFullscreenShader::_Draw(
 void
 HdxFullscreenShader::_PrintCompileErrors()
 {
-    if (!_shaderProgram) return;
-
     for (HgiShaderFunctionHandle fn : _shaderProgram->GetShaderFunctions()) {
         std::cout << fn->GetCompileErrors() << std::endl;
     }

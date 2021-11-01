@@ -939,29 +939,38 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
     const auto computeInstanceXforms = [&mask, &velocityTimeDelta, 
         &angularVelocityTimeDelta, &scales, 
         &orientations, &positions, &velocities, &accelerations, 
-        &angularVelocities, &identity, &protoXforms, &protoIndices, 
+        &angularVelocities, &protoXforms, &protoIndices, 
         &protoPaths, &xforms] (size_t start, size_t end) {
         for (size_t instanceId = start ; instanceId < end ; ++instanceId) {
             if (!mask.empty() && !mask[instanceId]) {
                 continue;
             }
 
-            GfTransform instanceTransform;
+            bool identity = true;
+            GfMatrix4d instanceTransform(1.0);
 
             if (!scales.empty()) {
                 instanceTransform.SetScale(scales[instanceId]);
+                identity = false;
             }
 
             if (!orientations.empty()) {
-                GfRotation rotation = GfRotation(orientations[instanceId]);
+                if (identity) {
+                    instanceTransform.SetRotate(orientations[instanceId]);
+                    identity = false;
+                } else {
+                    GfMatrix4d rotation;
+                    rotation.SetRotate(orientations[instanceId]);
+                    instanceTransform *= rotation;
+                }
+
                 if (angularVelocities.size() != 0) {
                     GfVec3f angularVelocity = angularVelocities[instanceId];
-                    rotation *= GfRotation(
-                        angularVelocity,
-                        angularVelocityTimeDelta * 
-                            angularVelocity.GetLength());
+                    GfMatrix4d rotation;
+                    rotation.SetRotate(GfRotation(angularVelocity,
+                        angularVelocityTimeDelta * angularVelocity.GetLength()));
+                    instanceTransform *= rotation;
                 }
-                instanceTransform.SetRotation(rotation);
             }
 
             GfVec3f translation = positions[instanceId];
@@ -972,14 +981,16 @@ UsdGeomPointInstancer::ComputeInstanceTransformsAtTime(
                 }
                 translation += velocityTimeDelta * velocity;
             }
-            instanceTransform.SetTranslation(translation);
+            instanceTransform.SetTranslateOnly(translation);
 
             const int protoIndex = protoIndices[instanceId];
-            const GfMatrix4d &protoXform = (protoPaths.size() != 0) ? 
-                protoXforms[protoIndex] : identity;
 
-            (*xforms)[instanceId] = protoXform * 
-                                    instanceTransform.GetMatrix();
+            if (protoPaths.size() != 0) {
+                (*xforms)[instanceId] =
+                    protoXforms[protoIndex] * instanceTransform;
+            } else {
+                (*xforms)[instanceId] = instanceTransform;
+            }
         }
     };
 

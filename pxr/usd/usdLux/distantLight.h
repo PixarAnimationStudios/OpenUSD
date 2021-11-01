@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLux/api.h"
-#include "pxr/usd/usdLux/light.h"
+#include "pxr/usd/usdLux/nonboundableLightBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLux/tokens.h"
@@ -55,7 +55,12 @@ class SdfAssetPath;
 /// Light emitted from a distant source along the -Z axis.
 /// Also known as a directional light.
 ///
-class UsdLuxDistantLight : public UsdLuxLight
+/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
+/// that are text/tokens, the actual token is published and defined in \ref UsdLuxTokens.
+/// So to set an attribute to the value "rightHanded", use UsdLuxTokens->rightHanded
+/// as the value.
+///
+class UsdLuxDistantLight : public UsdLuxNonboundableLightBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -68,7 +73,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdLuxDistantLight(const UsdPrim& prim=UsdPrim())
-        : UsdLuxLight(prim)
+        : UsdLuxNonboundableLightBase(prim)
     {
     }
 
@@ -76,7 +81,7 @@ public:
     /// Should be preferred over UsdLuxDistantLight(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdLuxDistantLight(const UsdSchemaBase& schemaObj)
-        : UsdLuxLight(schemaObj)
+        : UsdLuxNonboundableLightBase(schemaObj)
     {
     }
 

@@ -33,7 +33,8 @@
 
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/singleton.h"
-#include "pxr/base/tf/hashmap.h"
+
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -279,7 +280,7 @@ public:
     /// it is not.
     const UsdPrimDefinition* FindConcretePrimDefinition(
         const TfToken &typeName) const {
-        auto it = _concreteTypedPrimDefinitions.find(typeName);
+        const auto it = _concreteTypedPrimDefinitions.find(typeName);
         return it != _concreteTypedPrimDefinitions.end() ? it->second : nullptr;
     }
 
@@ -288,8 +289,17 @@ public:
     /// it is not.
     const UsdPrimDefinition *FindAppliedAPIPrimDefinition(
         const TfToken &typeName) const {
-        auto it = _appliedAPIPrimDefinitions.find(typeName);
-        return it != _appliedAPIPrimDefinitions.end() ? it->second : nullptr;
+        // Check the single apply API schemas first then check for multiple
+        // apply schemas. This function will most often be used to find a 
+        // single apply schema's prim definition as the prim definitions for
+        // multiple apply schemas aren't generally useful.
+        const auto it = _singleApplyAPIPrimDefinitions.find(typeName);
+        if (it != _singleApplyAPIPrimDefinitions.end()) {
+            return it->second;
+        }
+        const auto multiIt = _multiApplyAPIPrimDefinitions.find(typeName);
+        return multiIt != _multiApplyAPIPrimDefinitions.end() ? 
+            multiIt->second.primDef : nullptr;
     }
 
     /// Returns the empty prim definition.
@@ -326,21 +336,42 @@ private:
 
     UsdSchemaRegistry();
 
-    void _FindAndAddPluginSchema();
+    // For the given full API schema name (which may be "type:instance" for 
+    // multiple apply API schemas), finds and returns the prim definition for 
+    // the API schema type. If the API schema is an instance of a multiple 
+    // apply API, the full prefix that will be prepended to all properties 
+    // when the schema is applied will be set in propertyPrefix.
+    const UsdPrimDefinition *_FindAPIPrimDefinitionByFullName(
+        const TfToken &apiSchemaName, std::string *propertyPrefix) const;
 
-    void _ApplyAPISchemasToPrimDefinition(
-        UsdPrimDefinition *primDef, const TfTokenVector &appliedAPISchemas) const;
+    void _ComposeAPISchemasIntoPrimDefinition(
+        UsdPrimDefinition *primDef, 
+        const TfTokenVector &appliedAPISchemas) const;
+
+    // Private class for helping initialize the schema registry. Defined 
+    // entirely in the implementation. Declared here for private access to the
+    // registry.
+    class _SchemaDefInitHelper;
+
+    // Multiple apply API schema definitions want to be stored along with the
+    // their schema's property namespace prefix which is required to correctly
+    // apply them.
+    struct _MultipleApplyAPIDefinition {
+        UsdPrimDefinition *primDef = nullptr;
+        TfToken propertyNamespace;
+    };
+    using _TypeNameToMultipleApplyAPIDefinitionMap = std::unordered_map<
+        TfToken, _MultipleApplyAPIDefinition, TfToken::HashFunctor>;
+
+    using _TypeNameToPrimDefinitionMap = std::unordered_map<
+        TfToken, UsdPrimDefinition *, TfToken::HashFunctor>;
 
     SdfLayerRefPtr _schematics;
-    typedef TfHashMap<TfToken, UsdPrimDefinition *, 
-                      TfToken::HashFunctor> _TypeNameToPrimDefinitionMap;
 
     _TypeNameToPrimDefinitionMap _concreteTypedPrimDefinitions;
-    _TypeNameToPrimDefinitionMap _appliedAPIPrimDefinitions;
+    _TypeNameToPrimDefinitionMap _singleApplyAPIPrimDefinitions;
+    _TypeNameToMultipleApplyAPIDefinitionMap _multiApplyAPIPrimDefinitions;
     UsdPrimDefinition *_emptyPrimDefinition;
-
-    TfHashMap<TfToken, TfToken, TfToken::HashFunctor> 
-        _multipleApplyAPISchemaNamespaces;
 
     VtDictionary _fallbackPrimTypes;
 

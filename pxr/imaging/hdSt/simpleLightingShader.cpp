@@ -172,7 +172,7 @@ HdStSimpleLightingShader::BindResources(const int program,
     _bindingMap->AssignSamplerUnitsToProgram(program);
     _lightingContext->BindSamplers(_bindingMap);
 
-    HdSt_TextureBinder::BindResources(binder, false, _namedTextureHandles);
+    HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
 
     binder.BindShaderResources(this);
 }
@@ -187,7 +187,7 @@ HdStSimpleLightingShader::UnbindResources(const int program,
     //
     _lightingContext->UnbindSamplers(_bindingMap);
 
-    HdSt_TextureBinder::UnbindResources(binder, false, _namedTextureHandles);
+    HdSt_TextureBinder::UnbindResources(binder, _namedTextureHandles);
 }
 
 /*virtual*/
@@ -329,7 +329,6 @@ _MakeNamedTextureHandle(
             HdTextureType::Uv,
             samplerParameters,
             /* memoryRequest = */ 0,
-            /* createBindlessHandle = */ false,
             shader);
 
     return { name,
@@ -385,7 +384,6 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdSceneDelegate *const delegate
             HdTextureType::Uv,
             envSamplerParameters,
             /* targetMemory = */ 0,
-            /* createBindlessHandle = */ false,
             shared_from_this());
 
     _namedTextureHandles = {

@@ -321,21 +321,22 @@ TfGetBaseName(const string& fileName)
     if (i == fileName.size() - 1)    // ends in directory delimiter
         return TfGetBaseName(fileName.substr(0, i));
 #if defined(ARCH_OS_WINDOWS)
-    PTSTR result = PathFindFileName(fileName.c_str());
+    const std::wstring wfileName{ ArchWindowsUtf8ToUtf16(fileName) };
+    LPWSTR result = PathFindFileNameW(wfileName.c_str());
 
     // If PathFindFilename returns the same string back, that means it didn't
     // do anything.  That could mean that the patch has no basename, in which
     // case we want to return the empty string, or it could mean that the
     // fileName was already basename, in which case we want to return the
     // string back.
-    if (result == fileName.c_str()) {
+    if (result == wfileName.c_str()) {
         const bool hasDriveLetter = fileName.find(":") != string::npos;
         const bool hasPathSeparator  = i != string::npos;
         if (hasDriveLetter || hasPathSeparator) {
             return std::string();
         }
     }
-    return result;
+    return ArchWindowsUtf16ToUtf8(result);
 
 #else
     if (i == string::npos)                      // no / in name

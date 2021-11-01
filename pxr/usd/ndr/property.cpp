@@ -87,4 +87,10 @@ NdrProperty::GetTypeAsSdfType() const {
     );
 }
 
+const VtValue&
+NdrProperty::GetDefaultValueAsSdfType() const {
+    static const VtValue& emptyValue = VtValue();
+    return emptyValue;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

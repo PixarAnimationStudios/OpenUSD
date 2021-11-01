@@ -275,8 +275,7 @@ Arch_LogInfo::EmitAnyExtraLogInfo(FILE *outFile, size_t max) const
         fputs(":\n", outFile);
         for (std::string const &line: *i->second) {
             if (max && n++ >= max) {
-                fputs("... full diagnostics reported in the stack trace "
-                      "file.\n", outFile);
+                fputs("... see full diagnostics in crash report.\n", outFile);
                 return;
             }
             fputs(line.c_str(), outFile);
@@ -1046,10 +1045,30 @@ ArchLogPostMortem(const char* reason,
         hostname[0] = '\0';
     }
 
+    auto printNDashes = [](int nDashes) {
+        const char *dash64 =
+            "----------------------------------------------------------------";
+        int dividend = nDashes / 64;
+        int remainder = nDashes % 64;
+        while (dividend--) {
+            fputs(dash64, stderr);
+        }
+        fputs(dash64 + 64 - remainder, stderr);
+    };
+
+    const char *haltMsg = " terminated";
+    int labelSize = strlen(progname) + strlen(haltMsg);
+    int bannerSize = std::max<int>(80, labelSize + strlen("-- ") * 2);
+
     fputs("\n", stderr);
-    fputs("------------------------ '", stderr);
+    int numLeadingDashes = (bannerSize - labelSize) / 2 - 1;
+    printNDashes(numLeadingDashes);
+    fputs(" ", stderr);
     fputs(progname, stderr);
-    fputs("' is dying ------------------------\n", stderr);
+    fputs(haltMsg, stderr);
+    fputs(" ", stderr);
+    printNDashes(bannerSize - numLeadingDashes - labelSize - 2);
+    fputs("\n", stderr);
 
     // print out any registered program info
     {
@@ -1065,19 +1084,21 @@ ArchLogPostMortem(const char* reason,
         fputs(message, stderr);
         fputs("\n", stderr);
     }
-    fputs("The stack can be found in ", stderr);
+
+    fputs("writing crash report to [ ", stderr);
     fputs(hostname, stderr);
     fputs(":", stderr);
     fputs(logfile, stderr);
-    fputs("\n", stderr);
+    fputs(" ] ...", stderr);
+    fflush(stderr);
 
     int loggedStack = _LogStackTraceForPid(logfile);
-    fputs("done.\n", stderr);
+    fputs(" done.\n", stderr);
     // Additionally, print the first few lines of extra log information since
     // developers don't always think to look for it in the stack trace file.
     ArchStackTrace_GetLogInfo().EmitAnyExtraLogInfo(stderr, 3 /* max */);
-    fputs("------------------------------------------------------------------\n",
-          stderr);
+    printNDashes(bannerSize);
+    fputs("\n", stderr);
 
     if (loggedStack) {
         _FinishLoggingFatalStackTrace(progname, logfile, NULL /*session log*/, 
@@ -1312,6 +1333,7 @@ ArchGetStackFrames(size_t maxdepth, size_t skip, vector<uintptr_t> *frames)
     /* use the exception handling mechanism to unwind our stack.
      * note this is gcc >= 3.3.3 only.
      */
+    frames->reserve(maxdepth);
     Arch_UnwindContext context(maxdepth, skip, frames);
     _Unwind_Backtrace(Arch_unwindcb, (void*)&context);
 }
@@ -1322,10 +1344,10 @@ void
 ArchGetStackFrames(size_t maxdepth, size_t skip, vector<uintptr_t> *frames)
 {
     void* stack[MAX_STACK_DEPTH];
-    size_t frameCount = CaptureStackBackTrace(0, MAX_STACK_DEPTH, stack, NULL);
+    size_t frameCount = CaptureStackBackTrace(skip, MAX_STACK_DEPTH, stack, NULL);
     frameCount = std::min(frameCount, maxdepth);
     frames->reserve(frameCount);
-    for (size_t frame = skip; frame != frameCount; ++frame) {
+    for (size_t frame = 0; frame < frameCount; ++frame) {
         frames->push_back(reinterpret_cast<uintptr_t>(stack[frame]));
     }
 }
@@ -1339,7 +1361,7 @@ ArchGetStackFrames(size_t maxdepth, size_t skip, vector<uintptr_t> *frames)
     const size_t frameCount =
         backtrace(stack, std::max((size_t)MAX_STACK_DEPTH, maxdepth));
     frames->reserve(frameCount);
-    for (size_t frame = skip; frame != frameCount; ++frame) {
+    for (size_t frame = skip; frame < frameCount; ++frame) {
         frames->push_back(reinterpret_cast<uintptr_t>(stack[frame]));
     }
 }
@@ -1378,22 +1400,24 @@ Arch_DefaultStackTraceCallback(uintptr_t address)
         return ArchStringPrintf("%s+%#0lx", symbolName.c_str(), symbolOffset);
     }
     else {
-        return ArchStringPrintf("%#016lx", address);
+        return "<unknown>";
     }
 }
 
 static
 vector<string>
-Arch_GetStackTrace(const vector<uintptr_t> &frames);
+Arch_GetStackTrace(const vector<uintptr_t> &frames,
+                   bool skipUnknownFrames=false);
 
 /*
  * ArchPrintStackFrames
  *  print out stack frames to the given ostream.
  */
 void
-ArchPrintStackFrames(ostream& oss, const vector<uintptr_t> &frames)
+ArchPrintStackFrames(ostream& oss, const vector<uintptr_t> &frames,
+                     bool skipUnknownFrames)
 {
-    const vector<string> result = Arch_GetStackTrace(frames);
+    const vector<string> result = Arch_GetStackTrace(frames, skipUnknownFrames);
     for (size_t i = 0; i < result.size(); i++) {
         oss << result[i] << std::endl;
     }
@@ -1420,8 +1444,9 @@ Arch_GetStackTraceCallback()
     return &callback;
 }
 
-vector<string>
-Arch_GetStackTrace(const vector<uintptr_t> &frames)
+static vector<string>
+Arch_GetStackTrace(const vector<uintptr_t> &frames,
+                   bool skipUnknownFrames)
 {
     vector<string> rv;
 
@@ -1435,10 +1460,14 @@ Arch_GetStackTrace(const vector<uintptr_t> &frames)
     if (!callback) {
         callback = Arch_DefaultStackTraceCallback;
     }
+    int n = 0;
     for (size_t i = 0; i < frames.size(); i++) {
         const std::string symbolic = callback(frames[i]);
+        if (skipUnknownFrames && symbolic == "<unknown>") {
+            continue;
+        }
         rv.push_back(ArchStringPrintf(" #%-3i 0x%016lx in %s",
-                                      (int)i, frames[i], symbolic.c_str()));
+                                      n++, frames[i], symbolic.c_str()));
     }
 
     return rv;

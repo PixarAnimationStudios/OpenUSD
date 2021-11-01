@@ -140,10 +140,6 @@ HdxRenderTask::Prepare(HdTaskContext* ctx,
     if (_setupTask) {
         _setupTask->Prepare(ctx, renderIndex);
     }
-
-    if (_pass) {
-        _pass->Prepare(GetRenderTags());
-    }
 }
 
 void
@@ -202,7 +198,7 @@ HdxRenderTask::_HasDrawItems() const
 {
     if (HdSt_RenderPass* hdStRenderPass =
             dynamic_cast<HdSt_RenderPass*>(_pass.get())) {
-        return hdStRenderPass->GetDrawItemCount() > 0;
+        return hdStRenderPass->HasDrawItems();
     } else {
         // Non-Storm backends don't typically use the draw item subsystem.
         // Return true to signify that there is rendering work to do.

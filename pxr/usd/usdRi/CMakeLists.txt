@@ -9,31 +9,14 @@ pxr_library(usdRi
         usd
         usdShade
         usdGeom
-        usdLux
         ${Boost_PYTHON_LIBRARY}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
-        lightAPI
-        lightFilterAPI
-        lightPortalAPI
         materialAPI
-        pxrAovLight
-        pxrBarnLightFilter
-        pxrCookieLightFilter
-        pxrEnvDayLight
-        pxrIntMultLightFilter
-        pxrRampLightFilter
-        pxrRodLightFilter
-        risBxdf
-        risIntegrator
-        risObject
-        risOslPattern
-        risPattern
         rmanUtilities
-        rslShader
         splineAPI
         statementsAPI
         textureAPI
@@ -50,24 +33,8 @@ pxr_library(usdRi
 
     PYMODULE_CPPFILES
         module.cpp
-        wrapLightAPI.cpp
-        wrapLightFilterAPI.cpp
-        wrapLightPortalAPI.cpp
         wrapMaterialAPI.cpp
-        wrapPxrAovLight.cpp
-        wrapPxrBarnLightFilter.cpp
-        wrapPxrCookieLightFilter.cpp
-        wrapPxrEnvDayLight.cpp
-        wrapPxrIntMultLightFilter.cpp
-        wrapPxrRampLightFilter.cpp
-        wrapPxrRodLightFilter.cpp
-        wrapRisBxdf.cpp
-        wrapRisIntegrator.cpp
-        wrapRisObject.cpp
-        wrapRisOslPattern.cpp
-        wrapRisPattern.cpp
         wrapRmanUtilities.cpp
-        wrapRslShader.cpp
         wrapSplineAPI.cpp
         wrapStatementsAPI.cpp
         wrapTextureAPI.cpp
@@ -95,8 +62,6 @@ pxr_register_test(testUsdRiSchemata
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRiSchemata"  
     EXPECTED_RETURN_CODE 0
-    ENV
-        USD_RI_WRITE_BXDF_OUTPUT=0
 )
 
 pxr_register_test(testUsdRiSplineAPI

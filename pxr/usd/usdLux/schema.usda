@@ -15,14 +15,14 @@ over "GLOBAL" (
                 string doc = """
                 This token represents the collection name to use
                 with UsdCollectionAPI to represent light-linking
-                of a UsdLuxLight prim.
+                of a prim with an applied UsdLuxLightAPI.
                 """
             }
             dictionary shadowLink = {
                 string doc = """
                 This token represents the collection name to use
                 with UsdCollectionAPI to represent shadow-linking
-                of a UsdLuxLight prim.
+                of a prim with an applied UsdLuxLightAPI.
                 """
             }
             dictionary filterLink = {
@@ -44,9 +44,14 @@ over "GLOBAL" (
 {
 }
 
-class "Light" (
-    inherits = </Xformable>
-    doc = """Base class for all lights.
+class "LightAPI" (
+    inherits = </APISchemaBase>
+    doc = """API schema that imparts the quality of being a light onto a prim. 
+
+    A light is any prim that has this schema applied to it.  This is true 
+    regardless of whether LightAPI is included as a built-in API of the prim 
+    type (e.g. RectLight or DistantLight) or is applied directly to a Gprim 
+    that should be treated as a light.
 
     <b>Linking</b>
 
@@ -67,7 +72,7 @@ class "Light" (
     """
     customData = {
         dictionary extraPlugInfo = {
-            bool implementsUsdShadeConnectableAPIBehavior = 1
+            bool providesUsdShadeConnectableAPIBehavior = 1
         }
         string extraIncludes = """
 #include "pxr/usd/usd/collectionAPI.h"
@@ -84,6 +89,61 @@ class "Light" (
     uniform bool collection:shadowLink:includeRoot = 1 (
         customData = {
             token apiName = ""
+        }
+    )
+    uniform token light:shaderId = "" (
+        doc = """Default ID for the light's shader. 
+        This defines the shader ID for this light when a render context specific
+        shader ID is not available. 
+
+        The default shaderId for the intrinsic UsdLux lights (RectLight, 
+        DistantLight, etc.) are set to default to the light's type name. For 
+        each intrinsic UsdLux light, we will always register an SdrShaderNode in
+        the SdrRegistry, with the identifier matching the type name and the 
+        source type "USD", that corresponds to the light's inputs.
+        \\see GetShaderId
+        \\see GetShaderIdAttrForRenderContext
+        \\see SdrRegistry::GetShaderNodeByIdentifier
+        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
+        """
+        customData = {
+            token apiName = "shaderId"
+        }
+        displayGroup = "Internal"
+    )
+    uniform token light:materialSyncMode = "noMaterialResponse" (
+        doc = """For a LightAPI applied to geometry that has a bound Material, 
+        which is entirely or partly emissive, this specifies the relationship 
+        of the Material response to the lighting response.
+        Valid values are:
+        - materialGlowTintsLight: All primary and secondary rays see the 
+          emissive/glow response as dictated by the bound Material while the 
+          base color seen by light rays (which is then modulated by all of the 
+          other LightAPI controls) is the multiplication of the color feeding 
+          the emission/glow input of the Material (i.e. its surface or volume 
+          shader) with the scalar or pattern input to *inputs:color*.
+          This allows the light's color to tint the geometry's glow color while 
+          preserving access to intensity and other light controls as ways to 
+          further modulate the illumination.
+        - independent: All primary and secondary rays see the emissive/glow 
+          response as dictated by the bound Material, while the base color seen 
+          by light rays is determined solely by *inputs:color*. Note that for 
+          partially emissive geometry (in which some parts are reflective 
+          rather than emissive), a suitable pattern must be connected to the 
+          light's color input, or else the light will radiate uniformly from 
+          the geometry.
+        - noMaterialResponse: The geometry behaves as if there is no Material
+          bound at all, i.e. there is no diffuse, specular, or transmissive 
+          response. The base color of light rays is entirely controlled by the
+          *inputs:color*. This is the standard mode for "canonical" lights in 
+          UsdLux and indicates to renderers that a Material will either never 
+          be bound or can always be ignored.
+        """
+        allowedTokens = ["materialGlowTintsLight", 
+                         "independent", 
+                         "noMaterialResponse"]
+        customData = {
+            token apiName = "materialSyncMode"
         }
     )
     float inputs:intensity = 1 (
@@ -152,8 +212,65 @@ class "Light" (
             token apiName = "colorTemperature"
         }
     )
-    rel filters (
+    rel light:filters (
         doc = """Relationship to the light filters that apply to this light."""
+        customData = {
+            token apiName = "filters"
+        }
+    )
+}
+
+class "MeshLightAPI" (
+    inherits = </APISchemaBase>
+    doc = """This is the preferred API schema to apply to 
+    \\ref UsdGeomMesh "Mesh" type prims when adding light behaviors to a mesh. 
+    At its base, this API schema has the built-in behavior of applying LightAPI 
+    to the mesh and overriding the default materialSyncMode to allow the 
+    emission/glow of the bound material to affect the color of the light. 
+    But, it additionally serves as a hook for plugins to attach additional 
+    properties to "mesh lights" through the creation of API schemas which are 
+    authored to auto-apply to MeshLightAPI.
+    \\see \\ref Usd_AutoAppliedAPISchemas
+    """
+    prepend apiSchemas = ["LightAPI"]
+) {
+    uniform token light:shaderId = "MeshLight" (
+        customData = {
+            token apiName = ""
+        }
+        displayGroup = "Internal"
+    )
+    uniform token light:materialSyncMode = "materialGlowTintsLight" (
+        customData = {
+            token apiName = ""
+        }
+    )
+}
+
+class "VolumeLightAPI" (
+    inherits = </APISchemaBase>
+    doc = """This is the preferred API schema to apply to 
+    \\ref UsdVolVolume "Volume" type prims when adding light behaviors to a 
+    volume. At its base, this API schema has the built-in behavior of applying 
+    LightAPI to the volume and overriding the default materialSyncMode to allow 
+    the emission/glow of the bound material to affect the color of the light. 
+    But, it additionally serves as a hook for plugins to attach additional 
+    properties to "volume lights" through the creation of API schemas which are 
+    authored to auto-apply to VolumeLightAPI.
+    \\see \\ref Usd_AutoAppliedAPISchemas
+    """
+    prepend apiSchemas = ["LightAPI"]
+) {
+    uniform token light:shaderId = "VolumeLight" (
+        customData = {
+            token apiName = ""
+        }
+        displayGroup = "Internal"
+    )
+    uniform token light:materialSyncMode = "materialGlowTintsLight" (
+        customData = {
+            token apiName = ""
+        }
     )
 }
 
@@ -171,11 +288,11 @@ class "ListAPI" (
     02  // including those inside payloads
     03  stage->Load();
     04  
-    05  // Traverse all prims, checking if they are of type UsdLuxLight
+    05  // Traverse all prims, checking if they have an applied UsdLuxLightAPI
     06  // (Note: ignoring instancing and a few other things for simplicity)
     07  SdfPathVector lights;
     08  for (UsdPrim prim: stage->Traverse()) {
-    09      if (prim.IsA<UsdLuxLight>()) {
+    09      if (prim.HasAPI<UsdLuxLightAPI>()) {
     10          lights.push_back(i->GetPath());
     11      }
     12  }
@@ -443,7 +560,7 @@ class LightFilter "LightFilter" (
     """
     customData = {
         dictionary extraPlugInfo = {
-            bool implementsUsdShadeConnectableAPIBehavior = 1
+            bool providesUsdShadeConnectableAPIBehavior = 1
         }
         string extraIncludes = """
 #include "pxr/usd/usd/collectionAPI.h"
@@ -457,13 +574,63 @@ class LightFilter "LightFilter" (
             token apiName = ""
         }
     )
+    uniform token lightFilter:shaderId = "" (
+        doc = """Default ID for the light filter's shader. 
+        This defines the shader ID for this light filter when a render context 
+        specific shader ID is not available. 
+
+        \\see GetShaderId
+        \\see GetShaderIdAttrForRenderContext
+        \\see SdrRegistry::GetShaderNodeByIdentifier
+        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
+        """
+        customData = {
+            token apiName = "shaderId"
+        }
+        displayGroup = "Internal"
+    )
+
+}
+
+class "BoundableLightBase" (
+    inherits = </Boundable>
+    doc = """Base class for intrinsic lights that are boundable.
+
+    The primary purpose of this class is to provide a direct API to the 
+    functions provided by LightAPI for concrete derived light types.
+    """
+    customData = {
+        string extraIncludes = """#include "pxr/usd/usdLux/lightAPI.h" """
+    }
+    prepend apiSchemas = ["LightAPI"]
+) {
+}
+
+class "NonboundableLightBase" (
+    inherits = </Xformable>
+    doc = """Base class for intrinsic lights that are not boundable.
+
+    The primary purpose of this class is to provide a direct API to the 
+    functions provided by LightAPI for concrete derived light types.
+    """
+    customData = {
+        string extraIncludes = """#include "pxr/usd/usdLux/lightAPI.h" """
+    }
+    prepend apiSchemas = ["LightAPI"]
+) {
 }
 
 class DistantLight "DistantLight" (
-    inherits = </Light>
+    inherits = </NonboundableLightBase>
     doc = """Light emitted from a distant source along the -Z axis.
     Also known as a directional light."""
 ) {
+    uniform token light:shaderId = "DistantLight" (
+        customData = {
+            token apiName = ""
+        }
+        displayGroup = "Internal"
+    )
     float inputs:angle = 0.53 (
         doc = """Angular size of the light in degrees.
         As an example, the Sun is approximately 0.53 degrees as seen from Earth.
@@ -483,10 +650,21 @@ class DistantLight "DistantLight" (
 }
 
 class DiskLight "DiskLight" (
-    inherits = </Light>
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = 1
+        }
+    }
+    inherits = </BoundableLightBase>
     doc = """Light emitted from one side of a circular disk.
     The disk is centered in the XY plane and emits light along the -Z axis."""
 ) {
+    uniform token light:shaderId = "DiskLight"  (
+        customData = {
+            token apiName = ""
+        }
+        displayGroup = "Internal"
+    )
     float inputs:radius = 0.5 (
         doc = "Radius of the disk."
         customData = {
@@ -496,13 +674,24 @@ class DiskLight "DiskLight" (
 }
 
 class RectLight "RectLight" (
-    inherits = </Light>
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = 1
+        }
+    }
+    inherits = </BoundableLightBase>
     doc = """Light emitted from one side of a rectangle.
     The rectangle is centered in the XY plane and emits light along the -Z axis.
     The rectangle is 1 unit in length in the X and Y axis.  In the default 
     position, a texture file's min coordinates should be at (+X, +Y) and 
     max coordinates at (-X, -Y)."""
 ) {
+    uniform token light:shaderId = "RectLight"  (
+        customData = {
+            token apiName = ""
+        }
+        displayGroup = "Internal"
+    )
     float inputs:width = 1 (
         doc = "Width of the rectangle, in the local X axis."
         customData = {
@@ -525,9 +714,20 @@ class RectLight "RectLight" (
 }
 
 class SphereLight "SphereLight" (
-    inherits = </Light>
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = 1
+        }
+    }
+    inherits = </BoundableLightBase>
     doc = """Light emitted outward from a sphere."""
 ) {
+    uniform token light:shaderId = "SphereLight"  (
+        customData = {
+            token apiName = ""
+        }
+        displayGroup = "Internal"
+    )
     float inputs:radius = 0.5 (
         doc = "Radius of the sphere."
         customData = {
@@ -543,12 +743,23 @@ class SphereLight "SphereLight" (
 }
 
 class CylinderLight "CylinderLight" (
-    inherits = </Light>
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = 1
+        }
+    }
+    inherits = </BoundableLightBase>
     doc = """Light emitted outward from a cylinder.
     The cylinder is centered at the origin and has its major axis on the X axis.
     The cylinder does not emit light from the flat end-caps.
     """
 ) {
+    uniform token light:shaderId = "CylinderLight"  (
+        customData = {
+            token apiName = ""
+        }
+        displayGroup = "Internal"
+    )
     float inputs:length = 1 (
         doc = "Width of the rectangle, in the local X axis."
         customData = {
@@ -570,17 +781,24 @@ class CylinderLight "CylinderLight" (
 }
 
 class GeometryLight "GeometryLight" (
-    inherits = </Light>
-    doc = """Light emitted outward from a geometric prim (UsdGeomGprim),
+    inherits = </NonboundableLightBase>
+    doc = """\\deprecated
+    Light emitted outward from a geometric prim (UsdGeomGprim),
     which is typically a mesh."""
 ) {
     rel geometry (
         doc = """Relationship to the geometry to use as the light source."""
     )
+    uniform token light:shaderId = "GeometryLight"  (
+        customData = {
+            token apiName = ""
+        }
+        displayGroup = "Internal"
+    )
 }
 
 class DomeLight "DomeLight" (
-    inherits = </Light>
+    inherits = </NonboundableLightBase>
     doc = """Light emitted inward from a distant external environment,
     such as a sky or IBL light probe.  The orientation of a dome light with a
     latlong texture is expected to match the OpenEXR specification for latlong 
@@ -606,6 +824,12 @@ class DomeLight "DomeLight" (
     -------------------------------------------------------------------------
 """
 ) {
+    uniform token light:shaderId = "DomeLight"  (
+        customData = {
+            token apiName = ""
+        }
+        displayGroup = "Internal"
+    )
     asset inputs:texture:file (
         doc = """A color texture to use on the dome, such as an HDR (high
         dynamic range) texture intended for IBL (image based lighting)."""
@@ -639,27 +863,28 @@ class DomeLight "DomeLight" (
 }
 
 class PortalLight "PortalLight" (
-    inherits = </Light>
+    inherits = </BoundableLightBase>
     doc = """A rectangular portal in the local XY plane that guides sampling
     of a dome light.  Transmits light in the -Z direction.
     The rectangle is 1 unit in length."""
 ) {
-}
-
-class LightPortal "LightPortal" (
-    inherits = </PortalLight>
-    doc = """
-    \\deprecated This remains for backward compatability for now but is 
-    identical to PortalLight which should be used instead.
-
-    A rectangular portal in the local XY plane that guides sampling
-    of a dome light.  Transmits light in the -Z direction.
-    The rectangle is 1 unit in length."""
-) {
+    uniform token light:shaderId = "PortalLight"  (
+        customData = {
+            token apiName = ""
+        }
+        displayGroup = "Internal"
+    )
+    float3[] extent = [(-0.5, -0.5, 0.0), (0.5, 0.5, 0.0)] (
+        doc = """Boundary extent of the unit rectangle in the XY plane that 
+        defines the portal."""
+        customData = {
+            token apiName = ""
+        }
+    )
 }
 
 class PluginLight "PluginLight" (
-    inherits = </Light>
+    inherits = </Xformable>
     doc = """Light that provides properties that allow it to identify an 
     external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
     provided to render delegates without the need to provide a schema 
@@ -667,7 +892,7 @@ class PluginLight "PluginLight" (
 
     \\see \\ref usdLux_PluginSchemas
 """
-    prepend apiSchemas = ["NodeDefAPI"]
+    prepend apiSchemas = ["NodeDefAPI", "LightAPI"]
     customData = {
         string extraIncludes = """
 #include "pxr/usd/usdShade/nodeDefAPI.h" """

@@ -444,6 +444,21 @@ HgiMetalGraphicsCmds::MemoryBarrier(HgiMemoryBarrier barrier)
                          beforeStages:dstStages];
 }
 
+static
+HgiMetal::CommitCommandBufferWaitType
+_ToHgiMetal(const HgiSubmitWaitType wait)
+{
+    switch(wait) {
+        case HgiSubmitWaitTypeNoWait:
+            return HgiMetal::CommitCommandBuffer_NoWait;
+        case HgiSubmitWaitTypeWaitUntilCompleted:
+            return HgiMetal::CommitCommandBuffer_WaitUntilCompleted;
+    }
+
+    TF_CODING_ERROR("Bad enum value for HgiSubmitWaitType");
+    return HgiMetal::CommitCommandBuffer_WaitUntilCompleted;
+}
+
 bool
 HgiMetalGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
@@ -451,17 +466,7 @@ HgiMetalGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
         [_encoder endEncoding];
         _encoder = nil;
 
-        HgiMetal::CommitCommandBufferWaitType waitType;
-        switch(wait) {
-            case HgiSubmitWaitTypeNoWait:
-                waitType = HgiMetal::CommitCommandBuffer_NoWait;
-                break;
-            case HgiSubmitWaitTypeWaitUntilCompleted:
-                waitType = HgiMetal::CommitCommandBuffer_WaitUntilCompleted;
-                break;
-        }
-
-        _hgi->CommitPrimaryCommandBuffer(waitType);
+        _hgi->CommitPrimaryCommandBuffer(_ToHgiMetal(wait));
     }
 
     return _hasWork;

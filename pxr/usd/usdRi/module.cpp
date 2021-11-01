@@ -30,33 +30,13 @@ TF_WRAP_MODULE
 {
     // Base classes must precede derived classes.  Indentation indicates class
     // hierarchy.
-    TF_WRAP(UsdRiRisObject);
-        TF_WRAP(UsdRiRisBxdf);
-
-    TF_WRAP(UsdRiRisPattern);
-        TF_WRAP(UsdRiRisOslPattern);
-
-    TF_WRAP(UsdRiLightAPI);
-    TF_WRAP(UsdRiLightFilterAPI);
-    TF_WRAP(UsdRiLightPortalAPI);
     TF_WRAP(UsdRiMaterialAPI);
     TF_WRAP(UsdRiTextureAPI);
     TF_WRAP(UsdRiSplineAPI);
 
-    TF_WRAP(UsdRiRisIntegrator);
-    TF_WRAP(UsdRiRslShader);
     TF_WRAP(UsdRiStatementsAPI);
 
     TF_WRAP(UsdRiTokens);
 
     TF_WRAP(UsdRiRmanUtilities);
-
-    TF_WRAP(UsdRiPxrAovLight);
-    TF_WRAP(UsdRiPxrEnvDayLight);
-
-    TF_WRAP(UsdRiPxrBarnLightFilter);
-    TF_WRAP(UsdRiPxrIntMultLightFilter);
-    TF_WRAP(UsdRiPxrCookieLightFilter);
-    TF_WRAP(UsdRiPxrRampLightFilter);
-    TF_WRAP(UsdRiPxrRodLightFilter);
 }

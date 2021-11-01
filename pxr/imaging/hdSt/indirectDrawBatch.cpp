@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdSt/drawItemInstance.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -434,7 +435,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         // shader parameter
         //
         HdBufferArrayRangeSharedPtr const &
-            shaderBar = drawItem->GetMaterialShader()->GetShaderData();
+            shaderBar = drawItem->GetMaterialNetworkShader()->GetShaderData();
 
         // 3 for triangles, 4 for quads, n for patches
         uint32_t numIndicesPerPrimitive

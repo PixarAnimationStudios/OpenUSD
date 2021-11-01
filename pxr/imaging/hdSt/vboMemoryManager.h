@@ -115,6 +115,9 @@ protected:
         /// Returns true if this bar is marked as immutable.
         bool IsImmutable() const override;
 
+        /// Returns true if this needs a staging buffer for CPU to GPU copies.
+        bool RequiresStaging() const override;
+
         /// Resize memory area for this range. Returns true if it causes container
         /// buffer reallocation.
         HDST_API

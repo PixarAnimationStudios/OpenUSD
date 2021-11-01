@@ -146,6 +146,14 @@ SdfTextFileFormat::CanRead(const string& filePath) const
 }
 
 bool
+SdfTextFileFormat::_CanReadFromAsset(
+    const std::string& resolvedPath,
+    const std::shared_ptr<ArAsset>& asset) const
+{
+    return _CanReadImpl(asset, GetFileCookie());
+}
+
+bool
 SdfTextFileFormat::Read(
     SdfLayer* layer,
     const string& resolvedPath,
@@ -159,6 +167,16 @@ SdfTextFileFormat::Read(
         return false;
     }
 
+    return _ReadFromAsset(layer, resolvedPath, asset, metadataOnly);
+}
+
+bool
+SdfTextFileFormat::_ReadFromAsset(
+    SdfLayer* layer,
+    const string& resolvedPath,
+    const std::shared_ptr<ArAsset>& asset,
+    bool metadataOnly) const
+{
     // Quick check to see if the file has the magic cookie before spinning up
     // the parser.
     if (!_CanReadImpl(asset, GetFileCookie())) {

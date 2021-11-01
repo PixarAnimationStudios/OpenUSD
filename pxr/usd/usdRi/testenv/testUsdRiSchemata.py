@@ -71,61 +71,10 @@ class TestUsdRiSchemata(unittest.TestCase):
         assert material.GetPrim()
         UsdShade.MaterialBindingAPI.Apply(p).Bind(material)
 
-        print ("Test shader")
-        shader = UsdRi.RslShader.Define(stage, '/World/Group/Model/Shader')
-        assert shader
-        assert shader.GetPrim()
-        assert not UsdRi.StatementsAPI.IsRiAttribute(shader.GetSloPathAttr())
-        shader.GetSloPathAttr().Set('foo')
-
         print ("Test RiMaterialAPI")
         riMaterial = UsdRi.MaterialAPI.Apply(material.GetPrim())
         assert riMaterial
         assert riMaterial.GetPrim()
-
-        # Test surface output
-        self._TestOutput(riMaterial, 
-            UsdRi.MaterialAPI.GetSurfaceOutput, 
-            UsdRi.MaterialAPI.SetSurfaceSource,
-            UsdRi.MaterialAPI.GetSurface,
-            shader.GetPath())
-
-        # Test displacement output
-        self._TestOutput(riMaterial, 
-            UsdRi.MaterialAPI.GetDisplacementOutput, 
-            UsdRi.MaterialAPI.SetDisplacementSource,
-            UsdRi.MaterialAPI.GetDisplacement,
-            shader.GetPath())
-
-        # Test volume output
-        self._TestOutput(riMaterial, 
-            UsdRi.MaterialAPI.GetVolumeOutput, 
-            UsdRi.MaterialAPI.SetVolumeSource,
-            UsdRi.MaterialAPI.GetVolume,
-            shader.GetPath())
-
-        print ("Test pattern")
-        pattern = UsdRi.RisPattern.Define(stage, '/World/Group/Model/Pattern')
-        assert pattern
-        assert pattern.GetPrim()
-        pattern.GetFilePathAttr().Set('foo')
-        self.assertEqual (pattern.GetFilePathAttr().Get(), 'foo')
-        pattern.GetArgsPathAttr().Set('argspath')
-        self.assertEqual (pattern.GetArgsPathAttr().Get(), 'argspath')
-
-        print ("Test oslPattern")
-        oslPattern = UsdRi.RisOslPattern.Define(
-            stage, '/World/Group/Model/OslPattern')
-        assert oslPattern
-        assert oslPattern.GetPrim()
-        self.assertEqual (oslPattern.GetFilePathAttr().Get(), 'PxrOSL')
-
-        print ("Test bxdf")
-        bxdf = UsdRi.RisBxdf.Define(stage, '/World/Group/Model/Bxdf')
-        assert bxdf
-        assert bxdf.GetPrim()
-        bxdf.GetFilePathAttr().Set('foo')
-        bxdf.GetArgsPathAttr().Set('argspath')
 
         print ("Test RIS Material")
         risMaterial = UsdRi.MaterialAPI(material.GetPrim())
@@ -133,7 +82,7 @@ class TestUsdRiSchemata(unittest.TestCase):
         assert risMaterial.GetPrim()
 
         print ("Test riStatements")
-        riStatements = UsdRi.StatementsAPI.Apply(shader.GetPrim())
+        riStatements = UsdRi.StatementsAPI.Apply(model.GetPrim())
         assert riStatements
         assert riStatements.GetPrim()
         attr = riStatements.CreateRiAttribute("ModelName", "string").\
@@ -144,9 +93,7 @@ class TestUsdRiSchemata(unittest.TestCase):
         # this is so convoluted
         attr = riStatements.GetPrim().GetAttribute(props[0].GetName())
         assert attr
-        prefix = ('primvars:'
-            if Tf.GetEnvSetting('USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING')
-            else '')
+        prefix = 'primvars:'
         self.assertEqual(attr.GetName(),
             prefix+'ri:attributes:user:ModelName')
         self.assertEqual(attr.Get(), 'someModelName')
@@ -179,19 +126,18 @@ class TestUsdRiSchemata(unittest.TestCase):
         riStatements.SetCoordinateSystem('LEyeSpace')
         self.assertEqual(riStatements.GetCoordinateSystem(), 'LEyeSpace')
         self.assertEqual(UsdRi.StatementsAPI(model).GetModelCoordinateSystems(),
-                    [Sdf.Path('/World/Group/Model/Shader')])
+                    [Sdf.Path('/World/Group/Model')])
         riStatements.SetScopedCoordinateSystem('ScopedLEyeSpace')
         self.assertEqual(riStatements.GetScopedCoordinateSystem(), 'ScopedLEyeSpace')
         self.assertEqual(UsdRi.StatementsAPI(model).GetModelScopedCoordinateSystems(),
-                    [Sdf.Path('/World/Group/Model/Shader')])
+                    [Sdf.Path('/World/Group/Model')])
         self.assertEqual(UsdRi.StatementsAPI(group).GetModelCoordinateSystems(), [])
         self.assertEqual(UsdRi.StatementsAPI(group).GetModelScopedCoordinateSystems(), [])
         self.assertEqual(UsdRi.StatementsAPI(world).GetModelCoordinateSystems(), [])
         self.assertEqual(UsdRi.StatementsAPI(world).GetModelScopedCoordinateSystems(), [])
 
         # Test mixed old & new style encodings
-        if (Tf.GetEnvSetting('USDRI_STATEMENTS_WRITE_NEW_ATTR_ENCODING') and
-            Tf.GetEnvSetting('USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING')):
+        if Tf.GetEnvSetting('USDRI_STATEMENTS_READ_OLD_ATTR_ENCODING'):
             prim  = stage.DefinePrim("/prim")
             riStatements = UsdRi.StatementsAPI.Apply(prim)
             self.assertEqual(len(riStatements.GetRiAttributes()), 0)
@@ -211,11 +157,6 @@ class TestUsdRiSchemata(unittest.TestCase):
                 Sdf.ValueTypeNames.String)
             self.assertEqual(len(riStatements.GetRiAttributes()), 2)
             self.assertFalse(ignoredAttr in riStatements.GetRiAttributes())
-        
-    def test_Metadata(self):
-        stage = Usd.Stage.CreateInMemory()
-        osl = UsdRi.RisOslPattern.Define(stage, "/osl")
-        self.assertTrue( osl.GetFilePathAttr().IsHidden() )
 
 if __name__ == "__main__":
     unittest.main()

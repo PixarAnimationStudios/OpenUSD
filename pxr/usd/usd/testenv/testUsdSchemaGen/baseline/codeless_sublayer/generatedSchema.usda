@@ -6,10 +6,6 @@
     }
 )
 
-class "DerivedSingleApplyAPI"
-{
-}
-
 class DerivedTestPxHairman "DerivedTestPxHairman"
 {
     float attrWithoutGeneratedAccessorAPI (

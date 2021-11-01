@@ -31,13 +31,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
 {
     if (@available(macOS 10.14.5, ios 12.0, *)) {
-        concurrentDispatchSupported = true;
-    }
-    else {
-        concurrentDispatchSupported = false;
+        _SetFlag(HgiDeviceCapabilitiesBitsConcurrentDispatch, true);
     }
 
     defaultStorageMode = MTLResourceStorageModeShared;
+    bool unifiedMemory = false;
     if (@available(macOS 100.100, ios 12.0, *)) {
         unifiedMemory = true;
     } else if (@available(macOS 10.15, ios 13.0, *)) {
@@ -46,18 +44,17 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
 #else
         unifiedMemory = [device isLowPower];
 #endif
-    } else {
-        unifiedMemory = false;
     }
 
+    _SetFlag(HgiDeviceCapabilitiesBitsUnifiedMemory, unifiedMemory);
+
+#if defined(ARCH_OS_MACOS)
     if (!unifiedMemory) {
         defaultStorageMode = MTLResourceStorageModeManaged;
     }
+#endif
 }
 
-HgiMetalCapabilities::~HgiMetalCapabilities()
-{
-    
-}
+HgiMetalCapabilities::~HgiMetalCapabilities() = default;
 
 PXR_NAMESPACE_CLOSE_SCOPE

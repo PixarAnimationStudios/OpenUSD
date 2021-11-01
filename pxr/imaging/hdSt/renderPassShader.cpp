@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -198,8 +196,7 @@ HdStRenderPassShader::BindResources(const int program,
     unsigned int cullStyle = _cullStyle;
     binder.BindUniformui(HdShaderTokens->cullStyle, 1, &cullStyle);
 
-    HdSt_TextureBinder::BindResources(
-        binder, /* useBindlessHandles = */ false, _namedTextureHandles);
+    HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
 }
 
 /*virtual*/
@@ -212,10 +209,7 @@ HdStRenderPassShader::UnbindResources(const int program,
         binder.Unbind(it->second);
     }
 
-    HdSt_TextureBinder::UnbindResources(
-        binder, /* useBindlessHandles = */ false, _namedTextureHandles);
-
-    glActiveTexture(GL_TEXTURE0);
+    HdSt_TextureBinder::UnbindResources(binder, _namedTextureHandles);
 }
 
 void
@@ -338,7 +332,6 @@ HdStRenderPassShader::UpdateAovInputTextures(
                 HdTextureType::Uv,
                 samplerParameters,
                 /* memoryRequest = */ 0,
-                /* createBindlessHandle = */ false,
                 shared_from_this());
         // Add to _namedTextureHandles so that the texture will
         // be bound to the shader in BindResources.

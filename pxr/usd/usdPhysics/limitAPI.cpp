@@ -134,23 +134,6 @@ UsdPhysicsLimitAPI::CanApply(
 UsdPhysicsLimitAPI
 UsdPhysicsLimitAPI::Apply(const UsdPrim &prim, const TfToken &name)
 {
-    // Ensure that the instance name is valid.
-    TfTokenVector tokens = SdfPath::TokenizeIdentifierAsTokens(name);
-
-    if (tokens.empty()) {
-        TF_CODING_ERROR("Invalid PhysicsLimitAPI name '%s'.", 
-                        name.GetText());
-        return UsdPhysicsLimitAPI();
-    }
-
-    const TfToken &baseName = tokens.back();
-    if (IsSchemaPropertyBaseName(baseName)) {
-        TF_CODING_ERROR("Invalid PhysicsLimitAPI name '%s'. "
-                        "The base-name '%s' is a schema property name.", 
-                        name.GetText(), baseName.GetText());
-        return UsdPhysicsLimitAPI();
-    }
-
     if (prim.ApplyAPI<UsdPhysicsLimitAPI>(name)) {
         return UsdPhysicsLimitAPI(prim, name);
     }

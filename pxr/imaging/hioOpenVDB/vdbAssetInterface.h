@@ -31,6 +31,8 @@
 
 #include "openvdb/openvdb.h"
 
+#include "pxr/imaging/hioOpenVDB/api.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HioOpenVDBArAssetInterface
@@ -41,6 +43,7 @@ class HioOpenVDBArAssetInterface : public ArAsset
 {
 public:
     /// Empty virtual destructor to prevent build errors with some compilers.
+    HIOOPENVDB_API
     virtual ~HioOpenVDBArAssetInterface();
 
     /// Return a shared pointer to an OpenVDB grid with /p name,

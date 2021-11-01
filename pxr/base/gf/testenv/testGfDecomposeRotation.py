@@ -25,6 +25,8 @@
 from __future__ import division
 
 import logging
+from math import pi
+import random
 import unittest
 import sys
 
@@ -747,6 +749,165 @@ class TestGfDecomposeRotation(unittest.TestCase):
             self._TestDecomposeRotation(rot, thetaFBHint = None)
             self._TestDecomposeRotation(rot, thetaLRHint = None)
             self._TestDecomposeRotation(rot, thetaSwHint = None)
+
+class TestClosestEulerRotation(unittest.TestCase):
+    _NUM_TESTS = 100
+    _TEST_RANGE = 12.0 * pi
+
+    @classmethod
+    def setUpClass(self):
+        self.rand = random.Random(12345)
+
+    def _TestEquivalentRotation(self, val, hint, result):
+            # If hint is None then we are ignoring that value and it should be 0
+            if val is None:
+                self.assertEqual(result, 0.0)
+                return
+            # Make sure the result is within pi of the hint
+            self.assertTrue(abs(result-hint) <= pi,
+                msg='Result {} is not within pi of hint {}'.format(
+                    result, hint))
+            # Make sure there the angles are equivalent
+            # NOTE: The mod operator, %, is necessary here.
+            # math.fmod() does not work for this test
+            self.assertAlmostEqual(val % (2.0*pi), result % (2.0*pi),
+                msg='fmod of result {} is not equivalent to fmod of val {} '\
+                'for hint {}'.format(result, val, hint))
+
+    def testOneChannel(self):
+        # Test each channel independently
+        for channel in range(4):
+            hint = [0] * 4
+            val = [None] * 4
+            for i in range(self._NUM_TESTS):
+                hint[channel] = self.rand.uniform(
+                    -self._TEST_RANGE, self._TEST_RANGE)
+                val[channel]  = self.rand.uniform(
+                    -self._TEST_RANGE, self._TEST_RANGE)
+                result = Gf.Rotation.MatchClosestEulerRotation(
+                    hint[0], hint[1], hint[2], hint[3],
+                    val[0], val[1], val[2], val[3])
+                for checkChannel in range(4):
+                    self._TestEquivalentRotation(
+                        val[checkChannel],
+                        hint[checkChannel],
+                        result[checkChannel])
+
+    def testTwoChannels(self):
+        for i in range(self._NUM_TESTS):
+            # Pick two random channels
+            index1, index2 = self.rand.sample(range(4), 2)
+            vals  = [None] * 4
+            hints = [0] * 4
+            vals[index1]   = self.rand.uniform(-self._TEST_RANGE, self._TEST_RANGE)
+            vals[index2]   = self.rand.uniform(-self._TEST_RANGE, self._TEST_RANGE)
+            hints[index1]  = self.rand.uniform(-self._TEST_RANGE, self._TEST_RANGE)
+            hints[index2]  = self.rand.uniform(-self._TEST_RANGE, self._TEST_RANGE)
+            result = Gf.Rotation.MatchClosestEulerRotation(
+                hints[0], hints[1], hints[2], hints[3],
+                vals[0], vals[1], vals[2], vals[3])
+            for i in range(4):
+                self._TestEquivalentRotation(vals[i], hints[i], result[i])
+
+    def testThreeChannels(self):
+        valOuter = 5.0 * pi / 6.0
+        valInner = pi / 5.0
+        hint = pi / 2.0
+
+        # Test flips in FB/LR/SW
+        result = Gf.Rotation.MatchClosestEulerRotation(
+            0, 0, hint, 0,
+            None, valOuter, valInner, valOuter)
+        self.assertEqual(result[0], 0)
+        self.assertAlmostEqual(result[1], valOuter - pi)
+        self.assertAlmostEqual(result[2], -valInner + pi)
+        self.assertAlmostEqual(result[3], valOuter - pi)
+
+        # Test flips in TW/LR/SW
+        result = Gf.Rotation.MatchClosestEulerRotation(
+            0, 0, hint, 0,
+            valOuter, None, valInner, valOuter,)
+        self.assertEqual(result[1], 0)
+        self.assertAlmostEqual(result[0], valOuter - pi)
+        self.assertAlmostEqual(result[2], -valInner)
+        self.assertAlmostEqual(result[3], valOuter - pi)
+
+        # Test flips in TW/FB/SW
+        result = Gf.Rotation.MatchClosestEulerRotation(
+            0, hint, 0, 0,
+            valOuter, valInner, None, valOuter)
+        self.assertEqual(result[2], 0)
+        self.assertAlmostEqual(result[0], valOuter - pi)
+        self.assertAlmostEqual(result[1], -valInner)
+        self.assertAlmostEqual(result[3], valOuter - pi)
+
+        # Test flips in TW/FB/LR
+        result = Gf.Rotation.MatchClosestEulerRotation(
+            0, hint, 0, 0,
+            valOuter, valInner, valOuter, None)
+        self.assertEqual(result[3], 0)
+        self.assertAlmostEqual(result[0], valOuter - pi)
+        self.assertAlmostEqual(result[1], -valInner + pi)
+        self.assertAlmostEqual(result[2], valOuter - pi)
+
+        # Test no flipping necessary
+        result = Gf.Rotation.MatchClosestEulerRotation(
+            0, hint, 0, hint,
+            None, valOuter, valInner, valOuter)
+        self.assertEqual(result[0], 0)
+        self.assertEqual(result[1], valOuter)
+        self.assertEqual(result[2], valInner)
+        self.assertEqual(result[3], valOuter)
+
+    def testFourChannels(self):
+        valOuter = 5.0 * pi / 6.0
+        valInner = pi / 5.0
+        hint = pi / 2.0
+
+        # Case 0, no flipping
+        result = Gf.Rotation.MatchClosestEulerRotation(
+            0, 0, hint, hint,
+            valOuter, valInner, valInner, valOuter)
+        self.assertAlmostEqual(result[0], valOuter)
+        self.assertAlmostEqual(result[1], valInner)
+        self.assertAlmostEqual(result[2], valInner)
+        self.assertAlmostEqual(result[3], valOuter)
+
+        # Case 1, transform 1st 3
+        result = Gf.Rotation.MatchClosestEulerRotation(
+            0, hint, 0, hint,
+            valOuter, valInner, valInner, valOuter)
+        self.assertAlmostEqual(result[0], valOuter - pi)
+        self.assertAlmostEqual(result[1], -(valInner - pi))
+        self.assertAlmostEqual(result[2], valInner - pi)
+        self.assertAlmostEqual(result[3], valOuter)
+
+        # Case 2, 1 & 3 composed
+        result = Gf.Rotation.MatchClosestEulerRotation(
+            0, hint, hint, 0,
+            valOuter, valInner, valInner, valOuter)
+        self.assertAlmostEqual(result[0], valOuter - pi)
+        self.assertAlmostEqual(result[1], -valInner)
+        self.assertAlmostEqual(result[2], -valInner)
+        self.assertAlmostEqual(result[3], valOuter - pi)
+
+        # Case 3, transform last 3
+        result = Gf.Rotation.MatchClosestEulerRotation(
+            hint, 0, hint, 0,
+            valOuter, valInner, valInner, valOuter)
+        self.assertEqual(result[0], valOuter)
+        self.assertAlmostEqual(result[1], valInner - pi)
+        self.assertAlmostEqual(result[2], -(valInner - pi))
+        self.assertAlmostEqual(result[3], valOuter - pi)
+
+        # Case 3, transform last 3 + 2pi flip on FB
+        result = Gf.Rotation.MatchClosestEulerRotation(
+            hint, hint, hint, 0,
+            valOuter, valInner, valInner, valOuter)
+        self.assertEqual(result[0], valOuter)
+        self.assertAlmostEqual(result[1], valInner + pi)
+        self.assertAlmostEqual(result[2], -(valInner - pi))
+        self.assertAlmostEqual(result[3], valOuter - pi)
 
 if __name__ == '__main__':
     unittest.main()

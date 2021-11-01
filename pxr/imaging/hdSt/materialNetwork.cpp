@@ -773,8 +773,16 @@ _MakeMaterialParamsForTexture(
     texParam.isPremultiplied = premultiplyTexture;
 
     // Get texture's sourceColorSpace hint 
-    const TfToken sourceColorSpace = _ResolveParameter(
-        node, sdrNode, _tokens->sourceColorSpace, HdStTokens->colorSpaceAuto);
+    // XXX: This is a workaround for Presto. If there's no colorspace token, 
+    // check if there's a colorspace string.
+    TfToken sourceColorSpace = _ResolveParameter(
+        node, sdrNode, _tokens->sourceColorSpace, TfToken());
+    if (sourceColorSpace.IsEmpty()) {
+        const std::string sourceColorSpaceStr = _ResolveParameter(
+            node, sdrNode, _tokens->sourceColorSpace, 
+            HdStTokens->colorSpaceAuto.GetString());
+        sourceColorSpace = TfToken(sourceColorSpaceStr);
+    }
 
     // Extract texture file path
     bool useTexturePrimToFindTexture = true;
@@ -1233,8 +1241,9 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
             // will use the fallback shader.
             if (_surfaceGfx->IsValid()) {
                 
-                _fragmentSource = isVolume ? _surfaceGfx->GetVolumeSource() 
-                                           : _surfaceGfx->GetSurfaceSource();
+                _fragmentSource = _surfaceGfx->GetSurfaceSource();
+                _volumeSource = _surfaceGfx->GetVolumeSource();
+
                 _materialMetadata = _surfaceGfx->GetMetadata();
                 _materialTag = _GetMaterialTag(_materialMetadata, *surfTerminal);
                 _GatherMaterialParams(surfaceNetwork, *surfTerminal,
@@ -1261,6 +1270,12 @@ std::string const&
 HdStMaterialNetwork::GetFragmentCode() const
 {
     return _fragmentSource;
+}
+
+std::string const& 
+HdStMaterialNetwork::GetVolumeCode() const
+{
+    return _volumeSource;
 }
 
 std::string const&

@@ -45,6 +45,15 @@ from collections import namedtuple
 from jinja2 import Environment, FileSystemLoader
 from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError
 
+# Need to set the environment variable for disabling the schema registry's 
+# loading of schema type prim definitions before importing any pxr libraries,
+# otherwise this setting won't take. We disable this to make sure we don't try 
+# to load generatedSchema.usda files (which usdGenSchema generates) during 
+# schema generation. We expect poorly formed or incorrect generatedSchema.usda
+# to issue coding errors and we don't want those errors to cause failures in 
+# this utility which would be used to repair poorly formed or incorrect 
+# generatedSchema files.
+os.environ["USD_DISABLE_PRIM_DEFINITIONS_FOR_USDGENSCHEMA"] = "1"
 from pxr import Plug, Sdf, Usd, Vt, Tf
 
 # Object used for printing. This gives us a way to control output with regards 
@@ -547,10 +556,25 @@ class ClassInfo(object):
                         sdfPrim.path)
         
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
-            (not self.parentCppClassName):
-            raise _GetSchemaDefException(
-                "API schemas must explicitly inherit from UsdAPISchemaBase.", 
-                sdfPrim.path)
+                self.parentCppClassName != "UsdAPISchemaBase":
+            if self.isAppliedAPISchema: 
+                if self.isMultipleApply:
+                    if parentCustomData.get(API_SCHEMA_TYPE) != MULTIPLE_APPLY:
+                        raise _GetSchemaDefException(
+                            "Multiple-apply API schemas must inherit directly "
+                            "from APISchemaBase or another multiple-apply API "
+                            "schema.", 
+                            sdfPrim.path)
+                else:
+                    raise _GetSchemaDefException(
+                        "Applied API schemas must explicitly inherit directly "
+                        "from APISchemaBase.", 
+                        sdfPrim.path)
+            elif parentCustomData.get(API_SCHEMA_TYPE) != NON_APPLIED:
+                raise _GetSchemaDefException(
+                    "Non-applied API schemas must inherit directly from "
+                    "APISchemaBase or another non-applied API schema.", 
+                    sdfPrim.path)
 
         if not self.isApi and self.isAppliedAPISchema:
             raise _GetSchemaDefException(
@@ -762,7 +786,8 @@ def _WriteFile(filePath, content, validate):
     content = (content + '\n'
                if content and not content.endswith('\n') else content)
     if os.path.exists(filePath):
-        existingContent = open(filePath, 'r').read()
+        with open(filePath, 'r') as fp:
+            existingContent = fp.read()
         if existingContent == content:
             Print('\tunchanged %s' % filePath)
             return
@@ -1068,7 +1093,8 @@ def _UpdatePlugInfoWithAPISchemaApplyInfo(clsDict, cls):
         if instancesDict:
             clsDict.update({API_SCHEMA_INSTANCES: instancesDict})
 
-def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env):
+def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env,
+        skipCodeGen):
 
     #
     # Load Templates
@@ -1090,7 +1116,8 @@ def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env):
         # read existing plugInfo file, strip comments.
         plugInfoFile = os.path.join(codeGenPath, 'plugInfo.json')
         if os.path.isfile(plugInfoFile):
-            infoLines = open(plugInfoFile).readlines()
+            with open(plugInfoFile, 'r') as fp:
+                infoLines = fp.readlines()
             infoLines = [l for l in infoLines
                          if not l.strip().startswith('#')]
             # parse as json.
@@ -1108,6 +1135,14 @@ def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env):
         # pull the types dictionary.
         if 'Plugins' in info:
             for pluginData in info.get('Plugins', {}):
+                # Plugin 'Type' should default to a "resource" type instead of a
+                # "library" if no code gen happens for this schema domain.
+                # Note that if any explicit cpp code is included for this schema
+                # domain, the plugin 'Type' needs to be manually updated in the 
+                # generated plugInfo.json to "library".
+                if skipCodeGen:
+                    pluginData["Type"] = "resource"
+
                 if pluginData.get('Name') == env.globals['libraryName']:
                     types = (pluginData
                              .setdefault('Info', {})
@@ -1223,7 +1258,7 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
         # If this is an API schema, check if it's applied and record necessary
         # information.
         if p.GetName() in primsToKeep and p.GetName().endswith('API'):
-            apiSchemaType = p.GetCustomDataByKey(API_SCHEMA_TYPE)
+            apiSchemaType = p.GetCustomDataByKey(API_SCHEMA_TYPE) or SINGLE_APPLY
             if apiSchemaType == MULTIPLE_APPLY:
                 namespacePrefix = p.GetCustomDataByKey(PROPERTY_NAMESPACE_PREFIX)
                 if namespacePrefix:
@@ -1242,13 +1277,20 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
             #   'customData' - This will be deleted below
             #   'specifier' - This is a required field and will always exist.
             # Any other metadata is an error.
-            allowedAPIMetadata = ['specifier', 'customData', 'documentation']
+            allowedAPIMetadata = [
+                'specifier', 'customData', 'documentation']
+            # Single apply API schemas are also allowed to specify 'apiSchemas'
+            # metadata to include other API schemas.
+            if apiSchemaType == SINGLE_APPLY:
+                allowedAPIMetadata.append('apiSchemas')
             invalidMetadata = [key for key in p.GetAllAuthoredMetadata().keys()
                                if key not in allowedAPIMetadata]
             if invalidMetadata:
                 raise _GetSchemaDefException("Found invalid metadata fields "
-                    "%s in API schema definition. API schemas cannot provide "
-                    "prim metadata fallbacks" % str(invalidMetadata) , 
+                    "%s in API schema definition. API schemas of type %s "
+                    "can only provide prim metadata fallbacks for %s" % (
+                    str(invalidMetadata), apiSchemaType, str(allowedAPIMetadata)
+                    ), 
                     p.GetPath())
 
         if p.HasAuthoredTypeName():
@@ -1464,7 +1506,7 @@ if __name__ == '__main__':
                          useExportAPI, j2_env, args.headerTerminatorString)
         # We always generate plugInfo and generateSchema.
         GeneratePlugInfo(templatePath, codeGenPath, classes, args.validate,
-                         j2_env)
+                         j2_env, skipCodeGen)
         GenerateRegistry(codeGenPath, schemaPath, classes, 
                          args.validate, j2_env)
     

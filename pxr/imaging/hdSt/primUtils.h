@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/rprim.h"
 
 #include <memory>
 #include <string>
@@ -48,7 +49,8 @@ using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 
 using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
 using HdBufferSpecVector = std::vector<struct HdBufferSpec>;
-using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
+using HdSt_MaterialNetworkShaderSharedPtr =
+        std::shared_ptr<class HdSt_MaterialNetworkShader>;
 
 using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
 
@@ -65,6 +67,9 @@ HDST_API
 void HdStMarkMaterialTagsDirty(HdRenderParam *renderParam);
 
 HDST_API
+void HdStMarkGeomSubsetDrawItemsDirty(HdRenderParam *renderParam);
+
+HDST_API
 void HdStMarkGarbageCollectionNeeded(HdRenderParam *renderParam);
 
 // -----------------------------------------------------------------------------
@@ -77,7 +82,11 @@ HdStGetPrimvarDescriptors(
     HdRprim const * prim,
     HdStDrawItem const * drawItem,
     HdSceneDelegate * delegate,
-    HdInterpolation interpolation);
+    HdInterpolation interpolation,
+    const HdReprSharedPtr &repr = nullptr,
+    HdMeshGeomStyle descGeomStyle = HdMeshGeomStyleInvalid,
+    int geomSubsetDescIndex = 0,
+    size_t numGeomSubsets = 0);
 
 // Get filtered instancer primvar descriptors for drawItem
 HDST_API
@@ -95,18 +104,31 @@ void HdStSetMaterialId(HdSceneDelegate *delegate,
                        HdRprim *rprim);
 
 HDST_API
+void HdStSetMaterialTag(HdRenderParam *renderParam,
+                        HdDrawItem *drawItem,
+                        const TfToken &materialTag);
+
+HDST_API
 void HdStSetMaterialTag(HdSceneDelegate *delegate,
                         HdRenderParam *renderParam,
-                        HdRprim *rprim,
+                        HdDrawItem *drawItem,
+                        SdfPath const & materialId,
                         bool hasDisplayOpacityPrimvar,
                         bool occludedSelectionShowsThrough);
-// Resolves the material shader for the given prim (using a fallback
+// Resolves the material network shader for the given prim (using a fallback
 // material as necessary).
 HDST_API
-HdStShaderCodeSharedPtr
-HdStGetMaterialShader(
+HdSt_MaterialNetworkShaderSharedPtr
+HdStGetMaterialNetworkShader(
     HdRprim const * prim,
     HdSceneDelegate * delegate);
+
+HDST_API
+HdSt_MaterialNetworkShaderSharedPtr
+HdStGetMaterialNetworkShader(
+    HdRprim const * prim,
+    HdSceneDelegate * delegate,
+    SdfPath const & materialId);
 
 // -----------------------------------------------------------------------------
 // Primvar processing and BAR allocation utilities

@@ -38,7 +38,8 @@ class HdSceneDelegate;
 
 using HdStRenderPassStateSharedPtr = std::shared_ptr<class HdStRenderPassState>;
 
-using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
+using HdSt_ImageShaderRenderPassSharedPtr =
+    std::shared_ptr<class HdSt_ImageShaderRenderPass>;
 using HdStRenderPassShaderSharedPtr =
     std::shared_ptr<class HdStRenderPassShader>;
 
@@ -99,7 +100,7 @@ private:
     const HdRenderPassAovBindingVector &_GetAovBindings(
         HdTaskContext *ctx) const;
 
-    HdRenderPassSharedPtr _renderPass;
+    HdSt_ImageShaderRenderPassSharedPtr _renderPass;
     HdStRenderPassStateSharedPtr _renderPassState;
     HdStRenderPassShaderSharedPtr _renderPassShader;
 

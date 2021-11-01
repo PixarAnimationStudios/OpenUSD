@@ -85,7 +85,7 @@ void wrapUsdLuxCylinderLight()
 {
     typedef UsdLuxCylinderLight This;
 
-    class_<This, bases<UsdLuxLight> >
+    class_<This, bases<UsdLuxBoundableLightBase> >
         cls("CylinderLight");
 
     cls

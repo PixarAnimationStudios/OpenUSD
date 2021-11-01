@@ -42,7 +42,8 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
         NormalSourceSmooth,
         NormalSourceLimit,
         NormalSourceFlat,
-        NormalSourceGeometryShader
+        NormalSourceGeometryShader,
+        NormalSourceScreenSpace
     };
 
     HdSt_MeshShaderKey(HdSt_GeometricShader::PrimitiveType primType,
@@ -110,7 +111,7 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     TfToken TCS[3];
     TfToken TES[4];
     TfToken GS[10];
-    TfToken FS[18];
+    TfToken FS[19];
 };
 
 

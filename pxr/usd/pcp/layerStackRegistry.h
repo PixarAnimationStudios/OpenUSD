@@ -29,6 +29,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/base/tf/declarePtrs.h"
+#include "pxr/base/tf/functionRef.h"
 #include "pxr/base/tf/refBase.h"
 
 #include <memory>
@@ -102,6 +103,10 @@ public:
     /// Returns every layer stack known to this registry.
     std::vector<PcpLayerStackPtr> GetAllLayerStacks() const;
 
+    /// Runs \p fn on all layer stacks known to this registry.
+    void 
+    ForEachLayerStack(const TfFunctionRef<void(const PcpLayerStackPtr&)>& fn);
+
 private:
     /// Private constructor -- see New().
     Pcp_LayerStackRegistry(const std::string& fileFormatTarget,
@@ -112,8 +117,8 @@ private:
     PcpLayerStackPtr _Find(const PcpLayerStackIdentifier&) const;
 
     // Remove the layer stack with the given identifier from the registry.
-    void _Remove(const PcpLayerStackIdentifier&,
-                 const PcpLayerStack *);
+    void _SetLayersAndRemove(const PcpLayerStackIdentifier&,
+                             const PcpLayerStack *);
 
     // Update the layer-stack-by-layer maps by setting the layers for the
     // given layer stack.
@@ -132,7 +137,7 @@ private:
     const Pcp_MutedLayers& _GetMutedLayers() const;
 
     // PcpLayerStack can access private _GetFileFormatTarget(), 
-    // _Remove(), and _SetLayers().
+    // _SetLayersAndRemove(), and _SetLayers().
     friend class PcpLayerStack;
 
 private:

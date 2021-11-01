@@ -123,7 +123,7 @@ HdReprSelector::operator[](size_t topologyIndex) const
     }
 }
 
-HdRepr::HdRepr() = default;
+HdRepr::HdRepr() : _geomSubsetsStart(0) {};
 
 HdRepr::~HdRepr() = default;
 

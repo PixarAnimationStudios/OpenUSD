@@ -1,0 +1,3098 @@
+#usda 1.0
+(
+    subLayers = [
+        @usdLux/schema.usda@,
+        @usdGeom/schema.usda@,
+        @usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "usdRiPxr"
+        bool skipCodeGeneration = 1
+    }
+)
+{
+}
+
+class "PxrCameraProjectionAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["Camera"]
+        token[] apiSchemaCanOnlyApplyTo = ["Camera"]
+        string className = "CameraProjectionAPI"
+        dictionary extraPlugInfo = {
+            bool isUsdShadeContainer = 0
+            bool providesUsdShadeConnectableAPIBehavior = 1
+            bool requiresUsdShadeEncapsulation = 0
+        }
+        dictionary schemaTokens = {
+            dictionary projection = {
+                string doc = "Describes the <i>projection</i> output terminal"
+            }
+        }
+    }
+    doc = """API schema that is auto-applied _only_ to UsdGeomCamera and 
+    provides a RenderMan-specific projection output terminal to UsdGeomCamera
+    """
+    inherits = </APISchemaBase>
+)
+{
+    token outputs:ri:projection (
+        customData = {
+            string apiName = "projection"
+        }
+        displayGroup = "Outputs"
+        doc = "Represents the projection output terminal on a camera prim."
+    )
+}
+
+class PxrAovLight "PxrAovLight" (
+    customData = {
+        string className = "AovLight"
+    }
+    inherits = </NonboundableLightBase>
+)
+{
+    string inputs:ri:light:aovName = "" (
+        connectability = "interfaceOnly"
+        displayName = "AOV Name"
+        doc = """
+            The name of the AOV to write to.
+        """
+    )
+    bool inputs:ri:light:inPrimaryHit = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "In Primary Hit"
+        doc = """
+                If this is on, the usual mask of the illuminated objects is
+                generated. If this is off, you can get a mask of only in
+                the refraction or reflection.
+            """
+    )
+    bool inputs:ri:light:inReflection = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "In Reflection"
+        doc = """
+                If this is on, the rays are traced through the specular reflections to get
+                the masking signal.
+
+                Warning: this will require some amount of samples to get a clean mask.
+            """
+    )
+    bool inputs:ri:light:inRefraction = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "In Refraction"
+        doc = """
+                If this is on, the rays are traced through the glass refractions
+                to get the masking signal.
+
+                Warning: this will require some amount of samples to get a clean mask.
+            """
+    )
+    bool inputs:ri:light:invert = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Invert"
+        doc = """
+                If this is on, it inverts the signal for the AOV.
+            """
+    )
+    string inputs:ri:light:notes (
+        displayGroup = "Notes"
+        doc = "General comment field for this light."
+    )
+    bool inputs:ri:light:onVolumeBoundaries = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "On Volume Boundaries"
+        doc = """
+                If this is on, the bounding box or shape of volumes will appear in
+                the mask. Since this is not always desirable, this can be turned off.
+            """
+    )
+    bool inputs:ri:light:useColor = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Use Color"
+        doc = """
+                If this is on, it outputs a RGB color image instead of a float image
+                for the AOV.
+            """
+    )
+    bool inputs:ri:light:useThroughput = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Use Throughput"
+        doc = """
+                If this is on, the values in the mask for the reflected or refracted
+                rays will be affected by the strength of the reflection or refraction.
+                This can lead to values below and above 1.0. Turn this off if you
+                want a more solid mask.
+            """
+    )
+    uniform token ri:light:shaderId = "PxrAovLight" (
+        displayGroup = "Internal"
+    )
+}
+
+class "PxrCylinderLightAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["CylinderLight"]
+        string apiSchemaType = "singleApply"
+        string className = "CylinderLightAPI"
+    }
+    inherits = </APISchemaBase>
+)
+{
+    bool inputs:ri:light:cheapCaustics = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk"
+        doc = """
+                Enable manifold walk computation and disable thin shadow for this light.
+                This parameter will be ignored if Trace Light Paths is enabled.
+            """
+    )
+    string inputs:ri:light:cheapCausticsExcludeGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk Exclude Group"
+        doc = """
+                Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
+            """
+    )
+    int inputs:ri:light:fixedSampleCount = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Samples"
+        doc = """
+                fixedSampleCount: Specifies an override of the number of light samples to be taken for this
+                light source. If set to something other than zero, it will override the
+                sampling performed by the integrator. It's recommended to leave this at the default unless
+                you experience unsolvable noise from the light.
+            """
+    )
+    bool inputs:ri:light:focusNormalize = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Emission Focus Normalize"
+        doc = """
+                 When normalize is enabled, the emissionFocus will scale itself so that it
+                 does not change the total energy output of the light.
+                 (Note that there is no way to set emissionFocusTint in this mode).
+             """
+    )
+    float inputs:ri:light:importanceMultiplier = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Importance Multiplier"
+        doc = """
+                Importance of this light for noise control.
+            """
+    )
+    float inputs:ri:light:intensityNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Intensity Near Dist"
+        doc = """
+                intensityNearDist: Near distance between the point being illuminated and the light
+                at which the sample doesn't get brighter. This may help you avoid hot spots and
+                sampling issues where a light is near a surface.
+            """
+    )
+    string inputs:ri:light:lightGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Group"
+        doc = """
+                lightGroup:  Specify the light group name used for light group LPEs. This is useful to
+                generate per-light AOVs for later adjustment in compositing.
+            """
+    )
+    float inputs:ri:light:msApprox = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "Multi-Scattering Approx."
+        doc = """
+                MsApprox: Enable/Disable msApprox.
+            """
+    )
+    color3f inputs:ri:light:msApproxBleed = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Bleed"
+        doc = """
+                MsApprox: Coloration of light bleed.
+            """
+    )
+    color3f inputs:ri:light:msApproxContribution = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Contribution"
+        doc = """
+                MsApprox: Coloration of contributing light.
+            """
+    )
+    string inputs:ri:light:notes (
+        displayGroup = "Notes"
+        doc = "General comment field for this light."
+    )
+    bool inputs:ri:light:thinShadow = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Thin Shadow"
+        doc = '''
+                thinShadow: Enable thin shadow and disable refraction caustics for this light.
+                This parameter will be ignored if Trace Light Paths is enabled. This is a
+                non-physical control that creates "fake" colored shadows for transmissive
+                objects without needing to generate photons for caustics.
+                Also for the paths where Cheap Caustics is enabled (surfaces marked "MWWalkable"),
+                then thinShadow is ignored as well.
+            '''
+    )
+    bool inputs:ri:light:traceLightPaths = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Trace Light Paths"
+        doc = """
+                traceLightPaths: Enable light and photon tracing from this light. This value
+                enforces a physically-based light and as a side-effect disables the above
+                Shadows controls. Users may use this feature to selectively decide which
+                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+            """
+    )
+    bool inputs:ri:light:visibleInRefractionPath = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Visible In Refraction"
+        doc = """
+                visibleInRefractionPath: Make this light source visible in refraction paths.
+                This parameter will be ignored if Manifold Walk is enabled.
+            """
+    )
+    uniform token ri:light:shaderId = "PxrCylinderLight" (
+        displayGroup = "Internal"
+    )
+}
+
+class "PxrDiskLightAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["DiskLight"]
+        string apiSchemaType = "singleApply"
+        string className = "DiskLightAPI"
+    }
+    inherits = </APISchemaBase>
+)
+{
+    bool inputs:ri:light:cheapCaustics = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk"
+        doc = """
+                Enable manifold walk computation and disable thin shadow for this light.
+                This parameter will be ignored if Trace Light Paths is enabled.
+            """
+    )
+    string inputs:ri:light:cheapCausticsExcludeGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk Exclude Group"
+        doc = """
+                Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
+            """
+    )
+    int inputs:ri:light:fixedSampleCount = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Samples"
+        doc = """
+                fixedSampleCount: Specifies an override of the number of light samples to be taken for this
+                light source. If set to something other than zero, it will override the
+                sampling performed by the integrator.  It's recommended to leave this at the default unless
+                you experience unsolvable noise from the light.
+            """
+    )
+    bool inputs:ri:light:focusNormalize = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Emission Focus Normalize"
+        doc = """
+                 When normalize is enabled, the emissionFocus will scale itself so that it
+                 does not change the total energy output of the light.
+                 (Note that there is no way to set emissionFocusTint in this mode).
+             """
+    )
+    float inputs:ri:light:importanceMultiplier = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Importance Multiplier"
+        doc = """
+                Importance of this light for noise control.
+            """
+    )
+    float inputs:ri:light:intensityNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Intensity Near Dist"
+        doc = """
+                intensityNearDist: Near distance between the point being illuminated and
+                the light at which the sample doesn't get brighter. This may help you
+                avoid hot spots and sampling issues where a light is near a surface.
+            """
+    )
+    string inputs:ri:light:lightGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Group"
+        doc = """
+                lightGroup:  Specify the light group name used for light group LPEs. This is useful to
+                generate per-light AOVs for later adjustment in compositing.
+            """
+    )
+    float inputs:ri:light:msApprox = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "Multi-Scattering Approx."
+        doc = """
+                MsApprox: Enable/Disable msApprox.
+            """
+    )
+    color3f inputs:ri:light:msApproxBleed = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Bleed"
+        doc = """
+                MsApprox: Coloration of light bleed.
+            """
+    )
+    color3f inputs:ri:light:msApproxContribution = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Contribution"
+        doc = """
+                MsApprox: Coloration of contributing light.
+            """
+    )
+    string inputs:ri:light:notes (
+        displayGroup = "Notes"
+        doc = "General comment field for this light."
+    )
+    bool inputs:ri:light:thinShadow = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Thin Shadow"
+        doc = '''
+                thinShadow: Enable thin shadow and disable refraction caustics for this light.
+                This parameter will be ignored if Trace Light Paths is enabled. This is a
+                non-physical control that creates "fake" colored shadows for transmissive
+                objects without needing to generate photons for caustics.
+                Also for the paths where Cheap Caustics is enabled (surfaces marked "MWWalkable"),
+                then thinShadow is ignored as well.
+            '''
+    )
+    bool inputs:ri:light:traceLightPaths = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Trace Light Paths"
+        doc = """
+                traceLightPaths: Enable light and photon tracing from this light. This value
+                enforces a physically-based light and as a side-effect disables the above
+                Shadows controls. Users may use this feature to selectively decide which
+                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+            """
+    )
+    bool inputs:ri:light:visibleInRefractionPath = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Visible In Refraction"
+        doc = """
+                visibleInRefractionPath: Make this light source visible in refraction paths.
+                This parameter will be ignored if Manifold Walk is enabled.
+            """
+    )
+    uniform token ri:light:shaderId = "PxrDiskLight" (
+        displayGroup = "Internal"
+    )
+}
+
+class "PxrDistantLightAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["DistantLight"]
+        string apiSchemaType = "singleApply"
+        string className = "DistantLightAPI"
+    }
+    inherits = </APISchemaBase>
+)
+{
+    bool inputs:ri:light:cheapCaustics = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk"
+        doc = """
+                Enable manifold walk computation and disable thin shadow for this light.
+                This parameter will be ignored if Trace Light Paths is enabled.
+            """
+    )
+    string inputs:ri:light:cheapCausticsExcludeGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk Exclude Group"
+        doc = """
+                Specifies the exclude shadow subset for manifold walk. Will be used
+                to prevent occlusion during the search of caustic paths.
+            """
+    )
+    int inputs:ri:light:fixedSampleCount = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Samples"
+        doc = """
+                fixedSampleCount: Specifies an override of the number of light samples to be taken for this
+                light source. If set to something other than zero, it will override the
+                sampling performed by the integrator. You might find need for this if you have
+                unsolvable noise from this light and need more samples.
+            """
+    )
+    bool inputs:ri:light:focusNormalize = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Emission Focus Normalize"
+        doc = """
+                 When normalize is enabled, the emissionFocus will scale itself so that it
+                 does not change the total energy output of the light.
+                 (Note that there is no way to set emissionFocusTint in this mode).
+             """
+    )
+    float inputs:ri:light:importanceMultiplier = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Importance Multiplier"
+        doc = """
+                Importance of this light for noise control.
+            """
+    )
+    string inputs:ri:light:lightGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Group"
+        doc = """
+                lightGroup:  Specify the light group name used for light group LPEs. This is
+                useful to generate per-light AOVs for later adjustment in compositing.
+            """
+    )
+    float inputs:ri:light:msApprox = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "Multi-Scattering Approx."
+        doc = """
+                MsApprox: Enable/Disable msApprox.
+            """
+    )
+    color3f inputs:ri:light:msApproxBleed = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Bleed"
+        doc = """
+                MsApprox: Coloration of light bleed.
+            """
+    )
+    color3f inputs:ri:light:msApproxContribution = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Contribution"
+        doc = """
+                MsApprox: Coloration of contributing light.
+            """
+    )
+    string inputs:ri:light:notes (
+        displayGroup = "Notes"
+        doc = "General comment field for this light."
+    )
+    bool inputs:ri:light:thinShadow = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Thin Shadow"
+        doc = '''
+                thinShadow: Enable thin shadow and disable refraction caustics for this light.
+                This parameter will be ignored if Trace Light Paths is enabled. This is a
+                non-physical control that creates "fake" colored shadows for transmissive
+                objects without needing to generate photons for caustics.
+                Also for the paths where Cheap Caustics is enabled (surfaces marked "MWWalkable"),
+                then thinShadow is ignored as well.
+            '''
+    )
+    bool inputs:ri:light:traceLightPaths = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Trace Light Paths"
+        doc = """
+                traceLightPaths: Enable light and photon tracing from this light. This value
+                enforces a physically-based light and as a side-effect disables the above
+                Shadows controls. Users may use this feature to selectively decide which
+                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+            """
+    )
+    bool inputs:ri:light:visibleInRefractionPath = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Visible In Refraction"
+        doc = """
+                visibleInRefractionPath: Make this light source visible in refraction paths.
+                This parameter will be ignored if Manifold Walk is enabled.
+            """
+    )
+    uniform token ri:light:shaderId = "PxrDistantLight" (
+        displayGroup = "Internal"
+    )
+}
+
+class "PxrDomeLightAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["DomeLight"]
+        string apiSchemaType = "singleApply"
+        string className = "DomeLightAPI"
+    }
+    inherits = </APISchemaBase>
+)
+{
+    bool inputs:ri:light:cheapCaustics = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk"
+        doc = """
+                Enable manifold walk computation and disable thin shadow for this light.
+                This parameter will be ignored if Trace Light Paths is enabled.
+            """
+    )
+    string inputs:ri:light:cheapCausticsExcludeGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk Exclude Group"
+        doc = """
+                Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
+            """
+    )
+    vector3f inputs:ri:light:colorMapGamma = (1, 1, 1) (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Map Gamma"
+        doc = """
+                colorMapGamma: Gamma-correct the texture.
+            """
+    )
+    float inputs:ri:light:colorMapSaturation = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Map Saturation"
+        doc = """
+                colorMapSaturation: Adjust the texture's saturation.
+            """
+    )
+    int inputs:ri:light:fixedSampleCount = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Samples"
+        doc = """
+                fixedSampleCount: Specifies an override of the number of light samples to be taken for this
+                light source. If set to something other than zero, it will override the
+                sampling performed by the integrator. It's recommended to leave this at the
+                default unless you experience unsolvable noise from the light.
+            """
+    )
+    float inputs:ri:light:importanceMultiplier = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Importance Multiplier"
+        doc = """
+                Importance of this light for noise control.
+            """
+    )
+    string inputs:ri:light:lightGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Group"
+        doc = """
+                lightGroup:  Specify the light group name used for light group LPEs. This is useful to
+                generate per-light AOVs for later adjustment in compositing.
+            """
+    )
+    float inputs:ri:light:msApprox = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "Multi-Scattering Approx."
+        doc = """
+                MsApprox: Enable/Disable msApprox.
+            """
+    )
+    color3f inputs:ri:light:msApproxBleed = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Bleed"
+        doc = """
+                MsApprox: Coloration of light bleed.
+            """
+    )
+    color3f inputs:ri:light:msApproxContribution = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Contribution"
+        doc = """
+                MsApprox: Coloration of contributing light.
+            """
+    )
+    string inputs:ri:light:notes (
+        displayGroup = "Notes"
+        doc = "General comment field for this light."
+    )
+    bool inputs:ri:light:thinShadow = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Thin Shadow"
+        doc = '''
+                thinShadow: Enable thin shadow and disable refraction caustics for this light.
+                This parameter will be ignored if Trace Light Paths is enabled. This is a
+                non-physical control that creates "fake" colored shadows for transmissive
+                objects without needing to generate photons for caustics.
+                Also for the paths where Cheap Caustics is enabled (surfaces marked "MWWalkable"),
+                then thinShadow is ignored as well.
+            '''
+    )
+    bool inputs:ri:light:traceLightPaths = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Trace Light Paths"
+        doc = """
+                traceLightPaths: Enable light and photon tracing from this light. This value
+                enforces a physically-based light and as a side-effect disables the above
+                Shadows controls. Users may use this feature to selectively decide which
+                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+            """
+    )
+    bool inputs:ri:light:visibleInRefractionPath = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Visible In Refraction"
+        doc = """
+                visibleInRefractionPath: Make this light source visible in refraction paths.
+                This parameter will be ignored if Manifold Walk is enabled.
+            """
+    )
+    uniform token ri:light:shaderId = "PxrDomeLight" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrEnvDayLight "PxrEnvDayLight" (
+    customData = {
+        string className = "EnvDayLight"
+    }
+    inherits = </NonboundableLightBase>
+)
+{
+    float inputs:diffuse = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Diffuse Amount"
+        doc = """
+                diffuse: Amount of diffuse light that is emitted. This is a non-physical control.
+                You could use a light with Diffuse Amount 0.0 to act purely as a source of
+                highlights for your scene objects.
+            """
+    )
+    float inputs:exposure = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Exposure"
+        doc = """
+              exposure:  Specify the intensity of the light source as a power of 2 (in stops).
+              Increasing the exposure by 1 will double the energy emitted by the light source.
+              A value of 0 produces an intensity of 1, -1 produces .5. You may wonder why you
+              might use Exposure, and the answer is that real world lighting has high energies
+              and typical exposures are low values while you may have to type a really large
+              number for equivalent Intensity. This is also comfortable to artists familiar with
+              photographic measurements.
+            """
+    )
+    float inputs:intensity = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Intensity"
+        doc = """
+              intensity: Scales the contribution of this light linearly.
+            """
+    )
+    bool inputs:ri:light:cheapCaustics = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk"
+        doc = """
+                Enable manifold walk computation and disable thin shadow for this light.
+                This parameter will be ignored if Trace Light Paths is enabled.
+            """
+    )
+    string inputs:ri:light:cheapCausticsExcludeGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk Exclude Group"
+        doc = """
+                Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
+            """
+    )
+    int inputs:ri:light:day = 20 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Day"
+        doc = """
+                day: Day of the month, 1 through 31.
+
+                This is ignored if month is 0.
+            """
+    )
+    int inputs:ri:light:fixedSampleCount = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Samples"
+        doc = """
+                fixedSampleCount: Specifies an override of the number of light samples to be taken for this
+                light source. If set to something other than zero, it will override the
+                sampling performed by the integrator. You might find need for this if you have
+                unsolvable noise from this light and need more samples.
+            """
+    )
+    color3f inputs:ri:light:groundColor = (0.18, 0.18, 0.18) (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Ground Color"
+        doc = """
+              groundColor: A flat color for the diffuse ground floor.
+            """
+    )
+    int inputs:ri:light:groundMode = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Ground Mode"
+        doc = """
+              Legacy: Old behavior,
+              Horizon Clamping: Smear horizon values on the virtual ground plane,
+              Diffuse Ground: A fake infinite ground plane with diffuse color
+            """
+    )
+    float inputs:ri:light:haziness = 2 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Haziness"
+        doc = """
+              haziness: The turbidity of the sky.  The lower limit of the model is 1.7 for
+              an exceptionally clear sky, and 10, for an inversion, is the upper
+              limit.
+            """
+    )
+    float inputs:ri:light:hour = 14.633333 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Hour"
+        doc = """
+              hour: Hours since midnight, local standard time.  May be fractional to
+              include minutes and seconds.  If daylight saving time is in effect,
+              subtract 1 to correct to standard time.
+
+              This is ignored if month is 0.
+            """
+    )
+    float inputs:ri:light:importanceMultiplier = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Importance Multiplier"
+        doc = """
+                Importance of this light for noise control.
+            """
+    )
+    float inputs:ri:light:latitude = 47.6019 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Latitude"
+        doc = """
+                latitude: Latitude in degrees.  Positive for north, negative for south.  Ranges frmo -90 to +90 degrees.
+
+                This is ignored if month is 0.
+            """
+    )
+    string inputs:ri:light:lightGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Group"
+        doc = """
+                lightGroup:  Specify the light group name used for light group LPEs. This is useful to
+                generate per-light AOVs for later adjustment in compositing.
+            """
+    )
+    float inputs:ri:light:longitude = -122.3318 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Longitude"
+        doc = """
+                longitude: Longitude in degrees.  Positive for east, negative for west.  Ranges frmo -180 to +180 degrees.
+
+                This is ignored if month is 0.
+            """
+    )
+    int inputs:ri:light:month = 11 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Month"
+        doc = """
+                month: Month of the year, 1 through 12.
+                The default, 0, means to use the explicitly given sun direction
+                instead of automatically computing it.
+            """
+    )
+    float inputs:ri:light:msApprox = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "Multi-Scattering Approx."
+        doc = """
+                MsApprox: Enable/Disable msApprox.
+            """
+    )
+    color3f inputs:ri:light:msApproxBleed = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Bleed"
+        doc = """
+                MsApprox: Coloration of light bleed.
+            """
+    )
+    color3f inputs:ri:light:msApproxContribution = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Contribution"
+        doc = """
+                MsApprox: Coloration of contributing light.
+            """
+    )
+    string inputs:ri:light:notes (
+        displayGroup = "Notes"
+        doc = "General comment field for this light."
+    )
+    color3f inputs:ri:light:skyTint = (1, 1, 1) (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Sky Tint"
+        doc = """
+              skyTint: Tweak the sky's contribution and color.  The default, white (1,1,1),
+              gives results based on measured physical values.
+            """
+    )
+    vector3f inputs:ri:light:sunDirection = (0, 1, 0) (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Direction"
+        doc = """
+              sunDirection: The *apparent* direction towards the center of
+              the sun.  The zenith is at +Y (for noon light) and the
+              horizon is in the XZ plane (for sunrise/set).  Note that the
+              Y component must non-negative.  Ignored if a month is given.
+            """
+    )
+    float inputs:ri:light:sunSize = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Sun Size"
+        doc = """
+              sunSize: Scale the apparent size of the sun in the sky.  Leave at 1 for a
+              realistic sun size with an 0.55 degree angular diameter.
+            """
+    )
+    color3f inputs:ri:light:sunTint = (1, 1, 1) (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Sun Tint"
+        doc = """
+              sunTint: Tweak the sun's contribution and color.  The default, white (1,1,1),
+              gives results based on measured physical values. Setting this to black removes the
+              sun contribution.
+            """
+    )
+    bool inputs:ri:light:thinShadow = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Thin Shadow"
+        doc = '''
+                thinShadow: Enable thin shadow and disable refraction caustics for this light.
+                This parameter will be ignored if Trace Light Paths is enabled. This is a
+                non-physical control that creates "fake" colored shadows for transmissive
+                objects without needing to generate photons for caustics.
+                Also for the paths where Cheap Caustics is enabled (surfaces marked "MWWalkable"),
+                then thinShadow is ignored as well.
+            '''
+    )
+    bool inputs:ri:light:traceLightPaths = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Trace Light Paths"
+        doc = """
+                traceLightPaths: Enable light and photon tracing from this light. This value
+                enforces a physically-based light and as a side-effect disables the above
+                Shadows controls. Users may use this feature to selectively decide which
+                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+            """
+    )
+    bool inputs:ri:light:visibleInRefractionPath = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Visible In Refraction"
+        doc = """
+                visibleInRefractionPath: Make this light source visible in refraction paths.
+                This parameter will be ignored if Manifold Walk is enabled.
+            """
+    )
+    int inputs:ri:light:year = 2014 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Year"
+        doc = """
+              year: Four-digit year.
+
+              This is ignored if month is 0.
+            """
+    )
+    float inputs:ri:light:zone = -8 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Time Zone"
+        doc = """
+                zone: Standard time zone offset from GMT/UTC in hours.  Positive for east,
+                negative for west.  For example, this would be -8 for Pacific time.
+
+                This is ignored if month is 0.
+            """
+    )
+    color3f inputs:shadow:color = (0, 0, 0) (
+        connectability = "interfaceOnly"
+        displayGroup = "Shadows"
+        displayName = "Shadow Color"
+        doc = """
+                shadowColor:  The color of the shadows cast by emitted light.
+            """
+    )
+    float inputs:shadow:distance = -1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Shadows"
+        displayName = "Shadow Max Distance"
+        doc = """
+                shadowDistance: The maximum distance of the shadow starting from the position
+                of the point being shaded.
+                -1.0 is unset which will use the distance between the point being
+                shaded and the point on the light. You may use this control to artificially
+                reduce the distance shadows are cast. This may also increase render speed by
+                not calculating shadows outside this distance
+            """
+    )
+    bool inputs:shadow:enable = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Shadows"
+        displayName = "Enable Shadows"
+        doc = """
+                enableShadows: Enable raytraced shadows.
+            """
+    )
+    float inputs:shadow:falloff = -1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Shadows"
+        displayName = "Shadow Falloff"
+        doc = """
+                shadowFalloff: the distance from the light at which shadow falloff begins.
+                -1.0 turns off shadow falloff. This is used along with Shadow Max Distance to
+                create a false fade for shadows that are reduced or cut off by the Shadow Max
+                Distance parameter.
+            """
+    )
+    float inputs:shadow:falloffGamma = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Shadows"
+        displayName = "Shadow Falloff Gamma"
+        doc = """
+                shadowFalloffGamma: The gamma of the shadow strength in the falloff zone. This
+                requires the use of Shadow Max Distance and Shadow Falloff.
+            """
+    )
+    float inputs:specular = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Specular Amount"
+        doc = """
+                specular: Amount of specular light that is emitted. This is a non-physical control.
+                You could use a light with Specular Amount 0.0 to act purely as a source of diffuse
+                light for your scene objects and avoid adding highlights.
+            """
+    )
+    uniform token ri:light:shaderId = "PxrEnvDayLight" (
+        displayGroup = "Internal"
+    )
+}
+
+class "PxrMeshLightAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["MeshLightAPI", "VolumeLightAPI"]
+        string apiSchemaType = "singleApply"
+        string className = "MeshLightAPI"
+    }
+    inherits = </APISchemaBase>
+)
+{
+    bool inputs:ri:light:cheapCaustics = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk"
+        doc = """
+                Enable manifold walk computation and disable thin shadow for this light.
+                This parameter will be ignored if Trace Light Paths is enabled.
+            """
+    )
+    string inputs:ri:light:cheapCausticsExcludeGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk Exclude Group"
+        doc = """
+                Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic path.
+            """
+    )
+    float inputs:ri:light:importanceMultiplier = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Importance Multiplier"
+        doc = """
+                Importance of this light for noise control.
+            """
+    )
+    float inputs:ri:light:intensityNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Intensity Near Dist"
+        doc = """
+                intensityNearDist: Near distance between the point being illuminated and the light
+                at which the sample doesn't get brighter. This may help you avoid hot spots and
+                sampling issues where a light is near a surface.
+            """
+    )
+    string inputs:ri:light:lightGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Group"
+        doc = """
+                lightGroup: Specify the light group name used for light group LPEs. This is useful to generate per-light AOVs for later adjustment in compositing.
+            """
+    )
+    float inputs:ri:light:msApprox = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "Multi-Scattering Approx."
+        doc = """
+                MsApprox: Enable/Disable msApprox.
+            """
+    )
+    color3f inputs:ri:light:msApproxBleed = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Bleed"
+        doc = """
+                MsApprox: Coloration of light bleed.
+            """
+    )
+    color3f inputs:ri:light:msApproxContribution = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Contribution"
+        doc = """
+                MsApprox: Coloration of contributing light.
+            """
+    )
+    bool inputs:ri:light:thinShadow = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Thin Shadow"
+        doc = '''
+                thinShadow: Enable thin shadow and disable refraction caustics for this light.
+                This parameter will be ignored if Trace Light Paths is enabled. This is a
+                non-physical control that creates "fake" colored shadows for transmissive
+                objects without needing to generate photons for caustics.
+                Also for the paths where Cheap Caustics is enabled (surfaces marked "MWWalkable"),
+                then thinShadow is ignored as well.
+            '''
+    )
+    bool inputs:ri:light:traceLightPaths = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Trace Light Paths"
+        doc = """
+                traceLightPaths: Enable light and photon tracing from this light. This value
+                enforces a physically-based light and as a side-effect disables the above Shadows
+                controls. Users may use this feature to selectively decide which lights emit
+                photons when using the PxrVCM or PxrUnified Integrators.
+            """
+    )
+    bool inputs:ri:light:visibleInRefractionPath = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Visible In Refraction"
+        doc = """
+                visibleInRefractionPath: Make this light source visible in refraction paths.
+                This parameter will be ignored if Cheap Caustics is enabled.
+            """
+    )
+    uniform token ri:light:shaderId = "PxrMeshLight" (
+        displayGroup = "Internal"
+    )
+}
+
+class "PxrPortalLightAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["PortalLight"]
+        string apiSchemaType = "singleApply"
+        string className = "PortalLightAPI"
+    }
+    inherits = </APISchemaBase>
+)
+{
+    bool inputs:ri:light:cheapCaustics = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk"
+        doc = """
+                Enable manifold walk computation and disable thin shadow for this light.
+                This parameter will be ignored if Trace Light Paths is enabled.
+            """
+    )
+    string inputs:ri:light:cheapCausticsExcludeGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk Exclude Group"
+        doc = """
+                Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
+            """
+    )
+    vector3f inputs:ri:light:colorMapGamma = (1, 1, 1) (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Map Gamma"
+        doc = """
+                colorMapGamma: Gamma-correct the texture.
+            """
+    )
+    float inputs:ri:light:colorMapSaturation = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Map Saturation"
+        doc = """
+                colorMapSaturation: Adjust the texture's saturation.
+            """
+    )
+    string inputs:ri:light:domeColorMap = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        hidden = true
+    )
+    int inputs:ri:light:fixedSampleCount = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Samples"
+        doc = """
+                fixedSampleCount: Specifies an override of the number of light samples to be taken for this
+                light source. If set to something other than zero, it will override the
+                sampling performed by the integrator. You might find need for this if you have
+                unsolvable noise from this light and need more samples.
+            """
+    )
+    float inputs:ri:light:importanceMultiplier = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Importance Multiplier"
+        doc = """
+                Importance of this light for noise control.
+            """
+    )
+    float inputs:ri:light:intensityMult = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Intensity Multiplier"
+        doc = """
+                intensityMult:  Intensity adjustment relative to the dome intensity. This gets
+                multiplied by the parent dome light's intensity and power.
+            """
+    )
+    string inputs:ri:light:lightGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Group"
+        doc = """
+                lightGroup:  Specify the light group name used for light group LPEs. This is useful
+                to generate per-light AOVs for later adjustment in compositing
+            """
+    )
+    float inputs:ri:light:msApprox = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "Multi-Scattering Approx."
+        doc = """
+                MsApprox: Enable/Disable msApprox.
+            """
+    )
+    color3f inputs:ri:light:msApproxBleed = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Bleed"
+        doc = """
+                MsApprox: Coloration of light bleed.
+            """
+    )
+    color3f inputs:ri:light:msApproxContribution = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Contribution"
+        doc = """
+                MsApprox: Coloration of contributing light.
+            """
+    )
+    string inputs:ri:light:notes (
+        displayGroup = "Notes"
+        doc = "General comment field for this light."
+    )
+    string inputs:ri:light:portalName (
+        displayGroup = "Advanced"
+        hidden = true
+    )
+    matrix4d inputs:ri:light:portalToDome (
+        displayGroup = "Advanced"
+        hidden = true
+    )
+    bool inputs:ri:light:thinShadow = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Thin Shadow"
+        doc = '''
+                thinShadow: Enable thin shadow and disable refraction caustics for this light.
+                This parameter will be ignored if Trace Light Paths is enabled. This is a
+                non-physical control that creates "fake" colored shadows for transmissive
+                objects without needing to generate photons for caustics.
+                Also for the paths where Cheap Caustics is enabled (surfaces marked "MWWalkable"),
+                then thinShadow is ignored as well.
+            '''
+    )
+    color3f inputs:ri:light:tint = (1, 1, 1) (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Color Tint"
+        doc = """
+               tint: This parameter tints the color from the dome texture.
+            """
+    )
+    bool inputs:ri:light:traceLightPaths = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Trace Light Paths"
+        doc = """
+                traceLightPaths: Enable light and photon tracing from this light. This value
+                enforces a physically-based light and as a side-effect disables the above
+                Shadows controls. Users may use this feature to selectively decide which
+                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+            """
+    )
+    bool inputs:ri:light:visibleInRefractionPath = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Visible In Refraction"
+        doc = """
+                visibleInRefractionPath: Make this light source visible in refraction paths.
+                This parameter will be ignored if Manifold Walk is enabled.
+            """
+    )
+    uniform token ri:light:shaderId = "PxrPortalLight" (
+        displayGroup = "Internal"
+    )
+}
+
+class "PxrRectLightAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["RectLight"]
+        string apiSchemaType = "singleApply"
+        string className = "RectLightAPI"
+    }
+    inherits = </APISchemaBase>
+)
+{
+    bool inputs:ri:light:cheapCaustics = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk"
+        doc = """
+                Enable manifold walk computation and disable thin shadow for this light.
+                This parameter will be ignored if Trace Light Paths is enabled.
+            """
+    )
+    string inputs:ri:light:cheapCausticsExcludeGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk Exclude Group"
+        doc = """
+                Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
+            """
+    )
+    vector3f inputs:ri:light:colorMapGamma = (1, 1, 1) (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Map Gamma"
+        doc = """
+                colorMapGamma: Gamma-correct the texture.
+            """
+    )
+    float inputs:ri:light:colorMapSaturation = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Basic"
+        displayName = "Map Saturation"
+        doc = """
+                colorMapSaturation: Adjust the texture's saturation.
+            """
+    )
+    int inputs:ri:light:fixedSampleCount = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Samples"
+        doc = """
+                fixedSampleCount: Specifies an override of the number of light samples to be taken for this
+                light source. If set to something other than zero, it will override the
+                sampling performed by the integrator and can result in a performance impact. For scenes that
+                have lots of lights, resulting in some lights that are under-sampled, you may want to set it
+                to non-zero.
+            """
+    )
+    bool inputs:ri:light:focusNormalize = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Emission Focus Normalize"
+        doc = """
+                 When normalize is enabled, the emissionFocus will scale itself so that it
+                 does not change the total energy output of the light.
+                 (Note that there is no way to set emissionFocusTint in this mode).
+             """
+    )
+    float inputs:ri:light:importanceMultiplier = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Importance Multiplier"
+        doc = """
+                Importance of this light for noise control.
+            """
+    )
+    float inputs:ri:light:intensityNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Intensity Near Dist"
+        doc = """
+                intensityNearDist: Near distance between the point being illuminated and the light
+                at which the sample doesn't get brighter. This may help you avoid hot spots and
+                sampling issues where a light is near a surface.
+            """
+    )
+    string inputs:ri:light:lightGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Group"
+        doc = """
+                lightGroup:  Specify the light group name used for light group LPEs. This is useful to
+                generate per-light AOVs for later adjustment in compositing.
+            """
+    )
+    float inputs:ri:light:msApprox = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "Multi-Scattering Approx."
+        doc = """
+                MsApprox: Enable/Disable msApprox.
+            """
+    )
+    color3f inputs:ri:light:msApproxBleed = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Bleed"
+        doc = """
+                MsApprox: Coloration of light bleed.
+            """
+    )
+    color3f inputs:ri:light:msApproxContribution = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Contribution"
+        doc = """
+                MsApprox: Coloration of contributing light.
+            """
+    )
+    string inputs:ri:light:notes (
+        displayGroup = "Notes"
+        doc = "General comment field for this light."
+    )
+    bool inputs:ri:light:thinShadow = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Thin Shadow"
+        doc = '''
+                thinShadow: Enable thin shadow and disable refraction caustics for this light.
+                This parameter will be ignored if Trace Light Paths is enabled. This is a
+                non-physical control that creates "fake" colored shadows for transmissive
+                objects without needing to generate photons for caustics.
+                Also for the paths where Cheap Caustics is enabled (surfaces marked "MWWalkable"),
+                then thinShadow is ignored as well.
+            '''
+    )
+    bool inputs:ri:light:traceLightPaths = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Trace Light Paths"
+        doc = """
+                traceLightPaths: Enable light and photon tracing from this light. This value
+                enforces a physically-based light and as a side-effect disables the above
+                Shadows controls. Users may use this feature to selectively decide which
+                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+            """
+    )
+    bool inputs:ri:light:visibleInRefractionPath = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Visible In Refraction"
+        doc = """
+                visibleInRefractionPath: Make this light source visible in refraction paths.
+                This parameter will be ignored if Manifold Walk is enabled.
+            """
+    )
+    uniform token ri:light:shaderId = "PxrRectLight" (
+        displayGroup = "Internal"
+    )
+}
+
+class "PxrSphereLightAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["SphereLight"]
+        string apiSchemaType = "singleApply"
+        string className = "SphereLightAPI"
+    }
+    inherits = </APISchemaBase>
+)
+{
+    bool inputs:ri:light:cheapCaustics = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk"
+        doc = """
+                Enable manifold walk computation and disable thin shadow for this light.
+                This parameter will be ignored if Trace Light Paths is enabled.
+            """
+    )
+    string inputs:ri:light:cheapCausticsExcludeGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Manifold Walk Caustics Exclude Group"
+        doc = """
+                Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
+            """
+    )
+    int inputs:ri:light:fixedSampleCount = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Samples"
+        doc = """
+                fixedSampleCount: Specifies an override of the number of light samples to be taken for this
+                light source. If set to something other than zero, it will override the
+                sampling performed by the integrator. It's recommended to leave this at the default unless
+                you experience unsolvable noise from the light.
+            """
+    )
+    bool inputs:ri:light:focusNormalize = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Emission Focus Normalize"
+        doc = """
+                 When normalize is enabled, the emissionFocus will scale itself so that it
+                 does not change the total energy output of the light.
+                 (Note that there is no way to set emissionFocusTint in this mode).
+             """
+    )
+    float inputs:ri:light:importanceMultiplier = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Importance Multiplier"
+        doc = """
+                Importance of this light for noise control.
+            """
+    )
+    float inputs:ri:light:intensityNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Intensity Near Dist"
+        doc = """
+                intensityNearDist: Near distance between the point being illuminated and the light
+                at which the sample doesn't get brighter. This may help you avoid hot spots and
+                sampling issues where a light is near a surface.
+            """
+    )
+    string inputs:ri:light:lightGroup = "" (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Light Group"
+        doc = """
+                lightGroup:  Specify the light group name used for light group LPEs. This is useful to
+                generate per-light AOVs for later adjustment in compositing.
+            """
+    )
+    float inputs:ri:light:msApprox = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "Multi-Scattering Approx."
+        doc = """
+                MsApprox: Enable/Disable msApprox.
+            """
+    )
+    color3f inputs:ri:light:msApproxBleed = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Bleed"
+        doc = """
+                MsApprox: Coloration of light bleed.
+            """
+    )
+    color3f inputs:ri:light:msApproxContribution = (0.5, 0.5, 0.5) (
+        connectability = "interfaceOnly"
+        displayGroup = "Multi-Scattering Approx"
+        displayName = "MS Approx Contribution"
+        doc = """
+                MsApprox: Coloration of contributing light.
+            """
+    )
+    string inputs:ri:light:notes (
+        displayGroup = "Notes"
+        doc = "General comment field for this light."
+    )
+    bool inputs:ri:light:thinShadow = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Thin Shadow"
+        doc = '''
+                thinShadow: Enable thin shadow and disable refraction caustics for this light.
+                This parameter will be ignored if Trace Light Paths is enabled. This is a
+                non-physical control that creates "fake" colored shadows for transmissive
+                objects without needing to generate photons for caustics.
+                Also for the paths where Cheap Caustics is enabled (surfaces marked "MWWalkable"),
+                then thinShadow is ignored as well.
+            '''
+    )
+    bool inputs:ri:light:traceLightPaths = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Trace Light Paths"
+        doc = """
+                traceLightPaths: Enable light and photon tracing from this light. This value
+                enforces a physically-based light and as a side-effect disables the above
+                Shadows controls. Users may use this feature to selectively decide which
+                lights emit photons when using the PxrVCM or PxrUnified Integrators.
+            """
+    )
+    bool inputs:ri:light:visibleInRefractionPath = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Visible In Refraction"
+        doc = """
+                visibleInRefractionPath: Make this light source visible in refraction paths.
+                This parameter will be ignored if Manifold Walk is enabled.
+            """
+    )
+    uniform token ri:light:shaderId = "PxrSphereLight" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrBarnLightFilter "PxrBarnLightFilter" (
+    customData = {
+        string className = "BarnLightFilter"
+    }
+    inherits = </LightFilter>
+)
+{
+    float inputs:ri:lightFilter:apex = 25 (
+        connectability = "interfaceOnly"
+        displayGroup = "Projection"
+        displayName = "Apex"
+        doc = """apex: Distance between center of barn and center of projection.
+            """
+    )
+    int inputs:ri:lightFilter:barnMode = 0 (
+        connectability = "interfaceOnly"
+        displayName = "Barn Mode"
+        doc = """barnMode:
+
+        In 'physical' mode the barn behaves like an open window through which
+        light falls. The falloff and blur are determined by the size of the
+        light, the distance to the light and distance from the barn.
+
+        In 'analytic' mode, the barn has a fixed projection and manual
+        falloff controls.
+        """
+    )
+    float inputs:ri:lightFilter:bottom = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Barn Shape.Refine Shape"
+        displayName = "Bottom"
+        doc = "bottom: Additional offset of the bottom region (-y axis)."
+    )
+    float inputs:ri:lightFilter:bottomEdge = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Barn Shape.Scale Edges"
+        displayName = "Bottom Edge"
+        doc = """
+                    bottomEdge: When edge is > 0, this scales the edge of the bottom region (-y axis).
+                """
+    )
+    int inputs:ri:lightFilter:colorRamp = 4 (
+        displayGroup = "Color Ramp"
+        doc = """colorRamp: This is Optional.  This sets the color gradient 
+                  for the transition.
+            """
+    )
+    color3f[] inputs:ri:lightFilter:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:colorRamp_Interpolation = "linear" (
+        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    float[] inputs:ri:lightFilter:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:combineMode = "mult" (
+        allowedTokens = ["mult", "max", "min", "screen"]
+        connectability = "interfaceOnly"
+        displayName = "Combine Mode"
+        doc = """
+\t<p>
+        combineMode: Light filters on a light are grouped by their combine mode. Light filters
+        in the same group are executed together and combined by the corresponding
+        operation:
+        </p>
+\t<ol>
+\t\t<li>max: the maximum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>min: the minimum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>screen: similar to the max operation, but it combines gradients
+              in a smoother way. This works best for grey scale light filters.</li>
+\t\t<li>mult (default): the results of all the filters are multiplied together
+              (Technically, they are applied one after the other.)</li>
+\t</ol>
+\t<p>
+        The groups are executed in the above order and are multiplied together,
+        which means a filter that turns things black in the mult group will zero out
+        all other filters.
+        </p>
+"""
+    )
+    float inputs:ri:lightFilter:density = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Density"
+        doc = "density: How much effect the component has (0-1)."
+    )
+    float inputs:ri:lightFilter:densityFar = 10 (
+        connectability = "interfaceOnly"
+        displayGroup = "Density Falloff"
+        displayName = "Density Far"
+        doc = "densityFar: Distance from the barn where the density interpolation ends."
+    )
+    float inputs:ri:lightFilter:densityFarVal = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Density Falloff"
+        displayName = "Density Far Val"
+        doc = "densityFarVal: Density multiplier where the blur interpolation ends."
+    )
+    float inputs:ri:lightFilter:densityNear = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Density Falloff"
+        displayName = "Density Near"
+        doc = "densityNear: Distance from the barn where the density interpolation starts."
+    )
+    float inputs:ri:lightFilter:densityNearVal = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Density Falloff"
+        displayName = "Density Near Val"
+        doc = "densityNearVal: Density multiplier where the blur interpolation starts."
+    )
+    float inputs:ri:lightFilter:densityPow = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Density Falloff"
+        displayName = "Density Exponent"
+        doc = "densityPow: Exponent of the density interpolation."
+    )
+    float inputs:ri:lightFilter:diffuse = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Diffuse"
+        doc = "diffuse: How much this light filter affects diffuse lighting."
+    )
+    bool inputs:ri:lightFilter:directional = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Projection"
+        displayName = "Directional"
+        doc = """directional: Whether or not the light projects along a direction or
+            out from a point.
+            """
+    )
+    float inputs:ri:lightFilter:edge = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Barn Shape"
+        displayName = "Edge Thickness"
+        doc = """edge: Thickness of the edge region.  Greater value will add
+                  more softness to the edges of the barn shape.
+            """
+    )
+    float inputs:ri:lightFilter:height = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Barn Shape"
+        displayName = "Height"
+        doc = "height: Height of the inner region of the barn (y axis)."
+    )
+    float inputs:ri:lightFilter:intensity = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Intensity"
+        doc = """intensity: Multiplier for both the diffuse and specular result.
+            """
+    )
+    bool inputs:ri:lightFilter:invert = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Invert"
+        doc = """invert: When this is on, invert the entire effect of the light
+                  filter.
+            """
+    )
+    float inputs:ri:lightFilter:left = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Barn Shape.Refine Shape"
+        displayName = "Left"
+        doc = "left: Additional offset of the left region (-x axis)."
+    )
+    float inputs:ri:lightFilter:leftEdge = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Barn Shape.Scale Edges"
+        displayName = "Left Edge"
+        doc = """
+                    leftEdge: When edge is > 0, this scales the edge of the left region (-x axis).
+                """
+    )
+    string inputs:ri:lightFilter:notes = "" (
+        displayGroup = "Notes"
+        doc = "General comment field for this light filter."
+    )
+    int inputs:ri:lightFilter:preBarn = 2 (
+        connectability = "interfaceOnly"
+        displayGroup = "Barn Shape"
+        displayName = "Pre Barn Effect"
+        doc = "preBarn: The effect on the light before it reaches the barn."
+    )
+    float inputs:ri:lightFilter:radius = 0.5 (
+        connectability = "interfaceOnly"
+        displayGroup = "Barn Shape"
+        displayName = "Radius"
+        doc = "radius: Radius of the corners of the inner barn square."
+    )
+    float inputs:ri:lightFilter:right = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Barn Shape.Refine Shape"
+        displayName = "Right"
+        doc = "right: Additional offset of the right region (+x axis)."
+    )
+    float inputs:ri:lightFilter:rightEdge = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Barn Shape.Scale Edges"
+        displayName = "Right Edge"
+        doc = """
+                    rightEdge: When edge is > 0, this scales the edge of the right region (+x axis).
+                """
+    )
+    float inputs:ri:lightFilter:scaleHeight = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Barn Shape.Scale"
+        displayName = "Scale Height"
+        doc = """
+                   scaleHeight: Scale the height of the inner barn shape (y axis).
+                   This includes scaling the radius.
+                """
+    )
+    float inputs:ri:lightFilter:scaleWidth = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Barn Shape.Scale"
+        displayName = "Scale Width"
+        doc = """
+                    scaleWidth: Scale the width of the inner barn shape (x axis).
+                    This includes scaling the radius.
+                """
+    )
+    float inputs:ri:lightFilter:shearX = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Projection"
+        displayName = "Shear X"
+        doc = "shearX: Shear the projection along the x-axis."
+    )
+    float inputs:ri:lightFilter:shearY = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Projection"
+        displayName = "Shear Y"
+        doc = "shearY: Shear the projection along the y-axis."
+    )
+    float inputs:ri:lightFilter:specular = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Specular"
+        doc = "specular: How much this light filter affects specular lighting."
+    )
+    float inputs:ri:lightFilter:top = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Barn Shape.Refine Shape"
+        displayName = "Top"
+        doc = "top: Additional offset of the top region (+y axis)."
+    )
+    float inputs:ri:lightFilter:topEdge = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Barn Shape.Scale Edges"
+        displayName = "Top Edge"
+        doc = """
+                    topEdge: When edge is > 0, this scales the edge of the top region (+y axis).
+                """
+    )
+    bool inputs:ri:lightFilter:useLightDirection = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Projection"
+        displayName = "Use Light Direction"
+        doc = """ useLightDirection: If checked the projection direction
+                   is determined by the position of the center of the light source.
+                   Otherwise it only follows the orientation of the cookie.
+                   WARNING: this does not work with dome and geometric area lights.
+            """
+    )
+    float inputs:ri:lightFilter:width = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Barn Shape"
+        displayName = "Width"
+        doc = "width: Width of the inner region of the barn (x axis)."
+    )
+    uniform token ri:lightFilter:shaderId = "PxrBarnLightFilter" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrBlockerLightFilter "PxrBlockerLightFilter" (
+    customData = {
+        string className = "BlockerLightFilter"
+    }
+    inherits = </LightFilter>
+)
+{
+    int inputs:ri:lightFilter:colorRamp = 4 (
+        displayGroup = "Color Ramp"
+        doc = """colorRamp: This is Optional.  It sets the color gradient
+                  for the transition.
+           """
+    )
+    color3f[] inputs:ri:lightFilter:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:colorRamp_Interpolation = "linear" (
+        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    float[] inputs:ri:lightFilter:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:combineMode = "mult" (
+        allowedTokens = ["mult", "max", "min", "screen"]
+        connectability = "interfaceOnly"
+        displayName = "Combine Mode"
+        doc = """
+\t<p>
+        combineMode: Light filters on a light are grouped by their combine mode. Light filters
+        in the same group are executed together and combined by the corresponding
+        operation:
+        </p>
+\t<ol>
+\t\t<li>max: the maximum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>min: the minimum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>screen: similar to the max operation, but it combines gradients
+              in a smoother way. This works best for grey scale light filters.</li>
+\t\t<li>mult (default): the results of all the filters are multiplied together
+              (Technically, they are applied one after the other.)</li>
+\t</ol>
+\t<p>
+        The groups are executed in the above order and are multiplied together,
+        which means a filter that turns things black in the mult group will zero out
+        all other filters.
+        </p>
+"""
+    )
+    float inputs:ri:lightFilter:density = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Density"
+        doc = "density: How much effect the filter has (0-1)."
+    )
+    float inputs:ri:lightFilter:depth = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Depth"
+        doc = "depth: Depth of inner region of the rod (z axis)."
+    )
+    float inputs:ri:lightFilter:diffuse = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Diffuse"
+        doc = "diffuse: How much this light filter affects diffuse lighting."
+    )
+    float inputs:ri:lightFilter:edge = 0.25 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Edge"
+        doc = "edge: Thickness of edge region."
+    )
+    int inputs:ri:lightFilter:falloff = 6 (
+        connectability = "interfaceOnly"
+        displayGroup = "Falloff"
+        doc = "falloff: Controls the transition from the core to the edge."
+    )
+    float[] inputs:ri:lightFilter:falloff_Floats = [0, 0, 0.2, 0.8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Falloff"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:falloff_Interpolation = "bspline" (
+        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
+        displayGroup = "Falloff"
+        hidden = true
+    )
+    float[] inputs:ri:lightFilter:falloff_Knots = [0, 0, 0.3, 0.7, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Falloff"
+        hidden = true
+    )
+    float inputs:ri:lightFilter:height = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Height"
+        doc = "height: Height of inner region of the rod (y axis)."
+    )
+    float inputs:ri:lightFilter:intensity = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Intensity"
+        doc = """intensity: Multiplier for both the diffuse and specular result.
+            """
+    )
+    bool inputs:ri:lightFilter:invert = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Invert"
+        doc = "invert: Inverts the entire effect of the filter."
+    )
+    string inputs:ri:lightFilter:notes = "" (
+        displayGroup = "Notes"
+        doc = "General comment field for this light filter."
+    )
+    float inputs:ri:lightFilter:radius = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Radius"
+        doc = "radius: Radius of corners of inner rod box."
+    )
+    float inputs:ri:lightFilter:saturation = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Saturation"
+        doc = """saturation: Saturation of the light before hitting the surface
+                  (0=greyscale,1=normal,>1=boosted colors)."""
+    )
+    float inputs:ri:lightFilter:specular = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Specular"
+        doc = "specular: How much this light filter affects specular lighting."
+    )
+    float inputs:ri:lightFilter:width = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Width"
+        doc = "width: Width of inner region of the rod (x axis)."
+    )
+    uniform token ri:lightFilter:shaderId = "PxrBlockerLightFilter" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrCombinerLightFilter "PxrCombinerLightFilter" (
+    customData = {
+        string className = "CombinerLightFilter"
+    }
+    inherits = </LightFilter>
+)
+{
+    bool inputs:ri:lightFilter:combineShadows = 0 (
+        connectability = "interfaceOnly"
+        displayName = "Combine shadows"
+        doc = """
+            Enables the shadow manipulation abilities of any connected light filters.
+        """
+    )
+    token inputs:ri:lightFilter:max (
+        displayName = "Max"
+        doc = """
+            max: Combining light filters by returning the maximum result.
+        """
+    )
+    token inputs:ri:lightFilter:min (
+        displayName = "Min"
+        doc = """
+            min: Combining light filters by returning the mininum result.
+        """
+    )
+    token inputs:ri:lightFilter:mult (
+        displayName = "Mult"
+        doc = """
+            mult: Combining light filters by multiplying.
+        """
+    )
+    token inputs:ri:lightFilter:screen (
+        displayName = "Screen"
+        doc = '''
+            screen: Combining light filters by returning the "screen" result.
+            Screen operation is similar to the max operation, but it combines gradients
+            in a smoother way.
+        '''
+    )
+    uniform token ri:lightFilter:shaderId = "PxrCombinerLightFilter" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrCookieLightFilter "PxrCookieLightFilter" (
+    customData = {
+        string className = "CookieLightFilter"
+    }
+    inherits = </LightFilter>
+)
+{
+    float inputs:ri:lightFilter:apex = 25 (
+        connectability = "interfaceOnly"
+        displayGroup = "Projection"
+        displayName = "Apex"
+        doc = """apex: Distance between the center of cookie and the center of projection.
+            """
+    )
+    float inputs:ri:lightFilter:blur = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Blur"
+        displayName = "Blur"
+        doc = """
+                blur: Blurriness of texture (0-1, multiplied by blurNear/blurFar interp).
+            """
+    )
+    float inputs:ri:lightFilter:blurFarDist = 10 (
+        connectability = "interfaceOnly"
+        displayGroup = "Blur"
+        displayName = "Blur Far Dist"
+        doc = "blurFarDist: Distance from the cookie where the blur interpolation ends."
+    )
+    float inputs:ri:lightFilter:blurFarVal = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Blur"
+        displayName = "Blur Far Value"
+        doc = "blurFarVal: Blur multiplier where the blur interpolation ends."
+    )
+    float inputs:ri:lightFilter:blurMidpoint = 0.5 (
+        connectability = "interfaceOnly"
+        displayGroup = "Blur"
+        displayName = "Blur Midpoint"
+        doc = "blurMidpoint: Distance between near and far, where the midValue is located."
+    )
+    float inputs:ri:lightFilter:blurMidVal = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Blur"
+        displayName = "Blur Mid Value"
+        doc = "blurMidVal: Blur multiplier in the middle of the blur interpolation."
+    )
+    float inputs:ri:lightFilter:blurNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Blur"
+        displayName = "Blur Near Dist"
+        doc = "blurNearDist: Distance from the cookie where the blur interpolation starts."
+    )
+    float inputs:ri:lightFilter:blurNearVal = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Blur"
+        displayName = "Blur Near Value"
+        doc = "blurNearVal: Blur multiplier where the blur interpolation starts."
+    )
+    float inputs:ri:lightFilter:blurPow = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Blur"
+        displayName = "Blur Exponent"
+        doc = "blurPow: Exponent of the blur interpolation."
+    )
+    token inputs:ri:lightFilter:combineMode = "mult" (
+        allowedTokens = ["mult", "max", "min", "screen"]
+        connectability = "interfaceOnly"
+        displayName = "Combine Mode"
+        doc = """
+\t<p>
+        combineMode: Light filters on a light are grouped by their combine mode. Light filters
+        in the same group are executed together and combined by the corresponding
+        operation:
+        </p>
+\t<ol>
+\t\t<li>max: the maximum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>min: the minimum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>screen: similar to the max operation, but it combines gradients
+              in a smoother way. This works best for grey scale light filters.</li>
+\t\t<li>mult (default): the results of all the filters are multiplied together
+              (technically: they are applied one after the other)</li>
+\t</ol>
+\t<p>
+        The groups are executed in the above order and are multiplied together,
+        which means a filter that turns things black in the mult group will zero out
+        all other filters.
+        </p>
+"""
+    )
+    float inputs:ri:lightFilter:contrast = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Saturation/Contrast/Tint"
+        displayName = "Contrast"
+        doc = """
+                contrast: Contrast control (less than 1 = contrast reduction,
+                larger than 1 = contrast increase).
+            """
+    )
+    int inputs:ri:lightFilter:cookieMode = 0 (
+        connectability = "interfaceOnly"
+        displayName = "Cookie Mode"
+        doc = """
+            cookieMode:
+
+            In 'physical' mode the cookie behaves like a stained glass window
+            through which light falls. The falloff and blur are determined by the
+            size of the light, the distance to the light and distance from the
+            cookie.
+
+            In 'analytic' mode, the cookie has a fixed projection and manual
+            blur and falloff controls.
+        """
+    )
+    float inputs:ri:lightFilter:density = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Density"
+        doc = "density: Controls the strength of the projected effect."
+    )
+    float inputs:ri:lightFilter:densityFarDist = 10 (
+        connectability = "interfaceOnly"
+        displayGroup = "Density Falloff"
+        displayName = "Density Far Dist"
+        doc = "densityFarDist: Distance from the cookie where the density interpolation ends."
+    )
+    float inputs:ri:lightFilter:densityFarVal = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Density Falloff"
+        displayName = "Density Far Value"
+        doc = "densityFarVal: Density multiplier where the blur interpolation ends."
+    )
+    float inputs:ri:lightFilter:densityMidpoint = 0.5 (
+        connectability = "interfaceOnly"
+        displayGroup = "Density Falloff"
+        displayName = "Density Midpoint"
+        doc = "densityMidpoint: Distance between near and far, where the midValue is located."
+    )
+    float inputs:ri:lightFilter:densityMidVal = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Density Falloff"
+        displayName = "Density Mid Value"
+        doc = "densityMidVal: Density multiplier in the middle of the density interpolation."
+    )
+    float inputs:ri:lightFilter:densityNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Density Falloff"
+        displayName = "Density Near Dist"
+        doc = "densityNearDist: Distance from the cookie where the density interpolation starts."
+    )
+    float inputs:ri:lightFilter:densityNearVal = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Density Falloff"
+        displayName = "Density Near Value"
+        doc = "densityNearVal: Density multiplier where the blur interpolation starts."
+    )
+    float inputs:ri:lightFilter:densityPow = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Density Falloff"
+        displayName = "Density Exponent"
+        doc = "densityPow: Exponent of the density interpolation."
+    )
+    float inputs:ri:lightFilter:diffuse = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Diffuse"
+        doc = "diffuse: How much this light filter affects diffuse lighting."
+    )
+    bool inputs:ri:lightFilter:directional = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Projection"
+        displayName = "Directional"
+        doc = """directional:  When this is on, the texture projects along a
+                  direction using the orthographic projection. When it is off,
+                  the texture projects using a focal point specified by the Apex.
+            """
+    )
+    color3f inputs:ri:lightFilter:fillColor = (1, 1, 1) (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Fill Color"
+        doc = """
+                fillColor: If the texture is not repeating, this specifies the
+                color for the region outside of and behind the projected rectangle.
+            """
+    )
+    float inputs:ri:lightFilter:height = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Height"
+        doc = "height: Height of the rect the light is shining through."
+    )
+    float inputs:ri:lightFilter:intensity = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Intensity"
+        doc = """intensity: Multiplier for both the diffuse and specular result.
+            """
+    )
+    bool inputs:ri:lightFilter:invert = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Invert"
+        doc = """invert: When this is on, the texture will be inverted before it is applied.
+            """
+    )
+    bool inputs:ri:lightFilter:invertU = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Invert U"
+        doc = "invertU: flip the texture from left to right."
+    )
+    bool inputs:ri:lightFilter:invertV = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Invert V"
+        doc = "invertV: flip the texture from bottom to top."
+    )
+    bool inputs:ri:lightFilter:linearize = 0 (
+        displayGroup = "Map"
+        displayName = "Linearize"
+        doc = "Linearize the texture, assuming an sRGB transfer function."
+    )
+    asset inputs:ri:lightFilter:map = @ratGrid.tex@ (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Map"
+        doc = "map: Filename of the projected texture."
+    )
+    float inputs:ri:lightFilter:midpoint = 0.18 (
+        connectability = "interfaceOnly"
+        displayGroup = "Saturation/Contrast/Tint"
+        displayName = "Midpoint"
+        doc = "midpoint: Midpoint for the contrast control."
+    )
+    string inputs:ri:lightFilter:notes = "" (
+        displayGroup = "Notes"
+        doc = "General comment field for this light filter."
+    )
+    float inputs:ri:lightFilter:offsetU = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Offset U"
+        doc = "offsetU: Offset of the texture in the U direction"
+    )
+    float inputs:ri:lightFilter:offsetV = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Offset V"
+        doc = "offsetV: Offset of the texture in the V direction"
+    )
+    bool inputs:ri:lightFilter:premultipliedAlpha = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Premultiplied Alpha"
+        doc = """
+                premultipliedAlpha: Textures are usually premultiplied by their alpha. If this not
+                the case, uncheck this.
+            """
+    )
+    int inputs:ri:lightFilter:refreshMap = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        doc = """
+                Press this button to force a refresh of the texture during
+                Live Rendering.
+            """
+    )
+    float inputs:ri:lightFilter:saturation = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Saturation/Contrast/Tint"
+        displayName = "Saturation"
+        doc = """
+                saturation: Saturation of the result (0=greyscale,1=normal,>1=boosted colors).
+            """
+    )
+    float inputs:ri:lightFilter:sBlurMult = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Blur"
+        displayName = "S Blur Mult"
+        doc = "sBlurMult: Blur multiplier in S direction."
+    )
+    float inputs:ri:lightFilter:scaleU = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Scale U"
+        doc = "scaleU: Scale of the texture in the U direction"
+    )
+    float inputs:ri:lightFilter:scaleV = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Scale V"
+        doc = "scaleV: Scale of the texture in the V direction"
+    )
+    float inputs:ri:lightFilter:shearX = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Projection"
+        displayName = "Shear X"
+        doc = "shearX: Shear the projection along the x-axis."
+    )
+    float inputs:ri:lightFilter:shearY = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Projection"
+        displayName = "Shear Y"
+        doc = "shearY: Shear the projection along the y-axis."
+    )
+    float inputs:ri:lightFilter:specular = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Specular"
+        doc = "specular: How much this light filter affects specular lighting."
+    )
+    float inputs:ri:lightFilter:tBlurMult = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Blur"
+        displayName = "T Blur Mult"
+        doc = "tBlurMult: Blur multiplier in T direction."
+    )
+    int inputs:ri:lightFilter:tileMode = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Tile Mode"
+        doc = '''tileMode:
+                "No Repeat"   - texture does not repeat.
+                "Edge Extent" - extends the color of the edge to infinity.
+                "Tile"        - texture repeats (tileable texture).
+            '''
+    )
+    color3f inputs:ri:lightFilter:tint = (1, 1, 1) (
+        connectability = "interfaceOnly"
+        displayGroup = "Saturation/Contrast/Tint"
+        displayName = "Tint"
+        doc = "tint: Tint of the resulting color after saturation, contrast and clamp."
+    )
+    int inputs:ri:lightFilter:useAlpha = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Use Alpha"
+        doc = """
+                useAlpha: This should always be on otherwise it will create hard edges
+                from the cookie.  This parameter is hidden in case we need to
+                expose it later.
+
+                When on, if there is no alpha channel in the projected texture, it will
+                use the installed $RMANTREEE/lib/textures/white.tex for blending
+                with the fill color. Otherwise, it will use the alpha channel.
+            """
+        hidden = true
+    )
+    bool inputs:ri:lightFilter:useLightDirection = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Projection"
+        displayName = "Use Light Direction"
+        doc = """
+                useLightDirection: When this is on, the projection direction is determined by the
+                position of the center of the light source. Otherwise, it only
+                follows the orientation of the cookie.
+
+                WARNING: This does not work with lights that have no direction such as
+                PxrDomeLight and PxrMeshLight.
+            """
+    )
+    float inputs:ri:lightFilter:whitepoint = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Saturation/Contrast/Tint"
+        displayName = "White Point"
+        doc = "whitepoint: White point for the contrast control if (contrast > 1.0)."
+    )
+    float inputs:ri:lightFilter:width = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Width"
+        doc = "width: Width of the rect the light is shining through."
+    )
+    uniform token ri:lightFilter:shaderId = "PxrCookieLightFilter" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrGoboLightFilter "PxrGoboLightFilter" (
+    customData = {
+        string className = "GoboLightFilter"
+    }
+    inherits = </LightFilter>
+)
+{
+    token inputs:ri:lightFilter:combineMode = "mult" (
+        allowedTokens = ["mult", "max", "min", "screen"]
+        connectability = "interfaceOnly"
+        displayName = "Combine Mode"
+        doc = """
+\t<p>
+        combineMode: Light filters on a light are grouped by their combine mode. Light filters
+        in the same group are executed together and combined by the corresponding
+        operation:
+        </p>
+\t<ol>
+\t\t<li>max: the maximum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>min: the minimum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>screen: similar to the max operation, but it combines gradients
+              in a smoother way. This works best for grey scale light filters.</li>
+\t\t<li>mult (default): the results of all the filters are multiplied together
+              (technically: they are applied one after the other)</li>
+\t</ol>
+\t<p>
+        The groups are executed in the above order and are multiplied together,
+        which means a filter that turns things black in the mult group will zero out
+        all other filters.
+        </p>
+"""
+    )
+    float inputs:ri:lightFilter:density = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Density"
+        doc = "density: Controls the strength of the projected effect."
+    )
+    float inputs:ri:lightFilter:diffuse = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Diffuse"
+        doc = "diffuse: How much this light filter affects diffuse lighting."
+    )
+    color3f inputs:ri:lightFilter:fillColor = (1, 1, 1) (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Fill Color"
+        doc = """
+                fillColor: If the texture is not repeating, this specifies the
+                color for the region outside of and behind the projected rectangle.
+            """
+    )
+    float inputs:ri:lightFilter:height = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Height"
+        doc = "height: Height of the rect the light is shining through."
+    )
+    float inputs:ri:lightFilter:intensity = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Intensity"
+        doc = """intensity: Multiplier for both the diffuse and specular result.
+            """
+    )
+    bool inputs:ri:lightFilter:invert = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Invert"
+        doc = """invert: When this is on, the texture will be inverted before it is applied.
+            """
+    )
+    bool inputs:ri:lightFilter:linearize = 0 (
+        displayGroup = "Map"
+        displayName = "Linearize"
+        doc = "Linearize the texture, assuming an sRGB transfer function."
+    )
+    asset inputs:ri:lightFilter:map = @ratGrid.tex@ (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Map"
+        doc = "map: Filename of the projected texture."
+    )
+    string inputs:ri:lightFilter:notes = "" (
+        displayGroup = "Notes"
+        doc = "General comment field for this light filter."
+    )
+    float inputs:ri:lightFilter:offsetU = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Offset U"
+        doc = "offsetU: Offset of the texture in the U direction"
+    )
+    float inputs:ri:lightFilter:offsetV = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Offset V"
+        doc = "offsetV: Offset of the texture in the V direction"
+    )
+    bool inputs:ri:lightFilter:premultipliedAlpha = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Premultiplied Alpha"
+        doc = """
+                premultipliedAlpha: Textures are usually premultiplied by their alpha. If this not
+                the case, uncheck this.
+            """
+    )
+    int inputs:ri:lightFilter:refreshMap = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        doc = """
+                Press this button to force a refresh of the texture during
+                Live Rendering.
+            """
+    )
+    float inputs:ri:lightFilter:scaleU = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Scale U"
+        doc = "scaleU: Scale of the texture in the U direction"
+    )
+    float inputs:ri:lightFilter:scaleV = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Scale V"
+        doc = "scaleV: Scale of the texture in the V direction"
+    )
+    float inputs:ri:lightFilter:specular = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Specular"
+        doc = "specular: How much this light filter affects specular lighting."
+    )
+    int inputs:ri:lightFilter:tileMode = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Tile Mode"
+        doc = '''tileMode:
+                "No Repeat"   - texture does not repeat.
+                "Edge Extent" - extends the color of the edge to infinity.
+                "Tile"        - texture repeats (tileable texture).
+            '''
+    )
+    float inputs:ri:lightFilter:width = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Width"
+        doc = "width: Width of the rect the light is shining through."
+    )
+    uniform token ri:lightFilter:shaderId = "PxrGoboLightFilter" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrIntMultLightFilter "PxrIntMultLightFilter" (
+    customData = {
+        string className = "IntMultLightFilter"
+    }
+    inherits = </LightFilter>
+)
+{
+    token inputs:ri:lightFilter:combineMode = "mult" (
+        allowedTokens = ["mult", "max", "min", "screen"]
+        connectability = "interfaceOnly"
+        displayName = "Combine Mode"
+        doc = """
+\t<p>
+        combineMode: Light filters on a light are grouped by their combine mode. Light filters
+        in the same group are executed together and combined by the corresponding
+        operation:
+        </p>
+\t<ol>
+\t\t<li>max: the maximum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>min: the minimum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>screen: similar to the max operation, but it combines gradients
+              in a smoother way. This works best for grey scale light filters.</li>
+\t\t<li>mult (default): the results of all the filters are multiplied together
+              (technically: they are applied one after the other)</li>
+\t</ol>
+\t<p>
+        The groups are executed in the above order and are multiplied together,
+        which means a filter that turns things black in the mult group will zero out
+        all other filters.
+        </p>
+"""
+    )
+    float inputs:ri:lightFilter:diffuse = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Diffuse"
+        doc = "diffuse: How much this light filter affects diffuse lighting."
+    )
+    float inputs:ri:lightFilter:exposure = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Exposure"
+        doc = "exposure: Exposure control for the multiplier."
+    )
+    float inputs:ri:lightFilter:intensity = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Intensity"
+        doc = "intensity: Multiplier for the light intensity."
+    )
+    bool inputs:ri:lightFilter:invert = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Invert"
+        doc = """
+                invert: When this is on, invert the multiplier.  For instance, if we
+                set the light filter's intensity to 2, the final light's intensity
+                will be divided by (instead of multiplied by) the light filter's
+                intensity.
+            """
+    )
+    string inputs:ri:lightFilter:notes = "" (
+        displayGroup = "Notes"
+        doc = "General comment field for this light filter."
+    )
+    float inputs:ri:lightFilter:saturation = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Color Saturation"
+        doc = """Saturation of the light before hitting the surface
+                  (0=greyscale,1=normal,>1=boosted colors).
+            """
+    )
+    float inputs:ri:lightFilter:specular = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Specular"
+        doc = "specular: How much this light filter affects specular lighting."
+    )
+    uniform token ri:lightFilter:shaderId = "PxrIntMultLightFilter" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrRampLightFilter "PxrRampLightFilter" (
+    customData = {
+        string className = "RampLightFilter"
+    }
+    inherits = </LightFilter>
+)
+{
+    float inputs:ri:lightFilter:beginDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Ramp Direction"
+        displayName = "Begin Distance"
+        doc = "beginDist: Distance where the ramp starts."
+    )
+    int inputs:ri:lightFilter:colorRamp = 4 (
+        connectability = "interfaceOnly"
+        displayGroup = "Color Ramp"
+        displayName = "Color Ramp"
+        doc = "Color Ramp"
+    )
+    color3f[] inputs:ri:lightFilter:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:colorRamp_Interpolation = "linear" (
+        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    float[] inputs:ri:lightFilter:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:combineMode = "mult" (
+        allowedTokens = ["mult", "max", "min", "screen"]
+        connectability = "interfaceOnly"
+        displayName = "Combine Mode"
+        doc = """
+\t<p>
+        combineMode: Light filters on a light are grouped by their combine mode. Light filters
+        in the same group are executed together and combined by the corresponding
+        operation:
+        </p>
+\t<ol>
+\t\t<li>max: the maximum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>min: the minimum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>screen: similar to the max operation, but it combines gradients
+              in a smoother way. This works best for grey scale light filters.</li>
+\t\t<li>mult (default): the results of all the filters are multiplied together
+              (technically: they are applied one after the other)</li>
+\t</ol>
+\t<p>
+        The groups are executed in the above order and are multiplied together,
+        which means a filter that turns things black in the mult group will zero out
+        all other filters.
+        </p>
+"""
+    )
+    float inputs:ri:lightFilter:density = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Density"
+        doc = "density: How much effect the filter has (0-1)."
+    )
+    float inputs:ri:lightFilter:diffuse = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Diffuse"
+        doc = "diffuse: How much this light filter affects diffuse lighting."
+    )
+    float inputs:ri:lightFilter:endDist = 10 (
+        connectability = "interfaceOnly"
+        displayGroup = "Ramp Direction"
+        displayName = "End Distance"
+        doc = "endDist: Distance where the ramp ends."
+    )
+    float inputs:ri:lightFilter:intensity = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Intensity"
+        doc = "intensity: Multiplier for both the diffuse and specular result."
+    )
+    bool inputs:ri:lightFilter:invert = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Invert"
+        doc = "invert: If the multipliers should be inverted"
+    )
+    string inputs:ri:lightFilter:notes = "" (
+        displayGroup = "Notes"
+        doc = "General comment field for this light filter."
+    )
+    int inputs:ri:lightFilter:ramp = 4 (
+        connectability = "interfaceOnly"
+        displayGroup = "Float Ramp"
+        displayName = "Ramp"
+        doc = "Ramp"
+    )
+    float[] inputs:ri:lightFilter:ramp_Floats = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Float Ramp"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:ramp_Interpolation = "linear" (
+        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
+        displayGroup = "Float Ramp"
+        hidden = true
+    )
+    float[] inputs:ri:lightFilter:ramp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Float Ramp"
+        hidden = true
+    )
+    int inputs:ri:lightFilter:rampType = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Ramp Direction"
+        displayName = "Ramp Type"
+        doc = "rampType: In which direction the ramp is applied."
+    )
+    float inputs:ri:lightFilter:saturation = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Saturation"
+        doc = """saturation: Saturation of the light before hitting the surface
+                  (0=greyscale,1=normal,>1=boosted colors). From Begin to End Distance, the value will ramp between the original light color and the Saturation adjusted color (and opposite if the ramp is inverted)."""
+    )
+    float inputs:ri:lightFilter:specular = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Specular"
+        doc = "specular: How much this light filter affects specular lighting."
+    )
+    uniform token ri:lightFilter:shaderId = "PxrRampLightFilter" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrRodLightFilter "PxrRodLightFilter" (
+    customData = {
+        string className = "RodLightFilter"
+    }
+    inherits = </LightFilter>
+)
+{
+    float inputs:ri:lightFilter:back = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape.Refine Shape"
+        displayName = "Back"
+        doc = "back: Additional size of the back region (-Z axis)."
+    )
+    float inputs:ri:lightFilter:backEdge = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape.Scale Edges"
+        displayName = "Back Edge"
+        doc = """
+                    backEdge: When edge is > 0, this scales the back edge up or down (-z axis).
+                """
+    )
+    float inputs:ri:lightFilter:bottom = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape.Refine Shape"
+        displayName = "Bottom"
+        doc = "bottom: Additional size of the bottom region (-Y axis)."
+    )
+    float inputs:ri:lightFilter:bottomEdge = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape.Scale Edges"
+        displayName = "Bottom Edge"
+        doc = """
+                    bottomEdge: When edge is > 0, this scales the bottom edge up or down (-y axis).
+                """
+    )
+    int inputs:ri:lightFilter:colorRamp = 4 (
+        displayGroup = "Color Ramp"
+        doc = """colorRamp: This is Optional.  This sets the color gradient
+                  for the transition.
+            """
+    )
+    color3f[] inputs:ri:lightFilter:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:colorRamp_Interpolation = "linear" (
+        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    float[] inputs:ri:lightFilter:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:combineMode = "mult" (
+        allowedTokens = ["mult", "max", "min", "screen"]
+        connectability = "interfaceOnly"
+        displayName = "Combine Mode"
+        doc = """
+\t<p>
+        combineMode: Light filters on a light are grouped by their combine mode. Light filters
+        in the same group are executed together and combined by the corresponding
+        operation:
+        </p>
+\t<ol>
+\t\t<li>max: the maximum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>min: the minimum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>screen: similar to the max operation, but it combines gradients
+              in a smoother way. This works best for grey scale light filters.</li>
+\t\t<li>mult (default): the results of all the filters are multiplied together
+              (Technically, they are applied one after the other.)</li>
+\t</ol>
+\t<p>
+        The groups are executed in the above order and are multiplied together,
+        which means a filter that turns things black in the mult group will zero out
+        all other filters.
+        </p>
+"""
+    )
+    float inputs:ri:lightFilter:density = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Density"
+        doc = "density: How much effect the filter has (0-1)."
+    )
+    float inputs:ri:lightFilter:depth = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Depth"
+        doc = "depth: Depth of the inner region of the rod (Z-axis)."
+    )
+    float inputs:ri:lightFilter:diffuse = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Diffuse"
+        doc = "diffuse: How much this light filter affects diffuse lighting."
+    )
+    float inputs:ri:lightFilter:edge = 0.25 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Edge Thickness"
+        doc = "edge: Thickness of the edge region."
+    )
+    int inputs:ri:lightFilter:falloff = 6 (
+        connectability = "interfaceOnly"
+        displayGroup = "Falloff"
+        doc = "falloff: Controls the transition from the core to the edge."
+    )
+    float[] inputs:ri:lightFilter:falloff_Floats = [0, 0, 0.2, 0.8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Falloff"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:falloff_Interpolation = "bspline" (
+        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
+        displayGroup = "Falloff"
+        hidden = true
+    )
+    float[] inputs:ri:lightFilter:falloff_Knots = [0, 0, 0.3, 0.7, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Falloff"
+        hidden = true
+    )
+    float inputs:ri:lightFilter:front = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape.Refine Shape"
+        displayName = "Front"
+        doc = "front: Additional size of the frontal region (+Z axis)."
+    )
+    float inputs:ri:lightFilter:frontEdge = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape.Scale Edges"
+        displayName = "Front Edge"
+        doc = """
+                    frontEdge: When edge is > 0, this scales the frontal edge up or down (+z axis).
+                """
+    )
+    float inputs:ri:lightFilter:height = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Height"
+        doc = "height: Height of the inner region of the rod (Y-axis)."
+    )
+    float inputs:ri:lightFilter:intensity = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Intensity"
+        doc = """intensity: Multiplier for both the diffuse and specular result.
+            """
+    )
+    bool inputs:ri:lightFilter:invert = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Invert"
+        doc = "invert: Inverts the entire effect of the filter."
+    )
+    float inputs:ri:lightFilter:left = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape.Refine Shape"
+        displayName = "Left"
+        doc = "left: Additional size of the left region (-X axis)."
+    )
+    float inputs:ri:lightFilter:leftEdge = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape.Scale Edges"
+        displayName = "Left Edge"
+        doc = """
+                   leftEdge: When edge is > 0, this scales the left edge up or down (-x axis).
+                """
+    )
+    string inputs:ri:lightFilter:notes = "" (
+        displayGroup = "Notes"
+        doc = "General comment field for this light filter."
+    )
+    float inputs:ri:lightFilter:radius = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Radius"
+        doc = "radius: Radius of the corners of the inner rod box."
+    )
+    float inputs:ri:lightFilter:right = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape.Refine Shape"
+        displayName = "Right"
+        doc = "right: Additional size of the right region (+X axis)."
+    )
+    float inputs:ri:lightFilter:rightEdge = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape.Scale Edges"
+        displayName = "Right Edge"
+        doc = """
+                    rightEdge: When edge is > 0, this scales the right edge up or down (+x axis).
+                """
+    )
+    float inputs:ri:lightFilter:saturation = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Color Saturation"
+        doc = """saturation: Saturation of the light before hitting the surface
+                  (0=greyscale,1=normal,>1=boosted colors)."""
+    )
+    float inputs:ri:lightFilter:scaleDepth = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape.Scale"
+        displayName = "Scale Depth"
+        doc = "scaleDepth: Scale the depth of the inner rod shape (Z axis)."
+    )
+    float inputs:ri:lightFilter:scaleHeight = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape.Scale"
+        displayName = "Scale Height"
+        doc = "scaleHeight: Scale the height of the inner rod shape (Y axis)."
+    )
+    float inputs:ri:lightFilter:scaleWidth = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape.Scale"
+        displayName = "Scale Width"
+        doc = "scaleWidth: Scale the width of the inner rod shape (X axis)."
+    )
+    float inputs:ri:lightFilter:specular = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Specular"
+        doc = "specular: How much this light filter affects specular lighting."
+    )
+    float inputs:ri:lightFilter:top = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape.Refine Shape"
+        displayName = "Top"
+        doc = "top: Additional size of the top region (+Y axis)."
+    )
+    float inputs:ri:lightFilter:topEdge = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape.Scale Edges"
+        displayName = "Top Edge"
+        doc = """
+                    topEdge: When edge is > 0, this scales the top edge up or down (+y axis).
+                """
+    )
+    float inputs:ri:lightFilter:width = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Width"
+        doc = "width: Width of the inner region of the rod (X-axis)."
+    )
+    uniform token ri:lightFilter:shaderId = "PxrRodLightFilter" (
+        displayGroup = "Internal"
+    )
+}
+

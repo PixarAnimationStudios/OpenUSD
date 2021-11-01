@@ -443,7 +443,6 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
             // Ask hydra to do a full refresh on this instancer.
             index->MarkInstancerDirty(depInstancerPath,
                     HdChangeTracker::DirtyPrimvar |
-                    HdChangeTracker::DirtyTransform |
                     HdChangeTracker::DirtyInstanceIndex);
 
             // Tell UsdImaging to re-run TrackVariability.
@@ -1261,8 +1260,11 @@ UsdImagingInstanceAdapter::ProcessPropertyChange(UsdPrim const& prim,
         _ProtoPrim const& proto = _GetProtoPrim(prim.GetPath(),
                                                     cachePath,
                                                     &instancerContext);
-        if (!TF_VERIFY(proto.adapter, "%s", cachePath.GetText())) {
-            return HdChangeTracker::AllDirty;
+        if (!proto.adapter) {
+            // Note: if we can't find the correct prototype, it may have been
+            // removed by a previous property update, so we can't treat it
+            // as an error.  Instead, we just return Clean.
+            return HdChangeTracker::Clean;
         }
 
         UsdPrim protoPrim = _GetPrim(proto.path);
@@ -2164,8 +2166,13 @@ UsdImagingInstanceAdapter::_GetProtoPrim(SdfPath const& instancerPath,
             }
         }
     }
-    if (!TF_VERIFY(r, "instancer = %s, cachePath = %s",
-                      instancerPath.GetText(), cachePath.GetText())) {
+
+    if (!r) {
+        // Note: for some callers, like ProcessPropertyChange, it's possible
+        // for this call to fail when trying to process property changes on
+        // things that have already been removed from the instancer map by
+        // a previous change.  Callers that expect this call to succeed should
+        // TF_VERIFY(r->adapter).
         return EMPTY;
     }
 
@@ -2450,6 +2457,10 @@ UsdImagingInstanceAdapter::GetScenePrimPath(
         _ProtoPrim const& proto = _GetProtoPrim(
             cachePath.GetAbsoluteRootOrPrimPath(),
             cachePath, &instancerContext);
+
+        if (!proto.adapter) {
+            return SdfPath();
+        }
 
         _InstancerData const* instrData =
             TfMapLookupPtr(_instancerData, instancerContext.instancerCachePath);
@@ -2790,6 +2801,11 @@ UsdImagingInstanceAdapter::GetVolumeFieldDescriptors(
         UsdImagingInstancerContext instancerContext;
         _ProtoPrim const& proto = _GetProtoPrim(usdPrim.GetPath(),
                                                     id, &instancerContext);
+
+        if (!TF_VERIFY(proto.adapter, "%s", usdPrim.GetPath().GetText())) {
+            return HdVolumeFieldDescriptorVector();
+        }
+
         return proto.adapter->GetVolumeFieldDescriptors(
             _GetPrim(proto.path), id, time);
     }

@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-bool
+UsdImagingDelegate::_HdPrimInfo*
 UsdImagingIndexProxy::_AddHdPrimInfo(SdfPath const &cachePath,
                                      UsdPrim const& usdPrim,
                                      UsdImagingPrimAdapterSharedPtr const& adapter)
@@ -44,7 +44,7 @@ UsdImagingIndexProxy::_AddHdPrimInfo(SdfPath const &cachePath,
             TF_CODING_ERROR("No adapter was found for <%s> (type: %s)\n",
                 cachePath.GetText(),
                 usdPrim ? usdPrim.GetTypeName().GetText() : "<expired prim>");
-            return false;
+            return nullptr;
         }
     }
 
@@ -68,7 +68,7 @@ UsdImagingIndexProxy::_AddHdPrimInfo(SdfPath const &cachePath,
         // XXX: ideally, we'd TF_VERIFY(inserted) here, but usd resyncs can
         // sometimes cause double-inserts, and de-duplicating the usd
         // population list is potentially expensive...
-        return false;
+        return nullptr;
     }
 
     primInfo.adapter         = adapterToInsert;
@@ -89,7 +89,7 @@ UsdImagingIndexProxy::_AddHdPrimInfo(SdfPath const &cachePath,
     _delegate->_cache2indexPath[cachePath] = indexPath;
     _delegate->_index2cachePath[indexPath] = cachePath;
 
-    return true;
+    return &primInfo;
 }
 
 void
@@ -174,9 +174,17 @@ UsdImagingIndexProxy::InsertRprim(
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
-    if (_AddHdPrimInfo(cachePath, usdPrim, adapter)) {
-        _delegate->GetRenderIndex().InsertRprim(primType, _delegate,
-            _delegate->ConvertCachePathToIndexPath(cachePath));
+    UsdImagingDelegate::_HdPrimInfo *primInfo =
+        _AddHdPrimInfo(cachePath, usdPrim, adapter);
+
+    if (primInfo) {
+        HdRenderIndex &renderIndex = _delegate->GetRenderIndex();
+        SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
+        renderIndex.InsertRprim(primType, _delegate, indexPath);
+
+        primInfo->dirtyBits =
+            renderIndex.GetChangeTracker().GetRprimDirtyBits(indexPath);
+        _delegate->_dirtyCachePaths.insert(cachePath);
 
         _AddTask(cachePath);
     }
@@ -189,9 +197,17 @@ UsdImagingIndexProxy::InsertSprim(
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
-    if (_AddHdPrimInfo(cachePath, usdPrim, adapter)) {
-        _delegate->GetRenderIndex().InsertSprim(primType, _delegate,
-            _delegate->ConvertCachePathToIndexPath(cachePath));
+    UsdImagingDelegate::_HdPrimInfo *primInfo =
+        _AddHdPrimInfo(cachePath, usdPrim, adapter);
+
+    if (primInfo) {
+        HdRenderIndex &renderIndex = _delegate->GetRenderIndex();
+        SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
+        renderIndex.InsertSprim(primType, _delegate, indexPath);
+
+        primInfo->dirtyBits =
+            renderIndex.GetChangeTracker().GetSprimDirtyBits(indexPath);
+        _delegate->_dirtyCachePaths.insert(cachePath);
 
         _AddTask(cachePath);
     }
@@ -204,9 +220,17 @@ UsdImagingIndexProxy::InsertBprim(
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
-    if (_AddHdPrimInfo(cachePath, usdPrim, adapter)) {
-        _delegate->GetRenderIndex().InsertBprim(primType, _delegate,
-            _delegate->ConvertCachePathToIndexPath(cachePath));
+    UsdImagingDelegate::_HdPrimInfo *primInfo =
+        _AddHdPrimInfo(cachePath, usdPrim, adapter);
+
+    if (primInfo) {
+        HdRenderIndex &renderIndex = _delegate->GetRenderIndex();
+        SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
+        renderIndex.InsertBprim(primType, _delegate, indexPath);
+
+        primInfo->dirtyBits =
+            renderIndex.GetChangeTracker().GetBprimDirtyBits(indexPath);
+        _delegate->_dirtyCachePaths.insert(cachePath);
 
         _AddTask(cachePath);
     }
@@ -218,11 +242,17 @@ UsdImagingIndexProxy::InsertInstancer(
                              UsdPrim const& usdPrim,
                              UsdImagingPrimAdapterSharedPtr adapter)
 {
-    if (_AddHdPrimInfo(cachePath, usdPrim, adapter)) {
-        _delegate->GetRenderIndex().InsertInstancer(_delegate,
-            _delegate->ConvertCachePathToIndexPath(cachePath));
+    UsdImagingDelegate::_HdPrimInfo *primInfo =
+        _AddHdPrimInfo(cachePath, usdPrim, adapter);
 
-        _delegate->_instancerPrimCachePaths.insert(cachePath);
+    if (primInfo) {
+        HdRenderIndex &renderIndex = _delegate->GetRenderIndex();
+        SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
+        renderIndex.InsertInstancer(_delegate, indexPath);
+
+        primInfo->dirtyBits =
+            renderIndex.GetChangeTracker().GetInstancerDirtyBits(indexPath);
+        _delegate->_dirtyCachePaths.insert(cachePath);
 
         TF_DEBUG(USDIMAGING_INSTANCER).Msg(
             "[Instancer Inserted] %s, adapter = %s\n",
@@ -267,6 +297,13 @@ void
 UsdImagingIndexProxy::MarkRprimDirty(SdfPath const& cachePath,
                                      HdDirtyBits dirtyBits)
 {
+    UsdImagingDelegate::_HdPrimInfo *primInfo =
+        _delegate->_GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo, "%s", cachePath.GetText())) {
+        primInfo->dirtyBits |= dirtyBits;
+        _delegate->_dirtyCachePaths.insert(cachePath);
+    }
+
     HdChangeTracker &tracker = _delegate->GetRenderIndex().GetChangeTracker();
     SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
     tracker.MarkRprimDirty(indexPath, dirtyBits);
@@ -276,6 +313,13 @@ void
 UsdImagingIndexProxy::MarkSprimDirty(SdfPath const& cachePath,
                                      HdDirtyBits dirtyBits)
 {
+    UsdImagingDelegate::_HdPrimInfo *primInfo =
+        _delegate->_GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo, "%s", cachePath.GetText())) {
+        primInfo->dirtyBits |= dirtyBits;
+        _delegate->_dirtyCachePaths.insert(cachePath);
+    }
+
     HdChangeTracker &tracker = _delegate->GetRenderIndex().GetChangeTracker();
     SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
     tracker.MarkSprimDirty(indexPath, dirtyBits);
@@ -285,6 +329,13 @@ void
 UsdImagingIndexProxy::MarkBprimDirty(SdfPath const& cachePath,
                                      HdDirtyBits dirtyBits)
 {
+    UsdImagingDelegate::_HdPrimInfo *primInfo =
+        _delegate->_GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo, "%s", cachePath.GetText())) {
+        primInfo->dirtyBits |= dirtyBits;
+        _delegate->_dirtyCachePaths.insert(cachePath);
+    }
+
     HdChangeTracker &tracker = _delegate->GetRenderIndex().GetChangeTracker();
     SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
     tracker.MarkBprimDirty(indexPath, dirtyBits);
@@ -294,19 +345,16 @@ void
 UsdImagingIndexProxy::MarkInstancerDirty(SdfPath const& cachePath,
                                          HdDirtyBits dirtyBits)
 {
-    HdChangeTracker &tracker = _delegate->GetRenderIndex().GetChangeTracker();
-    SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
-    tracker.MarkInstancerDirty(indexPath, dirtyBits);
-
-    // XXX: Currently, instancers are part of delegate sync even though they
-    // aren't in the sync request. This means we need to duplicate their
-    // change tracking. This can go away when instancers are part of delegate
-    // sync.
     UsdImagingDelegate::_HdPrimInfo *primInfo =
         _delegate->_GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo, "%s", cachePath.GetText())) {
         primInfo->dirtyBits |= dirtyBits;
+        _delegate->_dirtyCachePaths.insert(cachePath);
     }
+
+    HdChangeTracker &tracker = _delegate->GetRenderIndex().GetChangeTracker();
+    SdfPath indexPath = _delegate->ConvertCachePathToIndexPath(cachePath);
+    tracker.MarkInstancerDirty(indexPath, dirtyBits);
 }
 
 UsdImagingPrimAdapterSharedPtr
@@ -366,11 +414,9 @@ UsdImagingIndexProxy::_ProcessRemovals()
     {
         TRACE_FUNCTION_SCOPE("instancers");
         TF_FOR_ALL(it, _instancersToRemove) {
-
             TF_DEBUG(USDIMAGING_CHANGES).Msg("[Remove Instancer] <%s>\n",
                                     it->GetText());
 
-            _delegate->_instancerPrimCachePaths.erase(*it);
             index.RemoveInstancer(_delegate->ConvertCachePathToIndexPath(*it));
         }
         _instancersToRemove.clear();

@@ -117,7 +117,7 @@ vec3 ImportanceSample_GGX(vec2 Xi, float roughness, vec3 normal)
 --- --------------------------------------------------------------------------
 -- glsl DomeLight.Irradiance
 
-layout(local_size_x = 32, local_size_y = 32) in;
+layout(local_size_x = 8, local_size_y = 8) in;
 
 const float deltaPhi = (2.0f * float(PI)) / 180.0f;
 const float deltaTheta = (0.5f * float(PI)) / 64.0f;
@@ -169,7 +169,7 @@ void main(void)
 --- --------------------------------------------------------------------------
 -- glsl DomeLight.Prefilter
 
-layout(local_size_x = 32, local_size_y = 32) in;
+layout(local_size_x = 8, local_size_y = 8) in;
 layout(std140, binding=0) uniform Uniforms {
    float roughness;
 } uniforms;
@@ -234,7 +234,7 @@ void main(void)
 --- --------------------------------------------------------------------------
 -- glsl DomeLight.BRDF
 
-layout(local_size_x = 32, local_size_y = 32) in;
+layout(local_size_x = 8, local_size_y = 8) in;
 uniform int sampleLevel = 0;
 
 float Geometry_SchlicksmithGGX(float dotNL, float dotNV, float roughness)

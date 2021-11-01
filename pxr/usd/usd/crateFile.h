@@ -574,6 +574,8 @@ public:
     ~CrateFile();
 
     static bool CanRead(string const &assetPath);
+    static bool CanRead(string const &assetPath, ArAssetSharedPtr const &asset);
+
     static TfToken const &GetSoftwareVersionToken();
     TfToken GetFileVersionToken() const;
 
@@ -581,6 +583,8 @@ public:
 
     // Return nullptr on failure.
     static std::unique_ptr<CrateFile> Open(string const &assetPath);
+    static std::unique_ptr<CrateFile> Open(string const &assetPath,
+                                           ArAssetSharedPtr const &asset);
 
     // Helper for saving to a file.
     struct Packer {

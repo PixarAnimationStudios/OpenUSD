@@ -20,15 +20,23 @@ The goal of UsdLux is to serve as a basis for:
 The UsdLux core includes:
 
 - common light types
+    - UsdLuxCylinderLight
     - UsdLuxDiskLight
     - UsdLuxDistantLight
     - UsdLuxDomeLight
-    - UsdLuxGeometryLight
     - UsdLuxRectLight
     - UsdLuxSphereLight
 - common light attributes
     - \a power: intensity and exposure
     - \a color: as RGB components and/or color temperature
+- base classes for common lights
+    - UsdLuxBoundableLightBase: lights that inherit from UsdGeomBoundable
+    - UsdLuxNonboundableLightBase:  lights that inherit from UsdGeomXformable
+- API classes for imparting the behavior of "being a light" to any 
+  UsdGeomXformable derived prim type
+    - UsdLuxLightAPI: makes a prim "be a light" and adds common light attributes
+    - UsdLuxMeshLightAPI: extends UsdLuxLightAPI for application to UsdGeomMesh
+    - UsdLuxVolumeLightAPI: extends UsdLuxLightAPI for application to UsdVolVolume
 - API classes embodying more complex behaviors
     - UsdLuxListAPI: light component enumeration and discovery
     - UsdCollectionAPI: light-object linking
@@ -36,7 +44,7 @@ The UsdLux core includes:
     - UsdLuxShapingAPI: focus, cone angle, and IES profiles
 - associated components for adjusting behavior
     - UsdLuxLightFilter: a filter to modulate the effect of lights
-    - UsdLuxLightPortal: a portal to guide sampling of a dome light
+    - UsdLuxPortalLight: a portal to guide sampling of a dome light
 - \ref usdLux_PluginSchemas "plugin types":
     - UsdLuxPluginLight
     - UsdLuxPluginLightFilter
@@ -47,6 +55,22 @@ For a comprehensive list of the types see the full <a href="hierarchy.html">clas
 
 \section usdLux_Notes Design Notes and Usage Guide
 
+\subsection usdLux_LightAPIAndBeingALight LightAPI and "Being a Light"
+
+UsdLuxLightAPI defines all the common attributes and behaviors that are 
+considered to be core to all lights. Thus, we define a _UsdLux light_ as any 
+prim that has a UsdLuxLightAPI applied. In other words, applying a 
+UsdLuxLightAPI imparts the quality of "being a light" to a prim.
+
+Most light types, such as UsdLuxRectLight or any type that inherits from 
+UsdLuxBoundableLightBase or UsdLuxNonboundableLightBase, have an applied 
+UsdLuxLightAPI automatically \ref Usd_BuiltinAPISchemas "built in" to their type
+and therefore will always be lights. However, by attaching the quality of being 
+a light to an applied API schema, we can turn any geometry into a light by 
+applying a UsdLuxLightAPI to it, or, as we would in the case of a UsdGeomMesh 
+to which we'd apply UsdLuxMeshLightAPI, by applying an API schema that itself 
+has a built-in UsdLuxLightAPI.
+
 \subsection usdLux_Geometry Geometry
 
 By convention, lights with a primary axis emit along -Z.
@@ -55,13 +79,13 @@ Area lights are centered in the XY plane and are 1 unit in diameter.
 UsdLux objects are UsdGeomXformable, so they use its set of
 transform operators, and inherit transforms hierarchically.
 It is recommended that only translation and rotations be used
-with lights, to avoid introducing difficulties for light sampling
+with the lights, to avoid introducing difficulties for light sampling
 and integration.  Lights have explicit attributes to adjust their size.
 
-UsdLux includes both a light that uses arbitrary user-supplied geometry,
-as well as lights for specific shapes: spheres, rectangles, disks,
-and cylinders.  The specific shapes exist because they can support
-superior, analytic sampling methods.
+UsdLux provides the UsdLuxLightAPI, which can be applied to arbitrary 
+user-supplied geometry, as well as concrete lights for specific shapes: spheres,
+rectangles, disks, and cylinders.  The specific shapes exist because they can 
+support superior, analytic sampling methods.
 
 UsdLux is designed primarily for physically-based cinematic lighting with
 area lights.  Accordingly, it does not include zero-area point or line
@@ -72,17 +96,6 @@ are hints that avoid the need for backends to use heuristics (such as
 an arbitrary epsilon threshold) to determine the approximation. These
 hints can be set at the time of creation (or export) where the most
 information about the visual intent exists.
-
-To support efficient sampling, these specialized types place
-restrictions on their local-to-world transform. For example,
-a sphere may only be scaled uniformly. Because arbitrary
-transforms may be inherited from parent prims, it is necessary to
-explicitly compute the "effective" transform for such lights using
-UsdLuxLight::ComputeEffectiveTransform().
-
-To clarify geometric semantics and aid pipeline integration,
-UsdLux includes code to compute guide geometry for interactive
-viewport visualization.  This code is used in usdview.
 
 UsdLux does not provide support for expressing live transform
 constraints, such as to attach lights to moving geometry.  This is
@@ -127,7 +140,8 @@ systems that support this.
 - UsdLuxShadowAPI provides controls to refine shadow behavior in
 non-physical ways, including shadow linking, tinting, and falloff.
 
-- UsdLuxShapingAPI provides controls to shape light emission, including focus, cone-angle falloff, and IES profiles.
+- UsdLuxShapingAPI provides controls to shape light emission, including focus, 
+cone-angle falloff, and IES profiles.
 
 \subsection Extensibility
 
@@ -151,23 +165,30 @@ pipeline-specific capabilities that could be addded as extensions include:
     - integrator path-depth limits
 - constraint rigging to attach a light to an object
 
+We provide a utility to aide in extending the UsdLux core schemas, namely the
+schema generation script _usdgenschemafromsdr_. This script can be used to 
+generate new light schemas from the shader nodes in the SdrRegistry. These light
+schemas can be typed schemas that describe a completely new light type or
+can be applied API schemas that extend an existing light type automatically by
+being specified to \ref Usd_AutoAppliedAPISchemas "auto apply" to an existing
+light (such as UsdLuxDiskLight) or light API (such as UsdLuxMeshLightAPI). 
+
 \subsection usdLux_PluginSchemas Plugin Lights and Light Filters
 
-We expect "published, pipeline citizen" render delegates to provide typed 
-and applied codeless schemas that derive from the UsdLux base types (even if 
-only UsdLuxLight) for all of the renderer's core light types. But some 
-render delegates may be developed as part of a proprietary application 
-package that is only using USD as a mechanism to communicate to that render 
-delegate... in other words, the application doesn't really want to 
-participate in the open USD ecosystem, but needs to use it for rendering 
-scenes imported from USD and augmented using application/renderer-specific 
-lighting features, or finds it useful to use USD as an archiving format to 
-send jobs to a render-farm so that the full application need not be run 
-there.
+We expect "published, pipeline citizen" render delegates to provide codeless 
+schema libraries that contain typed schemas and/or applied API schemas that 
+define or extend all of the renderer's core light types. But some render 
+delegates may be developed as part of a proprietary application package that is 
+only using USD as a mechanism to communicate to that render delegate. In other 
+words, the application doesn't really want to participate in the open USD 
+ecosystem, but needs to use it for rendering scenes imported from USD and 
+augmented using application/renderer-specific lighting features, or finds it 
+useful to use USD as an archiving format to send jobs to a render-farm so that 
+the full application need not be run there.
 
 In order to lower the barrier somewhat for such applications, we provide 
 UsdLuxPluginLight and UsdLuxPluginLightFilter, concrete schema types that
-specify a "node identification" encoding, just like UsdShadeShader, so that the
+specify a "node identification" encoding just like UsdShadeShader, so that the
 application need only plug its extensions into Sdr (by providing node 
 definitions that will be consumed by render delegates), and not be required to
 take the extra step of generating USD schema definitions. Because they

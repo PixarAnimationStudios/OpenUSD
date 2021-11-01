@@ -59,7 +59,7 @@ public:
     void Finalize(HdRenderParam *renderParam) override;
 
 private:
-    void _ResetLight(HdPrman_Context *context);
+    void _ResetLight(HdPrman_Context *context, bool clearFilterPaths);
 
     const TfToken _hdLightType;
     riley::LightShaderId _shaderId;

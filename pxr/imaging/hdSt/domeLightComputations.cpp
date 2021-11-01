@@ -60,6 +60,13 @@ HdSt_DomeLightComputationGPU::HdSt_DomeLightComputationGPU(
 {
 }
 
+static 
+int 
+_MakeMultipleOf(int dim, int localSize)
+{
+    return ((dim + localSize - 1) / localSize) * localSize;
+}
+
 static
 void
 _FillPixelsByteSize(HgiTextureDesc * const desc)
@@ -152,8 +159,15 @@ HdSt_DomeLightComputationGPU::Execute(
     }
 
     // Size of texture to be created.
-    const int width  = srcDim[0] / 2;
-    const int height = srcDim[1] / 2;
+    // Downsize larger textures
+    bool downsize = (srcDim[0] > 256 && srcDim[1] > 256);
+    int width  = downsize ? srcDim[0] / 2 : srcDim[0];
+    int height = downsize ? srcDim[1] / 2 : srcDim[1];
+    
+    // Make sure dimensions align with the local size used in the Compute Shader
+    constexpr int localSize = 8;
+    width = _MakeMultipleOf(width, localSize);
+    height = _MakeMultipleOf(height, localSize);
 
     // Get texture object from lighting shader that this
     // computation is supposed to populate
@@ -250,7 +264,7 @@ HdSt_DomeLightComputationGPU::Execute(
     }
 
     // Queue compute work
-    computeCmds->Dispatch(width / 32, height / 32);
+    computeCmds->Dispatch(width / localSize, height / localSize);
 
     computeCmds->PopDebugGroup();
 

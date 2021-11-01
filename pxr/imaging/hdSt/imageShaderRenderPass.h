@@ -60,13 +60,14 @@ public:
     HDST_API
     virtual ~HdSt_ImageShaderRenderPass();
 
+    // Set the vertex BAR and geometric shader for the triangle.
+    // This function should be called before the Execute task phase.
+    HDST_API
+    void SetupFullscreenTriangleDrawItem();
 protected:
-    virtual void _Prepare(TfTokenVector const &renderTags) override;
 
-    virtual void _Execute(HdRenderPassStateSharedPtr const &renderPassState,
-                          TfTokenVector const &renderTags) override;
-
-    virtual void _MarkCollectionDirty() override;
+    void _Execute(HdRenderPassStateSharedPtr const &renderPassState,
+                  TfTokenVector const &renderTags) override;
 
 private:
     // Setup a BAR for a single triangle

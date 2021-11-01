@@ -17,7 +17,7 @@ pxr_library(tf
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
-        ${PYTHON_INCLUDE_DIR}
+        ${PYTHON_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIRS}
 
@@ -40,6 +40,7 @@ pxr_library(tf
         error
         errorMark
         errorTransport
+        exception
         expiryNotifier
         fastCompression
         fileUtils
@@ -191,6 +192,7 @@ pxr_library(tf
         wrapEnum.cpp
         wrapEnvSetting.cpp
         wrapError.cpp
+        wrapException.cpp
         wrapFileUtils.cpp
         wrapFunction.cpp
         wrapMallocTag.cpp
@@ -335,6 +337,7 @@ pxr_build_test(testTf
         testenv/enum.cpp
         testenv/error.cpp
         testenv/envSetting.cpp
+        testenv/exception.cpp
         testenv/fastCompression.cpp
         testenv/fileUtils.cpp
         testenv/functionRef.cpp
@@ -483,6 +486,10 @@ pxr_register_test(TfEnvSetting
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfEnvSetting"
     STDERR_REDIRECT debugTfEnvSettingStderr.txt
     DIFF_COMPARE debugTfEnvSettingStderr.txt
+)
+pxr_register_test(TfException
+    ENV TF_FATAL_THROW=0
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfException"
 )
 pxr_register_test(TfFileUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfFileUtils"

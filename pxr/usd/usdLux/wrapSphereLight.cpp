@@ -78,7 +78,7 @@ void wrapUsdLuxSphereLight()
 {
     typedef UsdLuxSphereLight This;
 
-    class_<This, bases<UsdLuxLight> >
+    class_<This, bases<UsdLuxBoundableLightBase> >
         cls("SphereLight");
 
     cls

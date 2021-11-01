@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -113,10 +114,15 @@ HdStCommandBuffer::ExecuteDraw(
 }
 
 void
-HdStCommandBuffer::SwapDrawItems(std::vector<HdStDrawItem const*>* items,
-                                 unsigned currentDrawBatchesVersion)
+HdStCommandBuffer::SetDrawItems(
+    HdDrawItemConstPtrVectorSharedPtr const &drawItems,
+    unsigned currentDrawBatchesVersion)
 {
-    _drawItems.swap(*items);
+    if (drawItems == _drawItems &&
+        currentDrawBatchesVersion == _drawBatchesVersion) {
+        return;
+    }
+    _drawItems = drawItems;
     _RebuildDrawBatches();
     _drawBatchesVersion = currentDrawBatchesVersion;
 }
@@ -196,7 +202,7 @@ HdStCommandBuffer::_RebuildDrawBatches()
 
     _drawBatches.clear();
     _drawItemInstances.clear();
-    _drawItemInstances.reserve(_drawItems.size());
+    _drawItemInstances.reserve(_drawItems->size());
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->rebuildBatches);
 
@@ -225,12 +231,17 @@ HdStCommandBuffer::_RebuildDrawBatches()
         std::unordered_map<size_t, HdSt_DrawBatchSharedPtrVector>;
     _DrawBatchMap batchMap;
 
-    for (size_t i = 0; i < _drawItems.size(); i++) {
-        HdStDrawItem const * drawItem = _drawItems[i];
+    // Downcast the HdDrawItem entries to HdStDrawItems:
+    std::vector<HdStDrawItem const*>* stDrawItemsPtr =
+        reinterpret_cast< std::vector<HdStDrawItem const*>* >(_drawItems.get());
+    auto const &drawItems = *stDrawItemsPtr;
+
+    for (size_t i = 0; i < drawItems.size(); i++) {
+        HdStDrawItem const * drawItem = drawItems[i];
 
         if (!TF_VERIFY(drawItem->GetGeometricShader(), "%s",
                        drawItem->GetRprimID().GetText()) ||
-            !TF_VERIFY(drawItem->GetMaterialShader(), "%s",
+            !TF_VERIFY(drawItem->GetMaterialNetworkShader(), "%s",
                        drawItem->GetRprimID().GetText())) {
             continue;
         }
@@ -250,7 +261,8 @@ HdStCommandBuffer::_RebuildDrawBatches()
             // for the hash which does not vary over time.
             // 
             boost::hash_combine(
-                key, drawItem->GetMaterialShader()->ComputeTextureSourceHash());
+                key, drawItem->GetMaterialNetworkShader()->
+                                        ComputeTextureSourceHash());
         }
 
         // Do a quick check to see if the draw item can be batched with the
@@ -291,7 +303,7 @@ HdStCommandBuffer::_RebuildDrawBatches()
 
     TF_DEBUG(HDST_DRAW_BATCH).Msg(
         "   %lu draw batches created for %lu draw items\n", _drawBatches.size(),
-        _drawItems.size());
+        drawItems.size());
 }
 
 void
@@ -353,7 +365,7 @@ HdStCommandBuffer::FrustumCull(GfMatrix4d const &viewProjMatrix)
 
     const bool mtCullingDisabled = 
         TfDebug::IsEnabled(HDST_DISABLE_MULTITHREADED_CULLING) || 
-        _drawItems.size() < 10000;
+        _drawItems->size() < 10000;
 
     struct _Worker {
         static

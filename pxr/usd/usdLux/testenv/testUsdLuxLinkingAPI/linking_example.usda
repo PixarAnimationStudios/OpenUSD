@@ -79,7 +79,7 @@ def Xform "Lights"
 
         def SphereLight "filter_exclude_a"
         {
-            rel filters = </Lights/FilterLinking/filter>
+            rel light:filters = </Lights/FilterLinking/filter>
         }
 
         def LightFilter "filter"

@@ -48,8 +48,7 @@ using HdStSamplerObjectSharedPtr =
 
 /// \class HdStSamplerObject
 ///
-/// A base class encapsulating a GPU sampler object and, optionally, a
-/// texture sampler handle (for bindless textures).
+/// A base class encapsulating a GPU sampler object.
 ///
 /// The subclasses of HdStSamplerObject mirror the subclasses of
 /// HdStTextureObject with the intention that they will be used in
@@ -86,7 +85,6 @@ public:
     HdStUvSamplerObject(
         HdStUvTextureObject const &uvTexture,
         HdSamplerParameters const &samplerParameters,
-        bool createBindlessHandle,
         HdSt_SamplerObjectRegistry * samplerObjectRegistry);
 
     HDST_API 
@@ -98,18 +96,8 @@ public:
         return _sampler;
     }
 
-    /// The GL sampler texture handle for bindless textures (as returned by
-    /// glGetTextureSamplerHandleARB).
-    ///
-    /// Only available when requested.
-    ///
-    uint64_t GetGLTextureSamplerHandle() const {
-        return _glTextureSamplerHandle;
-    }
-
 private:
     HgiSamplerHandle _sampler;
-    const uint64_t _glTextureSamplerHandle;
 };
 
 /// \class HdStFieldSamplerObject
@@ -121,7 +109,6 @@ public:
     HdStFieldSamplerObject(
         HdStFieldTextureObject const &uvTexture,
         HdSamplerParameters const &samplerParameters,
-        bool createBindlessHandle,
         HdSt_SamplerObjectRegistry * samplerObjectRegistry);
 
     ~HdStFieldSamplerObject() override;
@@ -132,24 +119,14 @@ public:
         return _sampler;
     }
 
-    /// The GL sampler texture handle for bindless textures (as returned by
-    /// glGetTextureSamplerHandleARB).
-    ///
-    /// Only available when requested.
-    ///
-    uint64_t GetGLTextureSamplerHandle() const {
-        return _glTextureSamplerHandle;
-    }
-
 private:
     HgiSamplerHandle _sampler;
-    const uint64_t _glTextureSamplerHandle;
 };
 
 /// \class HdStPtexSamplerObject
 ///
-/// Ptex doesn't bind samplers, so this class is just holding the
-/// texture handles for bindless textures.
+/// Ptex doesn't bind samplers, so this class is just holding a
+/// sampler to resolve handles for bindless textures.
 ///
 class HdStPtexSamplerObject final : public HdStSamplerObject {
 public:
@@ -157,7 +134,6 @@ public:
         HdStPtexTextureObject const &ptexTexture,
         // samplerParameters are ignored by ptex
         HdSamplerParameters const &samplerParameters,
-        bool createBindlessHandle,
         HdSt_SamplerObjectRegistry * samplerObjectRegistry);
 
     ~HdStPtexSamplerObject() override;
@@ -168,26 +144,8 @@ public:
         return _texelsSampler;
     }
 
-    /// The GL texture handle for bindless textures (as returned by
-    /// glGetTextureHandleARB). This is for texels.
-    ///
-    /// Only available when requested.
-    ///
-    uint64_t GetTexelsGLTextureHandle() const {
-        return _texelsGLTextureHandle;
-    }
-
-    /// Similar to GetGLTexelsTextureHandle but for layout.
-    ///
-    uint64_t GetLayoutGLTextureHandle() const {
-        return _layoutGLTextureHandle;
-    }
-
 private:
     HgiSamplerHandle _texelsSampler;
-
-    const uint64_t _texelsGLTextureHandle;
-    const uint64_t _layoutGLTextureHandle;
 };
 
 /// \class HdStUdimSamplerObject
@@ -201,7 +159,6 @@ public:
         HdStUdimTextureObject const &ptexTexture,
         // samplerParameters are ignored by udim (at least for now)
         HdSamplerParameters const &samplerParameters,
-        bool createBindlessHandle,
         HdSt_SamplerObjectRegistry * samplerObjectRegistry);
 
     ~HdStUdimSamplerObject() override;
@@ -212,26 +169,8 @@ public:
         return _texelsSampler;
     }
 
-    /// The GL texture handle for bindless textures (as returned by
-    /// glGetTextureHandleARB). This is for texels.
-    ///
-    /// Only available when requested.
-    ///
-    uint64_t GetTexelsGLTextureHandle() const {
-        return _texelsGLTextureHandle;
-    }
-
-    /// Similar to GetGLTexelsTextureHandle but for layout.
-    ///
-    uint64_t GetLayoutGLTextureHandle() const {
-        return _layoutGLTextureHandle;
-    }
-
 private:
     HgiSamplerHandle _texelsSampler;
-
-    const uint64_t _texelsGLTextureHandle;
-    const uint64_t _layoutGLTextureHandle;
 };
 
 template<HdTextureType textureType>

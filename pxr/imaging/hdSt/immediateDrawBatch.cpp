@@ -339,9 +339,9 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         // shader buffer
         //
         HdBufferArrayRangeSharedPtr const & shaderBar_ =
-            !program.GetSurfaceShader()
+            !program.GetMaterialNetworkShader()
                 ? HdStBufferArrayRangeSharedPtr()
-                : program.GetSurfaceShader()->GetShaderData();
+                : program.GetMaterialNetworkShader()->GetShaderData();
         HdStBufferArrayRangeSharedPtr shaderBar =
             std::static_pointer_cast<HdStBufferArrayRange> (shaderBar_);
 
@@ -359,8 +359,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         //
         // shader textures
         //
-        if (program.GetSurfaceShader()) {
-            program.GetSurfaceShader()->BindResources(
+        if (program.GetMaterialNetworkShader()) {
+            program.GetMaterialNetworkShader()->BindResources(
                 programId, binder, *renderPassState);
         }
 
@@ -475,8 +475,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
                 instanceCount);
         }
 
-        if (program.GetSurfaceShader()) {
-            program.GetSurfaceShader()->UnbindResources(
+        if (program.GetMaterialNetworkShader()) {
+            program.GetMaterialNetworkShader()->UnbindResources(
                 programId, binder, *renderPassState);
         }
 

@@ -319,6 +319,11 @@ class Launcher(object):
         from pxr import Work
         Work.SetConcurrencyLimitArgument(arg_parse_result.numThreads)
 
+        # XXX Override HdPrman's defaults using the env var.  In the
+        # future we expect there may be more formal ways to represent
+        # per-app settings for particular Hydra plugins.
+        os.environ.setdefault('HD_PRMAN_MAX_SAMPLES', '1024')
+
         if arg_parse_result.clearSettings:
             AppController.clearSettings()
 

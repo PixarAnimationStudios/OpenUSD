@@ -131,13 +131,20 @@ PXR_NAMESPACE_OPEN_SCOPE
     (wire)                                      \
     (wireOnSurf)
 
+#define HD_CULLSTYLE_TOKENS \
+    (dontCare) \
+    (nothing) \
+    (back) \
+    (front) \
+    (backUnlessDoubleSided) \
+    (frontUnlessDoubleSided)
+
 #define HD_PERF_TOKENS                          \
     (adjacencyBufSize)                          \
     (basisCurvesTopology)                       \
     (bufferSourcesResolved)                     \
-    (bufferArrayRangeMigrated)                    \
+    (bufferArrayRangeMigrated)                  \
     (bufferArrayRangeContainerResized)          \
-    (collectionsRefreshed)                      \
     (computationsCommited)                      \
     (drawBatches)                               \
     (drawCalls)                                 \
@@ -239,6 +246,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (drawTarget)                                \
     (material)                                  \
     (coordSys)                                  \
+    (instancer)                                 \
+    (instance)                                  \
     /* Sprims Lights */                         \
     (simpleLight)                               \
     (cylinderLight)                             \
@@ -255,6 +264,12 @@ PXR_NAMESPACE_OPEN_SCOPE
                                                 \
     /* Bprims */                                \
     (renderBuffer)
+
+HD_API
+bool HdPrimTypeIsGprim(TfToken const& primType);
+
+HD_API
+bool HdPrimTypeIsLight(TfToken const& primType);
 
 #define HD_PRIMVAR_ROLE_TOKENS                  \
     ((none, ""))                                \
@@ -357,9 +372,13 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (texture)                                         \
     (shaderFile)
 
+#define HD_SCENE_INDEX_EMULATION_TOKENS               \
+    (sceneDelegate)                                   \
+
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdInstancerTokens, HD_API, HD_INSTANCER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdReprTokens, HD_API, HD_REPR_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdCullStyleTokens, HD_API, HD_CULLSTYLE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HD_API, HD_PERF_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdShaderTokens, HD_API, HD_SHADER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialTagTokens, HD_API, HD_MATERIALTAG_TOKENS);
@@ -373,6 +392,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_API, HD_PRIMVAR_ROLE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdAovTokens, HD_API, HD_AOV_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_API, HD_RENDER_SETTINGS_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdResourceTypeTokens, HD_API, HD_RESOURCE_TYPE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdSceneIndexEmulationTokens, HD_API, 
+                         HD_SCENE_INDEX_EMULATION_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

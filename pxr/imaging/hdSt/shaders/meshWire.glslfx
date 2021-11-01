@@ -28,49 +28,6 @@
 --- #import $TOOLS/hdSt/shaders/meshWire.glslfx
 
 --- --------------------------------------------------------------------------
--- glsl MeshWire.Geometry.NoEdge
-
-void
-ProcessBarycentricCoordTriangle(int index)
-{
-    // do nothing.
-}
-
-void
-ProcessBarycentricCoordQuad(int index)
-{
-    // do nothing.
-}
-
---- --------------------------------------------------------------------------
--- glsl MeshWire.Geometry.Edge
-
-out EdgeData
-{
-    noperspective out vec3 barycentricCoord;
-} outEdgeData;
-
-void ProcessBarycentricCoordTriangle(int index)
-{
-    // These correspond to built-in fragment shader barycentric coords.
-    const vec3 barycentricCoords[3] = vec3[](
-        vec3(1,0,0), vec3(0,1,0), vec3(0,0,1)
-    );
-    outEdgeData.barycentricCoord = barycentricCoords[index];
-}
-
-void ProcessBarycentricCoordQuad(int index)
-{
-    // These correspond to built-in fragment shader barycentric coords
-    // except reversed for the second triangle in the quad. Each quad is
-    // split into two triangles with indices (3,0,2) and (1,2,0).
-    const vec3 barycentricCoords[4] = vec3[](
-        vec3(0,0,1), vec3(1,0,0), vec3(0,1,0), vec3(1,0,0)
-    );
-    outEdgeData.barycentricCoord = barycentricCoords[index];
-}
-
---- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.EdgeMaskTriangle
 
 vec3 GetPrimitiveEdgeMask()
@@ -138,18 +95,14 @@ vec3 GetPrimitiveEdgeMask()
 --- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.EdgeCommon
 
-in EdgeData
-{
-    // Could be vec2 but vec3 matches built-in barycentric coord
-    noperspective vec3 barycentricCoord;
-} inEdgeData;
+vec3 GetBarycentricCoord(); // codeGen
 
 // Returns the distance of the current fragment (in viewport pixel units) from
 // the nearest edge.
 float GetMinEdgeDistance()
 {
     // Hide triangle edges by adding edge mask.
-    vec3 param = inEdgeData.barycentricCoord + GetPrimitiveEdgeMask();
+    vec3 param = GetBarycentricCoord() + GetPrimitiveEdgeMask();
     vec3 edgeDistance = max(vec3(0.0), param / fwidth(param));
     return min(edgeDistance.x,
                min(edgeDistance.y,
@@ -166,14 +119,50 @@ float GetEdgeOpacity() {
 }
 
 --- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeParam
+
+vec4 GetPatchCoord(int localIndex); // codeGen
+
+vec3 GetEdgeParamTriangle()
+{
+    // Expand barycentric coordinates
+    vec2 param = GetPatchCoord(0).xy;
+    vec3 barycentric = vec3(param.x, param.y, 1 - param.x - param.y);
+
+    // Match triangle edge order
+    return barycentric.yzx;
+}
+
+vec3 GetEdgeDistanceTriangle()
+{
+    vec3 param = GetEdgeParamTriangle();
+    return max(vec3(0.0), param / fwidth(param));
+}
+
+vec4 GetEdgeParamQuad()
+{
+    // Expand coordinates to opposite corners of quad
+    vec2 leftBottom = GetPatchCoord(0).xy;
+    vec2 rightTop = vec2(1.0) - leftBottom;
+
+    // Match quad edge order
+    return vec4(leftBottom.y, rightTop.x, rightTop.y, leftBottom.x);
+}
+
+vec4 GetEdgeDistanceQuad()
+{
+    vec4 param = GetEdgeParamQuad();
+    return max(vec4(0.0), param / fwidth(param));
+}
+
+--- --------------------------------------------------------------------------
 -- glsl MeshPatchWire.Fragment.PatchEdgeTriangle
 
 // Override for subdivided faces to make the boundary of the face stand out.
-float GetEdgeOpacity(vec2 patchCoord)
+float GetEdgeOpacityForPatch()
 {
     // Distance in pixels from triangle patch edges.
-    vec3 param = vec3(patchCoord.x, patchCoord.y, 1-patchCoord.x-patchCoord.y);
-    vec3 patchEdgeDistance = max(vec3(0.0), param / fwidth(param));
+    vec3 patchEdgeDistance = GetEdgeDistanceTriangle();
 
     const float patchEdgeMinDistance =
         min(patchEdgeDistance.x, min(patchEdgeDistance.y, patchEdgeDistance.z));
@@ -191,13 +180,10 @@ float GetEdgeOpacity(vec2 patchCoord)
 -- glsl MeshPatchWire.Fragment.PatchEdgeQuad
 
 // Override for subdivided faces to make the boundary of the face stand out.
-float GetEdgeOpacity(vec2 patchCoord)
+float GetEdgeOpacityForPatch()
 {
     // Distance in pixels from quad patch edges.
-    vec2 leftBottom = patchCoord;
-    vec2 rightTop = vec2(1) - leftBottom;
-    vec4 param = vec4(leftBottom.y, rightTop.x, rightTop.y, leftBottom.x);
-    vec4 patchEdgeDistance = max(vec4(0.0), param / fwidth(param));
+    vec4 patchEdgeDistance = GetEdgeDistanceQuad();
 
     // Hide sub-patch internal edges introduced by quadrangulation
     if (GetEdgeFlag() != 0) patchEdgeDistance.yz += vec2(2.0);
@@ -282,7 +268,7 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
-    float p = GetEdgeOpacity(patchCoord.xy);
+    float p = GetEdgeOpacityForPatch();
     
     vec4 wireColor = GetWireframeColor();
 

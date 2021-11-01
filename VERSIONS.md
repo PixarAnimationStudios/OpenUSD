@@ -14,8 +14,8 @@ Our test machines have the following software versions installed
 
 | Software      | Linux                | macOS                        | Windows                        |
 | ------------- | -------------------- | ---------------------------- | ------------------------------ |
-| OS            | CentOS Linux 7       | 10.14.6                      | Windows 10                     |
-| C++ Compiler  | gcc 6.3.1            | Apple LLVM 10.0.0 (Xcode 10.1) | MSVC 14.0 (Visual Studio 2015) |
+| OS            | CentOS Linux 7       | 10.15.7                      | Windows 10                     |
+| C++ Compiler  | gcc 6.3.1            | Apple clang 11.0.3 (Xcode 11.7) | MSVC 14.0 (Visual Studio 2015) |
 | CMake         | 3.14.6               | 3.16.5                       | 3.16.5                         |
 | Python        | 2.7.16, 3.6.8        | 2.7.10, 3.7.7                | 2.7.12, 3.7.4, 3.8.10          |
 | Boost         | 1.66.0, 1.70.0       | 1.70.0                       | 1.70.0                         |

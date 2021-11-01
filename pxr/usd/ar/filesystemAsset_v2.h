@@ -32,6 +32,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/timestamp.h"
 
 #include <cstdio>
 #include <memory>
@@ -52,6 +53,12 @@ public:
     /// Returns a null pointer if the file could not be opened.
     AR_API
     static std::shared_ptr<ArFilesystemAsset> Open(
+        const ArResolvedPath& resolvedPath);
+
+    /// Returns an ArTimestamp holding the mtime of the file at \p resolvedPath.
+    /// Returns an invalid ArTimestamp if the mtime could not be retrieved.
+    AR_API
+    static ArTimestamp GetModificationTimestamp(
         const ArResolvedPath& resolvedPath);
 
     /// Constructs an ArFilesystemAsset for the given \p file. 

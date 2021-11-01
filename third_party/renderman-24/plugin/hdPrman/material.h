@@ -71,11 +71,16 @@ public:
     /// Set material filtering chain.
     static void SetFilterChain(MatfiltFilterChain const& chain);
 
+    /// Return the material network after filtering.
+    HdMaterialNetwork2 const& GetMaterialNetwork() const;
+
 private:
     void _ResetMaterial(HdPrman_Context *context);
 
     riley::MaterialId _materialId;
     riley::DisplacementId _displacementId;
+
+    HdMaterialNetwork2 _materialNetwork;
 };
 
 /// Helper function for converting an HdMaterialNetwork into Riley shading

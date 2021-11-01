@@ -37,6 +37,8 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
+#include "pxr/base/trace/trace.h"
+
 #include <set>
 #include <string>
 
@@ -66,7 +68,7 @@ HioImageRegistry::HioImageRegistry() :
 HioImageSharedPtr
 HioImageRegistry::_ConstructImage(std::string const & filename)
 {
-    static const HioImageSharedPtr NULL_IMAGE;
+    TRACE_FUNCTION();
 
     // Lookup the plug-in type name based on the filename.
     const TfToken fileExtension(
@@ -80,7 +82,7 @@ HioImageRegistry::_ConstructImage(std::string const & filename)
                 "[PluginLoad] Unknown image type '%s' for file '%s'\n",
                 fileExtension.GetText(),
                 filename.c_str());
-        return NULL_IMAGE;
+        return nullptr;
     }
 
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
@@ -89,7 +91,7 @@ HioImageRegistry::_ConstructImage(std::string const & filename)
         TF_CODING_ERROR("[PluginLoad] PlugPlugin could not be loaded for "
                 "TfType '%s'\n",
                 pluginType.GetTypeName().c_str());
-        return NULL_IMAGE;
+        return nullptr;
     }
 
     HioImageFactoryBase* const factory =
@@ -101,7 +103,7 @@ HioImageRegistry::_ConstructImage(std::string const & filename)
                 fileExtension.GetText(),
                 filename.c_str());
 
-        return NULL_IMAGE;
+        return nullptr;
     }
 
     HioImageSharedPtr const instance = factory->New();
@@ -111,7 +113,7 @@ HioImageRegistry::_ConstructImage(std::string const & filename)
                 pluginType.GetTypeName().c_str(),
                 fileExtension.GetText(),
                 filename.c_str());
-        return NULL_IMAGE;
+        return nullptr;
     }
 
     TF_DEBUG(HIO_DEBUG_TEXTURE_IMAGE_PLUGINS).Msg(

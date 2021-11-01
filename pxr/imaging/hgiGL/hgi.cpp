@@ -77,6 +77,8 @@ HgiGL::HgiGL()
 
     // Create "primary device" (note there is only one for GL)
     _device = new HgiGLDevice();
+
+    _capabilities.reset(new HgiGLCapabilities());
 }
 
 HgiGL::~HgiGL()
@@ -241,6 +243,12 @@ HgiGL::DestroyComputePipeline(HgiComputePipelineHandle* pipeHandle)
 TfToken const&
 HgiGL::GetAPIName() const {
     return HgiTokens->OpenGL;
+}
+
+HgiGLCapabilities const*
+HgiGL::GetCapabilities() const
+{
+    return _capabilities.get();
 }
 
 void

@@ -105,15 +105,28 @@ Some of these metadata tags are:
 ## Sdr metadata that is used to determine SdfValueTypeName
 
 Some metadata is used to drive the conversion of an SdfValueTypeName.
-Metadata that is used for SdfValueTypeName conversion is NOT authored by shader
-writers, and it should instead be injected into an SdrShaderProperty by a parser
-plugin writer.
+Metadata that is used for SdfValueTypeName conversion is authored either by 
+shader writers (SdrUsdDefinitionName), or it should be injected into an 
+SdrShaderProperty by a parser plugin writer (IsAssetIdentifier).
 This includes:
 - SdrPropertyMetadata->IsAssetIdentifier - This metadata tag is injected by a
-  parser if the parser determines that the property is an asset.  The presence
+  parser if the parser determines that the property is an asset. The presence
   of this metadata tag then guides the type mapping to choose
   SdfValueTypeNames->Asset
-
+- SdrPropertyMetadata->SdrUsdDefinitionType - This metadata, explicitly 
+  authored in a shader definition, specifies the SdfValueTypeName as string. 
+  Note that this metadata takes precendence in determining the SdfValueTypeName 
+  for the SdrShaderProperty. Authors of shader definition will have to provide 
+  explicit TfType value aliases (Refer SdfValueTypeName::GetAliasesAsTokens()) 
+  associated with the SdfValueTypeName, which generally match the type
+  declarations found in a usda file.
+  Example "bool" for SdfValueTypeNames->Bool, "bool[]" for
+  SdfValueTypeNames->BoolArray, etc. This is specifically important in
+  determining types which are represented as an "int" in the sdr type system but
+  should be represented as SdfValueTypeNames->Bool in the equivalent Sdf/USD
+  representation. When sdrUsdDefinitionType is specified, Sdr will do its best
+  to convert the default value provided in the shader definition into the
+  requested SdfValueType.
 
 ## Some examples illustrating the treatment of property types
 

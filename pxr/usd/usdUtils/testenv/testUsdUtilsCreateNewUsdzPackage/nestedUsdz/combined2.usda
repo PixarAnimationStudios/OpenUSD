@@ -1,5 +1,7 @@
 #usda 1.0
 (
+    defaultPrim = "World"
+    metersPerUnit = .01
     upAxis = "Y"
 )
 

@@ -13,15 +13,17 @@ pxr_library(usdLux
 
     PUBLIC_CLASSES
         blackbody
+        boundableLightBase
         cylinderLight
         diskLight
         distantLight
         domeLight
         geometryLight
-        light
+        lightAPI
         lightFilter
-        lightPortal
         listAPI
+        meshLightAPI
+        nonboundableLightBase
         pluginLight
         pluginLightFilter
         portalLight
@@ -30,6 +32,7 @@ pxr_library(usdLux
         shapingAPI
         sphereLight
         tokens
+        volumeLightAPI
 
     PUBLIC_HEADERS
         api.h
@@ -43,15 +46,17 @@ pxr_library(usdLux
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapBoundableLightBase.cpp
         wrapCylinderLight.cpp
         wrapDiskLight.cpp
         wrapDistantLight.cpp
         wrapDomeLight.cpp
         wrapGeometryLight.cpp
-        wrapLight.cpp
+        wrapLightAPI.cpp
         wrapLightFilter.cpp
-        wrapLightPortal.cpp
         wrapListAPI.cpp
+        wrapMeshLightAPI.cpp
+        wrapNonboundableLightBase.cpp
         wrapPluginLight.cpp
         wrapPluginLightFilter.cpp
         wrapPortalLight.cpp
@@ -60,6 +65,7 @@ pxr_library(usdLux
         wrapShapingAPI.cpp
         wrapSphereLight.cpp
         wrapTokens.cpp
+        wrapVolumeLightAPI.cpp
 
     PYMODULE_FILES 
         __init__.py

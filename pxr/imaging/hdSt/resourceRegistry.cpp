@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/stagingBuffer.h"
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
@@ -112,6 +113,7 @@ HdStResourceRegistry::HdStResourceRegistry(Hgi * const hgi)
     , _singleAggregationStrategy(
         std::make_unique<HdStVBOSimpleMemoryManager>(this))
     , _textureHandleRegistry(std::make_unique<HdSt_TextureHandleRegistry>(this))
+    , _stagingBuffer(std::make_unique<HdStStagingBuffer>(this))
 {
 }
 
@@ -684,6 +686,12 @@ HdStResourceRegistry::GetGlobalComputeCmds()
     return _computeCmds.get();
 }
 
+HdStStagingBuffer*
+HdStResourceRegistry::GetStagingBuffer()
+{
+    return _stagingBuffer.get();
+}
+
 void
 HdStResourceRegistry::SubmitBlitWork(HgiSubmitWaitType wait)
 {
@@ -730,6 +738,10 @@ HdStResourceRegistry::_Commit()
     // handles (for bindless textures).
     _CommitTextures();
 
+    // Staging buffer size uses an atomic in anticipation of the
+    // Resolve loop being multithreaded.
+    std::atomic_size_t stagingBufferSize { 0 };
+
     // TODO: requests should be sorted by resource, and range.
     {
         HD_TRACE_SCOPE("Resolve");
@@ -767,6 +779,15 @@ HdStResourceRegistry::_Commit()
                                     req.range->Resize(
                                         source->GetNumElements());
                                 }
+                            }
+
+                            // Calculate the size of the staging buffer.
+                            if (req.range && req.range->RequiresStaging()) {
+                                size_t srcSize =
+                                    source->GetNumElements() *
+                                    HdDataSizeOfTupleType(
+                                                source->GetTupleType());
+                                stagingBufferSize += srcSize;
                             }
                         }
                     }
@@ -834,6 +855,7 @@ HdStResourceRegistry::_Commit()
         HD_TRACE_SCOPE("Copy");
         // 4. copy phase:
         //
+        _stagingBuffer->Resize(stagingBufferSize);
 
         for (_PendingSource &pendingSource : _pendingSources) {
             HdBufferArrayRangeSharedPtr &dstRange = pendingSource.range;
@@ -872,6 +894,8 @@ HdStResourceRegistry::_Commit()
         _uniformUboAggregationStrategy->Flush();
         _uniformSsboAggregationStrategy->Flush();
         _singleAggregationStrategy->Flush();
+
+        _stagingBuffer->Flush();
 
         // Make sure the writes are visible to computations that follow
         if (_blitCmds) {
@@ -1179,12 +1203,11 @@ HdStResourceRegistry::AllocateTextureHandle(
         const HdTextureType textureType,
         HdSamplerParameters const &samplerParams,
         const size_t memoryRequest,
-        const bool createBindlessHandle,
         HdStShaderCodePtr const &shaderCode)
 {
     return _textureHandleRegistry->AllocateTextureHandle(
         textureId, textureType,
-        samplerParams, memoryRequest, createBindlessHandle,
+        samplerParams, memoryRequest,
         shaderCode);
 }
 

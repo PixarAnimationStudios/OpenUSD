@@ -140,9 +140,7 @@ vec4 IntToVec4(int id)
 // Fwd declare necessary methods to determine the subprim id of a fragment.
 int GetElementID(); // generated via codeGen
 int GetPrimitiveEdgeId(); // defined in edgeId.glslfx, or generated via codeGen
-bool IsFragmentOnEdge(); // defined in edgeId.glslfx, or generated via codeGen
 int GetPointId(); // defined in pointId.glslfx
-bool IsFragmentOnPoint(); // defined in pointId.glslfx
 
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
@@ -155,22 +153,9 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     int instanceId = GetDrawingCoord().instanceIndex[0];
     instanceIdOut = IntToVec4(instanceId);
 
-    int elementId = GetElementID();
-    elementIdOut = IntToVec4(elementId);
-
-    // XXX: This block should be under an #ifdef
-    int edgeId = -1;
-    if (IsFragmentOnEdge()) {
-        edgeId = GetPrimitiveEdgeId();
-    }
-    edgeIdOut = IntToVec4(edgeId);
-
-    // XXX: This block should be under an #ifdef
-    int pointId = -1;
-    if (IsFragmentOnPoint()) {
-        pointId = GetPointId();
-    }
-    pointIdOut = IntToVec4(pointId);
+    elementIdOut = IntToVec4(GetElementID());
+    edgeIdOut = IntToVec4(GetPrimitiveEdgeId());
+    pointIdOut = IntToVec4(GetPointId());
     
     neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
 }

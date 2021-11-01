@@ -11,6 +11,7 @@ pxr_library(hgi
         attachmentDesc
         blitCmds
         buffer
+        capabilities
         cmds
         computeCmds
         computePipeline

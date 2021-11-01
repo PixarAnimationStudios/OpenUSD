@@ -124,7 +124,7 @@ HgiGLShaderGenerator::_WriteInOuts(
         "gl_FragDepth"
     };
     const static std::map<std::string, std::string> takenInParams {
-        { HgiShaderKeywordTokens->hdPosition, "gl_Postiion"},
+        { HgiShaderKeywordTokens->hdPosition, "gl_Position"},
         { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"}
     };
 

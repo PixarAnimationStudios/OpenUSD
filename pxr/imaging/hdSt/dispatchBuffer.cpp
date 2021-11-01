@@ -60,6 +60,11 @@ public:
         return false;
     }
 
+    /// Dispatch buffer array range does not require staging
+    bool RequiresStaging() const override {
+        return false;
+    }
+
     /// Resize memory area for this range. Returns true if it causes container
     /// buffer reallocation.
     bool Resize(int numElements) override {
@@ -78,7 +83,7 @@ public:
         return VtValue();
     }
 
-    /// Returns the offset at which this range begins in the underlying buffer 
+    /// Returns the offset at which this range begins in the underlying buffer
     /// array in terms of elements.
     int GetElementOffset() const override {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
@@ -105,7 +110,7 @@ public:
     }
 
     /// Returns the version of the buffer array.
-    virtual size_t GetVersion() const {
+    size_t GetVersion() const override {
         TF_CODING_ERROR("Hd_DispatchBufferArrayRange doesn't support this operation");
         return 0;
     }

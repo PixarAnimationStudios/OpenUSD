@@ -41,6 +41,7 @@
 #include "pxr/base/js/value.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/scoped.h"
 #include "pxr/base/tf/staticData.h"
@@ -699,20 +700,32 @@ public:
     }
 
     ArResolverContext _CreateDefaultContextForAsset(
-        const std::string& filePath) const final
+        const std::string& assetPath) const final
     {
-        const _ResolverInfo* info = nullptr;
-        ArResolver& resolver = _GetResolver(filePath, &info);
-
-        if (!info->implementsContexts) {
-            return ArResolverContext();
+        if (ArIsPackageRelativePath(assetPath)) {
+            return _CreateDefaultContextForAsset(
+                ArSplitPackageRelativePathOuter(assetPath).first);
         }
 
-        if (ArIsPackageRelativePath(filePath)) {
-            return resolver.CreateDefaultContextForAsset(
-                ArSplitPackageRelativePathOuter(filePath).first);
+        std::vector<ArResolverContext> contexts;
+
+        if (_resolver->info.implementsContexts) {
+            contexts.push_back(
+                _resolver->Get()->CreateDefaultContextForAsset(assetPath));
         }
-        return resolver.CreateDefaultContextForAsset(filePath);
+
+        for (const auto& entry : _uriResolvers) {
+            if (!entry.second->info.implementsContexts) {
+                continue;
+            }
+
+            if (ArResolver* uriResolver = entry.second->Get()) {
+                contexts.push_back(
+                    uriResolver->CreateDefaultContextForAsset(assetPath));
+            }
+        }
+
+        return ArResolverContext(contexts);
     }
 
     void _RefreshContext(const ArResolverContext& context) final
@@ -832,7 +845,7 @@ public:
         return resolver.GetAssetInfo(assetPath, resolvedPath);
     }
 
-    VtValue _GetModificationTimestamp(
+    ArTimestamp _GetModificationTimestamp(
         const std::string& path,
         const ArResolvedPath& resolvedPath) const final
     {
@@ -1542,7 +1555,7 @@ ArResolver::GetAssetInfo(
     return _GetAssetInfo(assetPath, resolvedPath);
 }
 
-VtValue
+ArTimestamp
 ArResolver::GetModificationTimestamp(
     const std::string& assetPath,
     const ArResolvedPath& resolvedPath) const
@@ -1659,12 +1672,27 @@ ArResolver::_GetCurrentContext() const
     return ArResolverContext();
 }
 
+std::string
+ArResolver::_GetExtension(
+    const std::string& assetPath) const
+{
+    return TfGetExtension(assetPath);
+}
+
 ArAssetInfo
 ArResolver::_GetAssetInfo(
     const std::string& assetPath,
     const ArResolvedPath& resolvedPath) const
 {
     return ArAssetInfo();
+}
+
+ArTimestamp
+ArResolver::_GetModificationTimestamp(
+    const std::string& assetPath,
+    const ArResolvedPath& resolvedPath) const
+{
+    return ArTimestamp();
 }
 
 bool

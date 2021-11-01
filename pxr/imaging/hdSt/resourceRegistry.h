@@ -81,6 +81,7 @@ using HgiComputePipelineSharedPtr =
 
 class HdStTextureIdentifier;
 class HdSamplerParameters;
+class HdStStagingBuffer;
 
 /// \enum HdStComputeQueue
 ///
@@ -141,8 +142,7 @@ public:
     ///
 
     /// Allocate texture handle (encapsulates texture and sampler
-    /// object, bindless texture sampler handle, memory request and
-    /// callback to shader).
+    /// object, memory request and callback to shader).
     ///
     /// The actual allocation of the associated GPU texture and
     /// sampler resources and loading of the texture file is delayed
@@ -163,9 +163,6 @@ public:
         /// associated to the texture.
         /// If all memory requests are 0, no down-sampling will happen.
         size_t memoryRequest,
-        /// Also create a GL texture sampler handle for bindless
-        /// textures.
-        bool createBindlessHandle,
         /// After the texture is committed (or after it has been
         /// changed) the given shader code can add additional buffer
         /// sources and computations using the texture metadata with
@@ -463,6 +460,10 @@ public:
     HDST_API
     void SubmitComputeWork(HgiSubmitWaitType wait = HgiSubmitWaitTypeNoWait);
 
+    /// Returns the staging buffer used when committing data to the GPU.
+    HDST_API
+    HdStStagingBuffer* GetStagingBuffer();
+
 public:
     //
     // Unit test API
@@ -570,7 +571,7 @@ private:
 
     typedef tbb::concurrent_vector<_PendingSource> _PendingSourceList;
     _PendingSourceList    _pendingSources;
-    std::atomic_size_t   _numBufferSourcesToResolve;
+    std::atomic_size_t    _numBufferSourcesToResolve;
     
     struct _PendingComputation{
         _PendingComputation(HdBufferArrayRangeSharedPtr const &range,
@@ -669,6 +670,8 @@ private:
 
     HgiBlitCmdsUniquePtr _blitCmds;
     HgiComputeCmdsUniquePtr _computeCmds;
+
+    std::unique_ptr<HdStStagingBuffer> _stagingBuffer;
 };
 
 

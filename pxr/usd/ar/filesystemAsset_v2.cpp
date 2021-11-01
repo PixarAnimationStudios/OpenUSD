@@ -42,6 +42,16 @@ ArFilesystemAsset::Open(const ArResolvedPath& resolvedPath)
     return std::shared_ptr<ArFilesystemAsset>(new ArFilesystemAsset(f));
 }
 
+ArTimestamp
+ArFilesystemAsset::GetModificationTimestamp(const ArResolvedPath& resolvedPath)
+{
+    double time;
+    if (ArchGetModificationTime(resolvedPath.GetPathString().c_str(), &time)) {
+        return ArTimestamp(time);
+    }
+    return ArTimestamp();
+}
+
 ArFilesystemAsset::ArFilesystemAsset(FILE* file) 
     : _file(file) 
 { 

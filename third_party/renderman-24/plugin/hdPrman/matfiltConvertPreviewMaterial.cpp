@@ -23,6 +23,7 @@
 //
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
 #include "hdPrman/context.h"
+#include "hdPrman/debugCodes.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/arch/library.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -45,9 +46,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     (UsdPrimvarReader_float3)
 
     // UsdPreviewSurface tokens
+    (displacement)
     (file)
+    (normal)
+    (opacityThreshold)
 
     // UsdPreviewSurface conversion to Pxr nodes
+    (PxrDisplace)
     (PxrSurface)
 
     // Usd preview shading nodes osl tokens
@@ -64,12 +69,17 @@ TF_DEFINE_PRIVATE_TOKENS(
     (diffuseGainOut)
     (diffuseColor)
     (diffuseColorOut)
+    (dispAmount)
+    (dispAmountOut)
+    (dispScalar)
+    (dispScalarOut)
     (glassIor)
     (glassIorOut)
     (glowGain)
     (glowGainOut)
     (glowColor)
     (glowColorOut)
+    (normalIn)
     (refractionGain)
     (refractionGainOut)
     (specularEdgeColor)
@@ -82,19 +92,28 @@ TF_DEFINE_PRIVATE_TOKENS(
     (specularRoughnessOut)
     (presence)
     (presenceOut)
-    (allowPresenceWithGlass)
 
     // UsdUVTexture parameters
     (st)
     (wrapS)
     (wrapT)
     (useMetadata)
+    (sourceColorSpace)
+    (sRGB)
+    (raw)
+    ((colorSpaceAuto, "auto")) 
 
     // UsdTransform2d parameters
     (in)
     (scale)
     (translation)
     (result)
+
+    // Dummy node used to express material primvar opinions
+    (PrimvarPass)
+
+    // Primvars set by the material
+    ((displacementBoundSphere, "displacementbound:sphere"))
 );
 
 void
@@ -108,6 +127,8 @@ MatfiltConvertPreviewMaterial(
     std::map<SdfPath, HdMaterialNode2> nodesToAdd;
 
     SdfPath pxrSurfacePath;
+    SdfPath pxrDisplacePath;
+    SdfPath primvarPassPath;
 
     for (auto& nodeEntry: network.nodes) {
         SdfPath const& nodePath = nodeEntry.first;
@@ -124,17 +145,62 @@ MatfiltConvertPreviewMaterial(
             // translates the params to outputs that feed a PxrSurface node.
             node.nodeTypeId = _tokens->UsdPreviewSurfaceParameters;
 
+            // Because UsdPreviewSurfaceParameters uses "normalIn" instead of
+            // UsdPreviewSurface's "normal", adjust that here.
+            {
+                auto it = node.parameters.find(_tokens->normal);
+                if (it != node.parameters.end()) {
+                    auto const value = std::move(it->second);
+                    node.parameters.erase(it);
+                    node.parameters.insert({_tokens->normalIn, 
+                        std::move(value)});
+                }
+            }
+            {
+                auto it = node.inputConnections.find(_tokens->normal);
+                if (it != node.inputConnections.end()) {
+                    auto const value = std::move(it->second);
+                    node.inputConnections.erase(it);
+                    node.inputConnections.insert({_tokens->normalIn, 
+                        std::move(value)});
+                }
+            }
+
             // Insert a PxrSurface and connect it to the above node.
             pxrSurfacePath =
                 nodePath.GetParentPath().AppendChild(
                 TfToken(nodePath.GetName() + "_PxrSurface"));
 
+            // If opacityThreshold is > 0, do not use refraction.
+            bool opacityThreshold = false;
+            bool displacement = false;
+            for (auto const& paramIt : node.parameters) {
+                if (paramIt.first == _tokens->displacement) {
+                    VtValue const& vtDisplacement = paramIt.second;
+                    if (vtDisplacement.Get<float>() != 0.0f) {
+                        displacement = true;
+                    }
+                } else if (paramIt.first == _tokens->opacityThreshold) {
+                    VtValue const& vtOpacityThreshold = paramIt.second;
+                    if (vtOpacityThreshold.Get<float>() > 0.0f) {
+                        opacityThreshold = true;
+                    }
+                }
+            }
+            if (!displacement) {
+                for (auto const& paramIt : node.inputConnections) {
+                    if (paramIt.first == _tokens->displacement) {
+                        displacement = true;
+                        break;
+                    }
+                    continue;
+                }
+            }
+
             nodesToAdd[pxrSurfacePath] = HdMaterialNode2 {
                 _tokens->PxrSurface, 
                 // parameters:
-                {
-                    {_tokens->allowPresenceWithGlass, VtValue(1)},
-                },
+                {},
                 // connections:
                 {
                     {_tokens->bumpNormal,
@@ -149,8 +215,6 @@ MatfiltConvertPreviewMaterial(
                         {{nodePath, _tokens->glowColorOut}}},
                     {_tokens->glowGain,
                         {{nodePath, _tokens->glowGainOut}}},
-                    {_tokens->refractionGain,
-                        {{nodePath, _tokens->refractionGainOut}}},
                     {_tokens->specularFaceColor,
                         {{nodePath, _tokens->specularFaceColorOut}}},
                     {_tokens->specularEdgeColor,
@@ -169,7 +233,53 @@ MatfiltConvertPreviewMaterial(
                         {{nodePath, _tokens->presenceOut}}},
                 },
             };
+            
+            if (!opacityThreshold) {
+                nodesToAdd[pxrSurfacePath].inputConnections.insert(
+                    {_tokens->refractionGain,
+                        {{nodePath, _tokens->refractionGainOut}}});
+            }
 
+            // Need additional node, PxrDisplace, for displacement
+            if (displacement) {
+                pxrDisplacePath = nodePath.GetParentPath().AppendChild(
+                    TfToken(nodePath.GetName() + "_PxrDisplace"));
+
+                nodesToAdd[pxrDisplacePath] = HdMaterialNode2 {
+                    _tokens->PxrDisplace, 
+                    // parameters:
+                    {},
+                    // connections:
+                    {
+                        {_tokens->dispAmount,
+                            {{nodePath, _tokens->dispAmountOut}}},
+                        {_tokens->dispScalar,
+                            {{nodePath, _tokens->dispScalarOut}}},
+                    },
+                };
+            }
+
+            // One additional "dummy" node to author primvar opinions on the
+            // material, to be passed to the gprim.
+            primvarPassPath = nodePath.GetParentPath().AppendChild(
+                TfToken(nodePath.GetName() + "_PrimvarPass"));
+
+            nodesToAdd[primvarPassPath] = HdMaterialNode2 {
+                _tokens->PrimvarPass, 
+                // parameters:
+                {
+                    // We wish to always set this primvar on meshes using 
+                    // UsdPreviewSurface, regardless of the material's
+                    // displacement value. The primvar should have no effect if
+                    // there is no displacement on the material, and we
+                    // currently do not have the capabilities to efficiently
+                    // resync the mesh if the value of its UsdPreviewSurface's 
+                    // displacement input changes.
+                    {_tokens->displacementBoundSphere, VtValue(1.f)}
+                },
+                // connections:
+                {},
+            };
         } else if (node.nodeTypeId == _tokens->UsdUVTexture) {
             // Update texture nodes that use non-native texture formats
             // to read them via a Renderman texture plugin.
@@ -194,11 +304,30 @@ MatfiltConvertPreviewMaterial(
                             wrapSVal.GetWithDefault(_tokens->useMetadata);
                         TfToken wrapT =
                             wrapSVal.GetWithDefault(_tokens->useMetadata);
-                        param.second =
+                            
+                        // Check for source colorspace.
+                        VtValue sourceColorSpaceVal;
+                        TfMapLookup(node.parameters, _tokens->sourceColorSpace,
+                            &sourceColorSpaceVal);
+                        // XXX: This is a workaround for Presto. If there's no
+                        // colorspace token, check if there's a colorspace
+                        // string.
+                        TfToken sourceColorSpace = 
+                            sourceColorSpaceVal.GetWithDefault(TfToken());
+                        if (sourceColorSpace.IsEmpty()) {
+                            const std::string sourceColorSpaceStr = 
+                                sourceColorSpaceVal.GetWithDefault(
+                                    _tokens->colorSpaceAuto.GetString());
+                            sourceColorSpace = TfToken(sourceColorSpaceStr);
+                        }
+                        path =
                             TfStringPrintf("rtxplugin:%s?filename=%s"
-                                           "&wrapS=%s&wrapT=%s",
+                                           "&wrapS=%s&wrapT=%s&"
+                                           "sourceColorSpace=%s",
                                            pluginName.c_str(), path.c_str(),
-                                           wrapS.GetText(), wrapT.GetText());
+                                           wrapS.GetText(), wrapT.GetText(),
+                                           sourceColorSpace.GetText());
+                        param.second = path;
                     } else if (ext == "tex") {
                         // USD Preview Materials use a texture coordinate
                         // convention where (0,0) is in the bottom-left;
@@ -206,6 +335,9 @@ MatfiltConvertPreviewMaterial(
                         // where (0,0) is in the top-left.
                         needInvertT = true;
                     }
+                    TF_DEBUG(HDPRMAN_IMAGE_ASSET_RESOLVE)
+                        .Msg("Resolved preview material asset path: %s\n",
+                             path.c_str());
                 }
             }
             if (needInvertT &&
@@ -239,10 +371,16 @@ MatfiltConvertPreviewMaterial(
 
     network.nodes.insert(nodesToAdd.begin(), nodesToAdd.end());
     if (!pxrSurfacePath.IsEmpty()) {
-        // Use PxrSurface as sole terminal.  Displacement is not supported.
         network.terminals = {
             {HdMaterialTerminalTokens->surface, {pxrSurfacePath, TfToken()}}
         };
+
+        if (!pxrDisplacePath.IsEmpty()) {
+            network.terminals.insert(
+                {HdMaterialTerminalTokens->displacement, {pxrDisplacePath, 
+                    TfToken()}}
+            );
+        }
     }
 }
 

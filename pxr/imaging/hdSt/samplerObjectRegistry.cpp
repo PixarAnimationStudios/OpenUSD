@@ -47,7 +47,6 @@ HdStSamplerObjectSharedPtr
 _MakeTypedSamplerObject(
     HdStTextureObjectSharedPtr const &texture,
     HdSamplerParameters const &samplerParameters,
-    const bool createBindlessHandle,
     HdSt_SamplerObjectRegistry * const samplerObjectRegistry)
 {
     // e.g. HdStUvTextureObject
@@ -65,7 +64,6 @@ _MakeTypedSamplerObject(
     return std::make_shared<SamplerObject>(
         *typedTexture,
         samplerParameters,
-        createBindlessHandle,
         samplerObjectRegistry);
 }
 
@@ -74,7 +72,6 @@ HdStSamplerObjectSharedPtr
 _MakeSamplerObject(
     HdStTextureObjectSharedPtr const &texture,
     HdSamplerParameters const &samplerParameters,
-    const bool createBindlessHandle,
     HdSt_SamplerObjectRegistry * const samplerObjectRegistry)
 {
     switch(texture->GetTextureType()) {
@@ -82,25 +79,21 @@ _MakeSamplerObject(
         return _MakeTypedSamplerObject<HdTextureType::Uv>(
             texture,
             samplerParameters,
-            createBindlessHandle,
             samplerObjectRegistry);
     case HdTextureType::Field:
         return _MakeTypedSamplerObject<HdTextureType::Field>(
             texture,
             samplerParameters,
-            createBindlessHandle,
             samplerObjectRegistry);
     case HdTextureType::Ptex:
         return _MakeTypedSamplerObject<HdTextureType::Ptex>(
             texture,
             samplerParameters,
-            createBindlessHandle,
             samplerObjectRegistry);
     case HdTextureType::Udim:
         return _MakeTypedSamplerObject<HdTextureType::Udim>(
             texture,
             samplerParameters,
-            createBindlessHandle,
             samplerObjectRegistry);
     }
 
@@ -111,13 +104,12 @@ _MakeSamplerObject(
 HdStSamplerObjectSharedPtr
 HdSt_SamplerObjectRegistry::AllocateSampler(
     HdStTextureObjectSharedPtr const &texture,
-    HdSamplerParameters const &samplerParameters,
-    bool const createBindlessHandle)
+    HdSamplerParameters const &samplerParameters)
 {
     TRACE_FUNCTION();
 
     HdStSamplerObjectSharedPtr const result = _MakeSamplerObject(
-        texture, samplerParameters, createBindlessHandle, this);
+        texture, samplerParameters, this);
 
     if (result) {
         // Record sampler object

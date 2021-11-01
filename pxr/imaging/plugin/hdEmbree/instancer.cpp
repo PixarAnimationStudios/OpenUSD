@@ -133,8 +133,8 @@ HdEmbreeInstancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
             GfVec4f quat;
             if (sampler.Sample(instanceIndices[i], &quat)) {
                 GfMatrix4d rotateMat(1);
-                rotateMat.SetRotate(GfRotation(GfQuaternion(
-                    quat[0], GfVec3d(quat[1], quat[2], quat[3]))));
+                rotateMat.SetRotate(GfQuatd(
+                    quat[0], quat[1], quat[2], quat[3]));
                 transforms[i] = rotateMat * transforms[i];
             }
         }

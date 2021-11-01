@@ -64,7 +64,7 @@ void wrapUsdLuxPortalLight()
 {
     typedef UsdLuxPortalLight This;
 
-    class_<This, bases<UsdLuxLight> >
+    class_<This, bases<UsdLuxBoundableLightBase> >
         cls("PortalLight");
 
     cls

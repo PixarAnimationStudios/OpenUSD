@@ -93,56 +93,9 @@ UsdPrim::IsA(const TfType& schemaType) const
 }
 
 bool
-UsdPrim::_HasAPI(
-    const TfType& schemaType, 
-    bool validateSchemaType, 
-    const TfToken &instanceName) const 
+UsdPrim::_HasSingleApplyAPI(const TfType& schemaType) const 
 {
     TRACE_FUNCTION();
-
-    static const auto apiSchemaBaseType = 
-            TfType::Find<UsdAPISchemaBase>();
-
-    const bool isMultipleApplyAPISchema = 
-        UsdSchemaRegistry::GetInstance().IsMultipleApplyAPISchema(schemaType);
-
-    // Note that this block of code is only hit in python code paths,
-    // C++ clients would hit the static_asserts defined inline in 
-    // UsdPrim::HasAPI().
-    if (validateSchemaType) {
-        if (schemaType.IsUnknown()) {
-            TF_CODING_ERROR("HasAPI: Invalid unknown schema type (%s) ",
-                            schemaType.GetTypeName().c_str());
-            return false;
-        }
-
-        if (UsdSchemaRegistry::GetInstance().IsTyped(schemaType)) {
-            TF_CODING_ERROR("HasAPI: provided schema type ( %s ) is typed.",
-                            schemaType.GetTypeName().c_str());
-            return false;
-        }
-
-        if (!UsdSchemaRegistry::GetInstance().IsAppliedAPISchema(schemaType)) {
-            TF_CODING_ERROR("HasAPI: provided schema type ( %s ) is not an "
-                "applied API schema type.", schemaType.GetTypeName().c_str());
-            return false;
-        }
-
-        if (!schemaType.IsA(apiSchemaBaseType) || 
-            schemaType == apiSchemaBaseType) {
-            TF_CODING_ERROR("HasAPI: provided schema type ( %s ) does not "
-                "derive from UsdAPISchemaBase.", 
-                schemaType.GetTypeName().c_str());
-            return false;
-        }
-
-        if (!isMultipleApplyAPISchema && !instanceName.IsEmpty()) {
-            TF_CODING_ERROR("HasAPI: single application API schemas like %s do "
-                "not contain an application instanceName ( %s ).",
-                schemaType.GetTypeName().c_str(), instanceName.GetText());
-            return false;
-        }
-    }
 
     // Get our composed set of all applied schemas.
     auto appliedSchemas = GetAppliedSchemas();
@@ -150,61 +103,91 @@ UsdPrim::_HasAPI(
         return false;
     }
 
-    auto foundMatch = [&appliedSchemas, isMultipleApplyAPISchema, &instanceName]
-            (const std::string &alias) {
-        // If instanceName is not empty, look for an exact match in the 
-        // apiSchemas list.
-        if (!instanceName.IsEmpty()) {
-            const TfToken apiName(SdfPath::JoinIdentifier(
-                    alias, instanceName.GetString()));
-            return std::find(appliedSchemas.begin(), appliedSchemas.end(), 
-                             apiName) != appliedSchemas.end();
-        } 
-        // If we're looking for a multiple-apply API schema, then we return 
-        // true if we find an applied schema name that starts with "<alias>:".
-        else if (isMultipleApplyAPISchema) {
-            return std::any_of(appliedSchemas.begin(), appliedSchemas.end(), 
-                [&alias](const TfToken &appliedSchema) {
-                    return TfStringStartsWith(appliedSchema, 
-                            alias + UsdObject::GetNamespaceDelimiter());
-                });
-        } else {
-            // If instanceName is empty and if schemaType is not a multiple 
-            // apply API schema, then we can look for an exact match.
-            return std::find(appliedSchemas.begin(), appliedSchemas.end(), 
-                             alias) != appliedSchemas.end();
-        }
-    };
+    // The compile time and runtime schema type validation of HasAPI should
+    // ensure that this schemaName won't be empty so we don't check for that 
+    // here.
+    const TfToken schemaName = 
+        UsdSchemaRegistry::GetAPISchemaTypeName(schemaType);
 
-    // See if our schema is directly authored
-    static const auto schemaBaseType = TfType::Find<UsdSchemaBase>();
-    for (const auto& alias : schemaBaseType.GetAliases(schemaType)) {
-        if (foundMatch(alias)) {
-            return true; 
-        }
+    // Since this is a single apply API we're just looking for schemaName being
+    // in the list.
+    return std::find(appliedSchemas.begin(), appliedSchemas.end(), schemaName) 
+        != appliedSchemas.end();
+}
+
+bool 
+UsdPrim::_HasMultiApplyAPI(const TfType& schemaType,
+                           const TfToken &instanceName) const
+{
+    TRACE_FUNCTION();
+
+    // Get our composed set of all applied schemas.
+    auto appliedSchemas = GetAppliedSchemas();
+    if (appliedSchemas.empty()) {
+        return false;
     }
 
-    // If we couldn't find it directly authored in apiSchemas, 
-    // consider derived types. For example, if a user queries
-    // prim.HasAPI<UsdModelAPI>() on a prim with 
-    // apiSchemas = ["UsdGeomModelAPI"], we should return true
-    std::set<TfType> derivedTypes;
-    schemaType.GetAllDerivedTypes(&derivedTypes);
-    for (const auto& derived : derivedTypes) {
-        for (const auto& alias : schemaBaseType.GetAliases(derived)) {
-            if (foundMatch(alias)) { 
-                return true; 
-            }
-        }
-    }
+    // The compile time and runtime schema type validation of HasAPI should
+    // ensure that this schemaName won't be empty so we don't check for that 
+    // here.
+    const TfToken schemaName = 
+        UsdSchemaRegistry::GetAPISchemaTypeName(schemaType);
 
-    return false;
+    // If instance name is empty, we're looking for any instance of a multiple
+    // apply schema of the schemaType. Thus we search for name in the list that
+    // starts with the "<schemaName>:" prefix.
+    if (instanceName.IsEmpty()) {
+        const std::string schemaPrefix = 
+            schemaName.GetString() + UsdObject::GetNamespaceDelimiter();
+        return std::any_of(appliedSchemas.begin(), appliedSchemas.end(), 
+            [&schemaPrefix](const TfToken &appliedSchema) {
+                return TfStringStartsWith(appliedSchema, schemaPrefix);
+            });
+    } 
+
+    // Otherwise we have an instance name so we're looking for exact match of
+    // "<schemaType>:<instanceName>"
+    const TfToken apiName(SdfPath::JoinIdentifier(schemaName, instanceName));
+    return std::find(appliedSchemas.begin(), appliedSchemas.end(), apiName) 
+        != appliedSchemas.end();
 }
 
 bool
 UsdPrim::HasAPI(const TfType& schemaType, const TfToken& instanceName) const
 {
-    return _HasAPI(schemaType, true, instanceName);
+    if (schemaType.IsUnknown()) {
+        TF_CODING_ERROR("HasAPI: Invalid unknown schema type (%s) ",
+                        schemaType.GetTypeName().c_str());
+        return false;
+    }
+
+    if (!UsdSchemaRegistry::GetInstance().IsAppliedAPISchema(schemaType)) {
+        TF_CODING_ERROR("HasAPI: provided schema type ( %s ) is not an "
+            "applied API schema type.", schemaType.GetTypeName().c_str());
+        return false;
+    }
+
+    static const auto apiSchemaBaseType = TfType::Find<UsdAPISchemaBase>();
+    if (!schemaType.IsA(apiSchemaBaseType) || schemaType == apiSchemaBaseType) {
+        TF_CODING_ERROR("HasAPI: provided schema type ( %s ) does not "
+            "derive from UsdAPISchemaBase.", 
+            schemaType.GetTypeName().c_str());
+        return false;
+    }
+
+    // If the type is a multi apply API call the multi apply implementation.
+    if (UsdSchemaRegistry::GetInstance().IsMultipleApplyAPISchema(schemaType)) {
+        return _HasMultiApplyAPI(schemaType, instanceName);
+    }
+
+    // Otherwise it's a single apply API 
+    if (!instanceName.IsEmpty()) {
+        TF_CODING_ERROR("HasAPI: single application API schemas like %s do "
+            "not contain an application instanceName ( %s ).",
+            schemaType.GetTypeName().c_str(), instanceName.GetText());
+        return false;
+    }
+    return _HasSingleApplyAPI(schemaType);
 }
 
 // Runtime validation for the single apply schema non-templated 

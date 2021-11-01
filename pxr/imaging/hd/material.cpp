@@ -118,14 +118,6 @@ bool operator==(const HdMaterialRelationship& lhs,
            lhs.inputName  == rhs.inputName;
 }
 
-size_t hash_value(const HdMaterialRelationship& rel)
-{
-    size_t hash = hash_value(rel.inputId);
-    boost::hash_combine(hash, rel.inputName);
-    boost::hash_combine(hash, rel.outputId);
-    boost::hash_combine(hash, rel.outputName);
-    return hash;
-}
 
 bool operator==(const HdMaterialNode& lhs, const HdMaterialNode& rhs)
 {
@@ -134,13 +126,6 @@ bool operator==(const HdMaterialNode& lhs, const HdMaterialNode& rhs)
            lhs.parameters == rhs.parameters;
 }
 
-size_t hash_value(const HdMaterialNode& node)
-{
-    size_t hash = hash_value(node.path);
-    boost::hash_combine(hash, node.identifier);
-    boost::hash_combine(hash, node.parameters);
-    return hash;
-}
 
 bool operator==(const HdMaterialNetwork& lhs, const HdMaterialNetwork& rhs) 
 {
@@ -154,14 +139,6 @@ bool operator!=(const HdMaterialNetwork& lhs, const HdMaterialNetwork& rhs)
     return !(lhs == rhs);
 }
 
-size_t hash_value(const HdMaterialNetwork& network)
-{
-    size_t hash = 0;
-    boost::hash_combine(hash, network.relationships);
-    boost::hash_combine(hash, network.nodes);
-    boost::hash_combine(hash, network.primvars);
-    return hash;
-}
 
 std::ostream& operator<<(std::ostream& out, const HdMaterialNetworkMap& pv)
 {
@@ -182,12 +159,5 @@ bool operator!=(const HdMaterialNetworkMap& lhs,
     return !(lhs == rhs);
 }
 
-size_t hash_value(const HdMaterialNetworkMap& networkMap)
-{
-    size_t hash = 0;
-    boost::hash_combine(hash, networkMap.map);
-    boost::hash_combine(hash, networkMap.terminals);
-    return hash;
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE

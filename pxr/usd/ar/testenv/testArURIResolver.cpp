@@ -149,6 +149,69 @@ TestCreateContextFromString()
             _TestURIResolverContext("context string")));
 }
 
+static void
+TestCreateDefaultContext()
+{
+    ArResolver& resolver = ArGetResolver();
+
+    // CreateDefaultContext should return an ArResolverContext containing
+    // the union of the default contexts returned by all registered resolvers.
+    // ArDefaultResolver returns an empty ArResolverContext object as its
+    // default so we can't test for that, but TestArURIResolver returns a
+    // _TestURIResolverContext which we can check for here.
+    const ArResolverContext defaultContext = resolver.CreateDefaultContext();
+
+    const _TestURIResolverContext* uriCtx =
+        defaultContext.Get<_TestURIResolverContext>();
+    TF_AXIOM(uriCtx);
+    TF_AXIOM(uriCtx->data == "CreateDefaultContext");
+}
+
+static void
+TestCreateDefaultContextForAsset()
+{
+    auto runTest = [](const std::string& assetPath) {
+        ArResolver& resolver = ArGetResolver();
+
+        // CreateDefaultContextForAsset should return an ArResolverContext
+        // containing the union of the default contexts returned by all
+        // registered resolvers.
+        const ArResolverContext defaultContext = 
+            resolver.CreateDefaultContextForAsset(assetPath);
+
+        // ArDefaultResolver returns an ArDefaultResolverContext whose search
+        // path is set to the directory of the asset.
+        {
+            const ArDefaultResolverContext* defaultCtx =
+                defaultContext.Get<ArDefaultResolverContext>();
+            TF_AXIOM(defaultCtx);
+
+            const ArDefaultResolverContext expectedCtx(
+                std::vector<std::string>{ 
+                    TfGetPathName(TfAbsPath(assetPath)) });
+            TF_AXIOM(*defaultCtx == expectedCtx);
+        }
+
+        // TestArURIResolver returns a _TestURIResolverContext whose data field
+        // is set to the absolute path of the asset.
+        {
+            const _TestURIResolverContext* uriCtx =
+                defaultContext.Get<_TestURIResolverContext>();
+            TF_AXIOM(uriCtx);
+        
+            const _TestURIResolverContext expectedCtx(
+                TfAbsPath("test/test.file"));
+            TF_AXIOM(*uriCtx == expectedCtx);
+        }
+    };
+
+    runTest("test/test.file");
+
+    // For a package-relative path, CreateDefaultContextForAsset should only
+    // consider the outer-most package path.
+    runTest("test/test.file[in_package]");
+}
+
 int main(int argc, char** argv)
 {
     SetupPlugins();
@@ -158,6 +221,12 @@ int main(int argc, char** argv)
 
     printf("TestCreateContextFromString ...\n");
     TestCreateContextFromString();
+
+    printf("TestCreateDefaultContext ...\n");
+    TestCreateDefaultContext();
+
+    printf("TestCreateDefaultContextForAsset ...\n");
+    TestCreateDefaultContextForAsset();
 
     printf("Test PASSED\n");
     return 0;

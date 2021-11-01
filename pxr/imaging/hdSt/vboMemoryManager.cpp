@@ -21,21 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/contextCaps.h"
-
-#include <vector>
-
-#include "pxr/base/arch/hash.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/iterator.h"
-#include "pxr/base/tf/enum.h"
+#include "pxr/imaging/hdSt/vboMemoryManager.h"
 
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/tokens.h"
-#include "pxr/imaging/hdSt/vboMemoryManager.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -45,6 +36,14 @@
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/buffer.h"
+
+#include "pxr/base/arch/hash.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/enum.h"
+
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -542,6 +541,12 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::IsImmutable() const
 {
     return (_stripedBufferArray != nullptr)
          && _stripedBufferArray->IsImmutable();
+}
+
+bool
+HdStVBOMemoryManager::_StripedBufferArrayRange::RequiresStaging() const
+{
+    return false;
 }
 
 bool

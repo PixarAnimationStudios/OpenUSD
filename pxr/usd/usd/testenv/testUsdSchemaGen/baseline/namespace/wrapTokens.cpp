@@ -85,7 +85,6 @@ void wrapUsdContrivedTokens()
     _AddToken(cls, "cornerIndices", UsdContrivedTokens->cornerIndices);
     _AddToken(cls, "cornerSharpnesses", UsdContrivedTokens->cornerSharpnesses);
     _AddToken(cls, "creaseLengths", UsdContrivedTokens->creaseLengths);
-    _AddToken(cls, "derived", UsdContrivedTokens->derived);
     _AddToken(cls, "double2", UsdContrivedTokens->double2);
     _AddToken(cls, "double2Array", UsdContrivedTokens->double2Array);
     _AddToken(cls, "double3", UsdContrivedTokens->double3);
@@ -167,7 +166,6 @@ void wrapUsdContrivedTokens()
     _AddToken(cls, "temp", UsdContrivedTokens->temp);
     _AddToken(cls, "test", UsdContrivedTokens->test);
     _AddToken(cls, "testAttrOne", UsdContrivedTokens->testAttrOne);
-    _AddToken(cls, "testAttrThree", UsdContrivedTokens->testAttrThree);
     _AddToken(cls, "testAttrTwo", UsdContrivedTokens->testAttrTwo);
     _AddToken(cls, "testingAsset", UsdContrivedTokens->testingAsset);
     _AddToken(cls, "testo", UsdContrivedTokens->testo);

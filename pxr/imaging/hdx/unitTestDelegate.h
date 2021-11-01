@@ -166,6 +166,7 @@ public:
     VtIntArray GetInstanceIndices(
         SdfPath const& instancerId,
         SdfPath const& prototypeId) override;
+    SdfPathVector GetInstancerPrototypes(SdfPath const& instancerId) override;
 
     GfMatrix4d GetInstancerTransform(SdfPath const& instancerId) override;
     HdDisplayStyle GetDisplayStyle(SdfPath const& id) override;

@@ -216,6 +216,51 @@ public:
         Interpolation interpolation,
         int fvarChannel = 0);
 
+    /// Returns the mapping from base face to refined face indices.
+    HdBufferSourceSharedPtr GetOsdBaseFaceToRefinedFacesMapComputation(
+        HdStResourceRegistry *resourceRegistry);
+
+    /// @}
+
+    ///
+    /// \name Geom Subsets
+    /// @{
+    
+    /// Processes geom subsets to remove those with empty indices or empty 
+    /// material id. Will initialize _nonSubsetFaces if there are geom subsets.
+    void SanitizeGeomSubsets();
+
+    /// Returns the indices subset computation for unrefined indices.
+    HdBufferSourceSharedPtr GetIndexSubsetComputation(
+        HdBufferSourceSharedPtr indexBuilderSource, 
+        HdBufferSourceSharedPtr faceIndicesSource);
+
+    /// Returns the indices subset computation for refined indices.
+    HdBufferSourceSharedPtr GetRefinedIndexSubsetComputation(
+        HdBufferSourceSharedPtr indexBuilderSource, 
+        HdBufferSourceSharedPtr faceIndicesSource);
+    
+    /// Returns the triangulated/quadrangulated face indices computation.
+    HdBufferSourceSharedPtr GetGeomSubsetFaceIndexBuilderComputation(
+        HdBufferSourceSharedPtr geomSubsetFaceIndexHelperSource, 
+        VtIntArray const &faceIndices);
+
+    /// Returns computation creating buffer sources used in mapping authored 
+    /// face indices to triangulated/quadrangulated face indices.
+    HdBufferSourceSharedPtr GetGeomSubsetFaceIndexHelperComputation(
+        bool refined, 
+        bool quadrangulated);
+
+    /// @}
+
+    ///
+    /// \name Face-varying Topologies
+    /// @{
+    /// Returns the face indices of faces not used in any geom subsets.
+    std::vector<int> const *GetNonSubsetFaces() const {
+        return _nonSubsetFaces.get();
+    }
+
     /// Sets the face-varying topologies.
     void SetFvarTopologies(std::vector<VtIntArray> const &fvarTopologies) {
         _fvarTopologies = fvarTopologies;
@@ -241,8 +286,13 @@ private:
     RefineMode _refineMode;
     std::unique_ptr<HdSt_Subdivision> _subdivision;
     HdBufferSourceWeakPtr _osdTopologyBuilder;
+    HdBufferSourceWeakPtr _osdBaseFaceToRefinedFacesMap;
 
     std::vector<VtIntArray> _fvarTopologies;
+
+    // When using geom subsets, the indices of faces that are not contained
+    // within the geom subsets. Populated by SanitizeGeomSubsets().
+    std::unique_ptr<std::vector<int>> _nonSubsetFaces;
 
     // Must be created through factory
     explicit HdSt_MeshTopology(

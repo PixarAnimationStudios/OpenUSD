@@ -43,42 +43,58 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
                 "/TestSchemaAPI")
         self.assertTrue(sdrNode)
         resultLayer = Sdf.Layer.CreateNew("./resultAPISchema.usda")
-        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode)
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
     def test_APIIdentifierMissing(self):
         sdrNode = self._GetSdrNode("testAPIIdentifierMissing.usda", 
                 "/APIIdentifierMissing")
         self.assertTrue(sdrNode)
         resultLayer = Sdf.Layer.CreateNew("./resultAPIIdentifierMissing.usda")
-        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode)
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
     def test_OverrideAPISchemaGen(self):
         sdrNode = self._GetSdrNode("testSdrNodeAPISchema.usda", 
                 "/TestSchemaAPI")
         self.assertTrue(sdrNode)
         resultLayer = Sdf.Layer.FindOrOpen("./result_override.usda")
-        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode)
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
     def test_OmitDuplicateProperties(self):
         sdrNode = self._GetSdrNode("testDuplicateProps.usda",
                 "/TestDuplicatePropsAPI")
         self.assertTrue(sdrNode)
         resultLayer = Sdf.Layer.CreateNew("./duplicateProp.usda")
-        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode)
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
     def test_OmitDuplicatePropertiesTypeMismatch(self):
         sdrNode = self._GetSdrNode("testDuplicatePropsTypeMismatch.usda",
                 "/TestDuplicatePropsAPI")
         self.assertTrue(sdrNode)
         resultLayer = Sdf.Layer.CreateNew("./duplicatePropTypeMisMatch.usda")
-        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode)
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
     def test_rmanConcreteSchema(self):
         sdrNode = self._GetSdrNode("testSdrNodeConcreteSchema.usda",
                 "/TestSchemaConcrete")
         self.assertTrue(sdrNode)
         resultLayer = Sdf.Layer.CreateNew("./schemaConcrete.usda")
-        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode)
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
+
+    def test_UsdShadeConnectableAPIMetadata(self):
+        sdrNode = self._GetSdrNode("testUsdShadeConnectableAPI.usda", 
+                "/TestUsdShadeConnectableAPIMetadataAPI")
+        self.assertTrue(sdrNode)
+        resultLayer = \
+            Sdf.Layer.CreateNew("./resultUsdShadeConnectableAPIMetadata.usda")
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
+
+    def test_UsdShadeConnectableAPIMetadata2(self):
+        sdrNode = self._GetSdrNode("testUsdShadeConnectableAPI2.usda", 
+                "/TestUsdShadeConnectableAPIMetadataAPI")
+        self.assertTrue(sdrNode)
+        resultLayer = \
+            Sdf.Layer.CreateNew("./resultUsdShadeConnectableAPIMetadata2.usda")
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
 if __name__ == "__main__":
     unittest.main()

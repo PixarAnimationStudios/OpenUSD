@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hdSt/tokens.h"
@@ -38,6 +39,11 @@
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/imaging/hgiGL/buffer.h"
+#include "pxr/imaging/hgiGL/texture.h"
+#include "pxr/imaging/hgiGL/sampler.h"
+#include "pxr/imaging/hgiGL/shaderProgram.h"
 
 #include "pxr/base/tf/staticTokens.h"
 
@@ -166,9 +172,10 @@ _GetInstancerFilterNames(HdStDrawItem const * drawItem)
 {
     TfTokenVector filterNames = HdInstancer::GetBuiltinPrimvarNames();;
 
-    HdStShaderCodeSharedPtr materialShader = drawItem->GetMaterialShader();
-    if (materialShader) {
-        TfTokenVector const & names = materialShader->GetPrimvarNames();
+    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader =
+        drawItem->GetMaterialNetworkShader();
+    if (materialNetworkShader) {
+        TfTokenVector const & names = materialNetworkShader->GetPrimvarNames();
         filterNames.insert(filterNames.end(), names.begin(), names.end());
     }
 
@@ -223,8 +230,6 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             drawingCoordBindingType = HdBinding::DRAW_INDEX;
         }
     }
-
-    bool useBindlessForTexture = bindlessTextureEnabled;
 
     // binding assignments
     BindingLocator locator;
@@ -333,6 +338,10 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             // so expand them out to their target type for the shader binding.
             if (valueType.type == HdTypeInt32_2_10_10_10_REV) {
                 valueType.type = HdTypeFloatVec4;
+            } else if (valueType.type == HdTypeHalfFloatVec2) {
+                valueType.type = HdTypeFloatVec2;
+            } else if (valueType.type == HdTypeHalfFloatVec4) {
+                valueType.type = HdTypeFloatVec4;
             }
             TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
             metaDataOut->vertexData[vertexPrimvarBinding] =
@@ -405,6 +414,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     metaDataOut->primitiveParamBinding = bindingDecl;
                 } else if (name == HdTokens->edgeIndices) {
                     metaDataOut->edgeIndexBinding = bindingDecl;
+                } else if (name == HdStTokens->coarseFaceIndex) {
+                    metaDataOut->coarseFaceIndexBinding = bindingDecl;
                 } else if (_TokenContainsString(name,
                            HdStTokens->fvarIndices.GetString())) {
                     metaDataOut->fvarIndicesBindings.push_back(bindingDecl);
@@ -644,7 +655,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 std::make_pair(shaderParamBinding, sblock));
 
             //XXX:hack  we want to generalize materialParams to other shaders.
-            if ((*shader) == drawItem->GetMaterialShader()) {
+            if ((*shader) == drawItem->GetMaterialNetworkShader()) {
                 // shader parameters are interleaved into single struct.
                 _bindingMap[HdTokens->materialParams] = shaderParamBinding;
             }
@@ -654,10 +665,10 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         // for primvar and texture accessors
         for (HdSt_MaterialParam const& param : params) {
             const bool isMaterialShader =
-                ((*shader) == drawItem->GetMaterialShader());
+                ((*shader) == drawItem->GetMaterialNetworkShader());
 
             // renderpass texture should be bindfull (for now)
-            const bool bindless = useBindlessForTexture && isMaterialShader;
+            const bool bindless = bindlessTextureEnabled && isMaterialShader;
             std::string const& glSwizzle = param.swizzle;                    
             HdTupleType valueType = param.GetTupleType();
             TfToken glType =
@@ -1028,7 +1039,11 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
             glMakeNamedBufferResidentNV(
                 buffer->GetHandle()->GetRawResource(), GL_READ_WRITE);
         }
-        glUniformui64NV(loc, buffer->GetGPUAddress());
+        {
+            HgiGLBuffer * bufferGL =
+                static_cast<HgiGLBuffer*>(buffer->GetHandle().Get());
+            glUniformui64NV(loc, bufferGL->GetBindlessGPUAddress());
+        }
         break;
     case HdBinding::SSBO:
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, loc,
@@ -1041,7 +1056,11 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
             glMakeNamedBufferResidentNV(
                 buffer->GetHandle()->GetRawResource(), GL_READ_WRITE);
         }
-        glUniformui64NV(loc, buffer->GetGPUAddress()+offset);
+        {
+            HgiGLBuffer * bufferGL =
+                static_cast<HgiGLBuffer*>(buffer->GetHandle().Get());
+            glUniformui64NV(loc, bufferGL->GetBindlessGPUAddress()+offset);
+        }
         break;
     case HdBinding::DISPATCH:
         glBindBuffer(GL_DRAW_INDIRECT_BUFFER,
@@ -1472,6 +1491,8 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     boost::hash_combine(hash, primitiveParamBinding.dataType);
     boost::hash_combine(hash, edgeIndexBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.dataType);
+    boost::hash_combine(hash, coarseFaceIndexBinding.binding.GetValue());
+    boost::hash_combine(hash, coarseFaceIndexBinding.dataType);
 
     TF_FOR_ALL(binDecl, fvarIndicesBindings) {
         boost::hash_combine(hash, binDecl->binding.GetValue());
@@ -1588,5 +1609,168 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     return hash;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+/* static */
+bool
+HdSt_ResourceBinder::UseBindlessHandles()
+{
+    return GlfContextCaps::GetInstance().bindlessTextureEnabled;
+}
 
+/* static */
+uint64_t
+HdSt_ResourceBinder::GetSamplerBindlessHandle(
+        HgiSamplerHandle const &samplerHandle,
+        HgiTextureHandle const &textureHandle)
+{
+    HgiGLSampler * const glSampler =
+        const_cast<HgiGLSampler*>(
+        dynamic_cast<const HgiGLSampler*>(samplerHandle.Get()));
+
+    HgiGLTexture * const glTexture =
+        const_cast<HgiGLTexture*>(
+        dynamic_cast<const HgiGLTexture*>(textureHandle.Get()));
+
+    if (!glSampler || !glTexture) {
+        return 0;
+    }
+
+    return glSampler->GetBindlessHandle(textureHandle);
+}
+
+/* static */
+uint64_t
+HdSt_ResourceBinder::GetTextureBindlessHandle(
+        HgiTextureHandle const &textureHandle)
+{
+    HgiGLTexture * const glTexture =
+        const_cast<HgiGLTexture*>(
+        dynamic_cast<const HgiGLTexture*>(textureHandle.Get()));
+
+    if (!glTexture) {
+        return 0;
+    }
+
+    return glTexture->GetBindlessHandle();
+}
+
+static
+bool
+_IsBindless(HdBinding const & binding)
+{
+    switch (binding.GetType()) {
+        case HdBinding::BINDLESS_TEXTURE_2D:
+        case HdBinding::BINDLESS_TEXTURE_FIELD:
+        case HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY:
+        case HdBinding::BINDLESS_TEXTURE_UDIM_LAYOUT:
+        case HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL:
+        case HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT:
+            return true;
+        default:
+            return false;;
+    }
+}
+
+static
+GLenum
+_GetTextureTarget(HdBinding const & binding)
+{
+    switch (binding.GetType()) {
+        case HdBinding::TEXTURE_2D:
+            return GL_TEXTURE_2D;
+        case HdBinding::TEXTURE_FIELD:
+            return GL_TEXTURE_3D;
+        case HdBinding::TEXTURE_UDIM_ARRAY:
+        case HdBinding::TEXTURE_PTEX_TEXEL:
+            return GL_TEXTURE_2D_ARRAY;
+        case HdBinding::TEXTURE_UDIM_LAYOUT:
+            return GL_TEXTURE_1D;
+        case HdBinding::TEXTURE_PTEX_LAYOUT:
+            return GL_TEXTURE_1D_ARRAY;
+        default:
+            TF_CODING_ERROR("Unknown texture binding type");
+            return GL_NONE;
+    }
+}
+
+void
+HdSt_ResourceBinder::BindTexture(
+        const TfToken &name,
+        HgiSamplerHandle const &samplerHandle,
+        HgiTextureHandle const &textureHandle,
+        const bool bind) const
+{
+    const HdBinding binding = GetBinding(name);
+    if (_IsBindless(binding)) {
+        return;
+    }
+
+    const int samplerUnit = binding.GetTextureUnit();
+
+    glActiveTexture(GL_TEXTURE0 + samplerUnit);
+
+    const HgiTexture * const tex = textureHandle.Get();
+    const HgiGLTexture * const glTex =
+        dynamic_cast<const HgiGLTexture*>(tex);
+
+    if (tex && !glTex) {
+        TF_CODING_ERROR("Resource binder only supports OpenGL");
+    }
+
+    const GLuint texName =
+        (bind && glTex) ? glTex->GetTextureId() : 0;
+    glBindTexture(_GetTextureTarget(binding), texName);
+
+    const HgiSampler * const sampler = samplerHandle.Get();
+    const HgiGLSampler * const glSampler =
+        dynamic_cast<const HgiGLSampler*>(sampler);
+
+    if (sampler && !glSampler) {
+        TF_CODING_ERROR("Resource binder only supports OpenGL");
+    }
+
+    const GLuint samplerName =
+        (bind && glSampler) ? glSampler->GetSamplerId() : 0;
+    glBindSampler(samplerUnit, samplerName);
+
+    glActiveTexture(GL_TEXTURE0);
+}
+
+void
+HdSt_ResourceBinder::BindTextureWithLayout(
+        TfToken const &name,
+        HgiSamplerHandle const &texelSampler,
+        HgiTextureHandle const &texelTexture,
+        HgiTextureHandle const &layoutTexture,
+        const bool bind) const
+{
+    const HdBinding texelBinding = GetBinding(name);
+    if (_IsBindless(texelBinding)) {
+        return;
+    }
+
+    const int texelSamplerUnit = texelBinding.GetTextureUnit();
+
+    glActiveTexture(GL_TEXTURE0 + texelSamplerUnit);
+    glBindTexture(_GetTextureTarget(texelBinding),
+              (bind && texelTexture) ? texelTexture->GetRawResource() : 0);
+
+    const HgiGLSampler * const glSampler =
+        bind ? dynamic_cast<HgiGLSampler*>(texelSampler.Get()) : nullptr;
+
+    if (glSampler) {
+        glBindSampler(texelSamplerUnit, (GLuint)glSampler->GetSamplerId());
+    } else {
+        glBindSampler(texelSamplerUnit, 0);
+    }
+
+    const HdBinding layoutBinding = GetBinding(_ConcatLayout(name));
+    const int layoutSamplerUnit = layoutBinding.GetTextureUnit();
+
+    glActiveTexture(GL_TEXTURE0 + layoutSamplerUnit);
+    glBindTexture(_GetTextureTarget(layoutBinding),
+              (bind && layoutTexture) ? layoutTexture->GetRawResource() : 0);
+    glActiveTexture(GL_TEXTURE0);
+}
+
+
+PXR_NAMESPACE_CLOSE_SCOPE

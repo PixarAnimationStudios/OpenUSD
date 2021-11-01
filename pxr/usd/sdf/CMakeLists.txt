@@ -219,6 +219,18 @@ pxr_build_test_shared_lib(TestSdfNoAssetFileFormat
         testenv/TestSdfNoAssetFileFormat.cpp
 )
 
+pxr_build_test_shared_lib(TestSdfResolver
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX SdfPlugins
+    LIBRARIES
+        ar
+        sdf
+        tf
+
+    CPPFILES
+        testenv/TestSdfResolver.cpp
+)
+
 pxr_build_test(testSdfAttributeBlocking_Cpp
     LIBRARIES
         sdf

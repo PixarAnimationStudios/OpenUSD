@@ -227,11 +227,12 @@ static GfVec4d _PiShift(
     GfVec4d result(attempt);
     for (int i = 0; i < 4; i++)
     {
-        double      mod1 = fmod(attempt[i], mul);
-        double      mod2 = fmod(hint[i], mul);
-        result[i] = (hint[i]-mod2)+mod1;
-        if (fabs(hint[i]-result[i])>mul/2.0) 
-            result[i]+=(hint[i]<0?-mul:mul);
+        while (result[i] > hint[i] + M_PI) {
+            result[i] -= 2.0 * M_PI;
+        }
+        while (result[i] < hint[i] - M_PI) {
+            result[i] += 2.0 * M_PI;
+        }
     }
     return result;
 }
@@ -259,6 +260,164 @@ static void _ShiftGimbalLock(
     }
 }
 
+namespace
+{
+    // Enum of which angle is being zeroed out when selecting the closest roatation.
+    enum _ZeroAngle {
+        ZERO_NONE = 0,
+        ZERO_TW,
+        ZERO_FB,
+        ZERO_LR,
+        ZERO_SW
+    };
+}
+
+void
+GfRotation::MatchClosestEulerRotation(
+    double targetTw, double targetFB, double targetLR, double targetSw,
+    double *thetaTw, double *thetaFB, double *thetaLR, double *thetaSw)
+{
+    // Any given euler rotation isn't unique.  Adding multiples of
+    // 2pi is a no-op. With 3 angles, you can also add an odd
+    // multiple of pi to each angle, and negate the middle one.
+    //
+    // To understand this: Rotating by pi around 1 axis flips the
+    // other 2.  To get back where you started, you've got to flip
+    // each axis by pi with even parity.  angles are negated if
+    // there've been odd flips at the time that their rotation is
+    // applied.
+    //
+    // Since we've got a 4th axis, we can apply the identity to the
+    // 1st three angles, or the last 3, or the 1st 3 then the last 3
+    // (or vice versa - they commute.)  That, plus leaving the angles
+    // alone, gives us 4 distinct choices.
+    //
+    // We want to choose the one that minimizes sum of abs of the
+    // angles.  We do the miniscule combinatorial optimization
+    // exhaustively.
+
+    _ZeroAngle zeroAngle = ZERO_NONE;
+    double angleStandin = 0.0f;
+    unsigned int numAngles = 4;
+
+    if (thetaTw == nullptr) {
+        thetaTw = &angleStandin;
+        numAngles--;
+        zeroAngle = ZERO_TW;
+    }
+    if (thetaFB == nullptr) {
+        thetaFB = &angleStandin;
+        numAngles--;
+        zeroAngle = ZERO_FB;
+    }
+    if (thetaLR == nullptr) {
+        thetaLR = &angleStandin;
+        numAngles--;
+        zeroAngle = ZERO_LR;
+    }
+    if (thetaSw == nullptr) {
+        thetaSw = &angleStandin;
+        numAngles--;
+        zeroAngle = ZERO_SW;
+    }
+
+    if (numAngles == 0) {
+        return;
+    }
+
+
+    // Store the target angles in a Tw,FB,LR,Sw ordered array to use for :
+    //  1) 2*pi-Shifting
+    //  2) calculating sum of absolute differences in order to select
+    //          final angle solution from candidates.
+    GfVec4d targetAngles(targetTw, targetFB, targetLR, targetSw);
+
+    // With less than 3 angles provided pi shifting is the only option
+    if (numAngles < 3) {
+        // Alter our 4 euler angle component values
+        // to get them into a per angle mult 2*M_PI that is as close as
+        // possible to the target angles.
+        GfVec4d vals( *thetaTw, *thetaFB, *thetaLR, *thetaSw);
+        vals =  _PiShift(targetAngles, vals) ;
+
+        // install the answer.
+        *thetaTw = vals[0];
+        *thetaFB = vals[1];
+        *thetaLR = vals[2];
+        *thetaSw = vals[3];
+        return;
+    }
+
+    // The number of possible solutions based on the number of provided angles
+    const unsigned int numVals = numAngles == 4 ? 4 : 2;
+
+    //  Each angle flipped by pi in the min abs direction.
+    double thetaLRp = *thetaLR + ( (*thetaLR > 0)? -M_PI : M_PI);
+    double thetaFBp = *thetaFB + ( (*thetaFB > 0)? -M_PI : M_PI);
+    double thetaTwp = *thetaTw + ( (*thetaTw > 0)? -M_PI : M_PI);
+    double thetaSwp = *thetaSw + ( (*thetaSw > 0)? -M_PI : M_PI);
+
+    // fill up vals with the possible transformations:
+    GfVec4d vals[4];
+    //  0 - do nothing
+    vals[0] = GfVec4d(*thetaTw, *thetaFB, *thetaLR, *thetaSw);
+
+    // All four transforms are valid if we're not forcing any of the angles
+    // to zero, but if we are zeroing an angle, then we only have two valid
+    // options, the ones that don't flip the zeroed angle by pi.
+    switch (zeroAngle)
+    {
+    case ZERO_TW:
+        //  1 - transform last 3
+        vals[1] = GfVec4d( *thetaTw,   thetaFBp,  -thetaLRp, thetaSwp );
+        break;
+    case ZERO_FB:
+    case ZERO_LR:
+        //  1 - 1 & 3 composed
+        vals[1] = GfVec4d( thetaTwp,  -*thetaFB,  -*thetaLR,  thetaSwp );
+        break;
+    case ZERO_SW:
+        //  1 - transform 1st 3
+        vals[1] = GfVec4d( thetaTwp,  -thetaFBp, thetaLRp,  *thetaSw );
+        break;
+    case ZERO_NONE:
+        //  1 - transform 1st 3
+        //  2 - 1 & 3 composed
+        //  3 - transform last 3
+        vals[1] = GfVec4d( thetaTwp,  -thetaFBp, thetaLRp,  *thetaSw );
+        vals[2] = GfVec4d( thetaTwp,  -*thetaFB,  -*thetaLR,  thetaSwp );
+        vals[3] = GfVec4d( *thetaTw,   thetaFBp,  -thetaLRp, thetaSwp );
+        break;
+    };
+
+    for (unsigned int i=0; i<numVals;i++) {
+        vals[i] =  _PiShift(targetAngles, vals[i]) ;
+    }
+
+    // find the min of the sum of the differences between the
+    // original angle targets and our candidates and select the min
+    //
+    double min = 0;
+    int mini = -1;
+
+    for (unsigned int i = 0; i < numVals; i++) {
+        double sum = 0.0f;
+        GfVec4d targetDiff = vals[i]-targetAngles;
+        for(unsigned int j = 0;  j < 4; j++)
+            sum += fabs(targetDiff[j]);
+        if( (i == 0) || (sum < min) ) {
+            min = sum;
+            mini = i;
+        }
+    }
+
+    // install the answer.
+    *thetaTw = vals[mini][0];
+    *thetaFB = vals[mini][1];
+    *thetaLR = vals[mini][2];
+    *thetaSw = vals[mini][3];
+}
+
 void 
 GfRotation::DecomposeRotation(const GfMatrix4d &rot,
                            const GfVec3d &TwAxis,
@@ -273,22 +432,15 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
                            const double *swShift)
 {
     // Enum of which angle is being zeroed out when decomposing the roatation.
-    // This is determined by which angle output (if any) is NULL.
-    enum _ZeroAngle {
-        ZERO_NONE = 0,
-        ZERO_TW,
-        ZERO_FB,
-        ZERO_LR,
-        ZERO_SW
-    };
+    // This is determined by which angle output (if any) is nullptr.
     _ZeroAngle zeroAngle = ZERO_NONE;
 
-    double angleStandin = 0.0f, hintTw=0.0f, hintFB=0.0f, hintLR=0.0f,hintSw=0.0f;
-    if (thetaTw == NULL) {
+    double angleStandin = 0.0f, hintTw=0.0f, hintFB=0.0f, hintLR=0.0f, hintSw=0.0f;
+    if (thetaTw == nullptr) {
         zeroAngle = ZERO_TW;
         thetaTw = &angleStandin;
     }
-    if (thetaFB == NULL) {
+    if (thetaFB == nullptr) {
         if (zeroAngle != ZERO_NONE) {
             TF_CODING_ERROR("Need three angles to correctly decompose rotation");
             return;
@@ -296,7 +448,7 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
         zeroAngle = ZERO_FB;
         thetaFB = &angleStandin;
     }
-    if (thetaLR == NULL) {
+    if (thetaLR == nullptr) {
         if (zeroAngle != ZERO_NONE) {
             TF_CODING_ERROR("Need three angles to correctly decompose rotation");
             return;
@@ -304,7 +456,7 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
         zeroAngle = ZERO_LR;
         thetaLR = &angleStandin;
     }
-    if (thetaSw == NULL) {
+    if (thetaSw == nullptr) {
         if (zeroAngle != ZERO_NONE) {
             TF_CODING_ERROR("Need three angles to correctly decompose rotation");
             return;
@@ -399,103 +551,14 @@ GfRotation::DecomposeRotation(const GfMatrix4d &rot,
         break;
     };
 
-    // The decomposition isn't unique.  Obviously, adding multiples of
-    // 2pi is a no-op, but we've already coerced each angle onto the
-    // interval [-pi, pi].  With 3 angles, you can also add an odd
-    // multiple of pi to each angle, and negate the middle one.
-    //
-    // To understand this: Rotating by pi around 1 axis flips the
-    // other 2.  To get back where you started, you've got to flip
-    // each axis by pi with even parity.  angles are negated if
-    // there've been odd flips at the time that their rotation is
-    // applied.
-    //  
-    // Since we've got a 4th axis, we can apply the identity to the
-    // 1st three angles, or the last 3, or the 1st 3 then the last 3
-    // (or vice versa - they commute.)  That, plus leaving the angles
-    // alone, gives us 4 distinct choices.
-    //
-    // We want to choose the one that minimizes sum of abs of the
-    // angles.  We do the miniscule combinatorial optimization
-    // exhaustively.
-
-    //  Each angle flipped by pi in the min abs direction.
-    double thetaLRp = *thetaLR + ( (*thetaLR > 0)? -M_PI : M_PI);
-    double thetaFBp = *thetaFB + ( (*thetaFB > 0)? -M_PI : M_PI);
-    double thetaTwp = *thetaTw + ( (*thetaTw > 0)? -M_PI : M_PI);
-    double thetaSwp = *thetaSw + ( (*thetaSw > 0)? -M_PI : M_PI);
-
-    // fill up a table with the possible transformations:
-    //  0 - do nothing
-    //  1 - transform 1st 3
-    //  2 - 1 & 3 composed
-    //  3 - transform last 3
-    GfVec4d vals[4];
-    vals[0] = GfVec4d( *thetaTw,  *thetaFB,     *thetaLR,     *thetaSw );
-    vals[1] = GfVec4d( thetaTwp,  -thetaFBp,    thetaLRp,     *thetaSw );
-    vals[2] = GfVec4d( thetaTwp,  -(*thetaFB),  -(*thetaLR),  thetaSwp );
-    vals[3] = GfVec4d( *thetaTw,  thetaFBp,     -thetaLRp,    thetaSwp );
-
-    // All four transforms are valid if we're not forcing any of the angles
-    // to zero, but if we are zeroing an angle, then we only have to valid
-    // options, the ones that don't flip the zeroed angle by pi.
-    int numVals = zeroAngle == ZERO_NONE ? 4 : 2;
-    switch (zeroAngle)
-    {
-    case ZERO_TW:
-        vals[1] = vals[3];
-        break;
-    case ZERO_FB:
-    case ZERO_LR:
-        vals[1] = vals[2];
-        break;
-    default:
-        break;
-    };
-
-    // Store the hint angles in a Tw,FB,LR,Sw ordered array to use for :
-    //  1) 2*pi-Shifting
-    //  2) calculating sum of absolute differences in order to select 
-    //          final angle solution from candidates.
-    GfVec4d hintAngles(hintTw, hintFB, hintLR, hintSw);
-
-    // If using hint, then alter our 4 euler angle component values
-    // to get them into a per angle mult 2*M_PI that is as close as 
-    // possible to the hint angles.
-    if (useHint ) {
-        for (size_t i=0; i<4;i++) {
-            vals[i] =  _PiShift(hintAngles, vals[i]) ;
-        }
-    }
-
-    // find the min of weighted sum of abs.  The weight on the 2nd
-    // angle is to ensure that it stays on [-pi/2, pi/2] If swing
-    // isn't wired up, we leave out the 4-axis identity unless the client
-    // has passed a swing shift value representing the target sw, with a
-    // hint in the sw.
-    //
-    // if using hint angles, then we sum the differences between the
-    // original angle hints and our candidates and select the min
-    //
-    double min = 0;
-    int  i, j, mini = -1;
-
-    for (i = 0; i < numVals; i++) {
-        double sum = 0;
-        GfVec4d hintDiff = vals[i]-hintAngles;
-        for(j = 0;  j < 4; j++)
-            sum += fabs(hintDiff[j]);
-        if( (i == 0) || (sum < min) ) {
-            min = sum;
-            mini = i;
-        }
-    }
-
-    // install the answer.
-    *thetaTw = vals[mini][0];
-    *thetaFB = vals[mini][1];
-    *thetaLR = vals[mini][2];
-    *thetaSw = vals[mini][3];
+    // The decomposition isn't unique. Find the closest rotation to the hint.
+    MatchClosestEulerRotation(
+        hintTw, hintFB, hintLR, hintSw,
+        zeroAngle == ZERO_TW ? nullptr : thetaTw,
+        zeroAngle == ZERO_FB ? nullptr : thetaFB,
+        zeroAngle == ZERO_LR ? nullptr : thetaLR,
+        zeroAngle == ZERO_SW ? nullptr : thetaSw);
+    
 
     // Oh, but there's more: Take the example of when we're decomposing
     // into tw, fb, and lr. When the middle angle, (fb) is PI/2, then

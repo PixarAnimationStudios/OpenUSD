@@ -113,6 +113,7 @@ pxr_library(ar
         resolverContextBinder.h
         resolverScopedCache.h
         threadLocalScopedCache.h
+        timestamp.h
         ${versionedHeaders}
 
     PYTHON_PUBLIC_HEADERS
@@ -131,6 +132,7 @@ pxr_library(ar
         resolvedPath.cpp
         resolverContextBinder.cpp
         resolverScopedCache.cpp
+        timestamp.cpp
         debugCodes.cpp
         defaultResolverContext.cpp
         ${versionedCPPFiles}
@@ -147,6 +149,7 @@ pxr_library(ar
         wrapResolvedPath.cpp
         wrapResolverContextBinder.cpp
         wrapResolverScopedCache.cpp
+        wrapTimestamp.cpp
         ${versionedPymoduleCPPFiles}
 
     PYMODULE_FILES
@@ -165,6 +168,7 @@ pxr_test_scripts(
     testenv/testArPackageUtils.py
     testenv/testArResolvedPath.py
     testenv/testArResolverContext.py
+    testenv/testArTimestamp.py
 )
 
 pxr_build_test_shared_lib(TestArAdvancedAPI
@@ -262,28 +266,33 @@ if (AR_VERSION EQUAL 2)
         DIFF_COMPARE derived_resolver_with_cache.txt
     )
 
-    pxr_build_test_shared_lib(TestArURIResolver
-        CREATE_FRAMEWORK
-        INSTALL_PREFIX ArPlugins
-        LIBRARIES
-            tf
-            ar
-        CPPFILES
-            testenv/TestArURIResolver_plugin.cpp
-    ) 
+    # This test relies on a plugin built specifically for this test.
+    # The build system currently doesn't support this for static library
+    # builds, so we only enable this test on shared library builds.
+    if (BUILD_SHARED_LIBS)
+        pxr_build_test_shared_lib(TestArURIResolver
+            CREATE_FRAMEWORK
+            INSTALL_PREFIX ArPlugins
+            LIBRARIES
+                tf
+                ar
+            CPPFILES
+                testenv/TestArURIResolver_plugin.cpp
+        ) 
 
-    pxr_build_test(testArURIResolver_CPP
-        LIBRARIES
-            arch
-            tf
-            ar
-        CPPFILES
-            testenv/testArURIResolver.cpp
-    )
+        pxr_build_test(testArURIResolver_CPP
+            LIBRARIES
+                arch
+                tf
+                ar
+            CPPFILES
+                testenv/testArURIResolver.cpp
+        )
 
-    pxr_register_test(testArURIResolver_CPP
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArURIResolver_CPP"
-    )
+        pxr_register_test(testArURIResolver_CPP
+            COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArURIResolver_CPP"
+        )
+    endif()
 endif()
 
 pxr_build_test(testArDefaultResolver_CPP
@@ -341,6 +350,11 @@ pxr_register_test(testArPackageUtils
 pxr_register_test(testArResolvedPath
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArResolvedPath"
+)
+
+pxr_register_test(testArTimestamp
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArTimestamp"
 )
 
 pxr_register_test(testArResolverContext

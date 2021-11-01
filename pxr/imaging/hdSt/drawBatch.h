@@ -30,7 +30,7 @@
 
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hd/repr.h"
-#include "pxr/imaging/hdSt/shaderCode.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 
 #include <memory>
 #include <vector>
@@ -139,25 +139,27 @@ protected:
 
         void Reset() {
             _glslProgram.reset();
-            _surfaceShader.reset();
+            _materialNetworkShader.reset();
             _geometricShader.reset();
             _resourceBinder = HdSt_ResourceBinder();
             _shaders.clear();
         }
         
-        void SetSurfaceShader(HdStShaderCodeSharedPtr shader) {
-            _surfaceShader = shader;
+        void SetMaterialNetworkShader(
+                HdSt_MaterialNetworkShaderSharedPtr const &shader) {
+            _materialNetworkShader = shader;
         }
 
-        const HdStShaderCodeSharedPtr &GetSurfaceShader() {
-            return _surfaceShader; 
+        const HdSt_MaterialNetworkShaderSharedPtr &
+        GetMaterialNetworkShader() const {
+            return _materialNetworkShader; 
         }
 
         void SetGeometricShader(HdSt_GeometricShaderSharedPtr shader) {
             _geometricShader = shader;
         }
 
-        const HdSt_GeometricShaderSharedPtr &GetGeometricShader() { 
+        const HdSt_GeometricShaderSharedPtr &GetGeometricShader() const { 
             return _geometricShader; 
         }
 
@@ -167,18 +169,19 @@ protected:
             _shaders = shaders; 
         }
 
-        /// Returns array of shaders, this will not include the surface shader
-        /// passed via SetSurfaceShader (or the geometric shader).
+        /// Returns array of shaders, this will not include the
+        /// material network shader passed via SetMaterialNetworkShader
+        /// (or the geometric shader).
         const HdStShaderCodeSharedPtrVector &GetShaders() const {
             return _shaders; 
         }
 
         /// Returns array of composed shaders, this include the shaders passed
-        /// via SetShaders and the shader passed to SetSurfaceShader.
+        /// via SetShaders and the shader passed to SetMaterialNetworkShader.
         HdStShaderCodeSharedPtrVector GetComposedShaders() const {
             HdStShaderCodeSharedPtrVector shaders = _shaders;
-            if (_surfaceShader) {
-                shaders.push_back(_surfaceShader);
+            if (_materialNetworkShader) {
+                shaders.push_back(_materialNetworkShader);
             }
             return shaders;
         }
@@ -200,7 +203,7 @@ protected:
         HdSt_ResourceBinder _resourceBinder;
         HdStShaderCodeSharedPtrVector _shaders;
         HdSt_GeometricShaderSharedPtr _geometricShader;
-        HdStShaderCodeSharedPtr _surfaceShader;
+        HdSt_MaterialNetworkShaderSharedPtr _materialNetworkShader;
     };
 
     HDST_API

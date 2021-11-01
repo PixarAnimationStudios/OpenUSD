@@ -25,7 +25,7 @@ See pxr/usd/lib/usdGeom/schema.usda for an example.
 
 Schema classes can be classified into the following two types:
 
- - <b>API schema</b> - API schema - An API schema provides an interface to a 
+ - <b>API schema</b> - An API schema provides an interface to a 
    prim's qualities, but does not specify a typeName for the underlying prim. 
    The prim's qualities include its inheritance structure, attributes, 
    relationships etc. Since it cannot provide a typeName, an API schema is 
@@ -37,7 +37,7 @@ Schema classes can be classified into the following two types:
    usdGenSchema can help), the properties that "belong" to an API schema are 
    typically namespaced with the base-name of the schema, camelCased. For 
    example, UsdRiMaterialAPI::CreateSurfaceAttr() will create an attribute named 
-   outputs:ri:surface. 
+   outputs:ri:surface.
    API schemas are classified into the following two sub-types: 
         - <b>Non-applied API schemas</b> - If an API schema only provides an 
         interface to certain core bits of metadata (like UsdModelAPI, which sets 
@@ -48,23 +48,27 @@ Schema classes can be classified into the following two types:
         UsdClipsAPI, UsdShadeConnectableAPI and UsdGeomPrimvarsAPI. Typically, 
         non-applied API schemas can apply to any prim-type (eg, UsdClipsAPI) or 
         to a known fixed set of prim types, like in the case of 
-        UsdShadeConnectableAPI which is only applicable to Shaders and 
-        NodeGraphs.
+        UsdShadeConnectableAPI which is only applicable to types that implement
+        connectability behaviors such as shaders and lights.
         - <b>Applied API Schemas</b> - If there is a need to record and discover 
         whether an API schema has been applied to a prim, we make it an applied 
         API schema. An applied schema will impart its properties as additional 
-        built-in properties on the prim. A public Apply() (or private _Apply()) 
-        method is auto-generated for applied API schemas. Once an API schema 
-        has been applied to a prim, prim.HasAPI<APISchemaType>() will return 
+        built-in properties on the prim. A public Apply() method is 
+        auto-generated for applied API schemas. Once an API schema has been 
+        applied to a prim, prim.HasAPI<APISchemaType>() will return 
         true. An applied API schema must be applied to a prim via a call to the 
         Apply() method, for the schema object to evaluate to true when 
-        converted to a bool using the explicit bool conversion operator. An 
-        applied API schema can only inherit from another applied API schema or 
-        from UsdAPISchemaBase directly. Examples of applied API schemas include 
-        UsdCollectionAPI, UsdGeomModelAPI and UsdGeomMotionAPI. Applied API 
-        schemas are further classified into the following two categories:
+        converted to a bool using the explicit bool conversion operator.
+        Examples of applied API schemas include UsdCollectionAPI, 
+        UsdGeomModelAPI and UsdGeomMotionAPI. All API schemas must inherit from 
+        UsdAPISchemaBase directly and cannot inherit from other schemas. Applied
+        API schemas are further classified into the following two categories:
             - <b>Single-Apply API Schemas</b> - Applied API schemas that can 
-            only be applied once to a prim. Examples include UsdGeomModelAPI and 
+            only be applied as a single instance to a prim.  Even though API 
+            schemas cannot inherit from other API schemas, single-apply API 
+            schemas can include other API schemas as 
+            \ref Usd_BuiltinAPISchemas "built-ins". 
+            Examples of single-apply API schemas include UsdGeomModelAPI and 
             UsdGeomMotionAPI. 
             - <b>Multiple-Apply API Schemas</b> - Applied API schemas that can 
             be applied multiple times on the same prim with different instance 
@@ -133,11 +137,21 @@ schemas can be queried from the prim type's
 \ref UsdPrimDefinition::GetAppliedAPISchemas "prim definition" and the prim will
 also return true from UsdPrim::HasAPI for all of its built-in API schemas.
 
-\subsection Usd_IsASchemaBuiltins IsA schema built-in APIs
+Additionally, for some applied API schema types, we may want the application of 
+the API schema to additionally apply one or more other API schemas. We also 
+provide, through the same mechanisms as we have for IsA schemas, the ability to 
+specify built-in applied API schemas for single-apply API schema types. When a
+single-apply API schema with built-in API schemas is applied to a prim (or is 
+included as a built-in for another type), all of its built-in API schemas are 
+also applied. These built-ins nest, so an API schema can include another 
+built-in API schema which itself includes yet another built-in API schema and 
+all these be applied when the top level API schema is applied.
 
-The first and most straightforward way an IsA schema author can specify which 
-applied API schemas it wants built-in is by adding them through the 
-\em apiSchemas field in their schema definition like so:
+\subsection Usd_SchemaDefinedBuiltinAPIs Schema defined built-in APIs
+
+The first and most straightforward way an IsA or single-apply API schema author
+can specify which applied API schemas it wants built-in is by adding them 
+through the \em apiSchemas field in their schema definition like so:
 
 \code
 # Example of a concrete, typed (IsA) schema with built-in applied API schemas
@@ -151,42 +165,61 @@ class MyCustomPrim "MyCustomPrim" (
     # the API schema instance "ExampleMultiApplyAPI:foo"
     bool exampleMulti:foo:boolAttr = true
 }
+
+# Example of a single-apply API schema with built-in applied API schemas
+class "MyCustomAPI" (
+    inherits = </APISchemaBase>
+
+    # These listed applied API schemas will be built-in to this schema type and
+    # will always be applied when this schema is applied.
+    apiSchemas = ["ExampleSingleApplyAPI", "ExampleMultiApplyAPI:foo"]
+)  {
+    # Example of a default value override for a theoretical property defined in 
+    # the API schema instance "ExampleMultiApplyAPI:foo". This schema will be
+    # stronger when applied than its built-in API schemas and this default value
+    # will be used for the added property.
+    bool exampleMulti:foo:boolAttr = true
+}
 \endcode
 
-The listed API schemas will be built-in to the IsA schema type and derived types
-of the IsA schema will inherit its built-in API schemas. The IsA schema can 
-specify overrides to properties that would come from one of its built-in API 
-schemas by declaring the property itself. This should be done carefully to avoid
-breaking conformance with the API schema itself (like changing the property's 
-type) and is typically used for changing the default value for the property.
+The listed API schemas will be built-in to the declared schema type. For IsA
+schemas, derived types of the IsA schema will inherit its built-in API schemas
+(applied API schemas cannot inherit from each other.) Any schema can specify 
+overrides to properties that would come from one of its built-in API schemas by 
+declaring the property itself. This should be done carefully to avoid breaking 
+conformance with the built-in schema itself (like changing the property's type) 
+and is typically used for changing the default value for the property.
 \sa \ref Usd_APISchemaStrengthOrdering
 
 \subsection Usd_AutoAppliedAPISchemas Auto applied API schemas
 
-In addition to IsA schemas being able to declare built-in applied API schemas,
+In addition to schemas being able to declare built-in applied API schemas,
 an applied API schema can specify that it should be automatically applied to 
-any number of IsA schemas. The primary use case for this is when a schema author 
-wants to extend an existing IsA schema with properties from their own
-applied API schema without altering the existing IsA schema itself. Specifying 
-the API schema to auto apply can accomplish this goal without having to 
-manually apply the API to every prim instance of a schema type. A 
-concrete example would be a renderer providing an API schema for its own 
-specific render properties that can then be automatically applied to 
-UsdLuxLight prims when the renderer and its API schema are available.
+any number of IsA or single-apply API schemas. The primary use case for this is 
+when a schema author wants to extend an existing schema with properties from 
+their own applied API schema without altering the existing schema itself. 
+Specifying the API schema to auto apply can accomplish this goal without having 
+to manually apply the API to every prim instance of a schema type (or to every
+prim instance with a specific API schema applied). A concrete example would be a 
+renderer providing an API schema for its own specific render properties that can
+then be automatically applied to UsdLux light typed prims when the renderer and 
+its API schema are available.
 
-An author of an API schema can specify the IsA schemas to which it wants to be 
-automatically applied through the \em apiSchemaAutoApplyTo field in the API 
-schema definition's customData like so:
+An author of an API schema can specify the IsA and/or single-apply API schemas 
+to which it wants to be automatically applied through the 
+\em apiSchemaAutoApplyTo field in the API schema definition's customData like 
+so:
 
 \code
 # Example of an applied API schema specified to auto apply to both a concrete
-# and an abstract IsA schema.
+# and an abstract IsA schema as well as another single-apply API schema.
 class "MyCustomAPI" (
     inherits = </APISchemaBase>
     customData = {
-        # These listed IsA API schemas add this API schema to their built-in 
+        # These listed IsA and API schemas add this API schema to their built-in 
         # API schemas.
-        token[] apiSchemaAutoApplyTo = ["MyCustomConcretePrim", "MyCustomAbstractPrim"]
+        token[] apiSchemaAutoApplyTo = [
+           "MyCustomConcretePrim", "MyCustomAbstractPrim", "MyCustomAPI"]
     }
 )  {
     int autoApplyApiAttr = 1
@@ -194,21 +227,22 @@ class "MyCustomAPI" (
 \endcode
 
 The specified schema names in the \em apiSchemaAutoApplyTo field can refer to 
-both abstract and concrete IsA schema types. The applied schema will be added to 
-the built-in schemas for the listed IsA schema types as well as for any derived 
-schemas of the listed types. Note that this customData field is only supported 
-for single apply API schemas as multiple apply API schemas cannot be applied 
-without an instance name.
+another single-apply API schema and to both abstract and concrete IsA schema 
+types. For the IsA schema types, the applied schema will be added to the 
+built-in schemas for the listed types as well as for any derived schemas of the 
+listed types. Note that this customData field is only supported for single apply
+API schemas as multiple apply API schemas cannot be applied without an instance 
+name.
 
 \subsection Usd_PluginAutoAppliedAPISchemas Plugin defined auto applied API schemas
 
 Lastly, it is also possible for plugins to specify additional built-in API 
-schemas for IsA types outside of schema generation. This is useful if a client 
-desires IsA types to have built-in API schemas but doesn't want to force this 
-upon all clients by changing the generated schemas themselves. An example use 
-case for this would be a client pipeline that wants an available UI related API 
-schema applied to all shader prim types as this is not something all users of 
-these schemas may necessarily want.
+schemas for other schema types outside of schema generation. This is useful if a
+client desires schema types to have built-in API schemas but doesn't want to 
+force this upon all clients by changing the generated schemas themselves. An 
+example use case for this would be a client pipeline that wants an available UI 
+related API schema applied to all shader prim types as this is not something all
+users of these schemas may necessarily want.
  
 A plugin author can specify their additional built-in API schemas in their 
 plugin's plugInfo.json file using the \em AutoApplyAPISchemas metadata like so:
@@ -226,7 +260,7 @@ plugin's plugInfo.json file using the \em AutoApplyAPISchemas metadata like so:
                     },
                     "ExistingMultiApplyAPI:foo": {
                         "apiSchemaAutoApplyTo": [
-                            "ExistingPrimType", "OtherPrimType"
+                            "ExistingPrimType", "ExistingSingleApplyAPI"
                         ]
                     }
                 }
@@ -236,12 +270,11 @@ plugin's plugInfo.json file using the \em AutoApplyAPISchemas metadata like so:
 }
 \endcode
 
-The metadata format is a dictionary of API schema names to a list of the IsA
-schemas the plugin wants them to be applied to as a built-in API.
-Like with the schema generated 
-\ref Usd_AutoAppliedAPISchemas "auto apply schemas", the API schemas will 
-also be applied to any derived schema types of the listed IsA schemas. Multiple 
-apply schemas (in addition to single apply) can also be auto applied 
+The metadata format is a dictionary of API schema names to a list of the schemas
+the plugin wants them to be applied to as a built-in API. Like with the schema 
+generated \ref Usd_AutoAppliedAPISchemas "auto apply schemas", the API schemas 
+will also be applied to any derived schema types of any listed IsA schemas. 
+Multiple apply schemas (in addition to single apply) can also be auto applied 
 using this plugin metadata as long as the fully qualified instance name for the 
 mulitple apply schema is provided.
 
@@ -253,27 +286,35 @@ properties defined in API schemas will be unique to the schema. However, there
 will always be the possibility that properties with the same name may be defined 
 in multiple API schemas applied to the same prim. To account for this, there is 
 a strength ordering for applied API schemas that we use to determine which 
-property definition "wins" when more than one API schema can define it.
+property definition "wins" when more than one API schema can define it. Note 
+that in this situation, we do not compose the competing property definitions; 
+the entirety of the "winning" property definition is used and any weaker 
+definitions are ignored.
 
 Firstly, the strongest opinion for a built-in property in an IsA schema's
 \ref UsdPrimDefinition "prim definition" will always come from the IsA schema 
 itself. This is what allows us to override things like property default values 
 from a built-in API schema.
  
-Next, the \ref Usd_IsASchemaBuiltins "built-in schemas" that are defined in the 
-apiSchemas metadata of the IsA schema are applied in the order they appear in 
-the composed list operation of the apiSchemas field. This list order is 
-strongest to weakest, so property name conflicts will prefer a property 
-definition from an API schema earlier in the list.
-
-Lastly, any auto applied API schemas, whether defined in the 
+Next, any auto applied API schemas, whether defined in the 
 \ref Usd_AutoAppliedAPISchemas "API schema's definition" or in a 
-\ref Usd_PluginAutoAppliedAPISchemas "plugin's metadata", will be applied in 
-alphabetical order by schema name, strongest to weakest. The alphabetical 
-ordering is arbitrary but deterministic as there is no provided way to indicate
-strength ordering for auto applied API schemas. This also means that <b> auto 
-applied schemas will always be weaker than built-in API schemas</b> defined in the 
-IsA schema.
+\ref Usd_PluginAutoAppliedAPISchemas "plugin's metadata", will be appended to 
+the end of the list of built-in applied API schemas for the IsA or single-apply 
+API they apply to. Since the built-in schema list is ordered strongest to 
+weakest for application, this also means that <b> auto applied schemas will 
+always be weaker relative to the built-in API schemas defined in the schema they
+are auto applied to</b>. When more then one API schema is auto applied to the 
+same schema type, they are always sorted into alphabetical order by schema name 
+before they are appended to the built-in schemas. The alphabetical ordering is 
+arbitrary but deterministic as there is no provided way to indicate strength 
+ordering between auto applied API schemas.
+ 
+Lastly, the \ref Usd_SchemaDefinedBuiltinAPIs "built-in schemas" that are 
+defined in the apiSchemas metadata of the IsA schema are applied in the order 
+they appear in the composed list operation of the apiSchemas field, using a 
+depth first expansion of any API schema that itself has included built-in API
+schemas. This list order is strongest to weakest, so property name conflicts 
+will prefer a property definition from an API schema earlier in the list.
 
 Also note that any API schemas that are applied to a prim instance in scene 
 description will still have a stronger opinion on properties they define that 
@@ -396,13 +437,14 @@ Here's a short description of each datum in the global customData dictionary:
     If provided, the "value" string will be assigned as the token's value; 
     otherwise, the token's value will be its identifier (as a TfToken).
  
-  - \b skipCodeGeneration - Flag that, when set to true, tells schema generation
-    that it should not generate any C++ code for the classes in this module. We
-    call a schema without any corresponding C++ classes a "codeless schema".
-    Note that if skipCodeGeneration is set to true for a schema module, then 
-    any other schema module that includes it will also not generate any code. 
-    This is because we don't want to generate C++ code for classes that would 
-    possibly inherit from another C++ class that doesn't exist.
+  - \anchor codeless_schema \b skipCodeGeneration - Flag that, when set to 
+    true, tells schema generation that it should not generate any C++ code for 
+    the classes in this module. We call a schema without any corresponding C++ 
+    classes a "codeless schema". Note that if skipCodeGeneration is set to true 
+    for a schema module, then any other schema module that includes it will 
+    also not generate any code. This is because we don't want to generate C++ 
+    code for classes that would possibly inherit from another C++ class that 
+    doesn't exist.
  
 \section Usd_PerClassProperties Customizing Per-Class Properties
 
@@ -456,6 +498,10 @@ Here's a short description of each datum in the per-class customData dictionary:
     will be added as additional metadata for this class in the library's 
     plugInfo.json file. The values in this dictionary must be numeric types,
     strings, booleans, or dictionaries containing these types.
+    Examples of such extraPlugInfo include
+    _providesUsdShadeConnectableAPIBehavior_, _isUsdShadeContainer_,
+    _requiresUsdShadeEncapsulation_ -- these can be used to configure
+    UsdShadeConnectableAPIBehavior for Typed or API schemas.
 
   - \b schemaTokens - a place to declare tokens meaningful to the schema.
     These tokens will be included in the module's static tokens. See docs
@@ -474,8 +520,8 @@ Here's a short description of each datum in the per-class customData dictionary:
 
   - \b apiSchemaAutoApplyTo - must only be specified on single apply API 
     schemas. This is a token array value that lists the names of typed schemas 
-    that this API schema will be automatically applied to when the listed typed 
-    schemas are processed by the 
+    and other single apply API schemas that this API schema will be 
+    automatically applied to when the listed typed schemas are processed by the 
     \ref Usd_OM_SchemaDefinitionRegistry "schema definition registry."
 
   - \b apiSchemaCanOnlyApplyTo - must only be specified on single and multiple 

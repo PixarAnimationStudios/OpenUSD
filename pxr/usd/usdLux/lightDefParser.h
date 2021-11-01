@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \class UsdLux_LightDefParserPlugin
 /// 
 /// Parses shader definitions from the registered prim definitions for 
-/// UsdLuxLight and UsdLuxLightFilter derived schema classes.
+/// the UsdLux intrinsic concrete light types.
 /// 
 class UsdLux_LightDefParserPlugin : public NdrParserPlugin 
 {
@@ -62,6 +62,12 @@ private:
     friend class UsdLux_DiscoveryPlugin;
     static const TfToken &_GetSourceType();
     static const TfToken &_GetDiscoveryType();
+
+    // Mapping of shaderId to Typenames for API schemas which we want to have a
+    // sdr representation like concrete UsdLux light types.
+    using ShaderIdToAPITypeNameMap = 
+        std::unordered_map<TfToken, TfToken, TfToken::HashFunctor>;
+    static const ShaderIdToAPITypeNameMap& _GetShaderIdToAPITypeNameMap();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

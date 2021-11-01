@@ -199,15 +199,16 @@ WRAP_CUSTOM {
         .staticmethod("GetOrderedPurposeTokens")
 
         .def("ComputeVisibility", 
-             (TfToken (UsdGeomImageable::*)(UsdTimeCode const &) const)
-                &UsdGeomImageable::ComputeVisibility,
+             &UsdGeomImageable::ComputeVisibility,
              arg("time")=UsdTimeCode::Default())
-        .def("ComputeVisibility", 
-             (TfToken (UsdGeomImageable::*)(TfToken const &, 
-                                            UsdTimeCode const &) const)
-                &UsdGeomImageable::ComputeVisibility,
-             (arg("parentVisibility"),
-              arg("time")=UsdTimeCode::Default()))
+
+        .def("GetPurposeVisibilityAttr",
+             &UsdGeomImageable::GetPurposeVisibilityAttr,
+             (arg("purpose") = UsdGeomTokens->default_))
+        .def("ComputeEffectiveVisibility",
+             &UsdGeomImageable::ComputeEffectiveVisibility,
+             (arg("purpose") = UsdGeomTokens->default_,
+              arg("time") = UsdTimeCode::Default()))
 
         .def("ComputePurpose", 
              (TfToken (UsdGeomImageable::*)() const)

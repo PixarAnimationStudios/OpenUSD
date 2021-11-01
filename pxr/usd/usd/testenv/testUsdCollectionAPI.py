@@ -569,10 +569,10 @@ class TestUsdCollectionAPI(unittest.TestCase):
             Usd.CollectionAPI.Apply(testPrim, "")
 
         # Test Apply when the instance name is invalid because it matches a
-        # property name. CanApply will catch this too but not as a coding error.
+        # property name. CanApply will return false, but the apply will still
+        # occur as we don't enforce CanApply during Apply.
         self.assertFalse(Usd.CollectionAPI.CanApply(testPrim, "excludes"))
-        with self.assertRaises(Tf.ErrorException):
-            Usd.CollectionAPI.Apply(testPrim, "excludes")
+        self.assertTrue(Usd.CollectionAPI.Apply(testPrim, "excludes"))
 
     def test_CollectionEquivalence(self):
         # ----------------------------------------------------------

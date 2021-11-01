@@ -398,6 +398,7 @@ private:
     void _DidChangeLayerStackResolvedPath(
         const TfSpan<const PcpCache*>& caches,
         const PcpLayerStackPtr& layerStack,
+        bool requiresLayerStackChange,
         std::string* debugSummary);
 
     // The spec stack for the prim or property index at \p path must be

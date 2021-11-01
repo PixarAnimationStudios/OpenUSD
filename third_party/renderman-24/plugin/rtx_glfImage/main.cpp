@@ -27,6 +27,9 @@
 #include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/hio/types.h"
 #include "pxr/base/gf/gamma.h"
+#include "pxr/base/gf/half.h"
+#include "pxr/base/trace/trace.h"
+
 #include <mutex>
 
 class RixContext;
@@ -40,6 +43,7 @@ namespace {
 // Per TextureCtx user data.
 struct RtxHioImagePluginUserData {
     HioImageSharedPtr image;
+    bool flipped;
 
     std::mutex mipLevelsMutex;
     std::vector<HioImage::StorageSpec> mipLevels;
@@ -130,6 +134,49 @@ _ConvertSRGBtoLinear(T *dest, unsigned nPixels,
     }
 }
 
+template<class T>
+static void
+_ConvertToFloatAndFill(
+    const HioImage::StorageSpec& level, 
+    RtxPlugin::FillRequest& fillReq)
+{
+    TRACE_FUNCTION();
+    
+    const int numImageChannels = HioGetComponentCount(level.format);
+
+    const int startX = fillReq.tile.offset.X * fillReq.tile.size.X;
+    const int startY = fillReq.tile.offset.Y * fillReq.tile.size.Y;
+    const int endY = startY + fillReq.tile.size.Y;
+
+    const T *src = reinterpret_cast<const T*>(level.data) 
+        + (startY * level.width + startX) * numImageChannels
+        + (fillReq.channelOffset);
+    float *dest = (float*) fillReq.tileData;
+
+    // Get all channels in image.
+    if (fillReq.channelOffset == 0 && fillReq.numChannels == numImageChannels) {
+        for (int y = startY; y < endY; y++) {
+            const T *s = src;
+            for (int x = 0; x < numImageChannels * fillReq.tile.size.X; 
+                 x++, s++, dest++) {
+                *dest = static_cast<float>(*s);
+            }
+            src += numImageChannels * level.width;
+        }
+    } else {
+        for (int y = startY; y < endY; y++) {
+            const T *s = src;
+            for (int x = 0; x < fillReq.tile.size.X; x++) {
+                for (int i = 0; i < fillReq.numChannels; i++, s++, dest++) {
+                    *dest = static_cast<float>(*s);
+                }
+                s += numImageChannels - fillReq.numChannels;
+            }
+            src += numImageChannels * level.width;
+        }
+    }
+}
+
 int
 RtxHioImagePlugin::Open(TextureCtx& tCtx)
 {
@@ -138,6 +185,8 @@ RtxHioImagePlugin::Open(TextureCtx& tCtx)
     // Parse args.
     std::string filename;
     std::string wrapS, wrapT;
+    std::string flipped;
+    HioImage::SourceColorSpace sourceColorSpace = HioImage::Auto;
     for (unsigned int i = 0; i < tCtx.argc; i += 2) {
         if (strcmp(tCtx.argv[i], "filename") == 0) {
             filename = tCtx.argv[i + 1];
@@ -145,11 +194,20 @@ RtxHioImagePlugin::Open(TextureCtx& tCtx)
             wrapS = tCtx.argv[i + 1];
         } else if (strcmp(tCtx.argv[i], "wrapT") == 0) {
             wrapT = tCtx.argv[i + 1];
+        } else if (strcmp(tCtx.argv[i], "flipped") == 0) {
+            flipped = tCtx.argv[i + 1];
+        } else if (strcmp(tCtx.argv[i], "sourceColorSpace") == 0) {
+            if (strcmp(tCtx.argv[i + 1], "sRGB") == 0) {
+                sourceColorSpace = HioImage::SRGB;
+            } else if (strcmp(tCtx.argv[i + 1], "raw") == 0) {
+                sourceColorSpace = HioImage::Raw;
+            }
         }
     }
 
     // Open HioImage.
-    HioImageSharedPtr image = HioImage::OpenForReading(filename);
+    HioImageSharedPtr image = HioImage::OpenForReading(filename, 0, 0, 
+        sourceColorSpace);
     if (!image) {
         m_msgHandler->ErrorAlways(
             "RtxHioImagePlugin %p: "
@@ -170,7 +228,15 @@ RtxHioImagePlugin::Open(TextureCtx& tCtx)
     // Component data type.
     HioType channelType = HioGetHioType(image->GetFormat());
     switch (channelType) {
+    case HioTypeSignedByte:
+    case HioTypeUnsignedShort:
+    case HioTypeSignedShort:
+    case HioTypeUnsignedInt:
+    case HioTypeInt:
+    case HioTypeHalfFloat:
     case HioTypeFloat:
+    case HioTypeDouble:
+        // If not float, will convert data to float during Fill
         tCtx.dataType = TextureCtx::k_Float;
         break;
     case HioTypeUnsignedByte:
@@ -218,6 +284,9 @@ RtxHioImagePlugin::Open(TextureCtx& tCtx)
     tCtx.userData = data;
     data->image = image;
 
+    // Flip vertically. The default is true.
+    data->flipped = (flipped != "false");
+
     return 0;
 }
 
@@ -229,7 +298,7 @@ RtxHioImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
 
     // Find (or create) appropriate MIP level.
     HioImage::StorageSpec level;
-    level.flipped = true;
+    level.flipped = data->flipped;
     {
         // Lock mutex while scanning or modifying mipLevels.
         std::lock_guard<std::mutex> lock(data->mipLevelsMutex);
@@ -261,57 +330,71 @@ RtxHioImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
         }
     }
 
-    const bool isSRGB = data->image->IsColorSpaceSRGB();
-    const HioType channelType =
-        HioGetHioType(data->image->GetFormat());
+    const HioType channelType = HioGetHioType(data->image->GetFormat());
 
-    const int numImageChannels = HioGetComponentCount(level.format);
-    const int bytesPerChannel = HioGetDataSizeOfType(channelType);
+    if (channelType == HioTypeSignedByte) {
+        _ConvertToFloatAndFill<signed char>(level, fillReq);
+    } else if (channelType == HioTypeUnsignedShort) {
+        _ConvertToFloatAndFill<uint16_t>(level, fillReq);
+    } else if (channelType == HioTypeSignedShort) {
+        _ConvertToFloatAndFill<int16_t>(level, fillReq);
+    } else if (channelType == HioTypeUnsignedInt) {
+        _ConvertToFloatAndFill<uint32_t>(level, fillReq);
+    } else if (channelType == HioTypeInt) {
+        _ConvertToFloatAndFill<int32_t>(level, fillReq);
+    } else if (channelType == HioTypeDouble) {
+        _ConvertToFloatAndFill<double>(level, fillReq);
+    } else if (channelType == HioTypeHalfFloat) {
+        _ConvertToFloatAndFill<GfHalf>(level, fillReq);
+    } else {
+        const int numImageChannels = HioGetComponentCount(level.format);
+        const int bytesPerChannel = HioGetDataSizeOfType(channelType);
 
-    // Copy out tile data, one row at a time.
-    const int bytesPerImagePixel = level.depth;
-    const int bytesPerImageRow = bytesPerImagePixel * level.width;
-    const int bytesPerTilePixel = bytesPerChannel * fillReq.numChannels;
-    const int bytesPerTileRow = bytesPerTilePixel * fillReq.tile.size.X;
-    const int startX = fillReq.tile.offset.X * fillReq.tile.size.X;
-    const int startY = fillReq.tile.offset.Y * fillReq.tile.size.Y;
-    const int endY = startY + fillReq.tile.size.Y;
-    char *src = (char*) level.data
-        + (startY * level.width + startX) * bytesPerImagePixel
-        + (fillReq.channelOffset * bytesPerChannel);
-    char *dest = (char*) fillReq.tileData;
+        // Copy out tile data, one row at a time.
+        const int bytesPerImagePixel = level.depth;
+        const int bytesPerImageRow = bytesPerImagePixel * level.width;
+        const int bytesPerTilePixel = bytesPerChannel * fillReq.numChannels;
+        const int bytesPerTileRow = bytesPerTilePixel * fillReq.tile.size.X;
+        const int startX = fillReq.tile.offset.X * fillReq.tile.size.X;
+        const int startY = fillReq.tile.offset.Y * fillReq.tile.size.Y;
+        const int endY = startY + fillReq.tile.size.Y;
+        char *src = (char*) level.data
+            + (startY * level.width + startX) * bytesPerImagePixel
+            + (fillReq.channelOffset * bytesPerChannel);
+        char *dest = (char*) fillReq.tileData;
 
-    // If fill request wants all channels in the image, just memcpy each row.
-    // Otherwise we need to iterate over each pixel and copy just the 
-    // requested channels.
-    if (fillReq.channelOffset == 0 && 
-        fillReq.numChannels == numImageChannels) {
+        // If fill request wants all channels in the image, just memcpy each row.
+        // Otherwise we need to iterate over each pixel and copy just the 
+        // requested channels.
+        if (fillReq.channelOffset == 0 && 
+            fillReq.numChannels == numImageChannels) {
 
-        for (int y = startY; y < endY; y++) {
-            memcpy(dest, src, bytesPerTileRow);
-            src += bytesPerImageRow;
-            dest += bytesPerTileRow;
-        }
-    }
-    else {
-        for (int y = startY; y < endY; y++) {
-            for (char *d = dest, *dEnd = dest + bytesPerTileRow, *s = src; 
-                 d != dEnd; d += bytesPerTilePixel, s += bytesPerImagePixel) {
-                memcpy(d, s, bytesPerTilePixel);
+            for (int y = startY; y < endY; y++) {
+                memcpy(dest, src, bytesPerTileRow);
+                src += bytesPerImageRow;
+                dest += bytesPerTileRow;
             }
-            src += bytesPerImageRow;
-            dest += bytesPerTileRow;
+        }
+        else {
+            for (int y = startY; y < endY; y++) {
+                for (char *d = dest, *dEnd = dest + bytesPerTileRow, *s = src; 
+                    d != dEnd; d += bytesPerTilePixel, s += bytesPerImagePixel) {
+                    memcpy(d, s, bytesPerTilePixel);
+                }
+                src += bytesPerImageRow;
+                dest += bytesPerTileRow;
+            }
         }
     }
 
     // Make sure texture data is linear
-    if (isSRGB) {
-        if (channelType == HioTypeFloat) {
+    if (data->image->IsColorSpaceSRGB()) {
+        if (tCtx.dataType == TextureCtx::k_Float) {
             _ConvertSRGBtoLinear(
                 (float*)fillReq.tileData, 
                 fillReq.tile.size.X * fillReq.tile.size.Y,
                 fillReq.numChannels, fillReq.channelOffset);
-        } else if (channelType == HioTypeUnsignedByte) {
+        } else if (tCtx.dataType == TextureCtx::k_Byte) {
             _ConvertSRGBtoLinear(
                 (unsigned char*)fillReq.tileData, 
                 fillReq.tile.size.X * fillReq.tile.size.Y,

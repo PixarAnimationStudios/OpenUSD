@@ -73,6 +73,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (offsets)
     (indices)
     (weights)
+    (baseFaceToRefinedFacesMap)
+    (refinedFaceCounts)
 );
 
 // The stencil table data is managed using two buffer array ranges
@@ -183,6 +185,30 @@ protected:
 private:
     HdSt_MeshTopology *_topology;
     SdfPath const _id;
+};
+
+// ---------------------------------------------------------------------------
+/// \class HdSt_OsdBaseFaceToRefinedFacesMapComputation
+class HdSt_OsdBaseFaceToRefinedFacesMapComputation final : 
+    public HdComputedBufferSource
+{
+public:
+    HdSt_OsdBaseFaceToRefinedFacesMapComputation(
+        HdSt_Subdivision const *subdivision,
+        HdBufferSourceSharedPtr const &osdTopology);
+
+    bool HasChainedBuffer() const override;
+    bool Resolve() override;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    HdBufferSourceSharedPtrVector GetChainedBuffers() const override;
+
+protected:
+    bool _CheckValid() const override;
+
+private:
+    HdSt_Subdivision const *_subdivision;
+    HdBufferSourceSharedPtr _osdTopology;
+    HdBufferSourceSharedPtr _refinedFaceCounts;
 };
 
 // ---------------------------------------------------------------------------
@@ -642,13 +668,11 @@ HdSt_OsdRefineComputationGPU::HdSt_OsdRefineComputationGPU(
     TfToken const &primvarName,
     HdType type,
     HdSt_GpuStencilTableSharedPtr const & gpuStencilTable,
-    HdSt_MeshTopology::Interpolation interpolation,
-    int fvarChannel)
+    HdSt_MeshTopology::Interpolation interpolation)
     : _topology(topology)
     , _primvarName(primvarName)
     , _gpuStencilTable(gpuStencilTable)
     , _interpolation(interpolation)
-    , _fvarChannel(fvarChannel)
 {
 }
 
@@ -941,7 +965,15 @@ HdSt_Subdivision::CreateRefineComputationGPU(
                             resourceRegistry, interpolation, fvarChannel);
 
     return std::make_shared<HdSt_OsdRefineComputationGPU>(
-        topology, name, dataType, gpuStencilTable, interpolation, fvarChannel);
+        topology, name, dataType, gpuStencilTable, interpolation);
+}
+
+HdBufferSourceSharedPtr
+HdSt_Subdivision::CreateBaseFaceToRefinedFacesMapComputation(
+    HdBufferSourceSharedPtr const &osdTopology)
+{
+    return std::make_shared<HdSt_OsdBaseFaceToRefinedFacesMapComputation>(
+        this, osdTopology);
 }
 
 // ---------------------------------------------------------------------------
@@ -1517,6 +1549,94 @@ HdSt_OsdFvarIndexComputation::GetChainedBuffers() const
 
 bool
 HdSt_OsdFvarIndexComputation::_CheckValid() const {
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+
+HdSt_OsdBaseFaceToRefinedFacesMapComputation::
+    HdSt_OsdBaseFaceToRefinedFacesMapComputation(
+        HdSt_Subdivision const *subdivision,
+        HdBufferSourceSharedPtr const &osdTopology) :
+    _subdivision(subdivision), _osdTopology(osdTopology)
+{}
+
+void HdSt_OsdBaseFaceToRefinedFacesMapComputation::GetBufferSpecs(
+    HdBufferSpecVector *specs) const
+{
+    specs->emplace_back(_tokens->baseFaceToRefinedFacesMap, 
+        HdTupleType {HdTypeInt32, 1});
+    specs->emplace_back(_tokens->refinedFaceCounts, 
+        HdTupleType {HdTypeInt32, 1});
+}
+
+bool
+HdSt_OsdBaseFaceToRefinedFacesMapComputation::Resolve()
+{
+    if (_osdTopology && !_osdTopology->IsResolved()) return false;
+
+    if (!_TryLock()) return false;
+
+    if (!TF_VERIFY(_subdivision)) {
+        _SetResolved();
+        return true;
+    }
+    
+    HdSt_Subdivision::PatchTable const *patchTable =
+        _subdivision->GetPatchTable();
+    const size_t numPatches = patchTable ? 
+        patchTable->GetPatchParamTable().size() : 0;
+    const size_t numBaseFaces = patchTable ? 
+        patchTable->GetNumPtexFaces() : 0;
+
+    std::vector<std::vector<int>> baseFaceToRefinedFacesMap(numBaseFaces);
+
+    for (size_t i = 0; i < numPatches; ++i) {
+        OpenSubdiv::Far::PatchParam const &patchParam =
+            patchTable->GetPatchParamTable()[i];
+        baseFaceToRefinedFacesMap[patchParam.GetFaceId()].push_back(i);
+    }
+
+    VtIntArray baseFaceToRefinedFacesArr;
+    VtIntArray refinedFaceCounts(numBaseFaces);
+    size_t currRefinedFaceCount = 0;
+
+    for (size_t i = 0; i < numBaseFaces; ++i) {
+        std::vector<int> refinedFaces = baseFaceToRefinedFacesMap[i];
+        currRefinedFaceCount += refinedFaces.size();
+        
+        for (size_t j = 0; j < refinedFaces.size(); ++j) {
+            baseFaceToRefinedFacesArr.push_back(refinedFaces[j]);
+        }
+        refinedFaceCounts[i] = currRefinedFaceCount;
+    }
+
+    HdBufferSourceSharedPtr source = std::make_shared<HdVtBufferSource>(
+        _tokens->baseFaceToRefinedFacesMap, VtValue(baseFaceToRefinedFacesArr));
+    _SetResult(source);
+
+    _refinedFaceCounts = std::make_shared<HdVtBufferSource>(
+        _tokens->refinedFaceCounts, VtValue(refinedFaceCounts));
+
+    _SetResolved();
+    return true;
+}
+
+bool
+HdSt_OsdBaseFaceToRefinedFacesMapComputation::HasChainedBuffer() const
+{
+    return true;
+}
+
+HdBufferSourceSharedPtrVector
+HdSt_OsdBaseFaceToRefinedFacesMapComputation::GetChainedBuffers() const
+{
+    return { _refinedFaceCounts };
+}
+
+bool
+HdSt_OsdBaseFaceToRefinedFacesMapComputation::_CheckValid() const
+{
     return true;
 }
 

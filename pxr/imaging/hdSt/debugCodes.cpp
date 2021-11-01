@@ -37,6 +37,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Forces rebuild of draw batches.");
      TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DRAW_ITEM_GATHER,
         "Reports when draw items are fetched for a render pass.");
+     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DRAWITEMS_CACHE,
+        "Reports lookups from the draw items cache.");
 
      TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DISABLE_FRUSTUM_CULLING,
          "Disable view frustum culling");

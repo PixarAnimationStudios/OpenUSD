@@ -48,19 +48,22 @@ TF_DEFINE_PRIVATE_TOKENS(
 namespace ShaderMetadataHelpers
 {
     bool
-    IsTruthy(const TfToken& propName, const NdrTokenMap& metadata)
+    IsTruthy(const TfToken& key, const NdrTokenMap& metadata)
     {
+        const NdrTokenMap::const_iterator search = metadata.find(key);
+
         // Absence of the option implies false
-        if (metadata.count(propName) == 0) {
+        if (search == metadata.end()) {
             return false;
         }
 
-        std::string boolStr = metadata.at(propName);
-
         // Presence of the option without a value implies true
-        if (boolStr.empty()) {
+        if (search->second.empty()) {
             return true;
         }
+
+        // Copy string for modification below
+        std::string boolStr = search->second;
 
         // Turn into a lower case string
         std::transform(boolStr.begin(), boolStr.end(), boolStr.begin(), ::tolower);
@@ -77,10 +80,10 @@ namespace ShaderMetadataHelpers
 
 
     std::string
-    StringVal(const TfToken& propName, const NdrTokenMap& metadata,
+    StringVal(const TfToken& key, const NdrTokenMap& metadata,
               const std::string& defaultValue)
     {
-        const NdrTokenMap::const_iterator search = metadata.find(propName);
+        const NdrTokenMap::const_iterator search = metadata.find(key);
 
         if (search != metadata.end()) {
             return search->second;
@@ -94,10 +97,10 @@ namespace ShaderMetadataHelpers
 
 
     TfToken
-    TokenVal(const TfToken& propName, const NdrTokenMap& metadata,
+    TokenVal(const TfToken& key, const NdrTokenMap& metadata,
              const TfToken& defaultValue)
     {
-        const NdrTokenMap::const_iterator search = metadata.find(propName);
+        const NdrTokenMap::const_iterator search = metadata.find(key);
 
         if (search != metadata.end()) {
             return TfToken(search->second);
@@ -110,10 +113,31 @@ namespace ShaderMetadataHelpers
     // -------------------------------------------------------------------------
 
 
-    NdrStringVec
-    StringVecVal(const TfToken& propName, const NdrTokenMap& metadata)
+    int
+    IntVal(const TfToken& key, const NdrTokenMap& metadata,
+           int defaultValue)
     {
-        const NdrTokenMap::const_iterator search = metadata.find(propName);
+        const NdrTokenMap::const_iterator search = metadata.find(key);
+
+        if (search == metadata.end()) {
+            return defaultValue;
+        }
+
+        try {
+            return std::stoi(search->second);
+        } catch (...) {
+            return defaultValue;
+        }
+    }
+
+
+    // -------------------------------------------------------------------------
+
+
+    NdrStringVec
+    StringVecVal(const TfToken& key, const NdrTokenMap& metadata)
+    {
+        const NdrTokenMap::const_iterator search = metadata.find(key);
 
         if (search != metadata.end()) {
             return TfStringSplit(search->second, "|");
@@ -127,9 +151,9 @@ namespace ShaderMetadataHelpers
 
 
     NdrTokenVec
-    TokenVecVal(const TfToken& propName, const NdrTokenMap& metadata)
+    TokenVecVal(const TfToken& key, const NdrTokenMap& metadata)
     {
-        const NdrStringVec untokenized = StringVecVal(propName, metadata);
+        const NdrStringVec untokenized = StringVecVal(key, metadata);
         NdrTokenVec tokenized;
 
         for (const std::string& item : untokenized) {

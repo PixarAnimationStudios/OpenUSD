@@ -255,6 +255,8 @@ public:
     // box of the tree in the grid.
     static _GridHolderBase* New(const openvdb::GridBase::Ptr &grid);
 
+    virtual ~_GridHolderBase() = default;
+
 protected:
     _GridHolderBase(const openvdb::GridBase::Ptr &grid)
       : _treeBoundingBox(_ComputeTreeBoundingBox(grid))
@@ -594,6 +596,7 @@ bool
 HioOpenVDB_TextureData::Read()
 {   
     TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
     TF_DEBUG(HIOOPENVDB_DEBUG_TEXTURE).Msg(
         "[VdbTextureData] Path: %s GridName: %s\n",

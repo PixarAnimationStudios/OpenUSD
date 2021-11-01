@@ -350,6 +350,8 @@ HdPrman_InteractiveRenderPass::_Execute(
     static const RtUString us_PxrOrthographic("PxrOrthographic");
     static const RtUString us_PathTracer("PathTracer");
     static const RtUString us_main_cam_projection("main_cam_projection");
+    static const RtUString us_planeNormal("planeNormal");
+    static const RtUString us_planeOrigin("planeOrigin");
 
     if (!_interactiveContext) {
         // If this is not an interactive context, don't use Hydra to drive
@@ -446,7 +448,7 @@ HdPrman_InteractiveRenderPass::_Execute(
         VtValue vtMaxSamples = renderDelegate->GetRenderSetting(
             HdRenderSettingsTokens->convergedSamplesPerPixel).Cast<int>();
         int maxSamples = TF_VERIFY(!vtMaxSamples.IsEmpty()) ?
-            vtMaxSamples.UncheckedGet<int>() : 1024;
+            vtMaxSamples.UncheckedGet<int>() : 64; // RenderMan default
         _interactiveContext->_options.SetInteger(RixStr.k_hider_maxsamples,
                                                  maxSamples);
 
@@ -696,6 +698,55 @@ HdPrman_InteractiveRenderPass::_Execute(
                 &cameraNode,
                 &xform, 
                 &camParams);
+
+
+            // Clipping planes
+            for (riley::ClippingPlaneId const& id: _clipPlanes) {
+                _interactiveContext->riley->DeleteClippingPlane(id);
+            }
+            _clipPlanes.clear();
+            HdRenderPassState::ClipPlanesVector hdClipPlanes = 
+                renderPassState->GetClipPlanes();
+            if (!hdClipPlanes.empty()) {
+                // Convert camera's object xform.
+                TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
+                    xf_values(xforms.count);
+                for (size_t i=0; i < xforms.count; ++i) {
+                    xf_values[i] =
+                        HdPrman_GfMatrixToRtMatrix(
+                        xforms.values[i]);
+                }
+                riley::Transform camXform = { unsigned(xforms.count),
+                                           xf_values.data(),
+                                           xforms.times.data() };
+                // Hydra expresses clipping planes as a plane equation
+                // in the camera object space.
+                // Riley API expresses clipping planes in terms of a
+                // time-sampled transform, a normal, and a point.
+                for (GfVec4d plane: hdClipPlanes) {
+                    RtParamList params;
+                    GfVec3f direction(plane[0], plane[1], plane[2]);
+                    float directionLength = direction.GetLength();
+                    if (directionLength == 0.0f) {
+                        continue;
+                    }
+                    // Riley API expects a unit-length normal.
+                    GfVec3f norm = direction / directionLength;
+                    params.SetNormal(us_planeNormal,
+                        RtNormal3(norm[0], norm[1], norm[2]));
+                    // Determine the distance along the normal
+                    // to the plane.
+                    float distance = -plane[3] / directionLength;
+                    // The origin can be any point on the plane.
+                    RtPoint3 origin(norm[0] * distance,
+                                    norm[1] * distance,
+                                    norm[2] * distance);
+                    params.SetPoint(us_planeOrigin, origin);
+                    _clipPlanes.push_back(
+                        _interactiveContext->riley
+                        ->CreateClippingPlane(camXform, params));
+                }
+            }
         } else {
             // Use the framing state as a single time sample.
             float const zerotime = 0.0f;

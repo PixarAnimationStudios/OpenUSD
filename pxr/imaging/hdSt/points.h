@@ -94,6 +94,9 @@ private:
                          HdRenderParam *renderParam,
                          HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits);
+    
+    void _UpdateMaterialTagsForAllReprs(HdSceneDelegate *sceneDelegate,
+                                        HdRenderParam *renderParam);
 };
 
 

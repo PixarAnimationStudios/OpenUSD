@@ -237,6 +237,7 @@ UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     , _sceneLights(false)
     , _cameraLight(false)
     , _testIdRender(false)
+    , _enableSceneMaterials(true)
     , _complexity(1.0f)
     , _drawMode(UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH)
     , _shouldFrameAll(false)
@@ -329,10 +330,11 @@ static void Usage(int argc, char *argv[])
     static const char usage[] =
 "%s [-stage filePath] [-write filePath]\n"
 "                           [-offscreen] [-lighting] [-idRender]\n"
+"                           [-disableSceneMaterials]\n"
 "                           [-camera pathToCamera]\n"
 "                           [-complexity complexity]\n"
 "                           [-renderer rendererName]\n"
-"                           [-shading [flat|smooth|wire|wireOnSurface]]\n"
+"                           [-shading [flat|smooth|wire|wireOnSurface|points]]\n"
 "                           [-frameAll]\n"
 "                           [-clipPlane clipPlane1 ... clipPlane4]\n"
 "                           [-complexities complexities1 complexities2 ...]\n"
@@ -354,13 +356,15 @@ static void Usage(int argc, char *argv[])
 "                      defined in the scene\n"
 "  -camLight           use a single camera light\n"
 "  -idRender           ID rendering\n"
+"  -disableSceneMaterials\n"
+"                      Disable scene materials\n"
 "  -complexity complexity\n"
 "                      Set the fallback complexity [1]\n"
 "  -renderer rendererName\n"
 "                      use the specified renderer plugin []\n"
 "  -shading [flat|smooth|wire|wireOnSurface]\n"
 "                      force specific type of shading\n"
-"                      [flat|smooth|wire|wireOnSurface] []\n"
+"                      [flat|smooth|wire|wireOnSurface|points] []\n"
 "  -frameAll           set the view to frame all root prims on the stage\n"
 "  -clipPlane clipPlane1 ... clipPlane4\n"
 "                      set an additional camera clipping plane [()]\n"
@@ -541,6 +545,9 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         else if (strcmp(argv[i], "-idRender") == 0) {
             _testIdRender = true;
         }
+        else if (strcmp(argv[i], "-disableSceneMaterials") == 0) {
+            _enableSceneMaterials = false;
+        }
         else if (strcmp(argv[i], "-stage") == 0) {
             CheckForMissingArguments(i, 1, argc, argv);
             args->unresolvedStageFilePath = argv[++i];
@@ -706,6 +713,8 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
         _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_FLAT;
     } else if (args.shading.compare("wire") == 0 ) {
         _drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
+    } else if (args.shading.compare("points") == 0 ) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_POINTS;
     } else {
         TF_WARN("Draw mode %s not supported!", args.shading.c_str());
     }

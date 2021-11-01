@@ -32,6 +32,7 @@ pxr_library(usd
         debugCodes
         editContext
         editTarget
+        errors
         flattenUtils
         inherits
         interpolation
@@ -211,6 +212,7 @@ pxr_test_scripts(
     testenv/testUsdCreateProperties.py
     testenv/testUsdDataFormats.py
     testenv/testUsdExternalAssetDependencies.py
+    testenv/testUsdErrors.py
     testenv/testUsdFallbackPrimTypes.py
     testenv/testUsdFileFormats.py
     testenv/testUsdFlatten.py
@@ -435,6 +437,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdAppliedAPISchemas
+    DEST testUsdAppliedAPISchemas_AutoApplyDisabled
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdStageThreading
     DEST testUsdStageThreading
 )
@@ -652,6 +659,14 @@ pxr_register_test(testUsdAppliedAPISchemas
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdAppliedAPISchemas_AutoApplyDisabled
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAppliedAPISchemas"
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_DISABLE_AUTO_APPLY_API_SCHEMAS=1
+)
+
 pxr_register_test(testUsdAttributeBlocking
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeBlocking"
@@ -672,6 +687,13 @@ pxr_register_test(testUsdAttributeConnections
 pxr_register_test(testUsdAttributeQuery
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeQuery"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdErrors
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdErrors"
+    ENV TF_FATAL_THROW=0
     EXPECTED_RETURN_CODE 0
 )
 
@@ -866,10 +888,15 @@ pxr_register_test(testUsdMetadataCpp
 )
 
 if (PXR_USE_AR_2)
-    pxr_register_test(testUsdResolverChanged
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdResolverChanged"
-        EXPECTED_RETURN_CODE 0
-    )
+    # This test relies on a plugin built specifically for this test.
+    # The build system currently doesn't support this for static library
+    # builds, so we only enable this test on shared library builds.
+    if (BUILD_SHARED_LIBS)
+        pxr_register_test(testUsdResolverChanged
+            COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdResolverChanged"
+            EXPECTED_RETURN_CODE 0
+        )
+    endif()
 endif()
 
 pxr_register_test(testUsdStageNoPython
@@ -896,6 +923,12 @@ pxr_register_test(testUsdTimeCodeStream
 pxr_register_test(testUsdStage
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdStage"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdStageCache
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdStageCache"
     EXPECTED_RETURN_CODE 0
 )
 

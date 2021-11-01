@@ -420,6 +420,12 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::IsImmutable() const
          && _bufferArray->IsImmutable();
 }
 
+bool
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::RequiresStaging() const
+{
+    return false;
+}
+
 void
 HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
     HdBufferSourceSharedPtr const &bufferSource)

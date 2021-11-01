@@ -47,7 +47,7 @@ HDST_API
 TfToken HdStPackageFallbackLightingShader();
 
 HDST_API
-TfToken HdStPackageFallbackSurfaceShader();
+TfToken HdStPackageFallbackMaterialNetworkShader();
 
 HDST_API
 TfToken HdStPackageFallbackVolumeShader();

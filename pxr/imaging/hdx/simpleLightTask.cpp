@@ -157,7 +157,10 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
         {HdPrimTypeTokens->domeLight,
             HdPrimTypeTokens->simpleLight,
             HdPrimTypeTokens->sphereLight,
-            HdPrimTypeTokens->rectLight};
+            HdPrimTypeTokens->rectLight,
+            HdPrimTypeTokens->diskLight,
+            HdPrimTypeTokens->cylinderLight,
+            HdPrimTypeTokens->distantLight};
     _lightIds.clear();
     _numLights = _AppendLightsOfType(renderIndex, lightTypes,
                         _lightIncludePaths,

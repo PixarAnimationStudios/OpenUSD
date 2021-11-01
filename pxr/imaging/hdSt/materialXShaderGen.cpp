@@ -160,8 +160,15 @@ HdStMaterialXShaderGen::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
         emitString(R"(    "attributes": {)" "\n", mxStage);
         std::string line; unsigned int i = 0;
         for (auto primvarPair : _mxHdPrimvarMap) {
+            const mx::TypeDesc *mxType = mx::TypeDesc::get(primvarPair.second);
+            if (mxType == nullptr) {
+                TF_WARN("MaterialX geomprop '%s' has unknown type '%s'",
+                        primvarPair.first.c_str(), primvarPair.second.c_str());
+            }
+            std::string type = mxType ? _syntax->getTypeName(mxType) : "vec2";
+
             line += "        \"" + primvarPair.first + "\": {\n";
-            line += "            \"type\": \"" + primvarPair.second + "\"\n";
+            line += "            \"type\": \"" + type + "\"\n";
             line += "        }";
             line += (i < _mxHdPrimvarMap.size() - 1) ? ",\n" : "\n";
             i++;
@@ -548,9 +555,10 @@ HdStMaterialXShaderGen::_EmitMxVertexDataLine(
                 "    #ifdef HD_HAS_%s\n"
                 "        HdGet_%s(),\n"
                 "    #else\n"
-                "        vec2(0.0),\n"
+                "        %s(0.0),\n"
                 "    #endif\n        ", 
-                _defaultTexcoordName.c_str(), _defaultTexcoordName.c_str());
+                _defaultTexcoordName.c_str(), _defaultTexcoordName.c_str(),
+                _syntax->getTypeName(variable->getType()).c_str());
     }
     else if (mxVariableName.compare(0, mx::HW::T_IN_GEOMPROP.size(), 
                                     mx::HW::T_IN_GEOMPROP) == 0) {
@@ -563,9 +571,10 @@ HdStMaterialXShaderGen::_EmitMxVertexDataLine(
                 "    #ifdef HD_HAS%s\n"
                 "        HdGet%s(),\n"
                 "    #else\n"
-                "        vec2(0.0),\n"
+                "        %s(0.0),\n"
                 "    #endif\n        ", 
-                geompropName.c_str(), geompropName.c_str());
+                geompropName.c_str(), geompropName.c_str(),
+                _syntax->getTypeName(variable->getType()).c_str());
     }
     else {
         const std::string valueStr = variable->getValue() 

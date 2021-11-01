@@ -290,6 +290,27 @@ class TestUsdNotices(unittest.TestCase):
 
             del layerMutingChanged
 
+    def test_Reload(self):
+        s = Usd.Stage.CreateInMemory()
+        s.DefinePrim('/Root')
+
+        def OnReload(notice, sender):
+            self.assertEqual(notice.GetStage(), s)
+            self.assertEqual(notice.GetResyncedPaths(), ['/Root'])
+            self.assertFalse(notice.HasChangedFields('/Root'))
+            self.assertEqual(notice.GetChangedFields('/Root'), [])
+
+            # XXX: The pseudo-root is marked as having info changed
+            # because of the didReloadContent bit in the layer changelist.
+            # This doesn't seem correct.
+            self.assertEqual(notice.GetChangedInfoOnlyPaths(), ['/'])
+            self.assertFalse(notice.HasChangedFields('/'))
+            self.assertFalse(notice.GetChangedFields('/'), [])
+
+        notice = Tf.Notice.Register(Usd.Notice.ObjectsChanged, OnReload, s)
+
+        s.Reload()
+
     @unittest.skipIf(platform.system() == "Windows" and
                      not hasattr(Ar.Resolver, "CreateIdentifier"),
                      "This test case currently fails on Windows due to "
@@ -326,6 +347,10 @@ class TestUsdNotices(unittest.TestCase):
                     self.fixture.assertEqual(notice.GetStage(), self.stage)
                     self.fixture.assertEqual(notice.GetResyncedPaths(), 
                                              [Sdf.Path('/ModelReference')])
+                    self.fixture.assertFalse(
+                        notice.HasChangedFields('/ModelReference'))
+                    self.fixture.assertEqual(
+                        notice.GetChangedFields('/ModelReference'), [])
                     self.fixture.assertEqual(notice.GetChangedInfoOnlyPaths(),
                                              [])
 

@@ -570,6 +570,9 @@ _UpdateTextureNodes(
                     TfStringPrintf("rtxplugin:%s?filename=%s&wrapS=%s&wrapT=%s", 
                                     pluginName.c_str(), path.c_str(), 
                                     uWrap.GetText(), vWrap.GetText());
+                TF_DEBUG(HDPRMAN_IMAGE_ASSET_RESOLVE)
+                    .Msg("Resolved MaterialX asset path: %s\n",
+                         mxInputValue.c_str());
                 
                 // Update the MaterialX Texture Node with the new mxInputValue
                 const mx::NodeGraphPtr mxNodeGraph = 
@@ -579,6 +582,11 @@ _UpdateTextureNodes(
                 mxTextureNode->setInputValue(_tokens->file.GetText(), // name
                                              mxInputValue,            // value
                                              _tokens->filename.GetText());//type
+            }
+            else {
+                TF_DEBUG(HDPRMAN_IMAGE_ASSET_RESOLVE)
+                    .Msg("Resolved MaterialX asset path: %s\n",
+                         path.c_str());
             }
         }
     }

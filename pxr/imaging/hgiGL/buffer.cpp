@@ -34,6 +34,7 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
     , _bufferId(0)
     , _mapped(nullptr)
     , _cpuStaging(nullptr)
+    , _bindlessGPUAddress(0)
 {
 
     if (desc.byteSize == 0) {
@@ -126,5 +127,23 @@ HgiGLBuffer::GetCPUStagingAddress()
     // via CopyBufferCpuToGpu cmd by the client.
     return _cpuStaging;
 }
+
+uint64_t
+HgiGLBuffer::GetBindlessGPUAddress()
+{
+    // note: gpu address remains valid until the buffer object is deleted,
+    // or when the data store is respecified via BufferData/BufferStorage.
+    // It doesn't change even when we make the buffer resident or non-resident.
+    // https://www.opengl.org/registry/specs/NV/shader_buffer_load.txt
+    if (!_bindlessGPUAddress) {
+        glGetNamedBufferParameterui64vNV(
+            _bufferId, GL_BUFFER_GPU_ADDRESS_NV, &_bindlessGPUAddress);
+    }
+    if (!_bindlessGPUAddress) {
+        TF_CODING_ERROR("Failed to get bindless buffer GPU address");
+    }
+    return _bindlessGPUAddress;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

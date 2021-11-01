@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<UsdLuxRectLight,
-        TfType::Bases< UsdLuxLight > >();
+        TfType::Bases< UsdLuxBoundableLightBase > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
@@ -171,13 +171,14 @@ const TfTokenVector&
 UsdLuxRectLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdLuxTokens->lightShaderId,
         UsdLuxTokens->inputsWidth,
         UsdLuxTokens->inputsHeight,
         UsdLuxTokens->inputsTextureFile,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
-            UsdLuxLight::GetSchemaAttributeNames(true),
+            UsdLuxBoundableLightBase::GetSchemaAttributeNames(true),
             localNames);
 
     if (includeInherited)
@@ -196,3 +197,61 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdGeom/boundableComputeExtent.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+static bool
+_ComputeLocalExtent(const float width, 
+                    const float height, 
+                    VtVec3fArray *extent)
+{
+    extent->resize(2);
+    (*extent)[1] = GfVec3f(width * 0.5f, height * 0.5f, 0.0f);
+    (*extent)[0] = -(*extent)[1];
+    return true;
+}
+
+static bool 
+_ComputeExtent(
+    const UsdGeomBoundable &boundable,
+    const UsdTimeCode &time,
+    const GfMatrix4d *transform,
+    VtVec3fArray *extent)
+{
+    const UsdLuxRectLight light(boundable);
+    if (!TF_VERIFY(light)) {
+        return false;
+    }
+
+    float width;
+    if (!light.GetWidthAttr().Get(&width, time)) {
+        return false;
+    }
+
+    float height;
+    if (!light.GetHeightAttr().Get(&height, time)) {
+        return false;
+    }
+
+    if (!_ComputeLocalExtent(width, height, extent)) {
+        return false;
+    }
+
+    if (transform) {
+        GfBBox3d bbox(GfRange3d((*extent)[0], (*extent)[1]), *transform);
+        GfRange3d range = bbox.ComputeAlignedRange();
+        (*extent)[0] = GfVec3f(range.GetMin());
+        (*extent)[1] = GfVec3f(range.GetMax());
+    }
+
+    return true;
+}
+
+TF_REGISTRY_FUNCTION(UsdGeomBoundable)
+{
+    UsdGeomRegisterComputeExtentFunction<UsdLuxRectLight>(_ComputeExtent);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

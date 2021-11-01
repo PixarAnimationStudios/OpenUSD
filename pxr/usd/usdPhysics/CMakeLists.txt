@@ -87,3 +87,14 @@ pxr_library(usdPhysics
         examples/usdPhysicsSpheresWithMaterial.usda
 )
 
+pxr_test_scripts(
+    testenv/testUsdPhysicsMetrics.py
+)
+
+
+pxr_register_test(testUsdPhysicsMetrics
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPhysicsMetrics"
+    EXPECTED_RETURN_CODE 0
+)
+

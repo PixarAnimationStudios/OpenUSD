@@ -248,6 +248,7 @@ _FindConnectedNode(
 // Get the Texture coordinate name if specified, otherwise get the default name 
 static void
 _GetTextureCoordinateName(
+    mx::DocumentPtr const &mxDoc,
     HdMaterialNetwork2* hdNetwork,
     HdMaterialNode2* hdTextureNode,
     SdfPath const& hdTextureNodePath,
@@ -286,10 +287,15 @@ _GetTextureCoordinateName(
                 hdNetwork->nodes[hdTextureNodePath].parameters[_tokens->st] = 
                                 TfToken(texcoordName.c_str());
 
-                // Save texture coordinate primvar name for the glslfx header
-                (*mxHdPrimvarMap)[texcoordName] = "vec2";
-                textureCoordSet = true;
-                break;
+                // Save texture coordinate primvar name for the glslfx header;
+                // figure out the mx typename
+                mx::NodeDefPtr mxNodeDef = mxDoc->getNodeDef(
+                        hdCoordNode.nodeTypeId.GetString());
+                if (mxNodeDef) {
+                    (*mxHdPrimvarMap)[texcoordName] = mxNodeDef->getType();
+                    textureCoordSet = true;
+                    break;
+                }
             }
         }
     }
@@ -326,6 +332,7 @@ _GetTextureCoordinateName(
 // texture nodes to the terminal node
 static void 
 _UpdateTextureNodes(
+    mx::DocumentPtr const &mxDoc,
     HdMaterialNetwork2* hdNetwork,
     SdfPath const& hdTerminalNodePath,
     std::set<SdfPath> const& hdTextureNodes,
@@ -336,7 +343,7 @@ _UpdateTextureNodes(
     for (auto const& texturePath : hdTextureNodes) {
         HdMaterialNode2 hdTextureNode = hdNetwork->nodes[texturePath];
 
-        _GetTextureCoordinateName(hdNetwork, &hdTextureNode, texturePath, 
+        _GetTextureCoordinateName(mxDoc, hdNetwork, &hdTextureNode, texturePath, 
                                   mxHdPrimvarMap, defaultTexcoordName);
 
         // Gather the Hydra Texture Parameters
@@ -369,7 +376,44 @@ _UpdateTextureNodes(
         textureConn.upstreamNode = texturePath;
         textureConn.upstreamOutputName = TfToken(newConnName);
         hdNetwork->nodes[hdTerminalNodePath].
-                    inputConnections[TfToken(newConnName)] = {textureConn};
+            inputConnections[textureConn.upstreamOutputName] = {textureConn};
+    }
+}
+
+// Connect the primvar nodes to the terminal node
+static void 
+_UpdatePrimvarNodes(
+    mx::DocumentPtr const &mxDoc,
+    HdMaterialNetwork2* hdNetwork,
+    SdfPath const& hdTerminalNodePath,
+    std::set<SdfPath> const& hdPrimvarNodes,
+    mx::StringMap* mxHdPrimvarMap)
+{
+    for (auto const& primvarPath : hdPrimvarNodes) {
+        HdMaterialNode2 hdPrimvarNode = hdNetwork->nodes[primvarPath];
+
+        // Save primvar name for the glslfx header
+        auto primvarNameIt = hdPrimvarNode.parameters.find(_tokens->geomprop);
+        if (primvarNameIt != hdPrimvarNode.parameters.end()) {
+            std::string const& primvarName =
+                HdMtlxConvertToString(primvarNameIt->second);
+
+            // Figure out the mx typename
+            mx::NodeDefPtr mxNodeDef = mxDoc->getNodeDef(
+                    hdPrimvarNode.nodeTypeId.GetString());
+            if (mxNodeDef) {
+                (*mxHdPrimvarMap)[primvarName] = mxNodeDef->getType();
+            }
+        }
+
+        // Connect the primvar node to the terminal node for HdStMaterialNetwork
+        // Create a unique name for the new connection.
+        std::string newConnName = primvarPath.GetName() + "_primvarconn";
+        HdMaterialConnection2 primvarConn;
+        primvarConn.upstreamNode = primvarPath;
+        primvarConn.upstreamOutputName = TfToken(newConnName);
+        hdNetwork->nodes[hdTerminalNodePath]
+            .inputConnections[primvarConn.upstreamOutputName] = {primvarConn};
     }
 }
 
@@ -458,28 +502,32 @@ HdSt_ApplyMaterialXFilter(
     if (mtlxSdrNode) {
 
         // Load Standard Libraries/setup SearchPaths (for mxDoc and mxShaderGen)
-        mx::FilePathVec libraryFolders = { "libraries", };
+        mx::FilePathVec libraryFolders;
         mx::FileSearchPath searchPath;
         searchPath.append(mx::FilePath(PXR_MATERIALX_STDLIB_DIR));
-        searchPath.append(mx::FilePath(PXR_MATERIALX_BASE_DIR));
         mx::DocumentPtr stdLibraries = mx::createDocument();
         mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
 
         // Create the MaterialX Document from the HdMaterialNetwork
         MxHdInfo mxHdInfo; // Hydra information for MaterialX glslfx shaderGen 
         std::set<SdfPath> hdTextureNodes;
+        std::set<SdfPath> hdPrimvarNodes;
         mx::DocumentPtr mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
                                         *hdNetwork,
                                         terminalNode,   // MaterialX HdNode
                                         materialPath,
                                         stdLibraries,
                                         &hdTextureNodes,
-                                        &mxHdInfo.textureMap);
+                                        &mxHdInfo.textureMap,
+                                        &hdPrimvarNodes);
 
         // Add Hydra parameters for each of the Texture nodes
-        _UpdateTextureNodes(hdNetwork, terminalNodePath, hdTextureNodes, 
+        _UpdateTextureNodes(mtlxDoc, hdNetwork, terminalNodePath, hdTextureNodes, 
                             &mxHdInfo.textureMap, &mxHdInfo.primvarMap, 
                             &mxHdInfo.defaultTexcoordName);
+
+        _UpdatePrimvarNodes(mtlxDoc, hdNetwork, terminalNodePath,
+                            hdPrimvarNodes, &mxHdInfo.primvarMap);
 
         mxHdInfo.materialTag = _GetMaterialTag(terminalNode);
 

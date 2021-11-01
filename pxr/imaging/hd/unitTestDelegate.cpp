@@ -238,6 +238,7 @@ void
 HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
                                     VtVec3fArray const &points,
                                     VtIntArray const &curveVertexCounts,
+                                    VtIntArray const &curveIndices,
                                     VtVec3fArray const &normals,
                                     TfToken const &type,
                                     TfToken const &basis,
@@ -254,7 +255,7 @@ HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
     HdRenderIndex& index = GetRenderIndex();
     index.InsertRprim(HdPrimTypeTokens->basisCurves, this, id);
 
-    _curves[id] = _Curves(points, curveVertexCounts, 
+    _curves[id] = _Curves(points, curveVertexCounts, curveIndices,
                           type,
                           basis);
 
@@ -676,6 +677,8 @@ HdUnitTestDelegate::UpdateTask(SdfPath const &id,
        tracker.MarkTaskDirty(id, HdChangeTracker::DirtyParams);
    } else if (key == HdTokens->collection) {
        tracker.MarkTaskDirty(id, HdChangeTracker::DirtyCollection);
+   } else if (key == HdTokens->renderTags) {
+       tracker.MarkTaskDirty(id, HdChangeTracker::DirtyRenderTags);
    } else {
        TF_CODING_ERROR("Unknown key %s", key.GetText());
    }
@@ -707,6 +710,19 @@ HdUnitTestDelegate::GetRenderTag(SdfPath const& id)
 }
 
 /*virtual*/
+TfTokenVector
+HdUnitTestDelegate::GetTaskRenderTags(SdfPath const& id)
+{
+    const auto it = _tasks.find(id);
+    if (it == _tasks.end()) {
+        return TfTokenVector();
+    }
+
+    const VtDictionary &dict = it->second.params;
+    return VtDictionaryGet<TfTokenVector>(dict, HdTokens->renderTags, VtDefault = TfTokenVector());
+}
+
+/*virtual*/
 HdMeshTopology 
 HdUnitTestDelegate::GetMeshTopology(SdfPath const& id)
 {
@@ -734,7 +750,7 @@ HdUnitTestDelegate::GetBasisCurvesTopology(SdfPath const& id)
                                  curve.basis,
                                  HdTokens->nonperiodic,
                                  curve.curveVertexCounts,
-                                 VtIntArray());
+                                 curve.curveIndices);
 }
 
 /*virtual*/
@@ -819,6 +835,18 @@ HdUnitTestDelegate::GetInstanceIndices(SdfPath const& instancerId,
         }
     }
     return indices;
+}
+
+/*virtual*/
+SdfPathVector
+HdUnitTestDelegate::GetInstancerPrototypes(SdfPath const& instancerId)
+{
+    HD_TRACE_FUNCTION();
+
+    if (_Instancer *instancer = TfMapLookupPtr(_instancers, instancerId)) {
+        return instancer->prototypes;
+    }
+    return SdfPathVector();
 }
 
 /*virtual*/
@@ -1589,6 +1617,7 @@ HdUnitTestDelegate::AddCurves(
         _BuildArray(points, sizeof(points)/sizeof(points[0])),
         _BuildArray(curveVertexCounts,
                     sizeof(curveVertexCounts)/sizeof(curveVertexCounts[0])),
+        /*curveIndices=*/VtIntArray(),
         authNormals,
         type,
         basis,
@@ -1948,6 +1977,7 @@ HdUnitTestDelegate::PopulateInvalidPrimsSet()
     // empty curve
     AddBasisCurves(SdfPath("/empty_curve"),
                             VtVec3fArray(),
+                            VtIntArray(),
                             VtIntArray(),
                             VtVec3fArray(),
                             HdTokens->linear,

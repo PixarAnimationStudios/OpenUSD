@@ -37,7 +37,8 @@ TF_WRAP_MODULE
 
     // Generated schema.  Base classes must precede derived classes.
     // Indentation shows class hierarchy.
-    TF_WRAP(UsdLuxLight);
+    TF_WRAP(UsdLuxBoundableLightBase);
+    TF_WRAP(UsdLuxNonboundableLightBase);
     {
         TF_WRAP(UsdLuxCylinderLight);
         TF_WRAP(UsdLuxDiskLight);
@@ -49,10 +50,14 @@ TF_WRAP_MODULE
         TF_WRAP(UsdLuxPluginLight);
         TF_WRAP(UsdLuxPortalLight);
     }
+    TF_WRAP(UsdLuxLightAPI);
+    {
+        TF_WRAP(UsdLuxMeshLightAPI);
+        TF_WRAP(UsdLuxVolumeLightAPI);
+    }
     TF_WRAP(UsdLuxListAPI);
     TF_WRAP(UsdLuxShapingAPI);
     TF_WRAP(UsdLuxShadowAPI);
     TF_WRAP(UsdLuxLightFilter);
     TF_WRAP(UsdLuxPluginLightFilter);
-    TF_WRAP(UsdLuxLightPortal);
 }

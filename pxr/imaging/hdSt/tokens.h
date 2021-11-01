@@ -63,10 +63,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((_int, "int"))                             \
     ((colorSpaceAuto, "auto"))                  \
     (fvarIndices)                               \
-    (fvarPatchParam)
-
-#define HDST_LIGHT_TOKENS                       \
-    (color)
+    (fvarPatchParam)                            \
+    (coarseFaceIndex)                           \
+    (processedFaceCounts)                       \
+    (processedFaceIndices)                      \
+    (geomSubsetFaceIndices)
 
 #define HDST_TEXTURE_TOKENS                     \
     (wrapS)                                     \
@@ -117,14 +118,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDST_PERF_TOKENS                        \
     (copyBufferGpuToGpu)                        \
-    (copyBufferCpuToGpu)
+    (copyBufferCpuToGpu)                        \
+    (drawItemsCacheHit)                         \
+    (drawItemsCacheMiss)                        \
+    (drawItemsCacheStale)                       \
+    (drawItemsFetched)
 
 TF_DECLARE_PUBLIC_TOKENS(HdStGLSLProgramTokens, HDST_API,
                          HDST_GLSL_PROGRAM_TOKENS);
 
 TF_DECLARE_PUBLIC_TOKENS(HdStTokens, HDST_API, HDST_TOKENS);
-
-TF_DECLARE_PUBLIC_TOKENS(HdStLightTokens, HDST_API, HDST_LIGHT_TOKENS);
 
 TF_DECLARE_PUBLIC_TOKENS(HdStTextureTokens, HDST_API, HDST_TEXTURE_TOKENS);
 

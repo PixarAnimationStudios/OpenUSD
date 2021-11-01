@@ -28,7 +28,7 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 
-#include "pxr/imaging/hdSt/surfaceShader.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,7 +41,7 @@ using HdVolumeFieldDescriptorVector =
 
 /// \class HdSt_VolumeShader
 ///
-/// Adds the following behaviors to HdStSurfaceShader:
+/// Adds the following behaviors to HdSt_MaterialNetworkShader:
 /// - walk through field descriptors to allocate textures and update
 ///   the NamedTextureHandle's.
 /// - compute volume bounding box, adds it to the shader bar and
@@ -49,7 +49,7 @@ using HdVolumeFieldDescriptorVector =
 /// - bind raymarching step sizes (querried from render delegate)
 ///   to uniforms in the shader
 ///
-class HdSt_VolumeShader final : public HdStSurfaceShader
+class HdSt_VolumeShader final : public HdSt_MaterialNetworkShader
 {
 public:
     explicit HdSt_VolumeShader(HdRenderDelegate * const renderDelegate);

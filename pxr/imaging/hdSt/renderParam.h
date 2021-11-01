@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdSt/api.h"
 
 #include <atomic>
+#include <shared_mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -64,6 +65,34 @@ public:
     HDST_API
     unsigned int GetMaterialTagsVersion() const;
 
+    /// Marks geom subsets draw items dirty, meaning that the draw items 
+    /// associated with the collection of a render pass need to be re-gathered.
+    HDST_API
+    void MarkGeomSubsetDrawItemsDirty();
+
+    HDST_API
+    unsigned int GetGeomSubsetDrawItemsVersion() const;
+
+    // ---------------------------------------------------------------------- //
+    /// Material tag tracking
+    // ---------------------------------------------------------------------- /
+
+    /// Does render index have rprims with given materialTag? Note
+    /// that for performance reasons and ease of implementation
+    /// (HdRprimSharedData::materialTag initializes to the default
+    /// material tag), this always returns true for the default (and
+    /// empty) material tag.
+    HDST_API
+    bool HasMaterialTag(const TfToken &materialTag) const;
+
+    /// Register that there is an rprim with given materialTag.
+    HDST_API
+    void IncreaseMaterialTagCount(const TfToken &materialTag);
+    
+    /// Unregister that there is an rprim with given materialTag.
+    HDST_API
+    void DecreaseMaterialTagCount(const TfToken &materialTag);
+
     // ---------------------------------------------------------------------- //
     /// Garbage collection tracking
     // ---------------------------------------------------------------------- //
@@ -80,10 +109,16 @@ public:
     }
     
 private:
+    void _AdjustMaterialTagCount(const TfToken &materialTag, int i);
+
     std::atomic_uint _drawBatchesVersion;
     std::atomic_uint _materialTagsVersion;
+    std::atomic_uint _geomSubsetDrawItemsVersion;
     bool _needsGarbageCollection; // Doesn't need to be atomic since parallel
                                   // sync might only set it (and not clear).
+
+    mutable std::shared_timed_mutex _materialTagToCountMutex;
+    std::unordered_map<TfToken, std::atomic_int, TfHash> _materialTagToCount;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

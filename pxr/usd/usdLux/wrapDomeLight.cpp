@@ -78,7 +78,7 @@ void wrapUsdLuxDomeLight()
 {
     typedef UsdLuxDomeLight This;
 
-    class_<This, bases<UsdLuxLight> >
+    class_<This, bases<UsdLuxNonboundableLightBase> >
         cls("DomeLight");
 
     cls

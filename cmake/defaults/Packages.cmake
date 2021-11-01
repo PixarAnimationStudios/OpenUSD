@@ -71,6 +71,10 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         find_package(PythonLibs 2.7 REQUIRED)
     endif()
 
+    if(WIN32 AND PXR_USE_DEBUG_PYTHON)
+        set(Boost_USE_DEBUG_PYTHON ON)
+    endif()
+
     # This option indicates that we don't want to explicitly link to the python
     # libraries. See BUILDING.md for details.
     if(PXR_PY_UNDEFINED_DYNAMIC_LOOKUP AND NOT WIN32 )
@@ -221,8 +225,7 @@ if (PXR_BUILD_IMAGING)
             list(APPEND VULKAN_LIBS Vulkan::Vulkan)
 
             # Find the extra vulkan libraries we need
-            # XXX In cmake 3.18+ we can instead use: Vulkan::glslc
-            set(EXTRA_VULKAN_LIBS glslang OGLCompiler OSDependent MachineIndependent GenericCodeGen SPIRV SPIRV-Tools SPIRV-Tools-opt SPIRV-Tools-shared)
+            set(EXTRA_VULKAN_LIBS shaderc_combined)
             foreach(EXTRA_LIBRARY ${EXTRA_VULKAN_LIBS})
                 find_library("${EXTRA_LIBRARY}_PATH" NAMES "${EXTRA_LIBRARY}" PATHS $ENV{VULKAN_SDK}/lib)
                 list(APPEND VULKAN_LIBS "${${EXTRA_LIBRARY}_PATH}")

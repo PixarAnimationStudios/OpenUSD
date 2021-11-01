@@ -111,6 +111,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SPRIM_REMOVED,
         "Report when sprims are removed");
 
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SYNC_ALL,
+        "Report debugging info for the sync all algorithm.");
+
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_TASK_ADDED,
         "Report when tasks are added");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_TASK_REMOVED,

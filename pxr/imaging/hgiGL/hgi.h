@@ -26,11 +26,13 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgiGL/api.h"
+#include "pxr/imaging/hgiGL/capabilities.h"
 #include "pxr/imaging/hgiGL/garbageCollector.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 #include <functional>
+#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -136,6 +138,9 @@ public:
     TfToken const& GetAPIName() const override;
 
     HGIGL_API
+    HgiGLCapabilities const* GetCapabilities() const override;
+
+    HGIGL_API
     void StartFrame() override;
 
     HGIGL_API
@@ -168,6 +173,7 @@ private:
     }
 
     HgiGLDevice* _device;
+    std::unique_ptr<HgiGLCapabilities> _capabilities;
     HgiGLGarbageCollector _garbageCollector;
     int _frameDepth;
 };

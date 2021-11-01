@@ -158,7 +158,7 @@ class GfRotation {
     // an equivalent rotation that is as close as possible to the hints.
     //
     // One can use this routine to generate any combination of the three 
-    // angles by passing in NULL for the angle that is to be omitted.
+    // angles by passing in nullptr for the angle that is to be omitted.
     // 
     // Passing in valid pointers for all four angles will decompose into
     // Tw, FB, and LR but allows Sw to be used for best matching of hint 
@@ -185,9 +185,9 @@ class GfRotation {
                                   double *thetaTw,
                                   double *thetaFB,
                                   double *thetaLR,
-                                  double *thetaSw = NULL,
+                                  double *thetaSw = nullptr,
                                   bool   useHint=false,
-                                  const double *swShift=NULL);
+                                  const double *swShift=nullptr);
 
     // This function projects the vectors \p v1 and \p v2 onto the plane 
     // normal to \p axis, and then returns the rotation about \p axis that 
@@ -196,6 +196,20 @@ class GfRotation {
     static GfRotation RotateOntoProjected(const GfVec3d &v1,
                                           const GfVec3d &v2,
                                           const GfVec3d &axis);
+
+    /// Replace the hint angles with the closest rotation of the given
+    /// rotation to the hint.
+    ///
+    /// Each angle in the rotation will be within Pi of the corresponding
+    /// hint angle and the sum of the differences with the hint will
+    /// be minimized. If a given rotation value is null then that angle will
+    /// be treated as 0.0 and ignored in the calculations.
+    ///
+    /// All angles are in radians. The rotation order is Tw/FB/LR/Sw.
+    GF_API
+    static void MatchClosestEulerRotation(
+        double targetTw, double targetFB, double targetLR, double targetSw,
+        double *thetaTw, double *thetaFB, double *thetaLR, double *thetaSw);
 
     /// Transforms row vector \p vec by the rotation, returning the result. 
     GF_API

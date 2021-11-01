@@ -1,4 +1,4 @@
-/* stb_image_resize - v0.95 - public domain image resizing
+/* stb_image_resize - v0.97 - public domain image resizing
    by Jorge L Rodriguez (@VinoBS) - 2014
    http://github.com/nothings/stb
 
@@ -20,8 +20,8 @@
                                output_pixels, out_w, out_h, 0,
                                num_channels , alpha_chan  , 0)
       stbir_resize_uint8_srgb_edgemode(
-                               input_pixels , in_w , in_h , 0, 
-                               output_pixels, out_w, out_h, 0, 
+                               input_pixels , in_w , in_h , 0,
+                               output_pixels, out_w, out_h, 0,
                                num_channels , alpha_chan  , 0, STBIR_EDGE_CLAMP)
                                                             // WRAP/REFLECT/ZERO
 
@@ -159,6 +159,8 @@
       Nathan Reed: warning fixes
 
    REVISIONS
+      0.97 (2020-02-02) fixed warning
+      0.96 (2019-03-04) fixed warnings
       0.95 (2017-07-23) fixed warnings
       0.94 (2017-03-18) fixed warnings
       0.93 (2017-03-03) fixed bug with certain combinations of heights
@@ -193,6 +195,7 @@ typedef uint16_t stbir_uint16;
 typedef uint32_t stbir_uint32;
 #endif
 
+#ifndef STBIRDEF
 #ifdef STB_IMAGE_RESIZE_STATIC
 #define STBIRDEF static
 #else
@@ -202,7 +205,7 @@ typedef uint32_t stbir_uint32;
 #define STBIRDEF extern
 #endif
 #endif
-
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -231,7 +234,7 @@ STBIRDEF int stbir_resize_float(     const float *input_pixels , int input_w , i
                                      int num_channels);
 
 
-// The following functions interpret image data as gamma-corrected sRGB. 
+// The following functions interpret image data as gamma-corrected sRGB.
 // Specify STBIR_ALPHA_CHANNEL_NONE if you have no alpha channel,
 // or otherwise provide the index of the alpha channel. Flags value
 // of 0 will probably do the right thing if you're not sure what
@@ -304,19 +307,19 @@ typedef enum
 STBIRDEF int stbir_resize_uint8_generic( const unsigned char *input_pixels , int input_w , int input_h , int input_stride_in_bytes,
                                                unsigned char *output_pixels, int output_w, int output_h, int output_stride_in_bytes,
                                          int num_channels, int alpha_channel, int flags,
-                                         stbir_edge edge_wrap_mode, stbir_filter filter, stbir_colorspace space, 
+                                         stbir_edge edge_wrap_mode, stbir_filter filter, stbir_colorspace space,
                                          void *alloc_context);
 
 STBIRDEF int stbir_resize_uint16_generic(const stbir_uint16 *input_pixels  , int input_w , int input_h , int input_stride_in_bytes,
                                                stbir_uint16 *output_pixels , int output_w, int output_h, int output_stride_in_bytes,
                                          int num_channels, int alpha_channel, int flags,
-                                         stbir_edge edge_wrap_mode, stbir_filter filter, stbir_colorspace space, 
+                                         stbir_edge edge_wrap_mode, stbir_filter filter, stbir_colorspace space,
                                          void *alloc_context);
 
 STBIRDEF int stbir_resize_float_generic( const float *input_pixels         , int input_w , int input_h , int input_stride_in_bytes,
                                                float *output_pixels        , int output_w, int output_h, int output_stride_in_bytes,
                                          int num_channels, int alpha_channel, int flags,
-                                         stbir_edge edge_wrap_mode, stbir_filter filter, stbir_colorspace space, 
+                                         stbir_edge edge_wrap_mode, stbir_filter filter, stbir_colorspace space,
                                          void *alloc_context);
 
 
@@ -348,7 +351,7 @@ STBIRDEF int stbir_resize(         const void *input_pixels , int input_w , int 
                                          void *output_pixels, int output_w, int output_h, int output_stride_in_bytes,
                                    stbir_datatype datatype,
                                    int num_channels, int alpha_channel, int flags,
-                                   stbir_edge edge_mode_horizontal, stbir_edge edge_mode_vertical, 
+                                   stbir_edge edge_mode_horizontal, stbir_edge edge_mode_vertical,
                                    stbir_filter filter_horizontal,  stbir_filter filter_vertical,
                                    stbir_colorspace space, void *alloc_context);
 
@@ -356,7 +359,7 @@ STBIRDEF int stbir_resize_subpixel(const void *input_pixels , int input_w , int 
                                          void *output_pixels, int output_w, int output_h, int output_stride_in_bytes,
                                    stbir_datatype datatype,
                                    int num_channels, int alpha_channel, int flags,
-                                   stbir_edge edge_mode_horizontal, stbir_edge edge_mode_vertical, 
+                                   stbir_edge edge_mode_horizontal, stbir_edge edge_mode_vertical,
                                    stbir_filter filter_horizontal,  stbir_filter filter_vertical,
                                    stbir_colorspace space, void *alloc_context,
                                    float x_scale, float y_scale,
@@ -366,7 +369,7 @@ STBIRDEF int stbir_resize_region(  const void *input_pixels , int input_w , int 
                                          void *output_pixels, int output_w, int output_h, int output_stride_in_bytes,
                                    stbir_datatype datatype,
                                    int num_channels, int alpha_channel, int flags,
-                                   stbir_edge edge_mode_horizontal, stbir_edge edge_mode_vertical, 
+                                   stbir_edge edge_mode_horizontal, stbir_edge edge_mode_vertical,
                                    stbir_filter filter_horizontal,  stbir_filter filter_vertical,
                                    stbir_colorspace space, void *alloc_context,
                                    float s0, float t0, float s1, float t1);
@@ -668,14 +671,14 @@ static const stbir_uint32 fp32_to_srgb8_tab4[104] = {
     0x44c20798, 0x488e071e, 0x4c1c06b6, 0x4f76065d, 0x52a50610, 0x55ac05cc, 0x5892058f, 0x5b590559,
     0x5e0c0a23, 0x631c0980, 0x67db08f6, 0x6c55087f, 0x70940818, 0x74a007bd, 0x787d076c, 0x7c330723,
 };
- 
+
 static stbir_uint8 stbir__linear_to_srgb_uchar(float in)
 {
     static const stbir__FP32 almostone = { 0x3f7fffff }; // 1-eps
     static const stbir__FP32 minval = { (127-13) << 23 };
     stbir_uint32 tab,bias,scale,t;
     stbir__FP32 f;
- 
+
     // Clamp to [2^(-13), 1-eps]; these two values map to 0 and 1, respectively.
     // The tests are carefully written so that NaNs map to 0, same as in the reference
     // implementation.
@@ -683,13 +686,13 @@ static stbir_uint8 stbir__linear_to_srgb_uchar(float in)
         in = minval.f;
     if (in > almostone.f)
         in = almostone.f;
- 
+
     // Do the table lookup and unpack bias, scale
     f.f = in;
     tab = fp32_to_srgb8_tab4[(f.u - minval.u) >> 20];
     bias = (tab >> 16) << 9;
     scale = tab & 0xffff;
- 
+
     // Grab next-highest mantissa bits and perform linear interpolation
     t = (f.u >> 12) & 0xff;
     return (unsigned char) ((bias + scale*t) >> 16);
@@ -1061,7 +1064,11 @@ static void stbir__calculate_coefficients_upsample(stbir_filter filter, float sc
         total_filter += coefficient_group[i];
     }
 
-    STBIR_ASSERT(stbir__filter_info_table[filter].kernel((float)(in_last_pixel + 1) + 0.5f - in_center_of_out, 1/scale) == 0);
+    // NOTE(fg): Not actually true in general, nor is there any reason to expect it should be.
+    // It would be true in exact math but is at best approximately true in floating-point math,
+    // and it would not make sense to try and put actual bounds on this here because it depends
+    // on the image aspect ratio which can get pretty extreme.
+    //STBIR_ASSERT(stbir__filter_info_table[filter].kernel((float)(in_last_pixel + 1) + 0.5f - in_center_of_out, 1/scale) == 0);
 
     STBIR_ASSERT(total_filter > 0.9);
     STBIR_ASSERT(total_filter < 1.1f); // Make sure it's not way off.
@@ -1086,7 +1093,7 @@ static void stbir__calculate_coefficients_downsample(stbir_filter filter, float 
 {
     int i;
 
-     STBIR_ASSERT(out_last_pixel - out_first_pixel <= (int)ceil(stbir__filter_info_table[filter].support(scale_ratio) * 2)); // Taken directly from stbir__get_coefficient_width() which we can't call because we don't know if we're horizontal or vertical.
+    STBIR_ASSERT(out_last_pixel - out_first_pixel <= (int)ceil(stbir__filter_info_table[filter].support(scale_ratio) * 2)); // Taken directly from stbir__get_coefficient_width() which we can't call because we don't know if we're horizontal or vertical.
 
     contributor->n0 = out_first_pixel;
     contributor->n1 = out_last_pixel;
@@ -1100,7 +1107,11 @@ static void stbir__calculate_coefficients_downsample(stbir_filter filter, float 
         coefficient_group[i] = stbir__filter_info_table[filter].kernel(x, scale_ratio) * scale_ratio;
     }
 
-    STBIR_ASSERT(stbir__filter_info_table[filter].kernel((float)(out_last_pixel + 1) + 0.5f - out_center_of_in, scale_ratio) == 0);
+    // NOTE(fg): Not actually true in general, nor is there any reason to expect it should be.
+    // It would be true in exact math but is at best approximately true in floating-point math,
+    // and it would not make sense to try and put actual bounds on this here because it depends
+    // on the image aspect ratio which can get pretty extreme.
+    //STBIR_ASSERT(stbir__filter_info_table[filter].kernel((float)(out_last_pixel + 1) + 0.5f - out_center_of_in, scale_ratio) == 0);
 
     for (i = out_last_pixel - out_first_pixel; i >= 0; i--)
     {
@@ -1236,7 +1247,7 @@ static float* stbir__get_decode_buffer(stbir__info* stbir_info)
     return &stbir_info->decode_buffer[stbir_info->horizontal_filter_pixel_margin * stbir_info->channels];
 }
 
-#define STBIR__DECODE(type, colorspace) ((type) * (STBIR_MAX_COLORSPACES) + (colorspace))
+#define STBIR__DECODE(type, colorspace) ((int)(type) * (STBIR_MAX_COLORSPACES) + (int)(colorspace))
 
 static void stbir__decode_scanline(stbir__info* stbir_info, int n)
 {
@@ -1549,7 +1560,6 @@ static void stbir__resample_horizontal_downsample(stbir__info* stbir_info, float
                 {
                     int out_pixel_index = k * 1;
                     float coefficient = horizontal_coefficients[coefficient_group + k - n0];
-                    STBIR_ASSERT(coefficient != 0);
                     output_buffer[out_pixel_index + 0] += decode_buffer[in_pixel_index + 0] * coefficient;
                 }
             }
@@ -1570,7 +1580,6 @@ static void stbir__resample_horizontal_downsample(stbir__info* stbir_info, float
                 {
                     int out_pixel_index = k * 2;
                     float coefficient = horizontal_coefficients[coefficient_group + k - n0];
-                    STBIR_ASSERT(coefficient != 0);
                     output_buffer[out_pixel_index + 0] += decode_buffer[in_pixel_index + 0] * coefficient;
                     output_buffer[out_pixel_index + 1] += decode_buffer[in_pixel_index + 1] * coefficient;
                 }
@@ -1592,7 +1601,6 @@ static void stbir__resample_horizontal_downsample(stbir__info* stbir_info, float
                 {
                     int out_pixel_index = k * 3;
                     float coefficient = horizontal_coefficients[coefficient_group + k - n0];
-                    STBIR_ASSERT(coefficient != 0);
                     output_buffer[out_pixel_index + 0] += decode_buffer[in_pixel_index + 0] * coefficient;
                     output_buffer[out_pixel_index + 1] += decode_buffer[in_pixel_index + 1] * coefficient;
                     output_buffer[out_pixel_index + 2] += decode_buffer[in_pixel_index + 2] * coefficient;
@@ -1615,7 +1623,6 @@ static void stbir__resample_horizontal_downsample(stbir__info* stbir_info, float
                 {
                     int out_pixel_index = k * 4;
                     float coefficient = horizontal_coefficients[coefficient_group + k - n0];
-                    STBIR_ASSERT(coefficient != 0);
                     output_buffer[out_pixel_index + 0] += decode_buffer[in_pixel_index + 0] * coefficient;
                     output_buffer[out_pixel_index + 1] += decode_buffer[in_pixel_index + 1] * coefficient;
                     output_buffer[out_pixel_index + 2] += decode_buffer[in_pixel_index + 2] * coefficient;
@@ -1640,7 +1647,6 @@ static void stbir__resample_horizontal_downsample(stbir__info* stbir_info, float
                     int c;
                     int out_pixel_index = k * channels;
                     float coefficient = horizontal_coefficients[coefficient_group + k - n0];
-                    STBIR_ASSERT(coefficient != 0);
                     for (c = 0; c < channels; c++)
                         output_buffer[out_pixel_index + c] += decode_buffer[in_pixel_index + c] * coefficient;
                 }
@@ -2324,8 +2330,9 @@ static int stbir__resize_allocated(stbir__info *info,
     if (alpha_channel < 0)
         flags |= STBIR_FLAG_ALPHA_USES_COLORSPACE | STBIR_FLAG_ALPHA_PREMULTIPLIED;
 
-    if (!(flags&STBIR_FLAG_ALPHA_USES_COLORSPACE) || !(flags&STBIR_FLAG_ALPHA_PREMULTIPLIED))
+    if (!(flags&STBIR_FLAG_ALPHA_USES_COLORSPACE) || !(flags&STBIR_FLAG_ALPHA_PREMULTIPLIED)) {
         STBIR_ASSERT(alpha_channel >= 0 && alpha_channel < info->channels);
+    }
 
     if (alpha_channel >= info->channels)
         return 0;
@@ -2442,7 +2449,7 @@ static int stbir__resize_arbitrary(
         return 0;
 
     result = stbir__resize_allocated(&info, input_data, input_stride_in_bytes,
-                                            output_data, output_stride_in_bytes, 
+                                            output_data, output_stride_in_bytes,
                                             alpha_channel, flags, type,
                                             edge_horizontal, edge_vertical,
                                             colorspace, extra_memory, memory_required);
@@ -2496,7 +2503,7 @@ STBIRDEF int stbir_resize_uint8_srgb_edgemode(const unsigned char *input_pixels 
 STBIRDEF int stbir_resize_uint8_generic( const unsigned char *input_pixels , int input_w , int input_h , int input_stride_in_bytes,
                                                unsigned char *output_pixels, int output_w, int output_h, int output_stride_in_bytes,
                                          int num_channels, int alpha_channel, int flags,
-                                         stbir_edge edge_wrap_mode, stbir_filter filter, stbir_colorspace space, 
+                                         stbir_edge edge_wrap_mode, stbir_filter filter, stbir_colorspace space,
                                          void *alloc_context)
 {
     return stbir__resize_arbitrary(alloc_context, input_pixels, input_w, input_h, input_stride_in_bytes,
@@ -2508,7 +2515,7 @@ STBIRDEF int stbir_resize_uint8_generic( const unsigned char *input_pixels , int
 STBIRDEF int stbir_resize_uint16_generic(const stbir_uint16 *input_pixels  , int input_w , int input_h , int input_stride_in_bytes,
                                                stbir_uint16 *output_pixels , int output_w, int output_h, int output_stride_in_bytes,
                                          int num_channels, int alpha_channel, int flags,
-                                         stbir_edge edge_wrap_mode, stbir_filter filter, stbir_colorspace space, 
+                                         stbir_edge edge_wrap_mode, stbir_filter filter, stbir_colorspace space,
                                          void *alloc_context)
 {
     return stbir__resize_arbitrary(alloc_context, input_pixels, input_w, input_h, input_stride_in_bytes,
@@ -2521,7 +2528,7 @@ STBIRDEF int stbir_resize_uint16_generic(const stbir_uint16 *input_pixels  , int
 STBIRDEF int stbir_resize_float_generic( const float *input_pixels         , int input_w , int input_h , int input_stride_in_bytes,
                                                float *output_pixels        , int output_w, int output_h, int output_stride_in_bytes,
                                          int num_channels, int alpha_channel, int flags,
-                                         stbir_edge edge_wrap_mode, stbir_filter filter, stbir_colorspace space, 
+                                         stbir_edge edge_wrap_mode, stbir_filter filter, stbir_colorspace space,
                                          void *alloc_context)
 {
     return stbir__resize_arbitrary(alloc_context, input_pixels, input_w, input_h, input_stride_in_bytes,
@@ -2535,7 +2542,7 @@ STBIRDEF int stbir_resize(         const void *input_pixels , int input_w , int 
                                          void *output_pixels, int output_w, int output_h, int output_stride_in_bytes,
                                    stbir_datatype datatype,
                                    int num_channels, int alpha_channel, int flags,
-                                   stbir_edge edge_mode_horizontal, stbir_edge edge_mode_vertical, 
+                                   stbir_edge edge_mode_horizontal, stbir_edge edge_mode_vertical,
                                    stbir_filter filter_horizontal,  stbir_filter filter_vertical,
                                    stbir_colorspace space, void *alloc_context)
 {
@@ -2550,7 +2557,7 @@ STBIRDEF int stbir_resize_subpixel(const void *input_pixels , int input_w , int 
                                          void *output_pixels, int output_w, int output_h, int output_stride_in_bytes,
                                    stbir_datatype datatype,
                                    int num_channels, int alpha_channel, int flags,
-                                   stbir_edge edge_mode_horizontal, stbir_edge edge_mode_vertical, 
+                                   stbir_edge edge_mode_horizontal, stbir_edge edge_mode_vertical,
                                    stbir_filter filter_horizontal,  stbir_filter filter_vertical,
                                    stbir_colorspace space, void *alloc_context,
                                    float x_scale, float y_scale,
@@ -2571,7 +2578,7 @@ STBIRDEF int stbir_resize_region(  const void *input_pixels , int input_w , int 
                                          void *output_pixels, int output_w, int output_h, int output_stride_in_bytes,
                                    stbir_datatype datatype,
                                    int num_channels, int alpha_channel, int flags,
-                                   stbir_edge edge_mode_horizontal, stbir_edge edge_mode_vertical, 
+                                   stbir_edge edge_mode_horizontal, stbir_edge edge_mode_vertical,
                                    stbir_filter filter_horizontal,  stbir_filter filter_vertical,
                                    stbir_colorspace space, void *alloc_context,
                                    float s0, float t0, float s1, float t1)
@@ -2590,38 +2597,38 @@ This software is available under 2 licenses -- choose whichever you prefer.
 ------------------------------------------------------------------------------
 ALTERNATIVE A - MIT License
 Copyright (c) 2017 Sean Barrett
-Permission is hereby granted, free of charge, to any person obtaining a copy of 
-this software and associated documentation files (the "Software"), to deal in 
-the Software without restriction, including without limitation the rights to 
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies 
-of the Software, and to permit persons to whom the Software is furnished to do 
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
 so, subject to the following conditions:
-The above copyright notice and this permission notice shall be included in all 
+The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------------
 ALTERNATIVE B - Public Domain (www.unlicense.org)
 This is free and unencumbered software released into the public domain.
-Anyone is free to copy, modify, publish, use, compile, sell, or distribute this 
-software, either in source code form or as a compiled binary, for any purpose, 
+Anyone is free to copy, modify, publish, use, compile, sell, or distribute this
+software, either in source code form or as a compiled binary, for any purpose,
 commercial or non-commercial, and by any means.
-In jurisdictions that recognize copyright laws, the author or authors of this 
-software dedicate any and all copyright interest in the software to the public 
-domain. We make this dedication for the benefit of the public at large and to 
-the detriment of our heirs and successors. We intend this dedication to be an 
-overt act of relinquishment in perpetuity of all present and future rights to 
+In jurisdictions that recognize copyright laws, the author or authors of this
+software dedicate any and all copyright interest in the software to the public
+domain. We make this dedication for the benefit of the public at large and to
+the detriment of our heirs and successors. We intend this dedication to be an
+overt act of relinquishment in perpetuity of all present and future rights to
 this software under copyright law.
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
-AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
-ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ------------------------------------------------------------------------------
 */

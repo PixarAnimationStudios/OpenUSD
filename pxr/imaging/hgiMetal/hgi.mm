@@ -88,8 +88,7 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
     _commandBuffer = [_commandQueue commandBuffer];
     [_commandBuffer retain];
 
-    _capabilities.reset(
-        new HgiMetalCapabilities(_device));
+    _capabilities.reset(new HgiMetalCapabilities(_device));
 
     HgiMetalSetupMetalDebug();
     
@@ -286,6 +285,12 @@ HgiMetal::GetAPIName() const {
     return HgiTokens->Metal;
 }
 
+HgiMetalCapabilities const*
+HgiMetal::GetCapabilities() const
+{
+    return _capabilities.get();
+}
+
 void
 HgiMetal::StartFrame()
 {
@@ -341,12 +346,6 @@ int
 HgiMetal::GetAPIVersion() const
 {
     return _apiVersion;
-}
-
-HgiMetalCapabilities const &
-HgiMetal::GetCapabilities() const
-{
-    return *_capabilities;
 }
 
 void

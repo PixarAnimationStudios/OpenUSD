@@ -146,10 +146,6 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedDerived
     const TfToken creaseLengths;
-    /// \brief "derived"
-    /// 
-    /// Property namespace prefix for the UsdContrivedDerivedMultipleApplyAPI schema.
-    const TfToken derived;
     /// \brief "double2"
     /// 
     /// UsdContrivedBase
@@ -474,10 +470,6 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedPublicMultipleApplyAPI, UsdContrivedMultipleApplyAPI
     const TfToken testAttrOne;
-    /// \brief "testAttrThree"
-    /// 
-    /// UsdContrivedDerivedMultipleApplyAPI
-    const TfToken testAttrThree;
     /// \brief "testAttrTwo"
     /// 
     /// UsdContrivedPublicMultipleApplyAPI, UsdContrivedMultipleApplyAPI

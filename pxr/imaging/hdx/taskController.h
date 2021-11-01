@@ -270,6 +270,7 @@ private:
 
     void _CreateLightingTask();
     void _CreateShadowTask();
+    SdfPath _CreateSkydomeTask();
     SdfPath _CreateRenderTask(TfToken const& materialTag);
     void _CreateOitResolveTask();
     void _CreateSelectionTask();
@@ -303,7 +304,11 @@ private:
     SdfPath _GetAovPath(TfToken const& aov) const;
     SdfPathVector _GetAovEnabledTasks() const;
 
-    // Helper function to set the parameters of a light, get a particular light 
+    // Helper functions to set up the lighting state for the built-in lights
+    bool _SupportBuiltInLightTypes();
+    void _SetBuiltInLightingState(GlfSimpleLightingContextPtr const& src);
+
+    // Helper functions to set the parameters of a light, get a particular light 
     // in the scene, replace and remove Sprims from the scene 
     void _SetParameters(SdfPath const& pathName, GlfSimpleLight const& light);
     GlfSimpleLight _GetLightAtId(size_t const& pathIdx);

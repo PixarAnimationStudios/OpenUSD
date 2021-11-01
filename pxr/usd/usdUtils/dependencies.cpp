@@ -325,10 +325,16 @@ _FileAnalyzer::_RemapRefOrPayload(const RefOrPayloadType &refOrPayload)
 void
 _FileAnalyzer::_ProcessPayloads(const SdfPrimSpecHandle &primSpec)
 {
-    SdfPayloadsProxy payloadList = primSpec->GetPayloadList();
-    payloadList.ModifyItemEdits(std::bind(
-        &_FileAnalyzer::_RemapRefOrPayload<SdfPayload, _DepType::Payload>, 
-        this, std::placeholders::_1));
+    if (_remapPathFunc) {
+        primSpec->GetPayloadList().ModifyItemEdits(std::bind(
+            &_FileAnalyzer::_RemapRefOrPayload<SdfPayload, _DepType::Payload>, 
+            this, std::placeholders::_1));
+    } else {
+        for (SdfPayload const& payload:
+             primSpec->GetPayloadList().GetAddedOrExplicitItems()) {
+            _ProcessDependency(payload.GetAssetPath(), _DepType::Payload);
+        }
+    }
 }
 
 void
@@ -516,10 +522,16 @@ _FileAnalyzer::_ProcessMetadata(const SdfPrimSpecHandle &primSpec)
 void
 _FileAnalyzer::_ProcessReferences(const SdfPrimSpecHandle &primSpec)
 {
-    SdfReferencesProxy refList = primSpec->GetReferenceList();
-    refList.ModifyItemEdits(std::bind(
-        &_FileAnalyzer::_RemapRefOrPayload<SdfReference, _DepType::Reference>, 
-        this, std::placeholders::_1));
+    if (_remapPathFunc) {
+        primSpec->GetReferenceList().ModifyItemEdits(std::bind(
+            &_FileAnalyzer::_RemapRefOrPayload<SdfReference,
+            _DepType::Reference>, this, std::placeholders::_1));
+    } else {
+        for (SdfReference const& reference:
+            primSpec->GetReferenceList().GetAddedOrExplicitItems()) {
+            _ProcessDependency(reference.GetAssetPath(), _DepType::Reference);
+        }
+    }
 }
 
 void

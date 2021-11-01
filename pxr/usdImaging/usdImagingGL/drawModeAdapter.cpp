@@ -806,6 +806,11 @@ UsdImagingGLDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                                          UsdImagingInstancerContext const*
                                             instancerContext) const
 {
+    if (_IsMaterialPath(cachePath)) {
+        // The draw mode material doesn't make use of UpdateForTime.
+        return;
+    }
+
     UsdImagingPrimvarDescCache* primvarDescCache = _GetPrimvarDescCache();
     UsdGeomModelAPI model(prim);
 

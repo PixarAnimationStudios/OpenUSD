@@ -80,6 +80,8 @@ void wrapShaderProperty()
 
     class_<This, ThisPtr, bases<NdrProperty>,
            boost::noncopyable>("ShaderProperty", no_init)
+        .def("GetDefaultValueAsSdfType", &This::GetDefaultValueAsSdfType,
+                copyRefPolicy)
         .def("GetLabel", &This::GetLabel, copyRefPolicy)
         .def("GetHelp", &This::GetHelp)
         .def("GetPage", &This::GetPage, copyRefPolicy)

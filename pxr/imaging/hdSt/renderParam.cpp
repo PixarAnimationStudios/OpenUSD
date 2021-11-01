@@ -29,6 +29,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdStRenderParam::HdStRenderParam()
     : _drawBatchesVersion(1)
     , _materialTagsVersion(1)
+    , _geomSubsetDrawItemsVersion(1)
     , _needsGarbageCollection(false)
 {
 }
@@ -61,6 +62,86 @@ HdStRenderParam::GetMaterialTagsVersion() const
     // Can use relaxed ordering because render passes are expected to
     // only read the value, and that too in a single threaded fashion.
     return _materialTagsVersion.load(std::memory_order_relaxed);
+}
+
+void
+HdStRenderParam::MarkGeomSubsetDrawItemsDirty()
+{
+    ++_geomSubsetDrawItemsVersion; // uses std::memory_order_seq_cst 
+}
+
+unsigned int
+HdStRenderParam::GetGeomSubsetDrawItemsVersion() const
+{
+    // Can use relaxed ordering because render passes are expected to
+    // only read the value, and that too in a single threaded fashion.
+    return _geomSubsetDrawItemsVersion.load(std::memory_order_relaxed);
+}
+
+static
+bool
+_IsMaterialTagCounted(const TfToken &materialTag)
+{
+    return !materialTag.IsEmpty();
+}
+
+bool
+HdStRenderParam::HasMaterialTag(const TfToken &materialTag) const
+{
+    if (!_IsMaterialTagCounted(materialTag)) {
+        return true;
+    }
+
+    std::shared_lock<std::shared_timed_mutex> lock(_materialTagToCountMutex);
+
+    const auto it = _materialTagToCount.find(materialTag);
+    if (it == _materialTagToCount.end()) {
+        return false;
+    }
+    
+    return it->second > 0;
+}
+
+void
+HdStRenderParam::_AdjustMaterialTagCount(const TfToken &materialTag,
+                                         const int i)
+{
+    if (!_IsMaterialTagCounted(materialTag)) {
+        return;
+    }
+
+    {
+        // Map already had entry for materialTag.
+        // Shared lock is sufficient because the entry's integer is atomic.
+        std::shared_lock<std::shared_timed_mutex> l(_materialTagToCountMutex);
+        const auto it = _materialTagToCount.find(materialTag);
+        if (it != _materialTagToCount.end()) {
+            it->second += i;
+            return;
+        }
+    }
+
+    {
+        // Map had no entry for materialTag.
+        std::unique_lock<std::shared_timed_mutex> l(_materialTagToCountMutex);
+        _materialTagToCount[materialTag] += i;
+    }
+}
+
+void
+HdStRenderParam::IncreaseMaterialTagCount(const TfToken &materialTag)
+{
+    _AdjustMaterialTagCount(materialTag, +1);
+}
+
+void
+HdStRenderParam::DecreaseMaterialTagCount(const TfToken &materialTag)
+{
+    _AdjustMaterialTagCount(materialTag, -1);
+
+    // Note that it is difficult to remove zero entries from the map here during
+    // multi-threaded access.
+    // It is probably not worth implementing a garbage collection for this map.
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

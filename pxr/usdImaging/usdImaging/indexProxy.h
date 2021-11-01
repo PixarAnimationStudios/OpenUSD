@@ -210,9 +210,10 @@ private:
     // Called by UsdImagingDelegate::ApplyPendingUpdates.
     void _UniqueifyPathsToRepopulate();
 
-    bool _AddHdPrimInfo(SdfPath const& cachePath,
-                        UsdPrim const& usdPrim,
-                        UsdImagingPrimAdapterSharedPtr const& adapter);
+    UsdImagingDelegate::_HdPrimInfo*
+        _AddHdPrimInfo(SdfPath const& cachePath,
+                       UsdPrim const& usdPrim,
+                       UsdImagingPrimAdapterSharedPtr const& adapter);
 
     USDIMAGING_API
     void _RemoveDependencies(SdfPath const& cachePath);

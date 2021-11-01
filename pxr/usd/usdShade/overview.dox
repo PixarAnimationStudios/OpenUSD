@@ -226,10 +226,24 @@ below:
   itself. Note that "pass through" connections are not allowed for 
   Nodegraph-derived container nodes.
 
-  Sub-classes of UsdShadeNodeGraph can override UsdShadeConnectableAPIBehavior
-  interface to provide a different implementation, including ignoring the
-  encapsulation criteria. 
+- Any new or derived Typed or single-apply API schema can register its own 
+  UsdShadeConnectableAPIBehavior to customize connectivity rules. It can also 
+  specify, in its extraPlugInfo customData, the isUsdShadeContainer and 
+  requiresUsdShadeEncapsulation booleans to customize those aspects of behavior 
+  without needing to provide a UsdShadeConnectableAPIBehavior implementation.
 
+  \anchor UsdShadeConnectableAPIBehavior_ResolutionOrder Resolution order 
+  for when multiple types and apiSchemas provide a 
+  UsdShadeConnectableAPIBehavior:
+  1. Behavior defined on an authored API schemas, wins over 
+  2. Behavior defined for a prim type, wins over
+  3. Behavior defined for the prim's ancestor types, wins over
+  4. Behavior defined for any built-in API schemas.
+  5. If no Behavior is found but an api schema adds
+     providesUsdShadeConnectableAPIBehavior plug metadata then a default
+     behavior is registered for the primTypeId, with its isContainer and
+     requiresEncapsulation driven by extraPlugInfo metadata
+ 
 Note that interface-only connections can only happen between inputs and source 
 which have "interfaceOnly" connectivity.
 

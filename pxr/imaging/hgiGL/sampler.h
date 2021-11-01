@@ -32,6 +32,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+using HgiTextureHandle = HgiHandle<class HgiTexture>;
+
 ///
 /// \class HgiGLSampler
 ///
@@ -50,6 +52,10 @@ public:
     HGIGL_API
     uint32_t GetSamplerId() const;
 
+    /// Returns the bindless gpu handle (caller must verify extension support)
+    HGIGL_API
+    uint64_t GetBindlessHandle(HgiTextureHandle const &textureHandle);
+
 protected:
     friend class HgiGL;
 
@@ -63,6 +69,8 @@ private:
 
 private:
     uint32_t _samplerId;
+    uint32_t _bindlessTextureId;
+    uint64_t _bindlessHandle;
 };
 
 

@@ -29,11 +29,11 @@
 #include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/lightingShader.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hdSt/surfaceShader.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -128,8 +128,9 @@ bool
 HdSt_DrawBatch::_IsAggregated(HdStDrawItem const *drawItem0,
                               HdStDrawItem const *drawItem1)
 {
-    if (!HdStSurfaceShader::CanAggregate(drawItem0->GetMaterialShader(),
-                                         drawItem1->GetMaterialShader())) {
+    if (!HdSt_MaterialNetworkShader::CanAggregate(
+            drawItem0->GetMaterialNetworkShader(),
+            drawItem1->GetMaterialNetworkShader())) {
         return false;
     }
 
@@ -204,20 +205,21 @@ HdSt_DrawBatch::Rebuild()
 }
 
 static
-HdStSurfaceShaderSharedPtr
-_GetFallbackSurfaceShader()
+HdSt_MaterialNetworkShaderSharedPtr
+_GetFallbackMaterialNetworkShader()
 {
     static std::once_flag once;
-    static HdStSurfaceShaderSharedPtr fallbackSurfaceShader;
+    static HdSt_MaterialNetworkShaderSharedPtr fallbackShader;
    
     std::call_once(once, [](){
         HioGlslfxSharedPtr glslfx =
-            std::make_shared<HioGlslfx>(HdStPackageFallbackSurfaceShader());
+            std::make_shared<HioGlslfx>(
+                HdStPackageFallbackMaterialNetworkShader());
 
-        fallbackSurfaceShader.reset(new HdStGLSLFXShader(glslfx));
+        fallbackShader.reset(new HdStGLSLFXShader(glslfx));
     });
 
-    return fallbackSurfaceShader;
+    return fallbackShader;
 }
 
 HdSt_DrawBatch::_DrawingProgram &
@@ -235,11 +237,16 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
     size_t shaderHash = state->GetShaderHash();
     boost::hash_combine(shaderHash,
                         firstDrawItem->GetGeometricShader()->ComputeHash());
-    HdStShaderCodeSharedPtr surfaceShader  =
-        state->GetUseSceneMaterials() ? firstDrawItem->GetMaterialShader()
-                                      : _GetFallbackSurfaceShader();
-    size_t surfaceHash = surfaceShader ? surfaceShader->ComputeHash() : 0;
-    boost::hash_combine(shaderHash, surfaceHash);
+
+    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader  =
+        state->GetUseSceneMaterials()
+            ? firstDrawItem->GetMaterialNetworkShader()
+            : _GetFallbackMaterialNetworkShader();
+
+    size_t materialNetworkShaderHash =
+        materialNetworkShader ? materialNetworkShader->ComputeHash() : 0;
+    boost::hash_combine(shaderHash, materialNetworkShaderHash);
+
     bool shaderChanged = (_shaderHash != shaderHash);
     
     // Set shaders (lighting and renderpass) to the program. 
@@ -254,10 +261,10 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
     //      programs by shaderHash.
     if (!_program.GetGLSLProgram() || shaderChanged) {
         
-        _program.SetSurfaceShader(surfaceShader);
+        _program.SetMaterialNetworkShader(materialNetworkShader);
 
         // Try to compile the shader and if it fails to compile we go back
-        // to use the specified fallback surface shader.
+        // to use the specified fallback material network shader.
         if (!_program.CompileShader(firstDrawItem, indirect, resourceRegistry)){
 
             // While the code should gracefully handle shader compilation
@@ -266,21 +273,23 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
                             firstDrawItem->GetRprimID().GetText());
 
 
-            // If we failed to compile the surface shader, replace it with the
-            // fallback surface shader and try again.
-            // XXX: Note that we only say "surface shader" here because it is
-            // currently the only one that we allow customization for.  We
-            // expect all the other shaders to compile or else the shipping
-            // code is broken and needs to be fixed.  When we open up more
-            // shaders for customization, we will need to check them as well.
+            // If we failed to compile the material network, replace it
+            // with the fallback material network shader and try again.
+            // XXX: Note that we only say "material network shader" here
+            // because it is currently the only one for which we allow
+            // customization.  We expect all the other shaders to compile
+            // or else the shipping code is broken and needs to be fixed.
+            // When we open up more shaders for customization, we will
+            // need to check them as well.
             
-            _program.SetSurfaceShader(_GetFallbackSurfaceShader());
+            _program.SetMaterialNetworkShader(
+                _GetFallbackMaterialNetworkShader());
 
             bool res = _program.CompileShader(firstDrawItem, 
                                               indirect, 
                                               resourceRegistry);
             // We expect the fallback shader to always compile.
-            TF_VERIFY(res);
+            TF_VERIFY(res, "Failed to compile with fallback material network");
         }
 
         _shaderHash = shaderHash;

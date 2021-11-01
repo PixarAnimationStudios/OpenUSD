@@ -59,6 +59,7 @@ UsdImaging_BuildHdMaterialNetworkFromTerminal(
     UsdPrim const& usdTerminal,
     TfToken const& terminalIdentifier,
     TfTokenVector const& shaderSourceTypes,
+    TfTokenVector const& renderContexts,
     HdMaterialNetworkMap *materialNetworkMap,
     UsdTimeCode time);
 

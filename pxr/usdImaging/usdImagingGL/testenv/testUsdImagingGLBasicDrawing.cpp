@@ -278,6 +278,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     params.drawMode = GetDrawMode();
     params.enableLighting = IsEnabledTestLighting();
     params.enableIdRender = IsEnabledIdRender();
+    params.enableSceneMaterials = IsEnabledSceneMaterials();
     params.complexity = _GetComplexity();
     params.cullStyle = GetCullStyle();
     params.showGuides = IsShowGuides();

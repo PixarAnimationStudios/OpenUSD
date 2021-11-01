@@ -394,20 +394,39 @@ public:
     /// \name External references
     /// @{
 
-    /// Return paths of all external references of layer.
+    /// \deprecated 
+    /// Use GetCompositionAssetDependencies instead.
     SDF_API
     std::set<std::string> GetExternalReferences() const;
 
-    /// Updates the external references of the layer.
-    ///
-    /// If only the old asset path is given, this update works as delete, 
-    /// removing any sublayers or prims referencing the pathtype using the
-    /// old asset path as reference.
-    /// 
-    /// If new asset path is supplied, the update works as "rename", updating
-    /// any occurrence of the old reference to the new reference.
+    /// \deprecated 
+    /// Use UpdateCompositionAssetDependency instead.
     SDF_API
     bool UpdateExternalReference(
+        const std::string &oldAssetPath,
+        const std::string &newAssetPath=std::string());
+
+    /// Return paths of all assets this layer depends on due to composition 
+    /// fields.
+    ///
+    /// This includes the paths of all layers referred to by reference, 
+    /// payload, and sublayer fields in this layer. This function only returns 
+    /// direct composition dependencies of this layer, i.e. it does not recurse 
+    /// to find composition dependencies from its dependent layer assets.
+    SDF_API
+    std::set<std::string> GetCompositionAssetDependencies() const;
+
+    /// Updates the asset path of a composation dependency in this layer.
+    /// 
+    /// If \p newAssetPath is supplied, the update works as "rename", updating
+    /// any occurrence of \p oldAssetPath to \p newAssetPath in all reference,
+    /// payload, and sublayer fields.
+    ///
+    /// If \p newAssetPath is not given, this update behaves as a "delete", 
+    /// removing all occurrences of \p oldAssetPath from all reference, payload,
+    /// and sublayer fields.
+    SDF_API
+    bool UpdateCompositionAssetDependency(
         const std::string &oldAssetPath,
         const std::string &newAssetPath=std::string());
 
@@ -1582,10 +1601,11 @@ private:
     std::string _GetMutedPath() const;
 
     // If old and new asset path is given, rename all external prim
-    // references referring to the old path.
-    void _UpdateReferencePaths(const SdfPrimSpecHandle &parent,
-                               const std::string &oldLayerPath,
-                               const std::string &newLayerPath);
+    // composition dependency referring to the old path.
+    void _UpdatePrimCompositionDependencyPaths(
+        const SdfPrimSpecHandle &parent,
+        const std::string &oldLayerPath,
+        const std::string &newLayerPath);
 
     // Set the clean state to the current state.
     void _MarkCurrentStateAsClean() const;

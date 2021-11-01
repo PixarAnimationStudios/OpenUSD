@@ -1,15 +1,23 @@
-#usda 1.0 
+#usda 1.0
 (
+    defaultPrim = "World"
+    metersPerUnit = 0.01
+    subLayers = [
+        @./geom.usdc@
+    ]
     upAxis = "Y"
-    subLayers = [@./geom.usdc@]
 )
 
-def "World" (prepend references = [@./shading.usda@</World>])
+def "World" (
+    prepend references = @./shading.usda@</World>
+)
 {
-    def Scope "scope" {
-        
-    }   
+    def Scope "scope"
+    {
+    }
 
-    def Camera "camera" {
+    def Camera "camera"
+    {
     }
 }
+

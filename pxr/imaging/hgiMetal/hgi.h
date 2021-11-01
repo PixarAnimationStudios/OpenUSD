@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgiMetal/api.h"
+#include "pxr/imaging/hgiMetal/capabilities.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
@@ -33,7 +34,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HgiMetalCapabilities;
 
 enum {
     APIVersion_Metal1_0 = 0,
@@ -135,7 +135,10 @@ public:
 
     HGIMETAL_API
     TfToken const& GetAPIName() const override;
-    
+
+    HGIMETAL_API
+    HgiMetalCapabilities const* GetCapabilities() const override;
+
     HGIMETAL_API
     void StartFrame() override;
 
@@ -168,9 +171,6 @@ public:
 
     HGIMETAL_API
     int GetAPIVersion() const;
-    
-    HGIMETAL_API
-    HgiMetalCapabilities const & GetCapabilities() const;
     
     HGIMETAL_API
     void CommitPrimaryCommandBuffer(

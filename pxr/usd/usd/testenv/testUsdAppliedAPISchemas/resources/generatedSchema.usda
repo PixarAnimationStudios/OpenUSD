@@ -42,7 +42,7 @@ class "TestSingleApplyAPI" (
 }
 
 class "TestSingleCanApplyAPI" (
-    doc = "Test single apply API schema"
+    doc = "Test single apply API schema with canOnlyApplyTo restrictions"
 )
 {
     uniform bool singleCan:bool_attr = 1 (
@@ -58,7 +58,7 @@ class "TestSingleCanApplyAPI" (
 }
 
 class "TestMultiCanApplyAPI" (
-    doc = "Test multi-apply API schema"
+    doc = "Test multi-apply API schema with instance name and canOnlyApplyTo restrictions"
 )
 {
     uniform bool bool_attr = 1 (
@@ -88,14 +88,14 @@ class TestTypedSchema "TestTypedSchema" (
     )
 }
 
-class TestWithFallbackAppliedSchema "TestWithFallbackAppliedSchema" (
-    apiSchemas = ["TestSingleApplyAPI", "TestMultiApplyAPI:fallback"]
-    doc = "Test with fallback API schemas"
+class TestWithBuiltinAppliedSchema "TestWithBuiltinAppliedSchema" (
+    apiSchemas = ["TestSingleApplyAPI", "TestMultiApplyAPI:builtin"]
+    doc = "Test with built-in API schemas"
     hidden = false
 )
 {
-    uniform bool multi:fallback:bool_attr = 0 (
-        doc = "Override bool_attr from TestMultiApplyAPI:fallback"
+    uniform bool multi:builtin:bool_attr = 0 (
+        doc = "Override bool_attr from TestMultiApplyAPI:builtin"
     )
     string testAttr = "foo" (
         allowedTokens = ["bar", "baz"]
@@ -108,7 +108,7 @@ class TestWithFallbackAppliedSchema "TestWithFallbackAppliedSchema" (
 }
 
 class TestTypedSchemaForAutoApply "TestTypedSchemaForAutoApply" (
-    apiSchemas = ["TestMultiApplyAPI:fallback"]
+    apiSchemas = ["TestMultiApplyAPI:builtin"]
     doc = "Testing typed schema"
     hidden = true
 )
@@ -181,5 +181,131 @@ class TestDerivedTypedSchemaForAutoApplyAbstractBase "TestDerivedTypedSchemaForA
         displayGroup = "Display Group"
         doc = "Testing documentation metadata"
     )
+}
+
+class "TestNestedInnerSingleApplyAPI" (
+    apiSchemas = ["TestSingleApplyAPI", "TestMultiApplyAPI:bar"]
+    doc = "Test nested single apply API schema: inner schema"
+)
+{
+    uniform int innerSingle:int_attr = 3 (
+        doc = "Int attribute"
+    )
+    rel innerSingle:relationship (
+        doc = "Relationship"
+    )
+    uniform token innerSingle:token_attr = "inner" (
+        doc = "Token attribute"
+    )
+    token multi:bar:token_attr = "inner_override" (
+        doc = "Override of TestMultiApplyAPI:bar token_attr"
+    )
+}
+
+class "TestNestedOuterSingleApplyAPI" (
+    apiSchemas = ["TestMultiApplyAPI:foo", "TestNestedInnerSingleApplyAPI"]
+    doc = "Test nested single apply API schema: outer schema"
+)
+{
+    uniform int outerSingle:int_attr = 4 (
+        doc = "Int attribute"
+    )
+    rel outerSingle:relationship (
+        doc = "Relationship"
+    )
+    uniform token outerSingle:token_attr = "outer" (
+        doc = "Token attribute"
+    )
+    token single:token_attr = "outer_override" (
+        doc = "Override of TestSingleApplyAPI token_attr"
+    )
+}
+
+class "TestNestedCycle1API" (
+    apiSchemas = ["TestNestedCycle2API"]
+    doc = "Test nested single apply API schema with a cycle #1"
+)
+{
+    uniform token cycle1:token_attr = "cycle1" (
+        doc = "Token attribute"
+    )
+    uniform int cycle:int_attr = 1 (
+        doc = "Int attribute"
+    )
+}
+
+class "TestNestedCycle2API" (
+    apiSchemas = ["TestNestedCycle3API"]
+    doc = "Test nested single apply API schema with a cycle #2"
+)
+{
+    uniform token cycle2:token_attr = "cycle2" (
+        doc = "Token attribute"
+    )
+    uniform int cycle:int_attr = 2 (
+        doc = "Int attribute"
+    )
+}
+
+class "TestNestedCycle3API" (
+    apiSchemas = ["TestNestedCycle1API"]
+    doc = "Test nested single apply API schema with a cycle #3"
+)
+{
+    uniform token cycle3:token_attr = "cycle3" (
+        doc = "Token attribute"
+    )
+    uniform int cycle:int_attr = 3 (
+        doc = "Int attribute"
+    )
+}
+
+class TestWithBuiltinNestedAppliedSchema "TestWithBuiltinNestedAppliedSchema" (
+    apiSchemas = ["TestNestedOuterSingleApplyAPI", "TestNestedCycle1API"]
+    doc = "Test with built-in nested API schemas"
+    hidden = false
+)
+{
+    string testAttr = "foo" (
+        allowedTokens = ["bar", "baz"]
+        doc = "Testing documentation metadata"
+    )
+    rel testRel (
+        displayGroup = "Display Group"
+        doc = "Testing documentation metadata"
+    )
+}
+
+class "TestAutoAppliedToAPI" (
+    apiSchemas = ["TestMultiApplyAPI:builtin"]
+    doc = "API that has other API schemas that auto apply to it"
+)
+{
+    string testAttr = "foo" (
+        allowedTokens = ["bar", "baz"]
+        doc = "Testing documentation metadata"
+    )
+    rel testRel (
+        displayGroup = "Display Group"
+        doc = "Testing documentation metadata"
+    )
+}
+
+class "TestNestedAutoAppliedToAPI" (
+    apiSchemas = ["TestMultiApplyAPI:foo"]
+    doc = """
+API that TestAutoAppliedToAPI auto applies to for testing that API schemas can 
+be nested through auto apply"""
+)
+{
+}
+
+class TestNestedAutoAppliedToAPIAppliedToPrim "TestNestedAutoAppliedToAPIAppliedToPrim" (
+    doc = """
+Typed schema that TestNestedAutoAppliedToAPI auto applies to for testing that 
+API schemas with auto applied API schemas can be correctly auto applied to prim
+type schemas"""
+)
+{
 }
 

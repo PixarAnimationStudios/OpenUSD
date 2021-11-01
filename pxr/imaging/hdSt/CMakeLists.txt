@@ -107,8 +107,8 @@ pxr_library(hdSt
         shaderCode
         simpleLightingShader
         smoothNormals
+        stagingBuffer
         subtextureIdentifier
-        surfaceShader
         textureBinder
         textureCpuData
         textureHandle
@@ -137,11 +137,13 @@ pxr_library(hdSt
         codeGen
         cullingShaderKey
         drawBatch
+        drawItemsCache
         extCompComputeShader
         fieldTextureCpuData
         imageShaderShaderKey
         immediateDrawBatch
         indirectDrawBatch
+        materialNetworkShader
         materialParam
         meshShaderKey
         meshTopology 
@@ -164,7 +166,7 @@ pxr_library(hdSt
         shaders/edgeId.glslfx
         shaders/fallbackLighting.glslfx
         shaders/fallbackLightingShader.glslfx
-        shaders/fallbackSurface.glslfx
+        shaders/fallbackMaterialNetwork.glslfx
         shaders/fallbackVolume.glslfx
         shaders/frustumCull.glslfx
         shaders/imageShader.glslfx

@@ -473,6 +473,8 @@ pxr_register_test(testUsdUtilsUpdateSchemaWithSdrNode
     DIFF_COMPARE resultAPISchema.usda
     DIFF_COMPARE resultAPIIdentifierMissing.usda
     DIFF_COMPARE result_override.usda
+    DIFF_COMPARE resultUsdShadeConnectableAPIMetadata.usda
+    DIFF_COMPARE resultUsdShadeConnectableAPIMetadata2.usda
     DIFF_COMPARE duplicateProp.usda
     DIFF_COMPARE duplicatePropTypeMisMatch.usda
     DIFF_COMPARE schemaConcrete.usda

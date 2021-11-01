@@ -162,9 +162,11 @@ private:
     
     void _UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                                    HdRenderParam *renderParam,
-                                   bool updateMaterialShader,
+                                   bool updateMaterialNetworkShader,
                                    bool updateGeometricShader);
 
+    void _UpdateMaterialTagsForAllReprs(HdSceneDelegate *sceneDelegate,
+                                        HdRenderParam *renderParam);
 
     HdSt_BasisCurvesTopologySharedPtr _topology;
     HdTopology::ID _topologyId;

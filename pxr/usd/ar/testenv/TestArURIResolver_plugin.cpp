@@ -50,13 +50,6 @@ protected:
     {
     }
 
-    std::string _GetExtension(
-        const std::string& path) const final
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), _uriScheme));
-        return TfGetExtension(path);
-    }
-
     std::string _CreateIdentifier(
         const std::string& assetPath,
         const ArResolvedPath& anchorAssetPath) const final
@@ -98,22 +91,15 @@ protected:
 
     ArResolverContext _CreateDefaultContext() const final
     {
-        return ArResolverContext(_TestURIResolverContext());
+        return ArResolverContext(
+            _TestURIResolverContext("CreateDefaultContext"));
     }
 
     ArResolverContext _CreateDefaultContextForAsset(
-        const std::string& filePath) const final
+        const std::string& assetPath) const final
     {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(filePath), _uriScheme));
-        return ArResolverContext(_TestURIResolverContext());
-    }
-
-    VtValue _GetModificationTimestamp(
-        const std::string& path,
-        const ArResolvedPath& resolvedPath) const final
-    {
-        TF_AXIOM(TfStringStartsWith(TfStringToLower(path), _uriScheme));
-        return VtValue(42);
+        return ArResolverContext(
+            _TestURIResolverContext(TfAbsPath(assetPath)));
     }
 
     std::shared_ptr<ArAsset> _OpenAsset(

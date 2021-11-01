@@ -24,64 +24,12 @@
 #include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hdSt/glConversions.h"
-#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <cctype>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-size_t
-HdStGLConversions::GetComponentSize(int glDataType)
-{
-    switch (glDataType) {
-        case GL_BOOL:
-            // Note that we don't use GLboolean here because according to
-            // code in vtBufferSource, everything gets rounded up to 
-            // size of single value in interleaved struct rounds up to
-            // sizeof(GLint) according to GL spec.
-            //      _size = std::max(sizeof(T), sizeof(GLint));
-            return sizeof(GLint);
-        case GL_BYTE:
-            return sizeof(GLbyte);
-        case GL_UNSIGNED_BYTE:
-            return sizeof(GLubyte);
-        case GL_SHORT:
-            return sizeof(GLshort);
-        case GL_UNSIGNED_SHORT:
-            return sizeof(GLushort);
-        case GL_INT:
-            return sizeof(GLint);
-        case GL_UNSIGNED_INT:
-            return sizeof(GLuint);
-        case GL_FLOAT:
-            return sizeof(GLfloat);
-        case GL_2_BYTES:
-            return 2;
-        case GL_3_BYTES:
-            return 3;
-        case GL_4_BYTES:
-            return 4;
-        case GL_UNSIGNED_INT64_ARB:
-            return sizeof(GLuint64EXT);
-        case GL_DOUBLE:
-            return sizeof(GLdouble);
-        case GL_INT_2_10_10_10_REV:
-            return sizeof(GLint);
-        // following enums are for bindless texture pointers.
-        case GL_SAMPLER_2D:
-            return sizeof(GLuint64EXT);
-        case GL_SAMPLER_2D_ARRAY:
-            return sizeof(GLuint64EXT);
-        case GL_INT_SAMPLER_BUFFER:
-            return sizeof(GLuint64EXT);
-    };
-
-    TF_CODING_ERROR("Unexpected GL datatype 0x%x", glDataType);
-    return 1;
-}
 
 
 GLenum
@@ -201,6 +149,9 @@ int
 HdStGLConversions::GetGLAttribType(HdType type)
 {
     switch (type) {
+    case HdTypeHalfFloatVec2:
+    case HdTypeHalfFloatVec4:
+        return GL_HALF_FLOAT;
     case HdTypeInt32:
     case HdTypeInt32Vec2:
     case HdTypeInt32Vec3:
@@ -262,6 +213,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (uvec4)
 
     (packed_2_10_10_10)
+    (packed_half2)
+    (packed_half4)
 );
 
 TfToken
@@ -275,6 +228,12 @@ HdStGLConversions::GetGLSLTypename(HdType type)
     // Packed types (require special handling in codegen)...
     case HdTypeInt32_2_10_10_10_REV:
         return _glTypeNames->packed_2_10_10_10;
+    // XXX: Note that we don't support half or half3, since we can't
+    // index-address them...
+    case HdTypeHalfFloatVec2:
+        return _glTypeNames->packed_half2;
+    case HdTypeHalfFloatVec4:
+        return _glTypeNames->packed_half4;
 
     case HdTypeBool:
         return _glTypeNames->_bool;

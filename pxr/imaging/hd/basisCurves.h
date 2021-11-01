@@ -33,6 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_BASISCURVES_REPR_DESC_TOKENS \
     (surfaceShader)                     \
+    (surfaceShaderUnlit)                \
     (hullColor)                         \
     (pointColor)
 

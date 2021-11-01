@@ -43,6 +43,9 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/gf/vec4h.h"
+#include "pxr/base/gf/quath.h"
+#include "pxr/base/gf/quatf.h"
+#include "pxr/base/gf/quatd.h"
 
 #include <unordered_map>
 #include <typeinfo>
@@ -166,6 +169,9 @@ static inline ValueDataGetterMap _MakeValueDataGetterMap() {
         ELEM(GfVec4f),
         ELEM(GfVec4h),
         ELEM(GfVec4i),
+        ELEM(GfQuath),
+        ELEM(GfQuatf),
+        ELEM(GfQuatd),
         ELEM(HdVec4f_2_10_10_10_REV),
         ELEM(bool),
         ELEM(char),
@@ -210,6 +216,9 @@ static inline TupleTypeMap _MakeTupleTypeMap() {
         { typeid(GfVec4f), HdTypeFloatVec4 },
         { typeid(GfVec4h), HdTypeHalfFloatVec4 },
         { typeid(GfVec4i), HdTypeInt32Vec4 },
+        { typeid(GfQuath), HdTypeHalfFloatVec4 },
+        { typeid(GfQuatf), HdTypeFloatVec4 },
+        { typeid(GfQuatd), HdTypeDoubleVec4 },
         { typeid(HdVec4f_2_10_10_10_REV), HdTypeInt32_2_10_10_10_REV },
         { typeid(bool), HdTypeBool },
         { typeid(char), HdTypeInt8 },

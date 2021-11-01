@@ -105,11 +105,6 @@ public:
     USDIMAGING_API
     void SyncAll(bool includeUnvarying);
 
-    /// Opportunity for the delegate to clean itself up after
-    /// performing parallel work during sync phase
-    USDIMAGING_API
-    virtual void PostSyncCleanup() override;
-
     /// Populates the rootPrim in the HdRenderIndex.
     USDIMAGING_API
     void Populate(UsdPrim const& rootPrim);
@@ -566,7 +561,8 @@ private:
     // be refreshed.
     void _RefreshUsdObject(SdfPath const& usdPath, 
                            TfTokenVector const& changedPrimInfoFields,
-                           UsdImagingIndexProxy* proxy);
+                           UsdImagingIndexProxy* proxy,
+                           SdfPathSet* allTrackedVariabilityPaths); 
 
     // Heavy-weight invalidation of an entire prim subtree. All cached data is
     // reconstructed for all prims below \p rootPath.
@@ -690,11 +686,10 @@ private:
     // This is done in response to toggling the purpose-based display settings.
     void _MarkRenderTagsDirty();
 
+    typedef TfHashSet<SdfPath, SdfPath::Hash> _DirtySet;
 
-    typedef TfHashSet<SdfPath, SdfPath::Hash> _InstancerSet;
-
-    // Set of cache paths representing instancers
-    _InstancerSet _instancerPrimCachePaths;
+    // Set of cache paths that are due a Sync()
+    _DirtySet _dirtyCachePaths;
 
     /// Refinement level per-USD-prim and fallback.
     typedef TfHashMap<SdfPath, int, SdfPath::Hash> _RefineLevelMap;

@@ -51,6 +51,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((displacementBoundSphere, "displacementbound:sphere")) 
+);
+
 HdPrman_Mesh::HdPrman_Mesh(SdfPath const& id)
     : BASE(id)
 {

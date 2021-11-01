@@ -2407,7 +2407,11 @@ UsdStage::_IsObjectDescendantOfInstance(const SdfPath& path) const
     // prim index, it would not be computed during composition unless
     // it is also serving as the source prim index for a prototype prim
     // on this stage.
-    return (_instanceCache->IsPathDescendantToAnInstance(
+    //
+    // Check if we have any instancing in this stage to avoid unnecessary
+    // path operations for performance.
+    return (_instanceCache->GetNumPrototypes() > 0 && 
+        _instanceCache->IsPathDescendantToAnInstance(
             path.GetAbsoluteRootOrPrimPath()));
 }
 
@@ -3163,15 +3167,24 @@ UsdStage::Reload()
     ArGetResolver().RefreshContext(GetPathResolverContext());
 #endif
 
-    // Reload layers that are reached via composition.
-    PcpChanges& changes = _pendingChanges->pcpChanges;
-    _cache->Reload(&changes);
+    // Reload layers in a change block to batch together change notices.
+    { 
+        SdfChangeBlock block;
+    
+        // Reload layers that are reached via composition.
+        PcpChanges& changes = _pendingChanges->pcpChanges;
+        _cache->Reload(&changes);
+        
+        // Reload all clip layers that are opened.
+        _clipCache->Reload();
+    }
 
-    // Reload all clip layers that are opened.
-    _clipCache->Reload();
-
-    // Process changes.
-    _ProcessPendingChanges();
+    // Process changes if they haven't already been processed in response
+    // to layer change notices above. If they have already been processed,
+    // _pendingChanges would have been reset to NULL.
+    if (_pendingChanges == &localPendingChanges) {
+        _ProcessPendingChanges();
+    }
 }
 
 /*static*/
@@ -4032,10 +4045,15 @@ UsdStage::_HandleLayersDidChange(
         changes.DidChangeSignificantly(_cache.get(), p);
     }
 
-    // See comments on _pendingChanges above.
-    if (_pendingChanges == &localPendingChanges) {
-        _ProcessPendingChanges();
-    }
+    // Normally we'd call _ProcessPendingChanges only if _pendingChanges
+    // pointed to localPendingChanges. If it didn't, it would mean that an
+    // upstream caller initialized _pendingChanges and that caller would be
+    // expected to call _ProcessPendingChanges itself.
+    // 
+    // However, the _PathsToChangesMap objects in _pendingChanges may hold
+    // raw pointers to entries stored in the notice, so we must process these
+    // changes immediately while the notice is still alive.
+    _ProcessPendingChanges();
 }
 
 void

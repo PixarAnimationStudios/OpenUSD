@@ -103,10 +103,17 @@ protected:
                 bool * isFirstInstance,
                 HdStResourceRegistrySharedPtr const &resourceRegistry) const;
 
-    bool _UseQuadIndices(const HdRenderIndex &renderIndex,
-                         HdSt_MeshTopologySharedPtr const & topology) const;
+    bool _MaterialHasPtex(const HdRenderIndex &renderIndex, 
+                          const SdfPath &materialId) const;
 
-    bool _UseLimitRefinement(const HdRenderIndex &renderIndex) const;
+    bool _UseQuadIndices(const HdRenderIndex &renderIndex,
+                         const HdSt_MeshTopologySharedPtr &topology) const;
+
+    bool _MaterialHasLimitSurface(const HdRenderIndex &renderIndex, 
+                                  const SdfPath &materialId) const;
+
+    bool _UseLimitRefinement(const HdRenderIndex &renderIndex,
+                             const HdMeshTopology &topology) const;
 
     bool _UseSmoothNormals(HdSt_MeshTopologySharedPtr const& topology) const;
 
@@ -116,50 +123,91 @@ protected:
                          HdRenderParam *renderParam,
                          HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits,
+                         const TfToken &reprToken,
+                         const HdReprSharedPtr &repr,
                          const HdMeshReprDesc &desc,
                          bool requireSmoothNormals,
-                         bool requireFlatNormals);
+                         bool requireFlatNormals,
+                         int geomSubsetDescIndex);
 
     void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                         HdRenderParam *renderParam,
                                         HdStDrawItem *drawItem,
-                                        const HdMeshReprDesc &desc);
+                                        const HdMeshReprDesc &desc,
+                                        const SdfPath &materialId);
 
     void _UpdateShadersForAllReprs(HdSceneDelegate *sceneDelegate,
                                    HdRenderParam *renderParam,
-                                   bool updateMaterialShader,
+                                   bool updateMaterialNetworkShader,
                                    bool updateGeometricShader);
+    
+    void _UpdateMaterialTagsForAllReprs(HdSceneDelegate *sceneDelegate,
+                                        HdRenderParam *renderParam);
 
     void _PopulateTopology(HdSceneDelegate *sceneDelegate,
                            HdRenderParam *renderParam,
                            HdStDrawItem *drawItem,
                            HdDirtyBits *dirtyBits,
-                           const HdMeshReprDesc &desc);
+                           const TfToken &reprToken,
+                           const HdReprSharedPtr &repr,
+                           const HdMeshReprDesc &desc,
+                           int geomSubsetDescIndex);
 
-    void _PopulateAdjacency(
-        HdStResourceRegistrySharedPtr const &resourceRegistry);
+    void _UpdateDrawItemsForGeomSubsets(HdSceneDelegate *sceneDelegate,
+                                        HdRenderParam *renderParam,
+                                        HdStDrawItem *drawItem,
+                                        const TfToken &reprToken,
+                                        const HdReprSharedPtr &repr,
+                                        const HdGeomSubsets &geomSubsets,
+                                        size_t oldNumGeomSubsets);
+    
+    void _CreateTopologyRangeForGeomSubset(
+        HdStResourceRegistrySharedPtr resourceRegistry,
+        HdChangeTracker &changeTracker, 
+        HdRenderParam *renderParam, 
+        HdDrawItem *drawItem, 
+        const TfToken &indexToken,
+        HdBufferSourceSharedPtr indicesSource, 
+        HdBufferSourceSharedPtr fvarIndicesSource, 
+        HdBufferSourceSharedPtr geomSubsetFaceIndicesHelperSource,
+        const VtIntArray &faceIndices,
+        bool refined);
 
     void _GatherFaceVaryingTopologies(HdSceneDelegate *sceneDelegate,
+                                      const HdReprSharedPtr &repr,
+                                      const HdMeshReprDesc &desc,
                                       HdStDrawItem *drawItem,
+                                      int geomSubsetDescIndex,
                                       HdDirtyBits *dirtyBits,
                                       const SdfPath &id,
                                       HdSt_MeshTopologySharedPtr topology);
-
+    
+    void _PopulateAdjacency(
+        HdStResourceRegistrySharedPtr const &resourceRegistry);
+        
     void _PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                  HdRenderParam *renderParam,
+                                 const HdReprSharedPtr &repr,
+                                 const HdMeshReprDesc &desc,
                                  HdStDrawItem *drawItem,
+                                 int geomSubsetDescIndex,
                                  HdDirtyBits *dirtyBits,
                                  bool requireSmoothNormals);
 
     void _PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
                                       HdRenderParam *renderParam,
+                                      const HdReprSharedPtr &repr,
+                                      const HdMeshReprDesc &desc,
                                       HdStDrawItem *drawItem,
-                                      HdDirtyBits *dirtyBits,
-                                      const HdMeshReprDesc &desc);
+                                      int geomSubsetDescIndex,
+                                      HdDirtyBits *dirtyBits);
 
     void _PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                                   HdRenderParam *renderParam,
+                                  const HdReprSharedPtr &repr,
+                                  const HdMeshReprDesc &desc,
                                   HdStDrawItem *drawItem,
+                                  int geomSubsetDescIndex,
                                   HdDirtyBits *dirtyBits,
                                   bool requireFlatNormals);
 
@@ -263,7 +311,10 @@ private:
     enum DrawingCoord {
         HullTopology = HdDrawingCoord::CustomSlotsBegin,
         PointsTopology,
-        InstancePrimvar // has to be at the very end
+        FreeSlot // If the mesh topology has geom subsets, we might place
+                 // them here as geom subsets are processed before instance 
+                 // primvars. The instance primvars will follow after. If there
+                 // are no geom subsets, instance primvars start here.
     };
 
     enum DirtyBits : HdDirtyBits {

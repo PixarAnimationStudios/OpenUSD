@@ -72,6 +72,7 @@ private:
     bool _isPrimaryIntegrator;
     riley::IntegratorId _mainIntegratorId;
     riley::IntegratorId _quickIntegratorId;
+    std::vector<riley::ClippingPlaneId> _clipPlanes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

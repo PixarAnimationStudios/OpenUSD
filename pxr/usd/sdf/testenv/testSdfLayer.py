@@ -24,11 +24,11 @@
 
 import os, platform, itertools, sys, unittest
 
-# Initialize Ar to use ArDefaultResolver unless a different implementation
+# Initialize Ar to use Sdf_TestResolver unless a different implementation
 # is specified via the TEST_SDF_LAYER_RESOLVER to allow testing with other
 # filesystem-based resolvers.
 preferredResolver = os.environ.get(
-    "TEST_SDF_LAYER_RESOLVER", "ArDefaultResolver")
+    "TEST_SDF_LAYER_RESOLVER", "Sdf_TestResolver")
 
 from pxr import Ar
 Ar.SetPreferredResolver(preferredResolver)
@@ -200,7 +200,7 @@ class TestSdfLayer(unittest.TestCase):
         self.assertEqual(oldResolvedPath, newResolvedPath)
         self.assertFalse(listener.receivedNotice)
 
-    def test_UpdateExternalReference(self):
+    def test_UpdateCompositionAssetDependency(self):
         srcLayer = Sdf.Layer.CreateAnonymous()
         srcLayerStr = '''\
 #sdf 1.4.32
@@ -258,25 +258,26 @@ def "Root" (
         '''
         srcLayer.ImportFromString(srcLayerStr)
 
-        # Calling UpdateExternalReference with an empty old layer path is
-        # not allowed.
+        # Calling UpdateCompositionAssetDependency with an empty old layer path
+        # is not allowed.
         origLayer = srcLayer.ExportToString()
-        self.assertFalse(srcLayer.UpdateExternalReference("", ""))
+        self.assertFalse(srcLayer.UpdateCompositionAssetDependency("", ""))
         self.assertEqual(origLayer, srcLayer.ExportToString())
 
-        # Calling UpdateExternalReference with an asset path that does not
-        # exist should result in no changes to the layer.
-        self.assertTrue(srcLayer.UpdateExternalReference(
+        # Calling UpdateCompositionAssetDependency with an asset path that does
+        # not exist should result in no changes to the layer.
+        self.assertTrue(srcLayer.UpdateCompositionAssetDependency(
             "nonexistent.sdf", "foo.sdf"))
         self.assertEqual(origLayer, srcLayer.ExportToString())
 
         # Test renaming / removing sublayers.
-        self.assertTrue(srcLayer.UpdateExternalReference(
+        self.assertTrue(srcLayer.UpdateCompositionAssetDependency(
             "sublayer_1.sdf", "new_sublayer_1.sdf"))
         self.assertEqual(
             srcLayer.subLayerPaths, ["new_sublayer_1.sdf", "sublayer_2.sdf"])
 
-        self.assertTrue(srcLayer.UpdateExternalReference("sublayer_2.sdf", ""))
+        self.assertTrue(srcLayer.UpdateCompositionAssetDependency(
+            "sublayer_2.sdf", ""))
         self.assertEqual(srcLayer.subLayerPaths, ["new_sublayer_1.sdf"])
 
         # Test renaming / removing payloads.
@@ -293,7 +294,7 @@ def "Root" (
             ["/Root{v=x}", "/Root{v=x}ChildInVariant"]
         ]
 
-        self.assertTrue(srcLayer.UpdateExternalReference(
+        self.assertTrue(srcLayer.UpdateCompositionAssetDependency(
             "payload_1.sdf", "new_payload_1.sdf"))
         for prim in primsWithSinglePayload:
             self.assertEqual(
@@ -307,7 +308,7 @@ def "Root" (
                  Sdf.Payload("payload_2.sdf", "/Payload2")],
                 "Unexpected payloads {0} at {1}".format(prim.payloadList, prim.path))
 
-        self.assertTrue(srcLayer.UpdateExternalReference(
+        self.assertTrue(srcLayer.UpdateCompositionAssetDependency(
             "new_payload_1.sdf", ""))
         for prim in primsWithSinglePayload:
             self.assertEqual(
@@ -320,7 +321,7 @@ def "Root" (
                 "Unexpected payloads {0} at {1}".format(prim.payloadList, prim.path))
 
         # Test renaming / removing references.
-        self.assertTrue(srcLayer.UpdateExternalReference(
+        self.assertTrue(srcLayer.UpdateCompositionAssetDependency(
             "ref_1.sdf", "new_ref_1.sdf"))
         for prim in primsWithReferences:
             self.assertEqual(
@@ -330,7 +331,7 @@ def "Root" (
                 "Unexpected references {0} at {1}"
                 .format(prim.referenceList, prim.path))
 
-        self.assertTrue(srcLayer.UpdateExternalReference(
+        self.assertTrue(srcLayer.UpdateCompositionAssetDependency(
             "ref_2.sdf", ""))
         for prim in primsWithReferences:
             self.assertEqual(
@@ -751,6 +752,42 @@ def "Root"
         self.assertEqual(list(layer9.rootPrims.keys()),
                          list(["Generated"]))
 
+    def test_CreatePrimInLayer(self):
+        layer = Sdf.Layer.CreateAnonymous()
+        self.assertFalse(layer.GetPrimAtPath("/root"))
+        rootSpec = Sdf.CreatePrimInLayer(layer, '/root')
+        # Must return new prim spec
+        self.assertTrue(rootSpec)
+        # Prim spec must match what we retrieve via namespace
+        self.assertEqual(rootSpec, layer.GetPrimAtPath('/root'))
+        with self.assertRaises(Tf.ErrorException):
+            # Must fail with non-prim path
+            Sdf.CreatePrimInLayer(layer, '/root.property')
+        # Must be able to create variants
+        variantSpec = Sdf.CreatePrimInLayer(layer, '/root{x=y}')
+        self.assertTrue(variantSpec)
+        self.assertEqual(variantSpec, layer.GetPrimAtPath('/root{x=y}'))
+        # New variant names use prepend
+        self.assertTrue('x' in rootSpec.variantSetNameList.prependedItems)
+        self.assertTrue(len(rootSpec.variantSetNameList.addedItems) == 0)
+
+    def test_ReloadAfterSetIdentifier(self):
+        layer = Sdf.Layer.CreateNew('TestReloadAfterSetIdentifier.sdf')
+        
+        # CreateNew creates a new empty layer on disk. Modifying it and
+        # then reloading should reset the layer back to its original
+        # empty state.
+        prim = Sdf.CreatePrimInLayer(layer, '/test')
+        self.assertTrue(layer.Reload())
+        self.assertFalse(prim)
+
+        # However, changing a layer's identifier does not immediately
+        # save the layer under its new filename. Because of that, there's
+        # nothing for Reload to reload from, so it does nothing.
+        prim = Sdf.CreatePrimInLayer(layer, '/test')
+        layer.identifier = 'TestReloadAfterSetIdentifier_renamed.sdf'
+        self.assertFalse(layer.Reload())
+        self.assertTrue(prim)
 
 if __name__ == "__main__":
     unittest.main()

@@ -47,7 +47,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((Pages, "pages"))             \
     ((Primvars, "primvars"))       \
     ((ImplementationName, "__SDR__implementationName"))\
-    ((Target, "__SDR__target"))
+    ((Target, "__SDR__target"))    \
+    ((SdrUsdEncodingVersion, "sdrUsdEncodingVersion"))
 
 // Note: The concept of context is defined on NdrNode and can be queried with
 // the GetContext() method. Sdr categorizes shaders by the context in which they
