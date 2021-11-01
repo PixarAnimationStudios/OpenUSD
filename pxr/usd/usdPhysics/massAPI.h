@@ -307,6 +307,7 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

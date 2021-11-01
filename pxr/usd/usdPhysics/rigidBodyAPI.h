@@ -309,6 +309,15 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Compute mass properties to the given rigid body \p prim. 
+    /// \p diagonalInertia Computed diagonal of the inertial tensor for the rigid body.
+    /// \p com Computed center of mass for the rigid body.
+    /// \p principalAxes Inertia tensor's principal axes orienttion for the rigid body.
+    /// \return Computed mass of the rigid body
+    USDPHYSICS_API
+    static float ComputeMassProperties(const UsdPrim &prim, GfVec3f& diagonalInertia, GfVec3f& com, GfQuatf& principalAxes);
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -29,10 +29,10 @@ pxr_library(usdPhysics
         fixedJoint
         joint
         limitAPI
-        massAPI
+        massAPI        
         materialAPI
         meshCollisionAPI
-        metrics
+        metrics        
         prismaticJoint
         revoluteJoint
         rigidBodyAPI
@@ -42,6 +42,7 @@ pxr_library(usdPhysics
         
     PUBLIC_HEADERS
         api.h
+        massProperties.h
 
     PYTHON_CPPFILES
         moduleDeps.cpp

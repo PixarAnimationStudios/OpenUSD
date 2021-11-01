@@ -125,7 +125,9 @@ class "PhysicsRigidBodyAPI"
     prim should move accordingly."""
 
     inherits = </APISchemaBase>
+    
 )
+
 {
 
     bool physics:rigidBodyEnabled = true (
