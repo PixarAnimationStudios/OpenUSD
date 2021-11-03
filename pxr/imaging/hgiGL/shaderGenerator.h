@@ -29,6 +29,8 @@
 #include "pxr/imaging/hgiGL/shaderSection.h"
 #include "pxr/imaging/hgiGL/api.h"
 
+#include <map>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HgiGLShaderSectionUniquePtrVector =
