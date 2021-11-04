@@ -49,10 +49,13 @@
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
- 
+
+extern TfEnvSetting<bool> HD_PRMAN_ENABLE_QUICKINTEGRATE;
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (openvdbAsset)
@@ -124,8 +127,6 @@ HdPrmanRenderDelegate::_Initialize()
     }
 
     std::string integrator = HdPrmanIntegratorTokens->PxrPathTracer;
-    const std::string interactiveIntegrator = 
-        HdPrmanIntegratorTokens->PxrDirectLighting;
     std::string integratorEnv = TfGetenv("HD_PRMAN_INTEGRATOR");
     if (!integratorEnv.empty()) {
         integrator = integratorEnv;
@@ -137,35 +138,43 @@ HdPrmanRenderDelegate::_Initialize()
     float pixelVariance = 0.001f;
 
     // Prepare list of render settings descriptors
-    _settingDescriptors.resize(5);
+    _settingDescriptors.reserve(5);
 
-    _settingDescriptors[0] = { 
+    _settingDescriptors.push_back({
         std::string("Integrator"),
         HdPrmanRenderSettingsTokens->integratorName,
         VtValue(integrator) 
-    };
+    });
 
-    _settingDescriptors[1] = {
-        std::string("Interactive Integrator"),
-        HdPrmanRenderSettingsTokens->interactiveIntegrator,
-        VtValue(interactiveIntegrator)
-    };
+    if (TfGetEnvSetting(HD_PRMAN_ENABLE_QUICKINTEGRATE)) {
+        const std::string interactiveIntegrator = 
+            HdPrmanIntegratorTokens->PxrDirectLighting;
+        _settingDescriptors.push_back({
+            std::string("Interactive Integrator"),
+            HdPrmanRenderSettingsTokens->interactiveIntegrator,
+            VtValue(interactiveIntegrator)
+        });
 
-    // If >0, the time in ms that we'll render quick output before switching
-    // to path tracing
-    _settingDescriptors[2] = {
-        std::string("Interactive Integrator Timeout (ms)"),
-        HdPrmanRenderSettingsTokens->interactiveIntegratorTimeout,
-        VtValue(200)
-    };
+        // If >0, the time in ms that we'll render quick output before switching
+        // to path tracing
+        _settingDescriptors.push_back({
+            std::string("Interactive Integrator Timeout (ms)"),
+            HdPrmanRenderSettingsTokens->interactiveIntegratorTimeout,
+            VtValue(200)
+        });
+    }
 
-    _settingDescriptors[3] = { std::string("Max Samples"),
+    _settingDescriptors.push_back({
+        std::string("Max Samples"),
         HdRenderSettingsTokens->convergedSamplesPerPixel,
-        VtValue(maxSamples) };
+        VtValue(maxSamples)
+    });
 
-    _settingDescriptors[4] = { std::string("Variance Threshold"),
+    _settingDescriptors.push_back({
+        std::string("Variance Threshold"),
         HdRenderSettingsTokens->convergedVariance,
-        VtValue(pixelVariance) };
+        VtValue(pixelVariance)
+    });
 
     _PopulateDefaultSettings(_settingDescriptors);
 

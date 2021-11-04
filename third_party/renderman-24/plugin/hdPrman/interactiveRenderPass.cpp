@@ -42,8 +42,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static bool _enableQuickIntegrate = TfGetenvBool(
-    "HD_PRMAN_ENABLE_QUICKINTEGRATE", false);
+TF_DEFINE_ENV_SETTING(HD_PRMAN_ENABLE_QUICKINTEGRATE, false,
+                      "Enable interactive integrator");
+
+static bool _enableQuickIntegrate =
+    TfGetEnvSetting(HD_PRMAN_ENABLE_QUICKINTEGRATE);
 
 HdPrman_InteractiveRenderPass::HdPrman_InteractiveRenderPass(
     HdRenderIndex *index,
