@@ -23,12 +23,24 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-def _modifySettings(appController):
-    import os
-    cwd = os.getcwd()
-    os.environ["OCIO"] = cwd + "/test.ocio"
-    appController._dataModel.viewSettings.colorCorrectionMode = "openColorIO"
+# The OCIO env var is set to the test.ocio config in the test directory before
+# it is run.
+
+from pxr.Usdviewq.common import ColorCorrectionModes
+
+def _useOCIO(appController):
+    appController._dataModel.viewSettings.colorCorrectionMode = ColorCorrectionModes.OPENCOLORIO
     appController._dataModel.viewSettings.showHUD = False
+    # The first view ("Gamma 2.2" will be the default view)
+    appController._takeShot("colorCorrectionOCIO_g22.png")
+
+def _useFallback(appController):
+    appController._dataModel.viewSettings.colorCorrectionMode = ColorCorrectionModes.SRGB
+    appController._takeShot("colorCorrectionSRGB.png")
+
+def _disableColorCorrection(appController):
+    appController._dataModel.viewSettings.colorCorrectionMode = ColorCorrectionModes.DISABLED
+    appController._takeShot("colorCorrectionDisabled.png")
 
 # Set the background color and refresh the view.
 def _setBackgroundColorAction(appController, action):
@@ -39,9 +51,10 @@ def _setBackgroundColorAction(appController, action):
 # Test with a dark grey background color.
 def _testGreyDarkBackground(appController):
     _setBackgroundColorAction(appController, appController._ui.actionGrey_Dark)
-    appController._takeShot("ocio_grey_dark.png")
 
 # Test OpenColorIO in UsdView
 def testUsdviewInputFunction(appController):
-    _modifySettings(appController)
     _testGreyDarkBackground(appController)
+    _useOCIO(appController)
+    _useFallback(appController)
+    _disableColorCorrection(appController)

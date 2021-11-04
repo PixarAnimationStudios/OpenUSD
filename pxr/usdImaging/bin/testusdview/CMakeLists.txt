@@ -440,4 +440,10 @@ if (NOT PXR_HEADLESS_TEST_MODE)
         EXPECTED_RETURN_CODE 0
     )
     
+    pxr_register_test(testUsdviewColorManagement
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewColorManagement.py test.usda"
+        EXPECTED_RETURN_CODE 0
+    )
+    
 endif()
