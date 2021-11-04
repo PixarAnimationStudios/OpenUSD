@@ -96,6 +96,7 @@ public:
 
     bool bindlessTextureEnabled;      // ARB_bindless_texture
     bool bindlessBufferEnabled;       // NV_shader_buffer_load
+    bool builtinBarycentricsEnabled;  // NV_fragment_shader_barycentric   (4.5)
 
     // GLSL version and extensions 
     int glslVersion;                  // 400, 410, ...

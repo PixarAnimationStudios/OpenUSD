@@ -53,6 +53,8 @@ TF_DEFINE_ENV_SETTING(GLF_ENABLE_DIRECT_STATE_ACCESS, true,
                       "Use GL direct state access extention");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_COPY_BUFFER, true,
                       "Use GL copy buffer data");
+TF_DEFINE_ENV_SETTING(GLF_ENABLE_BUILTIN_BARYCENTRICS, false,
+                      "Use built in barycentric coordinates");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_SHADER_DRAW_PARAMETERS, true,
                       "Use GL shader draw params if available (OpenGL 4.5+)");
 
@@ -85,6 +87,7 @@ GlfContextCaps::GlfContextCaps()
     , multiDrawIndirectEnabled(false)
     , bindlessTextureEnabled(false)
     , bindlessBufferEnabled(false)
+    , builtinBarycentricsEnabled(false)
 
     , glslVersion(_DefaultGLSLVersion)
     , explicitUniformLocation(false)
@@ -151,6 +154,7 @@ GlfContextCaps::_LoadCaps()
     multiDrawIndirectEnabled     = false;
     bindlessTextureEnabled       = false;
     bindlessBufferEnabled        = false;
+    builtinBarycentricsEnabled   = false;
     glslVersion                  = _DefaultGLSLVersion;
     explicitUniformLocation      = false;
     shadingLanguage420pack       = false;
@@ -248,6 +252,9 @@ GlfContextCaps::_LoadCaps()
     if (GARCH_GLAPI_HAS(NV_shader_buffer_load)) {
         bindlessBufferEnabled = true;
     }
+    if (GARCH_GLAPI_HAS(NV_fragment_shader_barycentric)) {
+        builtinBarycentricsEnabled = true;
+    }
     if (GARCH_GLAPI_HAS(ARB_explicit_uniform_location)) {
         explicitUniformLocation = true;
     }
@@ -277,6 +284,9 @@ GlfContextCaps::_LoadCaps()
     if (!TfGetEnvSetting(GLF_ENABLE_BINDLESS_BUFFER)) {
         bindlessBufferEnabled = false;
     }
+    if (!TfGetEnvSetting(GLF_ENABLE_BUILTIN_BARYCENTRICS)) {
+        builtinBarycentricsEnabled = false;
+    }
     if (!TfGetEnvSetting(GLF_ENABLE_MULTI_DRAW_INDIRECT)) {
         multiDrawIndirectEnabled = false;
     }
@@ -299,6 +309,7 @@ GlfContextCaps::_LoadCaps()
         bindlessTextureEnabled      &= (glslVersion >= 430);
         bindlessBufferEnabled       &= (glslVersion >= 430);
         shaderStorageBufferEnabled  &= (glslVersion >= 430);
+        builtinBarycentricsEnabled  &= (glslVersion >= 450);
         shaderDrawParametersEnabled &= (glslVersion >= 450);
     }
 
@@ -310,7 +321,7 @@ GlfContextCaps::_LoadCaps()
     if (TfDebug::IsEnabled(GLF_DEBUG_CONTEXT_CAPS)) {
         std::cout
             << "GlfContextCaps: \n"
-            << "  GL_VENDOR                          = " 
+            << "  GL_VENDOR                          = "
             <<    glVendorStr << "\n"
             << "  GL_RENDERER                        = "
             <<    glRendererStr << "\n"
@@ -344,6 +355,8 @@ GlfContextCaps::_LoadCaps()
             <<    shaderStorageBufferEnabled << "\n"
             << "  ARB_shading_language_420pack       = "
             <<    shadingLanguage420pack << "\n"
+            << "  NV_fragment_shader_barycentric     = "
+            <<    builtinBarycentricsEnabled << "\n"
             << "  NV_shader_buffer_load              = "
             <<    bindlessBufferEnabled << "\n"
 

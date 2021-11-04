@@ -523,36 +523,41 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         std::make_shared<HdStGLSLProgram>(HdTokens->drawingShader, registry);
 
     // initialize autogen source buckets
+    _genHeader.str(""); _genHeaderFS.str("");
     _genCommon.str(""); _genVS.str(""); _genTCS.str(""); _genTES.str("");
     _genGS.str(""); _genFS.str(""); _genCS.str("");
     _procVS.str(""); _procTCS.str(""), _procTES.str(""), _procGS.str("");
 
     // GLSL version.
     GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-    _genCommon << "#version " << caps.glslVersion << "\n";
+    _genHeader << "#version " << caps.glslVersion << "\n";
 
     if (caps.bindlessBufferEnabled) {
-        _genCommon << "#extension GL_NV_shader_buffer_load : require\n"
+        _genHeader << "#extension GL_NV_shader_buffer_load : require\n"
                    << "#extension GL_NV_gpu_shader5 : require\n";
     }
     if (caps.bindlessTextureEnabled) {
-        _genCommon << "#extension GL_ARB_bindless_texture : require\n";
+        _genHeader << "#extension GL_ARB_bindless_texture : require\n";
     }
     // XXX: Skip checking the context caps for whether the bindless texture
     // extension is available when bindless shadow maps are enabled. This needs 
     // to be done because GlfSimpleShadowArray is used internally in a manner
     // wherein context caps initialization might not have happened.
     if (GlfSimpleShadowArray::GetBindlessShadowMapsEnabled()) {
-        _genCommon << "#extension GL_ARB_bindless_texture : require\n";
+        _genHeader << "#extension GL_ARB_bindless_texture : require\n";
     }
     if (caps.glslVersion < 460 && caps.shaderDrawParametersEnabled) {
-        _genCommon << "#extension GL_ARB_shader_draw_parameters : require\n";
+        _genHeader << "#extension GL_ARB_shader_draw_parameters : require\n";
     }
     if (caps.glslVersion < 430 && caps.explicitUniformLocation) {
-        _genCommon << "#extension GL_ARB_explicit_uniform_location : require\n";
+        _genHeader << "#extension GL_ARB_explicit_uniform_location : require\n";
     }
     if (caps.glslVersion < 420 && caps.shadingLanguage420pack) {
-        _genCommon << "#extension GL_ARB_shading_language_420pack : require\n";
+        _genHeader << "#extension GL_ARB_shading_language_420pack : require\n";
+    }
+    if (caps.builtinBarycentricsEnabled) {
+        _genHeaderFS <<
+                "#extension GL_NV_fragment_shader_barycentric: require\n";
     }
 
     // Used in glslfx files to determine if it is using new/old
@@ -764,12 +769,18 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     }
 
     // Barycentric coordinates
-    if (hasGS) {
-        _genGS << "noperspective out vec3 hd_barycentricCoord;\n";
-        _genFS << "noperspective in vec3 hd_barycentricCoord;\n"
-                  "vec3 GetBarycentricCoord() {\n"
-                  "  return hd_barycentricCoord;\n"
+    if (caps.builtinBarycentricsEnabled) {
+        _genFS << "vec3 GetBarycentricCoord() {\n"
+                  "  return gl_BaryCoordNoPerspNV;\n"
                   "}\n";
+    } else {
+        if (hasGS) {
+            _genGS << "noperspective out vec3 hd_barycentricCoord;\n";
+            _genFS << "noperspective in vec3 hd_barycentricCoord;\n"
+                      "vec3 GetBarycentricCoord() {\n"
+                      "  return hd_barycentricCoord;\n"
+                      "}\n";
+        }
     }
 
     // prep interstage plumbing function
@@ -804,35 +815,40 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             // do nothing. no additional code needs to be generated.
             ;
     }
-    switch(_geometricShader->GetPrimitiveType())
-    {
-        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
-        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
-        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BSPLINE:
+    if (!caps.builtinBarycentricsEnabled) {
+        switch(_geometricShader->GetPrimitiveType())
         {
-            // These correspond to built-in fragment shader barycentric coords
-            // except reversed for the second triangle in the quad. Each quad is
-            // split into two triangles with indices (3,0,2) and (1,2,0).
-            _procGS << "  const vec3 coords[4] = vec3[](\n"
-                    << "   vec3(0,0,1), vec3(1,0,0), vec3(0,1,0), vec3(1,0,0)\n"
-                    << "  );\n"
-                    << "  hd_barycentricCoord = coords[index];\n";
-            break;
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BSPLINE:
+            {
+                // These correspond to built-in fragment shader barycentric
+                // coords except reversed for the second triangle in the quad.
+                // Each quad is split into two triangles with indices (3,0,2)
+                // and (1,2,0).
+                _procGS << "  const vec3 coords[4] = vec3[](\n"
+                        << "   vec3(0,0,1), vec3(1,0,0), "
+                        << "vec3(0,1,0), vec3(1,0,0)\n"
+                        << "  );\n"
+                        << "  hd_barycentricCoord = coords[index];\n";
+                break;
+            }
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
+            {
+                // These correspond to built-in fragment shader barycentric
+                // coords.
+                _procGS << "  const vec3 coords[3] = vec3[](\n"
+                        << "   vec3(1,0,0), vec3(0,1,0), vec3(0,0,1)\n"
+                        << "  );\n"
+                        << "  hd_barycentricCoord = coords[index];\n";
+                break;
+            }
+            default: // points, basis curves
+                // do nothing. no additional code needs to be generated.
+                ;
         }
-        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
-        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
-        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
-        {
-            // These correspond to built-in fragment shader barycentric coords.
-            _procGS << "  const vec3 coords[3] = vec3[](\n"
-                    << "   vec3(1,0,0), vec3(0,1,0), vec3(0,0,1)\n"
-                    << "  );\n"
-                    << "  hd_barycentricCoord = coords[index];\n";
-            break;
-        }
-        default: // points, basis curves
-            // do nothing. no additional code needs to be generated.
-            ;
     }
 
     // generate drawing coord and accessors
@@ -917,21 +933,22 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // compile shaders
     // note: _vsSource, _fsSource etc are used for diagnostics (see header)
     if (hasVS) {
-        _vsSource = _genCommon.str() + _genVS.str();
+        _vsSource = _genHeader.str() + _genCommon.str() + _genVS.str();
         if (!glslProgram->CompileShader(HgiShaderStageVertex, _vsSource)) {
             return HdStGLSLProgramSharedPtr();
         }
         shaderCompiled = true;
     }
     if (hasFS) {
-        _fsSource = _genCommon.str() + _genFS.str();
+        _fsSource = _genHeader.str() + _genHeaderFS.str() +
+                    _genCommon.str() + _genFS.str();
         if (!glslProgram->CompileShader(HgiShaderStageFragment, _fsSource)) {
             return HdStGLSLProgramSharedPtr();
         }
         shaderCompiled = true;
     }
     if (hasTCS) {
-        _tcsSource = _genCommon.str() + _genTCS.str();
+        _tcsSource = _genHeader.str() + _genCommon.str() + _genTCS.str();
         if (!glslProgram->CompileShader(
                 HgiShaderStageTessellationControl, _tcsSource)) {
             return HdStGLSLProgramSharedPtr();
@@ -939,7 +956,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         shaderCompiled = true;
     }
     if (hasTES) {
-        _tesSource = _genCommon.str() + _genTES.str();
+        _tesSource = _genHeader.str() + _genCommon.str() + _genTES.str();
         if (!glslProgram->CompileShader(
                 HgiShaderStageTessellationEval, _tesSource)) {
             return HdStGLSLProgramSharedPtr();
@@ -947,7 +964,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         shaderCompiled = true;
     }
     if (hasGS) {
-        _gsSource = _genCommon.str() + _genGS.str();
+        _gsSource = _genHeader.str() + _genCommon.str() + _genGS.str();
         if (!glslProgram->CompileShader(HgiShaderStageGeometry, _gsSource)) {
             return HdStGLSLProgramSharedPtr();
         }
