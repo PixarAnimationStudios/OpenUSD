@@ -81,7 +81,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdEmbreeRenderSettingsTokens, HDEMBREE_RENDER_SETTINGS_
 /// schedule a final BVH build (though Embree doesn't currenlty use it).
 /// Importantly, no scene updates are processed after CommitResources().
 ///
-class HdEmbreeRenderDelegate final : public HdRenderDelegate {
+class HdEmbreeRenderDelegate final : public HdRenderDelegate
+{
 public:
     /// Render delegate constructor. This method creates the RTC device and
     /// scene, and links embree error handling to hydra error handling.
@@ -92,40 +93,40 @@ public:
     HdEmbreeRenderDelegate(HdRenderSettingsMap const& settingsMap);
     /// Render delegate destructor. This method destroys the RTC device and
     /// scene.
-    virtual ~HdEmbreeRenderDelegate();
+    ~HdEmbreeRenderDelegate() override;
 
     /// Return this delegate's render param.
     ///   \return A shared instance of HdEmbreeRenderParam.
-    virtual HdRenderParam *GetRenderParam() const override;
+    HdRenderParam *GetRenderParam() const override;
 
     /// Return a list of which Rprim types can be created by this class's
     /// CreateRprim.
-    virtual const TfTokenVector &GetSupportedRprimTypes() const override;
+    const TfTokenVector &GetSupportedRprimTypes() const override;
     /// Return a list of which Sprim types can be created by this class's
     /// CreateSprim.
-    virtual const TfTokenVector &GetSupportedSprimTypes() const override;
+    const TfTokenVector &GetSupportedSprimTypes() const override;
     /// Return a list of which Bprim types can be created by this class's
     /// CreateBprim.
-    virtual const TfTokenVector &GetSupportedBprimTypes() const override;
+    const TfTokenVector &GetSupportedBprimTypes() const override;
 
     /// Returns the HdResourceRegistry instance used by this render delegate.
-    virtual HdResourceRegistrySharedPtr GetResourceRegistry() const override;
+    HdResourceRegistrySharedPtr GetResourceRegistry() const override;
 
     /// Returns a list of user-configurable render settings.
     /// This is a reflection API for the render settings dictionary; it need
     /// not be exhaustive, but can be used for populating application settings
     /// UI.
-    virtual HdRenderSettingDescriptorList
+    HdRenderSettingDescriptorList
         GetRenderSettingDescriptors() const override;
 
     /// Return true to indicate that pausing and resuming are supported.
-    virtual bool IsPauseSupported() const override;
+    bool IsPauseSupported() const override;
 
     /// Pause background rendering threads.
-    virtual bool Pause() override;
+    bool Pause() override;
 
     /// Resume background rendering threads.
-    virtual bool Resume() override;
+    bool Resume() override;
 
     /// Create a renderpass. Hydra renderpasses are responsible for drawing
     /// a subset of the scene (specified by the "collection" parameter) to the
@@ -135,7 +136,7 @@ public:
     ///   \param collection A specifier for which parts of the scene should
     ///                     be drawn.
     ///   \return An embree renderpass object.
-    virtual HdRenderPassSharedPtr CreateRenderPass(HdRenderIndex *index,
+    HdRenderPassSharedPtr CreateRenderPass(HdRenderIndex *index,
                 HdRprimCollection const& collection) override;
 
     /// Create an instancer. Hydra instancers store data needed for an
@@ -145,12 +146,12 @@ public:
     ///   \param id The scene graph ID of this instancer, used when pulling
     ///             data from a scene delegate.
     ///   \return An embree instancer object.
-    virtual HdInstancer *CreateInstancer(HdSceneDelegate *delegate,
-                                         SdfPath const& id) override;
+    HdInstancer *CreateInstancer(HdSceneDelegate *delegate,
+                                 SdfPath const& id) override;
 
     /// Destroy an instancer created with CreateInstancer.
     ///   \param instancer The instancer to be destroyed.
-    virtual void DestroyInstancer(HdInstancer *instancer) override;
+    void DestroyInstancer(HdInstancer *instancer) override;
 
     /// Create a hydra Rprim, representing scene geometry. This class creates
     /// embree-specialized geometry containers like HdEmbreeMesh which map
@@ -160,12 +161,12 @@ public:
     ///   \param rprimId The scene graph ID of this rprim, used when pulling
     ///                  data from a scene delegate.
     ///   \return An embree rprim object.
-    virtual HdRprim *CreateRprim(TfToken const& typeId,
-                                 SdfPath const& rprimId) override;
+    HdRprim *CreateRprim(TfToken const& typeId,
+                         SdfPath const& rprimId) override;
 
     /// Destroy an Rprim created with CreateRprim.
     ///   \param rPrim The rprim to be destroyed.
-    virtual void DestroyRprim(HdRprim *rPrim) override;
+    void DestroyRprim(HdRprim *rPrim) override;
 
     /// Create a hydra Sprim, representing scene or viewport state like cameras
     /// or lights.
@@ -174,19 +175,19 @@ public:
     ///   \param sprimId The scene graph ID of this sprim, used when pulling
     ///                  data from a scene delegate.
     ///   \return An embree sprim object.
-    virtual HdSprim *CreateSprim(TfToken const& typeId,
-                                 SdfPath const& sprimId) override;
+    HdSprim *CreateSprim(TfToken const& typeId,
+                         SdfPath const& sprimId) override;
 
     /// Create a hydra Sprim using default values, and with no scene graph
     /// binding.
     ///   \param typeId The sprim type to create. This must be one of the types
     ///                 from GetSupportedSprimTypes().
     ///   \return An embree fallback sprim object.
-    virtual HdSprim *CreateFallbackSprim(TfToken const& typeId) override;
+    HdSprim *CreateFallbackSprim(TfToken const& typeId) override;
 
     /// Destroy an Sprim created with CreateSprim or CreateFallbackSprim.
     ///   \param sPrim The sprim to be destroyed.
-    virtual void DestroySprim(HdSprim *sPrim) override;
+    void DestroySprim(HdSprim *sPrim) override;
 
     /// Create a hydra Bprim, representing data buffers such as textures.
     ///   \param typeId The bprim type to create. This must be one of the types
@@ -194,33 +195,33 @@ public:
     ///   \param bprimId The scene graph ID of this bprim, used when pulling
     ///                  data from a scene delegate.
     ///   \return An embree bprim object.
-    virtual HdBprim *CreateBprim(TfToken const& typeId,
-                                 SdfPath const& bprimId) override;
+    HdBprim *CreateBprim(TfToken const& typeId,
+                         SdfPath const& bprimId) override;
 
     /// Create a hydra Bprim using default values, and with no scene graph
     /// binding.
     ///   \param typeId The bprim type to create. This must be one of the types
     ///                 from GetSupportedBprimTypes().
     ///   \return An embree fallback bprim object.
-    virtual HdBprim *CreateFallbackBprim(TfToken const& typeId) override;
+    HdBprim *CreateFallbackBprim(TfToken const& typeId) override;
 
     /// Destroy a Bprim created with CreateBprim or CreateFallbackBprim.
     ///   \param bPrim The bprim to be destroyed.
-    virtual void DestroyBprim(HdBprim *bPrim) override;
+    void DestroyBprim(HdBprim *bPrim) override;
 
     /// This function is called after new scene data is pulled during prim
     /// Sync(), but before any tasks (such as draw tasks) are run, and gives the
     /// render delegate a chance to transfer any invalidated resources to the
     /// rendering kernel.
     ///   \param tracker The change tracker passed to prim Sync().
-    virtual void CommitResources(HdChangeTracker *tracker) override;
+    void CommitResources(HdChangeTracker *tracker) override;
 
     /// This function tells the scene which material variant to reference.
     /// Embree doesn't currently use materials but raytraced backends generally
     /// specify "full".
     ///   \return A token specifying which material variant this renderer
     ///           prefers.
-    virtual TfToken GetMaterialBindingPurpose() const override {
+    TfToken GetMaterialBindingPurpose() const override {
         return HdTokens->full;
     }
 
@@ -230,12 +231,12 @@ public:
     ///   \param name The name of the AOV whose descriptor we want.
     ///   \return A descriptor specifying things like what format the AOV
     ///           output buffer should be.
-    virtual HdAovDescriptor
+    HdAovDescriptor
         GetDefaultAovDescriptor(TfToken const& name) const override;
 
     /// This function allows the renderer to report back some useful statistics
     /// that the application can display to the user.
-    virtual VtDictionary GetRenderStats() const override;
+    VtDictionary GetRenderStats() const override;
 
 private:
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;

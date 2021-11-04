@@ -41,9 +41,7 @@ HdEmbreeRenderBuffer::HdEmbreeRenderBuffer(SdfPath const& id)
 {
 }
 
-HdEmbreeRenderBuffer::~HdEmbreeRenderBuffer()
-{
-}
+HdEmbreeRenderBuffer::~HdEmbreeRenderBuffer() = default;
 
 /*virtual*/
 void
