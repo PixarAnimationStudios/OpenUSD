@@ -140,72 +140,6 @@ _GetCropWindow(
         _DivRoundDown(w.GetMaxY() + 1, height));
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// Screen window space: imagine a plane at unit distance (*) in front
-// of the camera (and parallel to the camera). Coordinates with
-// respect to screen window space are measured in this plane with the
-// y-Axis pointing up. Such coordinates parameterize rays from the
-// camera.
-// (*) This is a simplification achieved by fixing RenderMan's FOV to be
-// 90 degrees.
-//
-// Image space: coordinates of the pixels in the rendered image with the top
-// left pixel having coordinate (0,0), i.e., y-down.
-// The display window from the camera framing is in image space as well
-// as the width and height of the render buffer.
-//
-// We want to map the screen window space to the image space such that the
-// conformed camera frustum from the scene delegate maps to the display window
-// of the CameraUtilFraming. This is achieved by the following code.
-//
-//
-// Compute screen window for given camera.
-//
-static
-GfRange2d
-_GetScreenWindow(const HdCamera * const cam)
-{
-    const GfVec2d size(
-        cam->GetHorizontalAperture(),       cam->GetVerticalAperture());
-    const GfVec2d offset(
-        cam->GetHorizontalApertureOffset(), cam->GetVerticalApertureOffset());
-        
-    const GfRange2d filmbackPlane(-0.5 * size + offset, +0.5 * size + offset);
-
-    if (cam->GetProjection() == HdCamera::Orthographic) {
-        return filmbackPlane;
-    }
-
-    if (cam->GetFocalLength() == 0.0f) {
-        return filmbackPlane;
-    }
-
-    return filmbackPlane / double(cam->GetFocalLength());
-}
-
-static
-double
-_SafeDiv(const double a, const double b)
-{
-    if (b == 0) {
-        TF_CODING_ERROR(
-            "Invalid display window in render pass state for hdPrman");
-        return 1.0;
-    }
-    return a / b;
-}
-
-// Compute the aspect ratio of the display window taking the
-// pixel aspect ratio into account.
-static
-double
-_GetDisplayWindowAspect(const CameraUtilFraming &framing)
-{
-    const GfVec2f &size = framing.displayWindow.GetSize();
-    return framing.pixelAspectRatio * _SafeDiv(size[0], size[1]);
-}
-
 static
 const HdRenderBuffer *
 _GetRenderBuffer(const HdRenderPassAovBinding& aov,
@@ -242,98 +176,6 @@ _GetRenderBufferSize(const HdRenderPassAovBindingVector &aovBindings,
     }
 
     return false;
-}
-
-// Compute the screen window we need to give to RenderMan. This screen
-// window is mapped to the entire render buffer (in image space) by
-// RenderMan.
-//
-// The input is the screenWindowForDisplayWindow: the screen window
-// corresponding to the camera from the scene delegate conformed to match
-// the aspect ratio of the display window.
-//
-// Together with the displayWindow, this input establishes how screen
-// window space is mapped to image space. We know need to take the
-// render buffer rect in image space and convert it to screen window
-// space.
-// 
-static
-GfRange2d
-_ConvertScreenWindowForDisplayWindowToRenderBuffer(
-    const GfRange2d &screenWindowForDisplayWindow,
-    const GfRange2f &displayWindow,
-    const int32_t renderBufferWidth, const int32_t renderBufferHeight)
-{
-    // Scaling factors to go from image space to screen window space.
-    const double screenWindowWidthPerPixel =
-        screenWindowForDisplayWindow.GetSize()[0] /
-        displayWindow.GetSize()[0];
-        
-    const double screenWindowHeightPerPixel =
-        screenWindowForDisplayWindow.GetSize()[1] /
-        displayWindow.GetSize()[1];
-
-    // Assuming an affine mapping between screen window space
-    // and image space, compute what (0,0) corresponds to in
-    // screen window space.
-    const GfVec2d screenWindowMin(
-        screenWindowForDisplayWindow.GetMin()[0]
-        - screenWindowWidthPerPixel * displayWindow.GetMin()[0],
-        // Note that image space is y-Down and screen window
-        // space is y-Up, so this is a bit tricky...
-        screenWindowForDisplayWindow.GetMax()[1]
-        + screenWindowHeightPerPixel * (
-            displayWindow.GetMin()[1] - renderBufferHeight));
-        
-    const GfVec2d screenWindowSize(
-        screenWindowWidthPerPixel * renderBufferWidth,
-        screenWindowHeightPerPixel * renderBufferHeight);
-    
-    return GfRange2d(screenWindowMin, screenWindowMin + screenWindowSize);
-}
-
-// Convert a window into the format expected by RenderMan
-// (xmin, xmax, ymin, ymax).
-static
-GfVec4f
-_ToVec4f(const GfRange2d &window)
-{
-    return { float(window.GetMin()[0]), float(window.GetMax()[0]),
-             float(window.GetMin()[1]), float(window.GetMax()[1]) };
-}
-
-// Compute the screen window we need to give to RenderMan.
-// 
-// See above comments. This also conforms the camera frustum using
-// the window policy specified by the application or the HdCamera.
-//
-static
-GfVec4f
-_ComputeScreenWindow(
-    HdRenderPassStateSharedPtr const& renderPassState,
-    const int32_t renderBufferWidth, const int32_t renderBufferHeight)
-{
-    const CameraUtilFraming &framing = renderPassState->GetFraming();
-
-    // Screen window from camera.
-    const GfRange2d screenWindowForCamera =
-        _GetScreenWindow(renderPassState->GetCamera());
-
-    // Conform to match display window's aspect ratio.
-    const GfRange2d screenWindowForDisplayWindow =
-        CameraUtilConformedWindow(
-            screenWindowForCamera,
-            renderPassState->GetWindowPolicy(),
-            _GetDisplayWindowAspect(framing));
-    
-    // Compute screen window we need to send to RenderMan.
-    const GfRange2d screenWindowForRenderBuffer =
-        _ConvertScreenWindowForDisplayWindowToRenderBuffer(
-            screenWindowForDisplayWindow,
-            framing.displayWindow,
-            renderBufferWidth, renderBufferHeight);
-    
-    return _ToVec4f(screenWindowForRenderBuffer);
 }
 
 void
@@ -594,7 +436,9 @@ HdPrman_InteractiveRenderPass::_Execute(
         // if available.
         RtParamList camParams;
         cameraContext.SetCameraAndCameraNodeParams(
-            &camParams, &cameraNode.params);
+            &camParams,
+            &cameraNode.params,
+            GfVec2i(renderBufferWidth, renderBufferHeight));
 
         // XXX Normally we would update RenderMan option 'ScreenWindow' to
         // account for an orthographic camera,
@@ -604,25 +448,12 @@ HdPrman_InteractiveRenderPass::_Execute(
         // Inverse computation of GfFrustum::ComputeProjectionMatrix()
         GfMatrix4d viewToWorldCorrectionMatrix(1.0);
 
-        if (hdCam && framing.IsValid()) {
-            const GfVec4f screenWindow =
-                _ComputeScreenWindow(
-                    renderPassState,
-                    renderBufferWidth, renderBufferHeight);
+        if (! (hdCam && framing.IsValid())) {
+            // Note that the above cameraContext.SetCameraAndCameraNodeParams
+            // is not working when there is no valid camera and framing.
 
-            if (hdCam->GetProjection() == HdCamera::Perspective) {
-                // TODO: For lens distortion to be correct, we might
-                // need to set a different FOV and adjust the screenwindow
-                // accordingly.
-                // For now, lens distortion parameters are not passed through
-                // hdPrman anyway.
-                //
-                cameraNode.params.SetFloat(
-                    RixStr.k_fov, 90.0f);
-            }
-            camParams.SetFloatArray(
-                RixStr.k_Ri_ScreenWindow, screenWindow.data(), 4);
-        } else {
+            // Implementing behaviors for old clients here.
+
             if (!isPerspective) {
                 const double left   = -(1 + proj[3][0]) / proj[0][0];
                 const double right  =  (1 - proj[3][0]) / proj[0][0];
