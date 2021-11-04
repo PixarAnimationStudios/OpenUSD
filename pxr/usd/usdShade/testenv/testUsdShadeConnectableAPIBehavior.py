@@ -61,6 +61,18 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
     def test_AppliedSchemaWithDefaultBehavior(self):
         stage = Usd.Stage.CreateInMemory()
 
+        # create a typeless prim
+        typelessPrim = stage.DefinePrim("/Prim")
+        self.assertEqual(typelessPrim.GetTypeName(), "")
+        connectableTypelessPrim = UsdShade.ConnectableAPI(typelessPrim)
+        self.assertFalse(connectableTypelessPrim)
+        self.assertFalse(connectableTypelessPrim.IsContainer())
+        # Apply an API Schema which imparts connectability to this typeless prim
+        typelessPrim.AddAppliedSchema("ModifiedDefaultConnectableBehaviorAPI")
+        self.assertTrue(connectableTypelessPrim)
+        self.assertTrue(connectableTypelessPrim.IsContainer())
+
+
         # imparts connectability traits to UsdShadeTestTyped prim while still
         # having no connectability trails on the type itself.
         self.assertFalse(UsdShade.ConnectableAPI.HasConnectableAPI(
