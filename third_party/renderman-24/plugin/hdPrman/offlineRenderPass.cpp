@@ -24,8 +24,6 @@
 #include "hdPrman/offlineRenderPass.h"
 #include "hdPrman/offlineContext.h"
 
-#include <iostream>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdPrman_OfflineRenderPass::HdPrman_OfflineRenderPass(
@@ -39,9 +37,7 @@ HdPrman_OfflineRenderPass::HdPrman_OfflineRenderPass(
         std::dynamic_pointer_cast<HdPrman_OfflineContext>(context);
 }
 
-HdPrman_OfflineRenderPass::~HdPrman_OfflineRenderPass()
-{
-}
+HdPrman_OfflineRenderPass::~HdPrman_OfflineRenderPass() = default;
 
 bool
 HdPrman_OfflineRenderPass::IsConverged() const
