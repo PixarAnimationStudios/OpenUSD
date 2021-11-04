@@ -525,138 +525,138 @@ float ComputeMassProperties(const UsdPrim &prim, GfVec3f& diagonalInertia, GfVec
 {
     MassProperties massProps;
 
-    UsdGeomXformCache xfCache;
+    // UsdGeomXformCache xfCache;
 
-    // We assume that usdPrim is a dynamic body. Callers responsibility to check
-    InternalMassAccumulationData massDesc;
-    massDesc.principalAxes = GfQuatf(1.0f);
+    // // We assume that usdPrim is a dynamic body. Callers responsibility to check
+    // InternalMassAccumulationData massDesc;
+    // massDesc.principalAxes = GfQuatf(1.0f);
 
-    // Parse dynamic body mass data
-    MassApiData massInfo = parseMassApi(stage, usdPrim);
-    massDesc.density = massInfo.density;
-    massDesc.mass = massInfo.mass;
-    massDesc.diagonalizedInertiaTensor = massInfo.diagonalInertia;
-    massDesc.accumulateMass = massDesc.mass <= 0.0f;
+    // // Parse dynamic body mass data
+    // MassApiData massInfo = parseMassApi(stage, usdPrim);
+    // massDesc.density = massInfo.density;
+    // massDesc.mass = massInfo.mass;
+    // massDesc.diagonalizedInertiaTensor = massInfo.diagonalInertia;
+    // massDesc.accumulateMass = massDesc.mass <= 0.0f;
 
-    // check for CoM
-    carb::Float3 centerOfMass = { 0.0f, 0.0f, 0.0f };
-    carb::Float4 principalAxes = { 0.0f, 0.0f, 0.0f, 1.0f };
-    const bool hasCoM = getCoM(stage, usdPrim, centerOfMass);
-    const bool hasPa = getPrincipalAxes(stage, usdPrim, principalAxes);
+    // // check for CoM
+    // carb::Float3 centerOfMass = { 0.0f, 0.0f, 0.0f };
+    // carb::Float4 principalAxes = { 0.0f, 0.0f, 0.0f, 1.0f };
+    // const bool hasCoM = getCoM(stage, usdPrim, centerOfMass);
+    // const bool hasPa = getPrincipalAxes(stage, usdPrim, principalAxes);
 
-    if (massDesc.accumulateMass || !massInfo.hasInertia || !hasCoM)
-    {
-        std::vector<MassProperties> massProps;
-        std::vector<GfMatrix4f> massTransf;
-        std::unordered_map<usdparser::ObjectId, UsdPrim> shapeIds;
+    // if (massDesc.accumulateMass || !massInfo.hasInertia || !hasCoM)
+    // {
+    //     std::vector<MassProperties> massProps;
+    //     std::vector<GfMatrix4f> massTransf;
+    //     std::unordered_map<usdparser::ObjectId, UsdPrim> shapeIds;
 
-        UsdLoad::getUsdLoad()->getPhysXPhysicsInterface()->getRigidBodyShapes(it->second, shapeIds);
-        const size_t numShapes = shapeIds.size();
-        massProps.reserve(numShapes);
-        massTransf.reserve(numShapes);
+    //     UsdLoad::getUsdLoad()->getPhysXPhysicsInterface()->getRigidBodyShapes(it->second, shapeIds);
+    //     const size_t numShapes = shapeIds.size();
+    //     massProps.reserve(numShapes);
+    //     massTransf.reserve(numShapes);
 
-        for (const std::pair<usdparser::ObjectId, UsdPrim>& shapePair : shapeIds)
-        {
-            float shapeDensity = 0.0f;
-            const UsdPrim& shapePrim = shapePair.second;
+    //     for (const std::pair<usdparser::ObjectId, UsdPrim>& shapePair : shapeIds)
+    //     {
+    //         float shapeDensity = 0.0f;
+    //         const UsdPrim& shapePrim = shapePair.second;
 
-            if (!shapePrim)
-                continue;
+    //         if (!shapePrim)
+    //             continue;
 
-            MassApiData massAPIdata = getCollisionShapeMassAPIData(stage, shapePrim, massDesc.density, shapeDensity);
+    //         MassApiData massAPIdata = getCollisionShapeMassAPIData(stage, shapePrim, massDesc.density, shapeDensity);
 
-            GfMatrix4f matrix;
-            massProps.push_back(parseCollisionShapeForMass(stage, shapePrim, shapePair.first, massAPIdata, shapeDensity, matrix));
-            massTransf.push_back(matrix);
-        }
+    //         GfMatrix4f matrix;
+    //         massProps.push_back(parseCollisionShapeForMass(stage, shapePrim, shapePair.first, massAPIdata, shapeDensity, matrix));
+    //         massTransf.push_back(matrix);
+    //     }
 
-        if (!massProps.empty())
-        {
-            MassProperties accumulatedMassProps =
-                MassProperties::sum(massProps.data(), massTransf.data(), uint32_t(massProps.size()));
+    //     if (!massProps.empty())
+    //     {
+    //         MassProperties accumulatedMassProps =
+    //             MassProperties::sum(massProps.data(), massTransf.data(), uint32_t(massProps.size()));
 
-            // if we had to compute mass, set the new mass
-            if (massDesc.accumulateMass)
-            {
-                massDesc.mass = accumulatedMassProps.mass;
-            }
-            else
-            {
-                const double massDiff = massDesc.mass / accumulatedMassProps.mass;
-                accumulatedMassProps.mass = massDesc.mass;
-                accumulatedMassProps.inertiaTensor = accumulatedMassProps.inertiaTensor * massDiff;
-            }
+    //         // if we had to compute mass, set the new mass
+    //         if (massDesc.accumulateMass)
+    //         {
+    //             massDesc.mass = accumulatedMassProps.mass;
+    //         }
+    //         else
+    //         {
+    //             const double massDiff = massDesc.mass / accumulatedMassProps.mass;
+    //             accumulatedMassProps.mass = massDesc.mass;
+    //             accumulatedMassProps.inertiaTensor = accumulatedMassProps.inertiaTensor * massDiff;
+    //         }
 
-            if (!hasCoM)
-            {
-                centerOfMass.x = accumulatedMassProps.centerOfMass[0];
-                centerOfMass.y = accumulatedMassProps.centerOfMass[1];
-                centerOfMass.z = accumulatedMassProps.centerOfMass[2];
-            }
-            else
-            {
-                const GfVec3f newCenterOfMass(centerOfMass.x, centerOfMass.y, centerOfMass.z);
-                accumulatedMassProps.translate(newCenterOfMass - accumulatedMassProps.centerOfMass);
-            }
+    //         if (!hasCoM)
+    //         {
+    //             centerOfMass.x = accumulatedMassProps.centerOfMass[0];
+    //             centerOfMass.y = accumulatedMassProps.centerOfMass[1];
+    //             centerOfMass.z = accumulatedMassProps.centerOfMass[2];
+    //         }
+    //         else
+    //         {
+    //             const GfVec3f newCenterOfMass(centerOfMass.x, centerOfMass.y, centerOfMass.z);
+    //             accumulatedMassProps.translate(newCenterOfMass - accumulatedMassProps.centerOfMass);
+    //         }
 
-            GfQuatf accPa;
-            const GfVec3f accInertia = MassProperties::getMassSpaceInertia(accumulatedMassProps.inertiaTensor, accPa);
+    //         GfQuatf accPa;
+    //         const GfVec3f accInertia = MassProperties::getMassSpaceInertia(accumulatedMassProps.inertiaTensor, accPa);
 
-            // check for inertia override
-            if (!massInfo.hasInertia)
-            {
-                massDesc.diagonalizedInertiaTensor = accInertia;
-            }
+    //         // check for inertia override
+    //         if (!massInfo.hasInertia)
+    //         {
+    //             massDesc.diagonalizedInertiaTensor = accInertia;
+    //         }
 
-            if (!hasPa)
-            {
-                principalAxes.x = accPa.GetImaginary()[0];
-                principalAxes.y = accPa.GetImaginary()[1];
-                principalAxes.z = accPa.GetImaginary()[2];
-                principalAxes.w = accPa.GetReal();
-            }
-        }
-        else
-        {
-            // no shape provided check inertia
-            if (!massInfo.hasInertia)
-            {
-                // In the absence of collision shapes and a specified inertia tensor, approximate
-                // the tensor using a sphere. If the mass is not specified
-                // throw a warning instead. Equation for spherical intertial tensor is (2/5 or
-                // 0.4)*mass*radius^2, where we use 0.1 radius to imitate point.
+    //         if (!hasPa)
+    //         {
+    //             principalAxes.x = accPa.GetImaginary()[0];
+    //             principalAxes.y = accPa.GetImaginary()[1];
+    //             principalAxes.z = accPa.GetImaginary()[2];
+    //             principalAxes.w = accPa.GetReal();
+    //         }
+    //     }
+    //     else
+    //     {
+    //         // no shape provided check inertia
+    //         if (!massInfo.hasInertia)
+    //         {
+    //             // In the absence of collision shapes and a specified inertia tensor, approximate
+    //             // the tensor using a sphere. If the mass is not specified
+    //             // throw a warning instead. Equation for spherical intertial tensor is (2/5 or
+    //             // 0.4)*mass*radius^2, where we use 0.1 radius to imitate point.
 
-                if (massDesc.mass > 0.0f)
-                {
-                    const float metersPerUnit = float(UsdGeomGetStageMetersPerUnit(stage));
-                    const float radius = 0.1f / metersPerUnit;
-                    const float inertiaVal = 0.4f * massDesc.mass * radius * radius;
-                    massDesc.diagonalizedInertiaTensor[0] = inertiaVal;
-                    massDesc.diagonalizedInertiaTensor[1] = inertiaVal;
-                    massDesc.diagonalizedInertiaTensor[2] = inertiaVal;
-                    CARB_LOG_INFO(
-                        "The rigid body at %s has a possibly invalid inertia tensor of {1.0, 1.0, 1.0}, small sphere approximated inertia was used. %s %s",
-                        primPath.GetString().c_str(),
-                        "Either specify correct values in the mass properties, or add collider(s) to any shape(s) that you wish to automatically compute mass properties for.",
-                        "If you do not want the objects to collide, add colliders regardless then disable the 'enable collision' property.");
-                }
-                else
-                {
-                    CARB_LOG_WARN(
-                        "The rigid body at %s has a possibly invalid inertia tensor of {1.0, 1.0, 1.0}%s. %s %s",
-                        primPath.GetString().c_str(), (massDesc.mass < 0.0f) ? " and a negative mass" : "",
-                        "Either specify correct values in the mass properties, or add collider(s) to any shape(s) that you wish to automatically compute mass properties for.",
-                        "If you do not want the objects to collide, add colliders regardless then disable the 'enable collision' property.");
-                }
-            }
-        }
-    }
+    //             if (massDesc.mass > 0.0f)
+    //             {
+    //                 const float metersPerUnit = float(UsdGeomGetStageMetersPerUnit(stage));
+    //                 const float radius = 0.1f / metersPerUnit;
+    //                 const float inertiaVal = 0.4f * massDesc.mass * radius * radius;
+    //                 massDesc.diagonalizedInertiaTensor[0] = inertiaVal;
+    //                 massDesc.diagonalizedInertiaTensor[1] = inertiaVal;
+    //                 massDesc.diagonalizedInertiaTensor[2] = inertiaVal;
+    //                 CARB_LOG_INFO(
+    //                     "The rigid body at %s has a possibly invalid inertia tensor of {1.0, 1.0, 1.0}, small sphere approximated inertia was used. %s %s",
+    //                     primPath.GetString().c_str(),
+    //                     "Either specify correct values in the mass properties, or add collider(s) to any shape(s) that you wish to automatically compute mass properties for.",
+    //                     "If you do not want the objects to collide, add colliders regardless then disable the 'enable collision' property.");
+    //             }
+    //             else
+    //             {
+    //                 CARB_LOG_WARN(
+    //                     "The rigid body at %s has a possibly invalid inertia tensor of {1.0, 1.0, 1.0}%s. %s %s",
+    //                     primPath.GetString().c_str(), (massDesc.mass < 0.0f) ? " and a negative mass" : "",
+    //                     "Either specify correct values in the mass properties, or add collider(s) to any shape(s) that you wish to automatically compute mass properties for.",
+    //                     "If you do not want the objects to collide, add colliders regardless then disable the 'enable collision' property.");
+    //             }
+    //         }
+    //     }
+    // }
 
-    const carb::Float3 diagInertia = { massDesc.diagonalizedInertiaTensor[0], massDesc.diagonalizedInertiaTensor[1],
-                                        massDesc.diagonalizedInertiaTensor[2] };
+    // const carb::Float3 diagInertia = { massDesc.diagonalizedInertiaTensor[0], massDesc.diagonalizedInertiaTensor[1],
+    //                                     massDesc.diagonalizedInertiaTensor[2] };
 
-    UsdLoad::getUsdLoad()->getPhysicsInterface()->updateMass(
-        primPath, it->second, massDesc.mass, diagInertia, centerOfMass, principalAxes);
+    // UsdLoad::getUsdLoad()->getPhysicsInterface()->updateMass(
+    //     primPath, it->second, massDesc.mass, diagInertia, centerOfMass, principalAxes);
 
     com = massProps.GetCenterOfMass();
     const GfMatrix3f& inertia = massProps.GetInertiaTensor();

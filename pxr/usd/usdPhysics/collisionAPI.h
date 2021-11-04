@@ -216,6 +216,13 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Get collision material prim. 
+    /// \return Material prim with physics material that is binded to this 
+    /// collision prim.
+    USDPHYSICS_API
+    UsdPrim GetCollisionPhysicsMaterialPrim() const;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

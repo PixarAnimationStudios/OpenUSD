@@ -11,6 +11,7 @@ pxr_library(usdPhysics
         trace
         usd
         usdGeom
+        usdShade
         work
         ${Boost_PYTHON_LIBRARY}
         ${TBB_tbb_LIBRARY}

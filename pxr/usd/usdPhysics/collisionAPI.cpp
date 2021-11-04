@@ -178,3 +178,96 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdPhysics/materialAPI.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _bindingTokens,
+    ((materialBindingPhysics, "material:binding:physics"))
+);
+
+UsdPrim UsdPhysicsCollisionAPI::GetCollisionPhysicsMaterialPrim() const
+{
+    UsdPrim materialPrim;
+
+    // handle material through a direct binding rel search
+    UsdRelationship materialRel;
+    SdfPathVector materials;
+
+    TfToken bindingStrength = UsdShadeTokens->weakerThanDescendants;
+    UsdPrim parent = GetPrim();
+    bool physicsMaterialFound = false;
+    while (parent && !parent.IsPseudoRoot())
+    {
+        materials.clear();
+        bool hasPhysicsBinding = false;
+        materialRel = parent.GetRelationship(_bindingTokens->materialBindingPhysics);
+        if (materialRel)
+        {
+            bindingStrength = UsdShadeMaterialBindingAPI::GetMaterialBindingStrength(materialRel);
+            materialRel.GetTargets(&materials);
+            hasPhysicsBinding = true;
+        }
+        else
+        {
+            materialRel = parent.GetRelationship(UsdShadeTokens->materialBinding);
+            if (materialRel)
+            {
+                bindingStrength = UsdShadeMaterialBindingAPI::GetMaterialBindingStrength(materialRel);
+                materialRel.GetTargets(&materials);
+            }
+        }
+
+        if (!materials.empty() && GetPrim().GetStage())
+        {
+            UsdPrim mPrim = GetPrim().GetStage()->GetPrimAtPath(materials[0]);
+
+            if (mPrim && mPrim.HasAPI<UsdPhysicsMaterialAPI>())
+            {                
+                if (!materialPrim)
+                {
+                    // we dont have any materials, any material is good enough
+                    materialPrim = mPrim;
+                    if (hasPhysicsBinding)
+                    {
+                        physicsMaterialFound = true;
+                    }
+                }
+                else
+                {                    
+                    if (!physicsMaterialFound)
+                    {
+                        // if we dont have physics material but we found a physics material
+                        // we will use the physics material
+                        if (hasPhysicsBinding)
+                        {
+                            materialPrim = mPrim;
+                        }
+                        else if (bindingStrength == UsdShadeTokens->strongerThanDescendants)
+                        {
+                            // if we dont have physics material check if have a stronger binding
+                            materialPrim = mPrim;                            
+                        }
+                    }
+                    else
+                    {
+                        // we have a physics material check if have a stronger binding
+                        if (hasPhysicsBinding && bindingStrength == UsdShadeTokens->strongerThanDescendants)
+                        {
+                            materialPrim = mPrim;
+                        }
+                    }
+                }
+            }
+        }
+
+        parent = parent.GetParent();
+    }
+    
+    return materialPrim;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
