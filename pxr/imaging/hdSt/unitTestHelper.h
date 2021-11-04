@@ -53,7 +53,8 @@ using HgiUniquePtr = std::unique_ptr<class Hgi>;
 /// that is is not available, all OpenGL calls become no-ops, but all other work
 /// is performed as usual.
 ///
-class HdSt_TestDriver final {
+class HdSt_TestDriver final
+{
 public:
     HdSt_TestDriver();
     HdSt_TestDriver(TfToken const &reprName);
@@ -67,7 +68,7 @@ public:
     void Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides);
 
     /// Set camera to renderpass
-    void SetCamera(GfMatrix4d const &modelViewMatrix,
+    void SetCamera(GfMatrix4d const &viewMatrix,
                    GfMatrix4d const &projectionMatrix,
                    CameraUtilFraming const &framing);
     

@@ -455,6 +455,11 @@ HdUnitTestDelegate::UpdateTransform(SdfPath const& id,
         HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
         tracker.MarkRprimDirty(id, HdChangeTracker::DirtyTransform);
     }
+    if (_cameras.find(id) != _cameras.end()) {
+        _cameras[id].transform = mat;
+        HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+        tracker.MarkSprimDirty(id, HdChangeTracker::DirtyTransform);
+    }        
 }
 
 void 
@@ -918,6 +923,10 @@ HdUnitTestDelegate::GetTransform(SdfPath const& id)
     if(_meshes.find(id) != _meshes.end()) {
         return GfMatrix4d(_meshes[id].transform);
     }
+    if (_cameras.find(id) != _cameras.end()) {
+        return GfMatrix4d(_cameras[id].transform);
+    }
+
     return GfMatrix4d(1);
 }
 

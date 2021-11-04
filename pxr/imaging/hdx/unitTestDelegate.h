@@ -250,6 +250,7 @@ private:
     std::map<SdfPath, VtValue> _materials;
     std::map<SdfPath, int> _refineLevels;
     std::map<SdfPath, _DrawTarget> _drawTargets;
+    std::map<SdfPath, GfMatrix4d> _cameraTransforms;
     int _refineLevel;
 
     using SdfPathMap = std::map<SdfPath, SdfPath>;

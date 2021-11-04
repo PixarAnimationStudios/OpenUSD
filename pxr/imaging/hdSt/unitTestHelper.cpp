@@ -33,6 +33,7 @@
 #include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/camera.h"
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -227,31 +228,82 @@ HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides)
     _engine.Execute(&_sceneDelegate->GetRenderIndex(), &tasks);
 }
 
+static
+HdCamera::Projection
+_ToHd(const GfCamera::Projection projection)
+{
+    switch(projection) {
+    case GfCamera::Perspective:
+        return HdCamera::Perspective;
+    case GfCamera::Orthographic:
+        return HdCamera::Orthographic;
+    }
+    TF_CODING_ERROR("Bad GfCamera::Projection value");
+    return HdCamera::Perspective;
+}
+
 void
-HdSt_TestDriver::SetCamera(GfMatrix4d const &modelViewMatrix,
+HdSt_TestDriver::SetCamera(GfMatrix4d const &viewMatrix,
                            GfMatrix4d const &projectionMatrix,
                            CameraUtilFraming const &framing)
 {
+    GfCamera cam;
+    cam.SetFromViewAndProjectionMatrix(viewMatrix,
+                                       projectionMatrix);
+    
+    _sceneDelegate->UpdateTransform(
+        _cameraId,
+        GfMatrix4f(cam.GetTransform()));
     _sceneDelegate->UpdateCamera(
-        _cameraId, HdCameraTokens->worldToViewMatrix, VtValue(modelViewMatrix));
+        _cameraId,
+        HdCameraTokens->projection,
+        VtValue(_ToHd(cam.GetProjection())));
     _sceneDelegate->UpdateCamera(
-        _cameraId, HdCameraTokens->projectionMatrix, VtValue(projectionMatrix));
+        _cameraId,
+        HdCameraTokens->focalLength,
+        VtValue(cam.GetFocalLength() *
+                float(GfCamera::FOCAL_LENGTH_UNIT)));
+    _sceneDelegate->UpdateCamera(
+        _cameraId,
+        HdCameraTokens->horizontalAperture,
+        VtValue(cam.GetHorizontalAperture() *
+                float(GfCamera::APERTURE_UNIT)));
+    _sceneDelegate->UpdateCamera(
+        _cameraId,
+        HdCameraTokens->verticalAperture,
+        VtValue(cam.GetVerticalAperture() *
+                float(GfCamera::APERTURE_UNIT)));
+    _sceneDelegate->UpdateCamera(
+        _cameraId,
+        HdCameraTokens->horizontalApertureOffset,
+        VtValue(cam.GetHorizontalApertureOffset() *
+                float(GfCamera::APERTURE_UNIT)));
+    _sceneDelegate->UpdateCamera(
+        _cameraId,
+        HdCameraTokens->verticalApertureOffset,
+        VtValue(cam.GetVerticalApertureOffset() *
+                float(GfCamera::APERTURE_UNIT)));
+    _sceneDelegate->UpdateCamera(
+        _cameraId,
+        HdCameraTokens->clippingRange,
+        VtValue(cam.GetClippingRange()));
+
     // Baselines for tests were generated without constraining the view
     // frustum based on the viewport aspect ratio.
     _sceneDelegate->UpdateCamera(
         _cameraId, HdCameraTokens->windowPolicy,
         VtValue(CameraUtilDontConform));
     
-    const HdCamera * const cam =
+    const HdCamera * const camera =
         dynamic_cast<HdCamera const *>(
             _renderIndex->GetSprim(
                 HdPrimTypeTokens->camera,
                 _cameraId));
-    TF_VERIFY(cam);
+    TF_VERIFY(camera);
     _renderPassState->SetCameraAndFraming(
-        cam, framing, { false, CameraUtilFit });
+        camera, framing, { false, CameraUtilFit });
 }
-
+    
 void
 HdSt_TestDriver::SetCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes)
 {

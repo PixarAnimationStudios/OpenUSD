@@ -294,17 +294,32 @@ void HdEmbree_TestGLDrawing::InitTest()
     }
 
     // Configure the camera looking slightly down on the objects.
-    GfFrustum frustum;
-    frustum.SetNearFar(GfRange1d(0.1, 1000.0));
-    frustum.SetPosition(GfVec3d(0, -5, 10));
-    frustum.SetRotation(GfRotation(GfVec3d(1, 0, 0), 45));
+    GfMatrix4f viewMatrix;
+    viewMatrix.SetLookAt(
+        GfVec3f(0, -5, 10),
+        GfRotation(GfVec3d(1, 0, 0), 45));
+    _sceneDelegate->UpdateTransform(
+        camera,
+        viewMatrix.GetInverse());
 
-    _sceneDelegate->UpdateCamera(camera,
-        HdCameraTokens->worldToViewMatrix,
-        VtValue(frustum.ComputeViewMatrix()));
-    _sceneDelegate->UpdateCamera(camera,
-        HdCameraTokens->projectionMatrix,
-        VtValue(frustum.ComputeProjectionMatrix()));
+    _sceneDelegate->UpdateCamera(
+        camera,
+        HdCameraTokens->clippingRange,
+        VtValue(GfRange1f(0.1, 1000.0)));
+
+    _sceneDelegate->UpdateCamera(
+        camera,
+        HdCameraTokens->horizontalAperture,
+        VtValue(100.0f));
+    _sceneDelegate->UpdateCamera(
+        camera,
+        HdCameraTokens->verticalAperture,
+        VtValue(100.0f));
+    _sceneDelegate->UpdateCamera(
+        camera,
+        HdCameraTokens->focalLength,
+        VtValue(50.0f));
+
     _sceneDelegate->UpdateCamera(camera,
         HdCameraTokens->windowPolicy,
         VtValue(CameraUtilCrop));
