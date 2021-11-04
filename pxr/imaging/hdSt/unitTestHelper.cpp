@@ -32,8 +32,6 @@
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
-#include "pxr/imaging/glf/diagnostic.h"
-
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/tf/getenv.h"
@@ -224,8 +222,6 @@ HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides)
             withGuides)
     };
     _engine.Execute(&_sceneDelegate->GetRenderIndex(), &tasks);
-
-    GLF_POST_PENDING_GL_ERRORS();
 }
 
 void

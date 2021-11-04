@@ -72,6 +72,7 @@ public:
 private:
     HdSt_UnitTestGLDrawing *_unitTest;
     GlfDrawTargetRefPtr _drawTarget;
+    GLuint _vao;
     bool _animate;
 };
 
@@ -79,12 +80,14 @@ HdSt_UnitTestWindow::HdSt_UnitTestWindow(
     HdSt_UnitTestGLDrawing * unitTest, int w, int h)
     : GarchGLDebugWindow("Hd Test", w, h)
     , _unitTest(unitTest)
+    , _vao(0)
     , _animate(false)
 {
 }
 
 HdSt_UnitTestWindow::~HdSt_UnitTestWindow()
 {
+    glDeleteVertexArrays(1, &_vao);
 }
 
 /* virtual */
@@ -98,6 +101,8 @@ HdSt_UnitTestWindow::OnInitializeGL()
     std::cout << glGetString(GL_VENDOR) << "\n";
     std::cout << glGetString(GL_RENDERER) << "\n";
     std::cout << glGetString(GL_VERSION) << "\n";
+
+    glGenVertexArrays(1, &_vao);
 
     //
     // Create an offscreen draw target which is the same size as this
@@ -125,6 +130,7 @@ HdSt_UnitTestWindow::OnUninitializeGL()
 void
 HdSt_UnitTestWindow::OnPaintGL()
 {
+
     //
     // Update the draw target's size and execute the unit test with
     // the draw target bound.
@@ -132,7 +138,15 @@ HdSt_UnitTestWindow::OnPaintGL()
     _drawTarget->Bind();
     _drawTarget->SetSize(GfVec2i(GetWidth(), GetHeight()));
 
+    glBindVertexArray(_vao);
+
+    glViewport(0, 0, GetWidth(), GetHeight());
+
+    glEnable(GL_DEPTH_TEST);
+
     _unitTest->DrawTest();
+
+    glBindVertexArray(0);
 
     _drawTarget->Unbind();
 
@@ -150,6 +164,8 @@ HdSt_UnitTestWindow::OnPaintGL()
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+    GLF_POST_PENDING_GL_ERRORS();
 }
 
 void
@@ -158,9 +174,19 @@ HdSt_UnitTestWindow::OffscreenTest()
     _drawTarget->Bind();
     _drawTarget->SetSize(GfVec2i(GetWidth(), GetHeight()));
 
+    glBindVertexArray(_vao);
+
+    glViewport(0, 0, GetWidth(), GetHeight());
+
+    glEnable(GL_DEPTH_TEST);
+
     _unitTest->OffscreenTest();
 
+    glBindVertexArray(0);
+
     _drawTarget->Unbind();
+
+    GLF_POST_PENDING_GL_ERRORS();
 }
 
 void
@@ -384,6 +410,27 @@ HdSt_UnitTestGLDrawing::GetFrustum() const
     GfFrustum frustum;
     frustum.SetPerspective(45.0, aspectRatio, 1, 100000.0);
     return frustum;
+}
+
+void
+HdSt_UnitTestGLDrawing::ClearColor(float r, float g, float b, float a)
+{
+    GLfloat clearColor[4] = { r, g, b, a };
+    glClearBufferfv(GL_COLOR, 0, clearColor);
+}
+
+void
+HdSt_UnitTestGLDrawing::ClearDepth(float depthValue)
+{
+    GLfloat clearDepth[1] = { depthValue };
+    glClearBufferfv(GL_DEPTH, 0, clearDepth);
+}
+
+void
+HdSt_UnitTestGLDrawing::ClearStencil(int stencilValue)
+{
+    GLint clearStencil[1] = { stencilValue };
+    glClearBufferiv(GL_STENCIL, 0, clearStencil);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

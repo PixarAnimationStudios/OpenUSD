@@ -98,6 +98,13 @@ protected:
     HDST_API
     GfFrustum GetFrustum() const;
 
+    HDST_API
+    void ClearColor(float r, float g, float b, float a);
+    HDST_API
+    void ClearDepth(float depthValue);
+    HDST_API
+    void ClearStencil(int stencilValue);
+
     GfVec2i GetMousePos() const { return GfVec2i(_mousePos[0], _mousePos[1]); }
 
 private:
