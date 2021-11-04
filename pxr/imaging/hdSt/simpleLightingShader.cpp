@@ -92,6 +92,15 @@ HdStSimpleLightingShader::ComputeHash() const
     boost::hash_combine(hash, numShadows);
     boost::hash_combine(hash, _lightingContext->ComputeShaderSourceHash());
 
+    for (const HdStShaderCode::NamedTextureHandle &namedHandle :
+        _namedTextureHandles) {
+        
+        // Use name and hash only - not the texture itself as this
+        // does not affect the generated shader source.
+        boost::hash_combine(hash, namedHandle.name);
+        boost::hash_combine(hash, namedHandle.hash);
+    }
+
     return (ID)hash;
 }
 
@@ -198,7 +207,8 @@ HdStSimpleLightingShader::AddBindings(HdBindingRequestVector *customBindings)
     // a domeLight (ignoring RectLights, and multiple domeLights)
 
     _lightTextureParams.clear();
-    if(_HasDomeLight(_lightingContext)) {
+    
+    if (_HasDomeLight(_lightingContext) && _domeLightEnvironmentTextureHandle) {
         // irradiance map
         _lightTextureParams.push_back(
             HdSt_MaterialParam(

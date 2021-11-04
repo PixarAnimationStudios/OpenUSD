@@ -280,6 +280,7 @@ HdStLight::_PrepareDomeLight(
     GlfSimpleLight l;
     l.SetHasShadow(false);
     l.SetIsDomeLight(true);
+    l.SetAttenuation(GfVec3f(0.0f, 0.0f, 0.0f));
 
     // The intensity value is set to 0 if light is not visible
     if (!sceneDelegate->GetVisible(id) ||
@@ -288,7 +289,53 @@ HdStLight::_PrepareDomeLight(
         l.SetHasIntensity(false);
         return l;
     }
+    
+    // Get the color of the light
+    GfVec3f hdc = sceneDelegate->GetLightParamValue(id, HdLightTokens->color)
+        .Get<GfVec3f>();
 
+    // Color temperature
+    VtValue enableColorTemperatureVal = 
+        sceneDelegate->GetLightParamValue(id,
+            HdLightTokens->enableColorTemperature);
+    if (enableColorTemperatureVal.GetWithDefault<bool>(false)) {
+        VtValue colorTemperatureVal = 
+            sceneDelegate->GetLightParamValue(id,
+                HdLightTokens->colorTemperature);
+        if (colorTemperatureVal.IsHolding<float>()) {
+            float colorTemperature = colorTemperatureVal.Get<float>();
+            hdc = GfCompMult(hdc,
+                _BlackbodyTemperatureAsRgb(colorTemperature));
+        }
+    }
+
+    // Intensity
+    float intensity = 
+        sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity)
+            .Get<float>();
+
+    // Exposure
+    float exposure = 
+        sceneDelegate->GetLightParamValue(id, HdLightTokens->exposure)
+            .Get<float>();
+    intensity *= powf(2.0f, GfClamp(exposure, -50.0f, 50.0f));
+
+    // Calculate the final color of the light
+    GfVec4f c(hdc[0]*intensity, hdc[1]*intensity, hdc[2]*intensity, 1.0f); 
+
+    // Diffuse & Specular multiplier
+    float diffuseMultiplier = 
+        sceneDelegate->GetLightParamValue(id, HdLightTokens->diffuse)
+            .GetWithDefault<float>(1.0f);
+    float specularMultiplier = 
+        sceneDelegate->GetLightParamValue(id, HdLightTokens->specular)
+            .GetWithDefault<float>(1.0f);
+
+    l.SetHasIntensity(intensity != 0.0f);
+    l.SetDiffuse(diffuseMultiplier * c);
+    l.SetSpecular(specularMultiplier * c);
+
+    // Dome light texture
     {
         const VtValue v = sceneDelegate->GetLightParamValue(
                 id, HdLightTokens->textureFile);
