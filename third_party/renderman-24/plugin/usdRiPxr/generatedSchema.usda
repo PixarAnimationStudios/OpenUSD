@@ -678,38 +678,6 @@ class PxrEnvDayLight "PxrEnvDayLight" (
     apiSchemas = ["LightAPI"]
 )
 {
-    float inputs:diffuse = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Diffuse Amount"
-        doc = """
-                diffuse: Amount of diffuse light that is emitted. This is a non-physical control.
-                You could use a light with Diffuse Amount 0.0 to act purely as a source of
-                highlights for your scene objects.
-            """
-    )
-    float inputs:exposure = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Basic"
-        displayName = "Exposure"
-        doc = """
-              exposure:  Specify the intensity of the light source as a power of 2 (in stops).
-              Increasing the exposure by 1 will double the energy emitted by the light source.
-              A value of 0 produces an intensity of 1, -1 produces .5. You may wonder why you
-              might use Exposure, and the answer is that real world lighting has high energies
-              and typical exposures are low values while you may have to type a really large
-              number for equivalent Intensity. This is also comfortable to artists familiar with
-              photographic measurements.
-            """
-    )
-    float inputs:intensity = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Basic"
-        displayName = "Intensity"
-        doc = """
-              intensity: Scales the contribution of this light linearly.
-            """
-    )
     bool inputs:ri:light:cheapCaustics = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -954,65 +922,6 @@ class PxrEnvDayLight "PxrEnvDayLight" (
                 negative for west.  For example, this would be -8 for Pacific time.
 
                 This is ignored if month is 0.
-            """
-    )
-    color3f inputs:shadow:color = (0, 0, 0) (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Color"
-        doc = """
-                shadowColor:  The color of the shadows cast by emitted light.
-            """
-    )
-    float inputs:shadow:distance = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Max Distance"
-        doc = """
-                shadowDistance: The maximum distance of the shadow starting from the position
-                of the point being shaded.
-                -1.0 is unset which will use the distance between the point being
-                shaded and the point on the light. You may use this control to artificially
-                reduce the distance shadows are cast. This may also increase render speed by
-                not calculating shadows outside this distance
-            """
-    )
-    bool inputs:shadow:enable = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Enable Shadows"
-        doc = """
-                enableShadows: Enable raytraced shadows.
-            """
-    )
-    float inputs:shadow:falloff = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff"
-        doc = """
-                shadowFalloff: the distance from the light at which shadow falloff begins.
-                -1.0 turns off shadow falloff. This is used along with Shadow Max Distance to
-                create a false fade for shadows that are reduced or cut off by the Shadow Max
-                Distance parameter.
-            """
-    )
-    float inputs:shadow:falloffGamma = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff Gamma"
-        doc = """
-                shadowFalloffGamma: The gamma of the shadow strength in the falloff zone. This
-                requires the use of Shadow Max Distance and Shadow Falloff.
-            """
-    )
-    float inputs:specular = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Specular Amount"
-        doc = """
-                specular: Amount of specular light that is emitted. This is a non-physical control.
-                You could use a light with Specular Amount 0.0 to act purely as a source of diffuse
-                light for your scene objects and avoid adding highlights.
             """
     )
     rel proxyPrim (
