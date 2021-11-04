@@ -357,7 +357,7 @@ UsdImagingCameraAdapter::MarkTransformDirty(UsdPrim const& prim,
                                            SdfPath const& cachePath,
                                            UsdImagingIndexProxy* index)
 {
-    index->MarkSprimDirty(cachePath, HdCamera::DirtyViewMatrix);
+    index->MarkSprimDirty(cachePath, HdCamera::DirtyTransform);
 }
 
 void
