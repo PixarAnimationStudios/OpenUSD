@@ -172,28 +172,52 @@ public:
         return _primType;
     }
 
+    HdCullStyle GetCullStyle() const {
+        return _cullStyle;
+    }
+
+    bool GetUseHardwareFaceCulling() const {
+        return _useHardwareFaceCulling;
+    }
+
+    bool GetHasMirroredTransform() const {
+        return _hasMirroredTransform;
+    }
+
+    bool GetDoubleSided() const {
+        return _doubleSided;
+    }
+
+    float GetLineWidth() const {
+        return _lineWidth;
+    }
+
+    HdPolygonMode GetPolygonMode() const {
+        return _polygonMode;
+    }
+
     /// member query functions for PrimitiveType
-     inline bool IsPrimTypePoints() const {
+    bool IsPrimTypePoints() const {
         return IsPrimTypePoints(_primType);
     }
 
-    inline bool IsPrimTypeBasisCurves() const {
+    bool IsPrimTypeBasisCurves() const {
         return IsPrimTypeBasisCurves(_primType);
     }
 
-    inline bool IsPrimTypeMesh() const {
+    bool IsPrimTypeMesh() const {
         return IsPrimTypeMesh(_primType);
     }
 
-    inline bool IsPrimTypeTriangles() const {
+    bool IsPrimTypeTriangles() const {
         return IsPrimTypeTriangles(_primType);
     }
 
-    inline bool IsPrimTypeQuads() const {
+    bool IsPrimTypeQuads() const {
         return IsPrimTypeQuads(_primType);
     }
 
-    inline bool IsPrimTypePatches() const {
+    bool IsPrimTypePatches() const {
         return IsPrimTypePatches(_primType);
     }
 

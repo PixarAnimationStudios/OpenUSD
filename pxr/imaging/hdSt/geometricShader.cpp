@@ -116,87 +116,7 @@ HdSt_GeometricShader::BindResources(const int program,
                                     HdSt_ResourceBinder const &binder,
                                     HdRenderPassState const &state)
 {
-    if (_useHardwareFaceCulling) {
-        switch (_cullStyle) {
-            case HdCullStyleFront:
-                glEnable(GL_CULL_FACE);
-                if (_hasMirroredTransform) {
-                    glCullFace(GL_BACK);
-                } else {
-                    glCullFace(GL_FRONT);
-                }
-                break;
-            case HdCullStyleFrontUnlessDoubleSided:
-                if (!_doubleSided) {
-                    glEnable(GL_CULL_FACE);
-                    if (_hasMirroredTransform) {
-                        glCullFace(GL_BACK);
-                    } else {
-                        glCullFace(GL_FRONT);
-                    }
-                }
-                break;
-            case HdCullStyleBack:
-                glEnable(GL_CULL_FACE);
-                if (_hasMirroredTransform) {
-                    glCullFace(GL_FRONT);
-                } else {
-                    glCullFace(GL_BACK);
-                }
-                break;
-            case HdCullStyleBackUnlessDoubleSided:
-                if (!_doubleSided) {
-                    glEnable(GL_CULL_FACE);
-                    if (_hasMirroredTransform) {
-                        glCullFace(GL_FRONT);
-                    } else {
-                        glCullFace(GL_BACK);
-                    }
-                }
-                break;
-            case HdCullStyleNothing:
-                glDisable(GL_CULL_FACE);
-                break;
-            case HdCullStyleDontCare:
-            default:
-                // Fallback to the renderPass opinion, but account for 
-                // combinations of parameters that require extra handling
-                HdCullStyle cullstyle = state.GetCullStyle();
-                if (_doubleSided && 
-                   (cullstyle == HdCullStyleBackUnlessDoubleSided || 
-                    cullstyle == HdCullStyleFrontUnlessDoubleSided)) {
-                    glDisable(GL_CULL_FACE);
-                } else if (_hasMirroredTransform && 
-                    (cullstyle == HdCullStyleBack || 
-                     cullstyle == HdCullStyleBackUnlessDoubleSided)) {
-                    glEnable(GL_CULL_FACE);
-                    glCullFace(GL_FRONT);
-                } else if (_hasMirroredTransform && 
-                    (cullstyle == HdCullStyleFront ||
-                     cullstyle == HdCullStyleFrontUnlessDoubleSided)) {
-                    glEnable(GL_CULL_FACE);
-                    glCullFace(GL_BACK);
-                } 
-                break;
-        }
-    } else {
-        // Use fragment shader culling via discard.
-        glDisable(GL_CULL_FACE);
-
-        if (_cullStyle != HdCullStyleDontCare) {
-            unsigned int cullStyle = _cullStyle;
-            binder.BindUniformui(HdShaderTokens->cullStyle, 1, &cullStyle);
-        } else {
-            // don't care -- use renderPass's fallback
-        }
-    }
-
-    if (_polygonMode == HdPolygonModeLine) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        if (_lineWidth > 0) {
-            glLineWidth(_lineWidth);
-        }
-    }
+    // no-op
 }
 
 void
@@ -204,29 +124,7 @@ HdSt_GeometricShader::UnbindResources(const int program,
                                       HdSt_ResourceBinder const &binder,
                                       HdRenderPassState const &state)
 {
-    if (_polygonMode == HdPolygonModeLine) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
-
-    // Restore renderPass culling opinions
-    HdCullStyle cullstyle = state.GetCullStyle();
-    switch (cullstyle) {
-        case HdCullStyleFront:
-        case HdCullStyleFrontUnlessDoubleSided:
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_FRONT);
-            break;
-        case HdCullStyleBack:
-        case HdCullStyleBackUnlessDoubleSided:
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_BACK);
-            break;
-        case HdCullStyleNothing:
-        case HdCullStyleDontCare:
-        default:
-            glDisable(GL_CULL_FACE);
-            break;
-    }
+    // no-op
 }
 
 /*virtual*/

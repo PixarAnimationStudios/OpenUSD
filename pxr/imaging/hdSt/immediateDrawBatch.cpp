@@ -176,6 +176,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
                                                 program.GetGeometricShader();
     geometricShader->BindResources(programId, binder, *renderPassState);
 
+    renderPassState->ApplyStateFromGeometricShader(binder, geometricShader);
+
     if (geometricShader->IsPrimTypePatches()) {
         glPatchParameteri(GL_PATCH_VERTICES,
                           geometricShader->GetPrimitiveIndexSize());

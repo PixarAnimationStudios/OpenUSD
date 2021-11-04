@@ -44,8 +44,11 @@ using HdStRenderPassShaderSharedPtr =
     std::shared_ptr<class HdStRenderPassShader>;
 using HdSt_FallbackLightingShaderSharedPtr =
     std::shared_ptr<class HdSt_FallbackLightingShader>;
+using HdSt_GeometricShaderSharedPtr =
+    std::shared_ptr<class HdSt_GeometricShader>;
 using HdStShaderCodeSharedPtrVector = std::vector<HdStShaderCodeSharedPtr>;
 class HdRenderIndex;
+class HdSt_ResourceBinder;
 
 /// \class HdStRenderPassState
 ///
@@ -114,6 +117,11 @@ public:
     HdStRenderPassShaderSharedPtr const &GetRenderPassShader() const {
         return _renderPassShader;
     }
+
+    HDST_API
+    void ApplyStateFromGeometricShader(
+        HdSt_ResourceBinder const &binder,
+        HdSt_GeometricShaderSharedPtr const &geometricShader);
 
     /// scene materials
     HDST_API
