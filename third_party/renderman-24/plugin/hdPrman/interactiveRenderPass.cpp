@@ -53,7 +53,6 @@ HdPrman_InteractiveRenderPass::HdPrman_InteractiveRenderPass(
 , _converged(false)
 , _lastRenderedVersion(0)
 , _lastSettingsVersion(0)
-, _lastCamPropertiesHash(0)
 , _integrator(HdPrmanIntegratorTokens->PxrPathTracer)
 , _quickIntegrator(HdPrmanIntegratorTokens->PxrDirectLighting)
 , _quickIntegrateTime(200.f/1000.f)
@@ -519,22 +518,15 @@ HdPrman_InteractiveRenderPass::_Execute(
     const CameraUtilFraming &framing =
         renderPassState->GetFraming();
 
-    // These are only those camera properties that used to be Ri options
-    // and are still being queried from the options and passed to the camera.
-    RtParamList camProperties =
-            _interactiveContext->_GetCameraPropertiesFromDeprecatedOptions();
-
     if (camParamsChanged ||
         resolutionChanged ||
         proj != _lastProj ||
         viewToWorldMatrix != _lastViewToWorldMatrix ||
-        framing != _lastFraming ||
-        _lastCamPropertiesHash != camProperties.Hash()) {
+        framing != _lastFraming) {
 
         _lastProj = proj;
         _lastViewToWorldMatrix = viewToWorldMatrix;
         _lastFraming = framing;
-        _lastCamPropertiesHash = camProperties.Hash();
 
         _interactiveContext->StopRender();
 
@@ -690,8 +682,6 @@ HdPrman_InteractiveRenderPass::_Execute(
                                        xf_rt_values.data(),
                                        xforms.times.data() };
 
-            camParams.Update(camProperties);
-
             // Commit camera.
             riley->ModifyCamera(
                 _interactiveContext->cameraId, 
@@ -754,8 +744,6 @@ HdPrman_InteractiveRenderPass::_Execute(
                 viewToWorldCorrectionMatrix * viewToWorldMatrix);
 
             riley::Transform xform = {1, &matrix, &zerotime};
-
-            camParams.Update(camProperties);
 
             // Commit camera.
             riley->ModifyCamera(

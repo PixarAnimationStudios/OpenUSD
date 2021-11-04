@@ -312,8 +312,6 @@ HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         matrix.Translate(0.f, 0.f, -5.0f);
         riley::Transform xform = { 1, &matrix, &zerotime };
         
-        camParams.Update(_GetCameraPropertiesFromDeprecatedOptions());
-
         cameraId = riley->CreateCamera(riley::UserId::DefaultId(),
                                        camName, cameraNode, xform, camParams);
     }
@@ -846,31 +844,6 @@ HdPrman_InteractiveContext::_GetDeprecatedOptionsPrunedList()
     }
 
     return prunedOptions;
-}
-
-RtParamList 
-HdPrman_InteractiveContext::_GetCameraPropertiesFromDeprecatedOptions()
-{
-    // The following were previously options, but now need to be provided 
-    // as camera properties.
-    static std::vector<RtUString> const _newRileyCameraProperties = 
-        {RixStr.k_Ri_ScreenWindow};
-
-    RtParamList properties;
-    uint32_t paramId;
-    for (auto name : _newRileyCameraProperties)
-    {
-        if (_options.GetParamId(name, paramId))
-        {
-            // Copying the param info directly allows us to ignore 
-            // the actual parameter type.
-            RtParamList::ParamInfo info;
-            _options.GetParamInfo(paramId, info);
-            properties.SetParam(info, _options.GetParam(paramId));
-        }
-    }
-
-    return properties;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

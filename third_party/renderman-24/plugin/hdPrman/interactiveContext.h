@@ -127,12 +127,6 @@ struct HdPrman_InteractiveContext : public HdPrman_Context
     // copy of the options, to be provided to SetOptions().
     RtParamList _GetDeprecatedOptionsPrunedList();
 
-    // Some quantities previously given as options now need to be provided
-    // through CreateCamera() or ModifyCamera(). This method retrieve these
-    // values from _options and add them to the given paramlist.
-    RtParamList _GetCameraPropertiesFromDeprecatedOptions();
-
-
 private:
     // Initialize things, like riley, that need to succeed
     // in order for Begin to be called.

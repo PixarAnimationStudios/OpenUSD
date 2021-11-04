@@ -62,7 +62,6 @@ private:
     GfMatrix4d _lastViewToWorldMatrix;
     CameraUtilFraming _lastFraming;
     GfVec4f _lastCropWindow;
-    uint32_t _lastCamPropertiesHash;
 
     std::chrono::steady_clock::time_point _frameStart;
     std::string _integrator;
