@@ -49,7 +49,7 @@ class HdPrmanLightFilter final : public HdSprim
 {
 public:
     HdPrmanLightFilter(SdfPath const& id, TfToken const& lightFilterType);
-    virtual ~HdPrmanLightFilter();
+    ~HdPrmanLightFilter() override;
 
     /// Synchronizes state from the delegate to this object.
     void Sync(HdSceneDelegate *sceneDelegate,

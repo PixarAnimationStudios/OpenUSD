@@ -69,7 +69,7 @@ public:
     HdPrmanRenderDelegate(std::shared_ptr<HdPrman_Context> context,
         HdRenderSettingsMap const& settingsMap);
     HDPRMAN_API 
-    virtual ~HdPrmanRenderDelegate();
+    ~HdPrmanRenderDelegate() override;
 
     // HdRenderDelegate API implementation.
     HDPRMAN_API

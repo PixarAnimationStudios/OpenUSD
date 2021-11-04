@@ -41,7 +41,7 @@ class HdPrmanLight final : public HdLight
 {
 public:
     HdPrmanLight(SdfPath const& id, TfToken const& lightType);
-    virtual ~HdPrmanLight();
+    ~HdPrmanLight() override;
 
     /// Synchronizes state from the delegate to this object.
     void Sync(HdSceneDelegate *sceneDelegate,

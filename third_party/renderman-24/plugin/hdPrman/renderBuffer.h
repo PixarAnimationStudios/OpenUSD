@@ -26,9 +26,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderBuffer.h"
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/vec4f.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,39 +33,39 @@ class HdPrmanRenderBuffer : public HdRenderBuffer
 {
 public:
     HdPrmanRenderBuffer(SdfPath const& id);
-    ~HdPrmanRenderBuffer();
+    ~HdPrmanRenderBuffer() override;
 
-    virtual bool Allocate(GfVec3i const& dimensions,
-                          HdFormat format,
-                          bool multiSampled) override;
+    bool Allocate(GfVec3i const& dimensions,
+                  HdFormat format,
+                  bool multiSampled) override;
 
-    virtual unsigned int GetWidth() const override { return _width; }
-    virtual unsigned int GetHeight() const override { return _height; }
-    virtual unsigned int GetDepth() const override { return 1; }
-    virtual HdFormat GetFormat() const override { return _format; }
+    unsigned int GetWidth() const override { return _width; }
+    unsigned int GetHeight() const override { return _height; }
+    unsigned int GetDepth() const override { return 1; }
+    HdFormat GetFormat() const override { return _format; }
 
     // HdPrman doesn't handle sampling decisions at the hydra level.
-    virtual bool IsMultiSampled() const override { return false; }
+    bool IsMultiSampled() const override { return false; }
 
-    virtual void* Map() override {
+    void* Map() override {
         _mappers++;
         return _buffer.data();
     }
-    virtual void Unmap() override {
+    void Unmap() override {
         _mappers--;
     }
-    virtual bool IsMapped() const override {
+    bool IsMapped() const override {
         return _mappers.load() != 0;
     }
 
-    virtual bool IsConverged() const override {
+    bool IsConverged() const override {
         return _converged.load();
     }
     void SetConverged(bool cv) {
         _converged.store(cv);
     }
 
-    virtual void Resolve() override {}
+    void Resolve() override {}
 
     // ---------------------------------------------------------------------- //
     /// \name I/O helpers
@@ -80,7 +77,7 @@ public:
 private:
     static size_t _GetBufferSize(GfVec2i const& dims, HdFormat format);
 
-    virtual void _Deallocate() override;
+    void _Deallocate() override;
 
     unsigned int _width;
     unsigned int _height;
