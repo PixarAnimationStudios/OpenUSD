@@ -66,7 +66,7 @@ public:
      /// and the riley camera or options need to be updated.
      bool IsInvalid() const;
 
-     /// Update the riley camera parameters and the parameters for the
+     /// Update the given riley camera parameters and the parameters for the
      /// projection shader node for the camera.
      ///
      /// Sets fStop, focalLength, focusDistance, clippingRange.
@@ -75,6 +75,14 @@ public:
      void SetCameraAndCameraNodeParams(
          RtParamList * camParams,
          RtParamList * camNodeParams,
+         const GfVec2i &renderBufferSize) const;
+
+     /// Update the given riley options.
+     ///
+     /// Sets the crop window - if framing is invalid, crop window will be set
+     /// to fill the entire render buffer.
+     void SetRileyOptions(
+         RtParamList * const options,
          const GfVec2i &renderBufferSize) const;
 
      /// Mark that riley camera and options are up to date.

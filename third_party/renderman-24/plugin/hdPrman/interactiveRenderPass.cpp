@@ -85,61 +85,6 @@ _DiffTimeToNow(std::chrono::steady_clock::time_point const& then)
     return(diff.count());
 }
 
-// The crop window for RenderMan.
-//
-// Computed from data window and render buffer size.
-//
-// Recall from the RenderMan API:
-// Only the pixels within the crop window are rendered. Has no
-// affect on how pixels in the image map into the filmback plane.
-// The crop window is relative to the render buffer size, e.g.,
-// the crop window of (0,0,1,1) corresponds to the entire render
-// buffer. The coordinates of the crop window are y-down.
-// Format is (xmin, xmax, ymin, ymax).
-//
-// The limits for the integer locations corresponding to the above crop
-// window are:
-//
-//   rxmin = clamp(ceil( renderbufferwidth*xmin    ), 0, renderbufferwidth - 1)
-//   rxmax = clamp(ceil( renderbufferwidth*xmax - 1), 0, renderbufferwidth - 1)
-//   similar for y
-//
-static
-float
-_DivRoundDown(const int a, const int b)
-{
-    // Note that if the division (performed here)
-    //    float(a) / b
-    // rounds up, then the result (by RenderMan) of
-    //    ceil(b * (float(a) / b))
-    // might be a+1 instead of a.
-    //
-    // We add a slight negative bias to a to avoid this (we could also
-    // set the floating point rounding mode but: how to do this in a
-    // portable way - and on x86 switching the rounding is slow).
-
-    return GfClamp((a - 0.0078125f) / b, 0.0f, 1.0f);
-}
-
-static
-GfVec4f
-_GetCropWindow(
-    HdRenderPassStateSharedPtr const& renderPassState,
-    const int32_t width, const int32_t height)
-{
-    const CameraUtilFraming &framing = renderPassState->GetFraming();
-    if (!framing.IsValid()) {
-        return GfVec4f(0,1,0,1);
-    }
-
-    const GfRect2i &w = framing.dataWindow;
-    return GfVec4f(
-        _DivRoundDown(w.GetMinX(), width),
-        _DivRoundDown(w.GetMaxX() + 1, width),
-        _DivRoundDown(w.GetMinY(), height),
-        _DivRoundDown(w.GetMaxY() + 1, height));
-}
-
 static
 const HdRenderBuffer *
 _GetRenderBuffer(const HdRenderPassAovBinding& aov,
@@ -387,13 +332,9 @@ HdPrman_InteractiveRenderPass::_Execute(
                 }
             }
 
-            const GfVec4f cropWindow =
-                _GetCropWindow(
-                    renderPassState, renderBufferWidth, renderBufferHeight);
-
-            _interactiveContext->GetOptions().SetFloatArray(
-                RixStr.k_Ri_CropWindow,
-                cropWindow.data(), 4);
+            cameraContext.SetRileyOptions(
+                &(_interactiveContext->GetOptions()),
+                GfVec2i(renderBufferWidth, renderBufferHeight));
             
             riley->SetOptions(
                 _interactiveContext->_GetDeprecatedOptionsPrunedList());
