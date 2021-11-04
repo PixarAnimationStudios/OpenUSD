@@ -108,7 +108,11 @@ My_TestGLDrawing::DrawTest()
 
     _driver->SetCullStyle(_cullStyle);
 
-    _driver->SetCamera(viewMatrix, projMatrix, GfVec4d(0, 0, width, height));
+    _driver->SetCamera(
+        viewMatrix,
+        projMatrix,
+        CameraUtilFraming(
+            GfRect2i(GfVec2i(0, 0), width, height)));
 
     _driver->Draw();
 }

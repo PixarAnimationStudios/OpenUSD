@@ -69,7 +69,7 @@ public:
     HD_API
     void SetCamera(GfMatrix4d const &modelViewMatrix,
                    GfMatrix4d const &projectionMatrix,
-                   GfVec4d const &viewport);
+                   CameraUtilFraming const &framing);
 
     /// Set cull style
     HD_API

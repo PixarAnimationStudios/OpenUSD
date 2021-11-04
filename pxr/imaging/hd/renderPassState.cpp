@@ -431,5 +431,22 @@ HdRenderPassState::SetColorMasks(
     _colorMasks = masks;
 }
 
+GfVec2f
+HdRenderPassState::GetDrawingRangeNDC() const
+{
+    int width;
+    int height;
+    if (_framing.IsValid()) {
+        width  = _framing.dataWindow.GetWidth();
+        height = _framing.dataWindow.GetHeight();
+    } else {
+        width  = _viewport[2];
+        height = _viewport[3];
+    }
+   
+    return GfVec2f(2*_drawRange[0]/width,
+                   2*_drawRange[1]/height);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

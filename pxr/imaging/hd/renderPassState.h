@@ -247,10 +247,8 @@ public:
     HD_API
     void SetDrawingRange(GfVec2f const &drawRange);
     GfVec2f GetDrawingRange() const { return _drawRange; } // in pixel
-    GfVec2f GetDrawingRangeNDC() const { // in ndc
-        return GfVec2f(2*_drawRange[0]/_viewport[2],
-                       2*_drawRange[1]/_viewport[3]);
-    }
+    HD_API
+    GfVec2f GetDrawingRangeNDC() const; // in ndc
 
     HD_API
     void SetDepthBiasUseDefault(bool useDefault);

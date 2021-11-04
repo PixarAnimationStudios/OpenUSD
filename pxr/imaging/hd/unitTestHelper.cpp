@@ -164,7 +164,11 @@ Hd_TestDriver::_Init(HdReprSelector const &reprSelector)
     frustum.SetPerspective(45, true, 1, 1.0, 10000.0);
     GfMatrix4d projMatrix = frustum.ComputeProjectionMatrix();
 
-    SetCamera(viewMatrix, projMatrix, GfVec4d(0, 0, 512, 512));
+    SetCamera(
+        viewMatrix,
+        projMatrix,
+        CameraUtilFraming(
+            GfRect2i(GfVec2i(0, 0), 512, 512)));
 
     // set depthfunc to default
     _renderPassState->SetDepthFunc(HdCmpFuncLess);
@@ -193,7 +197,7 @@ Hd_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides)
 void
 Hd_TestDriver::SetCamera(GfMatrix4d const &modelViewMatrix,
                          GfMatrix4d const &projectionMatrix,
-                         GfVec4d const &viewport)
+                         CameraUtilFraming const &framing)
 {
     _sceneDelegate->UpdateCamera(
         _cameraId, HdCameraTokens->worldToViewMatrix, VtValue(modelViewMatrix));
@@ -205,11 +209,14 @@ Hd_TestDriver::SetCamera(GfMatrix4d const &modelViewMatrix,
         _cameraId, HdCameraTokens->windowPolicy,
         VtValue(CameraUtilDontConform));
     
-    HdSprim const *cam = _renderIndex->GetSprim(HdPrimTypeTokens->camera,
-                                                 _cameraId);
+    const HdCamera * const cam =
+        dynamic_cast<HdCamera const *>(
+            _renderIndex->GetSprim(
+                HdPrimTypeTokens->camera,
+                _cameraId));
     TF_VERIFY(cam);
-    _renderPassState->SetCameraAndViewport(
-        dynamic_cast<HdCamera const *>(cam), viewport);
+    _renderPassState->SetCameraAndFraming(
+        cam, framing, { false, CameraUtilFit });
 }
 
 void
