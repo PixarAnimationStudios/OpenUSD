@@ -533,14 +533,14 @@ HdChangeTracker::_MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
     _DependencyMap::const_accessor aII;
     if (_instancerInstancerDependencies.find(aII, id)) {
         for (SdfPath const& dep : aII->second) {
-            MarkInstancerDirty(dep, toPropagate);
+            _MarkInstancerDirty(dep, toPropagate);
         }
     }
 
     _DependencyMap::const_accessor aIR;
     if (_instancerRprimDependencies.find(aIR, id)) {
         for (SdfPath const& dep : aIR->second) {
-            MarkRprimDirty(dep, toPropagate);
+            _MarkRprimDirty(dep, toPropagate);
         }
     }
 }
