@@ -52,6 +52,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfPath;
 class HdSceneDelegate;
 class HdPrmanCamera;
+class HdPrmanCameraContext;
 class HdPrmanRenderDelegate;
 
 // Context for HdPrman to communicate with an instance of PRMan.
@@ -191,6 +192,7 @@ struct HdPrman_Context
     virtual RtParamList &GetOptions() = 0;
     virtual riley::IntegratorId GetActiveIntegratorId() = 0;
     virtual riley::ShadingNode & GetActiveIntegratorShadingNode() = 0;
+    virtual HdPrmanCameraContext &GetCameraContext() = 0;
 
 protected:
     void _InitializePrman();

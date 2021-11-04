@@ -67,9 +67,7 @@ HdPrman_InteractiveRenderPass::HdPrman_InteractiveRenderPass(
     _quickIntegrateTime = _enableQuickIntegrate ? 200.f/1000.f : 0.f;
 }
 
-HdPrman_InteractiveRenderPass::~HdPrman_InteractiveRenderPass()
-{
-}
+HdPrman_InteractiveRenderPass::~HdPrman_InteractiveRenderPass() = default;
 
 bool
 HdPrman_InteractiveRenderPass::IsConverged() const
@@ -396,10 +394,18 @@ HdPrman_InteractiveRenderPass::_Execute(
     HdPrmanCamera * const hdCam =
         const_cast<HdPrmanCamera *>(
             dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera()));
-    const bool camParamsChanged =
-        hdCam && hdCam->GetAndResetHasParamsChanged();
-    
-    if (_lastSettingsVersion != currentSettingsVersion || camParamsChanged) {
+    const CameraUtilFraming &framing = renderPassState->GetFraming();
+
+    HdPrmanCameraContext &cameraContext =
+        _interactiveContext->GetCameraContext();
+    cameraContext.SetCamera(hdCam);
+    cameraContext.SetFraming(framing);
+    cameraContext.SetWindowPolicy(renderPassState->GetWindowPolicy());
+
+    const bool camChanged = cameraContext.IsInvalid();
+    cameraContext.MarkValid();
+
+    if (_lastSettingsVersion != currentSettingsVersion || camChanged) {
         _interactiveContext->StopRender();
 
         _integrator = renderDelegate->GetRenderSetting<std::string>(
@@ -489,7 +495,6 @@ HdPrman_InteractiveRenderPass::_Execute(
         _mainIntegratorId = _interactiveContext->integratorId;
     }
 
-
     int32_t renderBufferWidth = 0;
     int32_t renderBufferHeight = 0;
 
@@ -510,68 +515,51 @@ HdPrman_InteractiveRenderPass::_Execute(
         _interactiveContext->resolution[0] != renderBufferWidth ||
         _interactiveContext->resolution[1] != renderBufferHeight;
 
-    const GfMatrix4d proj =
-        renderPassState->GetProjectionMatrix();
     const GfMatrix4d viewToWorldMatrix =
         renderPassState->GetWorldToViewMatrix().GetInverse();
-    const CameraUtilFraming &framing =
-        renderPassState->GetFraming();
 
-    if (camParamsChanged ||
-        resolutionChanged ||
-        proj != _lastProj ||
-        viewToWorldMatrix != _lastViewToWorldMatrix ||
-        framing != _lastFraming) {
-
-        _lastProj = proj;
-        _lastViewToWorldMatrix = viewToWorldMatrix;
-        _lastFraming = framing;
+    if (camChanged ||
+        resolutionChanged) {
 
         _interactiveContext->StopRender();
 
-        const GfVec4f cropWindow =
-            _GetCropWindow(
-                renderPassState, renderBufferWidth, renderBufferHeight);
-        const bool cropWindowChanged = cropWindow != _lastCropWindow;
-
-        if (resolutionChanged || cropWindowChanged) {
-            if (resolutionChanged) {
-                _interactiveContext->resolution[0] = renderBufferWidth;
-                _interactiveContext->resolution[1] = renderBufferHeight;
+        if (resolutionChanged) {
+            _interactiveContext->resolution[0] = renderBufferWidth;
+            _interactiveContext->resolution[1] = renderBufferHeight;
+            
+            _interactiveContext->GetOptions().SetIntegerArray(
+                RixStr.k_Ri_FormatResolution,
+                _interactiveContext->resolution, 2);
+            
+            // There is currently only one render target per context
+            if (_interactiveContext->renderViews.size() == 1) {
+                riley::RenderViewId const renderViewId =
+                    _interactiveContext->renderViews[0];
                 
-                _interactiveContext->GetOptions().SetIntegerArray(
-                    RixStr.k_Ri_FormatResolution,
-                    _interactiveContext->resolution, 2);
-
-                // There is currently only one render target per context
-                if (_interactiveContext->renderViews.size() == 1) {
-                    riley::RenderViewId const renderViewId =
-                        _interactiveContext->renderViews[0];
-                    
-                    auto it =
-                        _interactiveContext->renderTargets.find(renderViewId);
-                    
-                    if (it != _interactiveContext->renderTargets.end()) {
-                        riley::RenderTargetId const rtid = it->second;
-                        const riley::Extent targetExtent = {
-                            static_cast<uint32_t>(
-                                _interactiveContext->resolution[0]),
-                            static_cast<uint32_t>(
-                                _interactiveContext->resolution[1]),
-                            0};
-                        riley->ModifyRenderTarget(
-                            rtid, nullptr,
-                            &targetExtent, nullptr, nullptr, nullptr);
-                    }
+                auto it =
+                    _interactiveContext->renderTargets.find(renderViewId);
+                
+                if (it != _interactiveContext->renderTargets.end()) {
+                    riley::RenderTargetId const rtid = it->second;
+                    const riley::Extent targetExtent = {
+                        static_cast<uint32_t>(
+                            _interactiveContext->resolution[0]),
+                        static_cast<uint32_t>(
+                            _interactiveContext->resolution[1]),
+                        0};
+                    riley->ModifyRenderTarget(
+                        rtid, nullptr,
+                        &targetExtent, nullptr, nullptr, nullptr);
                 }
             }
-            if (cropWindowChanged) {
-                _lastCropWindow = cropWindow;
 
-                _interactiveContext->GetOptions().SetFloatArray(
-                    RixStr.k_Ri_CropWindow,
-                    cropWindow.data(), 4);
-            }
+            const GfVec4f cropWindow =
+                _GetCropWindow(
+                    renderPassState, renderBufferWidth, renderBufferHeight);
+
+            _interactiveContext->GetOptions().SetFloatArray(
+                RixStr.k_Ri_CropWindow,
+                cropWindow.data(), 4);
             
             _interactiveContext->riley->SetOptions(
                 _interactiveContext->_GetDeprecatedOptionsPrunedList());
@@ -590,6 +578,9 @@ HdPrman_InteractiveRenderPass::_Execute(
         // - World is Y-up
         // - Camera looks along +Z.
 
+        const GfMatrix4d proj =
+            renderPassState->GetProjectionMatrix();
+
         const bool isPerspective =
             round(proj[3][3]) != 1 || proj == GfMatrix4d(1);
         riley::ShadingNode cameraNode = riley::ShadingNode {
@@ -602,9 +593,8 @@ HdPrman_InteractiveRenderPass::_Execute(
         // Set riley camera and projection shader params from the Hydra camera,
         // if available.
         RtParamList camParams;
-        if (hdCam) {
-            hdCam->SetRileyCameraParams(camParams, cameraNode.params);
-        }
+        cameraContext.SetCameraAndCameraNodeParams(
+            &camParams, &cameraNode.params);
 
         // XXX Normally we would update RenderMan option 'ScreenWindow' to
         // account for an orthographic camera,
@@ -614,7 +604,7 @@ HdPrman_InteractiveRenderPass::_Execute(
         // Inverse computation of GfFrustum::ComputeProjectionMatrix()
         GfMatrix4d viewToWorldCorrectionMatrix(1.0);
 
-        if (hdCam && renderPassState->GetFraming().IsValid()) {
+        if (hdCam && framing.IsValid()) {
             const GfVec4f screenWindow =
                 _ComputeScreenWindow(
                     renderPassState,

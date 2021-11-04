@@ -31,6 +31,7 @@
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/framebuffer.h"
 #include "hdPrman/renderBuffer.h"
+#include "hdPrman/cameraContext.h"
 
 #include "Riley.h"
 
@@ -72,7 +73,7 @@ struct HdPrman_InteractiveContext : public HdPrman_Context
     int sceneLightCount;
 
     HdPrman_InteractiveContext();
-    virtual ~HdPrman_InteractiveContext();
+    ~HdPrman_InteractiveContext() override;
 
     // Start connection to Renderman.
     void Begin(HdRenderDelegate *renderDelegate);
@@ -126,6 +127,8 @@ struct HdPrman_InteractiveContext : public HdPrman_Context
     riley::IntegratorId GetActiveIntegratorId() override;
     riley::ShadingNode &GetActiveIntegratorShadingNode() override;
 
+    HdPrmanCameraContext &GetCameraContext() override;
+
 private:
     // Initialize things, like riley, that need to succeed
     // in order for Begin to be called.
@@ -144,6 +147,8 @@ private:
     bool _didBeginRiley;
 
     riley::ShadingNode _activeIntegratorShadingNode;
+
+    HdPrmanCameraContext _cameraContext;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

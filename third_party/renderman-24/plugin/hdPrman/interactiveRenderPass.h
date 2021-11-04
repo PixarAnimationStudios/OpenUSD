@@ -26,7 +26,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/matrix4d.h"
-#include "pxr/imaging/cameraUtil/framing.h"
 #include "pxr/imaging/hd/renderPass.h"
 
 #include "Riley.h"
@@ -58,10 +57,6 @@ private:
     bool _converged;
     int _lastRenderedVersion;
     int _lastSettingsVersion;
-    GfMatrix4d _lastProj;
-    GfMatrix4d _lastViewToWorldMatrix;
-    CameraUtilFraming _lastFraming;
-    GfVec4f _lastCropWindow;
 
     std::chrono::steady_clock::time_point _frameStart;
     std::string _integrator;

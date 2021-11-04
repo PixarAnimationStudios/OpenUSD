@@ -417,6 +417,11 @@ HdPrman_OfflineContext::GetActiveIntegratorShadingNode()
     return _activeIntegratorShadingNode;
 }
 
+HdPrmanCameraContext &
+HdPrman_OfflineContext::GetCameraContext()
+{
+    return _cameraContext;
+}
 
 void
 HdPrman_OfflineContext::_End()

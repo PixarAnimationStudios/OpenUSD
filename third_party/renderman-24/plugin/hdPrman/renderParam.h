@@ -36,7 +36,13 @@ public:
     HdPrman_RenderParam(std::shared_ptr<HdPrman_Context> const& context)
         : _context(context)
         {}
-    virtual ~HdPrman_RenderParam() = default;
+    ~HdPrman_RenderParam() override = default;
+
+    // Get the context without requesting edit access to the Riley scene.
+    // Used to, e.g., invalidate the camera context.
+    HdPrman_Context* GetContext() {
+        return _context.get();
+    }
 
     // Request edit access to the Riley scene and then return the context.
     virtual HdPrman_Context* AcquireContext() {

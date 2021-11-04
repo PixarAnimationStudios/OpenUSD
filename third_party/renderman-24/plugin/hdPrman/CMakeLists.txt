@@ -57,6 +57,7 @@ pxr_plugin(${PXR_PACKAGE}
     PUBLIC_CLASSES
         basisCurves
         camera
+        cameraContext
         context
         coordSys
         debugCodes

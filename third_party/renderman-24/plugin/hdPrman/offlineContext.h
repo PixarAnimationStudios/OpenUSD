@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
 #include "hdPrman/context.h"
+#include "hdPrman/cameraContext.h"
 
 #include "Riley.h"
 
@@ -46,7 +47,7 @@ struct HdPrman_OfflineContext: public HdPrman_Context
     HdPrman_OfflineContext();
 
     HDPRMAN_API
-    ~HdPrman_OfflineContext();
+    ~HdPrman_OfflineContext() override;
 
     // Produces a render
     HDPRMAN_API
@@ -86,6 +87,8 @@ struct HdPrman_OfflineContext: public HdPrman_Context
     riley::IntegratorId GetActiveIntegratorId() override;
     riley::ShadingNode & GetActiveIntegratorShadingNode() override;
 
+    HdPrmanCameraContext &GetCameraContext() override;
+
 private:
     // Finishes the renderer
     void _End();
@@ -114,6 +117,8 @@ private:
     riley::LightInstanceId _fallbackLightId;
 
     RtParamList _options;
+
+    HdPrmanCameraContext _cameraContext;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

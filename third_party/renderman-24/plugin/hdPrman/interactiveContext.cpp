@@ -851,6 +851,12 @@ HdPrman_InteractiveContext::GetActiveIntegratorShadingNode()
     return _activeIntegratorShadingNode;
 }
 
+HdPrmanCameraContext &
+HdPrman_InteractiveContext::GetCameraContext()
+{
+    return _cameraContext;
+}
+
 RtParamList 
 HdPrman_InteractiveContext::_GetDeprecatedOptionsPrunedList()
 {
