@@ -150,6 +150,10 @@ public:
     HDPRMAN_API 
     bool IsStopSupported() const override;
 
+    /// Return true to indicate whether or not the rendering threads are active.
+    HDPRMAN_API 
+    bool IsStopped() const override;
+
     /// Stop background rendering threads.
     HDPRMAN_API 
     bool Stop() override;

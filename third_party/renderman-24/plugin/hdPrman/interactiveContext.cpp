@@ -514,6 +514,12 @@ HdPrman_InteractiveContext::StopRender()
 }
 
 bool
+HdPrman_InteractiveContext::IsRenderStopped()
+{
+    return !renderThread.IsThreadRunning();
+}
+
+bool
 HdPrman_InteractiveContext::CreateDisplays(
     const HdRenderPassAovBindingVector& aovBindings)
 {

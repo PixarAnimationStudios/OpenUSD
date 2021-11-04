@@ -196,6 +196,13 @@ public:
     virtual bool IsPauseSupported() const;
 
     ///
+    /// Query the delegate's pause state. Returns true if the background
+    /// rendering threads are currently paused.
+    ///
+    HD_API
+    virtual bool IsPaused() const;
+
+    ///
     /// Pause all of this delegate's background rendering threads. Default
     /// implementation does nothing.
     ///
@@ -219,6 +226,13 @@ public:
     ///
     HD_API
     virtual bool IsStopSupported() const;
+
+    ///
+    /// Query the delegate's stop state. Returns true if the background
+    /// rendering threads are not currently active.
+    ///
+    HD_API
+    virtual bool IsStopped() const;
 
     ///
     /// Stop all of this delegate's background rendering threads. Default

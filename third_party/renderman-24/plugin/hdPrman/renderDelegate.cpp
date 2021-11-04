@@ -514,6 +514,17 @@ HdPrmanRenderDelegate::IsStopSupported() const
 }
 
 bool
+HdPrmanRenderDelegate::IsStopped() const
+{
+    if (_IsInteractive()) {
+        std::shared_ptr<HdPrman_InteractiveContext> interactiveContext =
+            std::dynamic_pointer_cast<HdPrman_InteractiveContext>(_context);
+        return interactiveContext->IsRenderStopped();
+    }
+    return false;
+}
+
+bool
 HdPrmanRenderDelegate::Stop()
 {
     if (_IsInteractive()) {

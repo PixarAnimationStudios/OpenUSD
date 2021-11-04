@@ -86,6 +86,9 @@ struct HdPrman_InteractiveContext : public HdPrman_Context
     // Request Riley (and the HdRenderThread) to stop.
     void StopRender();
 
+    // Query whether or not the HdRenderThread is running.
+    bool IsRenderStopped();
+
     // Checks whether context was successfully initialized.
     // ie. riley was created
     bool IsValid() const;
