@@ -35,6 +35,7 @@
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/types.h"
+#include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
@@ -346,6 +347,23 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
         _occluderRenderPassState->Prepare(renderIndex->GetResourceRegistry());
     }
     _pickableRenderPassState->Prepare(renderIndex->GetResourceRegistry());
+
+    HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
+        std::dynamic_pointer_cast<HdStResourceRegistry>(
+            renderIndex->GetResourceRegistry());
+
+    if (!_pickBuffer) {
+        HdBufferSpecVector offsetSpecs;
+        offsetSpecs.emplace_back(TfToken("PickBuffer"), HdTupleType{ HdTypeInt32, 1 });
+        _pickBuffer =
+            hdStResourceRegistry->AllocateSingleBufferArrayRange(
+            //hdStResourceRegistry->AllocateNonUniformBufferArrayRange(
+                TfToken("Picking"),
+                offsetSpecs,
+                HdBufferArrayUsageHint());
+
+        _pickBuffer->Resize(128);
+    }
 }
 
 void
@@ -412,6 +430,36 @@ HdxPickTask::Execute(HdTaskContext* ctx)
         glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
     }
 
+    //
+    if (HdStRenderPassState* extendedState =
+        dynamic_cast<HdStRenderPassState*>(_pickableRenderPassState.get())) {
+        HdStRenderPassShaderSharedPtr renderPassShader
+            = extendedState->GetRenderPassShader();
+
+        if (_pickBuffer) {
+            VtIntArray pickBufferInit;
+            pickBufferInit.push_back(2);   // entry offset
+            pickBufferInit.push_back(128); // buffer size
+            HdBufferSourceSharedPtr pickSource = std::make_shared<HdVtBufferSource>(
+                TfToken("PickBuffer"),
+                VtValue(pickBufferInit));
+
+            _pickBuffer->CopyData(pickSource);
+
+            HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
+                std::dynamic_pointer_cast<HdStResourceRegistry>(
+                    _index->GetResourceRegistry());
+            hdStResourceRegistry->SubmitBlitWork();
+
+            renderPassShader->AddBufferBinding(
+                HdBindingRequest(HdBinding::SSBO,
+                    TfToken("PickBufferBinding"), _pickBuffer, false));
+        }
+        else {
+            renderPassShader->RemoveBufferBinding(TfToken("PickBufferBinding"));
+        }
+    }
+
     if (_UseOcclusionPass()) {
         _occluderRenderPass->Execute(_occluderRenderPassState,
                                      GetRenderTags());
@@ -430,6 +478,55 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     glDeleteVertexArrays(1, &vao);
 
     GLF_POST_PENDING_GL_ERRORS();
+
+    if (_pickBuffer) {
+        VtValue pickData = _pickBuffer->ReadData(TfToken("PickBuffer"));
+        if (!pickData.IsEmpty())
+        {
+            const auto& data = pickData.Get<VtIntArray>();
+
+            int endIndex = std::min<int>(data[0], 128);
+            for (int j = 2; j < endIndex; ++j)
+            {
+                HdxPickHit hit;
+
+                int primId = data[j];
+                hit.objectId = _index->GetRprimPathFromPrimId(primId);
+
+                if (!hit.IsValid()) {
+                    continue;
+                }
+
+                bool rprimValid = _index->GetSceneDelegateAndInstancerIds(hit.objectId,
+                    &(hit.delegateId),
+                    &(hit.instancerId));
+
+                if (!TF_VERIFY(rprimValid, "%s\n", hit.objectId.GetText())) {
+                    continue;
+                }
+
+                // Calculate the hit location in NDC, then transform to worldspace.
+                hit.worldSpaceHitPoint = GfVec3f(0.f, 0.f, 0.f);
+                hit.worldSpaceHitNormal = GfVec3f(0.f, 0.f, 0.f);
+                hit.normalizedDepth = 0.f;
+
+                hit.instanceIndex = -1;
+                hit.elementIndex = -1;
+                hit.edgeIndex = -1;
+                hit.pointIndex = -1;
+                
+                _contextParams.outHits->push_back(hit);
+
+                if (_contextParams.resolveMode ==
+                    HdxPickTokens->resolveNearestToCenter ||
+                    _contextParams.resolveMode ==
+                    HdxPickTokens->resolveNearestToCamera)
+                    return;
+            }
+
+            return;
+        }
+    }
 
     // Capture the result buffers.
     size_t len = size[0] * size[1];
