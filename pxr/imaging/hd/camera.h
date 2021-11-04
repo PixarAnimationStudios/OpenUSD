@@ -97,16 +97,15 @@ public:
     {
         Clean                 = 0,
         DirtyTransform        = 1 << 0,
-        DirtyViewMatrix       = DirtyTransform, // deprecated
-        DirtyProjMatrix       = 1 << 1,         // deprecated
-        DirtyWindowPolicy     = 1 << 2,
-        DirtyClipPlanes       = 1 << 3,
-        DirtyParams           = 1 << 4,
+        DirtyParams           = 1 << 1,
+        DirtyClipPlanes       = 1 << 2,
+        DirtyWindowPolicy     = 1 << 3,
+        DirtyViewMatrix       = DirtyTransform,  // deprecated
+        DirtyProjMatrix       = DirtyParams,     // deprecated
         AllDirty              = (DirtyTransform
-                                |DirtyProjMatrix
-                                |DirtyWindowPolicy
+                                |DirtyParams
                                 |DirtyClipPlanes
-                                |DirtyParams)
+                                |DirtyWindowPolicy)
     };
 
     enum Projection {
