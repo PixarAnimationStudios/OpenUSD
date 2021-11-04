@@ -211,8 +211,8 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     mx::ShaderStage& mxStage) const
 {
     // Add global constants and type definitions
-    emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
-                + "/lib/mx_defines.glsl", mxContext, mxStage);
+    emitInclude("stdlib/" + mx::GlslShaderGenerator::TARGET 
+                + "/lib/mx_math.glsl", mxContext, mxStage);
     emitLine("#if NUM_LIGHTS > 0", mxStage, false);
     emitLine("#define MAX_LIGHT_SOURCES NUM_LIGHTS", mxStage, false);
     emitLine("#else", mxStage, false);
@@ -295,11 +295,6 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
         // add the mxInit function to convert Hd -> Mx data
         _EmitMxInitFunction(vertexData, mxStage);
     }
-
-    // Emit common math functions
-    emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
-                + "/lib/mx_math.glsl", mxContext, mxStage);
-    emitLineBreak(mxStage);
 
     // Emit lighting and shadowing code
     if (lighting) {

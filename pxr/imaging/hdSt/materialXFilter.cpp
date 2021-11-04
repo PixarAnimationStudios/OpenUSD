@@ -68,8 +68,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 static std::string
 _GenPixelShader(mx::GenContext & mxContext, mx::ElementPtr const& mxElem)
 {
-    bool hasTransparency = mx::isTransparentSurface(mxElem, 
-                                mxContext.getShaderGenerator());
+    bool hasTransparency = mx::isTransparentSurface(mxElem);
 
     mx::GenContext materialContext = mxContext;
     materialContext.getOptions().hwTransparency = hasTransparency;
@@ -135,8 +134,7 @@ HdSt_GenMaterialXShaderCode(
     mx::TypedElementPtr renderableElem = renderableElements.at(0);
     mx::NodePtr node = renderableElem->asA<mx::Node>();
     if (node && node->getType() == mx::MATERIAL_TYPE_STRING) {
-        std::unordered_set<mx::NodePtr> mxShaderNodes;
-        mxShaderNodes = mx::getShaderNodes(node, mx::SURFACE_SHADER_TYPE_STRING);
+        auto mxShaderNodes = mx::getShaderNodes(node, mx::SURFACE_SHADER_TYPE_STRING);
         if (!mxShaderNodes.empty()) {
             renderableElem = *mxShaderNodes.begin();
         }
