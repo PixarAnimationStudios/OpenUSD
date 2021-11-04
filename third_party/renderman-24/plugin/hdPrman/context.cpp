@@ -225,7 +225,7 @@ _SetParamValue(RtUString const& name,
         } else if (role == HdPrimvarRoleTokens->point) {
             params.SetPoint(name, RtPoint3(v[0], v[1], v[2]));
         } else if (role == HdPrimvarRoleTokens->normal) {
-            params.SetPoint(name, RtNormal3(v[0], v[1], v[2]));
+            params.SetNormal(name, RtNormal3(v[0], v[1], v[2]));
         } else if (role == HdPrimvarRoleTokens->vector) {
             params.SetVector(name, RtVector3(v[0], v[1], v[2]));
         } else {
@@ -259,7 +259,7 @@ _SetParamValue(RtUString const& name,
         } else if (role == HdPrimvarRoleTokens->point) {
             params.SetPoint(name, RtPoint3(v[0], v[1], v[2]));
         } else if (role == HdPrimvarRoleTokens->normal) {
-            params.SetPoint(name, RtNormal3(v[0], v[1], v[2]));
+            params.SetNormal(name, RtNormal3(v[0], v[1], v[2]));
         } else if (role == HdPrimvarRoleTokens->vector) {
             params.SetVector(name, RtVector3(v[0], v[1], v[2]));
         } else {
@@ -454,7 +454,7 @@ _SetPrimVarValue(RtUString const& name,
         } else if (role == HdPrimvarRoleTokens->point) {
             params.SetPoint(name, RtPoint3(v[0], v[1], v[2]));
         } else if (role == HdPrimvarRoleTokens->normal) {
-            params.SetPoint(name, RtNormal3(v[0], v[1], v[2]));
+            params.SetNormal(name, RtNormal3(v[0], v[1], v[2]));
         } else if (role == HdPrimvarRoleTokens->vector) {
             params.SetVector(name, RtVector3(v[0], v[1], v[2]));
         } else {
@@ -492,7 +492,7 @@ _SetPrimVarValue(RtUString const& name,
         } else if (role == HdPrimvarRoleTokens->point) {
             params.SetPoint(name, RtPoint3(v[0], v[1], v[2]));
         } else if (role == HdPrimvarRoleTokens->normal) {
-            params.SetPoint(name, RtNormal3(v[0], v[1], v[2]));
+            params.SetNormal(name, RtNormal3(v[0], v[1], v[2]));
         } else if (role == HdPrimvarRoleTokens->vector) {
             params.SetVector(name, RtVector3(v[0], v[1], v[2]));
         } else {
