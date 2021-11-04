@@ -197,6 +197,13 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     pointIdOut = IntToVec4(GetPointId());
     
     neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
+	
+    // fill in pick buffer
+    int entryOffset = atomicAdd(PickBuffer[0], 1);
+    if (entryOffset < PickBuffer[1])
+    {
+        PickBuffer[entryOffset] = primId;
+    }	
 }
 
 -- layout HdxRenderPass.RenderColorAndSelection
