@@ -46,8 +46,10 @@ HdPrman_OfflineContext::Initialize(
     std::vector<riley::ShadingNode> const & fallbackVolumeNodes,
     std::vector<RenderOutput> const & renderOutputs)
 {
-    _SetRileyOptions(rileyOptions);
-    _SetRileyIntegrator(integratorNode);
+    _options = rileyOptions;
+    _activeIntegratorShadingNode = integratorNode;
+    _SetRileyOptions(_options);
+    _SetRileyIntegrator(_activeIntegratorShadingNode);
     _SetCamera(cameraName, cameraNode, cameraXform, cameraParams);
     for (auto const& ro : renderOutputs) {
         _AddRenderOutput(ro.name, ro.type, ro.params);
@@ -64,13 +66,12 @@ HdPrman_OfflineContext::InitializeWithDefaults()
 
     // Options
     {
-        RtParamList options;
-        HdPrman_UpdateSearchPathsFromEnvironment(options);
-        
+        HdPrman_UpdateSearchPathsFromEnvironment(_options);
+
         float aspect = 1.0;
-        options.SetIntegerArray(RixStr.k_Ri_FormatResolution, res, 2);
-        options.SetFloat(RixStr.k_Ri_FormatPixelAspectRatio, aspect);
-        _SetRileyOptions(options);
+        _options.SetIntegerArray(RixStr.k_Ri_FormatResolution, res, 2);
+        _options.SetFloat(RixStr.k_Ri_FormatPixelAspectRatio, aspect);
+        _SetRileyOptions(_options);
     }
     
     // Integrator
@@ -396,6 +397,26 @@ HdPrman_OfflineContext::IsValid() const
 {
     return (riley != nullptr);
 }
+
+
+RtParamList&
+HdPrman_OfflineContext::GetOptions()
+{
+    return _options;
+}
+
+riley::IntegratorId
+HdPrman_OfflineContext::GetActiveIntegratorId()
+{
+    return _integratorId;
+}
+
+riley::ShadingNode &
+HdPrman_OfflineContext::GetActiveIntegratorShadingNode()
+{
+    return _activeIntegratorShadingNode;
+}
+
 
 void
 HdPrman_OfflineContext::_End()

@@ -72,6 +72,7 @@ pxr_plugin(${PXR_PACKAGE}
         mesh
         offlineContext
         points
+        paramsSetter
         renderDelegate
         rixStrings
         volume

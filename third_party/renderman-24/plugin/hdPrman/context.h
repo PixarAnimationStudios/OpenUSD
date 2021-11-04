@@ -156,6 +156,13 @@ struct HdPrman_Context
     // Get RIX vs XPU
     bool IsXpu() const { return _xpu; }
 
+    // Adds VtValue contents to RtParamList
+    bool SetParamFromVtValue(
+        RtUString const& name,
+        VtValue const& val,
+        TfToken const& role,
+        RtParamList& params);
+
     // Top-level entrypoint to PRMan.
     // Singleton used to access RixInterfaces.
     RixContext *rix;
@@ -178,6 +185,12 @@ struct HdPrman_Context
 
     // Fallback material for volumes that don't have materials.
     riley::MaterialId fallbackVolumeMaterial;
+
+    // Provides external access to resources used to set parameters for
+    // options and the active integrator.
+    virtual RtParamList &GetOptions() = 0;
+    virtual riley::IntegratorId GetActiveIntegratorId() = 0;
+    virtual riley::ShadingNode & GetActiveIntegratorShadingNode() = 0;
 
 protected:
     void _InitializePrman();

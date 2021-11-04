@@ -79,6 +79,13 @@ struct HdPrman_OfflineContext: public HdPrman_Context
 
     riley::CameraId cameraId;
 
+
+    // Provides external access to resources used to set parameters for
+    // options and the active integrator.
+    RtParamList &GetOptions() override;
+    riley::IntegratorId GetActiveIntegratorId() override;
+    riley::ShadingNode & GetActiveIntegratorShadingNode() override;
+
 private:
     // Finishes the renderer
     void _End();
@@ -99,10 +106,14 @@ private:
         std::vector<riley::ShadingNode> const & materialNodes);
 
     riley::IntegratorId _integratorId;
+    riley::ShadingNode _activeIntegratorShadingNode;
+
     riley::RenderTargetId _rtid;
     std::vector<riley::RenderViewId> _renderViews;
     std::vector<riley::RenderOutputId> _renderOutputs;
     riley::LightInstanceId _fallbackLightId;
+
+    RtParamList _options;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

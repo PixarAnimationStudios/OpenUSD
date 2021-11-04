@@ -36,6 +36,7 @@
 #include "hdPrman/mesh.h"
 #include "hdPrman/offlineContext.h"
 #include "hdPrman/offlineRenderPass.h"
+#include "hdPrman/paramsSetter.h"
 #include "hdPrman/points.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/renderPass.h"
@@ -58,6 +59,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (openvdbAsset)
     (field3dAsset)
     ((mtlxRenderContext, "mtlx"))
+    (prmanParams) /* XXX currently duplicated whereever used as to not yet */
+                 /* establish a formal convention */
 );
 
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanIntegratorTokens,
@@ -86,6 +89,7 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->pluginLight,
     HdPrimTypeTokens->extComputation,
     HdPrimTypeTokens->coordSys,
+    _tokens->prmanParams,
 };
 
 const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_BPRIM_TYPES =
@@ -329,6 +333,9 @@ HdPrmanRenderDelegate::CreateSprim(TfToken const& typeId,
         }
     } else if (typeId == HdPrimTypeTokens->extComputation) {
         sprim = new HdExtComputation(sprimId);
+    
+    } else if (typeId == _tokens->prmanParams) {
+        sprim = new HdPrmanParamsSetter(sprimId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -360,6 +367,8 @@ HdPrmanRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
         return new HdPrmanLight(SdfPath::EmptyPath(), typeId);
     } else if (typeId == HdPrimTypeTokens->extComputation) {
         return new HdExtComputation(SdfPath::EmptyPath());
+    } else if (typeId == _tokens->prmanParams) {
+        return new HdPrmanParamsSetter(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }

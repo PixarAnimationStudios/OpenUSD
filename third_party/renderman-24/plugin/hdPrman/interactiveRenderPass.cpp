@@ -424,23 +424,19 @@ HdPrman_InteractiveRenderPass::_Execute(
         {
             _quickIntegrateTime = 0.0f;
 
-            RtParamList integratorParams;
+            riley::ShadingNode &integratorNode =
+                _interactiveContext->GetActiveIntegratorShadingNode();
+
             _interactiveContext->SetIntegratorParamsFromRenderSettings(
                 renderDelegate,
                 _integrator,
-                integratorParams);
-	    _interactiveContext->SetIntegratorParamsFromCamera(
-                renderDelegate, hdCam,
-		_integrator, integratorParams);
+                integratorNode.params);
 
-            riley::ShadingNode integratorNode {
-                riley::ShadingNode::Type::k_Integrator,
-                RtUString(_integrator.c_str()),
-                RtUString(_integrator.c_str()),
-                integratorParams
-            };
-            riley->ModifyIntegrator(_interactiveContext->integratorId,
-                                    &integratorNode);
+            _interactiveContext->SetIntegratorParamsFromCamera(
+                    renderDelegate, hdCam, _integrator, integratorNode.params);
+
+            riley->ModifyIntegrator(
+                _interactiveContext->GetActiveIntegratorId(), &integratorNode);
         }
 
         // Update convergence criteria.

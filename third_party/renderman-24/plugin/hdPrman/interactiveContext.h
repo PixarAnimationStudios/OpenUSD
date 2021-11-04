@@ -127,6 +127,12 @@ struct HdPrman_InteractiveContext : public HdPrman_Context
     // copy of the options, to be provided to SetOptions().
     RtParamList _GetDeprecatedOptionsPrunedList();
 
+    // Provides external access to resources used to set parameters for
+    // options and the active integrator.
+    RtParamList &GetOptions() override;
+    riley::IntegratorId GetActiveIntegratorId() override;
+    riley::ShadingNode &GetActiveIntegratorShadingNode() override;
+
 private:
     // Initialize things, like riley, that need to succeed
     // in order for Begin to be called.
@@ -140,6 +146,8 @@ private:
     RtParamList _fallbackLightAttrs;
     bool _fallbackLightEnabled;
     bool _didBeginRiley;
+
+    riley::ShadingNode _activeIntegratorShadingNode;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

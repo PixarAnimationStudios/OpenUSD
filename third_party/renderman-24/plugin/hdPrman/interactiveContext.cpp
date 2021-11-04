@@ -271,12 +271,14 @@ HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
                             integratorName,
                             params);
         RtUString rmanIntegrator(integratorName.c_str()); 
-        riley::ShadingNode  integratorNode {
+        riley::ShadingNode &integratorNode = _activeIntegratorShadingNode;
+        integratorNode = {
             riley::ShadingNode::Type::k_Integrator,
             rmanIntegrator,
             rmanIntegrator,
             params
-        };    
+        };
+
         integratorId = riley->CreateIntegrator(riley::UserId::DefaultId(),
                                                integratorNode);
     }
@@ -823,6 +825,24 @@ HdPrman_InteractiveContext::CreateDisplays(
     renderTargets[renderView] = framebuffer.rtId;
 
     return true;
+}
+
+RtParamList&
+HdPrman_InteractiveContext::GetOptions() 
+{
+    return _options;
+}
+
+riley::IntegratorId
+HdPrman_InteractiveContext::GetActiveIntegratorId()
+{
+    return integratorId;
+}
+
+riley::ShadingNode &
+HdPrman_InteractiveContext::GetActiveIntegratorShadingNode()
+{
+    return _activeIntegratorShadingNode;
 }
 
 RtParamList 

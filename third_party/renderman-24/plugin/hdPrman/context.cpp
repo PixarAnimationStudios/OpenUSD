@@ -1414,6 +1414,16 @@ HdPrman_Context::RegisterIntegratorCallbackForCamera(
    _integratorCameraCallbacks->push_back(callback);
 }
 
+bool
+HdPrman_Context::SetParamFromVtValue(
+    RtUString const& name,
+    VtValue const& val,
+    TfToken const& role,
+    RtParamList& params)
+{
+    return _SetParamValue(name, val, role, params);
+}
+
 void
 HdPrman_Context::_InitializePrman()
 {
