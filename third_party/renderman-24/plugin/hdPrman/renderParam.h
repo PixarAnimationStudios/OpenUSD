@@ -30,7 +30,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_RenderParam : public HdRenderParam 
+class HdPrman_RenderParam final : public HdRenderParam 
 {
 public:
     HdPrman_RenderParam(std::shared_ptr<HdPrman_Context> const& context)
@@ -38,14 +38,7 @@ public:
         {}
     ~HdPrman_RenderParam() override = default;
 
-    // Get the context without requesting edit access to the Riley scene.
-    // Used to, e.g., invalidate the camera context.
     HdPrman_Context* GetContext() {
-        return _context.get();
-    }
-
-    // Request edit access to the Riley scene and then return the context.
-    virtual HdPrman_Context* AcquireContext() {
         return _context.get();
     }
 

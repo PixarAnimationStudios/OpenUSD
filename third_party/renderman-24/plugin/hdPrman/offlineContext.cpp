@@ -252,13 +252,13 @@ HdPrman_OfflineContext::~HdPrman_OfflineContext()
 void
 HdPrman_OfflineContext::_SetRileyOptions(RtParamList options)
 {
-    riley->SetOptions(options);
+    _riley->SetOptions(options);
 }
 
 void
 HdPrman_OfflineContext::_SetRileyIntegrator(riley::ShadingNode node)
 {
-    _integratorId = riley->CreateIntegrator(riley::UserId::DefaultId(), node);
+    _integratorId = _riley->CreateIntegrator(riley::UserId::DefaultId(), node);
 }
 
 void
@@ -268,7 +268,7 @@ HdPrman_OfflineContext::_SetCamera(
     riley::Transform xform, 
     RtParamList params)
 {
-    cameraId = riley->CreateCamera(riley::UserId::DefaultId(),
+    cameraId = _riley->CreateCamera(riley::UserId::DefaultId(),
         name, node, xform, params);
 }
 
@@ -280,7 +280,7 @@ HdPrman_OfflineContext::_AddRenderOutput(
 {
     riley::FilterSize const filterwidth = { 1.0f, 1.0f };
     _renderOutputs.push_back(
-        riley->CreateRenderOutput(riley::UserId::DefaultId(),
+        _riley->CreateRenderOutput(riley::UserId::DefaultId(),
             name,
             type,
             name,
@@ -296,7 +296,7 @@ HdPrman_OfflineContext::_SetRenderTargetAndDisplay(
     riley::Extent format,
     TfToken outputFilename)
 {
-    _rtid = riley->CreateRenderTarget(
+    _rtid = _riley->CreateRenderTarget(
             riley::UserId::DefaultId(),
             {(uint32_t) _renderOutputs.size(), _renderOutputs.data()},
             format,
@@ -315,7 +315,7 @@ HdPrman_OfflineContext::_SetRenderTargetAndDisplay(
 
     std::string outputExt = TfGetExtension(outputFilename);
     TfToken dspyFormat = extToDisplayDriver.at(outputExt);
-    riley->CreateDisplay(
+    _riley->CreateDisplay(
         riley::UserId::DefaultId(),
         _rtid,
         RtUString(outputFilename.GetText()),
@@ -323,7 +323,7 @@ HdPrman_OfflineContext::_SetRenderTargetAndDisplay(
         {(uint32_t)_renderOutputs.size(), _renderOutputs.data()},
         RtParamList());
 
-    riley::RenderViewId const renderView = riley->CreateRenderView(
+    riley::RenderViewId const renderView = _riley->CreateRenderView(
         riley::UserId::DefaultId(), 
         _rtid,
         cameraId, 
@@ -333,7 +333,7 @@ HdPrman_OfflineContext::_SetRenderTargetAndDisplay(
         RtParamList());
     _renderViews.push_back(renderView);
     
-    riley->SetDefaultDicingCamera(cameraId);
+    _riley->SetDefaultDicingCamera(cameraId);
 }
 
 void 
@@ -344,12 +344,12 @@ HdPrman_OfflineContext::SetFallbackLight(
 {
     riley::CoordinateSystemList const k_NoCoordsys = { 0, nullptr };
 
-    riley::LightShaderId lightShader = riley->CreateLightShader(
+    riley::LightShaderId lightShader = _riley->CreateLightShader(
         riley::UserId::DefaultId(), 
         {1, &node}, 
         {0, nullptr});
     
-    _fallbackLightId = riley->CreateLightInstance(
+    _fallbackLightId = _riley->CreateLightInstance(
       riley::UserId::DefaultId(),
       riley::GeometryPrototypeId::InvalidId(), // no group
       riley::GeometryPrototypeId::InvalidId(), // no geo
@@ -364,7 +364,7 @@ void
 HdPrman_OfflineContext::_SetFallbackMaterial(
     std::vector<riley::ShadingNode> const & materialNodes)
 {
-    fallbackMaterial = riley->CreateMaterial(riley::UserId::DefaultId(),
+    fallbackMaterial = _riley->CreateMaterial(riley::UserId::DefaultId(),
         {static_cast<uint32_t>(materialNodes.size()), &materialNodes[0]},
         RtParamList());
 }
@@ -373,7 +373,7 @@ void
 HdPrman_OfflineContext::_SetFallbackVolumeMaterial(
     std::vector<riley::ShadingNode> const & materialNodes)
 {
-    fallbackVolumeMaterial = riley->CreateMaterial(riley::UserId::DefaultId(),
+    fallbackVolumeMaterial = _riley->CreateMaterial(riley::UserId::DefaultId(),
         {static_cast<uint32_t>(materialNodes.size()), &materialNodes[0]},
         RtParamList());
 }
@@ -387,7 +387,7 @@ HdPrman_OfflineContext::Render()
     static RtUString const US_BATCH = RtUString("batch");   
     renderOptions.SetString(US_RENDERMODE, US_BATCH);   
 
-    riley->Render(
+    _riley->Render(
         {static_cast<uint32_t>(_renderViews.size()), _renderViews.data()},
             renderOptions);
 }
@@ -395,7 +395,7 @@ HdPrman_OfflineContext::Render()
 bool 
 HdPrman_OfflineContext::IsValid() const
 {
-    return (riley != nullptr);
+    return _riley;
 }
 
 
@@ -429,13 +429,13 @@ HdPrman_OfflineContext::_End()
     std::cout << "Destroy Prman" << std::endl;
     // Reset to initial state.
     if (_mgr) {
-        if(riley) {
-            _mgr->DestroyRiley(riley);
+        if(_riley) {
+            _mgr->DestroyRiley(_riley);
         }
         _mgr = nullptr;
     }
 
-    riley = nullptr;
+    _riley = nullptr;
 
     if (_rix) {
         RixXcpt* rix_xcpt = (RixXcpt*)_rix->GetRixInterface(k_RixXcpt);
@@ -446,6 +446,12 @@ HdPrman_OfflineContext::_End()
         _ri->PRManEnd();
         _ri = nullptr;
     }
+}
+
+riley::Riley *
+HdPrman_OfflineContext::AcquireRiley()
+{
+    return _riley;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

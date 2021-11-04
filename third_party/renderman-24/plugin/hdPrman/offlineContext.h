@@ -80,6 +80,9 @@ struct HdPrman_OfflineContext: public HdPrman_Context
 
     riley::CameraId cameraId;
 
+    // Returns Riley scene. Since this is the offline context, it
+    // currently does not stop the render.
+    riley::Riley * AcquireRiley() override;
 
     // Provides external access to resources used to set parameters for
     // options and the active integrator.

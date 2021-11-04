@@ -164,9 +164,8 @@ struct HdPrman_Context
         TfToken const& role,
         RtParamList& params);
 
-    // Riley instance.
-    riley::Riley *riley;
-
+    // Request edit access to the Riley scene and return it.
+    virtual riley::Riley * AcquireRiley() = 0;
     // A fallback material to use for any geometry that
     // does not have a bound material.
     riley::MaterialId fallbackMaterial;
@@ -196,6 +195,9 @@ protected:
 
     // Xcpt Handler
     HdPrman_Xcpt _xcpt;
+
+    // Riley instance.
+    riley::Riley *_riley;
 
 private:
     // Refcounts for each category mentioned by a light link.

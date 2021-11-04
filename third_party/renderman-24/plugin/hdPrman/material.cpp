@@ -116,14 +116,14 @@ void
 HdPrmanMaterial::Finalize(HdRenderParam *renderParam)
 {
     HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
     _ResetMaterial(context);
 }
 
 void
 HdPrmanMaterial::_ResetMaterial(HdPrman_Context *context)
 {
-    riley::Riley *riley = context->riley;
+    riley::Riley *riley = context->AcquireRiley();
     if (_materialId != riley::MaterialId::InvalidId()) {
         riley->DeleteMaterial(_materialId);
         _materialId = riley::MaterialId::InvalidId();
@@ -616,7 +616,7 @@ _ConvertHdMaterialNetwork2ToRman(
     riley::DisplacementId *displacementId)
 {
     HD_TRACE_FUNCTION();
-    riley::Riley *riley = context->riley;
+    riley::Riley *riley = context->AcquireRiley();
     std::vector<riley::ShadingNode> nodes;
     nodes.reserve(network.nodes.size());
     bool materialFound = false, displacementFound = false;
@@ -685,7 +685,7 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
 {  
     HD_TRACE_FUNCTION();
     HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
 
     SdfPath id = GetId();
 

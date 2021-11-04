@@ -41,22 +41,20 @@ HdPrmanCoordSys::HdPrmanCoordSys(SdfPath const& id)
     /* NOTHING */
 }
 
-HdPrmanCoordSys::~HdPrmanCoordSys()
-{
-}
+HdPrmanCoordSys::~HdPrmanCoordSys() = default;
 
 void
 HdPrmanCoordSys::Finalize(HdRenderParam *renderParam)
 {
     HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
     _ResetCoordSys(context);
 }
 
 void
 HdPrmanCoordSys::_ResetCoordSys(HdPrman_Context *context)
 {
-    riley::Riley *riley = context->riley;
+    riley::Riley *riley = context->AcquireRiley();
     if (_coordSysId != riley::CoordinateSystemId::InvalidId()) {
         riley->DeleteCoordinateSystem(_coordSysId);
         _coordSysId = riley::CoordinateSystemId::InvalidId();
@@ -70,11 +68,11 @@ HdPrmanCoordSys::Sync(HdSceneDelegate *sceneDelegate,
                       HdDirtyBits     *dirtyBits)
 {
     HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
 
     SdfPath id = GetId();
 
-    riley::Riley *riley = context->riley;
+    riley::Riley *riley = context->AcquireRiley();
 
     if (*dirtyBits) {
         // Sample transform

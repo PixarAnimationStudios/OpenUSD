@@ -95,7 +95,6 @@ pxr_plugin(${PXR_PACKAGE}
         renderParam.h
 
     PRIVATE_HEADERS
-        interactiveRenderParam.h
         virtualStructConditionalGrammar.tab.h
 
     CPPFILES

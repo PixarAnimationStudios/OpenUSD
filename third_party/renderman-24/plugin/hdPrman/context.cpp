@@ -66,13 +66,12 @@ TF_MAKE_STATIC_DATA(std::vector<HdPrman_Context::IntegratorCameraCallback>,
 }
 
 HdPrman_Context::HdPrman_Context() :
-    riley(nullptr),
     _rix(nullptr),
     _ri(nullptr),
     _mgr(nullptr),
+    _riley(nullptr),
     _instantaneousShutter(false)
 {
-    /* NOTHING */
 }
 
 HdPrman_Context::~HdPrman_Context() = default;
@@ -1470,8 +1469,8 @@ HdPrman_Context::_InitializePrman()
 
     // Acquire Riley instance.
     _mgr = (RixRileyManager*)_rix->GetRixInterface(k_RixRileyManager);
-    riley = _mgr->CreateRiley(RtUString(rileyvariant.c_str()), RtParamList());
-    if(!riley) {
+    _riley = _mgr->CreateRiley(RtUString(rileyvariant.c_str()), RtParamList());
+    if(!_riley) {
         TF_RUNTIME_ERROR("Could not initialize riley API.");
         return;
     }

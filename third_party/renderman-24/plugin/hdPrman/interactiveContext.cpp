@@ -63,7 +63,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     );
 
 void 
-HdPrman_RenderThreadCallback(HdPrman_InteractiveContext *context)
+HdPrman_InteractiveContext::_RenderThreadCallback()
 {
     static RtUString const US_RENDERMODE = RtUString("renderMode");
     static RtUString const US_INTERACTIVE = RtUString("interactive");
@@ -82,22 +82,23 @@ HdPrman_RenderThreadCallback(HdPrman_InteractiveContext *context)
 
     bool renderComplete = false;
     while (!renderComplete) {
-        while (context->renderThread.IsPauseRequested()) {
-            if (context->renderThread.IsStopRequested()) {
+        while (renderThread.IsPauseRequested()) {
+            if (renderThread.IsStopRequested()) {
                 break;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
-        if (context->renderThread.IsStopRequested()) {
+        if (renderThread.IsStopRequested()) {
             break;
         }
 
-        context->riley->Render(
-            {static_cast<uint32_t>(context->renderViews.size()),
-             context->renderViews.data()}, renderOptions);
+        _riley->Render(
+            { static_cast<uint32_t>(renderViews.size()),
+              renderViews.data()},
+            renderOptions);
 
         // If a pause was requested, we may have stopped early
-        renderComplete = !context->renderThread.IsPauseDirty();
+        renderComplete = !renderThread.IsPauseDirty();
     }
 }
 
@@ -108,8 +109,9 @@ HdPrman_InteractiveContext::HdPrman_InteractiveContext() :
     _didBeginRiley(false)
 {
     TfRegistryManager::GetInstance().SubscribeTo<HdPrman_Context>();
-    renderThread.SetRenderCallback(std::bind(
-        HdPrman_RenderThreadCallback, this));
+    renderThread.SetRenderCallback(
+        std::bind(
+            &HdPrman_InteractiveContext::_RenderThreadCallback, this));
     _Initialize();
 }
 
@@ -130,7 +132,7 @@ HdPrman_InteractiveContext::_Initialize()
 bool 
 HdPrman_InteractiveContext::IsValid() const
 {
-    return (riley != nullptr);
+    return _riley;
 }
 
 void 
@@ -252,7 +254,7 @@ HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         SetOptionsFromRenderSettings(
             static_cast<HdPrmanRenderDelegate*>(renderDelegate), _options);
         
-        riley->SetOptions(_GetDeprecatedOptionsPrunedList());
+        _riley->SetOptions(_GetDeprecatedOptionsPrunedList());
     }
 
     // Integrator
@@ -279,7 +281,7 @@ HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
             params
         };
 
-        integratorId = riley->CreateIntegrator(riley::UserId::DefaultId(),
+        integratorId = _riley->CreateIntegrator(riley::UserId::DefaultId(),
                                                integratorNode);
     }
 
@@ -314,12 +316,12 @@ HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         matrix.Translate(0.f, 0.f, -5.0f);
         riley::Transform xform = { 1, &matrix, &zerotime };
         
-        cameraId = riley->CreateCamera(riley::UserId::DefaultId(),
+        cameraId = _riley->CreateCamera(riley::UserId::DefaultId(),
                                        camName, cameraNode, xform, camParams);
     }
 
     // Dicing Camera
-    riley->SetDefaultDicingCamera(cameraId);
+    _riley->SetDefaultDicingCamera(cameraId);
 
     // Light
     {
@@ -330,7 +332,7 @@ HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
             us_lightA, // handle
             RtParamList()
         };
-        _fallbackLightShader = riley->CreateLightShader(
+        _fallbackLightShader = _riley->CreateLightShader(
             riley::UserId::DefaultId(), {1, &lightNode}, {0, nullptr});
 
         // Constant identity transform
@@ -351,7 +353,7 @@ HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         _fallbackLightAttrs.SetInteger(RixStr.k_visibility_camera, 0);
         _fallbackLightAttrs.SetInteger(RixStr.k_visibility_indirect, 1);
         _fallbackLightAttrs.SetInteger(RixStr.k_visibility_transmission, 1);
-        _fallbackLight = riley->CreateLightInstance(
+        _fallbackLight = _riley->CreateLightInstance(
               riley::UserId::DefaultId(),
               riley::GeometryPrototypeId::InvalidId(), // no group
               riley::GeometryPrototypeId::InvalidId(), // no geo
@@ -392,7 +394,7 @@ HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
                                     RtColorRGB(1.0f));
     materialNodes.push_back(pxrSurface_node);
 
-    fallbackMaterial = riley->CreateMaterial(
+    fallbackMaterial = _riley->CreateMaterial(
         riley::UserId::DefaultId(),
         {static_cast<uint32_t>(materialNodes.size()), &materialNodes[0]},
         RtParamList());
@@ -409,7 +411,7 @@ HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         pxrVolume_node.params.SetColor(us_diffuseColor, 
                                     RtColorRGB(0.18, 0.18, 0.18));
         materialNodes.push_back(pxrVolume_node);
-        fallbackVolumeMaterial = riley->CreateMaterial(
+        fallbackVolumeMaterial = _riley->CreateMaterial(
             riley::UserId::DefaultId(),
             {static_cast<uint32_t>(materialNodes.size()), materialNodes.data()},
             RtParamList());
@@ -427,7 +429,7 @@ HdPrman_InteractiveContext::SetIntegrator(riley::IntegratorId iid)
 {
     integratorId = iid;
     for (auto const& id : renderViews) {
-        riley->ModifyRenderView(id, nullptr, nullptr, &integratorId,
+        _riley->ModifyRenderView(id, nullptr, nullptr, &integratorId,
                                 nullptr, nullptr, nullptr);
     }
 }
@@ -457,12 +459,12 @@ HdPrman_InteractiveContext::End()
 
     // Reset to initial state.
     if (_mgr) {
-        if(riley) {
-            _mgr->DestroyRiley(riley);
+        if(_riley) {
+            _mgr->DestroyRiley(_riley);
         }
         _mgr = nullptr;
     }
-    riley = nullptr;
+    _riley = nullptr;
     if (_rix) {
         RixXcpt* rix_xcpt = (RixXcpt*)_rix->GetRixInterface(k_RixXcpt);
         rix_xcpt->Unregister(&_xcpt);
@@ -481,8 +483,8 @@ HdPrman_InteractiveContext::SetFallbackLightsEnabled(bool enabled)
     }
     _fallbackLightEnabled = enabled;
 
-    StopRender();
-    sceneVersion++;
+    // Stop render and crease sceneVersion to trigger restart.
+    riley::Riley * riley = AcquireRiley();
 
     _fallbackLightAttrs.SetInteger(RixStr.k_lighting_mute, !enabled);
 
@@ -505,7 +507,7 @@ HdPrman_InteractiveContext::StopRender()
         // before the render has gotten underway.
         // Also keep checking if render thread is still active,
         // in case it has somehow managed to stop already.
-        while((riley->Stop() == riley::StopResult::k_NotRendering) &&
+        while((_riley->Stop() == riley::StopResult::k_NotRendering) &&
               renderThread.IsRendering())
         {
         }
@@ -519,14 +521,13 @@ HdPrman_InteractiveContext::IsRenderStopped()
     return !renderThread.IsThreadRunning();
 }
 
-bool
+void
 HdPrman_InteractiveContext::CreateDisplays(
     const HdRenderPassAovBindingVector& aovBindings)
 {
     // Proceed with creating displays if the number has changed
     // or the display names don't match what we have.
     bool needCreate = false;
-    bool needClear = false;
     if(framebuffer.aovs.size() != aovBindings.size())
     {
         needCreate = true;
@@ -550,20 +551,23 @@ HdPrman_InteractiveContext::CreateDisplays(
                 // We do this before StartRender() to avoid race conditions
                 // where some buckets may get discarded or cleared with
                 // the wrong value.
-                StopRender();
+
+                // Stops render and increases sceneVersion to trigger restart.
+                AcquireRiley();
+
                 framebuffer.pendingClear = true;
                 framebuffer.aovs[aov].clearValue = aovBindings[aov].clearValue;
-                needClear = true;
             }
         }
     }
 
     if(!needCreate)
     {
-        return needClear; // return val indicates whether render needs restart
+        return;
     }
 
-    StopRender();
+    // Stop render and crease sceneVersion to trigger restart.
+    riley::Riley * riley = AcquireRiley();
 
     std::lock_guard<std::mutex> lock(framebuffer.mutex);
 
@@ -829,8 +833,6 @@ HdPrman_InteractiveContext::CreateDisplays(
         {0, nullptr}, {0, nullptr}, RtParamList());
     renderViews.push_back(renderView);
     renderTargets[renderView] = framebuffer.rtId;
-
-    return true;
 }
 
 RtParamList&
@@ -885,6 +887,15 @@ HdPrman_InteractiveContext::InvalidateTexture(const std::string &path)
 
     StopRender();
     sceneVersion.fetch_add(1);
+}
+
+riley::Riley *
+HdPrman_InteractiveContext::AcquireRiley()
+{
+    StopRender();
+    sceneVersion++;
+
+    return _riley;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

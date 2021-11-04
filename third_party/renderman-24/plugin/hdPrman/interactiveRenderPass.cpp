@@ -203,22 +203,11 @@ HdPrman_InteractiveRenderPass::_Execute(
         return;
     }
 
-    riley::Riley *riley = _interactiveContext->riley;
-
-    bool needStartRender = false;
-    const int currentSceneVersion = _interactiveContext->sceneVersion.load();
-    if (currentSceneVersion != _lastRenderedVersion) {
-        needStartRender = true;
-        _lastRenderedVersion = currentSceneVersion;
-    }
-
     // Creates displays if needed
     HdRenderPassAovBindingVector const &aovBindings =
         renderPassState->GetAovBindings();
-    if(_interactiveContext->CreateDisplays(aovBindings))
-    {
-        needStartRender = true;
-    }
+
+    _interactiveContext->CreateDisplays(aovBindings);
 
     // Enable/disable the fallback light when the scene provides no lights.
     _interactiveContext->SetFallbackLightsEnabled(
@@ -248,7 +237,10 @@ HdPrman_InteractiveRenderPass::_Execute(
     cameraContext.MarkValid();
 
     if (_lastSettingsVersion != currentSettingsVersion || camChanged) {
-        _interactiveContext->StopRender();
+
+        // AcquireRiley will stop rendering and increase sceneVersion
+        // so that the render will be re-started below.
+        riley::Riley * const riley = _interactiveContext->AcquireRiley();
 
         _integrator = renderDelegate->GetRenderSetting<std::string>(
             HdPrmanRenderSettingsTokens->integratorName,
@@ -310,12 +302,10 @@ HdPrman_InteractiveRenderPass::_Execute(
             renderDelegate,
             _interactiveContext->GetOptions());
         
-        _interactiveContext->riley->SetOptions(
+        riley->SetOptions(
             _interactiveContext->_GetDeprecatedOptionsPrunedList());
 
         _lastSettingsVersion = currentSettingsVersion;
-
-        needStartRender = true;
 
         // Setup quick integrator and save ids of it and main
         if (_enableQuickIntegrate)
@@ -363,7 +353,9 @@ HdPrman_InteractiveRenderPass::_Execute(
     if (camChanged ||
         resolutionChanged) {
 
-        _interactiveContext->StopRender();
+        // AcquireRiley will stop rendering and increase sceneVersion
+        // so that the render will be re-started below.
+        riley::Riley * const riley = _interactiveContext->AcquireRiley();
 
         if (resolutionChanged) {
             _interactiveContext->resolution[0] = renderBufferWidth;
@@ -403,7 +395,7 @@ HdPrman_InteractiveRenderPass::_Execute(
                 RixStr.k_Ri_CropWindow,
                 cropWindow.data(), 4);
             
-            _interactiveContext->riley->SetOptions(
+            riley->SetOptions(
                 _interactiveContext->_GetDeprecatedOptionsPrunedList());
         }
 
@@ -512,7 +504,7 @@ HdPrman_InteractiveRenderPass::_Execute(
 
             // Clipping planes
             for (riley::ClippingPlaneId const& id: _clipPlanes) {
-                _interactiveContext->riley->DeleteClippingPlane(id);
+                riley->DeleteClippingPlane(id);
             }
             _clipPlanes.clear();
             HdRenderPassState::ClipPlanesVector hdClipPlanes = 
@@ -553,8 +545,8 @@ HdPrman_InteractiveRenderPass::_Execute(
                                     norm[2] * distance);
                     params.SetPoint(us_planeOrigin, origin);
                     _clipPlanes.push_back(
-                        _interactiveContext->riley
-                        ->CreateClippingPlane(camXform, params));
+                        riley->CreateClippingPlane(
+                            camXform, params));
                 }
             }
         } else {
@@ -575,35 +567,32 @@ HdPrman_InteractiveRenderPass::_Execute(
 
         // Update the framebuffer Z scaling
         _interactiveContext->framebuffer.proj = proj;
-
-        needStartRender = true;
     }    
+    
+    // We need to capture the value of sceneVersion here after all
+    // the above calls to AcquireRiley since AcquireRiley increases
+    // the sceneVersion.
+    const int currentSceneVersion =
+        _interactiveContext->sceneVersion.load();
+    const bool needsStartRender = 
+        currentSceneVersion != _lastRenderedVersion;
 
-    // NOTE:
-    //
-    // _quickIntegrate enables hdPrman to go into a mode
-    // where it will switch to PxrDirectLighting
-    // integrator for a couple of interations
-    // and then switch back to PxrPathTracer/PbsPathTracer
-    // The thinking is that we want to use PxrDirectLighting for quick
-    // camera tumbles. To enable this mode, the 
-    // HD_PRMAN_ENABLE_QUICKINTEGRATE (bool) env var must be set.
+    if (needsStartRender) {
+        _lastRenderedVersion = currentSceneVersion;
 
-    // If we're rendering but we're still in the quick integrate window,
-    // check and see if we need to switch to the main integrator yet.
-    if (_quickIntegrate &&
-        (!needStartRender) &&
-        _interactiveContext->renderThread.IsRendering() &&
-        _DiffTimeToNow(_frameStart) > _quickIntegrateTime) {
+        // NOTE:
+        //
+        // _quickIntegrate enables hdPrman to go into a mode
+        // where it will switch to PxrDirectLighting
+        // integrator for a couple of interations
+        // and then switch back to PxrPathTracer/PbsPathTracer
+        // The thinking is that we want to use PxrDirectLighting for quick
+        // camera tumbles. To enable this mode, the 
+        // HD_PRMAN_ENABLE_QUICKINTEGRATE (bool) env var must be set.
+        
+        // If we're rendering but we're still in the quick integrate window,
+        // check and see if we need to switch to the main integrator yet.
 
-        _interactiveContext->StopRender();
-        _interactiveContext->SetIntegrator(_mainIntegratorId);
-        _interactiveContext->StartRender();
-
-        _quickIntegrate = false;
-    }
-    // Start (or restart) concurrent rendering.
-    if (needStartRender) {
         if (_quickIntegrateTime > 0 && _isPrimaryIntegrator) {
             if (!_quickIntegrate) {
                 // Start the frame with interactive integrator to give faster
@@ -618,6 +607,17 @@ HdPrman_InteractiveRenderPass::_Execute(
         }
         _interactiveContext->StartRender();
         _frameStart = std::chrono::steady_clock::now();
+    } else {
+        if (_quickIntegrate &&
+            _interactiveContext->renderThread.IsRendering() &&
+            _DiffTimeToNow(_frameStart) > _quickIntegrateTime) {
+
+            _interactiveContext->StopRender();
+            _interactiveContext->SetIntegrator(_mainIntegratorId);
+            _interactiveContext->StartRender();
+            
+            _quickIntegrate = false;
+        }
     }
 
     _converged = !_interactiveContext->renderThread.IsRendering();

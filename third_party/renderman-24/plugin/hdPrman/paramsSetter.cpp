@@ -54,12 +54,12 @@ HdPrmanParamsSetter::Sync(HdSceneDelegate *sceneDelegate,
         return;
     }
 
-    HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+    HdPrman_Context * const context =
+        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
 
-    SdfPath id = GetId();
+    riley::Riley * const riley = context->AcquireRiley();
 
-    riley::Riley *riley = context->riley;
+    const SdfPath id = GetId();
 
     VtValue optionsValue = sceneDelegate->Get(id, _tokens->Options);
     if (optionsValue.IsHolding<std::map<TfToken, VtValue>>()) {

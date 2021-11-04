@@ -50,15 +50,13 @@ HdPrmanLightFilter::HdPrmanLightFilter(SdfPath const& id,
     /* NOTHING */
 }
 
-HdPrmanLightFilter::~HdPrmanLightFilter()
-{
-}
+HdPrmanLightFilter::~HdPrmanLightFilter() = default;
 
 void
 HdPrmanLightFilter::Finalize(HdRenderParam *renderParam)
 {
     HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
     _ResetLightFilter(context);
 }
 
@@ -82,7 +80,7 @@ HdPrmanLightFilter::Sync(HdSceneDelegate *sceneDelegate,
                       HdDirtyBits     *dirtyBits)
 {  
     HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
 
     if (*dirtyBits) {
         _ResetLightFilter(context);

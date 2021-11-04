@@ -76,21 +76,21 @@ HdPrmanLight::HdPrmanLight(SdfPath const& id, TfToken const& lightType)
     /* NOTHING */
 }
 
-HdPrmanLight::~HdPrmanLight()
-{
-}
+HdPrmanLight::~HdPrmanLight() = default;
 
 void
 HdPrmanLight::Finalize(HdRenderParam *renderParam)
 {
     HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
     _ResetLight(context, true);
 }
 
 void
 HdPrmanLight::_ResetLight(HdPrman_Context *context, bool clearFilterPaths)
 {
+    riley::Riley *riley = context->AcquireRiley();
+
     if (!_lightLink.IsEmpty()) {
         context->DecrementLightLinkCount(_lightLink);
         _lightLink = TfToken();
@@ -104,7 +104,6 @@ HdPrmanLight::_ResetLight(HdPrman_Context *context, bool clearFilterPaths)
         _lightFilterLinks.clear();
     }
 
-    riley::Riley *riley = context->riley;
     if (_instanceId != riley::LightInstanceId::InvalidId()) {
         riley->DeleteLightInstance(
             riley::GeometryPrototypeId::InvalidId(),
@@ -579,12 +578,12 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     static const RtUString us_shadowSubset("shadowSubset");
     static const RtUString us_default("default");
 
-    HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+    HdPrman_Context * const context =
+        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
+
+    riley::Riley *const riley = context->AcquireRiley();
 
     SdfPath id = GetId();
-
-    riley::Riley *riley = context->riley;
 
     HdChangeTracker& changeTracker = 
         sceneDelegate->GetRenderIndex().GetChangeTracker();

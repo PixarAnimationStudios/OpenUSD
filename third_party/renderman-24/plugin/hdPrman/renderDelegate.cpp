@@ -28,7 +28,6 @@
 #include "hdPrman/coordSys.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/interactiveContext.h"
-#include "hdPrman/interactiveRenderParam.h"
 #include "hdPrman/interactiveRenderPass.h"
 #include "hdPrman/light.h"
 #include "hdPrman/lightFilter.h"
@@ -175,7 +174,7 @@ HdPrmanRenderDelegate::_Initialize()
         // interactive session.
         TF_VERIFY(interactiveContext);
 
-        _renderParam = std::make_shared<HdPrman_InteractiveRenderParam>(
+        _renderParam = std::make_shared<HdPrman_RenderParam>(
             interactiveContext);
 
         interactiveContext->Begin(this);

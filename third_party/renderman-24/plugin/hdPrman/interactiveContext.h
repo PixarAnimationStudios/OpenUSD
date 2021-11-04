@@ -95,10 +95,14 @@ struct HdPrman_InteractiveContext : public HdPrman_Context
     bool IsValid() const;
 
     // Creates displays in riley based on aovBindings vector
-    bool CreateDisplays(const HdRenderPassAovBindingVector& aovBindings);
+    void CreateDisplays(const HdRenderPassAovBindingVector& aovBindings);
 
     // Invalidate texture at path.
     void InvalidateTexture(const std::string &path);
+
+    // Request edit access (stopping the renderer and marking the contex to restart
+    // the renderer when executing the render pass) to the Riley scene and return it.
+    riley::Riley * AcquireRiley() override;
 
     // Render thread for background rendering.
     HdRenderThread renderThread;
@@ -136,6 +140,8 @@ private:
     // Initialize things, like riley, that need to succeed
     // in order for Begin to be called.
     void _Initialize();
+
+    void _RenderThreadCallback();
 
     // Full option description
     RtParamList _options;

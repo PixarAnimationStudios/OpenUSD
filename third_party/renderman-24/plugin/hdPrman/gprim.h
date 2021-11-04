@@ -27,14 +27,12 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/usd/sdf/types.h"
-#include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
 
 #include "hdPrman/context.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
 #include "hdPrman/renderParam.h"
-#include "hdPrman/renderPass.h"
 #include "hdPrman/rixStrings.h"
 
 #include "Riley.h"
@@ -46,24 +44,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// A mix-in template that adds shared gprim behavior to support
 /// various HdRprim types.
 template <typename BASE>
-class HdPrman_Gprim : public BASE {
+class HdPrman_Gprim : public BASE
+{
 public:
-    typedef BASE BaseType;
+    using BaseType = BASE;
 
     HdPrman_Gprim(SdfPath const& id)
         : BaseType(id)
     {
     }
 
-    virtual ~HdPrman_Gprim() = default;
+    ~HdPrman_Gprim() override = default;
 
     void
     Finalize(HdRenderParam *renderParam) override
     {
         HdPrman_Context *context =
-            static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+            static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
 
-        riley::Riley *riley = context->riley;
+        riley::Riley *riley = context->AcquireRiley();
 
         // Release retained conversions of coordSys bindings.
         context->ReleaseCoordSysBindings(BASE::GetId());
@@ -149,7 +148,10 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     TF_UNUSED(reprToken);
 
     HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
+
+    // Riley API.
+    riley::Riley *riley = context->AcquireRiley();
 
     // Update instance bindings.
     BASE::_UpdateInstancer(sceneDelegate, dirtyBits);
@@ -167,9 +169,6 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     // Sample transform
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
     sceneDelegate->SampleTransform(id, &xf);
-
-    // Riley API.
-    riley::Riley *riley = context->riley;
 
     // Resolve material binding.  Default to fallbackGprimMaterial.
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
