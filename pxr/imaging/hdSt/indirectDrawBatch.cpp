@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdSt/drawItemInstance.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
@@ -1228,12 +1229,12 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
                 " - indirect: %d\n"
                 " - drawCount: %d\n"
                 " - stride: %zu\n",
-               geometricShader->GetPrimitiveMode(),
+               HdStGLConversions::GetPrimitiveMode(geometricShader.get()),
                0, batchCount,
                _dispatchBuffer->GetCommandNumUints()*sizeof(uint32_t));
 
         glMultiDrawArraysIndirect(
-            geometricShader->GetPrimitiveMode(),
+            HdStGLConversions::GetPrimitiveMode(geometricShader.get()),
             0, // draw command always starts with 0
             batchCount,
             _dispatchBuffer->GetCommandNumUints()*sizeof(uint32_t));
@@ -1244,12 +1245,12 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
                 " - indirect: %d\n"
                 " - drawCount: %d\n"
                 " - stride: %zu\n",
-               geometricShader->GetPrimitiveMode(),
+               HdStGLConversions::GetPrimitiveMode(geometricShader.get()),
                0, batchCount,
                _dispatchBuffer->GetCommandNumUints()*sizeof(uint32_t));
 
         glMultiDrawElementsIndirect(
-            geometricShader->GetPrimitiveMode(),
+            HdStGLConversions::GetPrimitiveMode(geometricShader.get()),
             GL_UNSIGNED_INT,
             0, // draw command always starts with 0
             batchCount,

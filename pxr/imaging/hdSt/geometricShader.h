@@ -29,10 +29,7 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
-#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/usd/sdf/path.h"
-#include "pxr/imaging/garch/glApi.h"
-#include "pxr/imaging/hio/glslfx.h"
 
 #include <memory>
 
@@ -40,7 +37,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using HdSt_GeometricShaderSharedPtr =
     std::shared_ptr<class HdSt_GeometricShader>;
+using HdStResourceRegistrySharedPtr =
+    std::shared_ptr<class HdStResourceRegistry>;
 struct HdSt_ShaderKey;
+class HioGlslfx;
 
 /// \class HdSt_GeometricShader
 ///
@@ -224,10 +224,6 @@ public:
     FvarPatchType GetFvarPatchType() const {
         return _fvarPatchType;
     }
-
-    /// Return the GL primitive type of the draw item based on _primType
-    HDST_API
-    GLenum GetPrimitiveMode() const;
 
     // Returns the primitive index size based on the primitive mode
     // 3 for triangles, 4 for quads, 16 for regular b-spline patches etc.
