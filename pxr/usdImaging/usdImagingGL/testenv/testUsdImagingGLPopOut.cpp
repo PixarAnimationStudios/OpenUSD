@@ -41,9 +41,7 @@
 #include "pxr/imaging/garch/glDebugWindow.h"
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/drawTarget.h"
-// XXX Rework this test to not include glx via testGLContext.h to allow it
-//     to build on windows and mac.
-#include "pxr/imaging/glf/testGLContext.h"
+#include "pxr/imaging/glf/glContext.h"
 
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/prim.h"

@@ -111,15 +111,13 @@ pxr_build_test(testUsdImagingGLPickAndHighlight
         testenv/testUsdImagingGLPickAndHighlight.cpp
 )
 
-# XXX Test relies on glx.h via glf/testGLContext.h
-#     which isn't available on Windows & Mac by default.
-# pxr_build_test(testUsdImagingGLPopOut
-#     LIBRARIES
-#         ${TEST_LIBS}
-#     CPPFILES
-#         unitTestGLDrawing.cpp
-#         testenv/testUsdImagingGLPopOut.cpp
-# )
+pxr_build_test(testUsdImagingGLPopOut
+    LIBRARIES
+        ${TEST_LIBS}
+    CPPFILES
+        unitTestGLDrawing.cpp
+        testenv/testUsdImagingGLPopOut.cpp
+)
 
 pxr_build_test(testUsdImagingGLPurpose
     LIBRARIES
