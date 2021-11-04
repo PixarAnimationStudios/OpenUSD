@@ -295,6 +295,10 @@ bool HdPrimTypeIsLight(TfToken const& primType);
      * depth of the final fragment.
      */                                         \
     (depth)                                     \
+    /* HdAovTokens->depthStencil represents the clip-space
+     * depth of the final fragment w/ 8-bit stencil.
+     */                                         \
+    (depthStencil)                              \
     /* HdAovTokens->cameraDepth represents the camera-space
      * depth of the final fragment.
      */                                         \

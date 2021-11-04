@@ -41,11 +41,10 @@ static
 HgiTextureUsage _GetTextureUsage(HdFormat format, TfToken const &name)
 {
     if (HdAovHasDepthSemantic(name)) {
-        if (format == HdFormatFloat32UInt8) {
-            return HgiTextureUsageBitsDepthTarget |
-                   HgiTextureUsageBitsStencilTarget;
-        }
         return HgiTextureUsageBitsDepthTarget;
+    } else if (HdAovHasDepthStencilSemantic(name)) {
+        return HgiTextureUsageBitsDepthTarget |
+               HgiTextureUsageBitsStencilTarget;
     }
 
     return HgiTextureUsageBitsColorTarget;

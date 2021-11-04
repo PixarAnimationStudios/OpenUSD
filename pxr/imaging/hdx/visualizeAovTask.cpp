@@ -122,7 +122,8 @@ HdxVisualizeAovTask::_UpdateVizKernel(TfToken const &aovName)
 
     if (aovName == HdAovTokens->color) {
         vk = VizKernelNone;
-    } else if (HdAovHasDepthSemantic(aovName)) {
+    } else if (HdAovHasDepthSemantic(aovName) ||
+               HdAovHasDepthStencilSemantic(aovName)) {
         vk = VizKernelDepth;
     } else if (_IsIdAov(aovName)) {
         vk = VizKernelId;

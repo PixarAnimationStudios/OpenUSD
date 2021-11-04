@@ -815,7 +815,8 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
         attachmentDesc.dstAlphaBlendFactor=HgiBlendFactor(_blendAlphaDstFactor);
         attachmentDesc.alphaBlendOp = HgiBlendOp(_blendAlphaOp);
 
-        if (HdAovHasDepthSemantic(aov.aovName)) {
+        if (HdAovHasDepthSemantic(aov.aovName) ||
+            HdAovHasDepthStencilSemantic(aov.aovName)) {
             desc.depthAttachmentDesc = std::move(attachmentDesc);
             desc.depthTexture = hgiTexHandle;
             if (hgiResolveHandle) {

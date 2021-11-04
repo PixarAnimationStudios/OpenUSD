@@ -310,6 +310,9 @@ HdStRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
         return HdAovDescriptor(colorFormat,colorDepthMSAA, VtValue(GfVec4f(0)));
     } else if (HdAovHasDepthSemantic(name)) {
         return HdAovDescriptor(HdFormatFloat32, colorDepthMSAA, VtValue(1.0f));
+    } else if (HdAovHasDepthStencilSemantic(name)) {
+        return HdAovDescriptor(
+                HdFormatFloat32UInt8, colorDepthMSAA, VtValue(1.0f));
     }
 
     return HdAovDescriptor();
