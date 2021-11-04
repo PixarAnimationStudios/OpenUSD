@@ -230,10 +230,9 @@ HdxOitResolveTask::_PrepareOitBuffers(
         //
         // Counter Buffer
         //
-        HdBufferSpecVector counterSpecs;
-        counterSpecs.push_back(HdBufferSpec(
-            HdxTokens->hdxOitCounterBuffer, 
-            HdTupleType {HdTypeInt32, 1}));
+        HdBufferSpecVector counterSpecs{
+            { HdxTokens->hdxOitCounterBuffer, HdTupleType{HdTypeInt32, 1} }
+        };
         _counterBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitCounter,
                                             counterSpecs,
@@ -241,10 +240,9 @@ HdxOitResolveTask::_PrepareOitBuffers(
         //
         // Index Buffer
         //
-        HdBufferSpecVector indexSpecs;
-        indexSpecs.push_back(HdBufferSpec(
-            HdxTokens->hdxOitIndexBuffer,
-            HdTupleType {HdTypeInt32, 1}));
+        HdBufferSpecVector indexSpecs{
+            { HdxTokens->hdxOitIndexBuffer, HdTupleType{HdTypeInt32, 1} }
+        };
         _indexBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitIndices,
                                             indexSpecs,
@@ -253,10 +251,9 @@ HdxOitResolveTask::_PrepareOitBuffers(
         //
         // Data Buffer
         //        
-        HdBufferSpecVector dataSpecs;
-        dataSpecs.push_back(HdBufferSpec(
-            HdxTokens->hdxOitDataBuffer, 
-            HdTupleType {HdTypeFloatVec4, 1}));
+        HdBufferSpecVector dataSpecs{
+            { HdxTokens->hdxOitDataBuffer, HdTupleType{HdTypeFloatVec4, 1} }
+        };
         _dataBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitData,
                                             dataSpecs,
@@ -265,10 +262,9 @@ HdxOitResolveTask::_PrepareOitBuffers(
         //
         // Depth Buffer
         //
-        HdBufferSpecVector depthSpecs;
-        depthSpecs.push_back(HdBufferSpec(
-            HdxTokens->hdxOitDepthBuffer, 
-            HdTupleType {HdTypeFloat, 1}));
+        HdBufferSpecVector depthSpecs{
+            { HdxTokens->hdxOitDepthBuffer, HdTupleType{HdTypeFloat, 1} }
+        };
         _depthBar = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                                             /*role*/HdxTokens->oitDepth,
                                             depthSpecs,
@@ -277,10 +273,9 @@ HdxOitResolveTask::_PrepareOitBuffers(
         //
         // Uniforms
         //
-        HdBufferSpecVector uniformSpecs;
-        uniformSpecs.push_back( HdBufferSpec(
-            HdxTokens->oitScreenSize,HdTupleType{HdTypeInt32Vec2, 1}));
-
+        HdBufferSpecVector uniformSpecs{
+            { HdxTokens->oitScreenSize, HdTupleType{HdTypeInt32Vec2, 1} }
+        };
         _uniformBar = hdStResourceRegistry->AllocateUniformBufferArrayRange(
                                             /*role*/HdxTokens->oitUniforms,
                                             uniformSpecs,
