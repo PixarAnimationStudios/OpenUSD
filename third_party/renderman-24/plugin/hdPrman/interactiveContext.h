@@ -97,6 +97,9 @@ struct HdPrman_InteractiveContext : public HdPrman_Context
     // Creates displays in riley based on aovBindings vector
     bool CreateDisplays(const HdRenderPassAovBindingVector& aovBindings);
 
+    // Invalidate texture at path.
+    void InvalidateTexture(const std::string &path);
+
     // Render thread for background rendering.
     HdRenderThread renderThread;
 

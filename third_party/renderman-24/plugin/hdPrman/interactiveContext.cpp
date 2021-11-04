@@ -124,7 +124,7 @@ HdPrman_InteractiveContext::_Initialize()
     _InitializePrman();
 
     // Register RenderMan display driver
-    HdPrmanFramebuffer::Register(rix);
+    HdPrmanFramebuffer::Register(_rix);
 }
 
 bool 
@@ -456,20 +456,20 @@ HdPrman_InteractiveContext::End()
     }
 
     // Reset to initial state.
-    if (mgr) {
+    if (_mgr) {
         if(riley) {
-            mgr->DestroyRiley(riley);
+            _mgr->DestroyRiley(riley);
         }
-        mgr = nullptr;
+        _mgr = nullptr;
     }
     riley = nullptr;
-    if (rix) {
-        RixXcpt* rix_xcpt = (RixXcpt*)rix->GetRixInterface(k_RixXcpt);
-        rix_xcpt->Unregister(&xcpt);
+    if (_rix) {
+        RixXcpt* rix_xcpt = (RixXcpt*)_rix->GetRixInterface(k_RixXcpt);
+        rix_xcpt->Unregister(&_xcpt);
     }
-    if (ri) {
-        ri->PRManEnd();
-        ri = nullptr;
+    if (_ri) {
+        _ri->PRManEnd();
+        _ri = nullptr;
     }
 }
 
@@ -876,6 +876,15 @@ HdPrman_InteractiveContext::_GetDeprecatedOptionsPrunedList()
     }
 
     return prunedOptions;
+}
+
+void
+HdPrman_InteractiveContext::InvalidateTexture(const std::string &path)
+{
+    _ri->InvalidateTexture(RtUString(path.c_str()));
+
+    StopRender();
+    sceneVersion.fetch_add(1);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

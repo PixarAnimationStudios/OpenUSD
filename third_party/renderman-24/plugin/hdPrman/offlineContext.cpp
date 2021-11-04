@@ -428,23 +428,23 @@ HdPrman_OfflineContext::_End()
 {
     std::cout << "Destroy Prman" << std::endl;
     // Reset to initial state.
-    if (mgr) {
+    if (_mgr) {
         if(riley) {
-            mgr->DestroyRiley(riley);
+            _mgr->DestroyRiley(riley);
         }
-        mgr = nullptr;
+        _mgr = nullptr;
     }
 
     riley = nullptr;
 
-    if (rix) {
-        RixXcpt* rix_xcpt = (RixXcpt*)rix->GetRixInterface(k_RixXcpt);
-        rix_xcpt->Unregister(&xcpt);
+    if (_rix) {
+        RixXcpt* rix_xcpt = (RixXcpt*)_rix->GetRixInterface(k_RixXcpt);
+        rix_xcpt->Unregister(&_xcpt);
     }
 
-    if (ri) {
-        ri->PRManEnd();
-        ri = nullptr;
+    if (_ri) {
+        _ri->PRManEnd();
+        _ri = nullptr;
     }
 }
 

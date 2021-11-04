@@ -164,21 +164,8 @@ struct HdPrman_Context
         TfToken const& role,
         RtParamList& params);
 
-    // Top-level entrypoint to PRMan.
-    // Singleton used to access RixInterfaces.
-    RixContext *rix;
-
-    // RixInterface for PRManBegin/End.
-    RixRiCtl *ri;
-
-    // RixInterface for Riley.
-    RixRileyManager *mgr;
-
     // Riley instance.
     riley::Riley *riley;
-
-    // Xcpt Handler
-    HdPrman_Xcpt xcpt;
 
     // A fallback material to use for any geometry that
     // does not have a bound material.
@@ -196,6 +183,19 @@ struct HdPrman_Context
 
 protected:
     void _InitializePrman();
+
+    // Top-level entrypoint to PRMan.
+    // Singleton used to access RixInterfaces.
+    RixContext *_rix;
+
+    // RixInterface for PRManBegin/End.
+    RixRiCtl *_ri;
+
+    // RixInterface for Riley.
+    RixRileyManager *_mgr;
+
+    // Xcpt Handler
+    HdPrman_Xcpt _xcpt;
 
 private:
     // Refcounts for each category mentioned by a light link.

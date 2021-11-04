@@ -66,10 +66,10 @@ TF_MAKE_STATIC_DATA(std::vector<HdPrman_Context::IntegratorCameraCallback>,
 }
 
 HdPrman_Context::HdPrman_Context() :
-    rix(nullptr),
-    ri(nullptr),
-    mgr(nullptr),
     riley(nullptr),
+    _rix(nullptr),
+    _ri(nullptr),
+    _mgr(nullptr),
     _instantaneousShutter(false)
 {
     /* NOTHING */
@@ -1427,13 +1427,13 @@ HdPrman_Context::SetParamFromVtValue(
 void
 HdPrman_Context::_InitializePrman()
 {
-    rix = RixGetContext();
-    if (!rix) {
+    _rix = RixGetContext();
+    if (!_rix) {
         TF_RUNTIME_ERROR("Could not initialize Rix API.");
         return;
     }
-    ri = (RixRiCtl*)rix->GetRixInterface(k_RixRiCtl);
-    if (!ri) {
+    _ri = (RixRiCtl*)_rix->GetRixInterface(k_RixRiCtl);
+    if (!_ri) {
         TF_RUNTIME_ERROR("Could not initialize Ri API.");
         return;
     }
@@ -1446,14 +1446,14 @@ HdPrman_Context::_InitializePrman()
     char arg1[] = "-woff";
     char woffs[] = "R56008,R56009";
     char* argv[] = { arg0, arg1, woffs};
-    ri->PRManBegin(3, argv);
+    _ri->PRManBegin(3, argv);
 
     // Register an Xcpt handler
-    RixXcpt* rix_xcpt = (RixXcpt*)rix->GetRixInterface(k_RixXcpt);
-    rix_xcpt->Register(&xcpt);
+    RixXcpt* rix_xcpt = (RixXcpt*)_rix->GetRixInterface(k_RixXcpt);
+    rix_xcpt->Register(&_xcpt);
 
     // Populate RixStr struct
-    RixSymbolResolver* sym = (RixSymbolResolver*)rix->GetRixInterface(
+    RixSymbolResolver* sym = (RixSymbolResolver*)_rix->GetRixInterface(
         k_RixSymbolResolver);
     sym->ResolvePredefinedStrings(RixStr);
 
@@ -1469,8 +1469,8 @@ HdPrman_Context::_InitializePrman()
     }
 
     // Acquire Riley instance.
-    mgr = (RixRileyManager*)rix->GetRixInterface(k_RixRileyManager);
-    riley = mgr->CreateRiley(RtUString(rileyvariant.c_str()), RtParamList());
+    _mgr = (RixRileyManager*)_rix->GetRixInterface(k_RixRileyManager);
+    riley = _mgr->CreateRiley(RtUString(rileyvariant.c_str()), RtParamList());
     if(!riley) {
         TF_RUNTIME_ERROR("Could not initialize riley API.");
         return;

@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "hdPrman/resourceRegistry.h"
+#include "hdPrman/interactiveContext.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "RixRiCtl.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -33,9 +33,7 @@ HdPrman_ResourceRegistry::HdPrman_ResourceRegistry(
 {
 }
 
-HdPrman_ResourceRegistry::~HdPrman_ResourceRegistry()
-{
-}
+HdPrman_ResourceRegistry::~HdPrman_ResourceRegistry() = default;
 
 void
 HdPrman_ResourceRegistry::ReloadResource(
@@ -43,11 +41,8 @@ HdPrman_ResourceRegistry::ReloadResource(
     std::string const& path)
 {
     if (resourceType == HdResourceTypeTokens->texture) {
-        _context->ri->InvalidateTexture(RtUString(path.c_str()));
+        _context->InvalidateTexture(path);
     }
-
-    _context->StopRender();
-    _context->sceneVersion.fetch_add(1);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
