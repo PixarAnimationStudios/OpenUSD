@@ -172,9 +172,14 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
 
     // Set up geometric shader states
     // all batch item should have the same geometric shader.
-    HdSt_GeometricShaderSharedPtr const &geometricShader
-        = program.GetGeometricShader();
+    HdSt_GeometricShaderSharedPtr const &geometricShader =
+                                                program.GetGeometricShader();
     geometricShader->BindResources(programId, binder, *renderPassState);
+
+    if (geometricShader->IsPrimTypePatches()) {
+        glPatchParameteri(GL_PATCH_VERTICES,
+                          geometricShader->GetPrimitiveIndexSize());
+    }
 
     size_t numItemsDrawn = 0;
     for (HdStDrawItemInstance const * drawItemInstance : _drawItemInstances) {

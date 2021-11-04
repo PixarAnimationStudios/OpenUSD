@@ -191,10 +191,6 @@ HdSt_GeometricShader::BindResources(const int program,
         }
     }
 
-    if (GetPrimitiveMode() == GL_PATCHES) {
-        glPatchParameteri(GL_PATCH_VERTICES, GetPrimitiveIndexSize());
-    }
-
     if (_polygonMode == HdPolygonModeLine) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         if (_lineWidth > 0) {
