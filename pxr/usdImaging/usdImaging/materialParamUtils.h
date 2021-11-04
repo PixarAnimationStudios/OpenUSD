@@ -25,7 +25,7 @@
 #define PXR_USD_IMAGING_MATERIAL_PARAM_UTILS_H
 
 #include "pxr/pxr.h"
-
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -36,26 +36,14 @@ class UsdPrim;
 class UsdTimeCode;
 class VtValue;
 
-/// Get the value from the usd attribute at given time. If it is an
-/// SdfAssetPath containing a UDIM pattern, e.g., //SHOW/myImage.<UDIM>.exr,
-/// the resolved path of the SdfAssetPath will be updated to a file path
-/// with a UDIM pattern, e.g., /filePath/myImage.<UDIM>.exr.
-/// There might be support for different patterns, e.g., myImage._MAPID_.exr,
-/// but this function always normalizes it to myImage.<UDIM>.exr.
-///
-/// The function assumes that the correct ArResolverContext is bound.
-///
-VtValue
-UsdImaging_ResolveMaterialParamValue(
-    const UsdAttribute& attr, const UsdTimeCode& time);
-
 /// Builds an HdMaterialNetwork for the usdTerminal prim and 
 /// populates it in the materialNetworkMap under the terminalIdentifier. 
 /// This shared implementation is usable for populating material networks for
 /// any connectable source including lights and light filters in addition to 
 /// materials.
+USDIMAGING_API
 void 
-UsdImaging_BuildHdMaterialNetworkFromTerminal(
+UsdImagingBuildHdMaterialNetworkFromTerminal(
     UsdPrim const& usdTerminal,
     TfToken const& terminalIdentifier,
     TfTokenVector const& shaderSourceTypes,
@@ -64,10 +52,11 @@ UsdImaging_BuildHdMaterialNetworkFromTerminal(
     UsdTimeCode time);
 
 /// Returns whether the material network built by 
-/// UsdImaging_BuildHdMaterialNetworkFromTerminal for the given usdTerminal 
+/// UsdImagingBuildHdMaterialNetworkFromTerminal for the given usdTerminal 
 /// prim is time varying.
+USDIMAGING_API
 bool
-UsdImaging_IsHdMaterialNetworkTimeVarying(
+UsdImagingIsHdMaterialNetworkTimeVarying(
     UsdPrim const& usdTerminal);
 
 PXR_NAMESPACE_CLOSE_SCOPE

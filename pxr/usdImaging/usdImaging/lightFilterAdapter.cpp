@@ -91,7 +91,7 @@ UsdImagingLightFilterAdapter::TrackVariability(UsdPrim const& prim,
         timeVaryingBits);
 
     // Determine if the light filter material network is time varying.
-    if (UsdImaging_IsHdMaterialNetworkTimeVarying(prim)) {
+    if (UsdImagingIsHdMaterialNetworkTimeVarying(prim)) {
         *timeVaryingBits |= HdLight::DirtyBits::DirtyResource;
     }
 
@@ -190,7 +190,7 @@ UsdImagingLightFilterAdapter::GetMaterialResource(UsdPrim const &prim,
 
     HdMaterialNetworkMap networkMap;
 
-    UsdImaging_BuildHdMaterialNetworkFromTerminal(
+    UsdImagingBuildHdMaterialNetworkFromTerminal(
         prim, 
         HdMaterialTerminalTokens->lightFilter,
         _GetShaderSourceTypes(),
