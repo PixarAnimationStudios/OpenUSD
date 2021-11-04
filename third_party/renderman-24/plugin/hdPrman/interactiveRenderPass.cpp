@@ -435,6 +435,9 @@ HdPrman_InteractiveRenderPass::_Execute(
             _interactiveContext->SetIntegratorParamsFromCamera(
                     renderDelegate, hdCam, _integrator, integratorNode.params);
 
+            RtUString integrator(_integrator.c_str());
+            integratorNode.handle = integratorNode.name = integrator;
+
             riley->ModifyIntegrator(
                 _interactiveContext->GetActiveIntegratorId(), &integratorNode);
         }
