@@ -37,7 +37,6 @@
 #include "hdPrman/offlineRenderPass.h"
 #include "hdPrman/paramsSetter.h"
 #include "hdPrman/points.h"
-#include "hdPrman/renderParam.h"
 #include "hdPrman/renderPass.h"
 #include "hdPrman/resourceRegistry.h"
 #include "hdPrman/volume.h"
@@ -183,16 +182,11 @@ HdPrmanRenderDelegate::_Initialize()
         // interactive session.
         TF_VERIFY(interactiveContext);
 
-        _renderParam = std::make_shared<HdPrman_RenderParam>(
-            interactiveContext);
-
         interactiveContext->Begin(this);
 
         _resourceRegistry = std::make_shared<HdPrman_ResourceRegistry>(
             interactiveContext);
     } else { 
-        _renderParam = std::make_shared<HdPrman_RenderParam>(_context);
-
         _resourceRegistry = std::make_shared<HdResourceRegistry>();
     }
 }
@@ -200,7 +194,6 @@ HdPrmanRenderDelegate::_Initialize()
 HdPrmanRenderDelegate::~HdPrmanRenderDelegate()
 {
     _context.reset();
-    _renderParam.reset();
 }
 
 HdRenderSettingsMap
@@ -218,7 +211,7 @@ HdPrmanRenderDelegate::GetRenderSettingDescriptors() const
 HdRenderParam*
 HdPrmanRenderDelegate::GetRenderParam() const
 {
-    return _renderParam.get();
+    return _context.get();
 }
 
 void

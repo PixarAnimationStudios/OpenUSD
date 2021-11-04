@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // currently is no HdLightFilter class.
 
 class HdSceneDelegate;
-struct HdPrman_Context;
+class HdPrman_Context;
 
 /// \class HdPrmanLightFilter
 ///

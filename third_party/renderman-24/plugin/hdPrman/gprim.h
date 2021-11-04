@@ -32,7 +32,6 @@
 #include "hdPrman/context.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
-#include "hdPrman/renderParam.h"
 #include "hdPrman/rixStrings.h"
 
 #include "Riley.h"
@@ -60,7 +59,7 @@ public:
     Finalize(HdRenderParam *renderParam) override
     {
         HdPrman_Context *context =
-            static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
+            static_cast<HdPrman_Context*>(renderParam);
 
         riley::Riley *riley = context->AcquireRiley();
 
@@ -148,7 +147,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     TF_UNUSED(reprToken);
 
     HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
+        static_cast<HdPrman_Context*>(renderParam);
 
     // Riley API.
     riley::Riley *riley = context->AcquireRiley();

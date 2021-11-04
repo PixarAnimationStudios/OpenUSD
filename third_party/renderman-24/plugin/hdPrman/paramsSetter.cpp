@@ -25,7 +25,6 @@
 #include "hdPrman/paramsSetter.h"
 #include "hdPrman/context.h"
 #include "hdPrman/debugCodes.h"
-#include "hdPrman/renderParam.h"
 #include "hdPrman/rixStrings.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -55,7 +54,7 @@ HdPrmanParamsSetter::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     HdPrman_Context * const context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
+        static_cast<HdPrman_Context*>(renderParam);
 
     riley::Riley * const riley = context->AcquireRiley();
 

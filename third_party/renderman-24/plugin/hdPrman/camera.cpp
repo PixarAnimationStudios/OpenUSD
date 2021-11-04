@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "hdPrman/camera.h"
-#include "hdPrman/renderParam.h"
 #include "hdPrman/cameraContext.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -58,7 +57,7 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
 
     if (bits & (DirtyTransform | DirtyParams)) {
         HdPrman_Context * const context =
-            static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
+            static_cast<HdPrman_Context*>(renderParam);
         context->GetCameraContext().MarkCameraInvalid(this);
     }
 

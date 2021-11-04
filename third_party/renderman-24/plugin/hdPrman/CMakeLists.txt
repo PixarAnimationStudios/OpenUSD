@@ -92,7 +92,6 @@ pxr_plugin(${PXR_PACKAGE}
 
     PUBLIC_HEADERS
         api.h
-        renderParam.h
 
     PRIVATE_HEADERS
         virtualStructConditionalGrammar.tab.h

@@ -34,8 +34,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HdPrman_Context;
-struct HdPrman_InteractiveContext;
+class HdPrman_Context;
+class HdPrman_InteractiveContext;
 
 class HdPrman_InteractiveRenderPass final : public HdRenderPass
 {

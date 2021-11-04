@@ -34,8 +34,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Context for offline rendering in HdPrman.
-struct HdPrman_OfflineContext: public HdPrman_Context
+class HdPrman_OfflineContext : public HdPrman_Context
 {
+public:
+
     struct RenderOutput
     {
         RtUString name;

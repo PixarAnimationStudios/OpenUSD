@@ -28,7 +28,6 @@
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/light.h"
 #include "hdPrman/material.h"
-#include "hdPrman/renderParam.h"
 #include "hdPrman/rixStrings.h"
 
 #include "pxr/imaging/hd/material.h"

@@ -29,8 +29,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HdPrman_Context;
-struct HdPrman_OfflineContext;
+class HdPrman_Context;
+class HdPrman_OfflineContext;
 
 /// A placeholder render pass that does nothing.
 /// This is meant for clients that use Hydra to push scene data

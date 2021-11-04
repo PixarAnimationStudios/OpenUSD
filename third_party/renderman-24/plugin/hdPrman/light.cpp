@@ -25,7 +25,6 @@
 #include "hdPrman/material.h"
 #include "hdPrman/context.h"
 #include "hdPrman/debugCodes.h"
-#include "hdPrman/renderParam.h"
 #include "hdPrman/rixStrings.h"
 #include "pxr/base/arch/library.h"
 #include "pxr/base/gf/vec3f.h"
@@ -82,7 +81,7 @@ void
 HdPrmanLight::Finalize(HdRenderParam *renderParam)
 {
     HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
+        static_cast<HdPrman_Context*>(renderParam);
     _ResetLight(context, true);
 }
 
@@ -579,7 +578,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     static const RtUString us_default("default");
 
     HdPrman_Context * const context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
+        static_cast<HdPrman_Context*>(renderParam);
 
     riley::Riley *const riley = context->AcquireRiley();
 

@@ -24,7 +24,6 @@
 #include "hdPrman/material.h"
 #include "hdPrman/context.h"
 #include "hdPrman/debugCodes.h"
-#include "hdPrman/renderParam.h"
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
 #include "hdPrman/matfiltFilterChain.h"
 #include "hdPrman/matfiltResolveVstructs.h"
@@ -116,7 +115,7 @@ void
 HdPrmanMaterial::Finalize(HdRenderParam *renderParam)
 {
     HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
+        static_cast<HdPrman_Context*>(renderParam);
     _ResetMaterial(context);
 }
 
@@ -685,7 +684,7 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
 {  
     HD_TRACE_FUNCTION();
     HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
+        static_cast<HdPrman_Context*>(renderParam);
 
     SdfPath id = GetId();
 

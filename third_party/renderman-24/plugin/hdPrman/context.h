@@ -31,6 +31,7 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/coordSys.h"
 
 #include "Riley.h"
@@ -56,12 +57,14 @@ class HdPrmanCameraContext;
 class HdPrmanRenderDelegate;
 
 // Context for HdPrman to communicate with an instance of PRMan.
-struct HdPrman_Context
+class HdPrman_Context : public HdRenderParam
 {
+public:
     HDPRMAN_API
     HdPrman_Context();
 
-    virtual ~HdPrman_Context();
+    HDPRMAN_API
+    ~HdPrman_Context() override;
 
     // Convert any Hydra primvars that should be Riley instance attributes.
     HDPRMAN_API

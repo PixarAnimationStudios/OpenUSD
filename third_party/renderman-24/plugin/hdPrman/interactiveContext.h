@@ -55,8 +55,10 @@ class HdRenderDelegate;
 // - a framebuffer for returning image results
 // - concurrent, background rendering support.
 //
-struct HdPrman_InteractiveContext : public HdPrman_Context
+class HdPrman_InteractiveContext : public HdPrman_Context
 {
+public:
+
     // A framebuffer to hold PRMan results.
     // The d_hydra.so renderman display driver handles updates via IPC.
     HdPrmanFramebuffer framebuffer;

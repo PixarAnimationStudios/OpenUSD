@@ -31,7 +31,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
-struct HdPrman_Context;
+class HdPrman_Context;
 
 /// \class HdPrmanCoordSys
 ///

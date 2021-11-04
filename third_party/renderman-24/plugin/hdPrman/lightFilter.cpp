@@ -24,7 +24,6 @@
 #include "hdPrman/lightFilter.h"
 #include "hdPrman/context.h"
 #include "hdPrman/debugCodes.h"
-#include "hdPrman/renderParam.h"
 #include "hdPrman/rixStrings.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -56,7 +55,7 @@ void
 HdPrmanLightFilter::Finalize(HdRenderParam *renderParam)
 {
     HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
+        static_cast<HdPrman_Context*>(renderParam);
     _ResetLightFilter(context);
 }
 
@@ -80,7 +79,7 @@ HdPrmanLightFilter::Sync(HdSceneDelegate *sceneDelegate,
                       HdDirtyBits     *dirtyBits)
 {  
     HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->GetContext();
+        static_cast<HdPrman_Context*>(renderParam);
 
     if (*dirtyBits) {
         _ResetLightFilter(context);

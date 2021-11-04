@@ -28,14 +28,11 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "hdPrman/api.h"
 
-#include <mutex>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_RenderParam;
 class HdPrman_RenderPass;
-struct HdPrman_Context;
-struct HdPrman_InteractiveContext;
+class HdPrman_Context;
+class HdPrman_InteractiveContext;
 class RixParamList;
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -186,7 +183,6 @@ protected:
     static const TfTokenVector SUPPORTED_BPRIM_TYPES;
 
     std::shared_ptr<HdPrman_Context> _context;
-    std::shared_ptr<HdPrman_RenderParam> _renderParam;
     HdResourceRegistrySharedPtr _resourceRegistry;
     HdRenderPassSharedPtr _renderPass;
     HdRenderSettingDescriptorList _settingDescriptors;
