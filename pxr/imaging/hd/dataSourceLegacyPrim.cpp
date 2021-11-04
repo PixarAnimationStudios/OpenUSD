@@ -73,6 +73,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdLegacyPrimTypeTokens, HD_LEGACY_PRIMTYPE_TOKENS);
 
+// XXX: currently private and duplicated where used so as to not yet formally
+//      define this convention.
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (prmanParams)
+    ((prmanParamsNames, ""))
+);
+
 // ----------------------------------------------------------------------------
 
 bool
@@ -2211,6 +2219,12 @@ HdDataSourceLegacyPrim::Has(const TfToken &name)
         }
     }
 
+    if (_type == _tokens->prmanParams) {
+        if (name == _tokens->prmanParams) {
+            return true;
+        }
+    }
+
     if (name == HdSceneIndexEmulationTokens->sceneDelegate) {
         return true;
     }
@@ -2295,6 +2309,10 @@ HdDataSourceLegacyPrim::GetNames()
 
     if (_type == HdPrimTypeTokens->drawTarget) {
         result.push_back(HdPrimTypeTokens->drawTarget);
+    }
+
+    if (_type == _tokens->prmanParams) {
+        result.push_back(_tokens->prmanParams);
     }
 
     result.push_back(HdSceneIndexEmulationTokens->sceneDelegate);
@@ -2690,6 +2708,49 @@ HdDataSourceLegacyPrim::_GetInstanceCategoriesDataSource()
     );
 }
 
+HdDataSourceBaseHandle
+HdDataSourceLegacyPrim::_GetPrmanParamsDataSource()
+{
+    VtValue namesValue = _sceneDelegate->Get(_id, _tokens->prmanParamsNames);
+    if (!namesValue.IsHolding<TfTokenVector>()) {
+        return nullptr;
+    }
+
+    TfTokenVector dictKeys;
+    std::vector<HdDataSourceBaseHandle> dicts;
+
+    for (const TfToken &dictName : namesValue.UncheckedGet<TfTokenVector>()) {
+        VtValue dictValue = _sceneDelegate->Get(_id, dictName);
+
+        if (!dictValue.IsHolding<std::map<TfToken, VtValue>>()) {
+            continue;
+        }
+
+        std::map<TfToken, VtValue> dict =
+            dictValue.UncheckedGet<std::map<TfToken, VtValue>>();
+
+        if (dict.empty()) {
+            continue;
+        }
+
+        TfTokenVector valueKeys;
+        std::vector<HdDataSourceBaseHandle> values;
+        for (const auto &valuePair : dict) {
+            valueKeys.push_back(valuePair.first);
+            values.push_back(
+                HdRetainedSampledDataSource::New(valuePair.second));
+        }
+
+        dictKeys.push_back(dictName);
+        dicts.push_back(HdRetainedContainerDataSource::New(
+            valueKeys.size(), valueKeys.data(), values.data()));
+    }
+
+
+    return HdRetainedContainerDataSource::New(
+            dictKeys.size(), dictKeys.data(), dicts.data());
+}
+
 HdDataSourceBaseHandle 
 HdDataSourceLegacyPrim::Get(const TfToken &name)
 {
@@ -2749,6 +2810,10 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
             Hd_LegacyDrawTargetContainerDataSource::New(_sceneDelegate, _id));
     } else if (name == HdExtComputationSchemaTokens->extComputation) {
         return Hd_DataSourceLegacyExtComputation::New(_id, _sceneDelegate);
+    } else if (name == _tokens->prmanParams) {
+        if (_type == _tokens->prmanParams) {
+            return _GetPrmanParamsDataSource();
+        }
     }
 
     return nullptr;
