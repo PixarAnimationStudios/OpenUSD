@@ -612,11 +612,16 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         // Topological visibility (of points, curves) comes in as DirtyTopology.
         // We encode this information in a separate BAR.
         if (dirtyTopology) {
+            // The points primvar is permitted to be larger than the number of
+            // CVs implied by the topology.  So here we allow for
+            // invisiblePoints being larger as well.
+            size_t minInvisiblePointsCapacity = srcTopology.GetNumPoints();
+
             HdStProcessTopologyVisibility(
                 srcTopology.GetInvisibleCurves(),
                 srcTopology.GetNumCurves(),
                 srcTopology.GetInvisiblePoints(),
-                srcTopology.CalculateNeededNumberOfControlPoints(),
+                minInvisiblePointsCapacity,
                 &_sharedData,
                 drawItem,
                 renderParam,
