@@ -251,7 +251,7 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
     l.SetHasIntensity(intensity != 0.0f);
     l.SetAmbient(GfVec4f(0.0f));
     l.SetDiffuse(diffuseMultiplier * c);
-    l.SetSpecular(GfVec4f(specularMultiplier * intensity));
+    l.SetSpecular(specularMultiplier * c);
     l.SetHasShadow(false);
     if (_lightType == HdPrimTypeTokens->rectLight ||
         _lightType == HdPrimTypeTokens->diskLight) {

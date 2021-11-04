@@ -63,10 +63,9 @@ R"(#if NUM_LIGHTS > 0
                 (HdGet_worldToViewInverseMatrix() * lightSource[i].position).xyz;
 
             // Color and Intensity 
-            // Note: Storm supports Simple, Sphere and Rect Direct Lights where
-            // diffuse = lightColor * intensity;
-            // specular = vec3(1) * intensity;
-            float intensity = lightSource[i].specular.r;
+            // Note: in Storm, diffuse = lightColor * intensity;
+            float intensity = max( max(lightSource[i].diffuse.r, lightSource[i].diffuse.g), 
+                                   lightSource[i].diffuse.b);
             $lightData[u_numActiveLightSources].color = lightSource[i].diffuse.rgb/intensity;
             $lightData[u_numActiveLightSources].intensity = intensity;
             
