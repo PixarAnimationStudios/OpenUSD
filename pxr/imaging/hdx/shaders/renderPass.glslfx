@@ -160,6 +160,77 @@ vec4 IntToVec4(int id)
                 ((id >> 24) & 0xff) / 255.0);
 }
 
+// calculate an integer hash value based on integer key and offset
+// this is used for the pick buffer hash map
+int fnv1Hash(int key, int offset)
+{
+    const int prime = 16777619;
+
+    int ret = offset;
+	
+    int b0 = (key & 255);
+    int b1 = (key & 65280) >> 8;
+    int b2 = (key & 16711680) >> 16;
+    int b3 = (key & -2130706432) >> 24;
+
+    ret *= prime;
+    ret ^= b0;
+    ret *= prime;
+    ret ^= b1;
+    ret *= prime;
+    ret ^= b2;
+    ret *= prime;
+    ret ^= b3;
+
+    return ret;
+}
+
+#if defined(HD_HAS_PickBuffer)
+bool 
+compareOrSet(
+    const int valueOffset, 
+    const int primId, 
+    const int instanceId, 
+    const int partId)
+{
+    int primIdOffset = valueOffset;
+    int instanceIdOffset = valueOffset + 1;
+    int partIdOffset = valueOffset + 2;
+
+    int primIdValue = PickBuffer[primIdOffset];
+    int instanceIdValue = PickBuffer[instanceIdOffset];
+    int partIdValue = PickBuffer[partIdOffset];
+
+    // if all the values are initialized, just compare 
+    if ((primIdValue != -9) && 
+        (instanceIdValue != -9) && 
+        (partIdValue != -9)) {
+        return  (primId == primIdValue) && 
+                (instanceId == instanceIdValue) && 
+                (partId == partIdValue);
+    }
+
+    // try to initialize the values and check if succeeded
+
+    primIdValue = atomicCompSwap(PickBuffer[primIdOffset], -9, primId);
+    if ((primIdValue != primId) && (primIdValue != -9)) {
+        return false;
+    }
+
+    instanceIdValue = atomicCompSwap(PickBuffer[instanceIdOffset], -9, instanceId);
+    if ((instanceIdValue != instanceId) && (instanceIdValue != -9)) {
+        return false;
+    }
+
+    partIdValue = atomicCompSwap(PickBuffer[partIdOffset], -9, partId);
+    if ((partIdValue != partId) && (partIdValue != -9)) {
+        return false;
+    }
+
+    return true;
+}
+#endif // HD_HAS_PickBuffer
+
 // Fwd declare necessary methods to determine the subprim id of a fragment.
 FORWARD_DECL(int GetElementID()); // generated via codeGen
 FORWARD_DECL(int GetPrimitiveEdgeId()); // defined in edgeId.glslfx, or generated via codeGen
@@ -176,11 +247,67 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     int instanceId = GetDrawingCoord().instanceIndex[0];
     instanceIdOut = IntToVec4(instanceId);
 
-    elementIdOut = IntToVec4(GetElementID());
-    edgeIdOut = IntToVec4(GetPrimitiveEdgeId());
-    pointIdOut = IntToVec4(GetPointId());
+    int elementId = GetElementID();
+    int edgeId = GetPrimitiveEdgeId();
+    int pointId = GetPointId();
+
+    elementIdOut = IntToVec4(elementId);
+    edgeIdOut = IntToVec4(edgeId);
+    pointIdOut = IntToVec4(pointId);
     
     neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
+
+    // add the item to the pick buffer, but only unique
+#if defined(HD_HAS_PickBuffer)
+
+    // if the pick buffer is not initialized, we are done 
+    if (PickBuffer[0] == 0)
+        return;
+	
+    // prepare some constants
+    const int entrySize = 3;
+    const int numSubBuffers = PickBuffer[0];
+    const int subBufferCapacity = PickBuffer[1];
+    const int tableOffset = PickBuffer[2];
+    const int storageOffset = PickBuffer[3];
+    const int partId =  PickBuffer[4] * elementId + 
+                        PickBuffer[5] * edgeId +
+                        PickBuffer[6] * pointId;
+
+    // calculate the item's hash
+    const int fnv1Seed = -2128831035;
+    int fnv1Value = fnv1Hash(primId, fnv1Seed);
+    fnv1Value = fnv1Hash(instanceId, fnv1Value);
+    fnv1Value = fnv1Hash(partId, fnv1Value);
+
+    // more constants
+    const int subBufferNumber = fnv1Value % numSubBuffers;
+    const int sizeOffset = tableOffset + subBufferNumber;
+    const int subBufferOffset = storageOffset + 
+                subBufferNumber * subBufferCapacity * entrySize;
+
+    // loop through the item's sub-buffer to see if the item is already there
+    // if not, add it in atomic fashion
+    int entryNumber = 0;
+    do
+    {
+        // see if we need to add a new entry
+        if (entryNumber == PickBuffer[sizeOffset]) {
+            atomicCompSwap(PickBuffer[sizeOffset], entryNumber, entryNumber + 1);
+        }
+
+        // if either the item equals to the current entry or we managed to 
+        // initialize the entry with the item's data, we are done
+        if (compareOrSet(
+                subBufferOffset + entryNumber * entrySize, 
+                primId, instanceId, partId)) {
+            break;
+        }
+    } // we exit out if we reach the capacity of the sub-buffer
+    while(++entryNumber != subBufferCapacity);
+    
+
+#endif // HD_HAS_PickBuffer
 }
 
 -- layout HdxRenderPass.RenderColorAndSelection

@@ -346,6 +346,47 @@ public:
         int *outHitInstanceIndex = NULL,
         HdInstancerContext *outInstancerContext = NULL);
 
+    struct IntersectionResult
+    {
+        GfVec3d hitPoint;
+        GfVec3d hitNormal;
+        SdfPath hitPrimPath;
+        SdfPath hitInstancerPath;
+        int hitInstanceIndex = 0;
+        HdInstancerContext instancerContext;
+    };
+
+    typedef std::vector<struct IntersectionResult> IntersectionResultVector;
+
+    /// Perform picking by finding the intersection of objects in the scene with a renderered frustum.
+    /// Depending on the resolve mode it may find all objects intersecting the frustum or the closest 
+    /// point of intersection within the frustum.
+    /// 
+    /// If resolve mode is set to resolveDeep it uses Deep Selection to gather all paths within 
+    /// the frustum even if obscured by other visible objects.
+    /// If resolve mode is set to resolveNearestToCenter it uses a PickRender and 
+    /// a customized depth buffer to find all approximate points of intersection by rendering. 
+    /// This is less accurate than implicit methods or rendering with GL_SELECT, but leverages any 
+    /// data already cached in the renderer.
+    ///
+    /// Returns whether a hit occurred and if so, \p outResults will point to all the 
+    /// gprims selected by the pick as determined by the resolve mode. 
+    /// \p outHitPoint will contain the intersection point in world space 
+    /// (i.e. \p projectionMatrix and \p viewMatrix factored back out of the result)
+    /// \p outHitNormal will contain the world space normal at that point.
+    /// \p hitPrimPath will point to the gprim selected by the pick.
+    /// \p hitInstancerPath will point to the point instancer (if applicable) of each gprim. 
+    ///
+    USDIMAGINGGL_API
+    bool TestIntersection(
+        const TfToken& resolveMode,
+        const GfMatrix4d& viewMatrix,
+        const GfMatrix4d& projectionMatrix,
+        const SdfPathVector& paths,
+        const UsdImagingGLRenderParams& params,
+        IntersectionResultVector& outResults,
+        bool wantsInstancerContext = false);
+
     /// Decodes a pick result given hydra prim ID/instance ID (like you'd get
     /// from an ID render).
     USDIMAGINGGL_API

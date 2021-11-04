@@ -37,6 +37,7 @@
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/primOriginSchema.h"
 #include "pxr/imaging/hd/types.h"
+#include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
@@ -58,6 +59,17 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdxPickTokens, HDX_PICK_TOKENS);
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _HdxPickTokens,
+    (PickBuffer)
+    (PickBufferBinding)
+    (Picking)
+);
+
+static const int PICK_BUFFER_HEADER_SIZE = 8;
+static const int PICK_BUFFER_SUBBUFFER_CAPACITY = 32;
+static const int PICK_BUFFER_ENTRY_SIZE = 3;
 
 static HdRenderPassStateSharedPtr
 _InitIdRenderPassState(HdRenderIndex *index)
@@ -120,6 +132,22 @@ HdxPickTask::~HdxPickTask()
 void
 HdxPickTask::_InitIfNeeded()
 {
+    // Init pick buffer
+    if (!_pickBuffer) {
+        HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
+            std::dynamic_pointer_cast<HdStResourceRegistry>(
+                _index->GetResourceRegistry());
+
+        HdBufferSpecVector bufferSpecs { 
+            { _HdxPickTokens->PickBuffer, HdTupleType{ HdTypeInt32, 1 } }
+        };
+
+        _pickBuffer = hdStResourceRegistry->AllocateSingleBufferArrayRange(
+                        _HdxPickTokens->Picking, 
+                        bufferSpecs, 
+                        HdBufferArrayUsageHint());
+    }
+
     if (_pickableAovBuffers.empty()) {
         _CreateAovBindings();
     }
@@ -499,14 +527,19 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
             state->SetStencilEnabled(false);
         }
 
+        // disable depth write for the main pass when resolving 'deep'
+        bool enableDepthWrite =
+            (state == _occluderRenderPassState) ||
+            (_contextParams.resolveMode != HdxPickTokens->resolveDeep);
+
         state->SetEnableDepthTest(true);
-        state->SetEnableDepthMask(true);
+        state->SetEnableDepthMask(enableDepthWrite);
         state->SetDepthFunc(HdCmpFuncLEqual);
 
-        // Allow semi-transparent pixels to be picked, but discard fully
-        // transparent ones.
-        state->SetAlphaThreshold(0.0001f);
-
+        // Set alpha threshold, to potentially discard translucent pixels.
+        // The default value of 0.0001 allow semi-transparent pixels to be picked, 
+        // but discards fully transparent ones.
+        state->SetAlphaThreshold(_contextParams.alphaThreshold);
         state->SetAlphaToCoverageEnabled(false);
         state->SetBlendEnabled(false);
         state->SetCullStyle(_params.cullStyle);
@@ -590,7 +623,92 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
     _pickableRenderPassState->Prepare(renderIndex->GetResourceRegistry());
     if (_UseWidgetPass()) {
         _widgetRenderPassState->Prepare(renderIndex->GetResourceRegistry());
+    }  
+
+    _ClearPickBuffer();
+
+    // Prepare pick buffer binding
+    HdStRenderPassState* extendedState =
+        dynamic_cast<HdStRenderPassState*>(_pickableRenderPassState.get());
+
+    HdStRenderPassShaderSharedPtr renderPassShader = 
+        extendedState ? extendedState->GetRenderPassShader() : nullptr;
+
+    if (renderPassShader) {
+        if (_pickBuffer) {
+            renderPassShader->AddBufferBinding(
+                HdBindingRequest(
+                    HdBinding::SSBO,
+                    _HdxPickTokens->PickBufferBinding, 
+                    _pickBuffer, 
+                    false));
+        }
+        else {
+            renderPassShader->RemoveBufferBinding(
+                _HdxPickTokens->PickBufferBinding);
+        }
     }
+}
+
+void
+HdxPickTask::_ClearPickBuffer()
+{
+    if (!_pickBuffer) {
+        return;
+    }
+
+    // populate pick buffer source array
+    VtIntArray pickBufferInit;
+    if (_contextParams.resolveMode == HdxPickTokens->resolveDeep)
+    {
+        const int numSubBuffers =
+            _contextParams.maxNumDeepEntries / PICK_BUFFER_SUBBUFFER_CAPACITY;
+        const int entryStorageOffset =
+            PICK_BUFFER_HEADER_SIZE + numSubBuffers;
+        const int entryStorageSize =
+            numSubBuffers * PICK_BUFFER_SUBBUFFER_CAPACITY * PICK_BUFFER_ENTRY_SIZE;
+
+        pickBufferInit.reserve(entryStorageOffset + entryStorageSize);
+
+        // populate pick buffer header
+        pickBufferInit.push_back(numSubBuffers);
+        pickBufferInit.push_back(PICK_BUFFER_SUBBUFFER_CAPACITY);
+        pickBufferInit.push_back(PICK_BUFFER_HEADER_SIZE);
+        pickBufferInit.push_back(entryStorageOffset);
+
+        pickBufferInit.push_back(
+            _contextParams.pickTarget == HdxPickTokens->pickFaces ? 1 : 0);
+        pickBufferInit.push_back(
+            _contextParams.pickTarget == HdxPickTokens->pickEdges ? 1 : 0);
+        pickBufferInit.push_back(
+            _contextParams.pickTarget == HdxPickTokens->pickPoints ? 1 : 0);
+        pickBufferInit.push_back(0);
+
+        // populate pick buffer's sub-buffer size table with zeros
+        pickBufferInit.resize(pickBufferInit.size() + numSubBuffers, 
+            [](int* b, int* e) { std::uninitialized_fill(b, e, 0); });
+
+        // populate pick buffer's entry storage with -9s, meaning uninitialized
+        pickBufferInit.resize(pickBufferInit.size() + entryStorageSize,
+            [](int* b, int* e) { std::uninitialized_fill(b, e, -9); });
+    }
+    else
+    {
+        // set pick buffer to invalid state
+        pickBufferInit.push_back(0);
+    }
+
+    // set the source to the pick buffer
+    HdBufferSourceSharedPtr bufferSource =
+        std::make_shared<HdVtBufferSource>(
+            _HdxPickTokens->PickBuffer,
+            VtValue(pickBufferInit));
+
+    HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
+        std::dynamic_pointer_cast<HdStResourceRegistry>(
+            _index->GetResourceRegistry());
+
+    hdStResourceRegistry->AddSource(_pickBuffer, bufferSource);
 }
 
 void
@@ -650,6 +768,12 @@ HdxPickTask::Execute(HdTaskContext* ctx)
             {HdxRenderTagTokens->widget});
     }
 
+    // For 'resolveDeep' mode, read hits from the pick buffer.
+    if (_contextParams.resolveMode == HdxPickTokens->resolveDeep) {
+        _ResolveDeep();
+        return;
+    }
+
     // Capture the result buffers and cast to the appropriate types.
     HdStTextureUtils::AlignedBuffer<int> primIds =
         _ReadAovBuffer<int>(HdAovTokens->primId);
@@ -700,6 +824,78 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 
     // This is important for Hgi garbage collection to run.
     _hgi->EndFrame();
+}
+
+void HdxPickTask::_ResolveDeep()
+{
+    if (!_pickBuffer) {
+        return;
+    }
+
+    VtValue pickData = _pickBuffer->ReadData(_HdxPickTokens->PickBuffer);
+    if (pickData.IsEmpty()) {
+        return;
+    }
+
+    const auto& data = pickData.Get<VtIntArray>();
+
+    const int numSubBuffers =
+        _contextParams.maxNumDeepEntries / PICK_BUFFER_SUBBUFFER_CAPACITY;
+    const int entryStorageOffset =
+        PICK_BUFFER_HEADER_SIZE + numSubBuffers;
+
+    // loop through all the sub-buffers, populating outHits
+    for (int subBuffer = 0; subBuffer < numSubBuffers; ++subBuffer)
+    {
+        const int sizeOffset = PICK_BUFFER_HEADER_SIZE + subBuffer;
+        const int numEntries = data[sizeOffset];
+        const int subBufferOffset =
+            entryStorageOffset + 
+            subBuffer * PICK_BUFFER_SUBBUFFER_CAPACITY * PICK_BUFFER_ENTRY_SIZE;
+
+        // loop through sub-buffer entries
+        for (int j = 0; j < numEntries; ++j)
+        {
+            int entryOffset = subBufferOffset + (j * PICK_BUFFER_ENTRY_SIZE);
+
+            HdxPickHit hit;
+
+            int primId = data[entryOffset];
+            hit.objectId = _index->GetRprimPathFromPrimId(primId);
+
+            if (!hit.IsValid()) {
+                continue;
+            }
+
+            bool rprimValid = _index->GetSceneDelegateAndInstancerIds(
+                                hit.objectId,
+                                &(hit.delegateId),
+                                &(hit.instancerId));
+
+            if (!TF_VERIFY(rprimValid, "%s\n", hit.objectId.GetText())) {
+                continue;
+            }
+
+            int partIndex = data[entryOffset + 2];
+            hit.instanceIndex = data[entryOffset + 1];
+            hit.elementIndex = 
+                _contextParams.pickTarget == HdxPickTokens->pickFaces ? 
+                partIndex : -1;
+            hit.edgeIndex =
+                _contextParams.pickTarget == HdxPickTokens->pickEdges ?
+                partIndex : -1;
+            hit.pointIndex = 
+                _contextParams.pickTarget == HdxPickTokens->pickPoints ?
+                partIndex : -1;
+
+            // the following data is skipped in deep selection
+            hit.worldSpaceHitPoint = GfVec3f(0.f, 0.f, 0.f);
+            hit.worldSpaceHitNormal = GfVec3f(0.f, 0.f, 0.f);
+            hit.normalizedDepth = 0.f;
+
+            _contextParams.outHits->push_back(hit);
+        }
+    }
 }
 
 const TfTokenVector &

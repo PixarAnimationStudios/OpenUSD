@@ -837,6 +837,66 @@ UsdImagingGLEngine::TestIntersection(
 }
 
 bool
+UsdImagingGLEngine::TestIntersection(
+    const TfToken& resolveMode,
+    const GfMatrix4d& viewMatrix,
+    const GfMatrix4d& projectionMatrix,
+    const SdfPathVector& paths,
+    const UsdImagingGLRenderParams& params,
+    IntersectionResultVector& outResults,
+    bool wantsInstancerContext)
+{
+    TF_VERIFY(_sceneDelegate);
+    TF_VERIFY(_taskController);
+
+    TF_VERIFY(_taskController);
+
+    _UpdateHydraCollection(&_renderCollection, paths, params);
+    _taskController->SetCollection(_renderCollection);
+
+    _PrepareRender(params);
+
+    HdxPickHitVector allHits;
+    HdxPickTaskContextParams pickParams;
+    pickParams.resolveMode = resolveMode;
+    pickParams.viewMatrix = viewMatrix;
+    pickParams.projectionMatrix = projectionMatrix;
+    pickParams.clipPlanes = params.clipPlanes;
+    pickParams.collection = _intersectCollection;
+    pickParams.outHits = &allHits;
+    const VtValue vtPickParams(pickParams);
+
+    _engine->SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
+    _Execute(params, _taskController->GetPickingTasks());
+
+    // return false if there were no hits
+    if (allHits.size() == 0) {
+        return false;
+    }
+
+    for(HdxPickHit& hit : allHits)
+    {
+        IntersectionResult res;
+
+        hit.objectId = _sceneDelegate->GetScenePrimPath(
+            hit.objectId, hit.instanceIndex, 
+            wantsInstancerContext ? &res.instancerContext : nullptr);
+
+        hit.instancerId = _sceneDelegate->ConvertIndexPathToCachePath(
+            hit.instancerId).GetAbsoluteRootOrPrimPath();
+
+        res.hitPoint = hit.worldSpaceHitPoint;
+        res.hitNormal = hit.worldSpaceHitNormal;
+        res.hitPrimPath = hit.objectId;
+        res.hitInstanceIndex = hit.instanceIndex;
+        res.hitInstancerPath = hit.instancerId;
+        outResults.push_back(res);
+    }
+
+    return true;
+}
+
+bool
 UsdImagingGLEngine::DecodeIntersection(
     unsigned char const primIdColor[4],
     unsigned char const instanceIdColor[4],
