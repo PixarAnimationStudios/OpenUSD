@@ -112,16 +112,6 @@ struct HdPrman_InteractiveContext : public HdPrman_Context
     riley::IntegratorId GetIntegrator();
     void SetIntegrator(riley::IntegratorId integratorId);
 
-    // Full option description
-    RtParamList _options;
-
-    // The following should not be given to Riley::SetOptions() anymore.
-    static const std::vector<RtUString> _deprecatedRileyOptions;
-
-    // The following were previously options,
-    // but now need to be provided as camera properties.
-    static const std::vector<RtUString> _newRileyCameraProperties;
-
     int32_t resolution[2];
 
     // Some quantites previously given as options now need to be provided
@@ -140,6 +130,9 @@ private:
     // Initialize things, like riley, that need to succeed
     // in order for Begin to be called.
     void _Initialize();
+
+    // Full option description
+    RtParamList _options;
 
     // The fallback light.  HdPrman_RenderPass calls
     // SetFallbackLightsEnabled() to maintain visibility

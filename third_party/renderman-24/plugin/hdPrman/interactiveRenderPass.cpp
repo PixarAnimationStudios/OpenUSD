@@ -444,20 +444,20 @@ HdPrman_InteractiveRenderPass::_Execute(
             HdRenderSettingsTokens->convergedSamplesPerPixel).Cast<int>();
         int maxSamples = TF_VERIFY(!vtMaxSamples.IsEmpty()) ?
             vtMaxSamples.UncheckedGet<int>() : 64; // RenderMan default
-        _interactiveContext->_options.SetInteger(RixStr.k_hider_maxsamples,
-                                                 maxSamples);
+        _interactiveContext->GetOptions().SetInteger(RixStr.k_hider_maxsamples,
+                                                     maxSamples);
 
         VtValue vtPixelVariance = renderDelegate->GetRenderSetting(
             HdRenderSettingsTokens->convergedVariance).Cast<float>();
         float pixelVariance = TF_VERIFY(!vtPixelVariance.IsEmpty()) ?
             vtPixelVariance.UncheckedGet<float>() : 0.001f;
-        _interactiveContext->_options.SetFloat(RixStr.k_Ri_PixelVariance,
-                                               pixelVariance);
+        _interactiveContext->GetOptions().SetFloat(RixStr.k_Ri_PixelVariance,
+                                                   pixelVariance);
 
         // Set Options from RenderSettings schema
         _interactiveContext->SetOptionsFromRenderSettings(
             renderDelegate,
-            _interactiveContext->_options);
+            _interactiveContext->GetOptions());
         
         _interactiveContext->riley->SetOptions(
             _interactiveContext->_GetDeprecatedOptionsPrunedList());
@@ -536,7 +536,7 @@ HdPrman_InteractiveRenderPass::_Execute(
                 _interactiveContext->resolution[0] = renderBufferWidth;
                 _interactiveContext->resolution[1] = renderBufferHeight;
                 
-                _interactiveContext->_options.SetIntegerArray(
+                _interactiveContext->GetOptions().SetIntegerArray(
                     RixStr.k_Ri_FormatResolution,
                     _interactiveContext->resolution, 2);
 
@@ -565,7 +565,7 @@ HdPrman_InteractiveRenderPass::_Execute(
             if (cropWindowChanged) {
                 _lastCropWindow = cropWindow;
 
-                _interactiveContext->_options.SetFloatArray(
+                _interactiveContext->GetOptions().SetFloatArray(
                     RixStr.k_Ri_CropWindow,
                     cropWindow.data(), 4);
             }
