@@ -98,9 +98,10 @@ My_TestGLDrawing::InitTest()
     TRACE_FUNCTION();
     
     std::cout << "My_TestGLDrawing::InitTest()\n";
-    _stage = UsdStage::Open(GetStageFilePath());
-    SdfPathVector excludedPaths;
+    _stage = UsdStage::Open(GetStageFilePath(),
+        IsEnabledUnloadedAsBounds() ? UsdStage::LoadNone : UsdStage::LoadAll);
 
+    SdfPathVector excludedPaths;
     if (UsdImagingGLEngine::IsHydraEnabled()) {
         std::cout << "Using HD Renderer.\n";
         _engine.reset(new UsdImagingGLEngine(
@@ -285,6 +286,10 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     params.showRender = IsShowRender();
     params.showProxy = IsShowProxy();
     params.clearColor = GetClearColor();
+
+    if (IsEnabledUnloadedAsBounds()) {
+        _SetDisplayUnloadedPrimsWithBounds(_engine.get(), true);
+    }
 
     glViewport(0, 0, width, height);
 

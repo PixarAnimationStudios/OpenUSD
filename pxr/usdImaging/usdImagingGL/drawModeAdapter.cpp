@@ -1487,8 +1487,13 @@ UsdImagingGLDrawModeAdapter::GetTransform(UsdPrim const& prim,
 {
     // If the draw mode is instantiated on an instance, prim will be
     // the instance prim, but we want to ignore transforms on that
-    // prim since the instance adapter will handle them.
-    if (prim.IsInstance()) {
+    // prim since the instance adapter will incorporate it into the per-instance
+    // transform and we don't want to double-transform the prim.
+    //
+    // Note: if the prim is unloaded (because unloaded prims are drawing as
+    // bounds), we skip the normal instancing machinery and need to handle
+    // the transform ourselves.
+    if (prim.IsInstance() && prim.IsLoaded()) {
         return GfMatrix4d(1.0);
     } else {
         return BaseAdapter::GetTransform(
