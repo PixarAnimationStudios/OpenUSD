@@ -135,7 +135,7 @@ HdRenderPassState::GetWorldToViewMatrix() const
         return _worldToViewMatrix;
     }
 
-    return _camera->GetViewMatrix();
+    return _camera->GetTransform().GetInverse();
 }
 
 CameraUtilConformWindowPolicy

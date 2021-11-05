@@ -208,7 +208,7 @@ HdxPickFromRenderBufferTask::Execute(HdTaskContext* ctx)
     // buffer to look at.
 
     // Get the view, projection used to generate the ID buffers.
-    const GfMatrix4d renderView = _camera->GetViewMatrix();
+    const GfMatrix4d renderView = _camera->GetTransform().GetInverse();
     const GfMatrix4d renderProj = _ComputeProjectionMatrix();
 
     // renderBufferXf transforms renderbuffer NDC to integer renderbuffer

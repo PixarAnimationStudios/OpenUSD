@@ -343,7 +343,7 @@ HdxDrawTargetTask::_ComputeCameraInfo(
                                   aspect)
         * yflip;
     
-    return { camera->GetViewMatrix(),
+    return { camera->GetTransform().GetInverse(),
              projectionMatrix,
              viewport,
              camera->GetClipPlanes() };
