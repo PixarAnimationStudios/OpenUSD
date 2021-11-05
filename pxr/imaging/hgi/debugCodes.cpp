@@ -21,35 +21,22 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_GL_CAPABILITIES_H
-#define PXR_IMAGING_HGI_GL_CAPABILITIES_H
+/// \file debugCodes.cpp
 
-#include "pxr/pxr.h"
-#include "pxr/imaging/hgiGL/api.h"
-#include "pxr/imaging/hgi/capabilities.h"
+#include "pxr/imaging/hgi/debugCodes.h"
+
+#include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/registryManager.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class HgiGLCapabilities
-///
-/// Reports the capabilities of the HgiGL device.
-///
-class HgiGLCapabilities final : public HgiCapabilities
+
+TF_REGISTRY_FUNCTION(TfDebug)
 {
-public:
-    HGIGL_API
-    ~HgiGLCapabilities() override;
-
-public:
-    friend class HgiGL;
-
-    HGIGL_API
-    HgiGLCapabilities();
-
-private:
-    void _LoadCapabilities();
-};
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HGI_DEBUG_DEVICE_CAPABILITIES,
+        "Hgi report when device capabilities are initialized and dump "
+        "contents");
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif

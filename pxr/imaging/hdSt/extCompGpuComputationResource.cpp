@@ -95,9 +95,11 @@ HdStExtCompGpuComputationResource::_Resolve()
         // let resourcebinder resolve bindings and populate metadata
         // which is owned by codegen.
         _resourceBinder.ResolveComputeBindings(_outputBufferSpecs,
-                                              inputBufferSpecs,
-                                              shaders,
-                                              codeGen.GetMetaData());
+                                               inputBufferSpecs,
+                                               shaders,
+                                               codeGen.GetMetaData(),
+                                               _registry->GetHgi()->
+                                                   GetCapabilities());
 
         HdStGLSLProgram::ID registryID = codeGen.ComputeHash();
 

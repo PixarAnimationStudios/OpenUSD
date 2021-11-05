@@ -41,16 +41,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(GlfContextCaps);
 
-TF_DEFINE_ENV_SETTING(GLF_ENABLE_BINDLESS_BUFFER, false,
-                      "Use GL bindless buffer extention");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_BINDLESS_TEXTURE, false,
                       "Use GL bindless texture extention");
-TF_DEFINE_ENV_SETTING(GLF_ENABLE_MULTI_DRAW_INDIRECT, true,
-                      "Use GL multi draw indirect extention");
-TF_DEFINE_ENV_SETTING(GLF_ENABLE_BUILTIN_BARYCENTRICS, false,
-                      "Use built in barycentric coordinates");
-TF_DEFINE_ENV_SETTING(GLF_ENABLE_SHADER_DRAW_PARAMETERS, true,
-                      "Use GL shader draw params if available (OpenGL 4.5+)");
 
 TF_DEFINE_ENV_SETTING(GLF_GLSL_VERSION, 0,
                       "GLSL version");
@@ -74,13 +66,9 @@ GlfContextCaps::GlfContextCaps()
     , maxTextureBufferSize(_DefaultMaxTextureBufferSize)
     , uniformBufferOffsetAlignment(0)
 
-    , multiDrawIndirectEnabled(false)
     , bindlessTextureEnabled(false)
-    , bindlessBufferEnabled(false)
-    , builtinBarycentricsEnabled(false)
 
     , glslVersion(_DefaultGLSLVersion)
-    , shaderDrawParametersEnabled(false)
 {
 }
 
@@ -132,12 +120,8 @@ GlfContextCaps::_LoadCaps()
     maxShaderStorageBlockSize    = _DefaultMaxShaderStorageBlockSize;
     maxTextureBufferSize         = _DefaultMaxTextureBufferSize;
     uniformBufferOffsetAlignment = 0;
-    multiDrawIndirectEnabled     = false;
     bindlessTextureEnabled       = false;
-    bindlessBufferEnabled        = false;
-    builtinBarycentricsEnabled   = false;
     glslVersion                  = _DefaultGLSLVersion;
-    shaderDrawParametersEnabled  = false;
 
     if (!TF_VERIFY(GlfGLContext::GetCurrentGLContext()->IsValid())) {
         return;
@@ -200,59 +184,20 @@ GlfContextCaps::_LoadCaps()
         glGetIntegerv(GL_MAX_SHADER_STORAGE_BLOCK_SIZE,
                       &maxShaderStorageBlockSize);
     }
-    if (glVersion >= 450) {
-        multiDrawIndirectEnabled = true;
-    }
-    if (glVersion >= 460) {
-        shaderDrawParametersEnabled = true;
-    }
 
     // initialize by individual extension.
     if (GARCH_GLAPI_HAS(ARB_bindless_texture)) {
         bindlessTextureEnabled = true;
     }
-    if (GARCH_GLAPI_HAS(NV_shader_buffer_load)) {
-        bindlessBufferEnabled = true;
-    }
-    if (GARCH_GLAPI_HAS(NV_fragment_shader_barycentric)) {
-        builtinBarycentricsEnabled = true;
-    }
-    if (GARCH_GLAPI_HAS(ARB_multi_draw_indirect)) {
-        multiDrawIndirectEnabled = true;
-    }
-#if defined(GL_VERSION_4_5)
-    if (GARCH_GLAPI_HAS(ARB_shader_draw_parameters)) {
-        shaderDrawParametersEnabled = true;
-    }
-#endif
-
     // Environment variable overrides (only downgrading is possible)
     if (!TfGetEnvSetting(GLF_ENABLE_BINDLESS_TEXTURE)) {
         bindlessTextureEnabled = false;
-    }
-    if (!TfGetEnvSetting(GLF_ENABLE_BINDLESS_BUFFER)) {
-        bindlessBufferEnabled = false;
-    }
-    if (!TfGetEnvSetting(GLF_ENABLE_BUILTIN_BARYCENTRICS)) {
-        builtinBarycentricsEnabled = false;
-    }
-    if (!TfGetEnvSetting(GLF_ENABLE_MULTI_DRAW_INDIRECT)) {
-        multiDrawIndirectEnabled = false;
-    }
-    if (!TfGetEnvSetting(GLF_ENABLE_SHADER_DRAW_PARAMETERS)) {
-        shaderDrawParametersEnabled = false;
     }
 
     // For debugging and unit testing
     if (TfGetEnvSetting(GLF_GLSL_VERSION) > 0) {
         // GLSL version override
         glslVersion = std::min(glslVersion, TfGetEnvSetting(GLF_GLSL_VERSION));
-
-        // downgrade to the overridden GLSL version
-        bindlessTextureEnabled      &= (glslVersion >= 430);
-        bindlessBufferEnabled       &= (glslVersion >= 430);
-        builtinBarycentricsEnabled  &= (glslVersion >= 450);
-        shaderDrawParametersEnabled &= (glslVersion >= 450);
     }
 
     if (TfDebug::IsEnabled(GLF_DEBUG_CONTEXT_CAPS)) {
@@ -277,18 +222,9 @@ GlfContextCaps::_LoadCaps()
             <<    maxTextureBufferSize << "\n"
             << "  GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT = "
             <<    uniformBufferOffsetAlignment << "\n"
-            // order alphabetically
+
             << "  ARB_bindless_texture               = "
             <<    bindlessTextureEnabled << "\n"
-            << "  ARB_multi_draw_indirect            = "
-            <<    multiDrawIndirectEnabled << "\n"
-            << "  ARB_shader_draw_parameters         = "
-            <<    shaderDrawParametersEnabled << "\n"
-            << "  NV_fragment_shader_barycentric     = "
-            <<    builtinBarycentricsEnabled << "\n"
-            << "  NV_shader_buffer_load              = "
-            <<    bindlessBufferEnabled << "\n"
-
             ;
     }
 }

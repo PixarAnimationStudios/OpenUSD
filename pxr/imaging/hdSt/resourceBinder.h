@@ -27,8 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
-
 #include "pxr/imaging/hd/binding.h"
+#include "pxr/imaging/hgi/capabilities.h"
 #include "pxr/imaging/hgi/handle.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/stl.h"
@@ -311,7 +311,8 @@ public:
                          MetaData *metaDataOut,
                          bool indirect,
                          bool instanceDraw,
-                         HdBindingRequestVector const &customBindings);
+                         HdBindingRequestVector const &customBindings,
+                         HgiCapabilities const *capabilities);
 
     /// Assign all binding points used in computation.
     /// Returns metadata to be used for codegen.
@@ -319,7 +320,8 @@ public:
     void ResolveComputeBindings(HdBufferSpecVector const &readWriteBufferSpecs,
                                 HdBufferSpecVector const &readOnlyBufferSpecs,
                                 HdStShaderCodeSharedPtrVector const &shaders,
-                                MetaData *metaDataOut);
+                                MetaData *metaDataOut,
+                                HgiCapabilities const *capabilities);
     
     HDST_API
     void Bind(HdBindingRequest const& req) const;

@@ -21,34 +21,23 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_GL_CAPABILITIES_H
-#define PXR_IMAGING_HGI_GL_CAPABILITIES_H
+#ifndef PXR_IMAGING_HGI_DEBUG_CODES_H
+#define PXR_IMAGING_HGI_DEBUG_CODES_H
+
+/// \file hgi/debugCodes.h
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgiGL/api.h"
-#include "pxr/imaging/hgi/capabilities.h"
+#include "pxr/base/tf/debug.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class HgiGLCapabilities
-///
-/// Reports the capabilities of the HgiGL device.
-///
-class HgiGLCapabilities final : public HgiCapabilities
-{
-public:
-    HGIGL_API
-    ~HgiGLCapabilities() override;
 
-public:
-    friend class HgiGL;
+TF_DEBUG_CODES(
 
-    HGIGL_API
-    HgiGLCapabilities();
+    HGI_DEBUG_DEVICE_CAPABILITIES
 
-private:
-    void _LoadCapabilities();
-};
+);
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

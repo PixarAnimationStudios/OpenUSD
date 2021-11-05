@@ -23,8 +23,6 @@
 //
 #include "pxr/imaging/hdSt/renderPass.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
-
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/drawItemsCache.h"
 #include "pxr/imaging/hdSt/glUtils.h"
@@ -435,7 +433,8 @@ HdSt_RenderPass::_UpdateCommandBuffer(TfTokenVector const& renderTags)
     const int batchVersion = _GetDrawBatchesVersion(GetRenderIndex());
     // Rebuild draw batches based on new draw items
     if (_drawItemsChanged) {
-        _cmdBuffer.SetDrawItems(_drawItems, batchVersion);
+        _cmdBuffer.SetDrawItems(_drawItems, batchVersion,
+            _hgi->GetCapabilities());
 
         _drawItemsChanged = false;
         size_t itemCount = _cmdBuffer.GetTotalSize();
@@ -443,7 +442,8 @@ HdSt_RenderPass::_UpdateCommandBuffer(TfTokenVector const& renderTags)
     } else {
         // validate command buffer to not include expired drawItems,
         // which could be produced by migrating BARs at the new repr creation.
-        _cmdBuffer.RebuildDrawBatchesIfNeeded(batchVersion);
+        _cmdBuffer.RebuildDrawBatchesIfNeeded(batchVersion,
+            _hgi->GetCapabilities());
     }
 
     // -------------------------------------------------------------------
@@ -467,12 +467,14 @@ HdSt_RenderPass::_FrustumCullCPU(
     // This process should be moved to HdSt_DrawBatch::PrepareDraw
     // to be consistent with GPU culling.
 
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
     HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
+
+    const bool multiDrawIndirectEnabled = _hgi->
+        GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
 
     const bool
        skipCulling = TfDebug::IsEnabled(HDST_DISABLE_FRUSTUM_CULLING) ||
-           (caps.multiDrawIndirectEnabled
+           (multiDrawIndirectEnabled
                && HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling());
     bool freezeCulling = TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM);
 

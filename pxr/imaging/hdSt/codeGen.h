@@ -116,8 +116,9 @@ private:
     void _GenerateConstantPrimvar();
     void _GenerateInstancePrimvar();
     void _GenerateElementPrimvar();
-    void _GenerateVertexAndFaceVaryingPrimvar(bool hasGS);
-    void _GenerateShaderParameters();
+    void _GenerateVertexAndFaceVaryingPrimvar(bool hasGS, 
+        bool shaderDrawParametersEnabled);
+    void _GenerateShaderParameters(bool bindlessTextureEnabled);
     void _GenerateTopologyVisibilityParameters();
 
     HdSt_ResourceBinder::MetaData _metaData;

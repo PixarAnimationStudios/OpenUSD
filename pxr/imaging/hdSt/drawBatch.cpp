@@ -332,7 +332,9 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
                                     codeGen.GetMetaData(),
                                     indirect,
                                     instanceDraw,
-                                    customBindings);
+                                    customBindings,
+                                    resourceRegistry->GetHgi()->
+                                        GetCapabilities());
 
     HdStGLSLProgram::ID hash = codeGen.ComputeHash();
 

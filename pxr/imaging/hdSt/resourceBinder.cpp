@@ -195,26 +195,26 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                                    HdSt_ResourceBinder::MetaData *metaDataOut,
                                    bool indirect,
                                    bool instanceDraw,
-                                   HdBindingRequestVector const &customBindings)
+                                   HdBindingRequestVector const &customBindings,
+                                   HgiCapabilities const *capabilities)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     if (!TF_VERIFY(metaDataOut)) return;
 
-    // GL context caps
-    const bool bindlessUniformEnabled
-        = GlfContextCaps::GetInstance().bindlessBufferEnabled;
-    const bool bindlessTextureEnabled
-        = GlfContextCaps::GetInstance().bindlessTextureEnabled;
+    const bool bindlessBuffersEnabled = 
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers);
+    const bool bindlessTexturesEnabled = 
+        GlfContextCaps::GetInstance().bindlessTextureEnabled;
 
     HdBinding::Type arrayBufferBindingType = HdBinding::SSBO;
-    if (bindlessUniformEnabled) {
+    if (bindlessBuffersEnabled) {
         arrayBufferBindingType = HdBinding::BINDLESS_UNIFORM; // EXT
     }
 
     HdBinding::Type structBufferBindingType = HdBinding::UBO;  // 3.1
-    if (bindlessUniformEnabled) {
+    if (bindlessBuffersEnabled) {
         structBufferBindingType = HdBinding::BINDLESS_UNIFORM; // EXT
     } else {
         structBufferBindingType = HdBinding::SSBO;             // 4.3
@@ -666,7 +666,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 ((*shader) == drawItem->GetMaterialNetworkShader());
 
             // renderpass texture should be bindfull (for now)
-            const bool bindless = bindlessTextureEnabled && isMaterialShader;
+            const bool bindless = bindlessTexturesEnabled && isMaterialShader;
             std::string const& glSwizzle = param.swizzle;                    
             HdTupleType valueType = param.GetTupleType();
             TfToken glType =
@@ -903,7 +903,8 @@ HdSt_ResourceBinder::ResolveComputeBindings(
                     HdBufferSpecVector const &readWriteBufferSpecs,
                     HdBufferSpecVector const &readOnlyBufferSpecs,
                     HdStShaderCodeSharedPtrVector const &shaders,
-                    MetaData *metaDataOut)
+                    MetaData *metaDataOut,
+                    HgiCapabilities const *capabilities)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -913,9 +914,9 @@ HdSt_ResourceBinder::ResolveComputeBindings(
     }
 
     // GL context caps
-    HdBinding::Type bindingType =
-        (GlfContextCaps::GetInstance().bindlessBufferEnabled
-         ? HdBinding::BINDLESS_SSBO_RANGE : HdBinding::SSBO);
+    HdBinding::Type bindingType = 
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers) ?
+            HdBinding::BINDLESS_SSBO_RANGE : HdBinding::SSBO;
 
     // binding assignments
     BindingLocator locator;

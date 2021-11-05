@@ -46,14 +46,24 @@ using HgiBits = uint32_t;
 ///   The device can execute commands concurrently</li>
 /// <li>HgiDeviceCapabilitiesBitsUnifiedMemory:
 ///   The device shares all GPU and CPU memory</li>
+/// <li>HgiDeviceCapabilitiesBitsBuiltinBarycentrics:
+///   The device can provide built-in barycentric coordinates</li>
+/// <li>HgiDeviceCapabilitiesBitsShaderDrawParameters:
+///   The device can provide additional built-in shader variables corresponding
+///   to draw command parameters</li>
+/// <li>HgiDeviceCapabilitiesBitsMultiDrawIndirect:
+///   THe device supports multiple primitive, indirect drawing</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
 {
-    HgiDeviceCapabilitiesBitsPresentation       = 1 << 0,
-    HgiDeviceCapabilitiesBitsBindlessBuffers    = 1 << 1,
-    HgiDeviceCapabilitiesBitsConcurrentDispatch = 1 << 2,
-    HgiDeviceCapabilitiesBitsUnifiedMemory      = 1 << 3,
+    HgiDeviceCapabilitiesBitsPresentation         = 1 << 0,
+    HgiDeviceCapabilitiesBitsBindlessBuffers      = 1 << 1,
+    HgiDeviceCapabilitiesBitsConcurrentDispatch   = 1 << 2,
+    HgiDeviceCapabilitiesBitsUnifiedMemory        = 1 << 3,
+    HgiDeviceCapabilitiesBitsBuiltinBarycentrics  = 1 << 4,
+    HgiDeviceCapabilitiesBitsShaderDrawParameters = 1 << 5,
+    HgiDeviceCapabilitiesBitsMultiDrawIndirect    = 1 << 6,
 };
 
 using HgiDeviceCapabilities = HgiBits;

@@ -72,8 +72,6 @@ public:
     GLF_API
     static const GlfContextCaps &GetInstance();
 
-
-
     // GL version
     int glVersion;                    // 400 (4.0), 410 (4.1), ...
 
@@ -87,16 +85,11 @@ public:
     int maxTextureBufferSize;
     int uniformBufferOffsetAlignment;
 
-    // GL extensions (ordered by version)
-    bool multiDrawIndirectEnabled;    // ARB_multi_draw_indirect          (4.5)
-
+    // GL extensions
     bool bindlessTextureEnabled;      // ARB_bindless_texture
-    bool bindlessBufferEnabled;       // NV_shader_buffer_load
-    bool builtinBarycentricsEnabled;  // NV_fragment_shader_barycentric   (4.5)
 
-    // GLSL version and extensions 
+    // GLSL version 
     int glslVersion;                  // 400, 410, ...
-    bool shaderDrawParametersEnabled; // ARB_shader_draw_parameters       (4.5)
 
 private:
     void _LoadCaps();
