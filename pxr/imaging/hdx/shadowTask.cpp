@@ -122,20 +122,23 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
             continue;
         }
 
-        const HdStLight* light = static_cast<const HdStLight*>(
-            renderIndex.GetSprim(HdPrimTypeTokens->simpleLight,
-                                 glfLights[lightId].GetID()));
+        // Shadows are supported on for SimpleLights and DistantLights
+        HdStLight* light = static_cast<HdStLight*>(renderIndex.GetSprim(
+                HdPrimTypeTokens->simpleLight, glfLights[lightId].GetID()));
+        if (!light) {
+            light = static_cast<HdStLight*>(renderIndex.GetSprim(
+                HdPrimTypeTokens->distantLight, glfLights[lightId].GetID()));
+        }
 
-        // It is possible the light is nullptr for area lights converted to 
-        // simple lights, however they should not have shadows enabled.
         TF_VERIFY(light);
 
         // Extract the collection from the HD light
         VtValue vtShadowCollection =
             light->Get(HdLightTokens->shadowCollection);
         const HdRprimCollection &col =
-            vtShadowCollection.IsHolding<HdRprimCollection>() ?
-            vtShadowCollection.Get<HdRprimCollection>() : HdRprimCollection();
+            vtShadowCollection.IsHolding<HdRprimCollection>()
+                ? vtShadowCollection.Get<HdRprimCollection>()
+                : HdRprimCollection();
 
         // Only want opaque or masked prims to appear in shadow pass, so make
         // two copies of the shadow collection with appropriate material tags

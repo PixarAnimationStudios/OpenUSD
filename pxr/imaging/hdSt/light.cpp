@@ -149,12 +149,10 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
             .Get<GfVec3f>();
 
     // Color temperature
-    VtValue enableColorTemperatureVal = 
-        sceneDelegate->GetLightParamValue(id,
+    VtValue enableColorTemperatureVal = sceneDelegate->GetLightParamValue(id,
             HdLightTokens->enableColorTemperature);
     if (enableColorTemperatureVal.GetWithDefault<bool>(false)) {
-        VtValue colorTemperatureVal = 
-            sceneDelegate->GetLightParamValue(id,
+        VtValue colorTemperatureVal = sceneDelegate->GetLightParamValue(id,
                 HdLightTokens->colorTemperature);
         if (colorTemperatureVal.IsHolding<float>()) {
             float colorTemperature = colorTemperatureVal.Get<float>();
@@ -229,7 +227,10 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
     // Calculate the final color of the light
     GfVec4f c(hdc[0]*intensity, hdc[1]*intensity, hdc[2]*intensity, 1.0f); 
 
-    // Diffuse & Specular multiplier
+    // Ambient, Diffuse & Specular multipliers
+    float ambientMultiplier = 
+        sceneDelegate->GetLightParamValue(id, HdLightTokens->ambient)
+            .GetWithDefault<float>(0.0f);
     float diffuseMultiplier = 
         sceneDelegate->GetLightParamValue(id, HdLightTokens->diffuse)
             .GetWithDefault<float>(1.0f);
@@ -246,13 +247,16 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
             .GetWithDefault<float>(0.0f);
 
     // Create the Glf Simple Light object that will be used by the rest
-    // of the pipeline. No support for shadows for this translated light.
+    // of the pipeline.
     GlfSimpleLight l;
     l.SetHasIntensity(intensity != 0.0f);
-    l.SetAmbient(GfVec4f(0.0f));
+    l.SetAmbient(ambientMultiplier * c);
     l.SetDiffuse(diffuseMultiplier * c);
     l.SetSpecular(specularMultiplier * c);
-    l.SetHasShadow(false);
+    l.SetHasShadow(
+        sceneDelegate->GetLightParamValue(id, HdLightTokens->hasShadow)
+            .GetWithDefault<bool>(false));
+
     if (_lightType == HdPrimTypeTokens->rectLight ||
         _lightType == HdPrimTypeTokens->diskLight) {
         l.SetSpotCutoff(shapingConeAngle);
@@ -454,13 +458,13 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
     // Shadow Params
     if (bits & DirtyShadowParams) {
         _params[HdLightTokens->shadowParams] =
-                sceneDelegate->Get(id, HdLightTokens->shadowParams);
+            sceneDelegate->GetLightParamValue(id, HdLightTokens->shadowParams);
     }
 
     // Shadow Collection
     if (bits & DirtyCollection) {
         VtValue vtShadowCollection =
-                sceneDelegate->Get(id, HdLightTokens->shadowCollection);
+            sceneDelegate->GetLightParamValue(id, HdLightTokens->shadowCollection);
 
         // Optional
         if (vtShadowCollection.IsHolding<HdRprimCollection>()) {
@@ -504,10 +508,11 @@ HdStLight::Get(TfToken const &token) const
 HdDirtyBits
 HdStLight::GetInitialDirtyBitsMask() const
 {
-    // In the case of regular lights we want to sync all dirty bits, but
-    // for area lights coming from the scenegraph we just want to extract
+    // In the case of simple and distant lights we want to sync all dirty bits,
+    // but for area lights coming from the scenegraph we just want to extract
     // the Transform and Params for now.
-    if (_lightType == HdPrimTypeTokens->simpleLight) {
+    if (_lightType == HdPrimTypeTokens->simpleLight || 
+        _lightType == HdPrimTypeTokens->distantLight) {
         return AllDirty;
     } else {
         return (DirtyParams | DirtyTransform);

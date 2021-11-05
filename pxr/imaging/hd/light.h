@@ -50,9 +50,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((textureFile, "texture:file"))                         \
     ((textureFormat, "texture:format"))                     \
     (width)                                                 \
+    (ambient)                                               \
     (diffuse)                                               \
     (specular)                                              \
     (normalize)                                             \
+    (hasShadow)                                             \
     ((shapingFocus, "shaping:focus"))                       \
     ((shapingFocusTint, "shaping:focusTint"))               \
     ((shapingConeAngle, "shaping:cone:angle"))              \
