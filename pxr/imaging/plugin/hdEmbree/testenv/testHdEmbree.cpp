@@ -23,7 +23,6 @@
 //
 #include "pxr/pxr.h"
 
-#include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/hio/image.h"
 
 #include "pxr/imaging/hd/engine.h"
@@ -327,9 +326,6 @@ void HdEmbree_TestGLDrawing::InitTest()
 
 void HdEmbree_TestGLDrawing::DrawTest()
 {
-    // The GL viewport needs to be set before calling execute.
-    glViewport(0, 0, GetWidth(), GetHeight());
-
     // XXX: We don't plumb changes to window size to the task.
 
     // Ask hydra to execute our render task (producing an image).
@@ -388,7 +384,6 @@ void HdEmbree_TestGLDrawing::_ColorizeId(int32_t *buffer, int size)
 void HdEmbree_TestGLDrawing::OffscreenTest()
 {
     // Render and write out to a file.
-    glViewport(0, 0, GetWidth(), GetHeight());
 
     // Ask hydra to execute our render task (producing an image).
     std::shared_ptr<HdxRenderTask> renderTask =
@@ -439,11 +434,6 @@ void HdEmbree_TestGLDrawing::OffscreenTest()
         }
 
         rb->Unmap();
-    } else {
-        // If this test isn't using the AOV API, we want to write out the
-        // color data in the GL framebuffer, using the base class's
-        // helper function.
-        WriteToFile("color", _outputName);
     }
 }
 

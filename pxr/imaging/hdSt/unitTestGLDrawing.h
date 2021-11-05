@@ -75,15 +75,6 @@ public:
     virtual void Idle();
 
     HDST_API
-    bool WriteToFile(std::string const & attachment,
-                     std::string const & filename) const;
-
-    HDST_API
-    virtual bool UsingAovs() const {
-        return false;
-    }
-
-    HDST_API
     virtual void Present(uint32_t framebuffer) {
         // do nothing
     }
@@ -107,13 +98,6 @@ protected:
     GfMatrix4d GetProjectionMatrix() const;
     HDST_API
     GfFrustum GetFrustum() const;
-
-    HDST_API
-    void ClearColor(float r, float g, float b, float a);
-    HDST_API
-    void ClearDepth(float depthValue);
-    HDST_API
-    void ClearStencil(int stencilValue);
 
     GfVec2i GetMousePos() const { return GfVec2i(_mousePos[0], _mousePos[1]); }
 

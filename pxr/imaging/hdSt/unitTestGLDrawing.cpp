@@ -27,7 +27,6 @@
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
-#include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/garch/glDebugWindow.h"
 
 #include "pxr/base/gf/frustum.h"
@@ -54,9 +53,6 @@ public:
 
     void OffscreenTest();
 
-    bool WriteToFile(std::string const & attachment, 
-                     std::string const & filename);
-
     void StartTimer();
 
     // GarchGLDebugWindow overrides
@@ -71,8 +67,6 @@ public:
 
 private:
     HdSt_UnitTestGLDrawing *_unitTest;
-    GlfDrawTargetRefPtr _drawTarget;
-    GLuint _vao;
     bool _animate;
 };
 
@@ -80,14 +74,12 @@ HdSt_UnitTestWindow::HdSt_UnitTestWindow(
     HdSt_UnitTestGLDrawing * unitTest, int w, int h)
     : GarchGLDebugWindow("Hd Test", w, h)
     , _unitTest(unitTest)
-    , _vao(0)
     , _animate(false)
 {
 }
 
 HdSt_UnitTestWindow::~HdSt_UnitTestWindow()
 {
-    glDeleteVertexArrays(1, &_vao);
 }
 
 /* virtual */
@@ -102,27 +94,13 @@ HdSt_UnitTestWindow::OnInitializeGL()
     std::cout << glGetString(GL_RENDERER) << "\n";
     std::cout << glGetString(GL_VERSION) << "\n";
 
-    glGenVertexArrays(1, &_vao);
-
-    //
-    // Create an offscreen draw target which is the same size as this
-    // widget and initialize the unit test with the draw target bound.
-    //
-    _drawTarget = GlfDrawTarget::New(GfVec2i(GetWidth(), GetHeight()));
-    _drawTarget->Bind();
-    _drawTarget->AddAttachment("color", GL_RGBA, GL_FLOAT, GL_RGBA);
-    _drawTarget->AddAttachment("depth", GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8,
-                               GL_DEPTH24_STENCIL8);
     _unitTest->InitTest();
-
-    _drawTarget->Unbind();
 }
 
 /* virtual */
 void
 HdSt_UnitTestWindow::OnUninitializeGL()
 {
-    _drawTarget = GlfDrawTargetRefPtr();
     _unitTest->UninitTest();
 }
 
@@ -130,70 +108,15 @@ HdSt_UnitTestWindow::OnUninitializeGL()
 void
 HdSt_UnitTestWindow::OnPaintGL()
 {
-
-    //
-    // Update the draw target's size and execute the unit test with
-    // the draw target bound.
-    //
-
-    if (!_unitTest->UsingAovs()) {
-        _drawTarget->Bind();
-        _drawTarget->SetSize(GfVec2i(GetWidth(), GetHeight()));
-
-        glBindVertexArray(_vao);
-
-        glViewport(0, 0, GetWidth(), GetHeight());
-
-        glEnable(GL_DEPTH_TEST);
-    }
-
+    // Execute the unit test
     _unitTest->DrawTest();
-
-    if (!_unitTest->UsingAovs()) {
-        glBindVertexArray(0);
-
-        _drawTarget->Unbind();
-
-        //
-        // Blit the resulting color buffer to the window (this is a noop
-        // if we're drawing offscreen).
-        //
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, _drawTarget->GetFramebufferId());
-
-        glBlitFramebuffer(0, 0, GetWidth(), GetHeight(),
-                         0, 0, GetWidth(), GetHeight(),
-                         GL_COLOR_BUFFER_BIT,
-                         GL_NEAREST);
-
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    } else {
-        _unitTest->Present(/*framebuffer*/0);
-    }
-
-    GLF_POST_PENDING_GL_ERRORS();
+    _unitTest->Present(/*framebuffer*/0);
 }
 
 void
 HdSt_UnitTestWindow::OffscreenTest()
 {
-    _drawTarget->Bind();
-    _drawTarget->SetSize(GfVec2i(GetWidth(), GetHeight()));
-
-    glBindVertexArray(_vao);
-
-    glViewport(0, 0, GetWidth(), GetHeight());
-
-    glEnable(GL_DEPTH_TEST);
-
     _unitTest->OffscreenTest();
-
-    glBindVertexArray(0);
-
-    _drawTarget->Unbind();
-
-    GLF_POST_PENDING_GL_ERRORS();
 }
 
 void
@@ -209,16 +132,6 @@ HdSt_UnitTestWindow::OnIdle()
     if (_animate) {
         _unitTest->Idle();
     }
-}
-
-bool
-HdSt_UnitTestWindow::WriteToFile(std::string const & attachment,
-        std::string const & filename)
-{
-    _drawTarget->Unbind();
-    bool ret = _drawTarget->WriteToFile(attachment, filename);
-    _drawTarget->Bind();
-    return ret;
 }
 
 /* virtual */
@@ -280,13 +193,6 @@ int
 HdSt_UnitTestGLDrawing::GetHeight() const
 {
     return _widget->GetHeight();
-}
-
-bool
-HdSt_UnitTestGLDrawing::WriteToFile(std::string const & attachment,
-        std::string const & filename) const
-{
-    return _widget->WriteToFile(attachment, filename);
 }
 
 void
@@ -419,26 +325,6 @@ HdSt_UnitTestGLDrawing::GetFrustum() const
     return frustum;
 }
 
-void
-HdSt_UnitTestGLDrawing::ClearColor(float r, float g, float b, float a)
-{
-    GLfloat clearColor[4] = { r, g, b, a };
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-}
-
-void
-HdSt_UnitTestGLDrawing::ClearDepth(float depthValue)
-{
-    GLfloat clearDepth[1] = { depthValue };
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-}
-
-void
-HdSt_UnitTestGLDrawing::ClearStencil(int stencilValue)
-{
-    GLint clearStencil[1] = { stencilValue };
-    glClearBufferiv(GL_STENCIL, 0, clearStencil);
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

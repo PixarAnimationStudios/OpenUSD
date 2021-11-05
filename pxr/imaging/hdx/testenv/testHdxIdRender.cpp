@@ -235,9 +235,6 @@ public:
     void DrawTest() override;
     void OffscreenTest() override;
     void Present(uint32_t framebuffer) override;
-    bool UsingAovs() const override {
-        return true;
-    }
 
     void MousePress(int button, int x, int y, int modKeys) override;
 

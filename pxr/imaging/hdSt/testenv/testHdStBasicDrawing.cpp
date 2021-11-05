@@ -52,9 +52,6 @@ public:
     void DrawTest() override;
     void OffscreenTest() override;
     void Present(uint32_t framebuffer) override;
-    bool UsingAovs() const override {
-        return true;
-    }
 
 protected:
     void ParseArgs(int argc, char *argv[]) override;
