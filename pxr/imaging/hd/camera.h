@@ -95,7 +95,6 @@ public:
         DirtyParams           = 1 << 1,
         DirtyClipPlanes       = 1 << 2,
         DirtyWindowPolicy     = 1 << 3,
-        DirtyViewMatrix       = DirtyTransform,  // deprecated
         DirtyProjMatrix       = DirtyParams,     // deprecated
         AllDirty              = (DirtyTransform
                                 |DirtyParams
@@ -205,16 +204,6 @@ public:
     // ---------------------------------------------------------------------- //
     /// Legacy camera parameters accessor API
     // ---------------------------------------------------------------------- //
-
-    /// Returns the matrix transformation from world to camera space.
-    /// \deprecated Use GetTransform instead
-    HD_API
-    GfMatrix4d GetViewMatrix() const;
-
-    /// Returns the matrix transformation from camera to world space.
-    /// \deprecated Use GetTransform and invert instead
-    HD_API
-    GfMatrix4d GetViewInverseMatrix() const;
 
     /// Returns the projection matrix for the camera.
     /// \deprecated Compute from above physically based attributes

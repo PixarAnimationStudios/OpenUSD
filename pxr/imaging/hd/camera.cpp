@@ -190,18 +190,6 @@ HdCamera::Sync(HdSceneDelegate * sceneDelegate,
 }
 
 GfMatrix4d
-HdCamera::GetViewMatrix() const
-{
-    return _transform.GetInverse();
-}
-
-GfMatrix4d
-HdCamera::GetViewInverseMatrix() const
-{
-    return _transform;
-}
-
-GfMatrix4d
 HdCamera::GetProjectionMatrix() const
 {
     HD_TRACE_FUNCTION();
