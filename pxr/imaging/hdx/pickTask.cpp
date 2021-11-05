@@ -118,6 +118,44 @@ HdxPickTask::~HdxPickTask()
 void
 HdxPickTask::_InitIfNeeded()
 {
+    // Init pick buffer
+    if (!_pickBuffer) {
+        HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
+            std::dynamic_pointer_cast<HdStResourceRegistry>(
+                _index->GetResourceRegistry());
+
+        HdBufferSpecVector bufferSpecs { 
+            { TfToken("PickBuffer"), HdTupleType{ HdTypeInt32, 1 } } 
+        };
+
+        _pickBuffer = hdStResourceRegistry->AllocateSingleBufferArrayRange(
+                        TfToken("Picking"), 
+                        bufferSpecs, 
+                        HdBufferArrayUsageHint());
+    }
+
+    // Resize pick buffer if needed
+    if (_pickBuffer) {        
+        // the size of one buffer entry (in 32-bit integers)
+        int entrySize = 4;
+
+        // heuristically assume that we may need to store up to 4 hits
+        // for each pixel
+        int numDeepHits = 4;
+
+        // total number of elements for the buffer
+        int numElements = size[0] * size[1] * numDeepHits * entrySize;
+
+        if (_pickBuffer->GetNumElements() != numElements) {
+            _pickBuffer->Resize(numElements);
+        }
+    }
+
+    // Resize draw target if needed
+    if (_drawTarget) {
+        if (size != _drawTarget->GetSize()) {
+            GlfSharedGLContextScopeHolder sharedContextHolder;
+
     if (_pickableAovBuffers.empty()) {
         _CreateAovBindings();
     }
@@ -587,23 +625,6 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
     if (_UseWidgetPass()) {
         _widgetRenderPassState->Prepare(renderIndex->GetResourceRegistry());
     }  
-    
-    HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
-        std::dynamic_pointer_cast<HdStResourceRegistry>(
-            renderIndex->GetResourceRegistry());
-
-    if (!_pickBuffer) {
-        HdBufferSpecVector offsetSpecs;
-        offsetSpecs.emplace_back(TfToken("PickBuffer"), HdTupleType{ HdTypeInt32, 1 });
-        _pickBuffer =
-            hdStResourceRegistry->AllocateSingleBufferArrayRange(
-            //hdStResourceRegistry->AllocateNonUniformBufferArrayRange(
-                TfToken("Picking"),
-                offsetSpecs,
-                HdBufferArrayUsageHint());
-
-        _pickBuffer->Resize(100000);
-    }
 }
 
 void
@@ -635,10 +656,10 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 
         if (_pickBuffer) {
             VtIntArray pickBufferInit;
-            pickBufferInit.push_back(100000);                       // buffer size
-            pickBufferInit.push_back(hashTableSize);                // hash table size
-            pickBufferInit.push_back(headerSize);                   // hash table offset
-            pickBufferInit.push_back(headerSize + hashTableSize);   // first entry offset
+            pickBufferInit.push_back(_pickBuffer->GetNumElements());
+            pickBufferInit.push_back(hashTableSize);                
+            pickBufferInit.push_back(headerSize);                   
+            pickBufferInit.push_back(headerSize + hashTableSize); // first entry offset
             for (int j = 0; j < hashTableSize; ++j) 
                 pickBufferInit.push_back(-1);
             HdBufferSourceSharedPtr pickSource = std::make_shared<HdVtBufferSource>(
