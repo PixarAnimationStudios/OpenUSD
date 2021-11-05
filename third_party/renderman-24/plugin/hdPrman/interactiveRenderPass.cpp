@@ -58,7 +58,7 @@ HdPrman_InteractiveRenderPass::HdPrman_InteractiveRenderPass(
 , _lastSettingsVersion(0)
 , _integrator(HdPrmanIntegratorTokens->PxrPathTracer)
 , _quickIntegrator(HdPrmanIntegratorTokens->PxrDirectLighting)
-, _quickIntegrateTime(200.f/1000.f)
+, _quickIntegrateTime(_enableQuickIntegrate ? 0.2f : 0.0f)
 , _quickIntegrate(false)
 , _isPrimaryIntegrator(false)
 {
@@ -66,8 +66,6 @@ HdPrman_InteractiveRenderPass::HdPrman_InteractiveRenderPass(
         std::dynamic_pointer_cast<HdPrman_InteractiveContext>(context);
 
     TF_VERIFY(_interactiveContext);
-
-    _quickIntegrateTime = _enableQuickIntegrate ? 200.f/1000.f : 0.f;
 }
 
 HdPrman_InteractiveRenderPass::~HdPrman_InteractiveRenderPass() = default;
@@ -272,7 +270,14 @@ HdPrman_InteractiveRenderPass::_Execute(
                 riley->CreateIntegrator(riley::UserId::DefaultId(),
                     integratorNode);
         }
-        _mainIntegratorId = _interactiveContext->integratorId;
+        
+        // This can't be correct: imagine that we call _Execute while the
+        // quick integrator is still working. Then _mainIntegratorId will
+        // be set to the id of the quick integrator and the below code that
+        // tries to switch to the main integrator with
+        // SetIntegrator(_mainIntegratorId) will do nothing.
+        //
+        _mainIntegratorId = _interactiveContext->GetActiveIntegratorId();
     }
 
     int32_t renderBufferWidth = 0;

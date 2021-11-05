@@ -260,7 +260,7 @@ HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
     // Integrator
     // This needs to be set before setting
     // the active render target, below.
-    integratorId = riley::IntegratorId::InvalidId();
+    _integratorId = riley::IntegratorId::InvalidId();
     {
         std::string integratorName = 
             renderDelegate->GetRenderSetting<std::string>(
@@ -281,7 +281,7 @@ HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
             params
         };
 
-        integratorId = _riley->CreateIntegrator(riley::UserId::DefaultId(),
+        _integratorId = _riley->CreateIntegrator(riley::UserId::DefaultId(),
                                                integratorNode);
     }
 
@@ -418,18 +418,12 @@ HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
     }
 }
 
-riley::IntegratorId 
-HdPrman_InteractiveContext::GetIntegrator()
-{
-    return integratorId;
-}
-
 void 
 HdPrman_InteractiveContext::SetIntegrator(riley::IntegratorId iid)
 {
-    integratorId = iid;
+    _integratorId = iid;
     for (auto const& id : renderViews) {
-        _riley->ModifyRenderView(id, nullptr, nullptr, &integratorId,
+        _riley->ModifyRenderView(id, nullptr, nullptr, &_integratorId,
                                 nullptr, nullptr, nullptr);
     }
 }
@@ -829,7 +823,7 @@ HdPrman_InteractiveContext::CreateDisplays(
     renderViews.clear();
 
     riley::RenderViewId const renderView = riley->CreateRenderView(
-        riley::UserId::DefaultId(), framebuffer.rtId, cameraId, integratorId,
+        riley::UserId::DefaultId(), framebuffer.rtId, cameraId, _integratorId,
         {0, nullptr}, {0, nullptr}, RtParamList());
     renderViews.push_back(renderView);
     renderTargets[renderView] = framebuffer.rtId;
@@ -844,7 +838,7 @@ HdPrman_InteractiveContext::GetOptions()
 riley::IntegratorId
 HdPrman_InteractiveContext::GetActiveIntegratorId()
 {
-    return integratorId;
+    return _integratorId;
 }
 
 riley::ShadingNode &

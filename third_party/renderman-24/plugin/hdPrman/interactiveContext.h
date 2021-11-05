@@ -63,10 +63,6 @@ public:
     // The d_hydra.so renderman display driver handles updates via IPC.
     HdPrmanFramebuffer framebuffer;
 
-    // The integrator to use.
-    // Updated from render pass state.
-    riley::IntegratorId integratorId;
-
     // The viewport camera to use.
     // Updated from render pass state.
     riley::CameraId cameraId;
@@ -119,7 +115,6 @@ public:
     // resolution edits, so we need to keep track of these too.
     std::map<riley::RenderViewId, riley::RenderTargetId> renderTargets;
 
-    riley::IntegratorId GetIntegrator();
     void SetIntegrator(riley::IntegratorId integratorId);
 
     int32_t resolution[2];
@@ -139,6 +134,10 @@ public:
     HdPrmanCameraContext &GetCameraContext() override;
 
 private:
+    // The integrator to use.
+    // Updated from render pass state.
+    riley::IntegratorId _integratorId;
+
     // Initialize things, like riley, that need to succeed
     // in order for Begin to be called.
     void _Initialize();
