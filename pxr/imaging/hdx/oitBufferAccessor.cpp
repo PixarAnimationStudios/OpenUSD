@@ -47,12 +47,7 @@ TF_DEFINE_ENV_SETTING(HDX_ENABLE_OIT, true,
 bool
 HdxOitBufferAccessor::IsOitEnabled()
 {
-    if (!bool(TfGetEnvSetting(HDX_ENABLE_OIT))) return false;
-
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-    if (!caps.shaderStorageBufferEnabled) return false;
-
-    return true;
+    return TfGetEnvSetting(HDX_ENABLE_OIT);
 }
 
 HdxOitBufferAccessor::HdxOitBufferAccessor(HdTaskContext *ctx)

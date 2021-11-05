@@ -41,8 +41,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(GlfContextCaps);
 
-TF_DEFINE_ENV_SETTING(GLF_ENABLE_SHADER_STORAGE_BUFFER, true,
-                      "Use GL shader storage buffer (OpenGL 4.3)");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_BINDLESS_BUFFER, false,
                       "Use GL bindless buffer extention");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_BINDLESS_TEXTURE, false,
@@ -51,8 +49,6 @@ TF_DEFINE_ENV_SETTING(GLF_ENABLE_MULTI_DRAW_INDIRECT, true,
                       "Use GL multi draw indirect extention");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_DIRECT_STATE_ACCESS, true,
                       "Use GL direct state access extention");
-TF_DEFINE_ENV_SETTING(GLF_ENABLE_COPY_BUFFER, true,
-                      "Use GL copy buffer data");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_BUILTIN_BARYCENTRICS, false,
                       "Use built in barycentric coordinates");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_SHADER_DRAW_PARAMETERS, true,
@@ -80,9 +76,6 @@ GlfContextCaps::GlfContextCaps()
     , maxTextureBufferSize(_DefaultMaxTextureBufferSize)
     , uniformBufferOffsetAlignment(0)
 
-    , arrayTexturesEnabled(false)
-    , shaderStorageBufferEnabled(false)
-    , bufferStorageEnabled(false)
     , directStateAccessEnabled(false)
     , multiDrawIndirectEnabled(false)
     , bindlessTextureEnabled(false)
@@ -90,12 +83,7 @@ GlfContextCaps::GlfContextCaps()
     , builtinBarycentricsEnabled(false)
 
     , glslVersion(_DefaultGLSLVersion)
-    , explicitUniformLocation(false)
-    , shadingLanguage420pack(false)
     , shaderDrawParametersEnabled(false)
-
-    , copyBufferEnabled(true)
-    , floatingPointBuffersEnabled(false)
 {
 }
 
@@ -147,21 +135,13 @@ GlfContextCaps::_LoadCaps()
     maxShaderStorageBlockSize    = _DefaultMaxShaderStorageBlockSize;
     maxTextureBufferSize         = _DefaultMaxTextureBufferSize;
     uniformBufferOffsetAlignment = 0;
-    arrayTexturesEnabled         = false;
-    shaderStorageBufferEnabled   = false;
-    bufferStorageEnabled         = false;
     directStateAccessEnabled     = false;
     multiDrawIndirectEnabled     = false;
     bindlessTextureEnabled       = false;
     bindlessBufferEnabled        = false;
     builtinBarycentricsEnabled   = false;
     glslVersion                  = _DefaultGLSLVersion;
-    explicitUniformLocation      = false;
-    shadingLanguage420pack       = false;
     shaderDrawParametersEnabled  = false;
-    copyBufferEnabled            = true;
-    floatingPointBuffersEnabled  = false;
-
 
     if (!TF_VERIFY(GlfGLContext::GetCurrentGLContext()->IsValid())) {
         return;
@@ -204,7 +184,6 @@ GlfContextCaps::_LoadCaps()
 
     if (glVersion >= 300) {
         glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxArrayTextureLayers);
-        arrayTexturesEnabled = true;
     }
 
     // initialize by Core versions
@@ -221,22 +200,9 @@ GlfContextCaps::_LoadCaps()
         glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profileMask);
         coreProfile = (profileMask & GL_CONTEXT_CORE_PROFILE_BIT);
     }
-    if (glVersion >= 400) {
-        // Older versions of GL maybe support R16F and D32F, but for now we set
-        // the minimum GL at 4.
-        floatingPointBuffersEnabled = true;
-    }
-    if (glVersion >= 420) {
-        shadingLanguage420pack = true;
-    }
     if (glVersion >= 430) {
-        shaderStorageBufferEnabled = true;
-        explicitUniformLocation = true;
         glGetIntegerv(GL_MAX_SHADER_STORAGE_BLOCK_SIZE,
                       &maxShaderStorageBlockSize);
-    }
-    if (glVersion >= 440) {
-        bufferStorageEnabled = true;
     }
     if (glVersion >= 450) {
         multiDrawIndirectEnabled = true;
@@ -255,12 +221,6 @@ GlfContextCaps::_LoadCaps()
     if (GARCH_GLAPI_HAS(NV_fragment_shader_barycentric)) {
         builtinBarycentricsEnabled = true;
     }
-    if (GARCH_GLAPI_HAS(ARB_explicit_uniform_location)) {
-        explicitUniformLocation = true;
-    }
-    if (GARCH_GLAPI_HAS(ARB_shading_language_420pack)) {
-        shadingLanguage420pack = true;
-    }
     if (GARCH_GLAPI_HAS(ARB_multi_draw_indirect)) {
         multiDrawIndirectEnabled = true;
     }
@@ -275,9 +235,6 @@ GlfContextCaps::_LoadCaps()
 #endif
 
     // Environment variable overrides (only downgrading is possible)
-    if (!TfGetEnvSetting(GLF_ENABLE_SHADER_STORAGE_BUFFER)) {
-        shaderStorageBufferEnabled = false;
-    }
     if (!TfGetEnvSetting(GLF_ENABLE_BINDLESS_TEXTURE)) {
         bindlessTextureEnabled = false;
     }
@@ -303,19 +260,10 @@ GlfContextCaps::_LoadCaps()
         glslVersion = std::min(glslVersion, TfGetEnvSetting(GLF_GLSL_VERSION));
 
         // downgrade to the overridden GLSL version
-        floatingPointBuffersEnabled &= (glslVersion >= 400);
-        shadingLanguage420pack      &= (glslVersion >= 420);
-        explicitUniformLocation     &= (glslVersion >= 430);
         bindlessTextureEnabled      &= (glslVersion >= 430);
         bindlessBufferEnabled       &= (glslVersion >= 430);
-        shaderStorageBufferEnabled  &= (glslVersion >= 430);
         builtinBarycentricsEnabled  &= (glslVersion >= 450);
         shaderDrawParametersEnabled &= (glslVersion >= 450);
-    }
-
-    // For driver issues workaround
-    if (!TfGetEnvSetting(GLF_ENABLE_COPY_BUFFER)) {
-        copyBufferEnabled = false;
     }
 
     if (TfDebug::IsEnabled(GLF_DEBUG_CONTEXT_CAPS)) {
@@ -345,26 +293,16 @@ GlfContextCaps::_LoadCaps()
             <<    bindlessTextureEnabled << "\n"
             << "  ARB_direct_state_access            = "
             <<    directStateAccessEnabled << "\n"
-            << "  ARB_explicit_uniform_location      = "
-            <<    explicitUniformLocation << "\n"
             << "  ARB_multi_draw_indirect            = "
             <<    multiDrawIndirectEnabled << "\n"
             << "  ARB_shader_draw_parameters         = "
             <<    shaderDrawParametersEnabled << "\n"
-            << "  ARB_shader_storage_buffer_object   = "
-            <<    shaderStorageBufferEnabled << "\n"
-            << "  ARB_shading_language_420pack       = "
-            <<    shadingLanguage420pack << "\n"
             << "  NV_fragment_shader_barycentric     = "
             <<    builtinBarycentricsEnabled << "\n"
             << "  NV_shader_buffer_load              = "
             <<    bindlessBufferEnabled << "\n"
 
             ;
-
-        if (!copyBufferEnabled) {
-            std::cout << "  CopyBuffer : disabled\n";
-        }
     }
 }
 

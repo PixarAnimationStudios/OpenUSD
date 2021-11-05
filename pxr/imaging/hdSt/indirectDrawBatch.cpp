@@ -23,7 +23,6 @@
 //
 #include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/cullingShaderKey.h"
@@ -183,14 +182,10 @@ HdSt_IndirectDrawBatch::SetEnableTinyPrimCulling(bool tinyPrimCulling)
 bool
 HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling()
 {
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-
     // GPU frustum culling requires SSBO of bindless buffer
 
     static bool isEnabledGPUFrustumCulling =
-        TfGetEnvSetting(HD_ENABLE_GPU_FRUSTUM_CULLING) &&
-        (caps.shaderStorageBufferEnabled ||
-         caps.bindlessBufferEnabled);
+        TfGetEnvSetting(HD_ENABLE_GPU_FRUSTUM_CULLING);
     return isEnabledGPUFrustumCulling &&
        !TfDebug::IsEnabled(HDST_DISABLE_FRUSTUM_CULLING);
 }
@@ -208,14 +203,10 @@ HdSt_IndirectDrawBatch::IsEnabledGPUCountVisibleInstances()
 bool
 HdSt_IndirectDrawBatch::IsEnabledGPUInstanceFrustumCulling()
 {
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-
     // GPU instance frustum culling requires SSBO of bindless buffer
 
     static bool isEnabledGPUInstanceFrustumCulling =
-        TfGetEnvSetting(HD_ENABLE_GPU_INSTANCE_FRUSTUM_CULLING) &&
-        (caps.shaderStorageBufferEnabled ||
-         caps.bindlessBufferEnabled);
+        TfGetEnvSetting(HD_ENABLE_GPU_INSTANCE_FRUSTUM_CULLING);
     return isEnabledGPUInstanceFrustumCulling;
 }
 

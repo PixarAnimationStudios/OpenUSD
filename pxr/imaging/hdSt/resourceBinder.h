@@ -321,12 +321,6 @@ public:
                                 HdStShaderCodeSharedPtrVector const &shaders,
                                 MetaData *metaDataOut);
     
-    /// call GL introspection APIs and fix up binding locations,
-    /// in case if explicit resource location qualifier is not available
-    /// (GL 4.2 or before)
-    HDST_API
-    void IntrospectBindings(HgiShaderProgramHandle const & hgiProgram);
-
     HDST_API
     void Bind(HdBindingRequest const& req) const;
     HDST_API

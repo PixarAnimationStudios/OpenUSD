@@ -203,8 +203,6 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     if (!TF_VERIFY(metaDataOut)) return;
 
     // GL context caps
-    const bool ssboEnabled
-        = GlfContextCaps::GetInstance().shaderStorageBufferEnabled;
     const bool bindlessUniformEnabled
         = GlfContextCaps::GetInstance().bindlessBufferEnabled;
     const bool bindlessTextureEnabled
@@ -218,7 +216,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     HdBinding::Type structBufferBindingType = HdBinding::UBO;  // 3.1
     if (bindlessUniformEnabled) {
         structBufferBindingType = HdBinding::BINDLESS_UNIFORM; // EXT
-    } else if (ssboEnabled) {
+    } else {
         structBufferBindingType = HdBinding::SSBO;             // 4.3
     }
 
@@ -1384,89 +1382,6 @@ HdSt_ResourceBinder::BindUniformf(TfToken const &name,
         glUniformMatrix4fv(location, 1, /*transpose=*/false, value);
     } else {
         TF_CODING_ERROR("Invalid count %d.", count);
-    }
-}
-
-void
-HdSt_ResourceBinder::IntrospectBindings(HgiShaderProgramHandle const & hgiProgram)
-{
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-
-    GLuint program = hgiProgram->GetRawResource();
-
-    if (ARCH_UNLIKELY(!caps.shadingLanguage420pack)) {
-        GLint numUBO = 0;
-        glGetProgramiv(program, GL_ACTIVE_UNIFORM_BLOCKS, &numUBO);
-
-        const int MAX_NAME = 256;
-        int length = 0;
-        char name[MAX_NAME+1];
-        for (int i = 0; i < numUBO; ++i) {
-            glGetActiveUniformBlockName(program, i, MAX_NAME, &length, name);
-            // note: ubo_ prefix is added in HdCodeGen::_EmitDeclaration()
-            if (strstr(name, "ubo_") == name) {
-                HdBinding binding;
-                if (TfMapLookup(_bindingMap, NameAndLevel(TfToken(name+4)), &binding)) {
-                    // set uniform block binding.
-                    glUniformBlockBinding(program, i, binding.GetLocation());
-                }
-            }
-        }
-    }
-
-    if (ARCH_UNLIKELY(!caps.explicitUniformLocation)) {
-        for (auto & it: _bindingMap) {
-            HdBinding binding = it.second;
-            HdBinding::Type type = binding.GetType();
-            std::string name = it.first.name;
-            int level = it.first.level;
-            if (level >=0) {
-                // follow nested instancing naming convention.
-                std::stringstream n;
-                n << name << "_" << level;
-                name = n.str();
-            }
-            if (type == HdBinding::UNIFORM       ||
-                type == HdBinding::UNIFORM_ARRAY) {
-                GLint loc = glGetUniformLocation(program, name.c_str());
-                // update location in resource binder.
-                // some uniforms may be optimized out.
-                if (loc < 0) loc = HdBinding::NOT_EXIST;
-                it.second.Set(type, loc, binding.GetTextureUnit());
-            }
-        }
-    }
-
-    if (ARCH_UNLIKELY(!caps.shadingLanguage420pack)) {
-        for (auto & it: _bindingMap) {
-            HdBinding binding = it.second;
-            HdBinding::Type type = binding.GetType();
-            std::string name = it.first.name;
-            std::string textureName;
-
-            // note: sampler prefix is added in
-            // HdCodeGen::_GenerateShaderParameters
-            if (type == HdBinding::TEXTURE_2D) {
-                textureName = "sampler2d_" + name;
-            } else if (type == HdBinding::TEXTURE_FIELD) {
-                textureName = "sampler3d_" + name;
-            } else if (type == HdBinding::TEXTURE_PTEX_TEXEL) {
-                textureName = "sampler2darray_" + name;
-            } else if (type == HdBinding::TEXTURE_PTEX_LAYOUT) {
-                textureName = "isampler1darray_" + name;
-            } else if (type == HdBinding::TEXTURE_UDIM_ARRAY) {
-                textureName = "sampler2dArray_" + name;
-            } else if (type == HdBinding::TEXTURE_UDIM_LAYOUT) {
-                textureName = "sampler1d_" + name;
-            }
-
-            if (!textureName.empty()) {
-                GLint loc = glGetUniformLocation(program, textureName.c_str());
-                glProgramUniform1i(program, loc, binding.GetTextureUnit());
-                if (loc < 0) loc = HdBinding::NOT_EXIST;
-                it.second.Set(type, loc, binding.GetTextureUnit());
-            }
-        }
     }
 }
 

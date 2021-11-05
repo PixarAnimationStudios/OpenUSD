@@ -438,7 +438,6 @@ namespace {
     };
     std::ostream & operator << (std::ostream & out, const LayoutQualifier &lq)
     {
-        GlfContextCaps const &caps = GlfContextCaps::GetInstance();
         int location = lq.binding.GetLocation();
 
         switch (lq.binding.GetType()) {
@@ -453,9 +452,8 @@ namespace {
         case HdBinding::UNIFORM_ARRAY:
         case HdBinding::BINDLESS_UNIFORM:
         case HdBinding::BINDLESS_SSBO_RANGE:
-            if (caps.explicitUniformLocation) {
-                out << "layout (location = " << location << ") ";
-            }
+            // ARB_explicit_uniform_location is supported since GL 4.3
+            out << "layout (location = " << location << ") ";
             break;
         case HdBinding::TEXTURE_2D:
         case HdBinding::BINDLESS_TEXTURE_2D:
@@ -469,22 +467,14 @@ namespace {
         case HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL:
         case HdBinding::TEXTURE_PTEX_LAYOUT:
         case HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT:
-            if (caps.shadingLanguage420pack) {
-                out << "layout (binding = "
-                    << lq.binding.GetTextureUnit() << ") ";
-            } else if (caps.explicitUniformLocation) {
-                out << "layout (location = " << location << ") ";
-            }
+            out << "layout (binding = "
+                << lq.binding.GetTextureUnit() << ") ";
             break;
         case HdBinding::SSBO:
             out << "layout (std430, binding = " << location << ") ";
             break;
         case HdBinding::UBO:
-            if (caps.shadingLanguage420pack) {
-                out << "layout (std140, binding = " << location << ") ";
-            } else {
-                out << "layout (std140)";
-            }
+            out << "layout (std140, binding = " << location << ") ";
             break;
         default:
             break;
@@ -545,12 +535,6 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     }
     if (caps.glslVersion < 460 && caps.shaderDrawParametersEnabled) {
         _genHeader << "#extension GL_ARB_shader_draw_parameters : require\n";
-    }
-    if (caps.glslVersion < 430 && caps.explicitUniformLocation) {
-        _genHeader << "#extension GL_ARB_explicit_uniform_location : require\n";
-    }
-    if (caps.glslVersion < 420 && caps.shadingLanguage420pack) {
-        _genHeader << "#extension GL_ARB_shading_language_420pack : require\n";
     }
     if (caps.builtinBarycentricsEnabled) {
         _genHeaderFS <<
@@ -997,12 +981,6 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     if (caps.bindlessTextureEnabled) {
         _genCommon << "#extension GL_ARB_bindless_texture : require\n";
     }
-    if (caps.glslVersion < 430 && caps.explicitUniformLocation) {
-        _genCommon << "#extension GL_ARB_explicit_uniform_location : require\n";
-    }
-    if (caps.glslVersion < 420 && caps.shadingLanguage420pack) {
-        _genCommon << "#extension GL_ARB_shading_language_420pack : require\n";
-    }
 
     // default workgroup size (must follow #extension directives)
     _genCommon << "layout(local_size_x = 1, local_size_y = 1) in;\n";
@@ -1184,7 +1162,6 @@ static void _EmitDeclaration(std::stringstream &str,
             << "[" << arraySize << "];\n";
         break;
     case HdBinding::UBO:
-        // note: ubo_ prefix is used in HdResourceBinder::IntrospectBindings.
         str << "uniform ubo_" << name <<  " {\n"
             << "  " << _GetPackedType(type, true)
             << " " << name;
