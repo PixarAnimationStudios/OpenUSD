@@ -45,27 +45,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
 
-/// \class HdSt_TestDriver
+/// \class HdSt_TestDriverBase
 ///
-/// A unit test driver that exercises the core engine.
+/// A base class for unit test drivers that creates all core components but no
+/// render passes.
 ///
-/// \note This test driver does NOT assume OpenGL is available; in the even
+/// \note This test driver does NOT assume OpenGL is available; in the event
 /// that is is not available, all OpenGL calls become no-ops, but all other work
 /// is performed as usual.
 ///
-class HdSt_TestDriver final
+class HdSt_TestDriverBase
 {
 public:
-    HdSt_TestDriver();
-    HdSt_TestDriver(TfToken const &reprName);
-    HdSt_TestDriver(HdReprSelector const &reprToken);
-    ~HdSt_TestDriver();
-
-    /// Draw
-    void Draw(bool withGuides=false);
-
-    /// Draw with external renderPass
-    void Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides);
+    HdSt_TestDriverBase();
+    virtual ~HdSt_TestDriverBase();
 
     /// Set camera to renderpass
     void SetCamera(GfMatrix4d const &viewMatrix,
@@ -77,24 +70,24 @@ public:
     /// Set cull style
     void SetCullStyle(HdCullStyle cullStyle);
 
-    /// Returns the renderpass
-    HdRenderPassSharedPtr const &GetRenderPass();
-
-    /// Returns the renderPassState
-    HdStRenderPassStateSharedPtr const &GetRenderPassState() const {
-        return _renderPassState;
-    }
-
     /// Returns the UnitTest delegate
     HdUnitTestDelegate& GetDelegate() { return *_sceneDelegate; }
 
     /// Switch repr
-    void SetRepr(HdReprSelector const &reprToken);
+    void SetRepr(HdReprSelector const &reprSelector);
+
+protected:
+    void _Init();
+    void _Init(HdReprSelector const &reprSelector);
+
+    const HdRprimCollection &_GetCollection() const { return _collection; }
+    HdStRenderDelegate * _GetRenderDelegate() { return &_renderDelegate; }
+    HdEngine * _GetEngine() { return &_engine; }
+
+    std::vector<HdRenderPassSharedPtr> _renderPasses;
+    std::vector<HdStRenderPassStateSharedPtr> _renderPassStates;
 
 private:
-
-    void _Init(HdReprSelector const &reprToken);
-
     // Hgi and HdDriver should be constructed before HdEngine to ensure they
     // are destructed last. Hgi may be used during engine/delegate destruction.
     HgiUniquePtr _hgi;
@@ -106,11 +99,71 @@ private:
     HdUnitTestDelegate *_sceneDelegate;
 
     SdfPath _cameraId;
-    HdReprSelector _reprToken;
+    HdReprSelector _reprSelector;
 
-    HdRenderPassSharedPtr _renderPass;
-    HdStRenderPassStateSharedPtr _renderPassState;
     HdRprimCollection          _collection;
+};
+
+/// \class HdSt_DrawTask
+///
+/// A simple task to execute a render pass.
+///
+class HdSt_DrawTask final : public HdTask
+{
+public:
+    HdSt_DrawTask(HdRenderPassSharedPtr const &renderPass,
+                  HdStRenderPassStateSharedPtr const &renderPassState,
+                  const TfTokenVector &renderTags);
+    
+    void Sync(HdSceneDelegate*,
+              HdTaskContext*,
+              HdDirtyBits*) override;
+
+    void Prepare(HdTaskContext* ctx,
+                 HdRenderIndex* renderIndex) override;
+
+    void Execute(HdTaskContext* ctx) override;
+
+    const TfTokenVector &GetRenderTags() const override
+    {
+        return _renderTags;
+    }
+
+private:
+    HdRenderPassSharedPtr const _renderPass;
+    HdStRenderPassStateSharedPtr const _renderPassState;
+    TfTokenVector const _renderTags;
+
+    HdSt_DrawTask() = delete;
+    HdSt_DrawTask(const HdSt_DrawTask &) = delete;
+    HdSt_DrawTask &operator =(const HdSt_DrawTask &) = delete;
+};
+
+/// \class HdSt_TestDriver
+///
+/// A unit test driver that exercises the core engine.
+///
+class HdSt_TestDriver final : public HdSt_TestDriverBase
+{
+public:
+    HdSt_TestDriver();
+    HdSt_TestDriver(TfToken const &reprName);
+    HdSt_TestDriver(HdReprSelector const &reprSelector);
+
+    /// Draw
+    void Draw(bool withGuides=false);
+
+    /// Draw with external renderPass
+    void Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides);
+
+    const HdStRenderPassStateSharedPtr &GetRenderPassState() const {
+        return _renderPassStates[0];
+    }
+
+    const HdRenderPassSharedPtr &GetRenderPass();
+
+private:
+    void _CreateRenderPassState();
 };
 
 /// \class HdSt_TestLightingShader

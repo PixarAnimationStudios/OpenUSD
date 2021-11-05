@@ -57,58 +57,39 @@ TF_DEFINE_PRIVATE_TOKENS(
     (testCollection)
 );
 
-class HdSt_DrawTask final : public HdTask
+HdSt_DrawTask::HdSt_DrawTask(
+    HdRenderPassSharedPtr const &renderPass,
+    HdStRenderPassStateSharedPtr const &renderPassState,
+    const TfTokenVector &renderTags)
+  : HdTask(SdfPath::EmptyPath())
+  , _renderPass(renderPass)
+  , _renderPassState(renderPassState)
+  , _renderTags(renderTags)
 {
-public:
-    HdSt_DrawTask(HdRenderPassSharedPtr const &renderPass,
-                  HdStRenderPassStateSharedPtr const &renderPassState,
-                  bool withGuides)
-    : HdTask(SdfPath::EmptyPath())
-    , _renderPass(renderPass)
-    , _renderPassState(renderPassState)
-    , _renderTags()
-    {
-        _renderTags.reserve(2);
-        _renderTags.push_back(HdRenderTagTokens->geometry);
+}
 
-        if (withGuides) {
-            _renderTags.push_back(HdRenderTagTokens->guide);
-        }
-    }
-    
-    void Sync(HdSceneDelegate*,
-                      HdTaskContext*,
-                      HdDirtyBits*) override
-    {
-        _renderPass->Sync();
-    }
+void
+HdSt_DrawTask::Sync(
+    HdSceneDelegate*,
+    HdTaskContext*,
+    HdDirtyBits*)
+{
+    _renderPass->Sync();
+}
 
-    void Prepare(HdTaskContext* ctx,
-                 HdRenderIndex* renderIndex) override
-    {
-        _renderPassState->Prepare(
-            renderIndex->GetResourceRegistry());
-    }
+void
+HdSt_DrawTask::Prepare(HdTaskContext* ctx,
+                       HdRenderIndex* renderIndex)
+{
+    _renderPassState->Prepare(
+        renderIndex->GetResourceRegistry());
+}
 
-    void Execute(HdTaskContext* ctx) override
-    {
-        _renderPass->Execute(_renderPassState, GetRenderTags());
-    }
-
-    const TfTokenVector &GetRenderTags() const override
-    {
-        return _renderTags;
-    }
-
-private:
-    HdRenderPassSharedPtr _renderPass;
-    HdStRenderPassStateSharedPtr _renderPassState;
-    TfTokenVector _renderTags;
-
-    HdSt_DrawTask() = delete;
-    HdSt_DrawTask(const HdSt_DrawTask &) = delete;
-    HdSt_DrawTask &operator =(const HdSt_DrawTask &) = delete;
-};
+void
+HdSt_DrawTask::Execute(HdTaskContext* ctx)
+{
+    _renderPass->Execute(_renderPassState, GetRenderTags());
+}
 
 template <typename T>
 static VtArray<T>
@@ -119,18 +100,25 @@ _BuildArray(T values[], int numValues)
     return result;
 }
 
-HdSt_TestDriver::HdSt_TestDriver()
+HdSt_TestDriverBase::HdSt_TestDriverBase()
  : _hgi(Hgi::CreatePlatformDefaultHgi())
  , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
  , _engine()
  , _renderDelegate()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
- , _renderPass()
- , _renderPassState(
-    std::dynamic_pointer_cast<HdStRenderPassState>(
-        _renderDelegate.CreateRenderPassState()))
  , _collection(_tokens->testCollection, HdReprSelector())
+{
+}
+
+HdSt_TestDriverBase::~HdSt_TestDriverBase()
+{
+    delete _sceneDelegate;
+    delete _renderIndex;
+}
+
+void
+HdSt_TestDriverBase::_Init()
 {
     if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
         TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "GPU") {
@@ -140,46 +128,8 @@ HdSt_TestDriver::HdSt_TestDriver()
     }
 }
 
-HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
- : _hgi(Hgi::CreatePlatformDefaultHgi())
- , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
- , _engine()
- , _renderDelegate()
- , _renderIndex(nullptr)
- , _sceneDelegate(nullptr)
- , _renderPass()
- , _renderPassState(
-    std::dynamic_pointer_cast<HdStRenderPassState>(
-        _renderDelegate.CreateRenderPassState()))
- , _collection(_tokens->testCollection, HdReprSelector())
-{
-    _Init(HdReprSelector(reprName));
-}
-
-HdSt_TestDriver::HdSt_TestDriver(HdReprSelector const &reprToken)
- : _hgi(Hgi::CreatePlatformDefaultHgi())
- , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
- , _engine()
- , _renderDelegate()
- , _renderIndex(nullptr)
- , _sceneDelegate(nullptr)
- , _renderPass()
- , _renderPassState(
-    std::dynamic_pointer_cast<HdStRenderPassState>(
-        _renderDelegate.CreateRenderPassState()))
-, _collection(_tokens->testCollection, HdReprSelector())
-{
-    _Init(reprToken);
-}
-
-HdSt_TestDriver::~HdSt_TestDriver()
-{
-    delete _sceneDelegate;
-    delete _renderIndex;
-}
-
 void
-HdSt_TestDriver::_Init(HdReprSelector const &reprToken)
+HdSt_TestDriverBase::_Init(HdReprSelector const &reprSelector)
 {
     _renderIndex = HdRenderIndex::New(&_renderDelegate, {&_hgiDriver});
     TF_VERIFY(_renderIndex != nullptr);
@@ -189,7 +139,7 @@ HdSt_TestDriver::_Init(HdReprSelector const &reprToken)
 
     _cameraId = SdfPath("/testCam");
     _sceneDelegate->AddCamera(_cameraId);
-    _reprToken = reprToken;
+    _reprSelector = reprSelector;
 
     GfMatrix4d viewMatrix = GfMatrix4d().SetIdentity();
     viewMatrix *= GfMatrix4d().SetTranslate(GfVec3d(0.0, 1000.0, 0.0));
@@ -204,29 +154,12 @@ HdSt_TestDriver::_Init(HdReprSelector const &reprToken)
               CameraUtilFraming(
                   GfRect2i(GfVec2i(0, 0), 512, 512)));
 
-    // set depthfunc to GL default
-    _renderPassState->SetDepthFunc(HdCmpFuncLess);
-
     // Update collection with repr and add collection to change tracker.
-    _collection.SetReprSelector(reprToken);
+    _collection.SetReprSelector(reprSelector);
     HdChangeTracker &tracker = _renderIndex->GetChangeTracker();
-    tracker.AddCollection(_collection.GetName());}
-
-void
-HdSt_TestDriver::Draw(bool withGuides)
-{
-    Draw(GetRenderPass(), withGuides);
+    tracker.AddCollection(_collection.GetName());
 }
 
-void
-HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides)
-{
-    HdTaskSharedPtrVector tasks = {
-        std::make_shared<HdSt_DrawTask>(renderPass, _renderPassState,
-            withGuides)
-    };
-    _engine.Execute(&_sceneDelegate->GetRenderIndex(), &tasks);
-}
 
 static
 HdCamera::Projection
@@ -243,7 +176,7 @@ _ToHd(const GfCamera::Projection projection)
 }
 
 void
-HdSt_TestDriver::SetCamera(GfMatrix4d const &viewMatrix,
+HdSt_TestDriverBase::SetCamera(GfMatrix4d const &viewMatrix,
                            GfMatrix4d const &projectionMatrix,
                            CameraUtilFraming const &framing)
 {
@@ -300,46 +233,116 @@ HdSt_TestDriver::SetCamera(GfMatrix4d const &viewMatrix,
                 HdPrimTypeTokens->camera,
                 _cameraId));
     TF_VERIFY(camera);
-    _renderPassState->SetCameraAndFraming(
-        camera, framing, { false, CameraUtilFit });
+
+    for (const HdRenderPassStateSharedPtr &renderPassState: _renderPassStates) {
+        renderPassState->SetCameraAndFraming(
+            camera, framing, { false, CameraUtilFit });
+    }
 }
     
 void
-HdSt_TestDriver::SetCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes)
+HdSt_TestDriverBase::SetCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes)
 {
     _sceneDelegate->UpdateCamera(
         _cameraId, HdCameraTokens->clipPlanes, VtValue(clipPlanes));
 }
 
 void
-HdSt_TestDriver::SetCullStyle(HdCullStyle cullStyle)
+HdSt_TestDriverBase::SetCullStyle(HdCullStyle cullStyle)
 {
-    _renderPassState->SetCullStyle(cullStyle);
-}
-
-HdRenderPassSharedPtr const &
-HdSt_TestDriver::GetRenderPass()
-{
-    if (!_renderPass) {
-        _renderPass = HdRenderPassSharedPtr(
-            new HdSt_RenderPass(&_sceneDelegate->GetRenderIndex(),
-                                _collection));
+    for (const HdRenderPassStateSharedPtr &renderPassState: _renderPassStates) {
+        renderPassState->SetCullStyle(cullStyle);
     }
-    return _renderPass;
 }
 
 void
-HdSt_TestDriver::SetRepr(HdReprSelector const &reprToken)
+HdSt_TestDriverBase::SetRepr(HdReprSelector const &reprSelector)
 {
-    _collection.SetReprSelector(reprToken);
+    _collection.SetReprSelector(reprSelector);
 
     // Mark changes.
     HdChangeTracker &tracker = _renderIndex->GetChangeTracker();
     tracker.MarkCollectionDirty(_collection.GetName());
 
-    // Update render pass with updated collection
-    _renderPass->SetRprimCollection(_collection);
+    for (const HdRenderPassSharedPtr &renderPass : _renderPasses) {
+        renderPass->SetRprimCollection(_collection);
+    }
+}
 
+// --------------------------------------------------------------------------
+
+HdSt_TestDriver::HdSt_TestDriver()
+{
+    _CreateRenderPassState();
+
+    // Init sets up the camera in the render pass state and
+    // thus needs to be called after render pass state has been setup.
+    _Init();
+}
+
+HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
+{
+    _CreateRenderPassState();
+
+    // Init sets up the camera in the render pass state and
+    // thus needs to be called after render pass state has been setup.
+    _Init(HdReprSelector(reprName));
+}
+
+HdSt_TestDriver::HdSt_TestDriver(HdReprSelector const &reprSelector)
+{
+    _CreateRenderPassState();
+
+    // Init sets up the camera in the render pass state and
+    // thus needs to be called after render pass state has been setup.
+    _Init(reprSelector);
+}
+
+void
+HdSt_TestDriver::_CreateRenderPassState()
+{
+    _renderPassStates = {
+        std::dynamic_pointer_cast<HdStRenderPassState>(
+            _GetRenderDelegate()->CreateRenderPassState()) };
+    // set depthfunc to GL default
+    _renderPassStates[0]->SetDepthFunc(HdCmpFuncLess);
+}
+
+HdRenderPassSharedPtr const &
+HdSt_TestDriver::GetRenderPass()
+{
+    if (_renderPasses.empty()) {
+        std::shared_ptr<HdSt_RenderPass> renderPass =
+            std::make_shared<HdSt_RenderPass>(
+                &GetDelegate().GetRenderIndex(),
+                _GetCollection());
+
+        _renderPasses.push_back(std::move(renderPass));
+    }
+    return _renderPasses[0];
+}
+
+void
+HdSt_TestDriver::Draw(bool withGuides)
+{
+    Draw(GetRenderPass(), withGuides);
+}
+
+void
+HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides)
+{
+    static const TfTokenVector geometryTags {
+        HdRenderTagTokens->geometry };
+    static const TfTokenVector geometryAndGuideTags {
+        HdRenderTagTokens->geometry,
+        HdRenderTagTokens->guide };
+
+    HdTaskSharedPtrVector tasks = {
+        std::make_shared<HdSt_DrawTask>(
+            renderPass,
+            _renderPassStates[0],
+            withGuides ? geometryAndGuideTags : geometryTags) };
+    _GetEngine()->Execute(&GetDelegate().GetRenderIndex(), &tasks);
 }
 
 // --------------------------------------------------------------------------
