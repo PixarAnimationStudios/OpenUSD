@@ -175,9 +175,6 @@ HdPrman_InteractiveRenderParam::Begin(HdRenderDelegate *renderDelegate)
     // XXX Shutter settings from studio katana defaults:
     // - /root.renderSettings.shutter{Open,Close}
     float shutterInterval[2] = { 0.0f, 0.5f };
-    // - /root.prmanGlobalStatements.camera.shutterOpening.shutteropening
-    const float shutterCurve[10] = {0, 0.05, 0, 0, 0, 0, 0.05, 1.0, 0.35, 0.0};
-
     if (!TfGetEnvSetting(HD_PRMAN_ENABLE_MOTIONBLUR)) {
         shutterInterval[1] = 0.0;
     }
@@ -257,6 +254,8 @@ HdPrman_InteractiveRenderParam::Begin(HdRenderDelegate *renderDelegate)
         _riley->SetOptions(_GetDeprecatedOptionsPrunedList());
     }
 
+    _cameraContext.Begin(_riley);
+
     // Integrator
     // This needs to be set before setting
     // the active render target, below.
@@ -285,43 +284,6 @@ HdPrman_InteractiveRenderParam::Begin(HdRenderDelegate *renderDelegate)
                                                integratorNode);
     }
 
-    // Camera
-    {
-        // Note: when changing the name of this camera, we will need to also 
-        // change the 'default dicing camera' name given to Riley::Render().
-        // Note: why not use us_main_cam defined earlier in the same file?
-        RtUString camName("main_cam");
-
-        // Camera params
-        RtParamList camParams;
-        // Shutter curve (normalized over shutter interval)
-        // XXX Riley decomposes the original float[10] style shutter curve
-        // as 3 separtae parameters
-        camParams.SetFloat(RixStr.k_shutterOpenTime, shutterCurve[0]);
-        camParams.SetFloat(RixStr.k_shutterCloseTime, shutterCurve[1]);
-        camParams.SetFloatArray(RixStr.k_shutteropening, shutterCurve+2, 8);
-        
-        // Projection
-        riley::ShadingNode cameraNode = riley::ShadingNode {
-            riley::ShadingNode::Type::k_Projection,
-            us_PxrPerspective,
-            us_main_cam_projection,
-            RtParamList()
-        };
-        cameraNode.params.SetFloat(RixStr.k_fov, 60.0f);
-
-        // Transform
-        float const zerotime = 0.0f;
-        RtMatrix4x4 matrix = RixConstants::k_IdentityMatrix;
-        matrix.Translate(0.f, 0.f, -5.0f);
-        riley::Transform xform = { 1, &matrix, &zerotime };
-        
-        cameraId = _riley->CreateCamera(riley::UserId::DefaultId(),
-                                       camName, cameraNode, xform, camParams);
-    }
-
-    // Dicing Camera
-    _riley->SetDefaultDicingCamera(cameraId);
 
     // Light
     {
@@ -823,8 +785,13 @@ HdPrman_InteractiveRenderParam::CreateDisplays(
     renderViews.clear();
 
     riley::RenderViewId const renderView = riley->CreateRenderView(
-        riley::UserId::DefaultId(), framebuffer.rtId, cameraId, _integratorId,
-        {0, nullptr}, {0, nullptr}, RtParamList());
+        riley::UserId::DefaultId(),
+        framebuffer.rtId,
+        _cameraContext.GetCameraId(),
+        _integratorId,
+        {0, nullptr},
+        {0, nullptr},
+        RtParamList());
     renderViews.push_back(renderView);
     renderTargets[renderView] = framebuffer.rtId;
 }

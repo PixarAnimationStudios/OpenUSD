@@ -361,7 +361,6 @@ HdPrman_InteractiveRenderPass::_Execute(
 
         cameraContext.UpdateRileyCameraAndClipPlanes(
             riley, 
-            _interactiveRenderParam->cameraId,
             GfVec2i(renderBufferWidth, renderBufferHeight));
 
         if (hdCam) {

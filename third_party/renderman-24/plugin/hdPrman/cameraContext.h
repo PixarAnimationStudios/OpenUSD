@@ -69,18 +69,23 @@ public:
     /// and the riley camera or options need to be updated.
     bool IsInvalid() const;
 
+    /// Create riley camera (with default settings).
+    void Begin(riley::Riley * riley);
+
+    /// Get id of riley camera - valid only after Begin.
+    const riley::CameraId &GetCameraId() const { return _cameraId; }
+
     /// Update the given riley options.
     ///
     /// Sets the crop window - if framing is invalid, crop window will be set
     /// to fill the entire render buffer.
     void SetRileyOptions(
-        RtParamList * const options,
+        RtParamList * options,
         const GfVec2i &renderBufferSize) const;
 
     /// Update riley camera identified by \p cameraId and clipping planes.
     void UpdateRileyCameraAndClipPlanes(
-        riley::Riley * const riley,
-        const riley::CameraId &cameraId,
+        riley::Riley * riley,
         const GfVec2i &renderBufferSize);
     
     /// Mark that riley camera and options are up to date.
@@ -93,7 +98,6 @@ private:
 
     void _UpdateRileyCamera(
         riley::Riley * const riley,
-        const riley::CameraId &cameraId,
         const GfVec2i &renderBufferSize);
     void _UpdateClipPlanes(riley::Riley * riley);
 
@@ -105,6 +109,7 @@ private:
     // Save ids of riley clip planes so that we can delete them before
     // re-creating them to update the clip planes.
     std::vector<riley::ClippingPlaneId> _clipPlaneIds;
+    riley::CameraId _cameraId;
     
     std::atomic_bool _invalid;
 };

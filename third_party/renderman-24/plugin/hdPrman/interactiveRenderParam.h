@@ -63,10 +63,6 @@ public:
     // The d_hydra.so renderman display driver handles updates via IPC.
     HdPrmanFramebuffer framebuffer;
 
-    // The viewport camera to use.
-    // Updated from render pass state.
-    riley::CameraId cameraId;
-        
     // Count of scene lights.  Maintained by the delegate.
     int sceneLightCount;
 

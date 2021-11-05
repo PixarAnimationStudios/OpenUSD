@@ -24,11 +24,14 @@
 #include "hdPrman/cameraContext.h"
 
 #include "hdPrman/camera.h"
-
-#include "RiTypesHelper.h" // XXX: Shouldn't rixStrings.h include this?
 #include "hdPrman/rixStrings.h"
 
+#include "Riley.h"
+#include "RixShadingUtils.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+static const RtUString _us_main_cam_projection("main_cam_projection");
 
 HdPrmanCameraContext::HdPrmanCameraContext()
   : _camera(nullptr)
@@ -401,7 +404,6 @@ _ToRtMatrices(
 void
 HdPrmanCameraContext::UpdateRileyCameraAndClipPlanes(
     riley::Riley * const riley,
-    const riley::CameraId &cameraId,
     const GfVec2i &renderBufferSize)
 {
     if (!_camera) {
@@ -409,22 +411,19 @@ HdPrmanCameraContext::UpdateRileyCameraAndClipPlanes(
         return;
     }
 
-    _UpdateRileyCamera(riley, cameraId, renderBufferSize);
+    _UpdateRileyCamera(riley, renderBufferSize);
     _UpdateClipPlanes(riley);
 }
 
 void
 HdPrmanCameraContext::_UpdateRileyCamera(
     riley::Riley * const riley,
-    const riley::CameraId &cameraId,
     const GfVec2i &renderBufferSize)
 {
-    static const RtUString us_main_cam_projection("main_cam_projection");
-
     const riley::ShadingNode node = riley::ShadingNode {
         riley::ShadingNode::Type::k_Projection,
         _ComputeProjectionShader(_camera->GetProjection()),
-        us_main_cam_projection,
+        _us_main_cam_projection,
         _ComputeNodeParams(_camera)
     };
 
@@ -465,7 +464,7 @@ HdPrmanCameraContext::_UpdateRileyCamera(
 
     // Commit camera.
     riley->ModifyCamera(
-        cameraId, 
+        _cameraId, 
         &node,
         &transform,
         &params);
@@ -607,6 +606,57 @@ void
 HdPrmanCameraContext::MarkValid()
 {
     _invalid = false;
+}
+
+void
+HdPrmanCameraContext::Begin(riley::Riley * const riley)
+{
+    // Create camera
+
+    // Note: when changing the name of this camera, we will need to also 
+    // change the 'default dicing camera' name given to Riley::Render().
+    // Note: why not use us_main_cam defined earlier in the same file?
+    const static RtUString name("main_cam");
+
+    RtParamList nodeParams;
+    nodeParams.SetFloat(RixStr.k_fov, 60.0f);
+
+    // Projection
+    const riley::ShadingNode node = riley::ShadingNode {
+        riley::ShadingNode::Type::k_Projection,
+        _ComputeProjectionShader(HdCamera::Perspective),
+        _us_main_cam_projection,
+        nodeParams
+    };
+
+    // Camera params
+    RtParamList params;
+
+    // - /root.prmanGlobalStatements.camera.shutterOpening.shutteropening
+    static const float shutterCurve[10] = {
+        0, 0.05, 0, 0, 0, 0, 0.05, 1.0, 0.35, 0.0};
+    // Shutter curve (normalized over shutter interval)
+    // XXX Riley decomposes the original float[10] style shutter curve
+    // as 3 separtae parameters
+    params.SetFloat(RixStr.k_shutterOpenTime, shutterCurve[0]);
+    params.SetFloat(RixStr.k_shutterCloseTime, shutterCurve[1]);
+    params.SetFloatArray(RixStr.k_shutteropening, shutterCurve+2, 8);
+    
+    // Transform
+    float const zerotime[] = { 0.0f };
+    RtMatrix4x4 matrix[] = {RixConstants::k_IdentityMatrix};
+    matrix[0].Translate(0.f, 0.f, -5.0f);
+    const riley::Transform transform = { 1, matrix, zerotime };
+        
+    _cameraId = riley->CreateCamera(
+        riley::UserId::DefaultId(),
+        name,
+        node,
+        transform,
+        params);
+
+    // Dicing Camera
+    riley->SetDefaultDicingCamera(_cameraId);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
