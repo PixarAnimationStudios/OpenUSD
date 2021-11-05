@@ -495,6 +495,10 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     GLuint restoreDrawFB = 0;
     glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, (GLint*)&restoreDrawFB);
 
+    GLuint vao = 0;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
     // Are we using stencil conditioning?
     bool needStencilConditioning =
         (_contextParams.depthMaskCallback != nullptr);
@@ -537,6 +541,9 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     if (convRstr) {
         glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
     }
+
+    glBindVertexArray(0);
+    glDeleteVertexArrays(1, &vao);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFB);
 
