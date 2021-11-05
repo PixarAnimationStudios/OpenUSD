@@ -135,7 +135,15 @@ My_TestGLDrawing::InitTest()
     if (_ShouldFrameAll()) {
         TfTokenVector purposes;
         purposes.push_back(UsdGeomTokens->default_);
-        purposes.push_back(UsdGeomTokens->proxy);
+        if (IsShowGuides()) {
+            purposes.push_back(UsdGeomTokens->guide);
+        }
+        if (IsShowProxy()) {
+            purposes.push_back(UsdGeomTokens->proxy);
+        }
+        if (IsShowRender()) {
+            purposes.push_back(UsdGeomTokens->render);
+        }
 
         // Extent hints are sometimes authored as an optimization to avoid
         // computing bounds, they are particularly useful for some tests where
