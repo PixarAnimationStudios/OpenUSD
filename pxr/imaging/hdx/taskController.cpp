@@ -262,10 +262,8 @@ HdxTaskController::_CreateRenderGraph()
             _CreateColorCorrectionTask();
             _CreateVisualizeAovTask();
             _CreatePresentTask();
+            _CreatePickTask();
         }
-
-        // Picking rendergraph
-        _CreatePickTask();
 
         // XXX AOVs are OFF by default for Storm TaskController because hybrid
         // rendering in Presto spawns an ImagineGLEngine, which creates a task

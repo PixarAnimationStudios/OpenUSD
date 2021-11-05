@@ -64,10 +64,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_PUBLIC_TOKENS(HdxPickTokens, HDX_API, HDX_PICK_TOKENS);
 
-TF_DECLARE_WEAK_AND_REF_PTRS(GlfDrawTarget);
-
+class HdStRenderBuffer;
 class HdStRenderPassState;
 using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
+
+class Hgi;
 
 /// Pick task params. This contains render-style state (for example), but is
 /// augmented by HdxPickTaskContextParams, which is passed in on the task
@@ -220,11 +221,20 @@ private:
     // map prim ID to paths.
     HdRenderIndex *_index;
 
-    void _InitIfNeeded(GfVec2i const& widthHeight);
+    void _InitIfNeeded();
+    void _CreateAovBindings();
+    void _CleanupAovBindings();
+
     void _ConditionStencilWithGLCallback(
             HdxPickTaskContextParams::DepthMaskCallback maskCallback);
 
     bool _UseOcclusionPass() const;
+
+    template<typename T>
+    T const *  _ReadAovBuffer(TfToken const & aovName,
+                              std::vector<uint8_t> * buffer) const;
+
+    HdRenderBuffer const * _FindAovBuffer(TfToken const & aovName) const;
 
     // Create a shared render pass each for pickables and unpickables
     HdRenderPassSharedPtr _pickableRenderPass;
@@ -235,9 +245,12 @@ private:
     HdRenderPassStateSharedPtr _pickableRenderPassState;
     HdRenderPassStateSharedPtr _occluderRenderPassState;
 
-    // A single draw target is shared for all contexts.  Since the FBO cannot
-    // be shared, we clone the attachments on each request.
-    GlfDrawTargetRefPtr _drawTarget;
+    Hgi* _hgi;
+
+    std::vector<std::unique_ptr<HdStRenderBuffer>> _pickableAovBuffers;
+    HdRenderPassAovBindingVector _pickableAovBindings;
+    HdRenderPassAovBinding _occluderAovBinding;
+    size_t _pickableDepthIndex;
 
     HdxPickTask() = delete;
     HdxPickTask(const HdxPickTask &) = delete;

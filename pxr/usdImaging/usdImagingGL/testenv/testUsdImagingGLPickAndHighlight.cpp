@@ -29,6 +29,7 @@
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/frustum.h"
+#include "pxr/base/gf/math.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/range3d.h"
@@ -64,6 +65,22 @@ struct OutHit {
     SdfPath outHitInstancerPath;
     int outHitInstanceIndex;
 };
+
+
+static bool
+_CompareOutHit(OutHit const & lhs, OutHit const & rhs)
+{
+    double const epsilon = 1e-6;
+    return GfIsClose(lhs.outHitPoint[0], rhs.outHitPoint[0], epsilon) &&
+           GfIsClose(lhs.outHitPoint[1], rhs.outHitPoint[1], epsilon) &&
+           GfIsClose(lhs.outHitPoint[2], rhs.outHitPoint[2], epsilon) &&
+           GfIsClose(lhs.outHitNormal[0], rhs.outHitNormal[0], epsilon) &&
+           GfIsClose(lhs.outHitNormal[1], rhs.outHitNormal[1], epsilon) &&
+           GfIsClose(lhs.outHitNormal[2], rhs.outHitNormal[2], epsilon) &&
+           lhs.outHitPrimPath == rhs.outHitPrimPath &&
+           lhs.outHitInstancerPath == rhs.outHitInstancerPath &&
+           lhs.outHitInstanceIndex == rhs.outHitInstanceIndex;
+}
 
 class My_TestGLDrawing : public UsdImagingGL_UnitTestGLDrawing {
 public:
@@ -185,7 +202,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     const std::map<TfToken, OutHit>& expectedOutputs = {
         { 
             TfToken(""), 
-                { GfVec3d(3.386113166809082, -1.9999918937683105, -0.5881404280662537),
+                { GfVec3d(3.386115312576294, -2.0000052452087402, -0.5881438851356506),
                 GfVec3d(0, -0.9980430603027344, 2.2161007702308985e-16),
                 SdfPath("/Group/GI1/I1/Mesh1/Plane1"), 
                 _stage->GetPrimAtPath(SdfPath("/Group/GI1/I1")).GetPrototype().
@@ -206,12 +223,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     Draw(false);
     OutHit testOut;
     Pick(GfVec2i(320, 130), GfVec2i(171, 131), &testOut);
-    bool test = testOut.outHitPoint == expectedOut.outHitPoint &&
-                testOut.outHitNormal == expectedOut.outHitNormal &&
-                testOut.outHitPrimPath == expectedOut.outHitPrimPath &&
-                testOut.outHitInstancerPath == expectedOut.outHitInstancerPath &&
-                testOut.outHitInstanceIndex == expectedOut.outHitInstanceIndex;
-    TF_VERIFY(test);
+    TF_VERIFY(_CompareOutHit(testOut, expectedOut));
 
     if (offscreen) {
         Draw();
