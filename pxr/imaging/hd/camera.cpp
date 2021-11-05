@@ -190,7 +190,7 @@ HdCamera::Sync(HdSceneDelegate * sceneDelegate,
 }
 
 GfMatrix4d
-HdCamera::GetProjectionMatrix() const
+HdCamera::ComputeProjectionMatrix() const
 {
     HD_TRACE_FUNCTION();
 

@@ -200,13 +200,13 @@ public:
     }
 
     // ---------------------------------------------------------------------- //
-    /// Legacy camera parameters accessor API
+    /// Convenience API for rasterizers
     // ---------------------------------------------------------------------- //
 
-    /// Returns the projection matrix for the camera.
-    /// \deprecated Compute from above physically based attributes
+    /// Computes the projection matrix for a camera from its physical
+    /// properties.
     HD_API
-    GfMatrix4d GetProjectionMatrix() const;
+    GfMatrix4d ComputeProjectionMatrix() const;
 
 protected:
     // frustum

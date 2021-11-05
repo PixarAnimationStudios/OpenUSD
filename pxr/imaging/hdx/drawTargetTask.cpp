@@ -338,7 +338,7 @@ HdxDrawTargetTask::_ComputeCameraInfo(
         GfVec3d(1.0, -1.0, 1.0));
 
     const GfMatrix4d projectionMatrix =
-        CameraUtilConformedWindow(camera->GetProjectionMatrix(), 
+        CameraUtilConformedWindow(camera->ComputeProjectionMatrix(), 
                                   camera->GetWindowPolicy(),
                                   aspect)
         * yflip;

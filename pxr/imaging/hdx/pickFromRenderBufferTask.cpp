@@ -39,9 +39,7 @@ HdxPickFromRenderBufferTask::HdxPickFromRenderBufferTask(
 {
 }
 
-HdxPickFromRenderBufferTask::~HdxPickFromRenderBufferTask()
-{
-}
+HdxPickFromRenderBufferTask::~HdxPickFromRenderBufferTask() = default;
 
 bool
 HdxPickFromRenderBufferTask::IsConverged() const
@@ -106,7 +104,7 @@ HdxPickFromRenderBufferTask::_ComputeProjectionMatrix() const
                 : _camera->GetWindowPolicy();
         return
             _params.framing.ApplyToProjectionMatrix(
-                _camera->GetProjectionMatrix(), policy);
+                _camera->ComputeProjectionMatrix(), policy);
     } else {
         const double aspect =
             _params.viewport[3] != 0.0
@@ -114,7 +112,7 @@ HdxPickFromRenderBufferTask::_ComputeProjectionMatrix() const
                 : 1.0;
         return
             CameraUtilConformedWindow(
-                _camera->GetProjectionMatrix(),
+                _camera->ComputeProjectionMatrix(),
                 _camera->GetWindowPolicy(),
                 aspect);
     }

@@ -155,7 +155,7 @@ HdRenderPassState::GetProjectionMatrix() const
     if (_framing.IsValid()) {
         return
             _framing.ApplyToProjectionMatrix(
-                _camera->GetProjectionMatrix(),
+                _camera->ComputeProjectionMatrix(),
                 GetWindowPolicy());
     }
 
@@ -165,7 +165,7 @@ HdRenderPassState::GetProjectionMatrix() const
 
     // Adjust the camera frustum based on the window policy.
     return CameraUtilConformedWindow(
-        _camera->GetProjectionMatrix(), policy, aspect);
+        _camera->ComputeProjectionMatrix(), policy, aspect);
 }
 
 HdRenderPassState::ClipPlanesVector const &

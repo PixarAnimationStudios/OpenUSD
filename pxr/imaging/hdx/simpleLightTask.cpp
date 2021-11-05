@@ -143,7 +143,7 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
 
     GfMatrix4d const  viewMatrix = camera->GetTransform().GetInverse();
     GfMatrix4d const& viewInverseMatrix = camera->GetTransform();
-    GfMatrix4d const& projectionMatrix = camera->GetProjectionMatrix();
+    GfMatrix4d const  projectionMatrix = camera->ComputeProjectionMatrix();
     // Extract the camera window policy to adjust the frustum correctly for
     // lights that have shadows.
 
