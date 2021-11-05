@@ -131,12 +131,7 @@ HdPrman_InteractiveRenderPass::_Execute(
 {
     HD_TRACE_FUNCTION();
     
-    static const RtUString us_PxrPerspective("PxrPerspective");
-    static const RtUString us_PxrOrthographic("PxrOrthographic");
     static const RtUString us_PathTracer("PathTracer");
-    static const RtUString us_main_cam_projection("main_cam_projection");
-    static const RtUString us_planeNormal("planeNormal");
-    static const RtUString us_planeOrigin("planeOrigin");
 
     if (!_interactiveRenderParam) {
         // If this is not an interactive context, don't use Hydra to drive
@@ -178,11 +173,8 @@ HdPrman_InteractiveRenderPass::_Execute(
         renderBufferHeight = vp[3];
     }
 
-    // XXX: Need to cast away constness to process updated camera params since
-    // the Hydra camera doesn't update the Riley camera directly.
-    HdPrmanCamera * const hdCam =
-        const_cast<HdPrmanCamera *>(
-            dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera()));
+    const HdPrmanCamera * const hdCam =
+        dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera());
 
     HdPrmanCameraContext &cameraContext =
         _interactiveRenderParam->GetCameraContext();
@@ -243,8 +235,17 @@ HdPrman_InteractiveRenderPass::_Execute(
                 _integrator,
                 integratorNode.params);
 
+            // XXX: Need to cast away constness because
+            // SetIntegratorParamsFromCamera has wrong signature.
+
+            HdPrmanCamera * const nonConstCam =
+                const_cast<HdPrmanCamera *>(hdCam);
+
             _interactiveRenderParam->SetIntegratorParamsFromCamera(
-                    renderDelegate, hdCam, _integrator, integratorNode.params);
+                renderDelegate,
+                nonConstCam,
+                _integrator,
+                integratorNode.params);
 
             RtUString integrator(_integrator.c_str());
             integratorNode.handle = integratorNode.name = integrator;
@@ -358,116 +359,12 @@ HdPrman_InteractiveRenderPass::_Execute(
                 _interactiveRenderParam->_GetDeprecatedOptionsPrunedList());
         }
 
-        // Coordinate system notes.
-        //
-        // # Hydra & USD are right-handed
-        // - Camera space is always Y-up, looking along -Z.
-        // - World space may be either Y-up or Z-up, based on stage metadata.
-        // - Individual prims may be marked to be left-handed, which
-        //   does not affect spatial coordinates, it only flips the
-        //   winding order of polygons.
-        //
-        // # Prman is left-handed
-        // - World is Y-up
-        // - Camera looks along +Z.
-
-        const bool isOrthographic =
-            hdCam && hdCam->GetProjection() == HdCamera::Orthographic;
-        riley::ShadingNode cameraNode = riley::ShadingNode {
-            riley::ShadingNode::Type::k_Projection,
-            isOrthographic ? us_PxrOrthographic : us_PxrPerspective,
-            us_main_cam_projection,
-            RtParamList()
-        };
-
-        // Set riley camera and projection shader params from the Hydra camera,
-        // if available.
-        RtParamList camParams;
-        cameraContext.SetCameraAndCameraNodeParams(
-            &camParams,
-            &cameraNode.params,
+        cameraContext.UpdateRileyCameraAndClipPlanes(
+            riley, 
+            _interactiveRenderParam->cameraId,
             GfVec2i(renderBufferWidth, renderBufferHeight));
 
-        // Riley camera xform is "move the camera", aka viewToWorld.
-        // Convert right-handed Y-up camera space (USD, Hydra) to
-        // left-handed Y-up (Prman) coordinates.  This just amounts to
-        // flipping the Z axis.
-        static const GfMatrix4d flipZ(GfVec4d(1.0, 1.0, -1.0, 1.0));
-
         if (hdCam) {
-            // Use time sampled transforms authored on the scene camera.
-            HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> const& 
-                xforms = hdCam->GetTimeSampleXforms();
-
-            TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
-                xf_rt_values(xforms.count);
-            
-            for (size_t i=0; i < xforms.count; ++i) {
-                xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(
-                    flipZ * xforms.values[i]);
-            }
-
-            riley::Transform xform = { unsigned(xforms.count),
-                                       xf_rt_values.data(),
-                                       xforms.times.data() };
-
-            // Commit camera.
-            riley->ModifyCamera(
-                _interactiveRenderParam->cameraId, 
-                &cameraNode,
-                &xform, 
-                &camParams);
-
-
-            // Clipping planes
-            for (riley::ClippingPlaneId const& id: _clipPlanes) {
-                riley->DeleteClippingPlane(id);
-            }
-            _clipPlanes.clear();
-            
-            const std::vector<GfVec4d> &hdClipPlanes =
-                hdCam->GetClipPlanes();
-            if (!hdClipPlanes.empty()) {
-                // Convert camera's object xform.
-                TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
-                    xf_values(xforms.count);
-                for (size_t i=0; i < xforms.count; ++i) {
-                    xf_values[i] =
-                        HdPrman_GfMatrixToRtMatrix(
-                        xforms.values[i]);
-                }
-                riley::Transform camXform = { unsigned(xforms.count),
-                                           xf_values.data(),
-                                           xforms.times.data() };
-                // Hydra expresses clipping planes as a plane equation
-                // in the camera object space.
-                // Riley API expresses clipping planes in terms of a
-                // time-sampled transform, a normal, and a point.
-                for (GfVec4d plane: hdClipPlanes) {
-                    RtParamList params;
-                    GfVec3f direction(plane[0], plane[1], plane[2]);
-                    float directionLength = direction.GetLength();
-                    if (directionLength == 0.0f) {
-                        continue;
-                    }
-                    // Riley API expects a unit-length normal.
-                    GfVec3f norm = direction / directionLength;
-                    params.SetNormal(us_planeNormal,
-                        RtNormal3(norm[0], norm[1], norm[2]));
-                    // Determine the distance along the normal
-                    // to the plane.
-                    float distance = -plane[3] / directionLength;
-                    // The origin can be any point on the plane.
-                    RtPoint3 origin(norm[0] * distance,
-                                    norm[1] * distance,
-                                    norm[2] * distance);
-                    params.SetPoint(us_planeOrigin, origin);
-                    _clipPlanes.push_back(
-                        riley->CreateClippingPlane(
-                            camXform, params));
-                }
-            }
-
             // Update the framebuffer Z scaling
             _interactiveRenderParam->framebuffer.proj =
                 hdCam->GetProjectionMatrix();

@@ -23,11 +23,10 @@
 //
 #include "hdPrman/cameraContext.h"
 
+#include "hdPrman/camera.h"
+
 #include "RiTypesHelper.h" // XXX: Shouldn't rixStrings.h include this?
 #include "hdPrman/rixStrings.h"
-
-#include "pxr/imaging/hd/camera.h"
-
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,7 +38,7 @@ HdPrmanCameraContext::HdPrmanCameraContext()
 }
 
 void
-HdPrmanCameraContext::MarkCameraInvalid(HdCamera * const camera)
+HdPrmanCameraContext::MarkCameraInvalid(const HdPrmanCamera * const camera)
 {
     // No need to invalidate if camera that is not the active camera
     // changed.
@@ -49,7 +48,7 @@ HdPrmanCameraContext::MarkCameraInvalid(HdCamera * const camera)
 }
 
 void
-HdPrmanCameraContext::SetCamera(HdCamera * const camera)
+HdPrmanCameraContext::SetCamera(const HdPrmanCamera * const camera)
 {
     if (camera) {
         if (_cameraPath != camera->GetId()) {
@@ -250,12 +249,32 @@ _ComputeScreenWindow(
     return _ToVec4f(screenWindowForRenderBuffer);
 }
 
-void
-HdPrmanCameraContext::SetCameraAndCameraNodeParams(
-    RtParamList * camParams,
-    RtParamList * camNodeParams,
-    const GfVec2i &renderBufferSize) const
+// Get respective projection shader name for projection.
+static
+const RtUString&
+_ComputeProjectionShader(const HdCamera::Projection projection)
 {
+    static const RtUString us_PxrPerspective("PxrPerspective");
+    static const RtUString us_PxrOrthographic("PxrOrthographic");
+
+    switch (projection) {
+    case HdCamera::Perspective:
+        return us_PxrPerspective;
+    case HdCamera::Orthographic:
+        return us_PxrOrthographic;
+    }
+
+    // Make compiler happy.
+    return us_PxrPerspective;
+}
+
+// Compute parameters for the camera riley::ShadingNode.
+static
+RtParamList
+_ComputeNodeParams(const HdCamera * const camera)
+{
+    RtParamList result;
+
     // Following parameters can be set on the projection shader:
     // fov (currently unhandled)
     // fovEnd (currently unhandled)
@@ -263,32 +282,47 @@ HdPrmanCameraContext::SetCameraAndCameraNodeParams(
     // focalLength
     // focalDistance
     // RenderMan defines disabled DOF as fStop=inf not zero
+
     float fStop = RI_INFINITY;
-    if (_camera) {
-        const float cameraFStop = _camera->GetFStop();
-        if (cameraFStop > 0.0) {
-            fStop = cameraFStop;
-        }
+    const float cameraFStop = camera->GetFStop();
+    if (cameraFStop > 0.0) {
+        fStop = cameraFStop;
     }
-    camNodeParams->SetFloat(RixStr.k_fStop, fStop);
+    result.SetFloat(RixStr.k_fStop, fStop);
 
-    if (_camera) {
-        // Do not use the initial value 0 which we get if the scene delegate
-        // did not provide a focal length.
-        const float focalLength = _camera->GetFocalLength();
-        if (focalLength > 0) {
-            camNodeParams->SetFloat(RixStr.k_focalLength, focalLength);
-        }
+    // Do not use the initial value 0 which we get if the scene delegate
+    // did not provide a focal length.
+    const float focalLength = camera->GetFocalLength();
+    if (focalLength > 0) {
+        result.SetFloat(RixStr.k_focalLength, focalLength);
     }
 
-    if (_camera) {
-        // Similar for focus distance.
-        const float focusDistance = _camera->GetFocusDistance();
-        if (focusDistance > 0) {
-            camNodeParams->SetFloat(RixStr.k_focalDistance, focusDistance);
-        }
+    // Similar for focus distance.
+    const float focusDistance = camera->GetFocusDistance();
+    if (focusDistance > 0) {
+        result.SetFloat(RixStr.k_focalDistance, focusDistance);
     }
-        
+
+    if (camera->GetProjection() == HdCamera::Perspective) {
+        // TODO: For lens distortion to be correct, we might
+        // need to set a different FOV and adjust the screenwindow
+        // accordingly.
+        // For now, lens distortion parameters are not passed through
+        // hdPrman anyway.
+        //
+        result.SetFloat(RixStr.k_fov, 90.0f);
+    }
+
+    return result;
+}
+
+// Compute params given to Riley::ModifyCamera
+RtParamList
+HdPrmanCameraContext::_ComputeCameraParams(
+    const GfVec2i &renderBufferSize) const
+{
+    RtParamList result;
+
     // Following parameters are currently set on the Riley camera:
     // 'nearClip' (float): near clipping distance
     // 'farClip' (float): near clipping distance
@@ -311,12 +345,10 @@ HdPrmanCameraContext::SetCameraAndCameraNodeParams(
     // Note that we do a sanity check slightly stronger than
     // GfRange1f::IsEmpty() in that we do not allow the range to contain
     // only exactly one point.
-    if (_camera) {
-        const GfRange1f &clippingRange = _camera->GetClippingRange();
-        if (clippingRange.GetMin() < clippingRange.GetMax()) {
-            camParams->SetFloat(RixStr.k_nearClip, clippingRange.GetMin());
-            camParams->SetFloat(RixStr.k_farClip, clippingRange.GetMax());
-        }
+    const GfRange1f &clippingRange = _camera->GetClippingRange();
+    if (clippingRange.GetMin() < clippingRange.GetMax()) {
+        result.SetFloat(RixStr.k_nearClip, clippingRange.GetMin());
+        result.SetFloat(RixStr.k_farClip, clippingRange.GetMax());
     }
 
     // XXX : Ideally we would want to set the proper shutter open and close,
@@ -335,31 +367,180 @@ HdPrmanCameraContext::SetCameraAndCameraNodeParams(
     //     camParams->SetFloat(RixStr.k_shutterCloseTime, *shutterClose);
     // }
 
-    // All subsequent code requires a valid camera and framing.
-
-    if (!_camera) {
-        return;
-    }
-
-    if (_camera->GetProjection() == HdCamera::Perspective) {
-        // TODO: For lens distortion to be correct, we might
-        // need to set a different FOV and adjust the screenwindow
-        // accordingly.
-        // For now, lens distortion parameters are not passed through
-        // hdPrman anyway.
-        //
-        camNodeParams->SetFloat(
-            RixStr.k_fov, 90.0f);
-    }
-
     const GfVec4f screenWindow = _ComputeScreenWindow(
         _camera, _framing, _policy, renderBufferSize);
     
-    camParams->SetFloatArray(
-        RixStr.k_Ri_ScreenWindow, screenWindow.data(), 4);
+    result.SetFloatArray(RixStr.k_Ri_ScreenWindow, screenWindow.data(), 4);
+
+    return result;
 }
 
+// Convert Hydra time sampled matrices to renderman matrices.
+// Optionally flip z-direction.
+static
+TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>
+_ToRtMatrices(
+    const HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> &samples,
+    const bool flipZ = false)
+{
+    using _RtMatrices = TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>;
+    _RtMatrices matrices(samples.count);
 
+    static const GfMatrix4d flipZMatrix(GfVec4d(1.0, 1.0, -1.0, 1.0));
+    
+    for (size_t i = 0; i < samples.count; ++i) {
+        matrices[i] = HdPrman_GfMatrixToRtMatrix(
+            flipZ
+                ? flipZMatrix * samples.values[i]
+                : samples.values[i]);
+    }
+
+    return matrices;
+}
+
+void
+HdPrmanCameraContext::UpdateRileyCameraAndClipPlanes(
+    riley::Riley * const riley,
+    const riley::CameraId &cameraId,
+    const GfVec2i &renderBufferSize)
+{
+    if (!_camera) {
+        // Bail if no camera.
+        return;
+    }
+
+    _UpdateRileyCamera(riley, cameraId, renderBufferSize);
+    _UpdateClipPlanes(riley);
+}
+
+void
+HdPrmanCameraContext::_UpdateRileyCamera(
+    riley::Riley * const riley,
+    const riley::CameraId &cameraId,
+    const GfVec2i &renderBufferSize)
+{
+    static const RtUString us_main_cam_projection("main_cam_projection");
+
+    const riley::ShadingNode node = riley::ShadingNode {
+        riley::ShadingNode::Type::k_Projection,
+        _ComputeProjectionShader(_camera->GetProjection()),
+        us_main_cam_projection,
+        _ComputeNodeParams(_camera)
+    };
+
+    const RtParamList params = _ComputeCameraParams(renderBufferSize);
+
+    // Coordinate system notes.
+    //
+    // # Hydra & USD are right-handed
+    // - Camera space is always Y-up, looking along -Z.
+    // - World space may be either Y-up or Z-up, based on stage metadata.
+    // - Individual prims may be marked to be left-handed, which
+    //   does not affect spatial coordinates, it only flips the
+    //   winding order of polygons.
+    //
+    // # Prman is left-handed
+    // - World is Y-up
+    // - Camera looks along +Z.
+
+    using _HdTimeSamples =
+        HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES>;
+    using _RtMatrices =
+        TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>;    
+
+    // Use time sampled transforms authored on the scene camera.
+    const _HdTimeSamples &sampleXforms = _camera->GetTimeSampleXforms();
+
+    // Riley camera xform is "move the camera", aka viewToWorld.
+    // Convert right-handed Y-up camera space (USD, Hydra) to
+    // left-handed Y-up (Prman) coordinates.  This just amounts to
+    // flipping the Z axis.
+    const _RtMatrices rtMatrices =
+        _ToRtMatrices(sampleXforms, /* flipZ = */ true);
+
+    const riley::Transform transform{
+        unsigned(sampleXforms.count),
+        rtMatrices.data(),
+        sampleXforms.times.data() };
+
+    // Commit camera.
+    riley->ModifyCamera(
+        cameraId, 
+        &node,
+        &transform,
+        &params);
+}
+
+// Hydra expresses clipping planes as a plane equation
+// in the camera object space.
+// Riley API expresses clipping planes in terms of a
+// time-sampled transform, a normal, and a point.
+static
+bool
+_ToClipPlaneParams(const GfVec4d &plane, RtParamList * const params)
+{
+    static const RtUString us_planeNormal("planeNormal");
+    static const RtUString us_planeOrigin("planeOrigin");
+    
+    const GfVec3f direction(plane[0], plane[1], plane[2]);
+    const float directionLength = direction.GetLength();
+    if (directionLength == 0.0f) {
+        return false;
+    }
+    // Riley API expects a unit-length normal.
+    const GfVec3f norm = direction / directionLength;
+    params->SetNormal(us_planeNormal,
+                      RtNormal3(norm[0], norm[1], norm[2]));
+    // Determine the distance along the normal
+    // to the plane.
+    const float distance = -plane[3] / directionLength;
+    // The origin can be any point on the plane.
+    const RtPoint3 origin(norm[0] * distance,
+                          norm[1] * distance,
+                          norm[2] * distance);
+    params->SetPoint(us_planeOrigin, origin);
+
+    return true;
+}
+
+void
+HdPrmanCameraContext::_UpdateClipPlanes(riley::Riley * const riley)
+{
+    // Delete clipping planes
+    for (riley::ClippingPlaneId const& id: _clipPlaneIds) {
+        riley->DeleteClippingPlane(id);
+    }
+    _clipPlaneIds.clear();
+
+    // Create clipping planes
+    const std::vector<GfVec4d> &clipPlanes = _camera->GetClipPlanes();
+    if (clipPlanes.empty()) {
+        return;
+    }
+
+    using _HdTimeSamples =
+        HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES>;
+    using _RtMatrices =
+        TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>;    
+
+    // Use time sampled transforms authored on the scene camera.
+    const _HdTimeSamples &sampleXforms = _camera->GetTimeSampleXforms();
+    const _RtMatrices rtMatrices = _ToRtMatrices(sampleXforms);
+
+    const riley::Transform transform {
+        unsigned(sampleXforms.count),
+        rtMatrices.data(),
+        sampleXforms.times.data() };
+
+    for (const GfVec4d &plane: clipPlanes) {
+        RtParamList params;
+        if (_ToClipPlaneParams(plane, &params)) {
+            _clipPlaneIds.push_back(
+                riley->CreateClippingPlane(transform, params));
+        }
+    }
+}
+    
 // The crop window for RenderMan.
 //
 // Computed from data window and render buffer size.
