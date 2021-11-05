@@ -157,7 +157,7 @@ PrintUsage(const char* cmd, const char *err=nullptr)
         fprintf(stderr, err);
     }
     fprintf(stderr, "Usage: %s INPUT.usd "
-            "[--out OUTPUT] [--frame FRAME] [--freeCamProj CAM_PROJECTION] "
+            "[--out OUTPUT] [--frame FRAME] "
             "[--sceneCamPath CAM_PATH] [--settings RENDERSETTINGS_PATH] "
             "[--sceneCamAspect aspectRatio] "
             "[--visualize STYLE] [--perf PERF] [--trace TRACE]\n"
@@ -229,7 +229,6 @@ int main(int argc, char *argv[])
     std::string perfOutput, traceOutput;
 
     int frameNum = 0;
-    bool isOrthographic = false;
     std::string cameraProjection("PxrPerspective");
     static const std::string PxrOrthographic("PxrOrthographic");
     SdfPath sceneCamPath, renderSettingsPath;
@@ -243,9 +242,6 @@ int main(int argc, char *argv[])
             sceneCamPath = SdfPath(argv[++i]);
         } else if (std::string(argv[i]) == "--sceneCamAspect") {
             sceneCamAspect = atof(argv[++i]);
-        } else if (std::string(argv[i]) == "--freeCamProj") {
-            cameraProjection = argv[++i];
-            isOrthographic = cameraProjection == PxrOrthographic;
         } else if (std::string(argv[i]) == "--out") {
             outputFilename = argv[++i];
         } else if (std::string(argv[i]) == "--settings") {
@@ -515,17 +511,35 @@ int main(int argc, char *argv[])
                 cameraParams.SetFloat(RixStr.k_nearClip, clipRange.GetMin());
                 cameraParams.SetFloat(RixStr.k_farClip, clipRange.GetMax());
                 
+                if (gfCam.GetProjection() == GfCamera::Perspective) {
+                    projParams.SetFloat(
+                        RixStr.k_fov, gfCam.GetFieldOfView(GfCamera::FOVVertical));
+                    // Convert parameters that are specified in tenths of a world
+                    // unit in USD to world units for Riley. See
+                    // UsdImagingCameraAdapter::UpdateForTime for reference.
+                    projParams.SetFloat(
+                        RixStr.k_focalLength,
+                        gfCam.GetFocalLength() *
+                        static_cast<float>(GfCamera::FOCAL_LENGTH_UNIT));
+                    projParams.SetFloat(RixStr.k_fStop, gfCam.GetFStop());
+                    projParams.SetFloat(
+                        RixStr.k_focalDistance,
+                        gfCam.GetFocusDistance());
+                } else {
+                    cameraProjection = PxrOrthographic;
+                    
+                    const GfVec4f screenWindow =
+                        GfVec4f(-gfCam.GetHorizontalAperture(),
+                                +gfCam.GetHorizontalAperture(),
+                                -gfCam.GetVerticalAperture(),
+                                +gfCam.GetVerticalAperture()) *
+                        static_cast<float>(GfCamera::APERTURE_UNIT)
+                        * 0.5f;
+                    cameraParams.SetFloatArray(
+                        RixStr.k_Ri_ScreenWindow, screenWindow.data(), 4);
+                }
+
                 // Projection
-                projParams.SetFloat(
-                    RixStr.k_fov, gfCam.GetFieldOfView(GfCamera::FOVVertical));
-                // Convert parameters that are specified in tenths of a world
-                // unit in USD to world units for Riley. See
-                // UsdImagingCameraAdapter::UpdateForTime for reference.
-                projParams.SetFloat(RixStr.k_focalLength,
-                    gfCam.GetFocalLength() / 10.0f);
-                projParams.SetFloat(RixStr.k_fStop, gfCam.GetFStop());
-                projParams.SetFloat(RixStr.k_focalDistance,
-                    gfCam.GetFocusDistance());
                 cameraNode = riley::ShadingNode {
                     riley::ShadingNode::Type::k_Projection,
                     RtUString(cameraProjection.c_str()),
@@ -570,15 +584,6 @@ int main(int argc, char *argv[])
                 // Transform
                 float const zerotime = 0.0f;
                 RtMatrix4x4 matrix = RixConstants::k_IdentityMatrix;
-
-                // Orthographic camera:
-                // XXX In HdPrman RenderPass we apply orthographic
-                // projection as a scale onto the viewMatrix. This
-                // is because we currently cannot update Renderman's
-                // `ScreenWindow` once it is running.
-                if (isOrthographic) {
-                    matrix.Scale(10,10,10);
-                }
 
                 // Translate camera back a bit
                 matrix.Translate(0.f, 0.f, -10.0f);
