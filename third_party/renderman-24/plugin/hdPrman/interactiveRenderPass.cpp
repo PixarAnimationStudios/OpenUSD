@@ -366,7 +366,11 @@ HdPrman_InteractiveRenderPass::_Execute(
         if (hdCam) {
             // Update the framebuffer Z scaling
             _interactiveRenderParam->framebuffer.proj =
+#if HD_API_VERSION >= 44
+                hdCam->ComputeProjectionMatrix();
+#else
                 hdCam->GetProjectionMatrix();
+#endif
         }
     }    
     
