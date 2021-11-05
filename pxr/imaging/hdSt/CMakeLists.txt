@@ -44,6 +44,7 @@ pxr_library(hdSt
         glf
         hd
         hgiGL
+        hgiInterop
         sdr
         tf
         trace

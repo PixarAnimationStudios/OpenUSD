@@ -22,20 +22,24 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/unitTestHelper.h"
+#include "pxr/imaging/hdSt/hioConversions.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 
 #include "pxr/imaging/hd/camera.h"
+#include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
+#include "pxr/imaging/hio/image.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/camera.h"
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/scoped.h"
 #include "pxr/base/tf/staticTokens.h"
 
 #include <string>
@@ -108,6 +112,8 @@ HdSt_TestDriverBase::HdSt_TestDriverBase()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
  , _collection(_tokens->testCollection, HdReprSelector())
+ , _clearColor(GfVec4f(0, 0, 0, 1))
+ , _clearDepth(1)
 {
 }
 
@@ -267,6 +273,160 @@ HdSt_TestDriverBase::SetRepr(HdReprSelector const &reprSelector)
     for (const HdRenderPassSharedPtr &renderPass : _renderPasses) {
         renderPass->SetRprimCollection(_collection);
     }
+}
+
+static TfTokenVector _aovOutputs {
+    HdAovTokens->color,
+    HdAovTokens->depth
+};
+
+SdfPath
+HdSt_TestDriverBase::_GetAovPath(TfToken const &aov) const
+{
+    std::string identifier = std::string("aov_") +
+        TfMakeValidIdentifier(aov.GetString());
+    return SdfPath("/testDriver").AppendChild(TfToken(identifier));
+}
+
+void
+HdSt_TestDriverBase::SetupAovs(int width, int height)
+{
+    if (_aovBindings.empty()) {  
+        // Delete old render buffers.
+        for (auto const &id : _aovBufferIds) {
+            _renderIndex->RemoveBprim(HdPrimTypeTokens->renderBuffer, id);
+        }
+
+        _aovBufferIds.clear();
+        _aovBindings.clear();
+        _aovBindings.resize(_aovOutputs.size());
+        
+        GfVec3i dimensions(width, height, 1);
+
+        // Create aov bindings and render buffers.
+        for (size_t i = 0; i < _aovOutputs.size(); i++) {
+            SdfPath aovId = _GetAovPath(_aovOutputs[i]);
+
+            _aovBufferIds.push_back(aovId);
+
+            HdAovDescriptor aovDesc = _renderDelegate.GetDefaultAovDescriptor(
+                _aovOutputs[i]);
+
+            HdRenderBufferDescriptor desc = { dimensions, aovDesc.format,
+                /*multiSampled*/false};
+            _AddRenderBuffer(aovId, desc);
+
+            HdRenderPassAovBinding &binding = _aovBindings[i];
+            binding.aovName = _aovOutputs[i];
+            binding.aovSettings = aovDesc.aovSettings;
+            binding.renderBufferId = aovId;
+            binding.renderBuffer = dynamic_cast<HdRenderBuffer*>(
+                _renderIndex->GetBprim(HdPrimTypeTokens->renderBuffer, aovId));
+
+            if (_aovOutputs[i] == HdAovTokens->color) {
+                binding.clearValue = VtValue(_clearColor);
+            } else if (_aovOutputs[i] == HdAovTokens->depth) {
+                binding.clearValue = VtValue(_clearDepth); 
+            }
+        }
+    }
+
+    for (const HdRenderPassStateSharedPtr &renderPassState: _renderPassStates) {
+        renderPassState->SetAovBindings(_aovBindings);
+    }
+}
+
+bool
+HdSt_TestDriverBase::WriteToFile(std::string const & attachment,
+                                 std::string const & filename)
+{
+    const SdfPath aovId = _GetAovPath(TfToken(attachment));
+
+    HdRenderBuffer * const renderBuffer = dynamic_cast<HdRenderBuffer*>(
+        GetDelegate().GetRenderIndex().GetBprim(HdPrimTypeTokens->renderBuffer,
+            aovId));
+    if (!renderBuffer) {
+        TF_CODING_ERROR("No HdRenderBuffer prim at path %s", aovId.GetText());
+        return false;
+    }
+
+    HioImage::StorageSpec storage;
+    storage.width = renderBuffer->GetWidth();
+    storage.height = renderBuffer->GetHeight();
+    storage.format = 
+        HdStHioConversions::GetHioFormat(renderBuffer->GetFormat());
+    storage.flipped = true;
+    storage.data = renderBuffer->Map();
+    TfScoped<> scopedUnmap([renderBuffer](){ renderBuffer->Unmap(); });
+
+    if (storage.format == HioFormatInvalid) {
+        TF_CODING_ERROR("Render buffer %s has format not corresponding to a"
+                        "HioFormat", aovId.GetText());
+        return false;
+    }
+
+    if (!storage.data) {
+        TF_CODING_ERROR("No data for render buffer %s", aovId.GetText());
+        return false;
+    }
+        
+    HioImageSharedPtr const image = HioImage::OpenForWriting(filename);
+    if (!image) {
+        TF_RUNTIME_ERROR("Failed to open image for writing %s",
+            filename.c_str());
+        return false;
+    }
+
+    if (!image->Write(storage)) {
+        TF_RUNTIME_ERROR("Failed to write image to %s", filename.c_str());
+        return false;
+    }
+
+    return true;
+}
+
+void
+HdSt_TestDriverBase::_AddRenderBuffer(SdfPath const &id, 
+    HdRenderBufferDescriptor const &desc)
+{
+    GetDelegate().AddRenderBuffer(id, desc.dimensions, desc.format,
+        desc.multiSampled);
+}
+
+void
+HdSt_TestDriverBase::UpdateAovDimensions(int width, int height)
+{
+    const GfVec3i dimensions(width, height, 1);
+
+    for (auto const& id : _aovBufferIds) {
+        HdRenderBufferDescriptor desc =
+            GetDelegate().GetRenderBufferDescriptor(id);
+        if (desc.dimensions != dimensions) {
+            GetDelegate().UpdateRenderBuffer(id, dimensions, desc.format, 
+                desc.multiSampled);
+        }
+    }
+}
+
+void
+HdSt_TestDriverBase::Present(int width, int height, uint32_t framebuffer)
+{
+    HgiTextureHandle colorTexture;
+    {
+        HdRenderPassAovBinding const &aovBinding = _aovBindings[0];
+        VtValue aov = aovBinding.renderBuffer->GetResource(false);
+        if (aov.IsHolding<HgiTextureHandle>()) {
+            colorTexture = aov.UncheckedGet<HgiTextureHandle>();
+        }
+    }
+
+    _interop.TransferToApp(
+        _hgi.get(),
+        colorTexture, 
+        /*srcDepth*/HgiTextureHandle(),
+        HgiTokens->OpenGL,
+        VtValue(framebuffer), 
+        GfVec4i(0, 0, width, height));
 }
 
 // --------------------------------------------------------------------------

@@ -283,7 +283,9 @@ public:
     HD_API
     void AddRenderBuffer(SdfPath const &id, GfVec3i const& dims,
                          HdFormat format, bool multiSampled);
-
+    HD_API
+    void UpdateRenderBuffer(SdfPath const &id, GfVec3i const& dims,
+                            HdFormat format, bool multiSampled);
     /// Camera
     HD_API
     void AddCamera(SdfPath const &id);

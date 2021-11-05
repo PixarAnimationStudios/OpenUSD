@@ -78,6 +78,16 @@ public:
     bool WriteToFile(std::string const & attachment,
                      std::string const & filename) const;
 
+    HDST_API
+    virtual bool UsingAovs() const {
+        return false;
+    }
+
+    HDST_API
+    virtual void Present(uint32_t framebuffer) {
+        // do nothing
+    }
+
 protected:
     HDST_API
     virtual void ParseArgs(int argc, char *argv[]);

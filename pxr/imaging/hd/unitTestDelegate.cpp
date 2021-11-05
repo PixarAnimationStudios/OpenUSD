@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/points.h"
+#include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -649,6 +650,15 @@ HdUnitTestDelegate::AddRenderBuffer(SdfPath const &id,
     HdRenderIndex& index = GetRenderIndex();
     index.InsertBprim(HdPrimTypeTokens->renderBuffer, this, id);
     _renderBuffers[id] = _RenderBuffer(dims, format, multiSampled);
+}
+
+void
+HdUnitTestDelegate::UpdateRenderBuffer(SdfPath const &id, 
+    GfVec3i const& dims, HdFormat format, bool multiSampled)
+{
+    _renderBuffers[id] = _RenderBuffer(dims, format, multiSampled);
+    HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+    tracker.MarkBprimDirty(id, HdRenderBuffer::DirtyDescription);
 }
 
 void

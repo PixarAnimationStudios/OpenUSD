@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 #include "pxr/imaging/hdSt/unitTestHelper.h"
@@ -52,6 +51,10 @@ public:
     void InitTest() override;
     void DrawTest() override;
     void OffscreenTest() override;
+    void Present(uint32_t framebuffer) override;
+    bool UsingAovs() const override {
+        return true;
+    }
 
 protected:
     void ParseArgs(int argc, char *argv[]) override;
@@ -94,14 +97,15 @@ My_TestGLDrawing::InitTest()
     }
 
     _driver->SetCameraClipPlanes(_clipPlanes);
+
+    _driver->SetClearColor(GfVec4f(0.1f, 0.1f, 0.1f, 1.0f));
+    _driver->SetClearDepth(1.0f);
+    _driver->SetupAovs(GetWidth(), GetHeight());
 }
 
 void
 My_TestGLDrawing::DrawTest()
 {
-    ClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    ClearDepth(1.0f);
-
     int width = GetWidth(), height = GetHeight();
     GfMatrix4d viewMatrix = GetViewMatrix();
     GfMatrix4d projMatrix = GetProjectionMatrix();
@@ -114,6 +118,8 @@ My_TestGLDrawing::DrawTest()
         CameraUtilFraming(
             GfRect2i(GfVec2i(0, 0), width, height)));
 
+    _driver->UpdateAovDimensions(width, height);
+
     _driver->Draw();
 }
 
@@ -123,8 +129,14 @@ My_TestGLDrawing::OffscreenTest()
     DrawTest();
 
     if (!_outputFilePath.empty()) {
-        WriteToFile("color", _outputFilePath);
+        _driver->WriteToFile("color", _outputFilePath);
     }
+}
+
+void
+My_TestGLDrawing::Present(uint32_t framebuffer)
+{
+    _driver->Present(GetWidth(), GetHeight(), framebuffer);
 }
 
 /* virtual */

@@ -34,6 +34,7 @@
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hio/glslfx.h"
+#include "pxr/imaging/hgiInterop/hgiInterop.h"
 
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -76,9 +77,30 @@ public:
     /// Switch repr
     void SetRepr(HdReprSelector const &reprSelector);
 
+    void SetupAovs(int width, int height);
+
+    void UpdateAovDimensions(int width, int height);
+
+    bool WriteToFile(std::string const & attachment,
+                     std::string const & filename);
+
+    void Present(int width, int height, uint32_t framebuffer);
+
+    void SetClearColor(GfVec4f const &clearColor) {
+        _clearColor = clearColor;
+    }
+
+    void SetClearDepth(float clearDepth) {
+        _clearDepth = clearDepth;
+    }
+
 protected:
     void _Init();
     void _Init(HdReprSelector const &reprSelector);
+
+    SdfPath _GetAovPath(TfToken const &aov) const;
+    void _AddRenderBuffer(SdfPath const &id, 
+        HdRenderBufferDescriptor const &desc);
 
     const HdRprimCollection &_GetCollection() const { return _collection; }
     HdStRenderDelegate * _GetRenderDelegate() { return &_renderDelegate; }
@@ -86,6 +108,9 @@ protected:
 
     std::vector<HdRenderPassSharedPtr> _renderPasses;
     std::vector<HdStRenderPassStateSharedPtr> _renderPassStates;
+
+    HdRenderPassAovBindingVector _aovBindings;
+    SdfPathVector _aovBufferIds;
 
 private:
     // Hgi and HdDriver should be constructed before HdEngine to ensure they
@@ -98,10 +123,15 @@ private:
     HdRenderIndex       *_renderIndex;
     HdUnitTestDelegate *_sceneDelegate;
 
+    HgiInterop _interop;
+
     SdfPath _cameraId;
     HdReprSelector _reprSelector;
 
     HdRprimCollection          _collection;
+
+    GfVec4f _clearColor;
+    float _clearDepth;
 };
 
 /// \class HdSt_DrawTask

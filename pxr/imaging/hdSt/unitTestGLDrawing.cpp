@@ -135,35 +135,42 @@ HdSt_UnitTestWindow::OnPaintGL()
     // Update the draw target's size and execute the unit test with
     // the draw target bound.
     //
-    _drawTarget->Bind();
-    _drawTarget->SetSize(GfVec2i(GetWidth(), GetHeight()));
 
-    glBindVertexArray(_vao);
+    if (!_unitTest->UsingAovs()) {
+        _drawTarget->Bind();
+        _drawTarget->SetSize(GfVec2i(GetWidth(), GetHeight()));
 
-    glViewport(0, 0, GetWidth(), GetHeight());
+        glBindVertexArray(_vao);
 
-    glEnable(GL_DEPTH_TEST);
+        glViewport(0, 0, GetWidth(), GetHeight());
+
+        glEnable(GL_DEPTH_TEST);
+    }
 
     _unitTest->DrawTest();
 
-    glBindVertexArray(0);
+    if (!_unitTest->UsingAovs()) {
+        glBindVertexArray(0);
 
-    _drawTarget->Unbind();
+        _drawTarget->Unbind();
 
-    //
-    // Blit the resulting color buffer to the window (this is a noop
-    // if we're drawing offscreen).
-    //
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, _drawTarget->GetFramebufferId());
+        //
+        // Blit the resulting color buffer to the window (this is a noop
+        // if we're drawing offscreen).
+        //
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, _drawTarget->GetFramebufferId());
 
-    glBlitFramebuffer(0, 0, GetWidth(), GetHeight(),
-                      0, 0, GetWidth(), GetHeight(),
-                      GL_COLOR_BUFFER_BIT,
-                      GL_NEAREST);
+        glBlitFramebuffer(0, 0, GetWidth(), GetHeight(),
+                         0, 0, GetWidth(), GetHeight(),
+                         GL_COLOR_BUFFER_BIT,
+                         GL_NEAREST);
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    } else {
+        _unitTest->Present(/*framebuffer*/0);
+    }
 
     GLF_POST_PENDING_GL_ERRORS();
 }
