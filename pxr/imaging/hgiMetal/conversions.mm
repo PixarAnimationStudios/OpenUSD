@@ -532,9 +532,6 @@ HgiMetalConversions::GetPrimitiveClass(HgiPrimitiveType pt)
 MTLPrimitiveType
 HgiMetalConversions::GetPrimitiveType(HgiPrimitiveType pt)
 {
-    if (pt == HgiPrimitiveTypePatchList) {
-        TF_CODING_ERROR("Patch primitives invalid for Metal");
-    }
     return _primitiveTypeTable[pt].metalPT;
 }
 

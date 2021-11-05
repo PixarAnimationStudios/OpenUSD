@@ -160,6 +160,40 @@ bool operator!=(
     const HgiShaderFunctionParamDesc& lhs,
     const HgiShaderFunctionParamDesc& rhs);
 
+/// \struct HgiShaderFunctionTessellationDesc
+///
+/// Describes a tessellation function's description
+///
+/// <ul>
+/// <li>patchType:
+///   The type of patch</li>
+/// <li>numVertsInPerPatch:
+///   The number of vertices in per patch</li>
+/// <li>numVertsOutPerPatch:
+///   The number of vertices out per patch</li>
+/// </ul>
+///
+struct HgiShaderFunctionTessellationDesc
+{
+    enum class PatchType { Quad, Triangle };
+    HGI_API
+    HgiShaderFunctionTessellationDesc();
+
+    PatchType patchType = PatchType::Triangle;
+    uint32_t numVertsPerPatchIn = 3;
+    uint32_t numVertsPerPatchOut = 3;
+};
+
+HGI_API
+bool operator==(
+        const HgiShaderFunctionTessellationDesc& lhs,
+        const HgiShaderFunctionTessellationDesc& rhs);
+
+HGI_API
+bool operator!=(
+        const HgiShaderFunctionTessellationDesc& lhs,
+        const HgiShaderFunctionTessellationDesc& rhs);
+
 /// \struct HgiShaderFunctionDesc
 ///
 /// Describes the properties needed to create a GPU shader function.
@@ -181,6 +215,8 @@ bool operator!=(
 ///   List of descriptions of the inputs of the shader.</li>
 /// <li>stageOutputs:
 ///   List of descriptions of the outputs of the shader.</li>
+/// <li>tessellationDesc:
+///   Description of tessellation shader function.</li>
 /// </ul>
 ///
 struct HgiShaderFunctionDesc
@@ -195,6 +231,7 @@ struct HgiShaderFunctionDesc
     std::vector<HgiShaderFunctionParamDesc> constantParams;
     std::vector<HgiShaderFunctionParamDesc> stageInputs;
     std::vector<HgiShaderFunctionParamDesc> stageOutputs;
+    HgiShaderFunctionTessellationDesc tessellationDescriptor;
 };
 
 using HgiShaderFunctionDescVector =

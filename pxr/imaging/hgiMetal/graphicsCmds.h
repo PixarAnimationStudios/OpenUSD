@@ -134,6 +134,7 @@ private:
     id<MTLRenderCommandEncoder> _encoder;
     HgiGraphicsCmdsDesc _descriptor;
     HgiPrimitiveType _primitiveType;
+    uint32_t _primitiveIndexSize;
     bool _hasWork;
     MTLViewport _viewport;
     NSString* _debugLabel;

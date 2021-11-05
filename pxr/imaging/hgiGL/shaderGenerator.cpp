@@ -174,6 +174,10 @@ HgiGLShaderGenerator::_Execute(
 {
     ss << _GetVersion() << " \n";
 
+    for (const std::string attr : _shaderLayoutAttributes) {
+        ss << attr;
+    }
+
     HgiGLShaderSectionUniquePtrVector* shaderSections = GetShaderSections();
     //For all shader sections, visit the areas defined for all
     //shader apis. We assume all shader apis have a global space

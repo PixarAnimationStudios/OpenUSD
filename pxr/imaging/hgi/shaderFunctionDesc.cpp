@@ -41,6 +41,9 @@ HgiShaderFunctionBufferDesc::HgiShaderFunctionBufferDesc()
 
 HgiShaderFunctionParamDesc::HgiShaderFunctionParamDesc() = default;
 
+HgiShaderFunctionTessellationDesc::HgiShaderFunctionTessellationDesc()
+= default;
+
 HgiShaderFunctionDesc::HgiShaderFunctionDesc() 
   : shaderStage(0)
   , shaderCode(nullptr)
@@ -48,6 +51,7 @@ HgiShaderFunctionDesc::HgiShaderFunctionDesc()
   , constantParams()
   , stageInputs()
   , stageOutputs()
+  , tessellationDescriptor()
 {
 }
 
@@ -105,6 +109,22 @@ bool operator!=(
 }
 
 bool operator==(
+        const HgiShaderFunctionTessellationDesc& lhs,
+        const HgiShaderFunctionTessellationDesc& rhs)
+{
+    return lhs.patchType == rhs.patchType &&
+    lhs.numVertsPerPatchIn == rhs.numVertsPerPatchIn &&
+    lhs.numVertsPerPatchOut == rhs.numVertsPerPatchOut;
+}
+
+bool operator!=(
+    const HgiShaderFunctionTessellationDesc& lhs,
+    const HgiShaderFunctionTessellationDesc& rhs)
+{
+    return !(lhs == rhs);
+}
+
+bool operator==(
     const HgiShaderFunctionDesc& lhs,
     const HgiShaderFunctionDesc& rhs)
 {
@@ -115,7 +135,8 @@ bool operator==(
            lhs.textures == rhs.textures &&
            lhs.constantParams == rhs.constantParams &&
            lhs.stageInputs == rhs.stageInputs &&
-           lhs.stageOutputs == rhs.stageOutputs;
+           lhs.stageOutputs == rhs.stageOutputs &&
+           lhs.tessellationDescriptor == rhs.tessellationDescriptor;
 }
 
 bool operator!=(

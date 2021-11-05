@@ -75,6 +75,8 @@ void
 HgiGLGraphicsCmds::BindPipeline(HgiGraphicsPipelineHandle pipeline)
 {
     _primitiveType = pipeline->GetDescriptor().primitiveType;
+    _primitiveIndexSize =
+        pipeline->GetDescriptor().tessellationState.primitiveIndexSize;
     _ops.push_back( HgiGLOps::BindPipeline(pipeline) );
 }
 
@@ -121,6 +123,7 @@ HgiGLGraphicsCmds::Draw(
     _ops.push_back(
         HgiGLOps::Draw(
             _primitiveType,
+            _primitiveIndexSize,
             vertexCount,
             vertexOffset,
             instanceCount)
@@ -137,6 +140,7 @@ HgiGLGraphicsCmds::DrawIndirect(
     _ops.push_back(
         HgiGLOps::DrawIndirect(
             _primitiveType,
+            _primitiveIndexSize,
             drawParameterBuffer,
             drawBufferOffset,
             drawCount,
@@ -155,6 +159,7 @@ HgiGLGraphicsCmds::DrawIndexed(
     _ops.push_back(
         HgiGLOps::DrawIndexed(
             _primitiveType,
+            _primitiveIndexSize,
             indexBuffer,
             indexCount,
             indexBufferByteOffset,
@@ -174,6 +179,7 @@ HgiGLGraphicsCmds::DrawIndexedIndirect(
     _ops.push_back(
         HgiGLOps::DrawIndexedIndirect(
             _primitiveType,
+            _primitiveIndexSize,
             indexBuffer,
             drawParameterBuffer,
             drawBufferOffset,

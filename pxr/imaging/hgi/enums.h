@@ -282,21 +282,24 @@ using HgiBufferUsage = HgiBits;
 /// <li>HgiShaderStageTessellationEval:
 ///   Generates the surface geometry (the points) from the transformed control
 ///   points for every coordinate coming out of the tessellator fixed function
-///  stage. </li>
+///  stage.</li>
 /// <li>HgiShaderStageGeometry:
 ///   Governs the processing of Primitives.</li>
+/// <li>HgiShaderStagePostTessellationVertex:
+///   Metal specific stage which performs tessellation and 
+///   vertex processing.</li>
 /// </ul>
 ///
 enum HgiShaderStageBits : HgiBits
 {
-    HgiShaderStageVertex               = 1 << 0,
-    HgiShaderStageFragment             = 1 << 1,
-    HgiShaderStageCompute              = 1 << 2,
-    HgiShaderStageTessellationControl  = 1 << 3,
-    HgiShaderStageTessellationEval     = 1 << 4,
-    HgiShaderStageGeometry             = 1 << 5,
-
-    HgiShaderStageCustomBitsBegin      = 1 << 6,
+    HgiShaderStageVertex                 = 1 << 0,
+    HgiShaderStageFragment               = 1 << 1,
+    HgiShaderStageCompute                = 1 << 2,
+    HgiShaderStageTessellationControl    = 1 << 3,
+    HgiShaderStageTessellationEval       = 1 << 4,
+    HgiShaderStageGeometry               = 1 << 5,
+    HgiShaderStagePostTessellationVertex = 1 << 6,
+    HgiShaderStageCustomBitsBegin        = 1 << 7,
 };
 using HgiShaderStage = HgiBits;
 

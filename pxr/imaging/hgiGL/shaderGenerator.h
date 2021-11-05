@@ -72,6 +72,7 @@ private:
         const std::string &qualifier);
     
     HgiGLShaderSectionUniquePtrVector _shaderSections;
+    std::vector<std::string> _shaderLayoutAttributes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

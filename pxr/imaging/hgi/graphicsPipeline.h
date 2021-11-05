@@ -246,6 +246,38 @@ bool operator!=(
     const HgiGraphicsShaderConstantsDesc& lhs,
     const HgiGraphicsShaderConstantsDesc& rhs);
 
+struct HgiTessellationLevel
+{
+    HGI_API
+    HgiTessellationLevel();
+
+    float innerTessLevel[2];
+    float outerTessLevel[4];
+};
+
+/// \struct HgiTessellationState
+///
+/// Properties to configure tessellation.
+///
+/// <ul>
+/// <li>tessEnabled:
+///   When enabled, set up the pipeline for tessellation.
+/// <li>primitiveIndexSize:
+///   The number of control indices per patch.
+/// <li>tessellationLevel:
+///   The fallback tessellation levels.
+/// </ul>
+///
+struct HgiTessellationState
+{
+    HGI_API
+    HgiTessellationState();
+
+    HgiTessellationLevel tessellationLevel;
+    int primitiveIndexSize;
+    bool tessEnabled;
+};
+
 /// \struct HgiGraphicsPipelineDesc
 ///
 /// Describes the properties needed to create a GPU pipeline.
@@ -276,6 +308,8 @@ bool operator!=(
 ///   Use HgiFormatInvalid to indicate no depth resolve attachment.</li>
 /// <li>shaderConstantsDesc:
 ///   Describes the shader uniforms.</li>
+/// <li>tessellationState:
+///   Describes the tessellation state.</li>
 /// </ul>
 ///
 struct HgiGraphicsPipelineDesc
@@ -295,6 +329,7 @@ struct HgiGraphicsPipelineDesc
     HgiAttachmentDesc depthAttachmentDesc;
     HgiAttachmentDesc depthResolveAttachmentDesc;
     HgiGraphicsShaderConstantsDesc shaderConstantsDesc;
+    HgiTessellationState tessellationState;
 };
 
 HGI_API
