@@ -23,9 +23,11 @@
 //
 #include "pxr/imaging/hdSt/unitTestHelper.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
+#include "pxr/imaging/hdSt/textureUtils.h"
 
 #include "pxr/base/tf/staticTokens.h"
 
+#include <iostream>
 #include <string>
 #include <sstream>
 
@@ -282,6 +284,373 @@ HdSt_TestLightingShader::SetLight(int light,
     }
 }
 
+// --------------------------------------------------------------------------
+
+HdSt_TextureTestDriver::HdSt_TextureTestDriver() :
+    _hgi(Hgi::CreatePlatformDefaultHgi())
+  , _indexBuffer()
+  , _vertexBuffer()
+  , _shaderProgram()
+  , _resourceBindings()
+  , _pipeline()
+{
+    _CreateVertexBufferDescriptor();
+}
+
+void
+HdSt_TextureTestDriver::Draw(HgiTextureHandle const &colorDst, 
+                             HgiTextureHandle const &inputTexture,
+                             HgiSamplerHandle const &inputSampler)
+{
+    const HgiTextureDesc &textureDesc = colorDst->GetDescriptor();
+
+    const GfVec4i viewport(0, 0, textureDesc.dimensions[0], 
+        textureDesc.dimensions[1]);
+    float screenSize[2] = { static_cast<float>(viewport[2]), 
+                            static_cast<float>(viewport[3]) };
+    _constantsData.resize(sizeof(screenSize));
+    memcpy(&_constantsData[0], &screenSize, sizeof(screenSize));
+
+    _CreateShaderProgram();
+    _CreateBufferResources();
+    _CreateTextureBindings(inputTexture, inputSampler);
+    _CreatePipeline(colorDst);
+
+    // Create graphics commands
+    HgiGraphicsCmdsDesc gfxDesc;
+    if (colorDst) {
+        gfxDesc.colorAttachmentDescs.push_back(_attachment0);
+        gfxDesc.colorTextures.push_back(colorDst);
+    }
+
+    HgiGraphicsCmdsUniquePtr gfxCmds = _hgi->CreateGraphicsCmds(gfxDesc);
+    gfxCmds->PushDebugGroup("Debug HdSt_TextureTestDriver");
+    gfxCmds->BindResources(_resourceBindings);
+    gfxCmds->BindPipeline(_pipeline);
+    gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
+    gfxCmds->SetViewport(viewport);
+    gfxCmds->SetConstantValues(_pipeline, HgiShaderStageFragment, 0, 
+        _constantsData.size(), _constantsData.data());
+    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1);
+    gfxCmds->PopDebugGroup();
+
+    _hgi->SubmitCmds(gfxCmds.get());
+}
+
+bool
+HdSt_TextureTestDriver::WriteToFile(HgiTextureHandle const &texture, 
+                                    std::string filename) const
+{
+    const HgiTextureDesc &textureDesc = texture->GetDescriptor();
+
+    HioImage::StorageSpec storage;
+    storage.width = textureDesc.dimensions[0];
+    storage.height = textureDesc.dimensions[1];
+    storage.format = HioFormatFloat32Vec4;
+    storage.flipped = true;
+
+    std::vector<uint8_t> buffer;
+    HdStTextureUtils::HgiTextureReadback(_hgi.get(), texture, &buffer);
+    storage.data = buffer.data();
+
+    if (storage.format == HioFormatInvalid) {
+        TF_CODING_ERROR("Hgi texture has format not corresponding to a"
+                        "HioFormat");
+        return false;
+    }
+
+    if (!storage.data) {
+        TF_CODING_ERROR("No data for texture");
+        return false;
+    }
+        
+    HioImageSharedPtr const image = HioImage::OpenForWriting(filename);
+    if (!image) {
+        TF_RUNTIME_ERROR("Failed to open image for writing %s",
+            filename.c_str());
+        return false;
+    }
+
+    if (!image->Write(storage)) {
+        TF_RUNTIME_ERROR("Failed to write image to %s", filename.c_str());
+        return false;
+    }
+
+    return true;
+}
+
+static const std::string vertShaderStr =
+"-- glslfx version 0.1\n"
+"-- configuration\n"
+"{\n"
+"    \"techniques\": {\n"
+"        \"default\": {\n"
+"            \"VertexPassthrough\": {\n"
+"                \"source\": [ \"Vertex.Main\" ]\n"
+"            }\n"
+"        }\n"
+"    }\n"
+"}\n"
+"-- glsl Vertex.Main\n"
+"void main(void)\n"
+"{\n"
+"    gl_Position = position;\n"
+"    uvOut = uvIn;\n"
+"}\n";
+
+static const std::string fragShaderStr = 
+"-- glslfx version 0.1\n"
+"-- configuration\n"
+"{\n"
+"    \"techniques\": {\n"
+"        \"default\": {\n"
+"            \"FullscreenTexture\": {\n"
+"                \"source\": [ \"Fragment.Main\" ]\n"
+"            }\n"
+"        }\n"
+"    }\n"
+"}\n"
+"-- glsl Fragment.Main\n"
+"void main(void)\n"
+"{\n"
+"    vec2 coord = (uvOut * screenSize) / 100.f;\n"
+"    vec4 color = vec4(HdGet_colorIn(coord).xyz, 1.0);\n"
+"    hd_FragColor = color;\n"
+"}\n";
+
+void
+HdSt_TextureTestDriver::_CreateShaderProgram()
+{
+    if (_pipeline) {
+        _hgi->DestroyGraphicsPipeline(&_pipeline);
+    }
+    if (_shaderProgram) {
+        _DestroyShaderProgram();
+    }
+
+    HgiShaderFunctionDesc vertDesc;
+    vertDesc.debugName = TfToken("Vertex");
+    vertDesc.shaderStage = HgiShaderStageVertex;
+    HgiShaderFunctionAddStageInput(
+        &vertDesc, "position", "vec4", "position");
+    HgiShaderFunctionAddStageInput(
+        &vertDesc, "uvIn", "vec2");
+    HgiShaderFunctionAddStageOutput(
+        &vertDesc, "gl_Position", "vec4", "position");
+    HgiShaderFunctionAddStageOutput(
+        &vertDesc, "uvOut", "vec2");
+
+    HgiShaderFunctionDesc fragDesc;
+    fragDesc.debugName = TfToken("Fragment");
+    fragDesc.shaderStage = HgiShaderStageFragment;
+    HgiShaderFunctionAddStageInput(
+        &fragDesc, "uvOut", "vec2");
+    HgiShaderFunctionAddTexture(
+        &fragDesc, "colorIn");
+    HgiShaderFunctionAddStageOutput(
+        &fragDesc, "hd_FragColor", "vec4", "color");
+    HgiShaderFunctionAddConstantParam(
+        &fragDesc, "screenSize", "vec2");
+
+    std::istringstream vertShaderStream(vertShaderStr);
+    std::istringstream fragShaderStream(fragShaderStr);
+    const HioGlslfx vsGlslfx = HioGlslfx(vertShaderStream);
+    const HioGlslfx fsGlslfx = HioGlslfx(fragShaderStream);
+
+    // Setup the vertex shader
+    std::string vsCode;
+    if (_hgi->GetAPIName() == HgiTokens->OpenGL) {
+        vsCode = "#version 450 \n";
+    }
+    vsCode += vsGlslfx.GetSource(TfToken("VertexPassthrough"));
+    TF_VERIFY(!vsCode.empty());
+    vertDesc.shaderCode = vsCode.c_str();
+    HgiShaderFunctionHandle vertFn = _hgi->CreateShaderFunction(vertDesc);
+
+    // Setup the fragment shader
+    std::string fsCode;
+    if (_hgi->GetAPIName() == HgiTokens->OpenGL) {
+        fsCode = "#version 450 \n";
+    }
+    fsCode += fsGlslfx.GetSource(TfToken("FullscreenTexture"));
+    TF_VERIFY(!fsCode.empty());
+    fragDesc.shaderCode = fsCode.c_str();
+    HgiShaderFunctionHandle fragFn = _hgi->CreateShaderFunction(fragDesc);
+
+    // Setup the shader program
+    HgiShaderProgramDesc programDesc;
+    programDesc.debugName = TfToken("FullscreenTriangle").GetString();
+    programDesc.shaderFunctions.push_back(std::move(vertFn));
+    programDesc.shaderFunctions.push_back(std::move(fragFn));
+    _shaderProgram = _hgi->CreateShaderProgram(programDesc);
+
+    if (!_shaderProgram->IsValid() || !vertFn->IsValid() || !fragFn->IsValid()){
+        TF_CODING_ERROR("Failed to create shader program");
+        _PrintCompileErrors();
+        _DestroyShaderProgram();
+        return;
+    }
+}
+
+void
+HdSt_TextureTestDriver::_CreateBufferResources()
+{
+    if (_vertexBuffer) {
+        return;
+    }
+
+    constexpr size_t elementsPerVertex = 6;
+    constexpr size_t vertDataCount = elementsPerVertex * 3;
+    constexpr float vertDataGL[vertDataCount] = 
+            { -1,  1, 0, 1,     0, 1,
+              -1, -1, 0, 1,     0, 0,
+               1, -1, 0, 1,     1, 0};
+
+    constexpr float vertDataOther[vertDataCount] =
+            { -1,  1, 0, 1,     0, -1,
+              -1, -1, 0, 1,     0, 1,
+               1, -1, 0, 1,     1, 1};
+
+    HgiBufferDesc vboDesc;
+    vboDesc.debugName = "HdSt_TextureTestDriver VertexBuffer";
+    vboDesc.usage = HgiBufferUsageVertex;
+    vboDesc.initialData = _hgi->GetAPIName() != HgiTokens->OpenGL 
+        ? vertDataOther : vertDataGL;
+    vboDesc.byteSize = sizeof(vertDataGL);
+    vboDesc.vertexStride = elementsPerVertex * sizeof(vertDataGL[0]);
+    _vertexBuffer = _hgi->CreateBuffer(vboDesc);
+
+    static const int32_t indices[3] = { 0, 1, 2 };
+
+    HgiBufferDesc iboDesc;
+    iboDesc.debugName = "HdSt_TextureTestDriver IndexBuffer";
+    iboDesc.usage = HgiBufferUsageIndex32;
+    iboDesc.initialData = indices;
+    iboDesc.byteSize = sizeof(indices) * sizeof(indices[0]);
+    _indexBuffer = _hgi->CreateBuffer(iboDesc);
+}
+
+bool
+HdSt_TextureTestDriver::_CreateTextureBindings(
+    HgiTextureHandle const &textureHandle, 
+    HgiSamplerHandle const &samplerHandle)
+{
+    HgiResourceBindingsDesc resourceDesc;
+    resourceDesc.debugName = "HdSt_TextureTestDriver";
+
+    if (textureHandle) {
+        HgiTextureBindDesc texBindDesc;
+        texBindDesc.bindingIndex = 0;
+        texBindDesc.stageUsage = HgiShaderStageFragment;
+        texBindDesc.textures.push_back(textureHandle);
+        if (samplerHandle) {
+            texBindDesc.samplers.push_back(samplerHandle);
+        }
+        resourceDesc.textures.push_back(std::move(texBindDesc));
+    }
+
+    // If nothing has changed in the descriptor we avoid re-creating the
+    // resource bindings object.
+    if (_resourceBindings) {
+        HgiResourceBindingsDesc const& desc= _resourceBindings->GetDescriptor();
+        if (desc == resourceDesc) {
+            return true;
+        }
+    }
+
+    _resourceBindings = _hgi->CreateResourceBindings(resourceDesc);
+
+    return true;
+}
+
+void
+HdSt_TextureTestDriver::_CreateVertexBufferDescriptor()
+{
+    HgiVertexAttributeDesc posAttr;
+    posAttr.format = HgiFormatFloat32Vec3;
+    posAttr.offset = 0;
+    posAttr.shaderBindLocation = 0;
+
+    HgiVertexAttributeDesc uvAttr;
+    uvAttr.format = HgiFormatFloat32Vec2;
+    uvAttr.offset = sizeof(float) * 4; // after posAttr
+    uvAttr.shaderBindLocation = 1;
+
+    _vboDesc.bindingIndex = 0;
+    _vboDesc.vertexStride = sizeof(float) * 6; // pos, uv
+    _vboDesc.vertexAttributes = { posAttr, uvAttr };
+}
+
+bool
+HdSt_TextureTestDriver::_CreatePipeline(HgiTextureHandle const& colorDst)
+{   
+    if (_pipeline) {
+        _hgi->DestroyGraphicsPipeline(&_pipeline);
+    }
+
+    // Setup attachments
+    _attachment0.blendEnabled = false;
+    _attachment0.loadOp = HgiAttachmentLoadOpDontCare;
+    _attachment0.storeOp = HgiAttachmentStoreOpStore;
+    _attachment0.srcColorBlendFactor = HgiBlendFactorZero;
+    _attachment0.dstColorBlendFactor = HgiBlendFactorZero;
+    _attachment0.colorBlendOp = HgiBlendOpAdd;
+    _attachment0.srcAlphaBlendFactor = HgiBlendFactorZero;
+    _attachment0.dstAlphaBlendFactor = HgiBlendFactorZero;
+    _attachment0.alphaBlendOp = HgiBlendOpAdd;
+
+    if (colorDst) {
+        _attachment0.format = colorDst->GetDescriptor().format;
+        _attachment0.usage = colorDst->GetDescriptor().usage;
+    } else {
+        _attachment0.format = HgiFormatInvalid;
+    }
+
+    HgiGraphicsPipelineDesc desc;
+    desc.debugName = "TestPipeline";
+    desc.shaderProgram = _shaderProgram;
+    if (_attachment0.format != HgiFormatInvalid) {
+        desc.colorAttachmentDescs.push_back(_attachment0);
+    }
+
+    HgiDepthStencilState depthState;
+    depthState.depthTestEnabled = true;
+    depthState.depthCompareFn = HgiCompareFunctionAlways;
+    depthState.stencilTestEnabled = false;
+    desc.depthState = depthState;
+
+    desc.vertexBuffers = { _vboDesc };
+    desc.depthState.depthWriteEnabled = false;
+    desc.multiSampleState.alphaToCoverageEnable = false;
+    desc.rasterizationState.cullMode = HgiCullModeBack;
+    desc.rasterizationState.polygonMode = HgiPolygonModeFill;
+    desc.rasterizationState.winding = HgiWindingCounterClockwise;
+    desc.shaderProgram = _shaderProgram;
+    desc.shaderConstantsDesc.byteSize = _constantsData.size();
+    desc.shaderConstantsDesc.stageUsage = HgiShaderStageFragment;
+
+    _pipeline = _hgi->CreateGraphicsPipeline(desc);
+
+    return true;
+}
+
+void
+HdSt_TextureTestDriver::_DestroyShaderProgram()
+{
+    for (HgiShaderFunctionHandle fn : _shaderProgram->GetShaderFunctions()) {
+        _hgi->DestroyShaderFunction(&fn);
+    }
+    _hgi->DestroyShaderProgram(&_shaderProgram);
+}
+
+void
+HdSt_TextureTestDriver::_PrintCompileErrors()
+{
+    for (HgiShaderFunctionHandle fn : _shaderProgram->GetShaderFunctions()) {
+        std::cout << fn->GetCompileErrors() << std::endl;
+    }
+    std::cout << _shaderProgram->GetCompileErrors() << std::endl;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

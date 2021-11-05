@@ -604,6 +604,43 @@ private:
     std::unique_ptr<HioGlslfx> _glslfx;
 };
 
+// --------------------------------------------------------------------------
+
+class HdSt_TextureTestDriver
+{
+public:
+    HdSt_TextureTestDriver();
+    
+    void Draw(HgiTextureHandle const &colorDst, 
+              HgiTextureHandle const &inputTexture,
+              HgiSamplerHandle const &inputSampler);
+
+    bool WriteToFile(HgiTextureHandle const &dstTexture, 
+                     std::string filename) const;
+
+    Hgi * GetHgi() { return _hgi.get(); }
+
+private:
+    void _CreateShaderProgram();
+    void _DestroyShaderProgram();
+    void _CreateBufferResources();
+    bool _CreateTextureBindings(HgiTextureHandle const &textureHandle, 
+                                HgiSamplerHandle const &samplerHandle);
+    void _CreateVertexBufferDescriptor();
+    bool _CreatePipeline(HgiTextureHandle const &colorDst);
+    void _PrintCompileErrors();
+
+    HgiUniquePtr _hgi;
+    HgiBufferHandle _indexBuffer;
+    HgiBufferHandle _vertexBuffer;
+    HgiShaderProgramHandle _shaderProgram;
+    HgiResourceBindingsHandle _resourceBindings;
+    HgiGraphicsPipelineHandle _pipeline;
+    HgiVertexBufferDesc _vboDesc;
+    HgiAttachmentDesc _attachment0;
+    std::vector<uint8_t> _constantsData;
+};
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
