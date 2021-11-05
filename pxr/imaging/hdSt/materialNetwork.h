@@ -26,8 +26,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
+#include "pxr/base/vt/dictionary.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

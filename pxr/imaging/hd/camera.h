@@ -31,7 +31,6 @@
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
-#include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/range1f.h"

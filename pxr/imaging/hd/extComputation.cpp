@@ -23,15 +23,8 @@
 //
 
 #include "pxr/imaging/hd/extComputation.h"
-#include "pxr/imaging/hd/extComputationContext.h"
-#include "pxr/imaging/hd/compExtCompInputSource.h"
-#include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
 
 #include "pxr/base/tf/envSetting.h"
-
-#include "pxr/base/arch/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -57,6 +50,8 @@ HdExtComputation::HdExtComputation(SdfPath const &id)
  , _gpuKernelSource()
 {
 }
+
+HdExtComputation::~HdExtComputation() = default;
 
 void
 HdExtComputation::Sync(HdSceneDelegate *sceneDelegate,

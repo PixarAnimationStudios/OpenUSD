@@ -51,7 +51,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdMeshReprDescTokens, HD_API,
 ///
 /// Descriptor to configure the drawItem(s) for a repr
 ///
-struct HdMeshReprDesc {
+struct HdMeshReprDesc
+{
     HdMeshReprDesc(HdMeshGeomStyle geomStyle = HdMeshGeomStyleInvalid,
                    HdCullStyle cullStyle = HdCullStyleDontCare,
                    TfToken shadingTerminal = HdMeshReprDescTokens->surfaceShader,
@@ -102,10 +103,11 @@ struct HdMeshReprDesc {
 
 /// Hydra Schema for a subdivision surface or poly-mesh object.
 ///
-class HdMesh : public HdRprim {
+class HdMesh : public HdRprim
+{
 public:
     HD_API
-    virtual ~HdMesh();
+    ~HdMesh() override;
 
     ///
     /// Render State
@@ -149,7 +151,7 @@ protected:
     HdMesh(SdfPath const& id);
 
     // We allow up to 2 repr descs per repr for meshes (see ConfigureRepr above)
-    typedef _ReprDescConfigs<HdMeshReprDesc, 2> _MeshReprConfig;
+    using _MeshReprConfig = _ReprDescConfigs<HdMeshReprDesc, 2>;
 
     HD_API
     static _MeshReprConfig::DescArray _GetReprDesc(TfToken const &reprName);
