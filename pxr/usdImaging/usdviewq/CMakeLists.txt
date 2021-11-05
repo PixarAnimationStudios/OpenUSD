@@ -49,8 +49,8 @@ pxr_library(usdviewq
         pythonInterpreter.py
         settings.py
         settings2.py
-        adjustClipping.py
         adjustDefaultMaterial.py
+        adjustFreeCamera.py
         preferences.py
         primViewItem.py
         common.py
@@ -71,8 +71,8 @@ pxr_library(usdviewq
 
     PYSIDE_UI_FILES
         mainWindowUI.ui
-        adjustClippingUI.ui
         adjustDefaultMaterialUI.ui
+        adjustFreeCameraUI.ui
         attributeValueEditorUI.ui
         preferencesUI.ui
         primLegendUI.ui

@@ -55,7 +55,8 @@ from .primTreeWidget import PrimTreeWidget, PrimViewColumnIndex
 from .primViewItem import PrimViewItem
 from .variantComboBox import VariantComboBox
 from .legendUtil import ToggleLegendWithBrowser
-from . import prettyPrint, adjustClipping, adjustDefaultMaterial, preferences, settings
+from . import (prettyPrint, adjustFreeCamera, adjustDefaultMaterial,
+               preferences, settings)
 from .selectionDataModel import ALL_INSTANCES, SelectionDataModel
 
 # Common Utilities
@@ -834,8 +835,8 @@ class AppController(QtCore.QObject):
                 self._ui.actionAuto_Compute_Clipping_Planes.triggered.connect(
                     self._toggleAutoComputeClippingPlanes)
 
-            self._ui.actionAdjust_Clipping.triggered[bool].connect(
-                self._adjustClippingPlanes)
+            self._ui.actionAdjust_Free_Camera.triggered[bool].connect(
+                self._adjustFreeCamera)
 
             self._ui.actionAdjust_Default_Material.triggered[bool].connect(
                 self._adjustDefaultMaterial)
@@ -873,8 +874,6 @@ class AppController(QtCore.QObject):
             self._ui.actionReload_All_Layers.triggered.connect(self._reloadStage)
 
             self._ui.actionToggle_Framed_View.triggered.connect(self._toggleFramedView)
-
-            self._ui.actionAdjust_FOV.triggered.connect(self._adjustFOV)
 
             self._ui.complexityGroup = QtWidgets.QActionGroup(self._mainWindow)
             self._ui.complexityGroup.setExclusive(True)
@@ -1906,25 +1905,21 @@ class AppController(QtCore.QObject):
         """Update the complexity from a selected QAction."""
         self._setComplexity(RefinementComplexities.fromName(action.text()))
 
-    def _adjustFOV(self):
-        fov = QtWidgets.QInputDialog.getDouble(self._mainWindow, "Adjust FOV",
-            "Enter a value between 0 and 180", self._dataModel.viewSettings.freeCameraFOV, 0, 180)
-        if (fov[1]):
-            self._dataModel.viewSettings.freeCameraFOV = fov[0]
-
-    def _adjustClippingPlanes(self, checked):
+    def _adjustFreeCamera(self, checked):
         # Eventually, this will not be accessible when _stageView is None.
         # Until then, silently ignore.
         if self._stageView:
             if (checked):
-                self._adjustClippingDlg = adjustClipping.AdjustClipping(self._mainWindow,
-                                                                     self._stageView)
-                self._adjustClippingDlg.finished.connect(
-                    lambda status : self._ui.actionAdjust_Clipping.setChecked(False))
+                self._adjustFreeCameraDlg = adjustFreeCamera.AdjustFreeCamera(
+                    self._mainWindow, self._dataModel, self._stageView,
+                    self._stageView.signalFrustumChanged)
+                self._adjustFreeCameraDlg.finished.connect(
+                    lambda status :
+                    self._ui.actionAdjust_Free_Camera.setChecked(False))
 
-                self._adjustClippingDlg.show()
+                self._adjustFreeCameraDlg.show()
             else:
-                self._adjustClippingDlg.close()
+                self._adjustFreeCameraDlg.close()
 
     def _adjustDefaultMaterial(self, checked):
         if (checked):
@@ -2562,10 +2557,11 @@ class AppController(QtCore.QObject):
 
         return windowShot
 
-    def GrabViewportShot(self):
+    def GrabViewportShot(self, cropToAspectRatio=False):
         '''Returns a QImage of the current stage view in usdview.'''
         if self._stageView:
-            return self._stageView.grabFrameBuffer()
+            return self._stageView.grabFrameBuffer(
+                cropToAspectRatio=cropToAspectRatio)
         else:
             return None
 

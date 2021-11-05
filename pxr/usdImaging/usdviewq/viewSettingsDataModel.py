@@ -73,6 +73,16 @@ def invisibleViewSetting(f):
         self.signalSettingChanged.emit()
     return wrapper
 
+
+def freeCameraViewSetting(f):
+    def wrapper(self, *args, **kwargs):
+        f(self, *args, **kwargs)
+        # If f raises an exception, the signal is not emitted.
+        self.signalFreeCameraSettingChanged.emit()
+        self.signalSettingChanged.emit()
+    return wrapper
+
+
 """Class to hold OCIO display, view, and colorSpace settings.
 The underlying data is somewhat opaque (for view it is strings, but
 for an app-controler it may be the Qt object)
@@ -104,6 +114,12 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     # emitted when any view setting which may affect the rendered image changes
     signalVisibleSettingChanged = QtCore.Signal()
 
+    # emitted when any view setting that affects the free camera changes. This
+    # signal allows clients to switch to the free camera whenever its settings
+    # are modified. Some operations may cause this signal to be emitted multiple
+    # times.
+    signalFreeCameraSettingChanged = QtCore.Signal()
+
     # emitted when autoClipping changes value, so that clients can initialize
     # it efficiently.  This signal will be emitted *before* 
     # signalVisibleSettingChanged when autoClipping changes.
@@ -128,6 +144,8 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._redrawOnScrub = self.stateProperty("redrawOnScrub", default=True)
         self._renderMode = self.stateProperty("renderMode", default=RenderModes.SMOOTH_SHADED)
         self._freeCameraFOV = self.stateProperty("freeCameraFOV", default=60.0)
+        self._freeCameraAspect = self.stateProperty("freeCameraAspect", default=1.0)
+        self._lockFreeCameraAspect = self.stateProperty("lockFreeCameraAspect", default=False)
         self._colorCorrectionMode = self.stateProperty("colorCorrectionMode", default=ColorCorrectionModes.SRGB)
         self._ocioSettings = OCIOSettings('')
         self._pickMode = self.stateProperty("pickMode", default=PickModes.PRIMS)
@@ -196,6 +214,8 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         state["redrawOnScrub"] = self._redrawOnScrub
         state["renderMode"] = self._renderMode
         state["freeCameraFOV"] = self._freeCameraFOV
+        state["freeCameraAspect"] = self._freeCameraAspect
+        state["lockFreeCameraAspect"] = self._lockFreeCameraAspect
         state["colorCorrectionMode"] = self._colorCorrectionMode
         state["pickMode"] = self._pickMode
         state["selectionHighlightMode"] = self._selHighlightMode
@@ -309,7 +329,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         return self._freeCameraFOV
 
     @freeCameraFOV.setter
-    @visibleViewSetting
+    @freeCameraViewSetting
     def freeCameraFOV(self, value):
         if self._freeCamera:
             # Setting the freeCamera's fov will trigger our own update
@@ -317,10 +337,39 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         else:
             self._freeCameraFOV = value
 
-    @visibleViewSetting
-    def _updateFOV(self):
+    @property
+    def freeCameraAspect(self):
+        return self._freeCameraAspect
+    
+    @freeCameraAspect.setter
+    @freeCameraViewSetting
+    def freeCameraAspect(self, value):
+        if self._freeCamera:
+            # Setting the freeCamera's aspect ratio will trigger our own update
+            self._freeCamera.aspectRatio = value
+        else:
+            self._freeCameraAspect = value
+
+    @freeCameraViewSetting
+    def _frustumChanged(self):
         if self._freeCamera:
             self._freeCameraFOV = self.freeCamera.fov
+            if self._lockFreeCameraAspect:
+                self._freeCameraAspect = self.freeCamera.aspectRatio
+
+    @property
+    def lockFreeCameraAspect(self):
+        return self._lockFreeCameraAspect
+    
+    @lockFreeCameraAspect.setter
+    @visibleViewSetting
+    def lockFreeCameraAspect(self, value):
+        self._lockFreeCameraAspect = value
+
+        if value and not self.showMask:
+            # Make sure the camera mask is turned on so the locked aspect ratio
+            # is visible in the viewport.
+            self.cameraMaskMode = CameraMaskModes.FULL
 
     @property
     def colorCorrectionMode(self):
@@ -691,10 +740,11 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         if not isinstance(value, FreeCamera) and value != None:
             raise TypeError("Free camera must be a FreeCamera object.")
         if self._freeCamera:
-            self._freeCamera.signalFrustumChanged.disconnect(self._updateFOV)
+            self._freeCamera.signalFrustumChanged.disconnect(
+                self._frustumChanged)
         self._freeCamera = value
         if self._freeCamera:
-            self._freeCamera.signalFrustumChanged.connect(self._updateFOV)
+            self._freeCamera.signalFrustumChanged.connect(self._frustumChanged)
             self._freeCameraFOV = self._freeCamera.fov
 
     @property

@@ -734,17 +734,17 @@ class StageView(QtOpenGL.QGLWidget):
     @property
     def showReticles(self):
         return ((self._dataModel.viewSettings.showReticles_Inside or self._dataModel.viewSettings.showReticles_Outside)
-                and self._dataModel.viewSettings.cameraPrim != None)
+                and self.hasLockedAspectRatio())
 
     @property
     def _fitCameraInViewport(self):
-       return ((self._dataModel.viewSettings.showMask or self._dataModel.viewSettings.showMask_Outline or self.showReticles)
-               and self._dataModel.viewSettings.cameraPrim != None)
+        return ((self._dataModel.viewSettings.showMask or self._dataModel.viewSettings.showMask_Outline or self.showReticles)
+                and self.hasLockedAspectRatio())
 
     @property
     def _cropImageToCameraViewport(self):
-       return ((self._dataModel.viewSettings.showMask and self._dataModel.viewSettings.showMask_Opaque)
-               and self._dataModel.viewSettings.cameraPrim != None)
+        return ((self._dataModel.viewSettings.showMask and self._dataModel.viewSettings.showMask_Opaque)
+                and self.hasLockedAspectRatio())
 
     @property
     def cameraPrim(self):
@@ -871,6 +871,8 @@ class StageView(QtOpenGL.QGLWidget):
         # is changed.
         self._dataModel.viewSettings.signalVisibleSettingChanged.connect(
             self.update)
+        self._dataModel.viewSettings.signalFreeCameraSettingChanged.connect(
+            self._onFreeCameraSettingChanged)
 
         self._dataModel.viewSettings.signalAutoComputeClippingPlanesChanged\
                                     .connect(self._onAutoComputeClippingChanged)
@@ -882,6 +884,7 @@ class StageView(QtOpenGL.QGLWidget):
         self._dataModel.viewSettings.freeCamera = FreeCamera(True,
                                     self._dataModel.viewSettings.freeCameraFOV)
         self._lastComputedGfCamera = None
+        self._lastAspectRatio = 1.0
 
         # prep Mask regions
         self._mask = Mask()
@@ -1504,16 +1507,22 @@ class StageView(QtOpenGL.QGLWidget):
         if cameraPrim and cameraPrim.IsActive():
             return cameraPrim
         return None
+
+    def hasLockedAspectRatio(self):
+        """True if the camera has a defined aspect ratio that should not change
+        when the viewport is resized."""
+        return bool(self.getActiveSceneCamera()) or \
+            self._dataModel.viewSettings.lockFreeCameraAspect
     
     # XXX: Consolidate window/frustum conformance code that is littered in
     # several places.
     def computeWindowPolicy(self, cameraAspectRatio):
-        # The freeCam always uses 'MatchVertically'.
-        # When using a scene cam, we factor in the masking setting and window
-        # size to compute it.
+        # The default freeCam uses 'MatchVertically'.
+        # When using a scene cam, or a freeCam with lockFreeCameraAspect=True,
+        # we factor in the masking setting and window size to compute it.
         windowPolicy = CameraUtil.MatchVertically
         
-        if self.getActiveSceneCamera():
+        if self.hasLockedAspectRatio():
             if self._cropImageToCameraViewport:
                 targetAspect = (
                     float(self.size().width()) / max(1.0, self.size().height()))
@@ -1550,6 +1559,11 @@ class StageView(QtOpenGL.QGLWidget):
             gfCam = self._dataModel.viewSettings.freeCamera.computeGfCamera(
                             self._bbox, autoClip=self.autoClip)
 
+            if self.hasLockedAspectRatio():
+                # Copy the camera before calling ConformWindow so we don't
+                # overwrite the camera's aspect ratio.
+                gfCam = Gf.Camera(gfCam)
+
         cameraAspectRatio = gfCam.aspectRatio
 
         # Conform the camera's frustum to the window viewport, if necessary.
@@ -1564,6 +1578,7 @@ class StageView(QtOpenGL.QGLWidget):
                           self._lastComputedGfCamera.frustum != gfCam.frustum)
         # We need to COPY the camera, not assign it...
         self._lastComputedGfCamera = Gf.Camera(gfCam)
+        self._lastAspectRatio = cameraAspectRatio
         if frustumChanged:
             self.signalFrustumChanged.emit()
         return (gfCam, cameraAspectRatio)
@@ -2000,6 +2015,38 @@ class StageView(QtOpenGL.QGLWidget):
         # draw HUD
         self._hud.draw(self)
 
+    def grabFrameBuffer(self, cropToAspectRatio=False):
+        """
+        Returns an image of the frame buffer. If cropToAspectRatio is True
+        and the camera mask is shown, the image is cropped to the camera's
+        aspect ratio.
+        """
+        image = super(StageView, self).grabFrameBuffer()
+        cropToAspectRatio &= self._dataModel.viewSettings.showMask
+        cropToAspectRatio &= self.hasLockedAspectRatio()
+
+        if not cropToAspectRatio:
+            return image
+
+        _, aspectRatio = self.resolveCamera()
+        if not aspectRatio:
+            return image
+
+        imageWidth = image.width()
+        imageHeight = image.height()
+        imageAspectRatio = float(imageWidth) / float(imageHeight)
+        if imageAspectRatio < aspectRatio:
+            targetWidth = imageWidth
+            targetHeight = targetWidth / aspectRatio
+            x = 0
+            y = (imageHeight - targetHeight) / 2.0
+        else:
+            targetHeight = imageHeight
+            targetWidth = targetHeight * aspectRatio
+            x = (imageWidth - targetWidth) / 2.0
+            y = 0
+        return image.copy(x, y, targetWidth, targetHeight)
+
     def sizeHint(self):
         return QtCore.QSize(460, 460)
 
@@ -2018,6 +2065,16 @@ class StageView(QtOpenGL.QGLWidget):
                 self._dataModel.viewSettings.freeCamera = FreeCamera(
                     self._stageIsZup,
                     self._dataModel.viewSettings.freeCameraFOV)
+
+            if self._dataModel.viewSettings.lockFreeCameraAspect:
+                # Update free camera aspect ratio to match the current camera.
+                freeCamera = self._dataModel.viewSettings.freeCamera
+                if self._lastAspectRatio < freeCamera.aspectRatio:
+                    freeCamera.horizontalAperture = \
+                        self._lastAspectRatio * freeCamera.verticalAperture
+                else:
+                    freeCamera.verticalAperture = \
+                        freeCamera.horizontalAperture / self._lastAspectRatio
 
             # override clipping plane state is managed by StageView,
             # so that it can be persistent.  Therefore we must restore it
@@ -2135,6 +2192,12 @@ class StageView(QtOpenGL.QGLWidget):
                 self.switchToFreeCamera()
             else:
                 self.computeAndSetClosestDistance()
+
+    def _onFreeCameraSettingChanged(self):
+        """Switch to the free camera if any of its settings have been modified.
+        """
+        self.switchToFreeCamera()
+        self.update()
 
     def computeAndSetClosestDistance(self):
         '''Using the current FreeCamera's frustum, determine the world-space
