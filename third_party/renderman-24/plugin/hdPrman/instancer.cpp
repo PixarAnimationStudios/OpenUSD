@@ -140,10 +140,22 @@ HdPrmanInstancer::SampleInstanceTransforms(
     HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES> translates;
     HdTimeSampleArray<VtQuathArray, HDPRMAN_MAX_TIME_SAMPLES> rotates;
     HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES> scales;
-    instanceXforms.UnboxFrom(boxedInstanceXforms);
-    translates.UnboxFrom(boxedTranslates);
-    rotates.UnboxFrom(boxedRotates);
-    scales.UnboxFrom(boxedScales);
+    if (!instanceXforms.UnboxFrom(boxedInstanceXforms)) {
+        TF_WARN("<%s> instanceTransform did not have expected type matrix4d[]",
+                instancerId.GetText());
+    }
+    if (!translates.UnboxFrom(boxedTranslates)) {
+        TF_WARN("<%s> translate did not have expected type vec3f[]",
+                instancerId.GetText());
+    }
+    if (!rotates.UnboxFrom(boxedRotates)) {
+        TF_WARN("<%s> rotate did not have expected type quath[]",
+                instancerId.GetText());
+    }
+    if (!scales.UnboxFrom(boxedScales)) {
+        TF_WARN("<%s> scale did not have expected type vec3f[]",
+                instancerId.GetText());
+    }
 
     // As a simple resampling strategy, find the input with the max #
     // of samples and use its sample placement.  In practice we expect

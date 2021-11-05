@@ -144,7 +144,10 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_Context *context,
     {
         HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedPoints;
         sceneDelegate->SamplePrimvar(id, HdTokens->points, &boxedPoints);
-        points.UnboxFrom(boxedPoints);
+        if (!points.UnboxFrom(boxedPoints)) {
+            TF_WARN("<%s> points did not have expected type vec3f[]",
+                    id.GetText());
+        }
     }
 
     primvars.SetTimes(points.count, &points.times[0]);
