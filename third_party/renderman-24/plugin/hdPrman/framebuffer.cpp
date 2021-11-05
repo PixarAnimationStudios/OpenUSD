@@ -132,6 +132,8 @@ static PtDspyError HydraDspyImageData(
         return PkDspyErrorBadParams;
     }
 
+    buf->newData = true;
+
     if (buf->pendingClear)
     {
         buf->pendingClear = false;
@@ -365,6 +367,7 @@ HdPrmanFramebuffer::Resize(int width, int height,
         cropOrigin[0] = cropXMin;
         cropOrigin[1] = cropYMin;
         pendingClear = true;
+        newData = true;
 
         for(HdPrmanFramebuffer::HdPrmanAovIt it = aovs.begin();
             it != aovs.end(); ++it)
@@ -520,6 +523,8 @@ public:
         }
         // Copy planar data into buffer
         std::lock_guard<std::mutex> lock(m_buf->mutex);
+
+        m_buf->newData = true;
 
         if (m_buf->pendingClear) {
             m_buf->pendingClear = false;
