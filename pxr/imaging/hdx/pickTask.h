@@ -60,7 +60,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (resolveNearestToCamera)         \
     (resolveNearestToCenter)         \
     (resolveUnique)                  \
-    (resolveAll)
+    (resolveAll)                     \
+    (resolveDeep)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxPickTokens, HDX_API, HDX_PICK_TOKENS);
 
@@ -134,6 +135,10 @@ using HdxPickHitVector = std::vector<HdxPickHit>;
 ///     4. HdxPickTokens->resolveAll: Returns all the hits for the pick location
 ///         or region. The number of hits returned depends on the resolution
 ///         used and may have duplicates.
+///     5. HdxPickTokens->resolveDeep: Returns the unique hits not only of visible 
+///         geometry but also of all the geometry hiding behind. The 'pickTarget'
+///         influences this operation. For e.g., the subprim indices are ignored
+///         when the pickTarget is pickPrimsAndInstances.
 ///
 struct HdxPickTaskContextParams
 {
@@ -238,6 +243,9 @@ private:
     // A single draw target is shared for all contexts.  Since the FBO cannot
     // be shared, we clone the attachments on each request.
     GlfDrawTargetRefPtr _drawTarget;
+
+    // pick buffer used for deep selection
+    HdBufferArrayRangeSharedPtr _pickBuffer;
 
     HdxPickTask() = delete;
     HdxPickTask(const HdxPickTask &) = delete;
