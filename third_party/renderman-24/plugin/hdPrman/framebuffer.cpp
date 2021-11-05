@@ -27,12 +27,14 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/tf.h"
+#include "pxr/base/work/loops.h"
 #include "RixDspy.h"
 #include "hdPrman/rixStrings.h"
 #include "display/display.h"
 #include "display/renderoutput.h"
 #include <map>
 #include <unordered_map>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -42,7 +44,7 @@ static RixDspy* s_dspy = nullptr;
 
 ////////////////////////////////////////////////////////////////////////
 // PRMan Display Driver API entrypoints
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////otify//////////////////////////////////////
 
 static PtDspyError HydraDspyImageOpen(
     PtDspyImageHandle* handle_p,
@@ -543,8 +545,7 @@ public:
 
             int cc = HdGetComponentCount(it->format);
             size_t srcOffset = m_offsets[offsetIdx];
-            if (it->format == HdFormatInt32)
-            {
+            if (it->format == HdFormatInt32) {
                 const int32_t* srcInt =
                     reinterpret_cast<const int32_t*>(
                         m_surface + srcOffset);
@@ -562,218 +563,245 @@ public:
                 // id values to have been manipulated in this way.
                 // NB: There's an assumption here that the primId
                 // aov is processed before elementId and instanceId aovs
-                if (it->name == HdAovTokens->primId)
-                {
+                if (it->name == HdAovTokens->primId) {
                     primIdIdx = hydraAovIdx;
 
-                    for (uint32_t y = 0; y < m_height; y++)
-                    {
-                        // Flip Y
-                        int32_t* aovData =
-                            reinterpret_cast<int32_t*>(it->pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w);
+                    WorkParallelForN(m_height,
+                                     [this, &srcInt, &it]
+                                     (size_t begin, size_t end) {
 
-                        for (uint32_t x = 0; x < m_width; x++)
-                        {
-                            *aovData = (*srcInt) - 1;
-                            srcInt++;
-                            aovData++;
+                        const int32_t* src = srcInt + begin * m_width;
+                        for (size_t y=begin; y<end; ++y) {
+                            int32_t* aovData = reinterpret_cast<int32_t*>(it->pixels.data()) +
+                                ((m_buf->h-1-y)*m_width);
+
+                            for (uint32_t x = 0; x < m_width; x++) {
+                                *aovData = (*src) - 1;
+                                src++;
+                                aovData++;
+                            }
                         }
-                    }
+                    });
+
+                    srcInt += m_width * m_height;
                 }
                 else if (it->name == HdAovTokens->instanceId ||
-                                    it->name == HdAovTokens->elementId)
-                {
-                    for (uint32_t y = 0; y < m_height; y++)
-                    {
-                        // Flip Y
-                        int32_t* aovData =
-                            reinterpret_cast<int32_t*>(it->pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w);
-                        int32_t* primIdData =
-                            reinterpret_cast<int32_t*>(
-                                m_buf->aovs[primIdIdx].pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w);
+                                    it->name == HdAovTokens->elementId) {
+                    WorkParallelForN(m_height,
+                                     [this, &srcInt, &it, &primIdIdx]
+                                     (size_t begin, size_t end) {
+                                         
+                                   
+                        const int32_t* src = srcInt + begin * m_width;
+                        for (size_t y=begin; y<end; ++y) {
+                            int32_t* aovData = reinterpret_cast<int32_t*>(it->pixels.data()) +
+                            ((m_buf->h-1-y)*m_width);
 
-                        for (uint32_t x = 0; x < m_width; x++)
-                        {
-                            if(*primIdData == -1)
+
+                            int32_t* primIdData =
+                                reinterpret_cast<int32_t*>(
+                                    m_buf->aovs[primIdIdx].pixels.data()) +
+                                ((m_buf->h-1-y)*m_buf->w);
+
+                            for (uint32_t x = 0; x < m_width; x++)
                             {
-                                *aovData = -1;
+                                if(*primIdData == -1) {
+                                    *aovData = -1;
+                                }
+                                else {
+                                    *aovData = *src;
+                                }
+                                src++;
+                                aovData++;
+                                primIdData++;
                             }
-                            else
-                            {
-                                *aovData = *srcInt;
-                            }
-                            srcInt++;
-                            aovData++;
-                            primIdData++;
                         }
-                    }
+                    });
+
+                    srcInt += m_width * m_height;
                 }
-                else
-                {
-                    for (uint32_t y = 0; y < m_height; y++)
-                    {
-                        // Flip Y
-                        int32_t* aovData =
-                            reinterpret_cast<int32_t*>(it->pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w);
-                        memcpy(aovData, srcInt, sizeof(int32_t) * m_width);
-                        srcInt += m_width;
-                    }
+                else {
+                    WorkParallelForN(m_height,
+                                     [this, &srcInt, &it]
+                                     (size_t begin, size_t end) {
+                                         
+                        const int32_t* src = srcInt + begin * m_width;
+                        for (size_t y=begin; y<end; ++y) {
+                            int32_t* aovData = reinterpret_cast<int32_t*>(it->pixels.data()) +
+                            ((m_buf->h-1-y)*m_width);
+                            memcpy(aovData, src, sizeof(int32_t) * m_width);
+                            src += m_width;
+                        }
+                    });
                 }   
-                    
+
+                srcInt += m_width * m_height;                    
             }
-            else
-            {
-                if(it->name == HdAovTokens->depth)
-                {
-                    const float* srcScalar =
-                        reinterpret_cast<const float*>(m_surface +
-                                                       srcOffset);
 
-                    for (uint32_t y = 0; y < m_height; y++)
-                    {
-                        // Flip Y
-                        float* aovData =
-                            reinterpret_cast<float*>(it->pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w);
+            else {
+                if(it->name == HdAovTokens->depth) {
 
-                        for (uint32_t x = 0; x < m_width; x++)
-                        {
-                            float value = *srcScalar;
-                            if(std::isfinite(value))
+                    WorkParallelForN(m_height,
+                                     [this, &it, &srcOffset]
+                                     (size_t begin, size_t end) {
+
+                        const float* srcScalar =
+                            reinterpret_cast<const float*>(m_surface +
+                                                           srcOffset) + begin * m_width;
+                                       
+                        for (size_t y=begin; y<end; ++y) {
+  
+                            // Flip Y
+                            float* aovData =
+                                reinterpret_cast<float*>(it->pixels.data()) +
+                                ((m_buf->h-1-y)*m_buf->w);
+
+                            for (uint32_t x = 0; x < m_width; x++)
                             {
-                                value =
-                                    m_buf->proj.Transform(
-                                        GfVec3f(0,0,-value))[2];
-                            }
-                            else
-                            {
-                                value = -1.0f;
-                            }
-                            *aovData = value;
+                                float value = *srcScalar;
+                                if(std::isfinite(value))
+                                {
+                                    value =
+                                        m_buf->proj.Transform(
+                                            GfVec3f(0,0,-value))[2];
+                                }
+                                else
+                                {
+                                    value = -1.0f;
+                                }
+                                *aovData = value;
                             
-                            aovData++;
-                            srcScalar++;
+                                aovData++;
+                                srcScalar++;
+                            }
                         }
-                    }
+                    });
                 }
-                else if( cc == 4 )
-                {
-                    const float* srcColorR =
-                        reinterpret_cast<const float*>(m_surface +
-                                                       srcOffset);
-                    const float* srcColorA =
-                        reinterpret_cast<const float*>(
-                            m_surface + m_alphaOffset);
+                else if( cc == 4 ) {
+                    WorkParallelForN(m_height,
+                                     [this, &it, &srcWeights, &srcOffset]
+                                     (size_t begin, size_t end) {
 
-                    GfVec4f clear =
+                        const float* weights = srcWeights + begin * m_width;
+ 
+                        const float* srcColorR =
+                            reinterpret_cast<const float*>(m_surface + srcOffset) + begin * m_width;
+                        const float* srcColorA =
+                            reinterpret_cast<const float*>(
+                                m_surface + m_alphaOffset) + begin * m_width;
+
+                        GfVec4f clear =
                         it->clearValue.Get<GfVec4f>();
 
-                    for (uint32_t y = 0; y < m_height; y++)
-                    {
-                        // Flip Y and assume RGBA (i.e. 4) color width
-                        float* aovData =
-                            reinterpret_cast<float*>(it->pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w)*4;
+                        for (size_t y=begin; y<end; ++y) {
+                            // Flip Y and assume RGBA (i.e. 4) color width
+                            float* aovData =
+                                reinterpret_cast<float*>(it->pixels.data()) +
+                                ((m_buf->h-1-y)*m_buf->w)*4;
 
-                        for (uint32_t x = 0; x < m_width; x++)
-                        {
-                            float isc = 1.f;
-                            if(*srcWeights > 0.f)
-                                isc = 1.f / *srcWeights;
+                            for (uint32_t x = 0; x < m_width; x++) {
+                                float isc = 1.f;
+                                if(*weights > 0.f)
+                                    isc = 1.f / *weights;
 
-                            const float* srcColorG =
-                                srcColorR + (m_height * m_width);
-                            const float* srcColorB =
-                                srcColorG + (m_height * m_width);
+                                const float* srcColorG =
+                                    srcColorR + (m_height * m_width);
+                                const float* srcColorB =
+                                    srcColorG + (m_height * m_width);
 
-                            // Premultiply color with alpha
-                            // to blend pixels with background.
-                            float alphaInv = 1-(*srcColorA * isc);
-                            aovData[0] = *srcColorR * isc +
-                                (alphaInv) * clear[0]; // R
-                            aovData[1] = *srcColorG * isc +
-                                (alphaInv) * clear[1]; // G
-                            aovData[2] = *srcColorB * isc +
-                                (alphaInv) * clear[2]; // B
-                            aovData[3] = *srcColorA * isc; // A
+                                // Premultiply color with alpha
+                                // to blend pixels with background.
+                                float alphaInv = 1-(*srcColorA * isc);
+                                aovData[0] = *srcColorR * isc +
+                                    (alphaInv) * clear[0]; // R
+                                aovData[1] = *srcColorG * isc +
+                                    (alphaInv) * clear[1]; // G
+                                aovData[2] = *srcColorB * isc +
+                                    (alphaInv) * clear[2]; // B
+                                aovData[3] = *srcColorA * isc; // A
 
-                            aovData += 4;
-                            srcColorR++;
-                            srcColorA++;
-                            srcWeights++;
+                                aovData += 4;
+                                srcColorR++;
+                                srcColorA++;
+                                weights++;
+                            }
                         }
-                    }
+                    });
 
                     // When component count is 4 (rgba) in the hydra aov,
                     // xpu's aovs will have a rgb aov followed by an alpha,
                     // so need to do an extra increment to skip past the alpha
                     offsetIdx++;
                 }
-                else if (cc == 1)
-                {
-                    const float* srcColorR =
-                        reinterpret_cast<const float*>(m_surface +
-                                                       srcOffset);
+                else if (cc == 1) {
+                    WorkParallelForN(m_height,
+                                     [this, &it, &srcWeights, &srcOffset]
+                                     (size_t begin, size_t end) {
 
-                    for (uint32_t y = 0; y < m_height; y++)
-                    {
-                        // Flip Y
-                        float* aovData =
-                            reinterpret_cast<float*>(it->pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w);
 
-                        for (uint32_t x = 0; x < m_width; x++)
-                        {
-                            float isc = 1.f;
-                            if(*srcWeights > 0.f)
-                                isc = 1.f / *srcWeights;
+                        const float* weights = srcWeights + begin * m_width;
+                        const float* srcColorR =
+                            reinterpret_cast<const float*>(m_surface +
+                                                           srcOffset) + begin * m_width;
+                        for (size_t y=begin; y<end; ++y) {
 
-                            *aovData = *srcColorR * isc;
+                            // Flip Y
+                            float* aovData =
+                                reinterpret_cast<float*>(it->pixels.data()) +
+                                ((m_buf->h-1-y)*m_buf->w);
 
-                            aovData++;
-                            srcColorR++;
-                            srcWeights++;
+                            for (uint32_t x = 0; x < m_width; x++)
+                            {
+                                float isc = 1.f;
+                                if(*weights > 0.f)
+                                    isc = 1.f / *weights;
+
+                                *aovData = *srcColorR * isc;
+
+                                aovData++;
+                                srcColorR++;
+                                weights++;
+                            }
                         }
-                    }
+                    });
                 }                
-                else
-                {
+                else {
                     assert(cc == 3);
-                    const float* srcColorR =
-                        reinterpret_cast<const float*>(m_surface +
-                                                       srcOffset);
+                    WorkParallelForN(m_height,
+                                     [this, &it, &srcWeights, &srcOffset]
+                                     (size_t begin, size_t end) {
 
-                    for (uint32_t y = 0; y < m_height; y++)
-                    {
-                        // Flip Y and assume RGBA (i.e. 4) color width
-                        float* aovData =
-                            reinterpret_cast<float*>(it->pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w)*cc;
+                        const float* weights = srcWeights + begin * m_width;
+                        const float* srcColorR =
+                            reinterpret_cast<const float*>(m_surface +
+                                                       srcOffset) + begin * m_width;
 
-                        for (uint32_t x = 0; x < m_width; x++)
-                        {
-                            float isc = 1.f;
-                            if(*srcWeights > 0.f)
-                                isc = 1.f / *srcWeights;
+                        for (size_t y=begin; y<end; ++y) {
+                            // Flip Y and assume RGBA (i.e. 4) color width
+                            float* aovData =
+                                reinterpret_cast<float*>(it->pixels.data()) +
+                                ((m_buf->h-1-y)*m_buf->w)*3;
 
-                            const float* srcColorG =
-                                srcColorR + (m_height * m_width);
-                            const float* srcColorB =
-                                srcColorG + (m_height * m_width);
+                            for (uint32_t x = 0; x < m_width; x++) {
+                                float isc = 1.f;
+                                if(*weights > 0.f)
+                                    isc = 1.f / *weights;
 
-                            aovData[0] = *srcColorR * isc;
-                            aovData[1] = *srcColorG * isc;
-                            aovData[2] = *srcColorB * isc;
+                                const float* srcColorG =
+                                    srcColorR + (m_height * m_width);
+                                const float* srcColorB =
+                                    srcColorG + (m_height * m_width);
 
-                            aovData += cc;
-                            srcColorR++;
-                            srcWeights++;
+                                aovData[0] = *srcColorR * isc;
+                                aovData[1] = *srcColorG * isc;
+                                aovData[2] = *srcColorB * isc;
+
+                                aovData += 3;
+                                srcColorR++;
+                                weights++;
+                            }
                         }
-                    }
+                    });
                 }
             }
         }
