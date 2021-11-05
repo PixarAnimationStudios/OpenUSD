@@ -31,7 +31,13 @@ HgiShaderFunctionTextureDesc::HgiShaderFunctionTextureDesc()
 {
 }
 
-HgiShaderFunctionBufferDesc::HgiShaderFunctionBufferDesc()  =  default;
+HgiShaderFunctionBufferDesc::HgiShaderFunctionBufferDesc()
+  : bindIndex(0)
+  , arraySize(0)
+  , binding(HgiBindingTypeValue)
+  , writable(false)
+{
+}
 
 HgiShaderFunctionParamDesc::HgiShaderFunctionParamDesc() = default;
 
@@ -66,7 +72,11 @@ bool operator==(
     const HgiShaderFunctionBufferDesc& rhs)
 {
     return lhs.nameInShader == rhs.nameInShader &&
-           lhs.type == rhs.type;
+           lhs.type == rhs.type &&
+           lhs.bindIndex == rhs.bindIndex &&
+           lhs.arraySize == rhs.arraySize &&
+           lhs.binding == rhs.binding &&
+           lhs.writable == rhs.writable;
 }
 
 bool operator!=(
@@ -134,11 +144,35 @@ void
 HgiShaderFunctionAddBuffer(
     HgiShaderFunctionDesc * const desc,
     const std::string &nameInShader,
-    const std::string &type)
+    const std::string &type,
+    const uint32_t bindIndex,
+    HgiBindingType binding,
+    uint32_t arraySize)
 {
     HgiShaderFunctionBufferDesc bufDesc;
     bufDesc.nameInShader = nameInShader;
     bufDesc.type = type;
+    bufDesc.binding = binding;
+    bufDesc.arraySize = arraySize;
+    bufDesc.bindIndex = bindIndex;
+    bufDesc.writable = false;
+
+    desc->buffers.push_back(std::move(bufDesc));
+}
+
+void
+HgiShaderFunctionAddWritableBuffer(
+    HgiShaderFunctionDesc * const desc,
+    const std::string &nameInShader,
+    const std::string &type,
+    const uint32_t bindIndex)
+{
+    HgiShaderFunctionBufferDesc bufDesc;
+    bufDesc.nameInShader = nameInShader;
+    bufDesc.type = type;
+    bufDesc.bindIndex = bindIndex;
+    bufDesc.binding = HgiBindingTypePointer;
+    bufDesc.writable = true;
 
     desc->buffers.push_back(std::move(bufDesc));
 }

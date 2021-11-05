@@ -546,6 +546,32 @@ enum HgiMemoryBarrierBits
 };
 using HgiMemoryBarrier = HgiBits;
 
+/// \enum HgiBindingType
+///
+/// Describes the type of shader resource binding model to use.
+///
+/// <ul>
+/// <li>HgiBindingTypeValue:
+///   Shader declares binding as a value.
+///   Glsl example: uniform int parameter;
+///   Msl example: int parameter;</li>
+/// <li>HgiBindingTypeArray:
+///   Shader declares binding as array value.
+///   Glsl example: uniform int parameter[n];
+///   Msl example: int parameter[n];</li>
+/// <li>HgiBindingTypePointer:
+///   Shader declares binding as pointer value.
+///   Glsl example: buffer { int parameter[] };
+///   Msl example: int *parameter;</li>
+/// </ul>
+///
+enum HgiBindingType
+{
+    HgiBindingTypeValue = 0,
+    HgiBindingTypeArray,
+    HgiBindingTypePointer,
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

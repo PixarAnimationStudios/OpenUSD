@@ -203,9 +203,15 @@ HdSt_SmoothNormalsComputationGPU::Execute(
             } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
                 dstType = HdStTokens->_int;
             }
-            HgiShaderFunctionAddBuffer(&computeDesc, "points", srcType);
-            HgiShaderFunctionAddBuffer(&computeDesc, "normals", dstType);
-            HgiShaderFunctionAddBuffer(&computeDesc, "entry", HdStTokens->_int);
+            HgiShaderFunctionAddBuffer(&computeDesc,
+                "points", srcType,
+                BufferBinding_Points, HgiBindingTypePointer);
+            HgiShaderFunctionAddWritableBuffer(&computeDesc,
+                "normals", dstType,
+                BufferBinding_Normals);
+            HgiShaderFunctionAddBuffer(&computeDesc,
+                "entry", HdStTokens->_int,
+                BufferBinding_Adjacency, HgiBindingTypePointer);
 
             static const std::string params[] = {
                 "vertexOffset",       // offset in aggregated buffer

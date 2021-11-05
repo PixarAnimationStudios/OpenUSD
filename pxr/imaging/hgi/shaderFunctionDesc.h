@@ -82,6 +82,14 @@ bool operator!=(
 ///   The name written from the codegen into shader file for the texture.</li>
 /// <li>type:
 ///   Type of the param within the shader file.</li>
+/// <li>bindIndex:
+///   The index of the resource.
+/// <li>arraySize:
+///   The array size of array type bindings.
+/// <li>bindingType:
+///   The binding type.
+/// <li>writeable:
+///   Whether the resource is writable.
 /// </ul>
 ///
 struct HgiShaderFunctionBufferDesc
@@ -91,6 +99,10 @@ struct HgiShaderFunctionBufferDesc
 
     std::string nameInShader;
     std::string type;
+    int32_t bindIndex;
+    uint32_t arraySize;
+    HgiBindingType binding;
+    bool writable;
 };
 
 using HgiShaderFunctionBufferDescVector =
@@ -213,7 +225,21 @@ void
 HgiShaderFunctionAddBuffer(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
-    const std::string &type);
+    const std::string &type,
+    const uint32_t bindIndex,
+    HgiBindingType binding,
+    const uint32_t arraySize = 0
+    );
+
+/// Adds buffer descriptor to given shader function descriptor.
+HGI_API
+void
+HgiShaderFunctionAddWritableBuffer(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    const std::string &type,
+    const uint32_t bindIndex
+    );
 
 /// Adds constant function param descriptor to given shader function
 /// descriptor.

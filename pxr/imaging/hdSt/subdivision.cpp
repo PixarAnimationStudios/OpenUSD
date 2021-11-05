@@ -1822,15 +1822,20 @@ _EvalStencilsGPU(
             computeDesc.shaderStage = HgiShaderStageCompute;
 
             HgiShaderFunctionAddBuffer(&computeDesc,
-                                       "sizes", HdStTokens->_int);
+                "sizes", HdStTokens->_int,
+                BufferBinding_Sizes, HgiBindingTypePointer);
             HgiShaderFunctionAddBuffer(&computeDesc,
-                                       "offsets", HdStTokens->_int);
+                "offsets", HdStTokens->_int,
+                BufferBinding_Offsets, HgiBindingTypePointer);
             HgiShaderFunctionAddBuffer(&computeDesc,
-                                       "indices", HdStTokens->_int);
+                "indices", HdStTokens->_int,
+                BufferBinding_Indices, HgiBindingTypePointer);
             HgiShaderFunctionAddBuffer(&computeDesc,
-                                       "weights", HdStTokens->_float);
-            HgiShaderFunctionAddBuffer(&computeDesc,
-                                       "primvar", HdStTokens->_float);
+                "weights", HdStTokens->_float,
+                BufferBinding_Weights, HgiBindingTypePointer);
+            HgiShaderFunctionAddWritableBuffer(&computeDesc,
+                "primvar", HdStTokens->_float,
+                BufferBinding_Primvar);
 
             static const std::string params[] = {
                 "pointIndexStart",
