@@ -645,18 +645,20 @@ HdUnitTestDelegate::UpdateInstancerPrototypes(float time)
 
 void
 HdUnitTestDelegate::AddRenderBuffer(SdfPath const &id,
-    GfVec3i const& dims, HdFormat format, bool multiSampled)
+                                    HdRenderBufferDescriptor const &desc)
 {
     HdRenderIndex& index = GetRenderIndex();
     index.InsertBprim(HdPrimTypeTokens->renderBuffer, this, id);
-    _renderBuffers[id] = _RenderBuffer(dims, format, multiSampled);
+    _renderBuffers[id] = _RenderBuffer(
+        desc.dimensions, desc.format, desc.multiSampled);
 }
 
 void
 HdUnitTestDelegate::UpdateRenderBuffer(SdfPath const &id, 
-    GfVec3i const& dims, HdFormat format, bool multiSampled)
+                                       HdRenderBufferDescriptor const &desc)
 {
-    _renderBuffers[id] = _RenderBuffer(dims, format, multiSampled);
+    _renderBuffers[id] = _RenderBuffer(
+        desc.dimensions, desc.format, desc.multiSampled);
     HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
     tracker.MarkBprimDirty(id, HdRenderBuffer::DirtyDescription);
 }

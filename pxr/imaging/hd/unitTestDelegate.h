@@ -281,11 +281,12 @@ public:
 
     /// Render buffers
     HD_API
-    void AddRenderBuffer(SdfPath const &id, GfVec3i const& dims,
-                         HdFormat format, bool multiSampled);
+    void AddRenderBuffer(SdfPath const &id, 
+                         HdRenderBufferDescriptor const &desc);
     HD_API
-    void UpdateRenderBuffer(SdfPath const &id, GfVec3i const& dims,
-                            HdFormat format, bool multiSampled);
+    void UpdateRenderBuffer(SdfPath const &id, 
+                            HdRenderBufferDescriptor const &desc);
+
     /// Camera
     HD_API
     void AddCamera(SdfPath const &id);

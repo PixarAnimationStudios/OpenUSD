@@ -120,8 +120,9 @@ private:
 }
 
 // ------------------------------------------------------------------------
-Hdx_UnitTestDelegate::Hdx_UnitTestDelegate(HdRenderIndex *index)
-    : HdSceneDelegate(index, SdfPath::AbsoluteRootPath())
+Hdx_UnitTestDelegate::Hdx_UnitTestDelegate(HdRenderIndex *index, 
+                                           SdfPath const& delegateId)
+    : HdSceneDelegate(index, delegateId)
     , _refineLevel(0)
 {
     // add camera
@@ -213,6 +214,17 @@ Hdx_UnitTestDelegate::AddCamera(SdfPath const &id)
 }
 
 void
+Hdx_UnitTestDelegate::UpdateCamera(SdfPath const &id,
+                                   TfToken const &key,
+                                   VtValue value)
+{
+    _ValueCache &cache = _valueCacheMap[id];
+    cache[key] = value;
+    HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+    tracker.MarkSprimDirty(id, HdCamera::AllDirty);
+}
+
+void
 Hdx_UnitTestDelegate::AddLight(SdfPath const &id, GlfSimpleLight const &light)
 {
     // add light
@@ -261,13 +273,38 @@ Hdx_UnitTestDelegate::SetLight(SdfPath const &id, TfToken const &key,
 }
 
 void
+Hdx_UnitTestDelegate::UpdateTransform(SdfPath const& id,
+                                      GfMatrix4f const& mat)
+{
+    if(_meshes.find(id) != _meshes.end()) {
+        _meshes[id].transform = GfMatrix4d(mat);
+        HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+        tracker.MarkRprimDirty(id, HdChangeTracker::DirtyTransform);
+    }
+    if (_cameraTransforms.find(id) != _cameraTransforms.end()) {
+        _cameraTransforms[id] = GfMatrix4d(mat);
+        HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+        tracker.MarkSprimDirty(id, HdChangeTracker::DirtyTransform);
+    }        
+}
+
+void
 Hdx_UnitTestDelegate::AddRenderBuffer(SdfPath const &id,
-                                      const HdRenderBufferDescriptor &desc)
+                                      HdRenderBufferDescriptor const &desc)
 {
     GetRenderIndex().InsertBprim(HdPrimTypeTokens->renderBuffer, this, id);
 
     _ValueCache &cache = _valueCacheMap[id];
     cache[_tokens->renderBufferDescriptor] = desc;
+}
+
+void
+Hdx_UnitTestDelegate::UpdateRenderBuffer(SdfPath const &id,
+                                         HdRenderBufferDescriptor const &desc)
+{
+    _ValueCache &cache = _valueCacheMap[id];
+    cache[_tokens->renderBufferDescriptor] = desc;
+    GetRenderIndex().GetChangeTracker().MarkBprimDirty(id, HdRenderBuffer::DirtyDescription);
 }
 
 void

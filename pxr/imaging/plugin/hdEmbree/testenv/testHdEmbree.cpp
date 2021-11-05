@@ -190,8 +190,8 @@ void HdEmbree_TestGLDrawing::InitTest()
         }
         aovBinding.renderBufferId = renderBuffer;
         _sceneDelegate->AddRenderBuffer(renderBuffer,
-            GfVec3i(GetWidth(), GetHeight(), 1),
-            format, false);
+            HdRenderBufferDescriptor{GfVec3i(GetWidth(), GetHeight(), 1),
+            format, false});
     }
 
     // Params is a general argument structure to the render task.
