@@ -49,9 +49,6 @@ HdCamera::HdCamera(SdfPath const &id)
   , _shutterClose(0.0)
   , _exposure(0.0f)
   , _windowPolicy(CameraUtilFit)
-  , _worldToViewMatrix(0.0)
-  , _worldToViewInverseMatrix(0.0)
-  , _projectionMatrix(0.0)
 {
 }
 
@@ -169,27 +166,6 @@ HdCamera::Sync(HdSceneDelegate * sceneDelegate,
         }
     }
 
-    if (bits & DirtyViewMatrix) {
-        // extract and store view matrix
-        const VtValue vMatrix = sceneDelegate->GetCameraParamValue(id,
-            HdCameraTokens->worldToViewMatrix);
-        
-        if (!vMatrix.IsEmpty()) {
-            _worldToViewMatrix = vMatrix.Get<GfMatrix4d>();
-            _worldToViewInverseMatrix = _worldToViewMatrix.GetInverse();
-        }
-    }
-
-    if (bits & DirtyProjMatrix) {
-        // extract and store projection matrix
-        const VtValue vMatrix = sceneDelegate->GetCameraParamValue(id,
-            HdCameraTokens->projectionMatrix);
-
-        if (!vMatrix.IsEmpty()) {
-            _projectionMatrix = vMatrix.Get<GfMatrix4d>();
-        }
-    }
-
     if (bits & DirtyWindowPolicy) {
         // treat window policy as an optional parameter
         const VtValue vPolicy = sceneDelegate->GetCameraParamValue(id, 
@@ -216,29 +192,19 @@ HdCamera::Sync(HdSceneDelegate * sceneDelegate,
 GfMatrix4d
 HdCamera::GetViewMatrix() const
 {
-    if (_worldToViewMatrix == GfMatrix4d(0.0)) {
-        return _transform.GetInverse();
-    }
-    return _worldToViewMatrix;
+    return _transform.GetInverse();
 }
 
 GfMatrix4d
 HdCamera::GetViewInverseMatrix() const
 {
-    if (_worldToViewInverseMatrix == GfMatrix4d(0.0)) {
-        return _transform;
-    }
-    return _worldToViewInverseMatrix;
+    return _transform;
 }
 
 GfMatrix4d
 HdCamera::GetProjectionMatrix() const
 {
     HD_TRACE_FUNCTION();
-
-    if (GetFocalLength() == 0.0f) {
-        return _projectionMatrix;
-    }
 
     GfCamera cam;
     

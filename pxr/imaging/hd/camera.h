@@ -66,12 +66,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (exposure)                                      \
                                                     \
     /* how to match window with different aspect */ \
-    (windowPolicy)                                  \
-                                                    \
-    /* OpenGL-style matrices, deprecated */         \
-    (worldToViewMatrix)                             \
-    (projectionMatrix)
-
+    (windowPolicy)
 
 TF_DECLARE_PUBLIC_TOKENS(HdCameraTokens, HD_API, HD_CAMERA_TOKENS);
 
@@ -250,11 +245,6 @@ protected:
     // Camera's opinion how it display in a window with
     // a different aspect ratio
     CameraUtilConformWindowPolicy _windowPolicy;
-
-    // OpenGL-style matrices
-    GfMatrix4d _worldToViewMatrix;
-    GfMatrix4d _worldToViewInverseMatrix;
-    GfMatrix4d _projectionMatrix;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
