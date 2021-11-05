@@ -736,5 +736,178 @@ HdPrmanMaterial::IsValid() const
     return _materialId != riley::MaterialId::InvalidId();
 }
 
+HdMaterialNetwork2
+HdPrmanMaterial_GetFallbackSurfaceMaterialNetwork()
+{
+    // We expect this to be called once, at init time, but drop a trace
+    // scope in just in case that changes.  Accordingly, we also don't
+    // bother creating static tokens for the single-use cases below.
+    HD_TRACE_FUNCTION();
+
+    const std::map<SdfPath, HdMaterialNode2> nodes = {
+        {
+            // path
+            SdfPath("/Primvar_displayColor"),
+            // node info
+            HdMaterialNode2 {
+                // nodeTypeId
+                TfToken("PxrPrimvar"),
+                // parameters
+                {
+                    { TfToken("varname"),
+                      VtValue(TfToken("displayColor")) },
+                    { TfToken("defaultColor"),
+                      VtValue(GfVec3f(0.5, 0.5, 0.5)) },
+                    { TfToken("type"),
+                      VtValue(TfToken("color")) },
+                },
+            },
+        },
+        {
+            // path
+            SdfPath("/Primvar_displayRoughness"),
+            // node info
+            HdMaterialNode2 {
+                // nodeTypeId
+                TfToken("PxrPrimvar"),
+                // parameters
+                {
+                    { TfToken("varname"),
+                      VtValue(TfToken("displayRoughness")) },
+                    { TfToken("defaultFloat"),
+                      VtValue(1.0f) },
+                    { TfToken("type"),
+                      VtValue(TfToken("float")) },
+                },
+            },
+        },
+        {
+            // path
+            SdfPath("/Primvar_displayOpacity"),
+            // node info
+            HdMaterialNode2 {
+                // nodeTypeId
+                TfToken("PxrPrimvar"),
+                // parameters
+                {
+                    { TfToken("varname"),
+                      VtValue(TfToken("displayOpacity")) },
+                    { TfToken("defaultFloat"),
+                      VtValue(1.0f) },
+                    { TfToken("type"),
+                      VtValue(TfToken("float")) },
+                },
+            },
+        },
+        {
+            // path
+            SdfPath("/Primvar_displayMetallic"),
+            // node info
+            HdMaterialNode2 {
+                // nodeTypeId
+                TfToken("PxrPrimvar"),
+                // parameters
+                {
+                    { TfToken("varname"),
+                      VtValue(TfToken("displayMetallic")) },
+                    { TfToken("defaultFloat"),
+                      VtValue(0.0f) },
+                    { TfToken("type"),
+                      VtValue(TfToken("float")) },
+                },
+            },
+        },
+
+        // UsdPreviewSurfaceParameters
+        {
+            // path
+            SdfPath("/UsdPreviewSurfaceParameters"),
+            // node info
+            HdMaterialNode2 {
+                // nodeTypeId
+                TfToken("UsdPreviewSurfaceParameters"),
+                // parameters
+                {},
+                // connections
+                {
+                    { TfToken("diffuseColor"),
+                      { { SdfPath("/Primvar_displayColor"),
+                            TfToken("resultRGB") } } },
+                    { TfToken("roughness"),
+                      { { SdfPath("/Primvar_displayRoughness"),
+                          TfToken("resultF") } } },
+                    { TfToken("metallic"),
+                      { { SdfPath("/Primvar_displayMetallic"),
+                          TfToken("resultF") } } },
+                    { TfToken("opacity"),
+                      { { SdfPath("/Primvar_displayOpacity"),
+                          TfToken("resultF") } } },
+                },
+            },
+        },
+        // PxrSurface (connected to UsdPreviewSurfaceParameters)
+        {
+            // path
+            SdfPath("/PxrSurface"),
+            // node info
+            HdMaterialNode2 {
+                // nodeTypeId
+                TfToken("PxrSurface"),
+                // parameters
+                {
+                    { TfToken("specularModelType"),
+                      VtValue(int(1)) },
+                    { TfToken("diffuseDoubleSided"),
+                      VtValue(int(1)) },
+                    { TfToken("specularDoubleSided"),
+                      VtValue(int(1)) },
+                    { TfToken("specularFaceColor"),
+                      VtValue(GfVec3f(0.04)) },
+                    { TfToken("specularEdgeColor"),
+                      VtValue(GfVec3f(1.0)) },
+                },
+                // connections
+                {
+                    { TfToken("diffuseColor"),
+                      {{ SdfPath("/UsdPreviewSurfaceParameters"),
+                         TfToken("diffuseColorOut") }} },
+                    { TfToken("diffuseGain"),
+                      {{ SdfPath("/UsdPreviewSurfaceParameters"),
+                         TfToken("diffuseGainOut") }} },
+                    { TfToken("specularFaceColor"),
+                      {{ SdfPath("/UsdPreviewSurfaceParameters"),
+                         TfToken("specularFaceColorOut") }} },
+                    { TfToken("specularEdgeColor"),
+                      {{ SdfPath("/UsdPreviewSurfaceParameters"),
+                         TfToken("specularEdgeColorOut") }} },
+                    { TfToken("specularRoughness"),
+                      {{ SdfPath("/UsdPreviewSurfaceParameters"),
+                         TfToken("specularRoughnessOut") }} },
+                    { TfToken("presence"),
+                      {{ SdfPath("/Primvar_displayOpacity"),
+                         TfToken("resultF") }} },
+                },
+            },
+        },
+    };
+
+    const std::map<TfToken, HdMaterialConnection2> terminals = {
+        { TfToken("surface"),
+          HdMaterialConnection2 {
+            SdfPath("/PxrSurface"),
+            TfToken("outputName") }
+        },
+    };
+
+    const TfTokenVector primvars = {
+        TfToken("displayColor"),
+        TfToken("displayMetallic"),
+        TfToken("displayOpacity"),
+        TfToken("displayRoughness"),
+    };
+
+    return HdMaterialNetwork2{nodes, terminals, primvars};
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

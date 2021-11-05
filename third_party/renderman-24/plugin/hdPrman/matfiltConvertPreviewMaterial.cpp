@@ -87,6 +87,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (specularFaceColorOut)
     (specularIor)
     (specularIorOut)
+    (specularModelType)
     (specularRoughness)
     (specularRoughnessOut)
     (presence)
@@ -199,7 +200,10 @@ MatfiltConvertPreviewMaterial(
             nodesToAdd[pxrSurfacePath] = HdMaterialNode2 {
                 _tokens->PxrSurface, 
                 // parameters:
-                {},
+                {
+                    // UsdPreviewSurface uses GGX, not Beckmann
+                    {_tokens->specularModelType, VtValue(int(1))},
+                },
                 // connections:
                 {
                     {_tokens->bumpNormal,

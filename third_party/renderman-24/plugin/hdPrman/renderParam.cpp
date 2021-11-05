@@ -1481,53 +1481,6 @@ HdPrman_RenderParam::_InitializePrman()
 
 static
 RtParamList
-_ComputePrimvarNodeParams()
-{
-    static const RtUString us_varname("varname");
-    static const RtUString us_displayColor("displayColor");
-    static const RtUString us_defaultColor("defaultColor");
-
-    RtParamList result;
-    result.SetString(
-        us_varname, us_displayColor);
-    // Note: this 0.5 gray is to match UsdImaging's fallback.
-    result.SetColor(
-        us_defaultColor, RtColorRGB(0.5, 0.5, 0.5));
-    result.SetString(
-        RixStr.k_type, RixStr.k_color);
-    return result;
-}
-
-static
-RtParamList
-_ComputeSurfaceNodeParams()
-{
-    static const RtUString us_diffuseColor("diffuseColor");
-    static const RtUString us_pv_color_resultRGB("pv_color:resultRGB");
-    static const RtUString us_specularModelType("specularModelType");
-    static const RtUString us_diffuseDoubleSided("diffuseDoubleSided");
-    static const RtUString us_specularDoubleSided("specularDoubleSided");
-    static const RtUString us_specularFaceColor("specularFaceColor");
-    static const RtUString us_specularEdgeColor("specularEdgeColor");
-
-    RtParamList result;
-    result.SetColorReference(
-        us_diffuseColor, us_pv_color_resultRGB);
-    result.SetInteger(
-        us_specularModelType, 1);
-    result.SetInteger(
-        us_diffuseDoubleSided, 1);
-    result.SetInteger(
-        us_specularDoubleSided, 1);
-    result.SetColor(
-        us_specularFaceColor, RtColorRGB(0.04f));
-    result.SetColor(
-        us_specularEdgeColor, RtColorRGB(1.0f));
-    return result;
-}
-
-static
-RtParamList
 _ComputeVolumeNodeParams()
 {
     static const RtUString us_densityFloatPrimVar("densityFloatPrimVar");
@@ -1548,22 +1501,12 @@ HdPrman_RenderParam::_CreateFallbackMaterials()
 {
     // Default material
     {
-        static const RtUString us_PxrPrimvar("PxrPrimvar");
-        static const RtUString us_pv_color("pv_color");
-        static const RtUString us_PxrSurface("PxrSurface");
-        static const RtUString us_simpleTestSurface("simpleTestSurface");
-
-        const std::vector<riley::ShadingNode> materialNodes{
-            riley::ShadingNode{
-                riley::ShadingNode::Type::k_Pattern,
-                us_PxrPrimvar,
-                us_pv_color,
-                _ComputePrimvarNodeParams()},
-            riley::ShadingNode{
-                riley::ShadingNode::Type::k_Bxdf,
-                us_PxrSurface, 
-                us_simpleTestSurface,
-                _ComputeSurfaceNodeParams()}};
+        std::vector<riley::ShadingNode> materialNodes;
+        HdPrman_ConvertHdMaterialNetwork2ToRmanNodes(
+            HdPrmanMaterial_GetFallbackSurfaceMaterialNetwork(),
+            SdfPath("/PxrSurface"), // We assume this terminal name here
+            &materialNodes
+        );
         _fallbackMaterialId = _riley->CreateMaterial(
             riley::UserId::DefaultId(),
             {static_cast<uint32_t>(materialNodes.size()), materialNodes.data()},

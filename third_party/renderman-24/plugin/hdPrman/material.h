@@ -92,6 +92,12 @@ HdPrman_ConvertHdMaterialNetwork2ToRmanNodes(
     SdfPath const& nodePath,
     std::vector<riley::ShadingNode> *result);
 
+/// Return the fallback surface material network description.  This network
+/// is meant to resemble Storm's fallback material.  It uses displayColor,
+/// displayRoughness, displayOpacity, and displayMetallic.
+HdMaterialNetwork2
+HdPrmanMaterial_GetFallbackSurfaceMaterialNetwork();
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_H
