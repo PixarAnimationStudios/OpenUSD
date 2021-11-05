@@ -67,16 +67,17 @@ public:
     const Value & Evaluate() const;
 
     /// Default-construct a NULL expression.
-    PCP_API
-    PcpMapExpression();
+    PcpMapExpression() noexcept = default;
 
     /// Swap this expression with the other.
-    PCP_API
-    void Swap(PcpMapExpression &other);
+    void Swap(PcpMapExpression &other) noexcept {
+        _node.swap(other._node);
+    }
 
     /// Return true if this is a null expression.
-    PCP_API
-    bool IsNull() const;
+    bool IsNull() const noexcept {
+        return !_node;
+    }
 
     /// \name Creating expressions
     /// @{
