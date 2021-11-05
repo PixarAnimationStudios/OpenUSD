@@ -223,7 +223,10 @@ HdRenderIndex::_InsertRprim(TfToken const& typeId,
 
     _rprimIds.Insert(rprimId);
 
-    _tracker.RprimInserted(rprimId, rprim->GetInitialDirtyBitsMask());
+    // Force an initial "renderTag" sync.  We add the bit here since the
+    // render index manages render tags, rather than the rprim implementation.
+    _tracker.RprimInserted(rprimId, rprim->GetInitialDirtyBitsMask() |
+                                    HdChangeTracker::DirtyRenderTag);
     _AllocatePrimId(rprim);
 
     _RprimInfo info = {
@@ -860,7 +863,24 @@ HdRenderIndex::GetRenderTag(SdfPath const& id) const
         return HdRenderTagTokens->hidden;
     }
 
-    return info->rprim->GetRenderTag(info->sceneDelegate);
+    return info->rprim->GetRenderTag();
+}
+
+TfToken
+HdRenderIndex::UpdateRenderTag(SdfPath const& id,
+                               HdDirtyBits bits)
+{
+    _RprimInfo const* info = TfMapLookupPtr(_rprimMap, id);
+    if (info == nullptr) {
+        return HdRenderTagTokens->hidden;
+    }
+
+    if (bits & HdChangeTracker::DirtyRenderTag) {
+        info->rprim->UpdateRenderTag(info->sceneDelegate, &bits);
+        _tracker.MarkRprimClean(id, bits);
+    }
+
+    return info->rprim->GetRenderTag();
 }
 
 SdfPathVector
@@ -1307,7 +1327,11 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
 
     // b. Update dirty list state and get dirty rprim ids
     _rprimDirtyList.UpdateRenderTagsAndReprSelectors(taskRenderTags,
-                                                      reprSelectors);
+                                                     reprSelectors);
+
+    // NOTE: GetDirtyRprims relies on up-to-date render tags; if render tags
+    // are dirty, this call will sync render tags before compiling the dirty
+    // list. This is outside of the usual sync order, but is necessary for now.
     SdfPathVector const& dirtyRprimIds = _rprimDirtyList.GetDirtyRprims();
  
     // c. Bucket rprims by their scene delegate to help build the the list

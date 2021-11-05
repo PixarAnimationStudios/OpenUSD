@@ -199,6 +199,10 @@ public:
         return _authoredReprSelector;
     }
 
+    TfToken const& GetRenderTag() const {
+        return _renderTag;
+    }
+
     /// Returns the render tag associated to this rprim
     inline  TfToken GetRenderTag(HdSceneDelegate* delegate) const;
 
@@ -235,6 +239,10 @@ public:
     HD_API
     void UpdateReprSelector(HdSceneDelegate* delegate,
                             HdDirtyBits *dirtyBits);
+
+    HD_API
+    void UpdateRenderTag(HdSceneDelegate* delegate,
+                         HdDirtyBits *dirtyBits);
 
 protected:
     // ---------------------------------------------------------------------- //
@@ -295,6 +303,9 @@ protected:
 
     // authored repr selector
     HdReprSelector _authoredReprSelector;
+
+    // authored render tag
+    TfToken _renderTag;
 
     // total number of reprs is relatively small (less than 5 or so
     // in most case), we use linear container for efficiency.

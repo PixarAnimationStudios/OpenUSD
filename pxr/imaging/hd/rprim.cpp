@@ -190,10 +190,19 @@ void
 HdRprim::UpdateReprSelector(HdSceneDelegate* delegate,
                             HdDirtyBits *dirtyBits)
 {
-    SdfPath const& id = GetId();
-    if (HdChangeTracker::IsReprDirty(*dirtyBits, id)) {
-        _authoredReprSelector = delegate->GetReprSelector(id);
+    if (HdChangeTracker::IsReprDirty(*dirtyBits, GetId())) {
+        _authoredReprSelector = delegate->GetReprSelector(GetId());
         *dirtyBits &= ~HdChangeTracker::DirtyRepr;
+    }
+}
+
+void
+HdRprim::UpdateRenderTag(HdSceneDelegate* delegate,
+                         HdDirtyBits *dirtyBits)
+{
+    if (*dirtyBits & HdChangeTracker::DirtyRenderTag) {
+        _renderTag = delegate->GetRenderTag(GetId());
+        *dirtyBits &= ~HdChangeTracker::DirtyRenderTag;
     }
 }
 
