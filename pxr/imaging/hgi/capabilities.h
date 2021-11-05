@@ -45,8 +45,33 @@ public:
         return (_flags & mask) != 0;
     }
 
+    HGI_API
+    virtual int GetAPIVersion() const = 0;
+    
+    HGI_API
+    virtual int GetShaderVersion() const = 0;
+
+    HGI_API
+    int GetMaxUniformBlockSize() const {
+        return _maxUniformBlockSize;
+    }
+
+    HGI_API
+    int GetMaxShaderStorageBlockSize() const {
+        return _maxShaderStorageBlockSize;
+    }
+
+    HGI_API
+    int GetUniformBufferOffsetAlignment() const {
+        return _uniformBufferOffsetAlignment;
+    }
+
 protected:
-    HgiCapabilities() : _flags(0) {}
+    HgiCapabilities()
+        : _maxUniformBlockSize(0)
+        , _maxShaderStorageBlockSize(0)
+        , _uniformBufferOffsetAlignment(0)
+        , _flags(0) {}
 
     void _SetFlag(HgiDeviceCapabilities mask, bool value) {
         if (value) {
@@ -55,6 +80,10 @@ protected:
             _flags &= ~mask;
         }
     }
+
+    int _maxUniformBlockSize;
+    int _maxShaderStorageBlockSize;
+    int _uniformBufferOffsetAlignment;
 
 private:
     HgiCapabilities & operator=(const HgiCapabilities&) = delete;

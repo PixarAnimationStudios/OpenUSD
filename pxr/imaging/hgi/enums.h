@@ -52,7 +52,9 @@ using HgiBits = uint32_t;
 ///   The device can provide additional built-in shader variables corresponding
 ///   to draw command parameters</li>
 /// <li>HgiDeviceCapabilitiesBitsMultiDrawIndirect:
-///   THe device supports multiple primitive, indirect drawing</li>
+///   The device supports multiple primitive, indirect drawing</li>
+/// <li>HgiDeviceCapabilitiesBitsBindlessTextures:
+///   The device can access GPU textures using bindless handles</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
@@ -64,6 +66,7 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsBuiltinBarycentrics  = 1 << 4,
     HgiDeviceCapabilitiesBitsShaderDrawParameters = 1 << 5,
     HgiDeviceCapabilitiesBitsMultiDrawIndirect    = 1 << 6,
+    HgiDeviceCapabilitiesBitsBindlessTextures     = 1 << 7
 };
 
 using HgiDeviceCapabilities = HgiBits;

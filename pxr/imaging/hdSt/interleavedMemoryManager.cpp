@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/contextCaps.h"
-
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/glUtils.h"
@@ -34,6 +32,7 @@
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/capabilities.h"
 
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -116,7 +115,10 @@ HdStInterleavedUBOMemoryManager::CreateBufferArray(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    const GlfContextCaps &caps = GlfContextCaps::GetInstance();
+    const int uniformBufferOffsetAlignment = _resourceRegistry->GetHgi()->
+        GetCapabilities()->GetUniformBufferOffsetAlignment();
+    const int maxUniformBlockSize = _resourceRegistry->GetHgi()->
+        GetCapabilities()->GetMaxUniformBlockSize();
 
     return std::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
@@ -125,9 +127,9 @@ HdStInterleavedUBOMemoryManager::CreateBufferArray(
             role,
             bufferSpecs,
             usageHint,
-            caps.uniformBufferOffsetAlignment,
+            uniformBufferOffsetAlignment,
             /*structAlignment=*/sizeof(float)*4,
-            caps.maxUniformBlockSize,
+            maxUniformBlockSize,
             HdPerfTokens->garbageCollectedUbo);
 }
 
@@ -156,7 +158,8 @@ HdStInterleavedSSBOMemoryManager::CreateBufferArray(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
 {
-    const GlfContextCaps &caps = GlfContextCaps::GetInstance();
+    const int maxShaderStorageBlockSize = _resourceRegistry->GetHgi()->
+        GetCapabilities()->GetMaxShaderStorageBlockSize();
 
     return std::make_shared<
         HdStInterleavedMemoryManager::_StripedInterleavedBuffer>(
@@ -167,7 +170,7 @@ HdStInterleavedSSBOMemoryManager::CreateBufferArray(
             usageHint,
             /*bufferOffsetAlignment=*/0,
             /*structAlignment=*/0,
-            caps.maxShaderStorageBlockSize,
+            maxShaderStorageBlockSize,
             HdPerfTokens->garbageCollectedSsbo);
 }
 

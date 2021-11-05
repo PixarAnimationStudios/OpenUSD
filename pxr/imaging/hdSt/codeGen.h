@@ -117,7 +117,7 @@ private:
     void _GenerateInstancePrimvar();
     void _GenerateElementPrimvar();
     void _GenerateVertexAndFaceVaryingPrimvar(bool hasGS, 
-        bool shaderDrawParametersEnabled);
+        bool shaderDrawParametersEnabled, int glslVersion);
     void _GenerateShaderParameters(bool bindlessTextureEnabled);
     void _GenerateTopologyVisibilityParameters();
 

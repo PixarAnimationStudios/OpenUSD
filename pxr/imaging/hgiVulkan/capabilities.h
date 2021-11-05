@@ -47,6 +47,12 @@ public:
     HGIVULKAN_API
     ~HgiVulkanCapabilities();
 
+    HGIVULKAN_API
+    int GetAPIVersion() const override;
+    
+    HGIVULKAN_API
+    int GetShaderVersion() const override;
+
     bool supportsTimeStamps;
     VkPhysicalDeviceProperties vkDeviceProperties;
     VkPhysicalDeviceFeatures vkDeviceFeatures;

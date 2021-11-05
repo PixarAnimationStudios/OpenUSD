@@ -41,34 +41,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(GlfContextCaps);
 
-TF_DEFINE_ENV_SETTING(GLF_ENABLE_BINDLESS_TEXTURE, false,
-                      "Use GL bindless texture extention");
-
-TF_DEFINE_ENV_SETTING(GLF_GLSL_VERSION, 0,
-                      "GLSL version");
-
-
 // Set defaults based on GL spec minimums
 static const int _DefaultMaxArrayTextureLayers        = 256;
-static const int _DefaultMaxUniformBlockSize          = 16*1024;
-static const int _DefaultMaxShaderStorageBlockSize    = 16*1024*1024;
-static const int _DefaultMaxTextureBufferSize         = 64*1024;
-static const int _DefaultGLSLVersion                  = 400;
 
 // Initialize members to ensure a sane starting state.
 GlfContextCaps::GlfContextCaps()
     : glVersion(0)
     , coreProfile(false)
-
     , maxArrayTextureLayers(_DefaultMaxArrayTextureLayers)
-    , maxUniformBlockSize(_DefaultMaxUniformBlockSize)
-    , maxShaderStorageBlockSize(_DefaultMaxShaderStorageBlockSize)
-    , maxTextureBufferSize(_DefaultMaxTextureBufferSize)
-    , uniformBufferOffsetAlignment(0)
-
-    , bindlessTextureEnabled(false)
-
-    , glslVersion(_DefaultGLSLVersion)
 {
 }
 
@@ -116,12 +96,6 @@ GlfContextCaps::_LoadCaps()
     glVersion                    = 0;
     coreProfile                  = false;
     maxArrayTextureLayers        = _DefaultMaxArrayTextureLayers;
-    maxUniformBlockSize          = _DefaultMaxUniformBlockSize;
-    maxShaderStorageBlockSize    = _DefaultMaxShaderStorageBlockSize;
-    maxTextureBufferSize         = _DefaultMaxTextureBufferSize;
-    uniformBufferOffsetAlignment = 0;
-    bindlessTextureEnabled       = false;
-    glslVersion                  = _DefaultGLSLVersion;
 
     if (!TF_VERIFY(GlfGLContext::GetCurrentGLContext()->IsValid())) {
         return;
@@ -145,59 +119,14 @@ GlfContextCaps::_LoadCaps()
         glVersion = major * 100 + minor * 10;
     }
 
-    if (glVersion >= 200) {
-        const char *glslVersionStr =
-            (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
-        dot = strchr(glslVersionStr, '.');
-        if (TF_VERIFY((dot && dot != glslVersionStr),
-                      "Can't parse GL_SHADING_LANGUAGE_VERSION %s",
-                      glslVersionStr)) {
-            // GL_SHADING_LANGUAGE_VERSION = "4.10"
-            //                               "4.50 <vendor>"
-            int major = std::max(0, std::min(9, *(dot-1) - '0'));
-            int minor = std::max(0, std::min(9, *(dot+1) - '0'));
-            glslVersion = major * 100 + minor * 10;
-        }
-    } else {
-        glslVersion = 0;
-    }
-
-    if (glVersion >= 300) {
-        glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxArrayTextureLayers);
-    }
-
-    // initialize by Core versions
-    if (glVersion >= 310) {
-        glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE,
-                      &maxUniformBlockSize);
-        glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE,
-                      &maxTextureBufferSize);
-        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT,
-                      &uniformBufferOffsetAlignment);
-    }
     if (glVersion >= 320) {
         GLint profileMask = 0;
         glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profileMask);
         coreProfile = (profileMask & GL_CONTEXT_CORE_PROFILE_BIT);
     }
-    if (glVersion >= 430) {
-        glGetIntegerv(GL_MAX_SHADER_STORAGE_BLOCK_SIZE,
-                      &maxShaderStorageBlockSize);
-    }
-
-    // initialize by individual extension.
-    if (GARCH_GLAPI_HAS(ARB_bindless_texture)) {
-        bindlessTextureEnabled = true;
-    }
-    // Environment variable overrides (only downgrading is possible)
-    if (!TfGetEnvSetting(GLF_ENABLE_BINDLESS_TEXTURE)) {
-        bindlessTextureEnabled = false;
-    }
-
-    // For debugging and unit testing
-    if (TfGetEnvSetting(GLF_GLSL_VERSION) > 0) {
-        // GLSL version override
-        glslVersion = std::min(glslVersion, TfGetEnvSetting(GLF_GLSL_VERSION));
+    
+    if (glVersion >= 300) {
+        glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxArrayTextureLayers);
     }
 
     if (TfDebug::IsEnabled(GLF_DEBUG_CONTEXT_CAPS)) {
@@ -211,21 +140,7 @@ GlfContextCaps::_LoadCaps()
             <<    glVersionStr << "\n"
             << "  GL version                         = "
             <<    glVersion << "\n"
-            << "  GLSL version                       = "
-            <<    glslVersion << "\n"
-
-            << "  GL_MAX_UNIFORM_BLOCK_SIZE          = "
-            <<    maxUniformBlockSize << "\n"
-            << "  GL_MAX_SHADER_STORAGE_BLOCK_SIZE   = "
-            <<    maxShaderStorageBlockSize << "\n"
-            << "  GL_MAX_TEXTURE_BUFFER_SIZE         = "
-            <<    maxTextureBufferSize << "\n"
-            << "  GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT = "
-            <<    uniformBufferOffsetAlignment << "\n"
-
-            << "  ARB_bindless_texture               = "
-            <<    bindlessTextureEnabled << "\n"
-            ;
+        ;
     }
 }
 

@@ -419,11 +419,6 @@ public:
         return _numReservedTextureUnits;
     }
 
-    /// Returns \c true if textures and samplers for material
-    /// networks use bindless texture and sampler handles.
-    HDST_API
-    static bool UseBindlessHandles();
-
     /// Returns the bindless handle for \p textureHandle using \p samplerHandle
     HDST_API
     static uint64_t GetSamplerBindlessHandle(

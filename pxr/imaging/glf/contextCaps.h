@@ -80,16 +80,6 @@ public:
 
     // Max constants
     int maxArrayTextureLayers;
-    int maxUniformBlockSize;
-    int maxShaderStorageBlockSize;
-    int maxTextureBufferSize;
-    int uniformBufferOffsetAlignment;
-
-    // GL extensions
-    bool bindlessTextureEnabled;      // ARB_bindless_texture
-
-    // GLSL version 
-    int glslVersion;                  // 400, 410, ...
 
 private:
     void _LoadCaps();

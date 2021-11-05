@@ -35,6 +35,8 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/imaging/hgi/capabilities.h"
+
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -180,6 +182,17 @@ HdSt_MaterialNetworkShader::ComputeHash() const
 HdStShaderCode::ID
 HdSt_MaterialNetworkShader::ComputeTextureSourceHash() const
 {
+    // To avoid excessive plumbing and checking of HgiCapabilities in order to 
+    // determine if bindless textures are enabled, we make things a little 
+    // easier for ourselves by having this function check and return 0 if 
+    // using bindless textures.
+    const bool useBindlessHandles = _namedTextureHandles.empty() ? false :
+        _namedTextureHandles[0].handle->UseBindlessHandles();
+    
+    if (useBindlessHandles) { 
+        return 0;
+    }
+
     if (!_isValidComputedTextureSourceHash) {
         _computedTextureSourceHash = _ComputeTextureSourceHash();
         _isValidComputedTextureSourceHash = true;
@@ -319,7 +332,7 @@ HdSt_MaterialNetworkShader::Reload()
 /*static*/
 bool
 HdSt_MaterialNetworkShader::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
-                                HdStShaderCodeSharedPtr const &shaderB)
+                                         HdStShaderCodeSharedPtr const &shaderB)
 {
     // Can aggregate if the shaders are identical.
     if (shaderA == shaderB) {
@@ -338,11 +351,9 @@ HdSt_MaterialNetworkShader::CanAggregate(HdStShaderCodeSharedPtr const &shaderA,
         return false;
     }
 
-    if (!HdSt_ResourceBinder::UseBindlessHandles()) {
-        if (shaderA->ComputeTextureSourceHash() !=
-                shaderB->ComputeTextureSourceHash()) {
-            return false;
-        }
+    if (shaderA->ComputeTextureSourceHash() !=
+        shaderB->ComputeTextureSourceHash()) {
+        return false;
     }
 
     return true;

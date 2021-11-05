@@ -23,8 +23,6 @@
 //
 #include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
-
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
@@ -206,7 +204,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     const bool bindlessBuffersEnabled = 
         capabilities->IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers);
     const bool bindlessTexturesEnabled = 
-        GlfContextCaps::GetInstance().bindlessTextureEnabled;
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
 
     HdBinding::Type arrayBufferBindingType = HdBinding::SSBO;
     if (bindlessBuffersEnabled) {
@@ -1523,13 +1521,6 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     }
 
     return hash;
-}
-
-/* static */
-bool
-HdSt_ResourceBinder::UseBindlessHandles()
-{
-    return GlfContextCaps::GetInstance().bindlessTextureEnabled;
 }
 
 /* static */

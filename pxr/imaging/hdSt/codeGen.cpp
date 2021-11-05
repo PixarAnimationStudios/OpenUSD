@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/simpleShadowArray.h"
 
 #include "pxr/imaging/hdSt/codeGen.h"
@@ -520,19 +519,19 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _genGS.str(""); _genFS.str(""); _genCS.str("");
     _procVS.str(""); _procTCS.str(""), _procTES.str(""), _procGS.str("");
 
-    // GLSL version.
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-    const int glslVersion = caps.glslVersion;
-    _genHeader << "#version " << glslVersion << "\n";
-
-    const bool bindlessTextureEnabled = caps.bindlessTextureEnabled;
-
+    // GL capabilities.
+    const int glslVersion = registry->GetHgi()->GetCapabilities()->
+        GetShaderVersion();
+    const bool bindlessTextureEnabled = registry->GetHgi()->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
     const bool bindlessBufferEnabled = registry->GetHgi()->GetCapabilities()->
         IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers);
     const bool shaderDrawParametersEnabled = registry->GetHgi()->
         GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsShaderDrawParameters);
     const bool builtinBarycentricsEnabled = registry->GetHgi()->
         GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+
+    _genHeader << "#version " << glslVersion << "\n";
 
     if (bindlessBufferEnabled) {
         _genHeader << "#extension GL_NV_shader_buffer_load : require\n"
@@ -851,7 +850,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _GenerateConstantPrimvar();
     _GenerateInstancePrimvar();
     _GenerateElementPrimvar();
-    _GenerateVertexAndFaceVaryingPrimvar(hasGS, shaderDrawParametersEnabled);
+    _GenerateVertexAndFaceVaryingPrimvar(hasGS, shaderDrawParametersEnabled, glslVersion);
 
     _GenerateTopologyVisibilityParameters();
 
@@ -982,15 +981,15 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     _genGS.str(""); _genFS.str(""); _genCS.str("");
     _procVS.str(""); _procTCS.str(""), _procTES.str(""), _procGS.str("");
     
-    // GLSL version.
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-    const int glslVersion = caps.glslVersion;
-    _genCommon << "#version " << glslVersion << "\n";
-    
-    const bool bindlessTextureEnabled = caps.bindlessTextureEnabled;
-
+    // GL capabilities 
+    const int glslVersion = registry->GetHgi()->GetCapabilities()->
+       GetShaderVersion();
     const bool bindlessBufferEnabled = registry->GetHgi()->GetCapabilities()->
         IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers);
+    const bool bindlessTextureEnabled = registry->GetHgi()->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
+    
+    _genCommon << "#version " << glslVersion << "\n";
 
     if (bindlessBufferEnabled) {
         _genCommon << "#extension GL_NV_shader_buffer_load : require\n"
@@ -2783,16 +2782,15 @@ HdSt_CodeGen::_GenerateElementPrimvar()
 
 void
 HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS, 
-    bool shaderDrawParametersEnabled)
+    bool shaderDrawParametersEnabled, int glslVersion)
 {
     // VS specific accessor for the "vertex drawing coordinate"
     // Even though we currently always plumb vertexCoord as part of the drawing
     // coordinate, we expect clients to use this accessor when querying the base
     // vertex offset for a draw call.
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
     _genVS << "int GetBaseVertexOffset() {\n";
     if (shaderDrawParametersEnabled) {
-        if (caps.glslVersion < 460) { // use ARB extension
+        if (glslVersion < 460) { // use ARB extension
             _genVS << "  return gl_BaseVertexARB;\n";
         } else {
             _genVS << "  return gl_BaseVertex;\n";
