@@ -38,7 +38,7 @@ void
 HdPrman_OfflineRenderParam::Initialize(
     RtParamList rileyOptions, 
     riley::ShadingNode integratorNode,
-    riley::Extent outputFormat, TfToken outputFilename,
+    TfToken outputFilename,
     std::vector<RenderOutput> const & renderOutputs)
 {
     _options = rileyOptions;
@@ -51,6 +51,10 @@ HdPrman_OfflineRenderParam::Initialize(
 
     GetCameraContext().SetEnableMotionBlur(true);
     GetCameraContext().Begin(AcquireRiley());
+
+    // Resolution will be updated by
+    // SetResolutionOfRenderTargets called by render pass.
+    const riley::Extent outputFormat = { 512, 512, 1 };
 
     _SetRenderTargetAndDisplay(outputFormat, outputFilename);
 

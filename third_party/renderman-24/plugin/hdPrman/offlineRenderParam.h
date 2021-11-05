@@ -65,7 +65,7 @@ public:
     void Initialize(
         RtParamList rileyOptions, 
         riley::ShadingNode integratorNode,
-        riley::Extent outputFormat, TfToken outputFilename,
+        TfToken outputFilename,
         std::vector<RenderOutput> const & renderOutputs);
 
     // Optional facility to quickly add a light to Riley

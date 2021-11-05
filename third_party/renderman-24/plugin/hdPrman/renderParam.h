@@ -27,34 +27,28 @@
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
 #include "hdPrman/xcpt.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/renderDelegate.h"
-#include "pxr/imaging/hd/coordSys.h"
+#include "pxr/base/gf/matrix4d.h"
 
 #include "Riley.h"
-#include <thread>
 #include <unordered_map>
 #include <mutex>
+
+class RixRiCtl;
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+class HdPrmanCamera;
+class HdPrmanCameraContext;
+class HdPrmanRenderDelegate;
 
 // Compile-time limit on max time samples.
 // The idea is to avoid heap allocation of sample buffers in the Sync()
 // calls by using fixed-size stack arrays with configured capacity.
 // The capacity is indicated to the scene delegate when requesting
 // time samples.
-#define HDPRMAN_MAX_TIME_SAMPLES 4
-
-class RixRiCtl;
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-class SdfPath;
-class HdSceneDelegate;
-class HdPrmanCamera;
-class HdPrmanCameraContext;
-class HdPrmanRenderDelegate;
+constexpr int HDPRMAN_MAX_TIME_SAMPLES = 4;
 
 // Render Param for HdPrman to communicate with an instance of PRMan.
 class HdPrman_RenderParam : public HdRenderParam
@@ -221,13 +215,11 @@ private:
     std::mutex _lightFilterMutex;
 
     // Map from Hydra coordinate system vector pointer to Riley equivalent.
-    typedef std::unordered_map<
-        HdIdVectorSharedPtr, RileyCoordSysIdVecRefPtr>
-        _HdToRileyCoordSysMap;
+    using _HdToRileyCoordSysMap =
+        std::unordered_map<HdIdVectorSharedPtr, RileyCoordSysIdVecRefPtr>;
     // Map from Hydra id to cached, converted coordinate systems.
-    typedef std::unordered_map<
-        SdfPath, HdIdVectorSharedPtr, SdfPath::Hash>
-        _GeomToHdCoordSysMap;
+    using _GeomToHdCoordSysMap =
+        std::unordered_map<SdfPath, HdIdVectorSharedPtr, SdfPath::Hash>;
 
     // A fallback material to use for any geometry that
     // does not have a bound material.

@@ -30,25 +30,19 @@
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/camera.h"
-#include "pxr/imaging/cameraUtil/screenWindowParameters.h"
 
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/usd/usdLux/listAPI.h"
 #include "pxr/usd/usdGeom/camera.h"
-#include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usdRender/product.h"
 #include "pxr/usd/usdRender/settings.h"
 #include "pxr/usd/usdRender/spec.h"
 #include "pxr/usd/usdRender/var.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
-#include "pxr/base/gf/camera.h"
-#include "pxr/base/tf/getenv.h"
-#include "pxr/base/tf/setenv.h"
 #include "pxr/base/tf/pathUtils.h"
-#include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/trace/reporter.h"
 #include "pxr/base/work/threadLimits.h"
@@ -500,14 +494,11 @@ int main(int argc, char *argv[])
 
         // Only allow "raster" for now.
         TF_VERIFY(product.type == TfToken("raster"));
-        riley::Extent const format = {
-            uint32_t(product.resolution[0]), uint32_t(product.resolution[1]),1};    
 
         // Basic configuration       
         renderParam->Initialize(
                 rileyOptions,
                 integratorNode,
-                format,
                 product.name,
                 renderOutputs);
 
