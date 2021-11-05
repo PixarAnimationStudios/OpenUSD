@@ -95,7 +95,6 @@ public:
         DirtyParams           = 1 << 1,
         DirtyClipPlanes       = 1 << 2,
         DirtyWindowPolicy     = 1 << 3,
-        DirtyProjMatrix       = DirtyParams,     // deprecated
         AllDirty              = (DirtyTransform
                                 |DirtyParams
                                 |DirtyClipPlanes
