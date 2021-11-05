@@ -115,7 +115,7 @@ protected:
     virtual riley::MaterialId
     _GetFallbackMaterial(HdPrman_RenderParam *renderParam)
     {
-        return renderParam->fallbackMaterial;
+        return renderParam->GetFallbackMaterialId();
     }
 
     // Populate primType and primvars.

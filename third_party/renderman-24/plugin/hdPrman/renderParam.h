@@ -72,9 +72,9 @@ public:
     ConvertAttributes(HdSceneDelegate *sceneDelegate, SdfPath const& id);
 
     // A vector of Riley coordinate system id's.
-    typedef std::vector<riley::CoordinateSystemId> RileyCoordSysIdVec;
+    using RileyCoordSysIdVec = std::vector<riley::CoordinateSystemId>;
     // A ref-counting ptr to a vector of coordinate systems.
-    typedef std::shared_ptr<RileyCoordSysIdVec> RileyCoordSysIdVecRefPtr;
+    using RileyCoordSysIdVecRefPtr = std::shared_ptr<RileyCoordSysIdVec>;
 
     /// Convert any coordinate system bindings for the given rprim id
     /// into a Riley equivalent form.  Retain the result internally
@@ -169,12 +169,6 @@ public:
 
     // Request edit access to the Riley scene and return it.
     virtual riley::Riley * AcquireRiley() = 0;
-    // A fallback material to use for any geometry that
-    // does not have a bound material.
-    riley::MaterialId fallbackMaterial;
-
-    // Fallback material for volumes that don't have materials.
-    riley::MaterialId fallbackVolumeMaterial;
 
     // Provides external access to resources used to set parameters for
     // options and the active integrator.
@@ -183,8 +177,17 @@ public:
     virtual riley::ShadingNode & GetActiveIntegratorShadingNode() = 0;
     virtual HdPrmanCameraContext &GetCameraContext() = 0;
 
+    const riley::MaterialId GetFallbackMaterialId() const {
+        return _fallbackMaterialId;
+    }
+
+    const riley::MaterialId GetFallbackVolumeMaterialId() const {
+        return _fallbackVolumeMaterialId;
+    }
+
 protected:
     void _InitializePrman();
+    void _CreateFallbackMaterials();
 
     // Top-level entrypoint to PRMan.
     // Singleton used to access RixInterfaces.
@@ -225,6 +228,13 @@ private:
     typedef std::unordered_map<
         SdfPath, HdIdVectorSharedPtr, SdfPath::Hash>
         _GeomToHdCoordSysMap;
+
+    // A fallback material to use for any geometry that
+    // does not have a bound material.
+    riley::MaterialId _fallbackMaterialId;
+
+    // Fallback material for volumes that don't have materials.
+    riley::MaterialId _fallbackVolumeMaterialId;
 
     // Coordinate system conversion cache.
     _GeomToHdCoordSysMap _geomToHdCoordSysMap;

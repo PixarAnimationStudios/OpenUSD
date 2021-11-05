@@ -66,8 +66,6 @@ public:
         RtParamList rileyOptions, 
         riley::ShadingNode integratorNode,
         riley::Extent outputFormat, TfToken outputFilename,
-        std::vector<riley::ShadingNode> const & fallbackMaterialNodes,
-        std::vector<riley::ShadingNode> const & fallbackVolumeNodes,
         std::vector<RenderOutput> const & renderOutputs);
 
     // Optional facility to quickly add a light to Riley
@@ -103,10 +101,6 @@ private:
         RtParamList const& params);
     void _SetRenderTargetAndDisplay(
         riley::Extent format,TfToken outputFilename);
-    void _SetFallbackMaterial(
-        std::vector<riley::ShadingNode> const & materialNodes);
-    void _SetFallbackVolumeMaterial(
-        std::vector<riley::ShadingNode> const & materialNodes);
 
     riley::IntegratorId _integratorId;
     riley::ShadingNode _activeIntegratorShadingNode;

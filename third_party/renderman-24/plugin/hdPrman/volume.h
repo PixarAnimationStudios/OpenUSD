@@ -120,7 +120,7 @@ protected:
 
     riley::MaterialId
     _GetFallbackMaterial(HdPrman_RenderParam *renderParam) override {
-        return renderParam->fallbackVolumeMaterial;
+        return renderParam->GetFallbackVolumeMaterialId();
     }
 
     using _VolumeEmitterMap = std::map<TfToken, HdPrman_VolumeTypeEmitter>;

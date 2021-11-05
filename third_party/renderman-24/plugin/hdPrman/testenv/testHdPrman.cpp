@@ -75,31 +75,14 @@ TF_DEFINE_PRIVATE_TOKENS(
 
  static const RtUString us_A("A");
  static const RtUString us_default("default");
- static const RtUString us_defaultColor("defaultColor");
- static const RtUString us_density("density");
- static const RtUString us_densityFloatPrimVar("densityFloatPrimVar");
- static const RtUString us_diffuseColor("diffuseColor");
- static const RtUString us_displayColor("displayColor");
  static const RtUString us_lightA("lightA");
  static const RtUString us_lightGroup("lightGroup");
- static const RtUString us_main_cam_projection("main_cam_projection");
  static const RtUString us_PathTracer("PathTracer");
- static const RtUString us_pv_color("pv_color");
- static const RtUString us_pv_color_resultRGB("pv_color:resultRGB");
  static const RtUString us_PxrDomeLight("PxrDomeLight");
  static const RtUString us_PxrPathTracer("PxrPathTracer");
- static const RtUString us_PxrPrimvar("PxrPrimvar");
- static const RtUString us_PxrSurface("PxrSurface");
  static const RtUString us_PxrVisualizer("PxrVisualizer");
- static const RtUString us_PxrVolume("PxrVolume");
- static const RtUString us_simpleTestSurface("simpleTestSurface");
- static const RtUString us_simpleVolume("simpleVolume");
- static const RtUString us_specularEdgeColor("specularEdgeColor");
- static const RtUString us_specularFaceColor("specularFaceColor");
- static const RtUString us_specularModelType("specularModelType");
  static const RtUString us_style("style");
  static const RtUString us_traceLightPaths("traceLightPaths");
- static const RtUString us_varname("varname");
  static const RtUString us_wireframe("wireframe");
 
 static TfStopwatch timer_prmanRender;
@@ -520,53 +503,12 @@ int main(int argc, char *argv[])
         riley::Extent const format = {
             uint32_t(product.resolution[0]), uint32_t(product.resolution[1]),1};    
 
-        // Fallback materials
-        std::vector<riley::ShadingNode> materialNodes;
-        {
-            riley::ShadingNode pxrPrimvar_node;
-            pxrPrimvar_node.type = riley::ShadingNode::Type::k_Pattern;
-            pxrPrimvar_node.name = us_PxrPrimvar;
-            pxrPrimvar_node.handle = us_pv_color;
-            pxrPrimvar_node.params.SetString(us_varname, us_displayColor);
-            // Note: this 0.5 gray is to match UsdImaging's fallback.
-            pxrPrimvar_node.params.SetColor(us_defaultColor,
-                                        RtColorRGB(0.5, 0.5, 0.5));
-            pxrPrimvar_node.params.SetString(RixStr.k_type, RixStr.k_color);
-            materialNodes.push_back(pxrPrimvar_node);
-
-            riley::ShadingNode pxrSurface_node;
-            pxrSurface_node.type = riley::ShadingNode::Type::k_Bxdf;
-            pxrSurface_node.name = us_PxrSurface;
-            pxrSurface_node.handle = us_simpleTestSurface;
-            pxrSurface_node.params.SetColorReference(us_diffuseColor,
-                                              us_pv_color_resultRGB);
-            pxrSurface_node.params.SetInteger(us_specularModelType, 1);
-            pxrSurface_node.params.SetColor(us_specularFaceColor,
-                                        RtColorRGB(0.04f));
-            pxrSurface_node.params.SetColor(us_specularEdgeColor,
-                                        RtColorRGB(1.0f));
-            materialNodes.push_back(pxrSurface_node);
-        }
-
-        // Fallback volume material
-        std::vector<riley::ShadingNode> volumeMaterialNodes;
-        {
-            riley::ShadingNode pxrVolume_node;
-            pxrVolume_node.type = riley::ShadingNode::Type::k_Bxdf;
-            pxrVolume_node.name = us_PxrVolume;
-            pxrVolume_node.handle = us_simpleVolume;
-            pxrVolume_node.params.SetString(us_densityFloatPrimVar, us_density);
-            volumeMaterialNodes.push_back(pxrVolume_node);
-        }
-
         // Basic configuration       
         renderParam->Initialize(
                 rileyOptions,
                 integratorNode,
                 format,
                 product.name,
-                materialNodes,
-                volumeMaterialNodes,
                 renderOutputs);
 
         // Optionally add a fallback light if no lights present in USD file.

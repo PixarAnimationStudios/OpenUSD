@@ -39,8 +39,6 @@ HdPrman_OfflineRenderParam::Initialize(
     RtParamList rileyOptions, 
     riley::ShadingNode integratorNode,
     riley::Extent outputFormat, TfToken outputFilename,
-    std::vector<riley::ShadingNode> const & fallbackMaterialNodes,
-    std::vector<riley::ShadingNode> const & fallbackVolumeNodes,
     std::vector<RenderOutput> const & renderOutputs)
 {
     _options = rileyOptions;
@@ -55,8 +53,8 @@ HdPrman_OfflineRenderParam::Initialize(
     GetCameraContext().Begin(AcquireRiley());
 
     _SetRenderTargetAndDisplay(outputFormat, outputFilename);
-    _SetFallbackMaterial(fallbackMaterialNodes);
-    _SetFallbackVolumeMaterial(fallbackVolumeNodes);
+
+    _CreateFallbackMaterials();
 }
 
 void
@@ -105,67 +103,7 @@ HdPrman_OfflineRenderParam::InitializeWithDefaults()
         _SetRenderTargetAndDisplay(format, TfToken("default.exr"));
     }
     
-    // Default material
-    {
-        static const RtUString us_PxrPrimvar("PxrPrimvar");
-        static const RtUString us_PxrSurface("PxrSurface");
-        static const RtUString us_simpleTestSurface("simpleTestSurface");
-        static const RtUString us_pv_color("pv_color");
-        static const RtUString us_pv_color_resultRGB("pv_color:resultRGB");
-        static const RtUString us_varname("varname");
-        static const RtUString us_displayColor("displayColor");
-        static const RtUString us_defaultColor("defaultColor");
-        static const RtUString us_diffuseColor("diffuseColor");
-        static const RtUString us_specularEdgeColor("specularEdgeColor");
-        static const RtUString us_specularFaceColor("specularFaceColor");
-        static const RtUString us_specularModelType("specularModelType");
-
-        std::vector<riley::ShadingNode> materialNodes;
-        riley::ShadingNode pxrPrimvar_node;
-        pxrPrimvar_node.type = riley::ShadingNode::Type::k_Pattern;
-        pxrPrimvar_node.name = us_PxrPrimvar;
-        pxrPrimvar_node.handle = us_pv_color;
-        pxrPrimvar_node.params.SetString(us_varname, us_displayColor);
-        // Note: this 0.5 gray is to match UsdImaging's fallback.
-        pxrPrimvar_node.params.SetColor(
-            us_defaultColor,
-            RtColorRGB(0.5, 0.5, 0.5));
-        pxrPrimvar_node.params.SetString(RixStr.k_type, RixStr.k_color);
-        materialNodes.push_back(pxrPrimvar_node);
-
-        riley::ShadingNode pxrSurface_node;
-        pxrSurface_node.type = riley::ShadingNode::Type::k_Bxdf;
-        pxrSurface_node.name = us_PxrSurface;
-        pxrSurface_node.handle = us_simpleTestSurface;
-        pxrSurface_node.params.SetColorReference(
-            us_diffuseColor,
-            us_pv_color_resultRGB);
-        pxrSurface_node.params.SetInteger(us_specularModelType, 1);
-        pxrSurface_node.params.SetColor(us_specularFaceColor,RtColorRGB(0.04f));
-        pxrSurface_node.params.SetColor(us_specularEdgeColor, RtColorRGB(1.0f));
-        materialNodes.push_back(pxrSurface_node);
-        _SetFallbackMaterial(materialNodes);
-    }
-
-    // Volume default material
-    {
-        static const RtUString us_PxrVolume("PxrVolume");
-        static const RtUString us_simpleVolume("simpleVolume");
-        static const RtUString us_density("density");
-        static const RtUString us_densityFloatPrimVar("densityFloatPrimVar");
-        static const RtUString us_diffuseColor("diffuseColor");
-        std::vector<riley::ShadingNode> volumeMaterialNodes;
-        riley::ShadingNode pxrVolume_node;
-        pxrVolume_node.type = riley::ShadingNode::Type::k_Bxdf;
-        pxrVolume_node.name = us_PxrVolume;
-        pxrVolume_node.handle = us_simpleVolume;
-        pxrVolume_node.params.SetString(us_densityFloatPrimVar, us_density);
-        // 18% albedo chosen to match Storm's fallback volume shader.
-        pxrVolume_node.params.SetColor(us_diffuseColor, 
-                                    RtColorRGB(0.18, 0.18, 0.18));
-        volumeMaterialNodes.push_back(pxrVolume_node);
-        _SetFallbackVolumeMaterial(volumeMaterialNodes);
-    }
+    _CreateFallbackMaterials();
 
     // Default light
     {
@@ -317,24 +255,6 @@ HdPrman_OfflineRenderParam::SetFallbackLight(
       k_NoCoordsys,
       xform,
       params);
-}
-
-void 
-HdPrman_OfflineRenderParam::_SetFallbackMaterial(
-    std::vector<riley::ShadingNode> const & materialNodes)
-{
-    fallbackMaterial = _riley->CreateMaterial(riley::UserId::DefaultId(),
-        {static_cast<uint32_t>(materialNodes.size()), &materialNodes[0]},
-        RtParamList());
-}
-
-void 
-HdPrman_OfflineRenderParam::_SetFallbackVolumeMaterial(
-    std::vector<riley::ShadingNode> const & materialNodes)
-{
-    fallbackVolumeMaterial = _riley->CreateMaterial(riley::UserId::DefaultId(),
-        {static_cast<uint32_t>(materialNodes.size()), &materialNodes[0]},
-        RtParamList());
 }
 
 void
