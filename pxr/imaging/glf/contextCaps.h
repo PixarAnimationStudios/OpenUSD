@@ -88,7 +88,6 @@ public:
     int uniformBufferOffsetAlignment;
 
     // GL extensions (ordered by version)
-    bool directStateAccessEnabled;    // ARB_direct_state_access          (4.5)
     bool multiDrawIndirectEnabled;    // ARB_multi_draw_indirect          (4.5)
 
     bool bindlessTextureEnabled;      // ARB_bindless_texture

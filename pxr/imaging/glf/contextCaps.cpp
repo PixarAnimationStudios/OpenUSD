@@ -47,8 +47,6 @@ TF_DEFINE_ENV_SETTING(GLF_ENABLE_BINDLESS_TEXTURE, false,
                       "Use GL bindless texture extention");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_MULTI_DRAW_INDIRECT, true,
                       "Use GL multi draw indirect extention");
-TF_DEFINE_ENV_SETTING(GLF_ENABLE_DIRECT_STATE_ACCESS, true,
-                      "Use GL direct state access extention");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_BUILTIN_BARYCENTRICS, false,
                       "Use built in barycentric coordinates");
 TF_DEFINE_ENV_SETTING(GLF_ENABLE_SHADER_DRAW_PARAMETERS, true,
@@ -76,7 +74,6 @@ GlfContextCaps::GlfContextCaps()
     , maxTextureBufferSize(_DefaultMaxTextureBufferSize)
     , uniformBufferOffsetAlignment(0)
 
-    , directStateAccessEnabled(false)
     , multiDrawIndirectEnabled(false)
     , bindlessTextureEnabled(false)
     , bindlessBufferEnabled(false)
@@ -135,7 +132,6 @@ GlfContextCaps::_LoadCaps()
     maxShaderStorageBlockSize    = _DefaultMaxShaderStorageBlockSize;
     maxTextureBufferSize         = _DefaultMaxTextureBufferSize;
     uniformBufferOffsetAlignment = 0;
-    directStateAccessEnabled     = false;
     multiDrawIndirectEnabled     = false;
     bindlessTextureEnabled       = false;
     bindlessBufferEnabled        = false;
@@ -225,10 +221,6 @@ GlfContextCaps::_LoadCaps()
         multiDrawIndirectEnabled = true;
     }
 #if defined(GL_VERSION_4_5)
-    if (GARCH_GLAPI_HAS(VERSION_4_5) ||
-        GARCH_GLAPI_HAS(ARB_direct_state_access)) {
-        directStateAccessEnabled = true;
-    }
     if (GARCH_GLAPI_HAS(ARB_shader_draw_parameters)) {
         shaderDrawParametersEnabled = true;
     }
@@ -246,9 +238,6 @@ GlfContextCaps::_LoadCaps()
     }
     if (!TfGetEnvSetting(GLF_ENABLE_MULTI_DRAW_INDIRECT)) {
         multiDrawIndirectEnabled = false;
-    }
-    if (!TfGetEnvSetting(GLF_ENABLE_DIRECT_STATE_ACCESS)) {
-        directStateAccessEnabled = false;
     }
     if (!TfGetEnvSetting(GLF_ENABLE_SHADER_DRAW_PARAMETERS)) {
         shaderDrawParametersEnabled = false;
@@ -291,8 +280,6 @@ GlfContextCaps::_LoadCaps()
             // order alphabetically
             << "  ARB_bindless_texture               = "
             <<    bindlessTextureEnabled << "\n"
-            << "  ARB_direct_state_access            = "
-            <<    directStateAccessEnabled << "\n"
             << "  ARB_multi_draw_indirect            = "
             <<    multiDrawIndirectEnabled << "\n"
             << "  ARB_shader_draw_parameters         = "
