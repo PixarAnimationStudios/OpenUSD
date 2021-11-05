@@ -150,6 +150,36 @@ private:
     TfTokenVector _renderTags;
 };
 
+GfVec2i
+MultiplyAndRound(const GfVec2f &a, const GfVec2i &b)
+{
+    return GfVec2i(std::roundf(a[0] * b[0]),
+                   std::roundf(a[1] * b[1]));
+}
+
+CameraUtilFraming
+ComputeFraming(const UsdRenderSpec::Product &product)
+{
+    const GfRange2f displayWindow(GfVec2f(0.0f), GfVec2f(product.resolution));
+
+    // We use rounding to nearest integer when computing the dataWindow
+    // from the dataWindowNDC. This is to conform about the UsdRenderSpec's
+    // specification of the pixels that make up the data window, namely it
+    // is exactly those pixels whose centers are contained in the dataWindowNDC
+    // in NDC space.
+    //
+    // Note that we subtract 1 from the maximum - that's because of GfRect2i's
+    // unusual API.
+    const GfRect2i dataWindow(
+        MultiplyAndRound(
+            product.dataWindowNDC.GetMin(), product.resolution),
+        MultiplyAndRound(
+            product.dataWindowNDC.GetMax(), product.resolution) - GfVec2i(1));
+
+    return CameraUtilFraming(
+        displayWindow, dataWindow, product.pixelAspectRatio);
+}
+
 void
 PrintUsage(const char* cmd, const char *err=nullptr)
 {
@@ -425,28 +455,6 @@ int main(int argc, char *argv[])
 
             // Product extraSettings become Riley options.
             _ConvertSettings(product.extraSettings, rileyOptions);
-            
-            rileyOptions.SetIntegerArray(RixStr.k_Ri_FormatResolution,
-                (int*) &product.resolution, 2);
-            rileyOptions.SetFloat(RixStr.k_Ri_FormatPixelAspectRatio,
-                product.pixelAspectRatio);
-
-            // Crop/Data window.
-            float cropWindow[4] = {
-                product.dataWindowNDC.GetMin()[0], // xmin
-                product.dataWindowNDC.GetMax()[0], // xmax
-                product.dataWindowNDC.GetMin()[1], // ymin
-                product.dataWindowNDC.GetMax()[1], // ymax
-            };
-            // RiCropWindow semantics has different float->int behavior
-            // than UsdRenderSettings dataWindowNDC, so compensate here.
-            float dx = 0.5 / product.resolution[0];
-            float dy = 0.5 / product.resolution[1];
-            cropWindow[0] -= dx;
-            cropWindow[1] -= dx;
-            cropWindow[2] -= dy;
-            cropWindow[3] -= dy;
-            rileyOptions.SetFloatArray(RixStr.k_Ri_CropWindow, cropWindow, 4);
         }
 
         // Integrator
@@ -644,10 +652,7 @@ int main(int argc, char *argv[])
 
             hdRenderPassState->SetCameraAndFraming(
                 camera,
-                CameraUtilFraming(
-                    GfRect2i(
-                        GfVec2i(0,0),
-                        product.resolution[0], product.resolution[1])),
+                ComputeFraming(product),
                 { false, CameraUtilFit });
 
             // The task execution graph and engine configuration is also simple.
