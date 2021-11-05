@@ -64,7 +64,7 @@ public:
             const HdSceneIndexBase &sender,
             const AddedPrimEntries &entries) override
     {
-        for (const AddedPrimEntry entry : entries) {
+        for (const AddedPrimEntry &entry : entries) {
             std::cout << _prefix << "PrimAdded: " << entry.primPath << ", "
                 << entry.primType << std::endl;
         }
@@ -74,7 +74,7 @@ public:
             const HdSceneIndexBase &sender,
             const RemovedPrimEntries &entries) override
     {
-        for (const RemovedPrimEntry entry : entries) {
+        for (const RemovedPrimEntry &entry : entries) {
             std::cout << _prefix << "PrimRemoved: " << entry.primPath << ", "
                 << std::endl;
         }
@@ -84,7 +84,7 @@ public:
             const HdSceneIndexBase &sender,
             const DirtiedPrimEntries &entries) override
     {
-        for (const DirtiedPrimEntry entry : entries) {
+        for (const DirtiedPrimEntry &entry : entries) {
             std::cout << _prefix << "PrimDirtied: " << entry.primPath << ", ";
 
             for (const HdDataSourceLocator &locator : entry.dirtyLocators) {
