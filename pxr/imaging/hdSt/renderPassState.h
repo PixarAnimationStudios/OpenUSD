@@ -144,13 +144,27 @@ public:
     ///
     /// This is used by render pass that do not have an associated HdCamera
     /// such as the shadow render pass.
-    HD_API
+    HDST_API
     void SetCameraFramingState(GfMatrix4d const &worldToViewMatrix,
                                GfMatrix4d const &projectionMatrix,
                                GfVec4d const &viewport,
                                ClipPlanesVector const & clipPlanes);
     
     GfMatrix4d GetCullMatrix() const { return _cullMatrix; }
+
+    /// Overrides the case when no HdCamera is given. In the case, uses
+    /// matrix specified by SetCameraFramingState.
+    HDST_API
+    GfMatrix4d GetWorldToViewMatrix() const override;
+
+    /// Overrides the case when no HdCamera is given. In the case, uses
+    /// matrix specified by SetCameraFramingState.
+    HDST_API
+    GfMatrix4d GetProjectionMatrix() const override;
+
+    /// Overrides the case when no HdCamera is given. In the case, uses
+    /// clip planes specified by SetCameraFramingState.
+    HDST_API ClipPlanesVector const & GetClipPlanes() const override;
 
     // Helper to get graphics cmds descriptor describing textures
     // we render into and the blend state, constructed from
@@ -161,6 +175,14 @@ public:
 
 private:
     bool _UseAlphaMask() const;
+
+    // ---------------------------------------------------------------------- //
+    // Camera state used when no HdCamera available
+    // ---------------------------------------------------------------------- //
+    
+    GfMatrix4d _worldToViewMatrix;
+    GfMatrix4d _projectionMatrix;
+    ClipPlanesVector _clipPlanes;
 
     GfMatrix4d _cullMatrix; // updated during Prepare(..)
 

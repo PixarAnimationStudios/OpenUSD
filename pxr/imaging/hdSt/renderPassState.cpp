@@ -69,6 +69,8 @@ HdStRenderPassState::HdStRenderPassState()
 HdStRenderPassState::HdStRenderPassState(
     HdStRenderPassShaderSharedPtr const &renderPassShader)
     : HdRenderPassState()
+    , _worldToViewMatrix(1)
+    , _projectionMatrix(1)
     , _cullMatrix(1.0)
     , _renderPassShader(renderPassShader)
     , _fallbackLightingShader(std::make_shared<HdSt_FallbackLightingShader>())
@@ -839,6 +841,40 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
     }
 
     return desc;
+}
+
+GfMatrix4d
+HdStRenderPassState::GetWorldToViewMatrix() const
+{
+    if (_camera) {
+        return HdRenderPassState::GetWorldToViewMatrix();
+    }
+
+    return _worldToViewMatrix;
+}
+
+GfMatrix4d
+HdStRenderPassState::GetProjectionMatrix() const
+{
+    if (_camera) {
+        return HdRenderPassState::GetProjectionMatrix();
+    }
+    return _projectionMatrix;
+}
+
+HdRenderPassState::ClipPlanesVector const &
+HdStRenderPassState::GetClipPlanes() const
+{
+    if (!_camera) {
+        if (_clippingEnabled) {
+            return _clipPlanes;
+        } else {
+            const static HdRenderPassState::ClipPlanesVector empty;
+            return empty;
+        }
+    }
+
+    return HdRenderPassState::GetClipPlanes();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

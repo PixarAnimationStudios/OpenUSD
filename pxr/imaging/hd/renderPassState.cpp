@@ -38,8 +38,6 @@ HdRenderPassState::HdRenderPassState()
     : _camera(nullptr)
     , _viewport(0, 0, 1, 1)
     , _overrideWindowPolicy{false, CameraUtilFit}
-    , _worldToViewMatrix(1)
-    , _projectionMatrix(1)
 
     , _overrideColor(0.0f, 0.0f, 0.0f, 0.0f)
     , _wireframeColor(0.0f, 0.0f, 0.0f, 0.0f)
@@ -128,9 +126,9 @@ GfMatrix4d
 HdRenderPassState::GetWorldToViewMatrix() const
 {
     if (!_camera) {
-        return _worldToViewMatrix;
+        return GfMatrix4d(1.0);
     }
-
+     
     return _camera->GetTransform().GetInverse();
 }
 
@@ -151,7 +149,7 @@ GfMatrix4d
 HdRenderPassState::GetProjectionMatrix() const
 {
     if (!_camera) {
-        return _projectionMatrix;
+        return GfMatrix4d(1.0);
     }
 
     if (_framing.IsValid()) {
@@ -173,14 +171,11 @@ HdRenderPassState::GetProjectionMatrix() const
 HdRenderPassState::ClipPlanesVector const &
 HdRenderPassState::GetClipPlanes() const
 {
-    if (!_clippingEnabled) {
+    if (!(_clippingEnabled && _camera)) {
         const static HdRenderPassState::ClipPlanesVector empty;
         return empty;
     }
 
-    if (!_camera) {
-        return _clipPlanes;
-    }
     return _camera->GetClipPlanes();
 }
 
