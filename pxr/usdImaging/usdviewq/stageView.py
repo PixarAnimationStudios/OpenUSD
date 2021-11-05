@@ -2056,19 +2056,19 @@ class StageView(QtOpenGL.QGLWidget):
         that has the same view and use it.
         """
         if self._dataModel.viewSettings.cameraPrim != None:
+            freeCamera = None
             # cameraPrim may no longer be valid, so use the last-computed
             # gf camera
             if self._lastComputedGfCamera:
-                self._dataModel.viewSettings.freeCamera = FreeCamera.FromGfCamera(
+                freeCamera = FreeCamera.FromGfCamera(
                     self._lastComputedGfCamera, self._stageIsZup)
             else:
-                self._dataModel.viewSettings.freeCamera = FreeCamera(
+                freeCamera = FreeCamera(
                     self._stageIsZup,
                     self._dataModel.viewSettings.freeCameraFOV)
 
             if self._dataModel.viewSettings.lockFreeCameraAspect:
                 # Update free camera aspect ratio to match the current camera.
-                freeCamera = self._dataModel.viewSettings.freeCamera
                 if self._lastAspectRatio < freeCamera.aspectRatio:
                     freeCamera.horizontalAperture = \
                         self._lastAspectRatio * freeCamera.verticalAperture
@@ -2079,9 +2079,12 @@ class StageView(QtOpenGL.QGLWidget):
             # override clipping plane state is managed by StageView,
             # so that it can be persistent.  Therefore we must restore it
             # now
-            self._dataModel.viewSettings.freeCamera.overrideNear = self._overrideNear
-            self._dataModel.viewSettings.freeCamera.overrideFar = self._overrideFar
+            freeCamera.overrideNear = self._overrideNear
+            freeCamera.overrideFar = self._overrideFar
+
             self._dataModel.viewSettings.cameraPrim = None
+            self._dataModel.viewSettings.freeCamera = freeCamera
+
             if computeAndSetClosestDistance:
                 self.computeAndSetClosestDistance()
             # let the controller know we've done this!
