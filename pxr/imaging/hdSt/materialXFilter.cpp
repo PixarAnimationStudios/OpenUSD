@@ -135,8 +135,8 @@ HdSt_GenMaterialXShaderCode(
     mx::TypedElementPtr renderableElem = renderableElements.at(0);
     mx::NodePtr node = renderableElem->asA<mx::Node>();
     if (node && node->getType() == mx::MATERIAL_TYPE_STRING) {
-        std::unordered_set<mx::NodePtr> mxShaderNodes;
-        mxShaderNodes = mx::getShaderNodes(node, mx::SURFACE_SHADER_TYPE_STRING);
+        // Use auto so can compile against MaterialX 1.38.0 or 1.38.1
+        auto mxShaderNodes = mx::getShaderNodes(node, mx::SURFACE_SHADER_TYPE_STRING);
         if (!mxShaderNodes.empty()) {
             renderableElem = *mxShaderNodes.begin();
         }
