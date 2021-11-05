@@ -38,7 +38,6 @@ HdRenderPassState::HdRenderPassState()
     : _camera(nullptr)
     , _viewport(0, 0, 1, 1)
     , _overrideWindowPolicy{false, CameraUtilFit}
-    , _cullMatrix(1)
     , _worldToViewMatrix(1)
     , _projectionMatrix(1)
 
@@ -94,9 +93,6 @@ HdRenderPassState::~HdRenderPassState() = default;
 void
 HdRenderPassState::Prepare(HdResourceRegistrySharedPtr const &resourceRegistry)
 {
-    if(!TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM)) {
-        _cullMatrix = GetWorldToViewMatrix() * GetProjectionMatrix();
-    }
 }
 
 void

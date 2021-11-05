@@ -69,6 +69,7 @@ HdStRenderPassState::HdStRenderPassState()
 HdStRenderPassState::HdStRenderPassState(
     HdStRenderPassShaderSharedPtr const &renderPassShader)
     : HdRenderPassState()
+    , _cullMatrix(1.0)
     , _renderPassShader(renderPassShader)
     , _fallbackLightingShader(std::make_shared<HdSt_FallbackLightingShader>())
     , _clipPlanesBufferSize(0)
@@ -114,6 +115,10 @@ HdStRenderPassState::Prepare(
     GLF_GROUP_FUNCTION();
 
     HdRenderPassState::Prepare(resourceRegistry);
+
+    if(!TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM)) {
+        _cullMatrix = GetWorldToViewMatrix() * GetProjectionMatrix();
+    }
 
     HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
         std::static_pointer_cast<HdStResourceRegistry>(resourceRegistry);

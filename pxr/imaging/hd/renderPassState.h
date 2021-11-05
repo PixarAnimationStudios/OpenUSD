@@ -157,8 +157,6 @@ public:
     HD_API
     ClipPlanesVector const & GetClipPlanes() const;
 
-    GfMatrix4d GetCullMatrix() const { return _cullMatrix; }
-
     // ---------------------------------------------------------------------- //
     /// \name Application rendering state
     // ---------------------------------------------------------------------- //
@@ -338,7 +336,6 @@ protected:
     GfVec4f _viewport;
     CameraUtilFraming _framing;
     std::pair<bool, CameraUtilConformWindowPolicy> _overrideWindowPolicy;
-    GfMatrix4d _cullMatrix; // updated during Prepare(..)
 
     // Used by applications setting the view matrix directly instead of
     // using an HdCamera. Will be removed eventually.
