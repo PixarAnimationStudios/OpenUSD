@@ -1461,11 +1461,11 @@ class StageView(QtOpenGL.QGLWidget):
 
         ccMode = self._dataModel.viewSettings.colorCorrectionMode
         self._renderParams.colorCorrectionMode = ccMode
-        self._renderParams.ocioDisplay, self._renderParams.ocioView, self._renderParams.ocioColorSpace = \
-            (self._dataModel.viewSettings.ocioConfig.display,
-               self._dataModel.viewSettings.ocioConfig.view,
-               self._dataModel.viewSettings.ocioConfig.colorSpace) if ccMode == ColorCorrectionModes.OPENCOLORIO else \
-            ('','','')
+        if ccMode == ColorCorrectionModes.OPENCOLORIO:
+            self._renderParams.ocioDisplay , self._renderParams.ocioView, self._renderParams.ocioColorSpace = \
+                (self._dataModel.viewSettings.ocioSettings.display,
+               self._dataModel.viewSettings.ocioSettings.view,
+               self._dataModel.viewSettings.ocioSettings.colorSpace)
 
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
 

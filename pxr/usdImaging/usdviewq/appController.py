@@ -71,13 +71,13 @@ from .common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
                      PropTreeWidgetTypeIsRel, PrimNotFoundException,
                      GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
                      GetPrimsLoadability, ClearColors,
-                     HighlightColors, KeyboardShortcuts)
+                     HighlightColors, KeyboardShortcuts, PrintWarning)
 
 from . import settings2
 from .settings2 import StateSource
 from .usdviewApi import UsdviewApi
 from .rootDataModel import RootDataModel, ChangeNotice
-from .viewSettingsDataModel import ViewSettingsDataModel, OCIOSettings
+from .viewSettingsDataModel import ViewSettingsDataModel
 from . import plugin
 from .pythonInterpreter import Myconsole
 
@@ -647,7 +647,10 @@ class AppController(QtCore.QObject):
                 self._ui.actionOpenColorIO)
             for action in self._colorCorrectionActions:
                 self._ui.colorCorrectionActionGroup.addAction(action)
-            self._ocioSettings, self._ocioMenu = None, None
+            # OCIO menu items are populated in _configureColorManagement()
+            self._ui.ocioDisplayMenus = []
+            self._ui.ocioColorSpacesActionGroup = None
+            self._ui.ocioLooksActionGroup = None
 
             # XXX This should be a validator in ViewSettingsDataModel.
             if self._dataModel.viewSettings.renderMode not in RenderModes:
@@ -1649,67 +1652,112 @@ class AppController(QtCore.QObject):
             self._ui.actionStop.setChecked(self._stopped and
                 self._stageView.IsStopRendererSupported())
 
+    def _disableOCIOAction(self):
+        for action in self._ui.colorCorrectionActionGroup.actions():
+            if action is self._ui.actionOpenColorIO:
+                action.setEnabled(False)
+
     def _configureColorManagement(self):
         enableMenu = (not self._noRender and 
                       UsdImagingGL.Engine.IsColorCorrectionCapable())
         self._ui.menuColorCorrection.setEnabled(enableMenu)
 
+        # Usage of OCIO is driven by the OCIO env var.
+        # * Disable OCIO color management option if env var isn't set.
+        # * Populate the OCIO menu items iff PyOpenColorIO module and
+        #   a valid config file was found.
+        if not os.environ.get('OCIO'):
+            self._disableOCIOAction()
+            return
+
         try:
             import PyOpenColorIO as OCIO
+        except ImportError:
+            PrintWarning(
+                "Could not import PyOpenColorIO. OCIO may be configured via the"
+                "interpreter and will fallback to the default display, view "
+                "and color space.")
+            # NOTE: This only disallows population of the OCIO menu in usdview.
+            # The OCIO plugin may be enabled, so we don't disable OCIO here.
+            return
+        
+        try:
             config = OCIO.GetCurrentConfig()
-            ocioMenu = QtWidgets.QMenu('OpenColorIO')
-            colorSpaceMenu = QtWidgets.QMenu('ColorSpace')
-            #looksMenu = QtWidgets.QMenu('Looks')
-            colorSpaceMap = {}
+        except Exception as e:
+            PrintWarning("OpenColorIO: ", e)
+            # Fallback to sRGB if a valid config wasn't found.
+            self._disableOCIOAction()
+            if self._dataModel.viewSettings.colorCorrectionMode ==\
+                    ColorCorrectionModes.OPENCOLORIO:
+                self._dataModel.viewSettings.colorCorrectionMode =\
+                    ColorCorrectionModes.SRGB
+            return
+        
+        def addAction(menu, name):
+            action = menu.addAction(name)
+            action.setCheckable(True)
+            return action
 
-            def addAction(menu, name):
-                action = menu.addAction(name)
-                action.setCheckable(True)
-                return action
+        def setColorSpace(action):
+            self._dataModel.viewSettings.setOcioSettings(\
+                colorSpace = str(action.text()))
+            self._dataModel.viewSettings.colorCorrectionMode =\
+                ColorCorrectionModes.OPENCOLORIO
 
-            def setColorSpace(action):
-                if self._ocioSettings._colorSpace:
-                    self._ocioSettings._colorSpace.setChecked(False)
-                self._ocioSettings._colorSpace = action
-                self._changeColorCorrection(ColorCorrectionModes.OPENCOLORIO)
-                self._refreshColorCorrectionModeMenu()
-                self._dataModel.viewSettings.setOCIOConfig(action.text())
+        def setOcioConfig(action):
+            display = str(action.parent().title())
+            view = str(action.text())
+            colorSpace = config.getDisplayColorSpaceName(display, view)
+            self._dataModel.viewSettings.setOcioSettings(colorSpace,\
+                display, view)
+            self._dataModel.viewSettings.colorCorrectionMode =\
+                ColorCorrectionModes.OPENCOLORIO
 
-            def setOCIO(action):
-                if self._ocioSettings._view:
-                    self._ocioSettings._view.setChecked(False)
-                self._ocioSettings._display, self._ocioSettings._view = action.parent(), action
-                # Reset the colorspace to the display & view default
-                display = self._ocioSettings._display.title()
-                view = self._ocioSettings._view.text()
-                colorSpace = config.getDisplayColorSpaceName(display, view)
-                self._dataModel.viewSettings.setOCIOConfig(colorSpace, display, view)
-                # This will handle the UI / menu updates
-                colorSpaceMap[colorSpace].trigger()
+        def addLabelSeparator(text, parent):
+            label = QtWidgets.QLabel(text)
+            label.setAlignment(QtCore.Qt.AlignCenter)
+            labelAction = QtWidgets.QWidgetAction(parent)
+            labelAction.setDefaultWidget(label)
+            parent.addAction(labelAction)
 
-            for d in config.getDisplays():
+        ocioMenu = QtWidgets.QMenu('OCIO Config')
+
+        # Displays & Views
+        displays = config.getDisplays()
+        if displays:
+            addLabelSeparator("<i> Displays </i>", ocioMenu)
+            for d in displays:
                 displayMenu = QtWidgets.QMenu(d)
+                group = QtWidgets.QActionGroup(displayMenu)
+                group.setExclusive(True)
+
                 for v in config.getViews(d):
                     a = addAction(displayMenu, v)
-                    a.triggered[bool].connect(lambda _, action=a: setOCIO(action))
+                    group.addAction(a)
+                group.triggered.connect(setOcioConfig)
                 ocioMenu.addMenu(displayMenu)
+                self._ui.ocioDisplayMenus.append(displayMenu)
 
-            for cs in config.getColorSpaces():
+        # Colorspaces
+        colorSpaces = config.getColorSpaces()
+        if colorSpaces:
+            ocioMenu.addSeparator()
+            addLabelSeparator("<i> Colorspaces </i>", ocioMenu)
+            group = QtWidgets.QActionGroup(ocioMenu)
+            group.setExclusive(True)
+            for cs in colorSpaces:
                 colorSpace = cs.getName()
-                a = addAction(colorSpaceMenu, colorSpace)
-                colorSpaceMap[colorSpace] = a
-                a.triggered[bool].connect(lambda _, action=a: setColorSpace(action))
+                a = addAction(ocioMenu, colorSpace)
+                group.addAction(a)
+            group.triggered.connect(setColorSpace)
+            self._ui.ocioColorSpacesActionGroup = group
 
-            # for lk in config.getLooks():
-            #     addAction(looksMenu, lk)
+        # TODO Populate looks menu (config.getLooks())
 
-            ocioMenu.addMenu(colorSpaceMenu)
-            #ocioMenu.addMenu(looksMenu)
-            self._ui.menuColorCorrection.addMenu(ocioMenu)
-            self._ocioSettings, self._ocioMenu = OCIOSettings(None), ocioMenu
-
-        except ImportError:
-            return
+        self._ui.menuColorCorrection.addMenu(ocioMenu)
+        # Since this method is called from _drawFirstImage, refresh UI to
+        # account for view settings.
+        self._refreshColorCorrectionModeMenu()
 
     # Topology-dependent UI changes
     def _reloadVaryingUI(self):
@@ -4933,9 +4981,22 @@ class AppController(QtCore.QObject):
                 str(action.text()) == self._dataModel.viewSettings.renderMode)
 
     def _refreshColorCorrectionModeMenu(self):
+        # Color correction mode
         for action in self._colorCorrectionActions:
             action.setChecked(
                 str(action.text()) == self._dataModel.viewSettings.colorCorrectionMode)
+
+        # OCIO menu
+        def setChecked(action, text):
+            action.setChecked(str(action.text()) == text)
+
+        for menu in self._ui.ocioDisplayMenus:
+            for viewAction in menu.actions():
+                setChecked(viewAction, self._dataModel.viewSettings.ocioSettings.view)
+        
+        if self._ui.ocioColorSpacesActionGroup:
+            for csAction in self._ui.ocioColorSpacesActionGroup.actions():
+                setChecked(csAction, self._dataModel.viewSettings.ocioSettings.colorSpace)
 
     def _refreshPickModeMenu(self):
         for action in self._pickModeActions:

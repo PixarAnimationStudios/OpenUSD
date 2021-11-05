@@ -34,7 +34,7 @@ def _useOCIO(appController):
     # The first view ("Gamma 2.2" will be the default view)
     appController._takeShot("colorCorrectionOCIO_g22.png")
     # XXX Add support for testing color spaces and looks.
-    appController._dataModel.viewSettings.setOCIOConfig(
+    appController._dataModel.viewSettings.setOcioSettings(
         colorSpace = None, display = "rec709g22", view = "Linear")
     appController._takeShot("colorCorrectionOCIO_linear.png")
         

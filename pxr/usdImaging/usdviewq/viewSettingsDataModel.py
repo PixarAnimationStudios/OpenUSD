@@ -83,13 +83,14 @@ def freeCameraViewSetting(f):
     return wrapper
 
 
-"""Class to hold OCIO display, view, and colorSpace settings.
-The underlying data is somewhat opaque (for view it is strings, but
-for an app-controler it may be the Qt object)
-"""
 class OCIOSettings():
-    def __init__(self, dflt=None):
-        self._display, self._view, self._colorSpace = dflt, dflt, dflt
+    """Class to hold OCIO display, view, and colorSpace config settings
+    as strings."""
+
+    def __init__(self, display="", view="", colorSpace=""):
+        self._display = display
+        self._view = view
+        self._colorSpace = colorSpace
 
     @property
     def display(self):
@@ -147,7 +148,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._freeCameraAspect = self.stateProperty("freeCameraAspect", default=1.0)
         self._lockFreeCameraAspect = self.stateProperty("lockFreeCameraAspect", default=False)
         self._colorCorrectionMode = self.stateProperty("colorCorrectionMode", default=ColorCorrectionModes.SRGB)
-        self._ocioSettings = OCIOSettings('')
+        self._ocioSettings = OCIOSettings()
         self._pickMode = self.stateProperty("pickMode", default=PickModes.PRIMS)
 
         # We need to store the trinary selHighlightMode state here,
@@ -381,21 +382,26 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._colorCorrectionMode = value
 
     @property
-    def ocioConfig(self):
-        return self._colorCorrectionMode
-
-    @property
-    def ocioConfig(self):
+    def ocioSettings(self):
         return self._ocioSettings
 
-    def setOCIOConfig(self, colorSpace=None, display=None, view=None):
-        if display:
-            assert view, 'Cannot set a display without a view'
-            self._ocioSettings._display = display
-            self._ocioSettings._view = view
+    @visibleViewSetting
+    def setOcioSettings(self, colorSpace="", display="", view=""):
+        """Specifies the OCIO settings to be used. Setting the OCIO 'display'
+           requires a 'view' to be specified."""
+
         if colorSpace:
             self._ocioSettings._colorSpace = colorSpace
-        self.colorCorrectionMode = ColorCorrectionModes.OPENCOLORIO
+
+        if display:
+            if view:
+                self._ocioSettings._display = display
+                self._ocioSettings._view = view
+            else:
+                PrintWarning("Cannot set a OCIO display without a view."\
+                             "Using default settings instead.")
+                self._ocioSettings._display = ""
+                self._ocioSettings._view = ""
 
     @property
     def pickMode(self):
