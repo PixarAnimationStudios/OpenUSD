@@ -174,6 +174,16 @@ namespace {
 
 //This is used by the macro blob, basically this is dumped on top
 //of the generated shader
+
+const char *
+_GetDeclarationDefinitions()
+{
+    return
+    "#define REF(space,type) space type &\n"
+    "#undef HD_NEEDS_FORWARD_DECL\n"
+    "#define HD_FWD_DECL(decl)\n";
+}
+
 const char *
 _GetPackedTypeDefinitions()
 {
@@ -184,7 +194,6 @@ _GetPackedTypeDefinitions()
     "#define hd_dvec2 packed_float2\n"
     "#define hd_vec3 packed_float3\n"
     "#define hd_dvec3 packed_float3\n"
-    "#define REF(space,type) space type &\n"
     "struct hd_mat3  { float m00, m01, m02,\n"
     "                        m10, m11, m12,\n"
     "                        m20, m21, m22;\n"
@@ -366,6 +375,9 @@ _ComputeHeader(id<MTLDevice> device)
 
     // XXX: this macro is still used in GlobalUniform.
     header  << "#define MAT4 mat4\n";
+
+    // macros to help with declarations
+    header  << _GetDeclarationDefinitions();
 
     // a trick to tightly pack vec3 into SSBO/UBO.
     header  << _GetPackedTypeDefinitions();
