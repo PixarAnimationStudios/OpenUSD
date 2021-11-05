@@ -31,6 +31,7 @@
 #include <unordered_map>
 
 namespace MaterialX {
+    class FileSearchPath;
     using DocumentPtr = std::shared_ptr<class Document>;
     using StringMap = std::unordered_map<std::string, std::string>;
 }
@@ -41,6 +42,14 @@ class SdfPath;
 class VtValue;
 struct HdMaterialNetwork2;
 struct HdMaterialNode2;
+
+/// Return the MaterialX search paths. In order, this includes:
+/// - Paths set in the environment variable 'PXR_MTLX_PLUGIN_SEARCH_PATHS'
+/// - Paths set in the environment variable 'PXR_MTLX_STDLIB_SEARCH_PATHS'
+/// - Path to the MaterialX standard library discovered at build time.
+HDMTLX_API
+const MaterialX::FileSearchPath&
+HdMtlxSearchPaths();
 
 /// Converts the HdParameterValue to a string MaterialX can understand
 HDMTLX_API

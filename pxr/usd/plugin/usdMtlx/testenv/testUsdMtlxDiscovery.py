@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 
 import os
-os.environ['PXR_USDMTLX_PLUGIN_SEARCH_PATHS'] = os.getcwd()
+os.environ['PXR_MTLX_PLUGIN_SEARCH_PATHS'] = os.getcwd()
 
 from pxr import Tf, Ndr, Sdr
 import unittest

@@ -185,8 +185,10 @@ private:
 
 UsdMtlxDiscoveryPlugin::UsdMtlxDiscoveryPlugin()
 {
+    // Note this is the same envar used in HdMtlxSearchPaths(). This is used to 
+    // indicate the location of any additional custom mtlx files.
     static const auto searchPaths =
-        UsdMtlxGetSearchPathsFromEnvVar("PXR_USDMTLX_PLUGIN_SEARCH_PATHS");
+        UsdMtlxGetSearchPathsFromEnvVar("PXR_MTLX_PLUGIN_SEARCH_PATHS");
 
     _searchPaths = searchPaths;
     _allSearchPaths =

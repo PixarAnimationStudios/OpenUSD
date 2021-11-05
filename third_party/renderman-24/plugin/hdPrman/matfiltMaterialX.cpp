@@ -621,10 +621,8 @@ MatfiltMaterialX(
         if (!terminalNode->inputConnections.empty()) {
 
             // Load Standard Libraries/setup SearchPaths (for mxDoc and mxShaderGen)
-            mx::FilePathVec libraryFolders = { "libraries", };
-            mx::FileSearchPath searchPath;
-            searchPath.append(mx::FilePath(PXR_MATERIALX_STDLIB_DIR));
-            searchPath.append(mx::FilePath(PXR_MATERIALX_BASE_DIR));
+            mx::FilePathVec libraryFolders;
+            mx::FileSearchPath searchPath = HdMtlxSearchPaths();
             mx::DocumentPtr stdLibraries = mx::createDocument();
             mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
 
