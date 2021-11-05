@@ -160,11 +160,40 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
 	
     // fill in pick buffer
-    int entryOffset = atomicAdd(PickBuffer[0], 1);
-    if (entryOffset < PickBuffer[1])
+    const int entrySize = 2;
+    const int bufferSize = PickBuffer[0];
+    const int hashTableSize = PickBuffer[1];
+    const int hashTableOffset = PickBuffer[2];
+    const int entryHash = primId % hashTableSize;
+    int linkOffset = hashTableOffset + entryHash;
+
+    bool shouldContinue = true;
+    do
     {
-        PickBuffer[entryOffset] = primId;
-    }	
+        int entryOffset = PickBuffer[linkOffset];
+        if (entryOffset == -1)
+        {
+            entryOffset = atomicAdd(PickBuffer[3], entrySize);
+            if (entryOffset + entrySize <= bufferSize)
+            {
+                atomicExchange(PickBuffer[entryOffset], primId);
+                atomicExchange(PickBuffer[entryOffset + 1], -1);
+
+                atomicCompSwap(PickBuffer[linkOffset], -1, entryOffset);
+            }
+
+            shouldContinue = false;
+        }
+        else if (primId == PickBuffer[entryOffset])
+        {
+           shouldContinue = false;
+        }
+        else
+        {
+            linkOffset = entryOffset + 1; 
+        }
+    }
+    while(shouldContinue);
 }
 
 -- glsl HdxRenderPass.RenderColorAndSelection

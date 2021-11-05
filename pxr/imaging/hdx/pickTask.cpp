@@ -362,7 +362,7 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
                 offsetSpecs,
                 HdBufferArrayUsageHint());
 
-        _pickBuffer->Resize(128);
+        _pickBuffer->Resize(100000);
     }
 }
 
@@ -431,6 +431,8 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     }
 
     //
+    int headerSize = 4;
+    int hashTableSize = 10;
     if (HdStRenderPassState* extendedState =
         dynamic_cast<HdStRenderPassState*>(_pickableRenderPassState.get())) {
         HdStRenderPassShaderSharedPtr renderPassShader
@@ -438,8 +440,12 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 
         if (_pickBuffer) {
             VtIntArray pickBufferInit;
-            pickBufferInit.push_back(2);   // entry offset
-            pickBufferInit.push_back(128); // buffer size
+            pickBufferInit.push_back(100000);                       // buffer size
+            pickBufferInit.push_back(hashTableSize);                // hash table size
+            pickBufferInit.push_back(headerSize);                   // hash table offset
+            pickBufferInit.push_back(headerSize + hashTableSize);   // first entry offset
+            for (int j = 0; j < hashTableSize; ++j) 
+                pickBufferInit.push_back(-1);
             HdBufferSourceSharedPtr pickSource = std::make_shared<HdVtBufferSource>(
                 TfToken("PickBuffer"),
                 VtValue(pickBufferInit));
@@ -485,8 +491,8 @@ HdxPickTask::Execute(HdTaskContext* ctx)
         {
             const auto& data = pickData.Get<VtIntArray>();
 
-            int endIndex = std::min<int>(data[0], 128);
-            for (int j = 2; j < endIndex; ++j)
+            int endOffset = std::min<int>(data[0], data[3]);
+            for (int j = headerSize + hashTableSize; j + 2 <= endOffset; j += 2)
             {
                 HdxPickHit hit;
 
