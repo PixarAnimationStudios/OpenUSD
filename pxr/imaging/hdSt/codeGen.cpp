@@ -539,11 +539,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     if (caps.bindlessTextureEnabled) {
         _genHeader << "#extension GL_ARB_bindless_texture : require\n";
     }
-    // XXX: Skip checking the context caps for whether the bindless texture
-    // extension is available when bindless shadow maps are enabled. This needs 
-    // to be done because GlfSimpleShadowArray is used internally in a manner
-    // wherein context caps initialization might not have happened.
-    if (GlfSimpleShadowArray::GetBindlessShadowMapsEnabled()) {
+    if (!caps.bindlessTextureEnabled) {
+        // XXX: Needed by MaterialX GLSL shader gen
         _genHeader << "#extension GL_ARB_bindless_texture : require\n";
     }
     if (caps.glslVersion < 460 && caps.shaderDrawParametersEnabled) {

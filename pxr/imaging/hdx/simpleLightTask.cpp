@@ -137,8 +137,6 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     if (!TF_VERIFY(shadows)) {
         return;
     }
-    bool const useBindlessShadowMaps =
-        GlfSimpleShadowArray::GetBindlessShadowMapsEnabled();
 
     // Place lighting context in task context
     (*ctx)[HdxTokens->lightingContext] = lightingContext;
@@ -285,20 +283,8 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     // If there are shadows then we need to create and setup 
     // the shadow array needed in the lighting context in 
     // order to receive shadows
-    // These calls will re-allocate internal buffers if they change.
-
-    if (useBindlessShadowMaps) {
-        shadows->SetShadowMapResolutions(shadowMapResolutions);
-    } else {
-        // Bindful shadow maps use a texture array, and hence are limited to
-        // a single resolution. Use the maximum authored resolution.
-        int maxRes = 0;
-        for (GfVec2i const& res : shadowMapResolutions) {
-            maxRes = std::max(maxRes, res[0]);
-        }
-        shadows->SetSize(GfVec2i(maxRes, maxRes));
-        shadows->SetNumLayers(shadowIndex + 1);
-    }
+    // This will re-allocate internal buffers if they change.
+    shadows->SetShadowMapResolutions(shadowMapResolutions);
 
     if (shadowIndex > -1) {
         for (size_t lightId = 0; lightId < _numLights; ++lightId) {

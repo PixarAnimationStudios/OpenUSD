@@ -125,12 +125,6 @@ HdStSimpleLightingShader::GetSource(TfToken const &shaderStageKey) const
     defineStream << "#define NUM_LIGHTS " << numLights<< "\n";
     defineStream << "#define USE_SHADOWS " << (int)(useShadows) << "\n";
     defineStream << "#define NUM_SHADOWS " << numShadows << "\n";
-    if (useShadows) {
-        const bool useBindlessShadowMaps =
-            GlfSimpleShadowArray::GetBindlessShadowMapsEnabled();;
-        defineStream << "#define USE_BINDLESS_SHADOW_TEXTURES "
-                     << int(useBindlessShadowMaps) << "\n";
-    }
 
     const std::string postSurfaceShader =
         _lightingContext->ComputeShaderSource(shaderStageKey);

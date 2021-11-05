@@ -188,19 +188,12 @@ computeShadowFilterWidth(int index, vec4 Peye)
 // textures
 // ---------------------------------------------------------------------------
 
-#if USE_BINDLESS_SHADOW_TEXTURES
 #if NUM_SHADOWS > 0
 
-uniform BindlessShadowSamplers {
-    uvec2 shadowCompareTextures[NUM_SHADOWS];
-};
+uniform sampler2DShadow shadowCompareTextures[NUM_SHADOWS];
+
 #endif // NUM_SHADOWS > 0
-#else // USE_BINDLESS_SHADOW_TEXTURES
 
-uniform sampler2DArray shadowTexture;
-uniform sampler2DArrayShadow shadowCompareTexture;
-
-#endif // !USE_BINDLESS_SHADOW_TEXTURES
 // ---------------------------------------------------------------------------
 // lighting functions
 // ---------------------------------------------------------------------------
@@ -245,12 +238,7 @@ shadowCompare(int shadowIndex, vec4 coord)
     // XXX: sample the next cascade over?
     coord.xy = clamp(coord.xy, vec2(0), vec2(1));
 
-#if USE_BINDLESS_SHADOW_TEXTURES
-    return texture(sampler2DShadow(shadowCompareTextures[shadowIndex]), coord.xyz);
-#else
-    return texture(shadowCompareTexture,
-                   vec4(coord.x, coord.y, shadowIndex, coord.z));
-#endif
+    return texture(shadowCompareTextures[shadowIndex], coord.xyz);
 }
 
 #ifndef SHADOW_FILTER
