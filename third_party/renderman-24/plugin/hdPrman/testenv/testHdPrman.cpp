@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/cameraUtil/screenWindowParameters.h"
 
 #include "pxr/usd/usd/stage.h"
@@ -81,7 +82,6 @@ TF_DEFINE_PRIVATE_TOKENS(
  static const RtUString us_displayColor("displayColor");
  static const RtUString us_lightA("lightA");
  static const RtUString us_lightGroup("lightGroup");
- static const RtUString us_main_cam("main_cam");
  static const RtUString us_main_cam_projection("main_cam_projection");
  static const RtUString us_PathTracer("PathTracer");
  static const RtUString us_pv_color("pv_color");
@@ -406,7 +406,6 @@ int main(int argc, char *argv[])
         // future the shutterInterval will be moved to new attributes on
         // the cameras, and shutterCurve will exist an a UsdRi schema.
         //
-        float shutterCurve[10] = {0, 0, 0, 0, 0, 0, 0, 1, 0.3, 0};
         if (usdCam) {
             float interval[2] = {0.0, 0.5};
             if (usdCam.GetShutterOpenAttr().Get(&interval[0], frameNum) ||
@@ -417,9 +416,6 @@ int main(int argc, char *argv[])
                     VtArray<float>({interval[0], interval[1]});
             }
         }
-
-        // Use two samples (start and end) of a frame for now.
-        std::vector<double> timeSampleOffsets = {0.0, 1.0};
 
         // Options
         RtParamList rileyOptions;
@@ -434,22 +430,6 @@ int main(int argc, char *argv[])
                 (int*) &product.resolution, 2);
             rileyOptions.SetFloat(RixStr.k_Ri_FormatPixelAspectRatio,
                 product.pixelAspectRatio);
-
-            // Compute screen window from product aperture.
-            float screenWindow[4] = { -1.0f, 1.0f, -1.0f, 1.0f };
-            if (usdCam) {
-                GfCamera gfCam = usdCam.GetCamera(frameNum);
-                gfCam.SetHorizontalAperture(product.apertureSize[0]);
-                gfCam.SetVerticalAperture(product.apertureSize[1]);
-                CameraUtilScreenWindowParameters
-                    cuswp(gfCam, GfCamera::FOVVertical);
-                GfVec4d screenWindowd = cuswp.GetScreenWindow();
-                screenWindow[0] = float(screenWindowd[0]);
-                screenWindow[1] = float(screenWindowd[1]);
-                screenWindow[2] = float(screenWindowd[2]);
-                screenWindow[3] = float(screenWindowd[3]);
-            }
-            rileyOptions.SetFloatArray(RixStr.k_Ri_ScreenWindow, screenWindow, 4);
 
             // Crop/Data window.
             float cropWindow[4] = {
@@ -487,107 +467,6 @@ int main(int argc, char *argv[])
                 integratorNode.params.SetInteger(us_wireframe, 1);
                 integratorNode.params.SetString(us_style,
                     RtUString(visualizerStyle.c_str()));
-            }
-        }
-
-        // Camera
-        riley::ShadingNode cameraNode;
-        RtUString cameraName = us_main_cam;
-        riley::Transform cameraXform;
-        RtParamList cameraParams;
-        {
-            RtParamList projParams;
-
-            // Shutter curve (this is relative to the Shutter interval above).
-            cameraParams.SetFloat(RixStr.k_shutterOpenTime, shutterCurve[0]);
-            cameraParams.SetFloat(RixStr.k_shutterCloseTime, shutterCurve[1]);
-            cameraParams.SetFloatArray(RixStr.k_shutteropening,shutterCurve+2,8);
-
-            if (usdCam) {
-                GfCamera gfCam = usdCam.GetCamera(frameNum);
-
-                // Clip planes
-                GfRange1f clipRange = gfCam.GetClippingRange();
-                cameraParams.SetFloat(RixStr.k_nearClip, clipRange.GetMin());
-                cameraParams.SetFloat(RixStr.k_farClip, clipRange.GetMax());
-                
-                if (gfCam.GetProjection() == GfCamera::Perspective) {
-                    projParams.SetFloat(
-                        RixStr.k_fov, gfCam.GetFieldOfView(GfCamera::FOVVertical));
-                    // Convert parameters that are specified in tenths of a world
-                    // unit in USD to world units for Riley. See
-                    // UsdImagingCameraAdapter::UpdateForTime for reference.
-                    projParams.SetFloat(
-                        RixStr.k_focalLength,
-                        gfCam.GetFocalLength() *
-                        static_cast<float>(GfCamera::FOCAL_LENGTH_UNIT));
-                    projParams.SetFloat(RixStr.k_fStop, gfCam.GetFStop());
-                    projParams.SetFloat(
-                        RixStr.k_focalDistance,
-                        gfCam.GetFocusDistance());
-                } else {
-                    cameraProjection = PxrOrthographic;
-                    
-                    const GfVec4f screenWindow =
-                        GfVec4f(-gfCam.GetHorizontalAperture(),
-                                +gfCam.GetHorizontalAperture(),
-                                -gfCam.GetVerticalAperture(),
-                                +gfCam.GetVerticalAperture()) *
-                        static_cast<float>(GfCamera::APERTURE_UNIT)
-                        * 0.5f;
-                    cameraParams.SetFloatArray(
-                        RixStr.k_Ri_ScreenWindow, screenWindow.data(), 4);
-                }
-
-                // Projection
-                cameraNode = riley::ShadingNode {
-                    riley::ShadingNode::Type::k_Projection,
-                    RtUString(cameraProjection.c_str()),
-                    RtUString("main_cam_projection"),
-                    projParams
-                };
-                
-                // Transform
-                std::vector<GfMatrix4d> xforms;
-                xforms.reserve(timeSampleOffsets.size());
-                // Get the xform at each time sample
-                for (double const& offset : timeSampleOffsets) {
-                    UsdGeomXformCache xfc(frameNum + offset);
-                    xforms.emplace_back(xfc.GetLocalToWorldTransform(
-                        usdCam.GetPrim()));
-                }
-
-                // USD camera looks down -Z (RHS), while 
-                // Prman camera looks down +Z (RHS)
-                GfMatrix4d flipZ(1.0);
-                flipZ[2][2] = -1.0;
-                RtMatrix4x4 xf_rt_values[HDPRMAN_MAX_TIME_SAMPLES];
-                float times[HDPRMAN_MAX_TIME_SAMPLES];
-                size_t numNetSamples = std::min(xforms.size(),
-                                            (size_t) HDPRMAN_MAX_TIME_SAMPLES);
-                for (size_t i=0; i < numNetSamples; i++) {
-                    xf_rt_values[i] =
-                        HdPrman_GfMatrixToRtMatrix(flipZ * xforms[i]);
-                    times[i] = timeSampleOffsets[i];
-                }
-                cameraXform = {(unsigned) numNetSamples, xf_rt_values, times};
-            } else {
-                // Projection
-                projParams.SetFloat(RixStr.k_fov, 60.0f);
-                cameraNode = riley::ShadingNode {
-                    riley::ShadingNode::Type::k_Projection,
-                    RtUString(cameraProjection.c_str()),
-                    RtUString("main_cam_projection"),
-                    projParams
-                };
-
-                // Transform
-                float const zerotime = 0.0f;
-                RtMatrix4x4 matrix = RixConstants::k_IdentityMatrix;
-
-                // Translate camera back a bit
-                matrix.Translate(0.f, 0.f, -10.0f);
-                cameraXform = { 1, &matrix, &zerotime };
             }
         }
 
@@ -676,10 +555,6 @@ int main(int argc, char *argv[])
         renderParam->Initialize(
                 rileyOptions,
                 integratorNode,
-                cameraName,
-                cameraNode,
-                cameraXform,
-                cameraParams,
                 format,
                 product.name,
                 materialNodes,
@@ -762,6 +637,18 @@ int main(int argc, char *argv[])
                                                 hdCollection);
             HdRenderPassStateSharedPtr hdRenderPassState =
                 hdPrmanBackend.CreateRenderPassState();
+
+            HdCamera * camera = 
+                dynamic_cast<HdCamera*>(
+                    hdRenderIndex->GetSprim(HdTokens->camera, sceneCamPath));
+
+            hdRenderPassState->SetCameraAndFraming(
+                camera,
+                CameraUtilFraming(
+                    GfRect2i(
+                        GfVec2i(0,0),
+                        product.resolution[0], product.resolution[1])),
+                { false, CameraUtilFit });
 
             // The task execution graph and engine configuration is also simple.
             HdTaskSharedPtrVector tasks = {

@@ -23,6 +23,12 @@
 //
 #include "hdPrman/offlineRenderPass.h"
 #include "hdPrman/offlineRenderParam.h"
+#include "hdPrman/camera.h"
+#include "pxr/imaging/hd/renderPassState.h"
+
+#include "hdPrman/rixStrings.h"     // Strings
+
+#include "RixShadingUtils.h"        // RixConstants
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -50,6 +56,47 @@ HdPrman_OfflineRenderPass::_Execute(
     HdRenderPassStateSharedPtr const& renderPassState,
     TfTokenVector const &renderTags)
 {
+    const HdPrmanCamera * const hdCam =
+        dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera());
+
+    HdPrmanCameraContext &cameraContext =
+        _offlineRenderParam->GetCameraContext();
+    cameraContext.SetCamera(hdCam);
+
+    if (renderPassState->GetFraming().IsValid()) {
+        // For new clients setting the camera framing.
+        cameraContext.SetFraming(renderPassState->GetFraming());
+    } else {
+        // For old clients using the viewport.
+        //
+        // Note that we ignore the viewport's offset. But that has no
+        // effect because the resulting output image is the same (at
+        // least up to the display/data window metadata in OpenEXR).
+        const GfVec4f vp = renderPassState->GetViewport();
+        cameraContext.SetFraming(
+            CameraUtilFraming(
+                GfRect2i(GfVec2i(0), vp[2], vp[3])));
+    }
+
+    cameraContext.SetWindowPolicy(renderPassState->GetWindowPolicy());
+
+    const bool camChanged = cameraContext.IsInvalid();
+    cameraContext.MarkValid();
+
+    if (camChanged) {
+        cameraContext.UpdateRileyCameraAndClipPlanes(
+            _offlineRenderParam->AcquireRiley());
+
+        RtParamList &options = _offlineRenderParam->GetOptions();
+        cameraContext.SetRileyOptions(
+            &options);
+
+        _offlineRenderParam->AcquireRiley()->SetOptions(options);
+
+        _offlineRenderParam->SetResolutionOfRenderTargets(
+            cameraContext.GetResolutionFromDisplayWindow());
+    }
+
     _offlineRenderParam->Render();
     _converged = true;
 }

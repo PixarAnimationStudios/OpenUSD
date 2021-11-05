@@ -351,7 +351,7 @@ HdPrman_InteractiveRenderPass::_Execute(
                 }
             }
 
-            cameraContext.SetRileyOptions(
+            cameraContext.SetRileyOptionsInteractive(
                 &(_interactiveRenderParam->GetOptions()),
                 GfVec2i(renderBufferWidth, renderBufferHeight));
             
@@ -359,7 +359,7 @@ HdPrman_InteractiveRenderPass::_Execute(
                 _interactiveRenderParam->_GetDeprecatedOptionsPrunedList());
         }
 
-        cameraContext.UpdateRileyCameraAndClipPlanes(
+        cameraContext.UpdateRileyCameraAndClipPlanesInteractive(
             riley, 
             GfVec2i(renderBufferWidth, renderBufferHeight));
 

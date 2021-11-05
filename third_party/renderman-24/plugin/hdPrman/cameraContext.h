@@ -75,30 +75,57 @@ public:
     /// Get id of riley camera - valid only after Begin.
     const riley::CameraId &GetCameraId() const { return _cameraId; }
 
-    /// Update the given riley options.
+    /// Update the given riley options for offline rendering
+    /// to an image file.
     ///
-    /// Sets the crop window - if framing is invalid, crop window will be set
-    /// to fill the entire render buffer.
+    /// Sets the crop window, format resolution and pixel aspect ratio.
     void SetRileyOptions(
+        RtParamList * options) const;
+
+    /// Update the given riley options for rendering to AOVs baked by
+    /// render buffers of the given size.
+    ///
+    /// Sets the crop window and pixel aspect ratio.
+    void SetRileyOptionsInteractive(
         RtParamList * options,
         const GfVec2i &renderBufferSize) const;
 
-    /// Update riley camera identified by \p cameraId and clipping planes.
+    /// Update riley camera and clipping planes for offline rendering
+    /// to an image file.
     void UpdateRileyCameraAndClipPlanes(
+        riley::Riley * riley);
+
+    /// Update riley camera and clipping planes for rendering to AOVs
+    /// baked by render buffers of the given size.
+    void UpdateRileyCameraAndClipPlanesInteractive(
         riley::Riley * riley,
         const GfVec2i &renderBufferSize);
     
     /// Mark that riley camera and options are up to date.
     void MarkValid();
 
+    /// Get resolution for offline rendering.
+    GfVec2i GetResolutionFromDisplayWindow() const;
+
+    /// Enables hard-coded shutter curve.
+    ///
+    /// Here for testing, this should be controlled by camera
+    /// attributes and render settings.
+    void SetEnableMotionBlur(bool enable);
+
 private:
+    /// Computes the screen window for the camera and conforms
+    /// it to have the display window's aspect ratio using the
+    /// current conform policy.
+    GfRange2d _ComputeConformedScreenWindow() const;
+
     // Compute parameters for Riley::ModifyCamera
     RtParamList _ComputeCameraParams(
-        const GfVec2i &renderBufferSize) const;
+        const GfRange2d &screenWindow) const;
 
     void _UpdateRileyCamera(
         riley::Riley * const riley,
-        const GfVec2i &renderBufferSize);
+        const GfRange2d &screenWindow);
     void _UpdateClipPlanes(riley::Riley * riley);
 
     const HdPrmanCamera * _camera;
@@ -112,6 +139,8 @@ private:
     riley::CameraId _cameraId;
     
     std::atomic_bool _invalid;
+
+    bool _enableMotionBlur;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

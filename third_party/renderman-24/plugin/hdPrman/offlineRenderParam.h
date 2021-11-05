@@ -65,9 +65,6 @@ public:
     void Initialize(
         RtParamList rileyOptions, 
         riley::ShadingNode integratorNode,
-        RtUString cameraName, 
-        riley::ShadingNode cameraNode, 
-        riley::Transform cameraXform, RtParamList cameraParams,
         riley::Extent outputFormat, TfToken outputFilename,
         std::vector<riley::ShadingNode> const & fallbackMaterialNodes,
         std::vector<riley::ShadingNode> const & fallbackVolumeNodes,
@@ -94,15 +91,13 @@ public:
 
     HdPrmanCameraContext &GetCameraContext() override;
 
+    void SetResolutionOfRenderTargets(const GfVec2i &res);
+
 private:
     // Finishes the renderer
     void _End();
     void _SetRileyOptions(RtParamList options);
     void _SetRileyIntegrator(riley::ShadingNode node);
-    void _SetCamera(RtUString name, 
-        riley::ShadingNode node, 
-        riley::Transform xform, 
-        RtParamList params);
     void _AddRenderOutput(RtUString name, 
         riley::RenderOutputType type,
         RtParamList const& params);

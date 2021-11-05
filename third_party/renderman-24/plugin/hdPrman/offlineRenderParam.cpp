@@ -38,9 +38,6 @@ void
 HdPrman_OfflineRenderParam::Initialize(
     RtParamList rileyOptions, 
     riley::ShadingNode integratorNode,
-    RtUString cameraName, 
-    riley::ShadingNode cameraNode, 
-    riley::Transform cameraXform, RtParamList cameraParams,
     riley::Extent outputFormat, TfToken outputFilename,
     std::vector<riley::ShadingNode> const & fallbackMaterialNodes,
     std::vector<riley::ShadingNode> const & fallbackVolumeNodes,
@@ -50,10 +47,13 @@ HdPrman_OfflineRenderParam::Initialize(
     _activeIntegratorShadingNode = integratorNode;
     _SetRileyOptions(_options);
     _SetRileyIntegrator(_activeIntegratorShadingNode);
-    _SetCamera(cameraName, cameraNode, cameraXform, cameraParams);
     for (auto const& ro : renderOutputs) {
         _AddRenderOutput(ro.name, ro.type, ro.params);
     }
+
+    GetCameraContext().SetEnableMotionBlur(true);
+    GetCameraContext().Begin(AcquireRiley());
+
     _SetRenderTargetAndDisplay(outputFormat, outputFilename);
     _SetFallbackMaterial(fallbackMaterialNodes);
     _SetFallbackVolumeMaterial(fallbackVolumeNodes);
@@ -68,7 +68,7 @@ HdPrman_OfflineRenderParam::InitializeWithDefaults()
     {
         HdPrman_UpdateSearchPathsFromEnvironment(_options);
 
-        float aspect = 1.0;
+        float aspect = 10.0;
         _options.SetIntegerArray(RixStr.k_Ri_FormatResolution, res, 2);
         _options.SetFloat(RixStr.k_Ri_FormatPixelAspectRatio, aspect);
         _SetRileyOptions(_options);
@@ -88,53 +88,6 @@ HdPrman_OfflineRenderParam::InitializeWithDefaults()
         _SetRileyIntegrator(integratorNode);
     }
 
-     // Camera
-    {
-        static const RtUString us_main_cam("main_cam");
-        riley::ShadingNode cameraNode;
-        RtUString cameraName;
-
-        std::string cameraProjection("PxrPerspective");
-        bool isOrthographic = false;
-        float shutterCurve[10] = {0, 0, 0, 0, 0, 0, 0, 1, 0.3, 0};
-        cameraName = us_main_cam;
-        riley::Transform cameraXform;
-        RtParamList cameraParams;
-        RtParamList projParams;
-
-        // Shutter curve (this is relative to the Shutter interval above).
-        cameraParams.SetFloat(RixStr.k_shutterOpenTime, shutterCurve[0]);
-        cameraParams.SetFloat(RixStr.k_shutterCloseTime, shutterCurve[1]);
-        cameraParams.SetFloatArray(RixStr.k_shutteropening, shutterCurve+2,8);
-
-        // Projection
-        projParams.SetFloat(RixStr.k_fov, 60.0f);
-        cameraNode = riley::ShadingNode {
-            riley::ShadingNode::Type::k_Projection,
-            RtUString(cameraProjection.c_str()),
-            RtUString("main_cam_projection"),
-            projParams
-        };
-
-        // Transform
-        float const zerotime = 0.0f;
-        RtMatrix4x4 matrix = RixConstants::k_IdentityMatrix;
-
-        // Orthographic camera:
-        // XXX In HdPrman RenderPass we apply orthographic
-        // projection as a scale onto the viewMatrix. This
-        // is because we currently cannot update Renderman's
-        // `ScreenWindow` once it is running.
-        if (isOrthographic) {
-            matrix.Scale(10,10,10);
-        }
-
-        // Translate camera back a bit
-        matrix.Translate(0.f, 0.f, -10.0f);
-        cameraXform = { 1, &matrix, &zerotime };
-        _SetCamera(cameraName, cameraNode, cameraXform, cameraParams);
-    }
-
     // Displays & Display Channels
     {
         _AddRenderOutput(
@@ -142,6 +95,9 @@ HdPrman_OfflineRenderParam::InitializeWithDefaults()
             riley::RenderOutputType::k_Color, 
             RtParamList());
     }
+
+    GetCameraContext().SetEnableMotionBlur(true);
+    GetCameraContext().Begin(AcquireRiley());
 
     // Output
     {
@@ -262,17 +218,6 @@ HdPrman_OfflineRenderParam::_SetRileyIntegrator(riley::ShadingNode node)
 }
 
 void
-HdPrman_OfflineRenderParam::_SetCamera(
-    RtUString name, 
-    riley::ShadingNode node, 
-    riley::Transform xform, 
-    RtParamList params)
-{
-    cameraId = _riley->CreateCamera(riley::UserId::DefaultId(),
-        name, node, xform, params);
-}
-
-void
 HdPrman_OfflineRenderParam::_AddRenderOutput(
     RtUString name, 
     riley::RenderOutputType type,
@@ -289,6 +234,20 @@ HdPrman_OfflineRenderParam::_AddRenderOutput(
             filterwidth, 
             1.0f, 
             params));
+}
+
+void
+HdPrman_OfflineRenderParam::SetResolutionOfRenderTargets(const GfVec2i &res)
+{
+    riley::Extent const format = {uint32_t(res[0]), uint32_t(res[1]), 1};
+
+    _riley->ModifyRenderTarget(
+        _rtid,
+        nullptr,
+        &format,
+        nullptr,
+        nullptr,
+        nullptr);
 }
 
 void
@@ -326,14 +285,14 @@ HdPrman_OfflineRenderParam::_SetRenderTargetAndDisplay(
     riley::RenderViewId const renderView = _riley->CreateRenderView(
         riley::UserId::DefaultId(), 
         _rtid,
-        cameraId, 
+        GetCameraContext().GetCameraId(),
         _integratorId,
         {0, nullptr}, 
         {0, nullptr}, 
         RtParamList());
     _renderViews.push_back(renderView);
     
-    _riley->SetDefaultDicingCamera(cameraId);
+    _riley->SetDefaultDicingCamera(GetCameraContext().GetCameraId());
 }
 
 void 
