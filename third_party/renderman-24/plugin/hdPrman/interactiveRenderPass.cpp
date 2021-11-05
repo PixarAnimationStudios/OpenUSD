@@ -426,29 +426,29 @@ HdPrman_InteractiveRenderPass::_Execute(
     // Blit from the framebuffer to the currently selected AOVs.
     // Lock the framebuffer when reading so we don't overlap
     // with RenderMan's resize/writing.
-    if (_interactiveRenderParam->framebuffer.newData) {
-        _interactiveRenderParam->framebuffer.mutex.lock();
-        if (_interactiveRenderParam->framebuffer.newData) {
-            for(size_t aov = 0; aov < aovBindings.size(); ++aov) {
-                if(!TF_VERIFY(aovBindings[aov].renderBuffer)) {
-                    continue;
-                }
-                HdPrmanRenderBuffer *rb = static_cast<HdPrmanRenderBuffer*>(
-                    aovBindings[aov].renderBuffer);
-
-                // Forward convergence state to the render buffers...
-                rb->SetConverged(_converged);
-                rb->Blit(_interactiveRenderParam->framebuffer.aovs[aov].format,
-                         _interactiveRenderParam->framebuffer.w,
-                         _interactiveRenderParam->framebuffer.h,
-                         reinterpret_cast<uint8_t*>(
-                             _interactiveRenderParam->
-                             framebuffer.aovs[aov].pixels.data()));
-            }
-            _interactiveRenderParam->framebuffer.newData = false;
+    _interactiveRenderParam->framebuffer.mutex.lock();
+    for(size_t aov = 0; aov < aovBindings.size(); ++aov) {
+        if(!TF_VERIFY(aovBindings[aov].renderBuffer)) {
+            continue;
         }
-        _interactiveRenderParam->framebuffer.mutex.unlock();
+        HdPrmanRenderBuffer *rb = static_cast<HdPrmanRenderBuffer*>(
+            aovBindings[aov].renderBuffer);
+
+        if (_interactiveRenderParam->framebuffer.newData) {
+            rb->Blit(_interactiveRenderParam->framebuffer.aovs[aov].format,
+                     _interactiveRenderParam->framebuffer.w,
+                     _interactiveRenderParam->framebuffer.h,
+                     reinterpret_cast<uint8_t*>(
+                         _interactiveRenderParam->
+                         framebuffer.aovs[aov].pixels.data()));
+        }
+        // Forward convergence state to the render buffers...
+        rb->SetConverged(_converged);
     }
+    if (_interactiveRenderParam->framebuffer.newData) {
+        _interactiveRenderParam->framebuffer.newData = false;
+    }
+    _interactiveRenderParam->framebuffer.mutex.unlock();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
