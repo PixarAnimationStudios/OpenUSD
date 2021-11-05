@@ -69,9 +69,8 @@ public:
      /// Update the given riley camera parameters and the parameters for the
      /// projection shader node for the camera.
      ///
-     /// Sets fStop, focalLength, focusDistance, clippingRange.
-     /// Also sets fov and screen window, but only if the camera and
-     /// the framing are valid.
+     /// Sets fStop, focalLength, focusDistance, clippingRange, fov and
+     /// screen window, but only if the camera is valid.
      void SetCameraAndCameraNodeParams(
          RtParamList * camParams,
          RtParamList * camNodeParams,

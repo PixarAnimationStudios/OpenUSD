@@ -166,17 +166,42 @@ HdPrman_InteractiveRenderPass::_Execute(
     const int currentSettingsVersion =
         renderDelegate->GetRenderSettingsVersion();
     
+    int32_t renderBufferWidth = 0;
+    int32_t renderBufferHeight = 0;
+
+    if (!_GetRenderBufferSize(aovBindings,
+                              GetRenderIndex(),
+                              &renderBufferWidth, &renderBufferHeight)) {
+        // For legacy clients not using AOVs, take size of viewport.
+        const GfVec4f vp = renderPassState->GetViewport();
+        renderBufferWidth  = vp[2];
+        renderBufferHeight = vp[3];
+    }
+
     // XXX: Need to cast away constness to process updated camera params since
     // the Hydra camera doesn't update the Riley camera directly.
     HdPrmanCamera * const hdCam =
         const_cast<HdPrmanCamera *>(
             dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera()));
-    const CameraUtilFraming &framing = renderPassState->GetFraming();
 
     HdPrmanCameraContext &cameraContext =
         _interactiveContext->GetCameraContext();
     cameraContext.SetCamera(hdCam);
-    cameraContext.SetFraming(framing);
+    if (renderPassState->GetFraming().IsValid()) {
+        // For new clients setting the camera framing.
+        cameraContext.SetFraming(renderPassState->GetFraming());
+    } else {
+        // For old clients using the viewport.
+        const GfVec4f vp = renderPassState->GetViewport();
+        cameraContext.SetFraming(
+            CameraUtilFraming(
+                GfRect2i(
+                    // Note that the OpenGL-style viewport is y-Up
+                    // but the camera framing is y-Down, so converting here.
+                    GfVec2i(vp[0], renderBufferHeight - (vp[1] + vp[3])),
+                    vp[2], vp[3])));
+    }
+
     cameraContext.SetWindowPolicy(renderPassState->GetWindowPolicy());
 
     const bool camChanged = cameraContext.IsInvalid();
@@ -280,18 +305,6 @@ HdPrman_InteractiveRenderPass::_Execute(
         _mainIntegratorId = _interactiveContext->GetActiveIntegratorId();
     }
 
-    int32_t renderBufferWidth = 0;
-    int32_t renderBufferHeight = 0;
-
-    if (!_GetRenderBufferSize(aovBindings,
-                              GetRenderIndex(),
-                              &renderBufferWidth, &renderBufferHeight)) {
-        // For legacy clients not using AOVs, take size of viewport.
-        const GfVec4f vp = renderPassState->GetViewport();
-        renderBufferWidth  = vp[2];
-        renderBufferHeight = vp[3];
-    }
-
     // Check if any camera update needed
     // TODO: This should be part of a Camera sprim; then we wouldn't
     // need to sync anything here.  Note that we'll need to solve
@@ -389,9 +402,9 @@ HdPrman_InteractiveRenderPass::_Execute(
         // Inverse computation of GfFrustum::ComputeProjectionMatrix()
         GfMatrix4d viewToWorldCorrectionMatrix(1.0);
 
-        if (! (hdCam && framing.IsValid())) {
+        if (!hdCam) {
             // Note that the above cameraContext.SetCameraAndCameraNodeParams
-            // is not working when there is no valid camera and framing.
+            // is not working when there is no valid camera.
 
             // Implementing behaviors for old clients here.
 

@@ -341,10 +341,6 @@ HdPrmanCameraContext::SetCameraAndCameraNodeParams(
         return;
     }
 
-    if (!_framing.IsValid()) {
-        return;
-    }
-
     if (_camera->GetProjection() == HdCamera::Perspective) {
         // TODO: For lens distortion to be correct, we might
         // need to set a different FOV and adjust the screenwindow
@@ -419,9 +415,7 @@ HdPrmanCameraContext::SetRileyOptions(
     const GfVec2i &renderBufferSize) const
 {
     const GfVec4f cropWindow =
-        _framing.IsValid()
-            ? _ComputeCropWindow(_framing.dataWindow, renderBufferSize)
-            : GfVec4f(0,1,0,1);
+        _ComputeCropWindow(_framing.dataWindow, renderBufferSize);
 
     options->SetFloatArray(
         RixStr.k_Ri_CropWindow,
