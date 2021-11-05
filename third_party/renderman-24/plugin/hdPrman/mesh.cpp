@@ -23,7 +23,7 @@
 //
 #include <numeric> // for std::iota
 #include "hdPrman/mesh.h"
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/coordSys.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
@@ -84,7 +84,7 @@ HdPrman_Mesh::GetInitialDirtyBitsMask() const
 }
 
 RtPrimVarList
-HdPrman_Mesh::_ConvertGeometry(HdPrman_Context *context,
+HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
                                 HdSceneDelegate *sceneDelegate,
                                 const SdfPath &id,
                                 RtUString *primType,

@@ -29,8 +29,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_Context;
-class HdPrman_OfflineContext;
+class HdPrman_RenderParam;
+class HdPrman_OfflineRenderParam;
 
 /// A placeholder render pass that does nothing.
 /// This is meant for clients that use Hydra to push scene data
@@ -42,7 +42,7 @@ public:
     HdPrman_OfflineRenderPass(
         HdRenderIndex *index,
         HdRprimCollection const &collection,
-        std::shared_ptr<HdPrman_Context> context);
+        std::shared_ptr<HdPrman_RenderParam> context);
     ~HdPrman_OfflineRenderPass() override;
 
     bool IsConverged() const override;
@@ -52,7 +52,7 @@ protected:
                   TfTokenVector const &renderTags) override;
 
 private:
-    std::shared_ptr<HdPrman_OfflineContext> _offlineContext;
+    std::shared_ptr<HdPrman_OfflineRenderParam> _offlineRenderParam;
     bool _converged;
 };
 

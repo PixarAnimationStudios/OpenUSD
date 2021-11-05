@@ -112,15 +112,15 @@ public:
 
 protected:
     RtPrimVarList
-    _ConvertGeometry(HdPrman_Context *context,
+    _ConvertGeometry(HdPrman_RenderParam *renderParam,
                      HdSceneDelegate *sceneDelegate,
                      const SdfPath &id,
                      RtUString *primType,
                      std::vector<HdGeomSubset> *geomSubsets) override;
 
     riley::MaterialId
-    _GetFallbackMaterial(HdPrman_Context *context) override {
-        return context->fallbackVolumeMaterial;
+    _GetFallbackMaterial(HdPrman_RenderParam *renderParam) override {
+        return renderParam->fallbackVolumeMaterial;
     }
 
     using _VolumeEmitterMap = std::map<TfToken, HdPrman_VolumeTypeEmitter>;

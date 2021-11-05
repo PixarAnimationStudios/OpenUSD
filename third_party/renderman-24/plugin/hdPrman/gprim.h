@@ -29,7 +29,7 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/gf/matrix4d.h"
 
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
 #include "hdPrman/rixStrings.h"
@@ -58,13 +58,13 @@ public:
     void
     Finalize(HdRenderParam *renderParam) override
     {
-        HdPrman_Context *context =
-            static_cast<HdPrman_Context*>(renderParam);
+        HdPrman_RenderParam *param =
+            static_cast<HdPrman_RenderParam*>(renderParam);
 
-        riley::Riley *riley = context->AcquireRiley();
+        riley::Riley *riley = param->AcquireRiley();
 
         // Release retained conversions of coordSys bindings.
-        context->ReleaseCoordSysBindings(BASE::GetId());
+        param->ReleaseCoordSysBindings(BASE::GetId());
 
         // Delete instances before deleting the prototypes they use.
         for (const auto &id: _instanceIds) {
@@ -113,14 +113,14 @@ protected:
     // Provide a fallback material.  Default grabs _fallbackMaterial
     // from the context.
     virtual riley::MaterialId
-    _GetFallbackMaterial(HdPrman_Context *context)
+    _GetFallbackMaterial(HdPrman_RenderParam *renderParam)
     {
-        return context->fallbackMaterial;
+        return renderParam->fallbackMaterial;
     }
 
     // Populate primType and primvars.
     virtual RtPrimVarList
-    _ConvertGeometry(HdPrman_Context *context,
+    _ConvertGeometry(HdPrman_RenderParam *renderParam,
                       HdSceneDelegate *sceneDelegate,
                       const SdfPath &id,
                       RtUString *primType,
@@ -146,11 +146,11 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
     TF_UNUSED(reprToken);
 
-    HdPrman_Context *context =
-        static_cast<HdPrman_Context*>(renderParam);
+    HdPrman_RenderParam *param =
+        static_cast<HdPrman_RenderParam*>(renderParam);
 
     // Riley API.
-    riley::Riley *riley = context->AcquireRiley();
+    riley::Riley *riley = param->AcquireRiley();
 
     // Update instance bindings.
     BASE::_UpdateInstancer(sceneDelegate, dirtyBits);
@@ -178,15 +178,15 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
         BASE::SetMaterialId(sceneDelegate->GetMaterialId(id));
 #endif
     }
-    riley::MaterialId materialId = _GetFallbackMaterial(context);
+    riley::MaterialId materialId = _GetFallbackMaterial(param);
     riley::DisplacementId dispId = riley::DisplacementId::InvalidId();
     const SdfPath & hdMaterialId = BASE::GetMaterialId();
     HdPrman_ResolveMaterial(sceneDelegate, hdMaterialId, &materialId, &dispId);
 
     // Convert (and cache) coordinate systems.
     riley::CoordinateSystemList coordSysList = {0, nullptr};
-    if (HdPrman_Context::RileyCoordSysIdVecRefPtr convertedCoordSys =
-        context->ConvertAndRetainCoordSysBindings(sceneDelegate, id)) {
+    if (HdPrman_RenderParam::RileyCoordSysIdVecRefPtr convertedCoordSys =
+        param->ConvertAndRetainCoordSysBindings(sceneDelegate, id)) {
         coordSysList.count = convertedCoordSys->size();
         coordSysList.ids = &(*convertedCoordSys)[0];
     }
@@ -206,7 +206,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     {
         RtUString primType;
         HdGeomSubsets geomSubsets;
-        RtPrimVarList primvars = _ConvertGeometry(context, sceneDelegate, id,
+        RtPrimVarList primvars = _ConvertGeometry(param, sceneDelegate, id,
                          &primType, &geomSubsets);
 
         // Transfer material opinions of primvars.
@@ -281,7 +281,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     // Create or modify Riley geometry instances.
     //
     // Resolve attributes.
-    RtParamList attrs = context->ConvertAttributes(sceneDelegate, id);
+    RtParamList attrs = param->ConvertAttributes(sceneDelegate, id);
     if (!isHdInstance) {
         // Simple case: Singleton instance.
         // Convert transform.
@@ -397,7 +397,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
 
             // Convert categories.
             if (instanceIndex < instanceCategories.size()) {
-                context->ConvertCategoriesToAttributes(
+                param->ConvertCategoriesToAttributes(
                     id, instanceCategories[instanceIndex], instanceAttrs);
             }
 

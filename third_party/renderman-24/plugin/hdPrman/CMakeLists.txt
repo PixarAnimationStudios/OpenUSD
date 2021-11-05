@@ -58,7 +58,6 @@ pxr_plugin(${PXR_PACKAGE}
         basisCurves
         camera
         cameraContext
-        context
         coordSys
         debugCodes
         gprim
@@ -71,17 +70,18 @@ pxr_plugin(${PXR_PACKAGE}
         matfiltFilterChain
         matfiltResolveVstructs
         mesh
-        offlineContext
+        offlineRenderParam
         points
         paramsSetter
         renderDelegate
+        renderParam
         rixStrings
         volume
         xcpt
         ${optionalPublicClasses}
 
     PRIVATE_CLASSES
-        interactiveContext
+        interactiveRenderParam
         interactiveRenderPass
         framebuffer
         offlineRenderPass

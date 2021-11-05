@@ -23,7 +23,7 @@
 //
 
 #include "hdPrman/paramsSetter.h"
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/rixStrings.h"
 #include "pxr/usd/sdf/types.h"
@@ -53,10 +53,10 @@ HdPrmanParamsSetter::Sync(HdSceneDelegate *sceneDelegate,
         return;
     }
 
-    HdPrman_Context * const context =
-        static_cast<HdPrman_Context*>(renderParam);
+    HdPrman_RenderParam * const param =
+        static_cast<HdPrman_RenderParam*>(renderParam);
 
-    riley::Riley * const riley = context->AcquireRiley();
+    riley::Riley * const riley = param->AcquireRiley();
 
     const SdfPath id = GetId();
 
@@ -66,9 +66,9 @@ HdPrmanParamsSetter::Sync(HdSceneDelegate *sceneDelegate,
             optionsValue.UncheckedGet<std::map<TfToken, VtValue>>();
 
         if (!valueDict.empty()) {
-            RtParamList &options = context->GetOptions();
+            RtParamList &options = param->GetOptions();
             for (const auto &tokenvalpair : valueDict) {
-                context->SetParamFromVtValue(
+                param->SetParamFromVtValue(
                     RtUString(tokenvalpair.first.data()), tokenvalpair.second,
                         TfToken(), options);
             }
@@ -85,16 +85,16 @@ HdPrmanParamsSetter::Sync(HdSceneDelegate *sceneDelegate,
 
         if (!valueDict.empty()) {
             riley::ShadingNode &integratorNode = 
-                context->GetActiveIntegratorShadingNode();
+                param->GetActiveIntegratorShadingNode();
 
             for (const auto &tokenvalpair : valueDict) {
-                context->SetParamFromVtValue(
+                param->SetParamFromVtValue(
                     RtUString(tokenvalpair.first.data()), tokenvalpair.second,
                         TfToken(), integratorNode.params);
             }
 
             riley->ModifyIntegrator(
-                context->GetActiveIntegratorId(), &integratorNode);
+                param->GetActiveIntegratorId(), &integratorNode);
         }
     }
 

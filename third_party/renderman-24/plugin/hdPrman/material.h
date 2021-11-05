@@ -32,7 +32,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
-class HdPrman_Context;
+class HdPrman_RenderParam;
 
 /// \class HdPrmanMaterial
 ///
@@ -75,7 +75,7 @@ public:
     HdMaterialNetwork2 const& GetMaterialNetwork() const;
 
 private:
-    void _ResetMaterial(HdPrman_Context *context);
+    void _ResetMaterial(HdPrman_RenderParam *renderParam);
 
     riley::MaterialId _materialId;
     riley::DisplacementId _displacementId;

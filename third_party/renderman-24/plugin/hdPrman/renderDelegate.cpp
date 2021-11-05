@@ -24,16 +24,16 @@
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/basisCurves.h"
 #include "hdPrman/camera.h"
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/coordSys.h"
 #include "hdPrman/instancer.h"
-#include "hdPrman/interactiveContext.h"
+#include "hdPrman/interactiveRenderParam.h"
 #include "hdPrman/interactiveRenderPass.h"
 #include "hdPrman/light.h"
 #include "hdPrman/lightFilter.h"
 #include "hdPrman/material.h"
 #include "hdPrman/mesh.h"
-#include "hdPrman/offlineContext.h"
+#include "hdPrman/offlineRenderParam.h"
 #include "hdPrman/offlineRenderPass.h"
 #include "hdPrman/paramsSetter.h"
 #include "hdPrman/points.h"
@@ -101,15 +101,16 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_BPRIM_TYPES =
 };
 
 HdPrmanRenderDelegate::HdPrmanRenderDelegate(
-    std::shared_ptr<HdPrman_Context> context) : _context(context)
+    std::shared_ptr<HdPrman_RenderParam> renderParam)
+    : _renderParam(renderParam)
 {
     _Initialize();
 }
 
 HdPrmanRenderDelegate::HdPrmanRenderDelegate(
-    std::shared_ptr<HdPrman_Context> context,
+    std::shared_ptr<HdPrman_RenderParam> renderParam,
     HdRenderSettingsMap const& settingsMap)
-    : HdRenderDelegate(settingsMap), _context(context)
+    : HdRenderDelegate(settingsMap), _renderParam(renderParam)
 {
     _Initialize();
 }
@@ -117,9 +118,9 @@ HdPrmanRenderDelegate::HdPrmanRenderDelegate(
 void
 HdPrmanRenderDelegate::_Initialize()
 {
-    std::shared_ptr<HdPrman_InteractiveContext> interactiveContext =
-        std::dynamic_pointer_cast<HdPrman_InteractiveContext>(_context);
-    if (interactiveContext != nullptr) {
+    std::shared_ptr<HdPrman_InteractiveRenderParam> interactiveRenderParam =
+        std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(_renderParam);
+    if (interactiveRenderParam != nullptr) {
         _renderMode = RenderMode::Interactive;
     } else { 
         _renderMode = RenderMode::Offline;
@@ -180,12 +181,12 @@ HdPrmanRenderDelegate::_Initialize()
     if (_IsInteractive()) {
         // We do not expect a non-interactive context passed into an
         // interactive session.
-        TF_VERIFY(interactiveContext);
+        TF_VERIFY(interactiveRenderParam);
 
-        interactiveContext->Begin(this);
+        interactiveRenderParam->Begin(this);
 
         _resourceRegistry = std::make_shared<HdPrman_ResourceRegistry>(
-            interactiveContext);
+            interactiveRenderParam);
     } else { 
         _resourceRegistry = std::make_shared<HdResourceRegistry>();
     }
@@ -193,7 +194,7 @@ HdPrmanRenderDelegate::_Initialize()
 
 HdPrmanRenderDelegate::~HdPrmanRenderDelegate()
 {
-    _context.reset();
+    _renderParam.reset();
 }
 
 HdRenderSettingsMap
@@ -211,7 +212,7 @@ HdPrmanRenderDelegate::GetRenderSettingDescriptors() const
 HdRenderParam*
 HdPrmanRenderDelegate::GetRenderParam() const
 {
-    return _context.get();
+    return _renderParam.get();
 }
 
 void
@@ -254,10 +255,10 @@ HdPrmanRenderDelegate::CreateRenderPass(HdRenderIndex *index,
     
     if (_renderMode == RenderMode::Interactive) {
         _renderPass = std::make_shared<HdPrman_InteractiveRenderPass>(
-            index, collection, _context);
+            index, collection, _renderParam);
     } else if (_renderMode == RenderMode::Offline) {
         _renderPass = std::make_shared<HdPrman_OfflineRenderPass>(
-            index, collection, _context);
+            index, collection, _renderParam);
     }
     return _renderPass;
 }
@@ -326,10 +327,10 @@ HdPrmanRenderDelegate::CreateSprim(TfToken const& typeId,
         if (_IsInteractive()) {
             // Disregard fallback prims in count.
             if (sprim->GetId() != SdfPath()) {
-                std::shared_ptr<HdPrman_InteractiveContext> interactiveContext =
-                    std::dynamic_pointer_cast<HdPrman_InteractiveContext>(
-                        _context);
-                interactiveContext->sceneLightCount++;
+                std::shared_ptr<HdPrman_InteractiveRenderParam> interactiveRenderParam =
+                    std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(
+                        _renderParam);
+                interactiveRenderParam->sceneLightCount++;
             }
         }
     } else if (typeId == HdPrimTypeTokens->extComputation) {
@@ -383,9 +384,9 @@ HdPrmanRenderDelegate::DestroySprim(HdSprim *sprim)
     if (_IsInteractive() && dynamic_cast<HdPrmanLight*>(sprim)) {
         // Disregard fallback prims in count.
         if (sprim->GetId() != SdfPath()) {
-            std::shared_ptr<HdPrman_InteractiveContext> interactiveContext =
-                std::dynamic_pointer_cast<HdPrman_InteractiveContext>(_context);
-            interactiveContext->sceneLightCount--;
+            std::shared_ptr<HdPrman_InteractiveRenderParam> interactiveRenderParam =
+                std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(_renderParam);
+            interactiveRenderParam->sceneLightCount--;
         }
     }
     delete sprim;
@@ -518,9 +519,9 @@ bool
 HdPrmanRenderDelegate::IsStopped() const
 {
     if (_IsInteractive()) {
-        std::shared_ptr<HdPrman_InteractiveContext> interactiveContext =
-            std::dynamic_pointer_cast<HdPrman_InteractiveContext>(_context);
-        return interactiveContext->IsRenderStopped();
+        std::shared_ptr<HdPrman_InteractiveRenderParam> interactiveRenderParam =
+            std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(_renderParam);
+        return interactiveRenderParam->IsRenderStopped();
     }
     return false;
 }
@@ -529,9 +530,9 @@ bool
 HdPrmanRenderDelegate::Stop()
 {
     if (_IsInteractive()) {
-        std::shared_ptr<HdPrman_InteractiveContext> interactiveContext =
-            std::dynamic_pointer_cast<HdPrman_InteractiveContext>(_context);
-        interactiveContext->StopRender();
+        std::shared_ptr<HdPrman_InteractiveRenderParam> interactiveRenderParam =
+            std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(_renderParam);
+        interactiveRenderParam->StopRender();
         return true;
     }
     return false;
@@ -542,9 +543,9 @@ HdPrmanRenderDelegate::Restart()
 {
     if (_IsInteractive()) {
         // Next call into HdPrman_RenderPass::_Execute will do a StartRender
-        std::shared_ptr<HdPrman_InteractiveContext> interactiveContext =
-            std::dynamic_pointer_cast<HdPrman_InteractiveContext>(_context);
-        interactiveContext->sceneVersion++;
+        std::shared_ptr<HdPrman_InteractiveRenderParam> interactiveRenderParam =
+            std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(_renderParam);
+        interactiveRenderParam->sceneVersion++;
         return true;
     }
     return false;

@@ -24,7 +24,7 @@
 
 #include "hdPrman/lightFilterUtils.h"
 
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/light.h"
 #include "hdPrman/material.h"
@@ -771,7 +771,7 @@ void HdPrmanLightFilterGenerateCoordSysAndLinks(
     std::vector<riley::CoordinateSystemId> *coordsysIds,
     std::vector<TfToken> *filterLinks,
     HdSceneDelegate *sceneDelegate,
-    HdPrman_Context *context,
+    HdPrman_RenderParam *renderParam,
     riley::Riley *riley,
     const riley::ShadingNode &lightNode)
 {
@@ -822,7 +822,7 @@ void HdPrmanLightFilterGenerateCoordSysAndLinks(
     }
     
     if (!lightFilterLink.IsEmpty()) {
-        context->IncrementLightFilterCount(lightFilterLink);
+        renderParam->IncrementLightFilterCount(lightFilterLink);
         (*filterLinks).push_back(lightFilterLink);
         // For light filters to link geometry, the light filters must
         // be assigned a grouping membership, and the

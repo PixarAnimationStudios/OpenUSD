@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // currently is no HdLightFilter class.
 
 class HdSceneDelegate;
-class HdPrman_Context;
+class HdPrman_RenderParam;
 
 /// \class HdPrmanLightFilter
 ///
@@ -69,7 +69,7 @@ public:
     void Finalize(HdRenderParam *renderParam) override;
 
 private:
-    void _ResetLightFilter(HdPrman_Context *context);
+    void _ResetLightFilter(HdPrman_RenderParam *renderParam);
 
     const TfToken _hdLightFilterType;
     riley::ShadingNode *_lightFilter;

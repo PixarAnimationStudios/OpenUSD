@@ -44,7 +44,7 @@ public:
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 protected:
     RtPrimVarList
-    _ConvertGeometry(HdPrman_Context *context,
+    _ConvertGeometry(HdPrman_RenderParam *renderParam,
                      HdSceneDelegate *sceneDelegate,
                      const SdfPath &id,
                      RtUString *primType,

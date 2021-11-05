@@ -56,9 +56,9 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     if (bits & (DirtyTransform | DirtyParams)) {
-        HdPrman_Context * const context =
-            static_cast<HdPrman_Context*>(renderParam);
-        context->GetCameraContext().MarkCameraInvalid(this);
+        HdPrman_RenderParam * const param =
+            static_cast<HdPrman_RenderParam*>(renderParam);
+        param->GetCameraContext().MarkCameraInvalid(this);
     }
 
     HdCamera::Sync(sceneDelegate, renderParam, dirtyBits);

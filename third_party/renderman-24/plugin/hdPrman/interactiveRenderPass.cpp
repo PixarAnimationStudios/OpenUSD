@@ -23,7 +23,7 @@
 //
 #include "hdPrman/interactiveRenderPass.h"
 #include "hdPrman/camera.h"
-#include "hdPrman/interactiveContext.h"
+#include "hdPrman/interactiveRenderParam.h"
 #include "hdPrman/renderBuffer.h"
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/rixStrings.h"
@@ -51,7 +51,7 @@ static bool _enableQuickIntegrate =
 HdPrman_InteractiveRenderPass::HdPrman_InteractiveRenderPass(
     HdRenderIndex *index,
     HdRprimCollection const &collection,
-    std::shared_ptr<HdPrman_Context> context)
+    std::shared_ptr<HdPrman_RenderParam> renderParam)
 : HdRenderPass(index, collection)
 , _converged(false)
 , _lastRenderedVersion(0)
@@ -62,10 +62,10 @@ HdPrman_InteractiveRenderPass::HdPrman_InteractiveRenderPass(
 , _quickIntegrate(false)
 , _isPrimaryIntegrator(false)
 {
-    _interactiveContext =
-        std::dynamic_pointer_cast<HdPrman_InteractiveContext>(context);
+    _interactiveRenderParam =
+        std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(renderParam);
 
-    TF_VERIFY(_interactiveContext);
+    TF_VERIFY(_interactiveRenderParam);
 }
 
 HdPrman_InteractiveRenderPass::~HdPrman_InteractiveRenderPass() = default;
@@ -138,13 +138,13 @@ HdPrman_InteractiveRenderPass::_Execute(
     static const RtUString us_planeNormal("planeNormal");
     static const RtUString us_planeOrigin("planeOrigin");
 
-    if (!_interactiveContext) {
+    if (!_interactiveRenderParam) {
         // If this is not an interactive context, don't use Hydra to drive
         // rendering and presentation of the framebuffer.  Instead, assume
         // we are just using Hydra to sync the scene contents to Riley.
         return;
     }
-    if (_interactiveContext->renderThread.IsPauseRequested()) {
+    if (_interactiveRenderParam->renderThread.IsPauseRequested()) {
         // No more updates if pause is pending
         return;
     }
@@ -153,11 +153,11 @@ HdPrman_InteractiveRenderPass::_Execute(
     HdRenderPassAovBindingVector const &aovBindings =
         renderPassState->GetAovBindings();
 
-    _interactiveContext->CreateDisplays(aovBindings);
+    _interactiveRenderParam->CreateDisplays(aovBindings);
 
     // Enable/disable the fallback light when the scene provides no lights.
-    _interactiveContext->SetFallbackLightsEnabled(
-        _interactiveContext->sceneLightCount == 0);
+    _interactiveRenderParam->SetFallbackLightsEnabled(
+        _interactiveRenderParam->sceneLightCount == 0);
 
     // Likewise the render settings.
     HdPrmanRenderDelegate * const renderDelegate =
@@ -185,7 +185,7 @@ HdPrman_InteractiveRenderPass::_Execute(
             dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera()));
 
     HdPrmanCameraContext &cameraContext =
-        _interactiveContext->GetCameraContext();
+        _interactiveRenderParam->GetCameraContext();
     cameraContext.SetCamera(hdCam);
     if (renderPassState->GetFraming().IsValid()) {
         // For new clients setting the camera framing.
@@ -211,7 +211,7 @@ HdPrman_InteractiveRenderPass::_Execute(
 
         // AcquireRiley will stop rendering and increase sceneVersion
         // so that the render will be re-started below.
-        riley::Riley * const riley = _interactiveContext->AcquireRiley();
+        riley::Riley * const riley = _interactiveRenderParam->AcquireRiley();
 
         _integrator = renderDelegate->GetRenderSetting<std::string>(
             HdPrmanRenderSettingsTokens->integratorName,
@@ -236,21 +236,21 @@ HdPrman_InteractiveRenderPass::_Execute(
             _quickIntegrateTime = 0.0f;
 
             riley::ShadingNode &integratorNode =
-                _interactiveContext->GetActiveIntegratorShadingNode();
+                _interactiveRenderParam->GetActiveIntegratorShadingNode();
 
-            _interactiveContext->SetIntegratorParamsFromRenderSettings(
+            _interactiveRenderParam->SetIntegratorParamsFromRenderSettings(
                 renderDelegate,
                 _integrator,
                 integratorNode.params);
 
-            _interactiveContext->SetIntegratorParamsFromCamera(
+            _interactiveRenderParam->SetIntegratorParamsFromCamera(
                     renderDelegate, hdCam, _integrator, integratorNode.params);
 
             RtUString integrator(_integrator.c_str());
             integratorNode.handle = integratorNode.name = integrator;
 
             riley->ModifyIntegrator(
-                _interactiveContext->GetActiveIntegratorId(), &integratorNode);
+                _interactiveRenderParam->GetActiveIntegratorId(), &integratorNode);
         }
 
         // Update convergence criteria.
@@ -258,23 +258,23 @@ HdPrman_InteractiveRenderPass::_Execute(
             HdRenderSettingsTokens->convergedSamplesPerPixel).Cast<int>();
         int maxSamples = TF_VERIFY(!vtMaxSamples.IsEmpty()) ?
             vtMaxSamples.UncheckedGet<int>() : 64; // RenderMan default
-        _interactiveContext->GetOptions().SetInteger(RixStr.k_hider_maxsamples,
+        _interactiveRenderParam->GetOptions().SetInteger(RixStr.k_hider_maxsamples,
                                                      maxSamples);
 
         VtValue vtPixelVariance = renderDelegate->GetRenderSetting(
             HdRenderSettingsTokens->convergedVariance).Cast<float>();
         float pixelVariance = TF_VERIFY(!vtPixelVariance.IsEmpty()) ?
             vtPixelVariance.UncheckedGet<float>() : 0.001f;
-        _interactiveContext->GetOptions().SetFloat(RixStr.k_Ri_PixelVariance,
+        _interactiveRenderParam->GetOptions().SetFloat(RixStr.k_Ri_PixelVariance,
                                                    pixelVariance);
 
         // Set Options from RenderSettings schema
-        _interactiveContext->SetOptionsFromRenderSettings(
+        _interactiveRenderParam->SetOptionsFromRenderSettings(
             renderDelegate,
-            _interactiveContext->GetOptions());
+            _interactiveRenderParam->GetOptions());
         
         riley->SetOptions(
-            _interactiveContext->_GetDeprecatedOptionsPrunedList());
+            _interactiveRenderParam->_GetDeprecatedOptionsPrunedList());
 
         _lastSettingsVersion = currentSettingsVersion;
 
@@ -295,14 +295,14 @@ HdPrman_InteractiveRenderPass::_Execute(
                 riley->CreateIntegrator(riley::UserId::DefaultId(),
                     integratorNode);
         }
-        
+
         // This can't be correct: imagine that we call _Execute while the
         // quick integrator is still working. Then _mainIntegratorId will
         // be set to the id of the quick integrator and the below code that
         // tries to switch to the main integrator with
         // SetIntegrator(_mainIntegratorId) will do nothing.
         //
-        _mainIntegratorId = _interactiveContext->GetActiveIntegratorId();
+        _mainIntegratorId = _interactiveRenderParam->GetActiveIntegratorId();
     }
 
     // Check if any camera update needed
@@ -310,8 +310,8 @@ HdPrman_InteractiveRenderPass::_Execute(
     // need to sync anything here.  Note that we'll need to solve
     // thread coordination for sprim sync/finalize first.
     const bool resolutionChanged =
-        _interactiveContext->resolution[0] != renderBufferWidth ||
-        _interactiveContext->resolution[1] != renderBufferHeight;
+        _interactiveRenderParam->resolution[0] != renderBufferWidth ||
+        _interactiveRenderParam->resolution[1] != renderBufferHeight;
 
     const GfMatrix4d viewToWorldMatrix =
         renderPassState->GetWorldToViewMatrix().GetInverse();
@@ -321,31 +321,31 @@ HdPrman_InteractiveRenderPass::_Execute(
 
         // AcquireRiley will stop rendering and increase sceneVersion
         // so that the render will be re-started below.
-        riley::Riley * const riley = _interactiveContext->AcquireRiley();
+        riley::Riley * const riley = _interactiveRenderParam->AcquireRiley();
 
         if (resolutionChanged) {
-            _interactiveContext->resolution[0] = renderBufferWidth;
-            _interactiveContext->resolution[1] = renderBufferHeight;
+            _interactiveRenderParam->resolution[0] = renderBufferWidth;
+            _interactiveRenderParam->resolution[1] = renderBufferHeight;
             
-            _interactiveContext->GetOptions().SetIntegerArray(
+            _interactiveRenderParam->GetOptions().SetIntegerArray(
                 RixStr.k_Ri_FormatResolution,
-                _interactiveContext->resolution, 2);
+                _interactiveRenderParam->resolution, 2);
             
             // There is currently only one render target per context
-            if (_interactiveContext->renderViews.size() == 1) {
+            if (_interactiveRenderParam->renderViews.size() == 1) {
                 riley::RenderViewId const renderViewId =
-                    _interactiveContext->renderViews[0];
+                    _interactiveRenderParam->renderViews[0];
                 
                 auto it =
-                    _interactiveContext->renderTargets.find(renderViewId);
+                    _interactiveRenderParam->renderTargets.find(renderViewId);
                 
-                if (it != _interactiveContext->renderTargets.end()) {
+                if (it != _interactiveRenderParam->renderTargets.end()) {
                     riley::RenderTargetId const rtid = it->second;
                     const riley::Extent targetExtent = {
                         static_cast<uint32_t>(
-                            _interactiveContext->resolution[0]),
+                            _interactiveRenderParam->resolution[0]),
                         static_cast<uint32_t>(
-                            _interactiveContext->resolution[1]),
+                            _interactiveRenderParam->resolution[1]),
                         0};
                     riley->ModifyRenderTarget(
                         rtid, nullptr,
@@ -354,11 +354,11 @@ HdPrman_InteractiveRenderPass::_Execute(
             }
 
             cameraContext.SetRileyOptions(
-                &(_interactiveContext->GetOptions()),
+                &(_interactiveRenderParam->GetOptions()),
                 GfVec2i(renderBufferWidth, renderBufferHeight));
             
             riley->SetOptions(
-                _interactiveContext->_GetDeprecatedOptionsPrunedList());
+                _interactiveRenderParam->_GetDeprecatedOptionsPrunedList());
         }
 
         // Coordinate system notes.
@@ -458,7 +458,7 @@ HdPrman_InteractiveRenderPass::_Execute(
 
             // Commit camera.
             riley->ModifyCamera(
-                _interactiveContext->cameraId, 
+                _interactiveRenderParam->cameraId, 
                 &cameraNode,
                 &xform, 
                 &camParams);
@@ -521,21 +521,21 @@ HdPrman_InteractiveRenderPass::_Execute(
 
             // Commit camera.
             riley->ModifyCamera(
-                _interactiveContext->cameraId, 
+                _interactiveRenderParam->cameraId, 
                 &cameraNode,
                 &xform, 
                 &camParams);
         }
 
         // Update the framebuffer Z scaling
-        _interactiveContext->framebuffer.proj = proj;
+        _interactiveRenderParam->framebuffer.proj = proj;
     }    
     
     // We need to capture the value of sceneVersion here after all
     // the above calls to AcquireRiley since AcquireRiley increases
     // the sceneVersion.
     const int currentSceneVersion =
-        _interactiveContext->sceneVersion.load();
+        _interactiveRenderParam->sceneVersion.load();
     const bool needsStartRender = 
         currentSceneVersion != _lastRenderedVersion;
 
@@ -559,35 +559,35 @@ HdPrman_InteractiveRenderPass::_Execute(
             if (!_quickIntegrate) {
                 // Start the frame with interactive integrator to give faster
                 // time-to-first-buckets.
-                _interactiveContext->SetIntegrator(_quickIntegratorId);
+                _interactiveRenderParam->SetIntegrator(_quickIntegratorId);
                 _quickIntegrate = true;
             }
         } else if (_quickIntegrateTime <= 0 || _quickIntegrate) {
             // Disable quick integrate
-            _interactiveContext->SetIntegrator(_mainIntegratorId);
+            _interactiveRenderParam->SetIntegrator(_mainIntegratorId);
             _quickIntegrate = false;
         }
-        _interactiveContext->StartRender();
+        _interactiveRenderParam->StartRender();
         _frameStart = std::chrono::steady_clock::now();
     } else {
         if (_quickIntegrate &&
-            _interactiveContext->renderThread.IsRendering() &&
+            _interactiveRenderParam->renderThread.IsRendering() &&
             _DiffTimeToNow(_frameStart) > _quickIntegrateTime) {
 
-            _interactiveContext->StopRender();
-            _interactiveContext->SetIntegrator(_mainIntegratorId);
-            _interactiveContext->StartRender();
+            _interactiveRenderParam->StopRender();
+            _interactiveRenderParam->SetIntegrator(_mainIntegratorId);
+            _interactiveRenderParam->StartRender();
             
             _quickIntegrate = false;
         }
     }
 
-    _converged = !_interactiveContext->renderThread.IsRendering();
+    _converged = !_interactiveRenderParam->renderThread.IsRendering();
 
     // Blit from the framebuffer to the currently selected AOVs.
     // Lock the framebuffer when reading so we don't overlap
     // with RenderMan's resize/writing.
-    _interactiveContext->framebuffer.mutex.lock();
+    _interactiveRenderParam->framebuffer.mutex.lock();
 
     for(size_t aov = 0; aov < aovBindings.size(); ++aov) {
         if(!TF_VERIFY(aovBindings[aov].renderBuffer)) {
@@ -598,14 +598,14 @@ HdPrman_InteractiveRenderPass::_Execute(
 
         // Forward convergence state to the render buffers...
         rb->SetConverged(_converged);
-        rb->Blit(_interactiveContext->framebuffer.aovs[aov].format,
-                 _interactiveContext->framebuffer.w,
-                 _interactiveContext->framebuffer.h,
+        rb->Blit(_interactiveRenderParam->framebuffer.aovs[aov].format,
+                 _interactiveRenderParam->framebuffer.w,
+                 _interactiveRenderParam->framebuffer.h,
                  reinterpret_cast<uint8_t*>(
-                     _interactiveContext->
+                     _interactiveRenderParam->
                      framebuffer.aovs[aov].pixels.data()));
     }
-    _interactiveContext->framebuffer.mutex.unlock();
+    _interactiveRenderParam->framebuffer.mutex.unlock();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

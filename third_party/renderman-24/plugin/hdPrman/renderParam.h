@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_CONTEXT_H
-#define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_CONTEXT_H
+#ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PARAM_H
+#define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PARAM_H
 
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
@@ -56,15 +56,15 @@ class HdPrmanCamera;
 class HdPrmanCameraContext;
 class HdPrmanRenderDelegate;
 
-// Context for HdPrman to communicate with an instance of PRMan.
-class HdPrman_Context : public HdRenderParam
+// Render Param for HdPrman to communicate with an instance of PRMan.
+class HdPrman_RenderParam : public HdRenderParam
 {
 public:
     HDPRMAN_API
-    HdPrman_Context();
+    HdPrman_RenderParam();
 
     HDPRMAN_API
-    ~HdPrman_Context() override;
+    ~HdPrman_RenderParam() override;
 
     // Convert any Hydra primvars that should be Riley instance attributes.
     HDPRMAN_API
@@ -295,4 +295,4 @@ HdPrman_UpdateSearchPathsFromEnvironment(RtParamList& options);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_CONTEXT_H
+#endif // EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PARAM_H

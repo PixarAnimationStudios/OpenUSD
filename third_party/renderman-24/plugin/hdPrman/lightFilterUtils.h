@@ -30,7 +30,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_Context;
+class HdPrman_RenderParam;
 class HdSceneDelegate;
 class SdfPath;
 class TfToken;
@@ -46,7 +46,7 @@ void HdPrmanLightFilterGenerateCoordSysAndLinks(
     std::vector<riley::CoordinateSystemId> *coordsysIds,
     std::vector<TfToken> *filterLinks,
     HdSceneDelegate *sceneDelegate,
-    HdPrman_Context *context,
+    HdPrman_RenderParam *renderParam,
     riley::Riley *riley,
     const riley::ShadingNode &lightNode);
 

@@ -22,19 +22,19 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "hdPrman/offlineRenderPass.h"
-#include "hdPrman/offlineContext.h"
+#include "hdPrman/offlineRenderParam.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdPrman_OfflineRenderPass::HdPrman_OfflineRenderPass(
     HdRenderIndex *index,
     HdRprimCollection const &collection,
-    std::shared_ptr<HdPrman_Context> context)
+    std::shared_ptr<HdPrman_RenderParam> renderParam)
 : HdRenderPass(index, collection)
 , _converged(false)
 {
-    _offlineContext =
-        std::dynamic_pointer_cast<HdPrman_OfflineContext>(context);
+    _offlineRenderParam =
+        std::dynamic_pointer_cast<HdPrman_OfflineRenderParam>(renderParam);
 }
 
 HdPrman_OfflineRenderPass::~HdPrman_OfflineRenderPass() = default;
@@ -50,7 +50,7 @@ HdPrman_OfflineRenderPass::_Execute(
     HdRenderPassStateSharedPtr const& renderPassState,
     TfTokenVector const &renderTags)
 {
-    _offlineContext->Render();
+    _offlineRenderParam->Render();
     _converged = true;
 }
 

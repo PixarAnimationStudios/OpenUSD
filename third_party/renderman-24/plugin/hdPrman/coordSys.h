@@ -31,7 +31,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
-class HdPrman_Context;
+class HdPrman_RenderParam;
 
 /// \class HdPrmanCoordSys
 ///
@@ -61,7 +61,7 @@ public:
     void Finalize(HdRenderParam *renderParam) override;
 
 private:
-    void _ResetCoordSys(HdPrman_Context *context);
+    void _ResetCoordSys(HdPrman_RenderParam *renderParam);
 
     riley::CoordinateSystemId _coordSysId;
 };

@@ -34,8 +34,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_Context;
-class HdPrman_InteractiveContext;
+class HdPrman_RenderParam;
+class HdPrman_InteractiveRenderParam;
 
 class HdPrman_InteractiveRenderPass final : public HdRenderPass
 {
@@ -43,7 +43,7 @@ public:
     HdPrman_InteractiveRenderPass(
         HdRenderIndex *index,
         HdRprimCollection const &collection,
-        std::shared_ptr<HdPrman_Context> context);
+        std::shared_ptr<HdPrman_RenderParam> renderParam);
     ~HdPrman_InteractiveRenderPass() override;
 
     bool IsConverged() const override;
@@ -53,7 +53,7 @@ protected:
                   TfTokenVector const &renderTags) override;
 
 private:
-    std::shared_ptr<HdPrman_InteractiveContext> _interactiveContext;
+    std::shared_ptr<HdPrman_InteractiveRenderParam> _interactiveRenderParam;
     bool _converged;
     int _lastRenderedVersion;
     int _lastSettingsVersion;

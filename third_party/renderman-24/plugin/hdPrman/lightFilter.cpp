@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "hdPrman/lightFilter.h"
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/rixStrings.h"
 #include "pxr/usd/sdf/types.h"
@@ -54,13 +54,13 @@ HdPrmanLightFilter::~HdPrmanLightFilter() = default;
 void
 HdPrmanLightFilter::Finalize(HdRenderParam *renderParam)
 {
-    HdPrman_Context *context =
-        static_cast<HdPrman_Context*>(renderParam);
-    _ResetLightFilter(context);
+    HdPrman_RenderParam *param =
+        static_cast<HdPrman_RenderParam*>(renderParam);
+    _ResetLightFilter(param);
 }
 
 void
-HdPrmanLightFilter::_ResetLightFilter(HdPrman_Context *context)
+HdPrmanLightFilter::_ResetLightFilter(HdPrman_RenderParam *renderParam)
 {
     // Currently, light filters are managed in light.cpp as part
     // of the lights.  Eventually, we will probably want to add
@@ -78,11 +78,11 @@ HdPrmanLightFilter::Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits)
 {  
-    HdPrman_Context *context =
-        static_cast<HdPrman_Context*>(renderParam);
+    HdPrman_RenderParam *param =
+        static_cast<HdPrman_RenderParam*>(renderParam);
 
     if (*dirtyBits) {
-        _ResetLightFilter(context);
+        _ResetLightFilter(param);
     }
 
     *dirtyBits = HdChangeTracker::Clean;

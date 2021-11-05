@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/coordSys.h"
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/material.h"
@@ -59,13 +59,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     (PrimvarPass)
 );
 
-TF_MAKE_STATIC_DATA(std::vector<HdPrman_Context::IntegratorCameraCallback>,
+TF_MAKE_STATIC_DATA(std::vector<HdPrman_RenderParam::IntegratorCameraCallback>,
                     _integratorCameraCallbacks)
 {
     _integratorCameraCallbacks->clear();
 }
 
-HdPrman_Context::HdPrman_Context() :
+HdPrman_RenderParam::HdPrman_RenderParam() :
     _rix(nullptr),
     _ri(nullptr),
     _mgr(nullptr),
@@ -74,17 +74,17 @@ HdPrman_Context::HdPrman_Context() :
 {
 }
 
-HdPrman_Context::~HdPrman_Context() = default;
+HdPrman_RenderParam::~HdPrman_RenderParam() = default;
 
 void
-HdPrman_Context::IncrementLightLinkCount(TfToken const& name)
+HdPrman_RenderParam::IncrementLightLinkCount(TfToken const& name)
 {
     std::lock_guard<std::mutex> lock(_lightLinkMutex);
     ++_lightLinkRefs[name];
 }
 
 void 
-HdPrman_Context::DecrementLightLinkCount(TfToken const& name)
+HdPrman_RenderParam::DecrementLightLinkCount(TfToken const& name)
 {
     std::lock_guard<std::mutex> lock(_lightLinkMutex);
     if (--_lightLinkRefs[name] == 0) {
@@ -93,33 +93,33 @@ HdPrman_Context::DecrementLightLinkCount(TfToken const& name)
 }
 
 bool 
-HdPrman_Context::IsLightLinkUsed(TfToken const& name)
+HdPrman_RenderParam::IsLightLinkUsed(TfToken const& name)
 {
     std::lock_guard<std::mutex> lock(_lightLinkMutex);
     return _lightLinkRefs.find(name) != _lightLinkRefs.end();
 }
 
 bool 
-HdPrman_Context::IsShutterInstantaneous() const
+HdPrman_RenderParam::IsShutterInstantaneous() const
 {
     return _instantaneousShutter;
 }
 
 void
-HdPrman_Context::SetInstantaneousShutter(bool instantaneousShutter)
+HdPrman_RenderParam::SetInstantaneousShutter(bool instantaneousShutter)
 {
     _instantaneousShutter = instantaneousShutter;
 }
 
 void
-HdPrman_Context::IncrementLightFilterCount(TfToken const& name)
+HdPrman_RenderParam::IncrementLightFilterCount(TfToken const& name)
 {
     std::lock_guard<std::mutex> lock(_lightFilterMutex);
     ++_lightFilterRefs[name];
 }
 
 void 
-HdPrman_Context::DecrementLightFilterCount(TfToken const& name)
+HdPrman_RenderParam::DecrementLightFilterCount(TfToken const& name)
 {
     std::lock_guard<std::mutex> lock(_lightFilterMutex);
     if (--_lightFilterRefs[name] == 0) {
@@ -128,7 +128,7 @@ HdPrman_Context::DecrementLightFilterCount(TfToken const& name)
 }
 
 bool 
-HdPrman_Context::IsLightFilterUsed(TfToken const& name)
+HdPrman_RenderParam::IsLightFilterUsed(TfToken const& name)
 {
     std::lock_guard<std::mutex> lock(_lightFilterMutex);
     return _lightFilterRefs.find(name) != _lightFilterRefs.end();
@@ -974,7 +974,7 @@ HdPrman_TransferMaterialPrimvarOpinions(HdSceneDelegate *sceneDelegate,
 }
 
 RtParamList
-HdPrman_Context::ConvertAttributes(HdSceneDelegate *sceneDelegate,
+HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
                                    SdfPath const& id)
 {
     RtPrimVarList attrs;
@@ -1006,7 +1006,7 @@ HdPrman_Context::ConvertAttributes(HdSceneDelegate *sceneDelegate,
 }
 
 void
-HdPrman_Context::ConvertCategoriesToAttributes(
+HdPrman_RenderParam::ConvertCategoriesToAttributes(
     SdfPath const& id,
     VtArray<TfToken> const& categories,
     RtParamList& attrs)
@@ -1102,8 +1102,8 @@ HdPrman_ResolveMaterial(HdSceneDelegate *sceneDelegate,
     return false;
 }
 
-HdPrman_Context::RileyCoordSysIdVecRefPtr
-HdPrman_Context::ConvertAndRetainCoordSysBindings(
+HdPrman_RenderParam::RileyCoordSysIdVecRefPtr
+HdPrman_RenderParam::ConvertAndRetainCoordSysBindings(
     HdSceneDelegate *sceneDelegate,
     SdfPath const& id)
 {
@@ -1152,7 +1152,7 @@ HdPrman_Context::ConvertAndRetainCoordSysBindings(
 }
 
 void
-HdPrman_Context::ReleaseCoordSysBindings(SdfPath const& id)
+HdPrman_RenderParam::ReleaseCoordSysBindings(SdfPath const& id)
 {
     std::lock_guard<std::mutex> lock(_coordSysMutex);
     _GeomToHdCoordSysMap::iterator geomIt = _geomToHdCoordSysMap.find(id);
@@ -1204,7 +1204,7 @@ _GetShutterInterval(
 }
 
 void
-HdPrman_Context::SetOptionsFromRenderSettings(
+HdPrman_RenderParam::SetOptionsFromRenderSettings(
     HdPrmanRenderDelegate *renderDelegate, 
     RtParamList& options)
 {
@@ -1271,7 +1271,7 @@ HdPrman_Context::SetOptionsFromRenderSettings(
 }
 
 void
-HdPrman_Context::SetIntegratorParamsFromRenderSettings(
+HdPrman_RenderParam::SetIntegratorParamsFromRenderSettings(
     HdPrmanRenderDelegate *renderDelegate,
     std::string& integratorName,
     RtParamList& params)
@@ -1395,7 +1395,7 @@ HdPrman_UpdateSearchPathsFromEnvironment(RtParamList& options)
 }
 
 void
-HdPrman_Context::SetIntegratorParamsFromCamera(
+HdPrman_RenderParam::SetIntegratorParamsFromCamera(
     HdPrmanRenderDelegate *renderDelegate,
     HdPrmanCamera *camera,
     std::string const& integratorName,
@@ -1407,14 +1407,14 @@ HdPrman_Context::SetIntegratorParamsFromCamera(
 }
 
 void 
-HdPrman_Context::RegisterIntegratorCallbackForCamera(
+HdPrman_RenderParam::RegisterIntegratorCallbackForCamera(
     IntegratorCameraCallback const& callback)
 {
    _integratorCameraCallbacks->push_back(callback);
 }
 
 bool
-HdPrman_Context::SetParamFromVtValue(
+HdPrman_RenderParam::SetParamFromVtValue(
     RtUString const& name,
     VtValue const& val,
     TfToken const& role,
@@ -1424,7 +1424,7 @@ HdPrman_Context::SetParamFromVtValue(
 }
 
 void
-HdPrman_Context::_InitializePrman()
+HdPrman_RenderParam::_InitializePrman()
 {
     _rix = RixGetContext();
     if (!_rix) {

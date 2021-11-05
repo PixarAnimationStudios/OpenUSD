@@ -21,20 +21,20 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_OFFLINE_CONTEXT_H
-#define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_OFFLINE_CONTEXT_H
+#ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_OFFLINE_RENDER_PARAM_H
+#define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_OFFLINE_RENDER_PARAM_H
 
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/cameraContext.h"
 
 #include "Riley.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Context for offline rendering in HdPrman.
-class HdPrman_OfflineContext : public HdPrman_Context
+// RenderParam for offline rendering in HdPrman.
+class HdPrman_OfflineRenderParam: public HdPrman_RenderParam
 {
 public:
 
@@ -46,10 +46,10 @@ public:
     };
 
     HDPRMAN_API
-    HdPrman_OfflineContext();
+    HdPrman_OfflineRenderParam();
 
     HDPRMAN_API
-    ~HdPrman_OfflineContext() override;
+    ~HdPrman_OfflineRenderParam() override;
 
     // Produces a render
     HDPRMAN_API
@@ -82,7 +82,7 @@ public:
 
     riley::CameraId cameraId;
 
-    // Returns Riley scene. Since this is the offline context, it
+    // Returns Riley scene. Since this is the offline renderParam, it
     // currently does not stop the render.
     riley::Riley * AcquireRiley() override;
 
@@ -128,4 +128,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_OFFLINE_CONTEXT_H
+#endif // EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_OFFLINE_RENDER_PARAM_H

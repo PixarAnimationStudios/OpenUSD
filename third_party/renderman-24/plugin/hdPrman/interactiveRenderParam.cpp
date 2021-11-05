@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdPrman/interactiveContext.h"
+#include "hdPrman/interactiveRenderParam.h"
 
 #include "pxr/base/arch/library.h"
 #include "pxr/base/plug/registry.h"
@@ -63,7 +63,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     );
 
 void 
-HdPrman_InteractiveContext::_RenderThreadCallback()
+HdPrman_InteractiveRenderParam::_RenderThreadCallback()
 {
     static RtUString const US_RENDERMODE = RtUString("renderMode");
     static RtUString const US_INTERACTIVE = RtUString("interactive");
@@ -102,26 +102,26 @@ HdPrman_InteractiveContext::_RenderThreadCallback()
     }
 }
 
-HdPrman_InteractiveContext::HdPrman_InteractiveContext() :
+HdPrman_InteractiveRenderParam::HdPrman_InteractiveRenderParam() :
     sceneLightCount(0),
     resolution{0, 0},
     _fallbackLightEnabled(false),
     _didBeginRiley(false)
 {
-    TfRegistryManager::GetInstance().SubscribeTo<HdPrman_Context>();
+    TfRegistryManager::GetInstance().SubscribeTo<HdPrman_RenderParam>();
     renderThread.SetRenderCallback(
         std::bind(
-            &HdPrman_InteractiveContext::_RenderThreadCallback, this));
+            &HdPrman_InteractiveRenderParam::_RenderThreadCallback, this));
     _Initialize();
 }
 
-HdPrman_InteractiveContext::~HdPrman_InteractiveContext()
+HdPrman_InteractiveRenderParam::~HdPrman_InteractiveRenderParam()
 {
     End();
 }
 
 void 
-HdPrman_InteractiveContext::_Initialize()
+HdPrman_InteractiveRenderParam::_Initialize()
 {
     _InitializePrman();
 
@@ -130,13 +130,13 @@ HdPrman_InteractiveContext::_Initialize()
 }
 
 bool 
-HdPrman_InteractiveContext::IsValid() const
+HdPrman_InteractiveRenderParam::IsValid() const
 {
     return _riley;
 }
 
 void 
-HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
+HdPrman_InteractiveRenderParam::Begin(HdRenderDelegate *renderDelegate)
 {
     //////////////////////////////////////////////////////////////////////// 
     //
@@ -419,7 +419,7 @@ HdPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
 }
 
 void 
-HdPrman_InteractiveContext::SetIntegrator(riley::IntegratorId iid)
+HdPrman_InteractiveRenderParam::SetIntegrator(riley::IntegratorId iid)
 {
     _integratorId = iid;
     for (auto const& id : renderViews) {
@@ -429,7 +429,7 @@ HdPrman_InteractiveContext::SetIntegrator(riley::IntegratorId iid)
 }
 
 void 
-HdPrman_InteractiveContext::StartRender()
+HdPrman_InteractiveRenderParam::StartRender()
 {
     // Last chance to set Ri options before starting riley!
     // Called from HdPrman_RenderPass::_Execute
@@ -445,7 +445,7 @@ HdPrman_InteractiveContext::StartRender()
 }
 
 void 
-HdPrman_InteractiveContext::End()
+HdPrman_InteractiveRenderParam::End()
 {
     if (renderThread.IsThreadRunning()) {
         renderThread.StopThread();
@@ -470,7 +470,7 @@ HdPrman_InteractiveContext::End()
 }
 
 void
-HdPrman_InteractiveContext::SetFallbackLightsEnabled(bool enabled)
+HdPrman_InteractiveRenderParam::SetFallbackLightsEnabled(bool enabled)
 {
     if (_fallbackLightEnabled == enabled) {
         return;
@@ -493,7 +493,7 @@ HdPrman_InteractiveContext::SetFallbackLightsEnabled(bool enabled)
 }
 
 void
-HdPrman_InteractiveContext::StopRender()
+HdPrman_InteractiveRenderParam::StopRender()
 {
     if (renderThread.IsRendering()) {
         // It is necessary to call riley->Stop() until it succeeds
@@ -510,13 +510,13 @@ HdPrman_InteractiveContext::StopRender()
 }
 
 bool
-HdPrman_InteractiveContext::IsRenderStopped()
+HdPrman_InteractiveRenderParam::IsRenderStopped()
 {
     return !renderThread.IsThreadRunning();
 }
 
 void
-HdPrman_InteractiveContext::CreateDisplays(
+HdPrman_InteractiveRenderParam::CreateDisplays(
     const HdRenderPassAovBindingVector& aovBindings)
 {
     // Proceed with creating displays if the number has changed
@@ -830,31 +830,31 @@ HdPrman_InteractiveContext::CreateDisplays(
 }
 
 RtParamList&
-HdPrman_InteractiveContext::GetOptions() 
+HdPrman_InteractiveRenderParam::GetOptions() 
 {
     return _options;
 }
 
 riley::IntegratorId
-HdPrman_InteractiveContext::GetActiveIntegratorId()
+HdPrman_InteractiveRenderParam::GetActiveIntegratorId()
 {
     return _integratorId;
 }
 
 riley::ShadingNode &
-HdPrman_InteractiveContext::GetActiveIntegratorShadingNode()
+HdPrman_InteractiveRenderParam::GetActiveIntegratorShadingNode()
 {
     return _activeIntegratorShadingNode;
 }
 
 HdPrmanCameraContext &
-HdPrman_InteractiveContext::GetCameraContext()
+HdPrman_InteractiveRenderParam::GetCameraContext()
 {
     return _cameraContext;
 }
 
 RtParamList 
-HdPrman_InteractiveContext::_GetDeprecatedOptionsPrunedList()
+HdPrman_InteractiveRenderParam::_GetDeprecatedOptionsPrunedList()
 {
     // The following should not be given to Riley::SetOptions() anymore.
     static std::vector<RtUString> const _deprecatedRileyOptions = {
@@ -875,7 +875,7 @@ HdPrman_InteractiveContext::_GetDeprecatedOptionsPrunedList()
 }
 
 void
-HdPrman_InteractiveContext::InvalidateTexture(const std::string &path)
+HdPrman_InteractiveRenderParam::InvalidateTexture(const std::string &path)
 {
     _ri->InvalidateTexture(RtUString(path.c_str()));
 
@@ -884,7 +884,7 @@ HdPrman_InteractiveContext::InvalidateTexture(const std::string &path)
 }
 
 riley::Riley *
-HdPrman_InteractiveContext::AcquireRiley()
+HdPrman_InteractiveRenderParam::AcquireRiley()
 {
     StopRender();
     sceneVersion++;

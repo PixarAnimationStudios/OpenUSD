@@ -26,7 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/timeSampleArray.h"
 

@@ -52,7 +52,7 @@
 #include "pxr/base/trace/reporter.h"
 #include "pxr/base/work/threadLimits.h"
 
-#include "hdPrman/offlineContext.h"
+#include "hdPrman/offlineRenderParam.h"
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/rixStrings.h"
 
@@ -213,7 +213,7 @@ _ConvertSettings(VtDictionary const& settings, RtParamList& params)
 int main(int argc, char *argv[])
 {
     // Pixar studio config
-    TfRegistryManager::GetInstance().SubscribeTo<HdPrman_Context>();
+    TfRegistryManager::GetInstance().SubscribeTo<HdPrman_RenderParam>();
 
     //////////////////////////////////////////////////////////////////////// 
     //
@@ -384,8 +384,8 @@ int main(int argc, char *argv[])
     for (auto product: renderSpec.products) {
         printf("Rendering %s...\n", product.name.GetText());
 
-        std::shared_ptr<HdPrman_OfflineContext> context =
-            std::make_shared<HdPrman_OfflineContext>();
+        std::shared_ptr<HdPrman_OfflineRenderParam> renderParam =
+            std::make_shared<HdPrman_OfflineRenderParam>();
 
         // Find USD camera prim.
         UsdGeomCamera usdCam;
@@ -587,7 +587,7 @@ int main(int argc, char *argv[])
         }
 
         // Displays & Display Channels
-        std::vector<HdPrman_OfflineContext::RenderOutput> renderOutputs;
+        std::vector<HdPrman_OfflineRenderParam::RenderOutput> renderOutputs;
         for (size_t index: product.renderVarIndices) {
             auto const& renderVar = renderSpec.renderVars[index];
 
@@ -616,7 +616,7 @@ int main(int argc, char *argv[])
             // RenderVar extraSettings become Riley channel params.
             _ConvertSettings(renderVar.extraSettings, params);
 
-            HdPrman_OfflineContext::RenderOutput ro;
+            HdPrman_OfflineRenderParam::RenderOutput ro;
             ro.name = RtUString(name.c_str());
             ro.type = renderOutputType;
             ro.params = params;
@@ -668,7 +668,7 @@ int main(int argc, char *argv[])
         }
 
         // Basic configuration       
-        context->Initialize(
+        renderParam->Initialize(
                 rileyOptions,
                 integratorNode,
                 cameraName,
@@ -705,7 +705,7 @@ int main(int argc, char *argv[])
             lightAttributes.SetInteger(RixStr.k_visibility_transmission, 1);
             lightAttributes.SetString(RixStr.k_grouping_membership,
                                       us_default);
-            context->SetFallbackLight(lightNode, xform, lightAttributes);
+            renderParam->SetFallbackLight(lightNode, xform, lightAttributes);
         }
 
         // Hydra setup
@@ -730,7 +730,7 @@ int main(int argc, char *argv[])
             // We should also configure the scene to filter for the
             // requested includedPurposes.
             HdRenderSettingsMap settingsMap;
-            HdPrmanRenderDelegate hdPrmanBackend(context, settingsMap);
+            HdPrmanRenderDelegate hdPrmanBackend(renderParam, settingsMap);
             std::unique_ptr<HdRenderIndex> hdRenderIndex(
                 HdRenderIndex::New(&hdPrmanBackend, HdDriverVector()));
             UsdImagingDelegate hdUsdFrontend(hdRenderIndex.get(),

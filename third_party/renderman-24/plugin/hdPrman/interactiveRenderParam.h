@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_INT_CONTEXT_H
-#define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_INT_CONTEXT_H
+#ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_INT_RENDER_PARAM_H
+#define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_INT_RENDER_PARAM_H
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/imaging/hd/renderThread.h"
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/framebuffer.h"
 #include "hdPrman/renderBuffer.h"
@@ -48,14 +48,14 @@ class SdfPath;
 class HdSceneDelegate;
 class HdRenderDelegate;
 
-// HdPrman_InteractiveContext supports interactive rendering workflows.
+// HdPrman_InteractiveRenderParam supports interactive rendering workflows.
 // Specifically, this means it provides:
 //
 // - a built-in Riley camera used for the RenderPass
 // - a framebuffer for returning image results
 // - concurrent, background rendering support.
 //
-class HdPrman_InteractiveContext : public HdPrman_Context
+class HdPrman_InteractiveRenderParam : public HdPrman_RenderParam
 {
 public:
 
@@ -70,8 +70,8 @@ public:
     // Count of scene lights.  Maintained by the delegate.
     int sceneLightCount;
 
-    HdPrman_InteractiveContext();
-    ~HdPrman_InteractiveContext() override;
+    HdPrman_InteractiveRenderParam();
+    ~HdPrman_InteractiveRenderParam() override;
 
     // Start connection to Renderman.
     void Begin(HdRenderDelegate *renderDelegate);
@@ -88,7 +88,7 @@ public:
     // Query whether or not the HdRenderThread is running.
     bool IsRenderStopped();
 
-    // Checks whether context was successfully initialized.
+    // Checks whether render param was successfully initialized.
     // ie. riley was created
     bool IsValid() const;
 
@@ -163,4 +163,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_INT_CONTEXT_H
+#endif // EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_INT_RENDER_PARAM_H

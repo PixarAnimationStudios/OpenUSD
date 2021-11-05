@@ -22,20 +22,20 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "hdPrman/offlineContext.h"
+#include "hdPrman/offlineRenderParam.h"
 #include "hdPrman/rixStrings.h"     // Strings
 #include "pxr/base/tf/pathUtils.h"  // Extract extension from tf token
 #include "RixShadingUtils.h"        // RixConstants
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdPrman_OfflineContext::HdPrman_OfflineContext()
+HdPrman_OfflineRenderParam::HdPrman_OfflineRenderParam()
 {
     _InitializePrman(); 
 }
 
 void
-HdPrman_OfflineContext::Initialize(
+HdPrman_OfflineRenderParam::Initialize(
     RtParamList rileyOptions, 
     riley::ShadingNode integratorNode,
     RtUString cameraName, 
@@ -60,7 +60,7 @@ HdPrman_OfflineContext::Initialize(
 }
 
 void
-HdPrman_OfflineContext::InitializeWithDefaults()
+HdPrman_OfflineRenderParam::InitializeWithDefaults()
 {
     int res[2] = {512,512};
 
@@ -244,25 +244,25 @@ HdPrman_OfflineContext::InitializeWithDefaults()
     }
 }
 
-HdPrman_OfflineContext::~HdPrman_OfflineContext()
+HdPrman_OfflineRenderParam::~HdPrman_OfflineRenderParam()
 {
     _End();
 }
 
 void
-HdPrman_OfflineContext::_SetRileyOptions(RtParamList options)
+HdPrman_OfflineRenderParam::_SetRileyOptions(RtParamList options)
 {
     _riley->SetOptions(options);
 }
 
 void
-HdPrman_OfflineContext::_SetRileyIntegrator(riley::ShadingNode node)
+HdPrman_OfflineRenderParam::_SetRileyIntegrator(riley::ShadingNode node)
 {
     _integratorId = _riley->CreateIntegrator(riley::UserId::DefaultId(), node);
 }
 
 void
-HdPrman_OfflineContext::_SetCamera(
+HdPrman_OfflineRenderParam::_SetCamera(
     RtUString name, 
     riley::ShadingNode node, 
     riley::Transform xform, 
@@ -273,7 +273,7 @@ HdPrman_OfflineContext::_SetCamera(
 }
 
 void
-HdPrman_OfflineContext::_AddRenderOutput(
+HdPrman_OfflineRenderParam::_AddRenderOutput(
     RtUString name, 
     riley::RenderOutputType type,
     RtParamList const& params)
@@ -292,7 +292,7 @@ HdPrman_OfflineContext::_AddRenderOutput(
 }
 
 void
-HdPrman_OfflineContext::_SetRenderTargetAndDisplay(
+HdPrman_OfflineRenderParam::_SetRenderTargetAndDisplay(
     riley::Extent format,
     TfToken outputFilename)
 {
@@ -337,7 +337,7 @@ HdPrman_OfflineContext::_SetRenderTargetAndDisplay(
 }
 
 void 
-HdPrman_OfflineContext::SetFallbackLight(
+HdPrman_OfflineRenderParam::SetFallbackLight(
     riley::ShadingNode node, 
     riley::Transform xform,
     RtParamList params)
@@ -361,7 +361,7 @@ HdPrman_OfflineContext::SetFallbackLight(
 }
 
 void 
-HdPrman_OfflineContext::_SetFallbackMaterial(
+HdPrman_OfflineRenderParam::_SetFallbackMaterial(
     std::vector<riley::ShadingNode> const & materialNodes)
 {
     fallbackMaterial = _riley->CreateMaterial(riley::UserId::DefaultId(),
@@ -370,7 +370,7 @@ HdPrman_OfflineContext::_SetFallbackMaterial(
 }
 
 void 
-HdPrman_OfflineContext::_SetFallbackVolumeMaterial(
+HdPrman_OfflineRenderParam::_SetFallbackVolumeMaterial(
     std::vector<riley::ShadingNode> const & materialNodes)
 {
     fallbackVolumeMaterial = _riley->CreateMaterial(riley::UserId::DefaultId(),
@@ -379,7 +379,7 @@ HdPrman_OfflineContext::_SetFallbackVolumeMaterial(
 }
 
 void
-HdPrman_OfflineContext::Render()
+HdPrman_OfflineRenderParam::Render()
 {
     std::cout << "   > Rendering" << std::endl;
     RtParamList renderOptions;
@@ -393,38 +393,38 @@ HdPrman_OfflineContext::Render()
 }
 
 bool 
-HdPrman_OfflineContext::IsValid() const
+HdPrman_OfflineRenderParam::IsValid() const
 {
     return _riley;
 }
 
 
 RtParamList&
-HdPrman_OfflineContext::GetOptions()
+HdPrman_OfflineRenderParam::GetOptions()
 {
     return _options;
 }
 
 riley::IntegratorId
-HdPrman_OfflineContext::GetActiveIntegratorId()
+HdPrman_OfflineRenderParam::GetActiveIntegratorId()
 {
     return _integratorId;
 }
 
 riley::ShadingNode &
-HdPrman_OfflineContext::GetActiveIntegratorShadingNode()
+HdPrman_OfflineRenderParam::GetActiveIntegratorShadingNode()
 {
     return _activeIntegratorShadingNode;
 }
 
 HdPrmanCameraContext &
-HdPrman_OfflineContext::GetCameraContext()
+HdPrman_OfflineRenderParam::GetCameraContext()
 {
     return _cameraContext;
 }
 
 void
-HdPrman_OfflineContext::_End()
+HdPrman_OfflineRenderParam::_End()
 {
     std::cout << "Destroy Prman" << std::endl;
     // Reset to initial state.
@@ -449,7 +449,7 @@ HdPrman_OfflineContext::_End()
 }
 
 riley::Riley *
-HdPrman_OfflineContext::AcquireRiley()
+HdPrman_OfflineRenderParam::AcquireRiley()
 {
     return _riley;
 }

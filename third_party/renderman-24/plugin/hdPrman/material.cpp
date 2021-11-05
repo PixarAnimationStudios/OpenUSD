@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "hdPrman/material.h"
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
 #include "hdPrman/matfiltFilterChain.h"
@@ -114,15 +114,15 @@ HdPrmanMaterial::~HdPrmanMaterial()
 void
 HdPrmanMaterial::Finalize(HdRenderParam *renderParam)
 {
-    HdPrman_Context *context =
-        static_cast<HdPrman_Context*>(renderParam);
-    _ResetMaterial(context);
+    HdPrman_RenderParam *param =
+        static_cast<HdPrman_RenderParam*>(renderParam);
+    _ResetMaterial(param);
 }
 
 void
-HdPrmanMaterial::_ResetMaterial(HdPrman_Context *context)
+HdPrmanMaterial::_ResetMaterial(HdPrman_RenderParam *renderParam)
 {
-    riley::Riley *riley = context->AcquireRiley();
+    riley::Riley *riley = renderParam->AcquireRiley();
     if (_materialId != riley::MaterialId::InvalidId()) {
         riley->DeleteMaterial(_materialId);
         _materialId = riley::MaterialId::InvalidId();
@@ -608,14 +608,14 @@ HdPrman_DumpNetwork(HdMaterialNetwork2 const& network, SdfPath const& id)
 // otherwise it will be created as needed.
 static void
 _ConvertHdMaterialNetwork2ToRman(
-    HdPrman_Context *context,
+    HdPrman_RenderParam *renderParam,
     SdfPath const& id,
     const HdMaterialNetwork2 &network,
     riley::MaterialId *materialId,
     riley::DisplacementId *displacementId)
 {
     HD_TRACE_FUNCTION();
-    riley::Riley *riley = context->AcquireRiley();
+    riley::Riley *riley = renderParam->AcquireRiley();
     std::vector<riley::ShadingNode> nodes;
     nodes.reserve(network.nodes.size());
     bool materialFound = false, displacementFound = false;
@@ -683,8 +683,8 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
                       HdDirtyBits     *dirtyBits)
 {  
     HD_TRACE_FUNCTION();
-    HdPrman_Context *context =
-        static_cast<HdPrman_Context*>(renderParam);
+    HdPrman_RenderParam *param =
+        static_cast<HdPrman_RenderParam*>(renderParam);
 
     SdfPath id = GetId();
 
@@ -710,14 +710,14 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
             if (TfDebug::IsEnabled(HDPRMAN_MATERIALS)) {
                 HdPrman_DumpNetwork(_materialNetwork, id);
             }
-            _ConvertHdMaterialNetwork2ToRman(context, id, _materialNetwork,
+            _ConvertHdMaterialNetwork2ToRman(param, id, _materialNetwork,
                                              &_materialId, &_displacementId);
         } else {
             TF_WARN("HdPrmanMaterial: Expected material resource "
                     "for <%s> to contain HdMaterialNodes, but "
                     "found %s instead.",
                     id.GetText(), hdMatVal.GetTypeName().c_str());
-            _ResetMaterial(context);
+            _ResetMaterial(param);
         }
     }
     *dirtyBits = HdChangeTracker::Clean;

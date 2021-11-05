@@ -22,14 +22,14 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "hdPrman/resourceRegistry.h"
-#include "hdPrman/interactiveContext.h"
+#include "hdPrman/interactiveRenderParam.h"
 #include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdPrman_ResourceRegistry::HdPrman_ResourceRegistry(
-    std::shared_ptr<HdPrman_InteractiveContext> const& context)
-    : _context(context)
+    std::shared_ptr<HdPrman_InteractiveRenderParam> const& renderParam)
+    : _renderParam(renderParam)
 {
 }
 
@@ -41,7 +41,7 @@ HdPrman_ResourceRegistry::ReloadResource(
     std::string const& path)
 {
     if (resourceType == HdResourceTypeTokens->texture) {
-        _context->InvalidateTexture(path);
+        _renderParam->InvalidateTexture(path);
     }
 }
 
