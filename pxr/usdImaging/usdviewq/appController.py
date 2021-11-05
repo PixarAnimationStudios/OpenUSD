@@ -1672,11 +1672,11 @@ class AppController(QtCore.QObject):
 
         try:
             import PyOpenColorIO as OCIO
-        except ImportError:
+        except ImportError as e:
             PrintWarning(
                 "Could not import PyOpenColorIO. OCIO may be configured via the"
                 "interpreter and will fallback to the default display, view "
-                "and color space.")
+                "and color space.", e)
             # NOTE: This only disallows population of the OCIO menu in usdview.
             # The OCIO plugin may be enabled, so we don't disable OCIO here.
             return
