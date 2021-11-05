@@ -313,9 +313,6 @@ HdPrman_InteractiveRenderPass::_Execute(
         _interactiveRenderParam->resolution[0] != renderBufferWidth ||
         _interactiveRenderParam->resolution[1] != renderBufferHeight;
 
-    const GfMatrix4d viewToWorldMatrix =
-        renderPassState->GetWorldToViewMatrix().GetInverse();
-
     if (camChanged ||
         resolutionChanged) {
 
@@ -374,14 +371,11 @@ HdPrman_InteractiveRenderPass::_Execute(
         // - World is Y-up
         // - Camera looks along +Z.
 
-        const GfMatrix4d proj =
-            renderPassState->GetProjectionMatrix();
-
-        const bool isPerspective =
-            round(proj[3][3]) != 1 || proj == GfMatrix4d(1);
+        const bool isOrthographic =
+            hdCam && hdCam->GetProjection() == HdCamera::Orthographic;
         riley::ShadingNode cameraNode = riley::ShadingNode {
             riley::ShadingNode::Type::k_Projection,
-            isPerspective ? us_PxrPerspective : us_PxrOrthographic,
+            isOrthographic ? us_PxrOrthographic : us_PxrPerspective,
             us_main_cam_projection,
             RtParamList()
         };
@@ -394,50 +388,11 @@ HdPrman_InteractiveRenderPass::_Execute(
             &cameraNode.params,
             GfVec2i(renderBufferWidth, renderBufferHeight));
 
-        // XXX Normally we would update RenderMan option 'ScreenWindow' to
-        // account for an orthographic camera,
-        //     options.SetFloatArray(RixStr.k_Ri_ScreenWindow, window, 4);
-        // But we cannot update this option in Renderman once it is running.
-        // We apply the orthographic-width to the viewMatrix scale instead.
-        // Inverse computation of GfFrustum::ComputeProjectionMatrix()
-        GfMatrix4d viewToWorldCorrectionMatrix(1.0);
-
-        if (!hdCam) {
-            // Note that the above cameraContext.SetCameraAndCameraNodeParams
-            // is not working when there is no valid camera.
-
-            // Implementing behaviors for old clients here.
-
-            if (!isPerspective) {
-                const double left   = -(1 + proj[3][0]) / proj[0][0];
-                const double right  =  (1 - proj[3][0]) / proj[0][0];
-                const double bottom = -(1 - proj[3][1]) / proj[1][1];
-                const double top    =  (1 + proj[3][1]) / proj[1][1];
-                const double w = (right-left) / 2;
-                const double h = (top-bottom) / 2;
-                viewToWorldCorrectionMatrix = GfMatrix4d(GfVec4d(w,h,1,1));
-            } else {
-                // Extract FOV from hydra projection matrix. More precisely,
-                // use the smaller value among the horizontal and vertical FOV.
-                //
-                // This seems to match the resolution API which uses the smaller
-                // value among width and height to match to the FOV.
-                // 
-                const float fov_rad =
-                    atan(1.0f / std::max(proj[0][0], proj[1][1])) * 2;
-                const float fov_deg =
-                    fov_rad / M_PI * 180.0;
-                cameraNode.params.SetFloat(RixStr.k_fov, fov_deg);
-            }
-        }
-
         // Riley camera xform is "move the camera", aka viewToWorld.
         // Convert right-handed Y-up camera space (USD, Hydra) to
         // left-handed Y-up (Prman) coordinates.  This just amounts to
         // flipping the Z axis.
-        GfMatrix4d flipZ(1.0);
-        flipZ[2][2] = -1.0;
-        viewToWorldCorrectionMatrix = flipZ * viewToWorldCorrectionMatrix;
+        static const GfMatrix4d flipZ(GfVec4d(1.0, 1.0, -1.0, 1.0));
 
         if (hdCam) {
             // Use time sampled transforms authored on the scene camera.
@@ -449,7 +404,7 @@ HdPrman_InteractiveRenderPass::_Execute(
             
             for (size_t i=0; i < xforms.count; ++i) {
                 xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(
-                    viewToWorldCorrectionMatrix * xforms.values[i]);
+                    flipZ * xforms.values[i]);
             }
 
             riley::Transform xform = { unsigned(xforms.count),
@@ -469,8 +424,9 @@ HdPrman_InteractiveRenderPass::_Execute(
                 riley->DeleteClippingPlane(id);
             }
             _clipPlanes.clear();
-            HdRenderPassState::ClipPlanesVector hdClipPlanes = 
-                renderPassState->GetClipPlanes();
+            
+            const std::vector<GfVec4d> &hdClipPlanes =
+                hdCam->GetClipPlanes();
             if (!hdClipPlanes.empty()) {
                 // Convert camera's object xform.
                 TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
@@ -511,24 +467,11 @@ HdPrman_InteractiveRenderPass::_Execute(
                             camXform, params));
                 }
             }
-        } else {
-            // Use the framing state as a single time sample.
-            float const zerotime = 0.0f;
-            RtMatrix4x4 matrix = HdPrman_GfMatrixToRtMatrix(
-                viewToWorldCorrectionMatrix * viewToWorldMatrix);
 
-            riley::Transform xform = {1, &matrix, &zerotime};
-
-            // Commit camera.
-            riley->ModifyCamera(
-                _interactiveRenderParam->cameraId, 
-                &cameraNode,
-                &xform, 
-                &camParams);
+            // Update the framebuffer Z scaling
+            _interactiveRenderParam->framebuffer.proj =
+                hdCam->GetProjectionMatrix();
         }
-
-        // Update the framebuffer Z scaling
-        _interactiveRenderParam->framebuffer.proj = proj;
     }    
     
     // We need to capture the value of sceneVersion here after all
