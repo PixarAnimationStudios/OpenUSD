@@ -565,7 +565,7 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
         }
     } else if (primType == HdPrimTypeTokens->camera) {
         if (_FindLocator(HdCameraSchema::GetDefaultLocator(), end, &it)) {
-            bits |= HdCamera::DirtyProjMatrix |
+            bits |=
                 HdCamera::DirtyWindowPolicy |
                 HdCamera::DirtyClipPlanes |
                 HdCamera::DirtyParams;
