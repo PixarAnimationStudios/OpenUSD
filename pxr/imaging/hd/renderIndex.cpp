@@ -1412,7 +1412,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
                     << ratioNonVarying * 100.0f << "% ("
                     << numNonVarying << " / "  << numDirtyRprims << ") \n";
 
-                TfDebug::Helper().Msg(ss.str().c_str());
+                TfDebug::Helper().Msg(ss.str());
             }
         }
     }

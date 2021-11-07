@@ -114,7 +114,7 @@ HdSt_DrawItemsCache::GetDrawItems(
             << collection << ", render tags " << renderTags << "\n";
         }
 
-        TfDebug::Helper().Msg(ss.str().c_str());
+        TfDebug::Helper().Msg(ss.str());
     }
     
     if (cacheMiss || staleEntry) {

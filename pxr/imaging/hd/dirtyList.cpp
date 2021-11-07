@@ -191,7 +191,7 @@ HdDirtyList::UpdateRenderTagsAndReprSelectors(
                 std::stringstream ss;
                 ss << "Resetting tracked reprs in dirty list from "
                    << _trackedReprs << " to " << reprs << "\n";
-                TfDebug::Helper().Msg(ss.str().c_str());
+                TfDebug::Helper().Msg(ss.str());
             }
             _trackedReprs = reprs;
             trackedReprsChanged = true;
