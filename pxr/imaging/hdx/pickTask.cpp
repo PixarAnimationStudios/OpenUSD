@@ -57,6 +57,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdxPickTokens, HDX_PICK_TOKENS);
 
+TF_DEFINE_PRIVATE_TOKENS(
+    HdxPickPrivateTokens,
+    (PickBuffer)
+    (PickBufferBinding)
+    (Picking)
+);
+
 static const int PICK_BUFFER_HEADER_SIZE = 4;
 static const int PICK_BUFFER_SUBBUFFER_CAPACITY = 32;
 
@@ -128,11 +135,11 @@ HdxPickTask::_InitIfNeeded()
                 _index->GetResourceRegistry());
 
         HdBufferSpecVector bufferSpecs { 
-            { TfToken("PickBuffer"), HdTupleType{ HdTypeInt32, 1 } } 
+            { HdxPickPrivateTokens->PickBuffer, HdTupleType{ HdTypeInt32, 1 } }
         };
 
         _pickBuffer = hdStResourceRegistry->AllocateSingleBufferArrayRange(
-                        TfToken("Picking"), 
+                        HdxPickPrivateTokens->Picking, 
                         bufferSpecs, 
                         HdBufferArrayUsageHint());
     }
@@ -534,8 +541,13 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
             state->SetStencilEnabled(false);
         }
 
+        // disable depth write for the main pass when resolving 'deep'
+        bool enableDepthWrite =
+            (state == _occluderRenderPassState) ||
+            (_contextParams.resolveMode != HdxPickTokens->resolveDeep);
+
         state->SetEnableDepthTest(true);
-        state->SetEnableDepthMask(true);
+        state->SetEnableDepthMask(enableDepthWrite);
         state->SetDepthFunc(HdCmpFuncLEqual);
 
         // Make sure translucent pixels can be picked by not discarding them
@@ -637,12 +649,13 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
             renderPassShader->AddBufferBinding(
                 HdBindingRequest(
                     HdBinding::SSBO,
-                    TfToken("PickBufferBinding"), 
+                    HdxPickPrivateTokens->PickBufferBinding, 
                     _pickBuffer, 
                     false));
         }
         else {
-            renderPassShader->RemoveBufferBinding(TfToken("PickBufferBinding"));
+            renderPassShader->RemoveBufferBinding(
+                HdxPickPrivateTokens->PickBufferBinding);
         }
     }
 }
@@ -666,7 +679,7 @@ HdxPickTask::Execute(HdTaskContext* ctx)
             _widgetDepthStencilBuffer.get());
     }
 
-    // Initialize pick buffer if needed
+    // Initialize pick buffer
     if (_pickBuffer) {
         VtIntArray pickBufferInit;
         if (_contextParams.resolveMode == HdxPickTokens->resolveDeep)
@@ -695,7 +708,7 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 
         HdBufferSourceSharedPtr bufferSource = 
             std::make_shared<HdVtBufferSource>(
-                TfToken("PickBuffer"),
+                HdxPickPrivateTokens->PickBuffer,
                 VtValue(pickBufferInit));
 
         _pickBuffer->CopyData(bufferSource);
@@ -852,7 +865,7 @@ void HdxPickTask::ResolveDeep()
         return;
     }
 
-    VtValue pickData = _pickBuffer->ReadData(TfToken("PickBuffer"));
+    VtValue pickData = _pickBuffer->ReadData(HdxPickPrivateTokens->PickBuffer);
     if (pickData.IsEmpty()) {
         return;
     }
