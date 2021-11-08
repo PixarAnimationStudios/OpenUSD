@@ -212,6 +212,13 @@ public:
         return _inertiaTensor;
     }
 
+    /// Set inertia tensor
+    /// \p inTensor New inertia tensor.
+    void SetInertiaTensor(const GfMatrix3f& inTensor)
+    {
+        _inertiaTensor = inTensor;
+    }
+
     /// Get center of mass
     /// \return Center of mass
     const GfVec3f& GetCenterOfMass() const
@@ -225,6 +232,13 @@ public:
     {
         return _mass;
     }
+
+    /// Set mass    
+    /// \p inMass New mass.
+    void SetMass(float inMass)
+    {
+        _mass = inMass;
+    }    
 
 private:
     GfMatrix3f _inertiaTensor; //!< The inertia tensor of the object.

@@ -118,6 +118,9 @@ class "PhysicsRigidBodyAPI"
 (
     customData = {
         string className = "RigidBodyAPI"
+        string extraIncludes = """
+#include "pxr/base/gf/matrix3f.h"
+#include "pxr/base/gf/quatf.h" """
     }
     doc = """Applies physics body attributes to any UsdGeomXformable prim and
     marks that prim to be driven by a simulation. If a simulation is running
