@@ -169,6 +169,10 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     pointIdOut = IntToVec4(GetPointId());
     
     neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
+
+    // if the pick buffer is not initialized, we are done 
+    if (PickBuffer[0] == 0)
+        return;
 	
     // fill in pick buffer
     const int numSubBuffers = PickBuffer[0];

@@ -146,6 +146,7 @@ struct HdxPickTaskContextParams
 
     HdxPickTaskContextParams()
         : resolution(128, 128)
+        , maxNumDeepEntries(32000)
         , pickTarget(HdxPickTokens->pickPrimsAndInstances)
         , resolveMode(HdxPickTokens->resolveNearestToCamera)
         , doUnpickablesOcclude(false)
@@ -158,6 +159,7 @@ struct HdxPickTaskContextParams
     {}
 
     GfVec2i resolution;
+    int maxNumDeepEntries;
     TfToken pickTarget;
     TfToken resolveMode;
     bool doUnpickablesOcclude;
@@ -230,6 +232,8 @@ private:
             HdxPickTaskContextParams::DepthMaskCallback maskCallback);
 
     bool _UseOcclusionPass() const;
+
+    void ResolveDeep();
 
     // Create a shared render pass each for pickables and unpickables
     HdRenderPassSharedPtr _pickableRenderPass;
