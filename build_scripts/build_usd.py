@@ -684,12 +684,17 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 ############################################################
 # boost
 
+# At Autodesk our Jenkins VM Mac builds have trouble downloading (using curl) this file.
+# Therefore we have temporarily placed it in Artifactory and download from there.
+
 if MacOS():
-    BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
+    #BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
+    BOOST_URL = "https://art-bobcat.autodesk.com:443/artifactory/oss-prd-generic/boost/1.70/boost_1_70_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
 elif Linux():
     if Python3():
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
+        #BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
+        BOOST_URL = "https://art-bobcat.autodesk.com:443/artifactory/oss-prd-generic/boost/1.70/boost_1_70_0.tar.gz"
     else:
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.66.0/source/boost_1_66_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost/version.hpp"
@@ -701,7 +706,8 @@ elif Windows():
     #
     # boost 1.70 is required for Visual Studio 2019. For simplicity, we use
     # this version for all older Visual Studio versions as well.
-    BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
+    #BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
+    BOOST_URL = "https://art-bobcat.autodesk.com:443/artifactory/oss-prd-generic/boost/1.70/boost_1_70_0.tar.gz"
     BOOST_VERSION_FILE = "include/boost-1_70/boost/version.hpp"
 
 def InstallBoost_Helper(context, force, buildArgs):
