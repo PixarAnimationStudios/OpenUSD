@@ -137,6 +137,17 @@ vec4 IntToVec4(int id)
                 ((id >> 24) & 0xff) / 255.0);
 }
 
+bool compareOrSet(const int valueOffset, const int primId)
+{
+    int bufferValue = PickBuffer[valueOffset];
+    if (bufferValue == -9)
+    {
+        bufferValue = atomicCompSwap(PickBuffer[valueOffset], -9, primId);
+    }
+
+    return (bufferValue == primId) || (bufferValue == -9);
+}
+
 // Fwd declare necessary methods to determine the subprim id of a fragment.
 int GetElementID(); // generated via codeGen
 int GetPrimitiveEdgeId(); // defined in edgeId.glslfx, or generated via codeGen
@@ -160,40 +171,34 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
 	
     // fill in pick buffer
-    const int entrySize = 2;
-    const int bufferSize = PickBuffer[0];
-    const int hashTableSize = PickBuffer[1];
-    const int hashTableOffset = PickBuffer[2];
-    const int entryHash = primId % hashTableSize;
-    int linkOffset = hashTableOffset + entryHash;
+    const int numSubBuffers = PickBuffer[0];
+    const int subBufferSize = PickBuffer[1];
+    const int tableOffset = PickBuffer[2];
+    const int bufferOffset = PickBuffer[3];
 
-    bool shouldContinue = true;
+    const int subBufferNumber = primId % numSubBuffers;
+    const int sizeOffset = tableOffset + subBufferNumber;
+    const int subBufferOffset = bufferOffset + subBufferNumber * subBufferSize;
+
+    int entryNumber = 0;
+    bool keepMoving = true;
     do
     {
-        int entryOffset = PickBuffer[linkOffset];
-        if (entryOffset == -1)
+        if (entryNumber == PickBuffer[sizeOffset])
         {
-            entryOffset = atomicAdd(PickBuffer[3], entrySize);
-            if (entryOffset + entrySize <= bufferSize)
-            {
-                atomicExchange(PickBuffer[entryOffset], primId);
-                atomicExchange(PickBuffer[entryOffset + 1], -1);
-
-                atomicCompSwap(PickBuffer[linkOffset], -1, entryOffset);
-            }
-
-            shouldContinue = false;
+            atomicCompSwap(PickBuffer[sizeOffset], entryNumber, entryNumber + 1);
         }
-        else if (primId == PickBuffer[entryOffset])
+
+        if (compareOrSet(subBufferOffset + entryNumber, primId))
         {
-           shouldContinue = false;
+            keepMoving = false;
         }
-        else
+        else if(++entryNumber == subBufferSize)
         {
-            linkOffset = entryOffset + 1; 
+            keepMoving = false;
         }
     }
-    while(shouldContinue);
+    while(keepMoving);
 }
 
 -- glsl HdxRenderPass.RenderColorAndSelection

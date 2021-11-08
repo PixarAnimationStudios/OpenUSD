@@ -119,18 +119,14 @@ HdxPickTask::_InitIfNeeded(GfVec2i const& size)
 
     // Resize pick buffer if needed
     if (_pickBuffer) {        
-        // the size of one buffer entry (in 32-bit integers)
-        int entrySize = 4;
+        int headerSize = 4;
+        int maxNumEntries = 32000;
+        int subBufferSize = 32;
+        int numSubBuffers = maxNumEntries / subBufferSize;
+        int totalSize = headerSize + numSubBuffers + (numSubBuffers * subBufferSize);
 
-        // heuristically assume that we may need to store up to 4 hits
-        // for each pixel
-        int numDeepHits = 4;
-
-        // total number of elements for the buffer
-        int numElements = size[0] * size[1] * numDeepHits * entrySize;
-
-        if (_pickBuffer->GetNumElements() != numElements) {
-            _pickBuffer->Resize(numElements);
+        if (_pickBuffer->GetNumElements() != totalSize) {
+            _pickBuffer->Resize(totalSize);
         }
     }
 
@@ -470,15 +466,20 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 
     //
     int headerSize = 4;
-    int hashTableSize = 10;
+    int maxNumEntries = 32000;
+    int subBufferSize = 32;
+    int numSubBuffers = maxNumEntries / subBufferSize;
+    int totalBufferSize = numSubBuffers * subBufferSize;
     if (_pickBuffer) {
         VtIntArray pickBufferInit;
-        pickBufferInit.push_back(_pickBuffer->GetNumElements());
-        pickBufferInit.push_back(hashTableSize);                
-        pickBufferInit.push_back(headerSize);                   
-        pickBufferInit.push_back(headerSize + hashTableSize); // first entry offset
-        for (int j = 0; j < hashTableSize; ++j) 
-            pickBufferInit.push_back(-1);
+        pickBufferInit.push_back(numSubBuffers);
+        pickBufferInit.push_back(subBufferSize);
+        pickBufferInit.push_back(headerSize);
+        pickBufferInit.push_back(headerSize + numSubBuffers);
+        for (int j = 0; j < numSubBuffers; ++j)
+            pickBufferInit.push_back(0);
+        for (int j = 0; j < totalBufferSize; ++j)
+            pickBufferInit.push_back(-9);
         HdBufferSourceSharedPtr pickSource = std::make_shared<HdVtBufferSource>(
             TfToken("PickBuffer"),
             VtValue(pickBufferInit));
@@ -516,43 +517,49 @@ HdxPickTask::Execute(HdTaskContext* ctx)
         {
             const auto& data = pickData.Get<VtIntArray>();
 
-            int endOffset = std::min<int>(data[0], data[3]);
-            for (int j = headerSize + hashTableSize; j + 2 <= endOffset; j += 2)
+            for (int subBuffer = 0; subBuffer < numSubBuffers; ++subBuffer)
             {
-                HdxPickHit hit;
+                const int sizeOffset = data[2] + subBuffer;
+                const int numEntries = data[sizeOffset];
+                const int subBufferOffset = data[3] + subBuffer * subBufferSize;
 
-                int primId = data[j];
-                hit.objectId = _index->GetRprimPathFromPrimId(primId);
+                for (int j = 0; j < numEntries; ++j)
+                {
+                    HdxPickHit hit;
 
-                if (!hit.IsValid()) {
-                    continue;
+                    int primId = data[subBufferOffset + j];
+                    hit.objectId = _index->GetRprimPathFromPrimId(primId);
+
+                    if (!hit.IsValid()) {
+                        continue;
+                    }
+
+                    bool rprimValid = _index->GetSceneDelegateAndInstancerIds(hit.objectId,
+                        &(hit.delegateId),
+                        &(hit.instancerId));
+
+                    if (!TF_VERIFY(rprimValid, "%s\n", hit.objectId.GetText())) {
+                        continue;
+                    }
+
+                    // Calculate the hit location in NDC, then transform to worldspace.
+                    hit.worldSpaceHitPoint = GfVec3f(0.f, 0.f, 0.f);
+                    hit.worldSpaceHitNormal = GfVec3f(0.f, 0.f, 0.f);
+                    hit.normalizedDepth = 0.f;
+
+                    hit.instanceIndex = -1;
+                    hit.elementIndex = -1;
+                    hit.edgeIndex = -1;
+                    hit.pointIndex = -1;
+
+                    _contextParams.outHits->push_back(hit);
+
+                    if (_contextParams.resolveMode ==
+                        HdxPickTokens->resolveNearestToCenter ||
+                        _contextParams.resolveMode ==
+                        HdxPickTokens->resolveNearestToCamera)
+                        return;
                 }
-
-                bool rprimValid = _index->GetSceneDelegateAndInstancerIds(hit.objectId,
-                    &(hit.delegateId),
-                    &(hit.instancerId));
-
-                if (!TF_VERIFY(rprimValid, "%s\n", hit.objectId.GetText())) {
-                    continue;
-                }
-
-                // Calculate the hit location in NDC, then transform to worldspace.
-                hit.worldSpaceHitPoint = GfVec3f(0.f, 0.f, 0.f);
-                hit.worldSpaceHitNormal = GfVec3f(0.f, 0.f, 0.f);
-                hit.normalizedDepth = 0.f;
-
-                hit.instanceIndex = -1;
-                hit.elementIndex = -1;
-                hit.edgeIndex = -1;
-                hit.pointIndex = -1;
-                
-                _contextParams.outHits->push_back(hit);
-
-                if (_contextParams.resolveMode ==
-                    HdxPickTokens->resolveNearestToCenter ||
-                    _contextParams.resolveMode ==
-                    HdxPickTokens->resolveNearestToCamera)
-                    return;
             }
 
             return;
