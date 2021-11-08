@@ -57,6 +57,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdxPickTokens, HDX_PICK_TOKENS);
 
+static const int PICK_BUFFER_HEADER_SIZE = 4;
+static const int PICK_BUFFER_SUBBUFFER_CAPACITY = 32;
+
 static HdRenderPassStateSharedPtr
 _InitIdRenderPassState(HdRenderIndex *index)
 {
@@ -136,14 +139,14 @@ HdxPickTask::_InitIfNeeded()
 
     // Resize pick buffer if needed
     if (_pickBuffer) {        
-        int headerSize = 4;
-        int maxNumEntries = 32000;
-        int subBufferSize = 32;
-        int numSubBuffers = maxNumEntries / subBufferSize;
-        int totalSize = headerSize + numSubBuffers + (numSubBuffers * subBufferSize);
+        const int numSubBuffers = 
+            _contextParams.maxNumDeepEntries / PICK_BUFFER_SUBBUFFER_CAPACITY;
+        const int bufferTotalSize = 
+            PICK_BUFFER_HEADER_SIZE + numSubBuffers + 
+            (numSubBuffers * PICK_BUFFER_SUBBUFFER_CAPACITY);
 
-        if (_pickBuffer->GetNumElements() != totalSize) {
-            _pickBuffer->Resize(totalSize);
+        if (_pickBuffer->GetNumElements() != bufferTotalSize) {
+            _pickBuffer->Resize(bufferTotalSize);
         }
     }
 
@@ -663,27 +666,39 @@ HdxPickTask::Execute(HdTaskContext* ctx)
             _widgetDepthStencilBuffer.get());
     }
 
-    //
-    int headerSize = 4;
-    int maxNumEntries = 32000;
-    int subBufferSize = 32;
-    int numSubBuffers = maxNumEntries / subBufferSize;
-    int totalBufferSize = numSubBuffers * subBufferSize;
+    // Initialize pick buffer if needed
     if (_pickBuffer) {
         VtIntArray pickBufferInit;
-        pickBufferInit.push_back(numSubBuffers);
-        pickBufferInit.push_back(subBufferSize);
-        pickBufferInit.push_back(headerSize);
-        pickBufferInit.push_back(headerSize + numSubBuffers);
-        for (int j = 0; j < numSubBuffers; ++j)
-            pickBufferInit.push_back(0);
-        for (int j = 0; j < totalBufferSize; ++j)
-            pickBufferInit.push_back(-9);
-        HdBufferSourceSharedPtr pickSource = std::make_shared<HdVtBufferSource>(
-            TfToken("PickBuffer"),
-            VtValue(pickBufferInit));
+        if (_contextParams.resolveMode == HdxPickTokens->resolveDeep)
+        {
+            const int numSubBuffers =
+                _contextParams.maxNumDeepEntries / PICK_BUFFER_SUBBUFFER_CAPACITY;
+            const int entryStorageOffset =
+                PICK_BUFFER_HEADER_SIZE + numSubBuffers;
+            const int entryStorageSize =
+                numSubBuffers * PICK_BUFFER_SUBBUFFER_CAPACITY;
 
-        _pickBuffer->CopyData(pickSource);
+            pickBufferInit.reserve(entryStorageOffset + entryStorageSize);
+            pickBufferInit.push_back(numSubBuffers);
+            pickBufferInit.push_back(PICK_BUFFER_SUBBUFFER_CAPACITY);
+            pickBufferInit.push_back(PICK_BUFFER_HEADER_SIZE);
+            pickBufferInit.push_back(entryStorageOffset);
+            for (int j = 0; j < numSubBuffers; ++j)
+                pickBufferInit.push_back(0);
+            for (int j = 0; j < entryStorageSize; ++j)
+                pickBufferInit.push_back(-9);
+        }
+        else
+        {
+            pickBufferInit.push_back(0);
+        }
+
+        HdBufferSourceSharedPtr bufferSource = 
+            std::make_shared<HdVtBufferSource>(
+                TfToken("PickBuffer"),
+                VtValue(pickBufferInit));
+
+        _pickBuffer->CopyData(bufferSource);
 
         HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
             std::dynamic_pointer_cast<HdStResourceRegistry>(
@@ -719,59 +734,10 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 
     GLF_POST_PENDING_GL_ERRORS();
 
-    if (_pickBuffer) {
-        VtValue pickData = _pickBuffer->ReadData(TfToken("PickBuffer"));
-        if (!pickData.IsEmpty())
-        {
-            const auto& data = pickData.Get<VtIntArray>();
-
-            for (int subBuffer = 0; subBuffer < numSubBuffers; ++subBuffer)
-            {
-                const int sizeOffset = data[2] + subBuffer;
-                const int numEntries = data[sizeOffset];
-                const int subBufferOffset = data[3] + subBuffer * subBufferSize;
-
-                for (int j = 0; j < numEntries; ++j)
-                {
-                    HdxPickHit hit;
-
-                    int primId = data[subBufferOffset + j];
-                    hit.objectId = _index->GetRprimPathFromPrimId(primId);
-
-                    if (!hit.IsValid()) {
-                        continue;
-                    }
-
-                    bool rprimValid = _index->GetSceneDelegateAndInstancerIds(hit.objectId,
-                        &(hit.delegateId),
-                        &(hit.instancerId));
-
-                    if (!TF_VERIFY(rprimValid, "%s\n", hit.objectId.GetText())) {
-                        continue;
-                    }
-
-                    // Calculate the hit location in NDC, then transform to worldspace.
-                    hit.worldSpaceHitPoint = GfVec3f(0.f, 0.f, 0.f);
-                    hit.worldSpaceHitNormal = GfVec3f(0.f, 0.f, 0.f);
-                    hit.normalizedDepth = 0.f;
-
-                    hit.instanceIndex = -1;
-                    hit.elementIndex = -1;
-                    hit.edgeIndex = -1;
-                    hit.pointIndex = -1;
-
-                    _contextParams.outHits->push_back(hit);
-
-                    if (_contextParams.resolveMode ==
-                        HdxPickTokens->resolveNearestToCenter ||
-                        _contextParams.resolveMode ==
-                        HdxPickTokens->resolveNearestToCamera)
-                        return;
-                }
-            }
-
-            return;
-        }
+    // For 'resolveDeep' mode, read hits from the pick buffer.
+    if (_contextParams.resolveMode == HdxPickTokens->resolveDeep) {
+        ResolveDeep();
+        return;
     }
 
     // Capture the result buffers.
@@ -877,6 +843,65 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     } else {
         TF_CODING_ERROR("Unrecognized interesection mode '%s'",
             _contextParams.resolveMode.GetText());
+    }
+}
+
+void HdxPickTask::ResolveDeep()
+{
+    if (!_pickBuffer) {
+        return;
+    }
+
+    VtValue pickData = _pickBuffer->ReadData(TfToken("PickBuffer"));
+    if (pickData.IsEmpty()) {
+        return;
+    }
+
+    const auto& data = pickData.Get<VtIntArray>();
+
+    const int numSubBuffers =
+        _contextParams.maxNumDeepEntries / PICK_BUFFER_SUBBUFFER_CAPACITY;
+    const int entryStorageOffset =
+        PICK_BUFFER_HEADER_SIZE + numSubBuffers;
+
+    for (int subBuffer = 0; subBuffer < numSubBuffers; ++subBuffer)
+    {
+        const int sizeOffset = PICK_BUFFER_HEADER_SIZE + subBuffer;
+        const int numEntries = data[sizeOffset];
+        const int subBufferOffset =
+            entryStorageOffset + subBuffer * PICK_BUFFER_SUBBUFFER_CAPACITY;
+
+        for (int j = 0; j < numEntries; ++j)
+        {
+            HdxPickHit hit;
+
+            int primId = data[subBufferOffset + j];
+            hit.objectId = _index->GetRprimPathFromPrimId(primId);
+
+            if (!hit.IsValid()) {
+                continue;
+            }
+
+            bool rprimValid = _index->GetSceneDelegateAndInstancerIds(hit.objectId,
+                &(hit.delegateId),
+                &(hit.instancerId));
+
+            if (!TF_VERIFY(rprimValid, "%s\n", hit.objectId.GetText())) {
+                continue;
+            }
+
+            // Calculate the hit location in NDC, then transform to worldspace.
+            hit.worldSpaceHitPoint = GfVec3f(0.f, 0.f, 0.f);
+            hit.worldSpaceHitNormal = GfVec3f(0.f, 0.f, 0.f);
+            hit.normalizedDepth = 0.f;
+
+            hit.instanceIndex = -1;
+            hit.elementIndex = -1;
+            hit.edgeIndex = -1;
+            hit.pointIndex = -1;
+
+            _contextParams.outHits->push_back(hit);
+        }
     }
 }
 

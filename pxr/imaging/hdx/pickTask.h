@@ -150,6 +150,7 @@ struct HdxPickTaskContextParams
 
     HdxPickTaskContextParams()
         : resolution(128, 128)
+        , maxNumDeepEntries(32000)
         , pickTarget(HdxPickTokens->pickPrimsAndInstances)
         , resolveMode(HdxPickTokens->resolveNearestToCamera)
         , doUnpickablesOcclude(false)
@@ -162,6 +163,7 @@ struct HdxPickTaskContextParams
     {}
 
     GfVec2i resolution;
+    int maxNumDeepEntries;
     TfToken pickTarget;
     TfToken resolveMode;
     bool doUnpickablesOcclude;
@@ -243,6 +245,8 @@ private:
     bool _UseOcclusionPass() const;
     bool _UseWidgetPass() const;
 
+    void ResolveDeep();
+    
     template<typename T>
     HdStTextureUtils::AlignedBuffer<T>
     _ReadAovBuffer(TfToken const & aovName) const;
