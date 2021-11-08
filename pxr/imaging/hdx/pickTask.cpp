@@ -381,6 +381,27 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
         _occluderRenderPassState->Prepare(renderIndex->GetResourceRegistry());
     }
     _pickableRenderPassState->Prepare(renderIndex->GetResourceRegistry());
+
+    // Prepare pick buffer binding
+    HdStRenderPassState* extendedState =
+        dynamic_cast<HdStRenderPassState*>(_pickableRenderPassState.get());
+
+    HdStRenderPassShaderSharedPtr renderPassShader = 
+        extendedState ? extendedState->GetRenderPassShader() : nullptr;
+
+    if (renderPassShader) {
+        if (_pickBuffer) {
+            renderPassShader->AddBufferBinding(
+                HdBindingRequest(
+                    HdBinding::SSBO,
+                    TfToken("PickBufferBinding"), 
+                    _pickBuffer, 
+                    false));
+        }
+        else {
+            renderPassShader->RemoveBufferBinding(TfToken("PickBufferBinding"));
+        }
+    }
 }
 
 void
@@ -450,37 +471,24 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     //
     int headerSize = 4;
     int hashTableSize = 10;
-    if (HdStRenderPassState* extendedState =
-        dynamic_cast<HdStRenderPassState*>(_pickableRenderPassState.get())) {
-        HdStRenderPassShaderSharedPtr renderPassShader
-            = extendedState->GetRenderPassShader();
+    if (_pickBuffer) {
+        VtIntArray pickBufferInit;
+        pickBufferInit.push_back(_pickBuffer->GetNumElements());
+        pickBufferInit.push_back(hashTableSize);                
+        pickBufferInit.push_back(headerSize);                   
+        pickBufferInit.push_back(headerSize + hashTableSize); // first entry offset
+        for (int j = 0; j < hashTableSize; ++j) 
+            pickBufferInit.push_back(-1);
+        HdBufferSourceSharedPtr pickSource = std::make_shared<HdVtBufferSource>(
+            TfToken("PickBuffer"),
+            VtValue(pickBufferInit));
 
-        if (_pickBuffer) {
-            VtIntArray pickBufferInit;
-            pickBufferInit.push_back(_pickBuffer->GetNumElements());
-            pickBufferInit.push_back(hashTableSize);                
-            pickBufferInit.push_back(headerSize);                   
-            pickBufferInit.push_back(headerSize + hashTableSize); // first entry offset
-            for (int j = 0; j < hashTableSize; ++j) 
-                pickBufferInit.push_back(-1);
-            HdBufferSourceSharedPtr pickSource = std::make_shared<HdVtBufferSource>(
-                TfToken("PickBuffer"),
-                VtValue(pickBufferInit));
+        _pickBuffer->CopyData(pickSource);
 
-            _pickBuffer->CopyData(pickSource);
-
-            HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
-                std::dynamic_pointer_cast<HdStResourceRegistry>(
-                    _index->GetResourceRegistry());
-            hdStResourceRegistry->SubmitBlitWork();
-
-            renderPassShader->AddBufferBinding(
-                HdBindingRequest(HdBinding::SSBO,
-                    TfToken("PickBufferBinding"), _pickBuffer, false));
-        }
-        else {
-            renderPassShader->RemoveBufferBinding(TfToken("PickBufferBinding"));
-        }
+        HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
+            std::dynamic_pointer_cast<HdStResourceRegistry>(
+                _index->GetResourceRegistry());
+        hdStResourceRegistry->SubmitBlitWork();
     }
 
     if (_UseOcclusionPass()) {
