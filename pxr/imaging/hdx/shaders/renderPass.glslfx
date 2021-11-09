@@ -137,15 +137,67 @@ vec4 IntToVec4(int id)
                 ((id >> 24) & 0xff) / 255.0);
 }
 
-bool compareOrSet(const int valueOffset, const int primId)
+int fnv1Hash(int key, int offset)
 {
-    int bufferValue = PickBuffer[valueOffset];
-    if (bufferValue == -9)
-    {
-        bufferValue = atomicCompSwap(PickBuffer[valueOffset], -9, primId);
+    const int prime = 16777619;
+
+    int ret = offset;
+	
+    int b0 = (key & 255);
+    int b1 = (key & 65280) >> 8;
+    int b2 = (key & 16711680) >> 16;
+    int b3 = (key & -2130706432) >> 24;
+
+    ret *= prime;
+    ret ^= b0;
+    ret *= prime;
+    ret ^= b1;
+    ret *= prime;
+    ret ^= b2;
+    ret *= prime;
+    ret ^= b3;
+
+    return ret;
+}
+
+bool 
+compareOrSet(
+    const int valueOffset, 
+    const int primId, 
+    const int instanceId, 
+    const int partId)
+{
+    // compare/set primId
+    int primIdOffset = valueOffset;
+    int primIdValue = PickBuffer[primIdOffset];
+    if (primIdValue == -9) {
+        primIdValue = atomicCompSwap(PickBuffer[primIdOffset], -9, primId);
+    }
+    if ((primIdValue != primId) && (primIdValue != -9)) {
+        return false;
     }
 
-    return (bufferValue == primId) || (bufferValue == -9);
+    // compare/set instanceId
+    int instanceIdOffset = valueOffset + 1;
+    int instanceIdValue = PickBuffer[instanceIdOffset];
+    if (instanceIdValue == -9) {
+        instanceIdValue = atomicCompSwap(PickBuffer[instanceIdOffset], -9, instanceId);
+    }
+    if ((instanceIdValue != instanceId) && (instanceIdValue != -9)) {
+        return false;
+    }
+
+    // compare/set partId
+    int partIdOffset = valueOffset + 2;
+    int partIdValue = PickBuffer[partIdOffset];
+    if (partIdValue == -9) {
+        partIdValue = atomicCompSwap(PickBuffer[partIdOffset], -9, partId);
+    }
+    if ((partIdValue != partId) && (partIdValue != -9)) {
+        return false;
+    }
+
+    return true;
 }
 
 // Fwd declare necessary methods to determine the subprim id of a fragment.
@@ -164,9 +216,13 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     int instanceId = GetDrawingCoord().instanceIndex[0];
     instanceIdOut = IntToVec4(instanceId);
 
-    elementIdOut = IntToVec4(GetElementID());
-    edgeIdOut = IntToVec4(GetPrimitiveEdgeId());
-    pointIdOut = IntToVec4(GetPointId());
+    int elementId = GetElementID();
+    int edgeId = GetPrimitiveEdgeId();
+    int pointId = GetPointId();
+
+    elementIdOut = IntToVec4(elementId);
+    edgeIdOut = IntToVec4(edgeId);
+    pointIdOut = IntToVec4(pointId);
     
     neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
 
@@ -175,14 +231,24 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         return;
 	
     // fill in pick buffer
+    const int entrySize = 3;
     const int numSubBuffers = PickBuffer[0];
-    const int subBufferSize = PickBuffer[1];
+    const int subBufferCapacity = PickBuffer[1];
     const int tableOffset = PickBuffer[2];
-    const int bufferOffset = PickBuffer[3];
+    const int storageOffset = PickBuffer[3];
+    const int partId =  PickBuffer[4] * elementId + 
+                        PickBuffer[5] * edgeId +
+                        PickBuffer[6] * pointId;
 
-    const int subBufferNumber = primId % numSubBuffers;
+    const int fnv1Seed = -2128831035;
+    int fnv1Value = fnv1Hash(primId, fnv1Seed);
+    fnv1Value = fnv1Hash(instanceId, fnv1Value);
+    fnv1Value = fnv1Hash(partId, fnv1Value);
+
+    const int subBufferNumber = fnv1Value % numSubBuffers;
     const int sizeOffset = tableOffset + subBufferNumber;
-    const int subBufferOffset = bufferOffset + subBufferNumber * subBufferSize;
+    const int subBufferOffset = storageOffset + 
+                subBufferNumber * subBufferCapacity * entrySize;
 
     int entryNumber = 0;
     bool keepMoving = true;
@@ -193,11 +259,13 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
             atomicCompSwap(PickBuffer[sizeOffset], entryNumber, entryNumber + 1);
         }
 
-        if (compareOrSet(subBufferOffset + entryNumber, primId))
+        if (compareOrSet(
+                subBufferOffset + entryNumber * entrySize, 
+                primId, instanceId, partId))
         {
             keepMoving = false;
         }
-        else if(++entryNumber == subBufferSize)
+        else if(++entryNumber == subBufferCapacity)
         {
             keepMoving = false;
         }

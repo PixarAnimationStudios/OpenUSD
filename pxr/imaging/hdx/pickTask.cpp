@@ -61,8 +61,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (Picking)
 );
 
-static const int PICK_BUFFER_HEADER_SIZE = 4;
+static const int PICK_BUFFER_HEADER_SIZE = 8;
 static const int PICK_BUFFER_SUBBUFFER_CAPACITY = 32;
+static const int PICK_BUFFER_ENTRY_SIZE = 3;
 
 static HdRenderPassStateSharedPtr
 _InitIdRenderPassState(HdRenderIndex *index)
@@ -133,7 +134,7 @@ HdxPickTask::_InitIfNeeded(GfVec2i const& size)
             _contextParams.maxNumDeepEntries / PICK_BUFFER_SUBBUFFER_CAPACITY;
         const int bufferTotalSize = 
             PICK_BUFFER_HEADER_SIZE + numSubBuffers + 
-            (numSubBuffers * PICK_BUFFER_SUBBUFFER_CAPACITY);
+            (numSubBuffers * PICK_BUFFER_SUBBUFFER_CAPACITY * PICK_BUFFER_ENTRY_SIZE);
 
         if (_pickBuffer->GetNumElements() != bufferTotalSize) {
             _pickBuffer->Resize(bufferTotalSize);
@@ -490,15 +491,26 @@ HdxPickTask::Execute(HdTaskContext* ctx)
             const int entryStorageOffset =
                 PICK_BUFFER_HEADER_SIZE + numSubBuffers;
             const int entryStorageSize =
-                numSubBuffers * PICK_BUFFER_SUBBUFFER_CAPACITY;
+                numSubBuffers * PICK_BUFFER_SUBBUFFER_CAPACITY * PICK_BUFFER_ENTRY_SIZE;
 
             pickBufferInit.reserve(entryStorageOffset + entryStorageSize);
+
             pickBufferInit.push_back(numSubBuffers);
             pickBufferInit.push_back(PICK_BUFFER_SUBBUFFER_CAPACITY);
             pickBufferInit.push_back(PICK_BUFFER_HEADER_SIZE);
             pickBufferInit.push_back(entryStorageOffset);
+            
+            pickBufferInit.push_back(
+                _contextParams.pickTarget == HdxPickTokens->pickFaces ? 1 : 0);
+            pickBufferInit.push_back(
+                _contextParams.pickTarget == HdxPickTokens->pickEdges ? 1 : 0);
+            pickBufferInit.push_back(
+                _contextParams.pickTarget == HdxPickTokens->pickPoints ? 1 : 0);
+            pickBufferInit.push_back(0);
+            
             for (int j = 0; j < numSubBuffers; ++j)
                 pickBufferInit.push_back(0);
+            
             for (int j = 0; j < entryStorageSize; ++j)
                 pickBufferInit.push_back(-9);
         }
@@ -646,13 +658,16 @@ void HdxPickTask::ResolveDeep()
         const int sizeOffset = PICK_BUFFER_HEADER_SIZE + subBuffer;
         const int numEntries = data[sizeOffset];
         const int subBufferOffset =
-            entryStorageOffset + subBuffer * PICK_BUFFER_SUBBUFFER_CAPACITY;
+            entryStorageOffset + 
+            subBuffer * PICK_BUFFER_SUBBUFFER_CAPACITY * PICK_BUFFER_ENTRY_SIZE;
 
         for (int j = 0; j < numEntries; ++j)
         {
+            int entryOffset = subBufferOffset + (j * PICK_BUFFER_ENTRY_SIZE);
+
             HdxPickHit hit;
 
-            int primId = data[subBufferOffset + j];
+            int primId = data[entryOffset];
             hit.objectId = _index->GetRprimPathFromPrimId(primId);
 
             if (!hit.IsValid()) {
@@ -667,15 +682,22 @@ void HdxPickTask::ResolveDeep()
                 continue;
             }
 
-            // Calculate the hit location in NDC, then transform to worldspace.
+            int partIndex = data[entryOffset + 2];
+            hit.instanceIndex = data[entryOffset + 1];
+            hit.elementIndex = 
+                _contextParams.pickTarget == HdxPickTokens->pickFaces ? 
+                partIndex : -1;
+            hit.edgeIndex =
+                _contextParams.pickTarget == HdxPickTokens->pickEdges ?
+                partIndex : -1;
+            hit.pointIndex = 
+                _contextParams.pickTarget == HdxPickTokens->pickPoints ?
+                partIndex : -1;
+
+            // the following data is skipped in deep selection
             hit.worldSpaceHitPoint = GfVec3f(0.f, 0.f, 0.f);
             hit.worldSpaceHitNormal = GfVec3f(0.f, 0.f, 0.f);
             hit.normalizedDepth = 0.f;
-
-            hit.instanceIndex = -1;
-            hit.elementIndex = -1;
-            hit.edgeIndex = -1;
-            hit.pointIndex = -1;
 
             _contextParams.outHits->push_back(hit);
         }
