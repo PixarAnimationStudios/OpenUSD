@@ -369,7 +369,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
                         sdrNode.GetContext(), PropertyDefiningKeys.SHADER_ID)
                 sdrIdentifier = primDef.GetAttributeFallbackValue(
                         shaderIdAttrName)
-                if sdrIdentifier is not "":
+                if sdrIdentifier != "":
                     usdSchemaNode = reg.GetNodeByIdentifierAndType(
                             sdrIdentifier,
                             SchemaDefiningMiscConstants.USD_SOURCE_TYPE)
