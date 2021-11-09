@@ -145,19 +145,6 @@ HdxPickTask::_InitIfNeeded()
                         HdBufferArrayUsageHint());
     }
 
-    // Resize pick buffer if needed
-    if (_pickBuffer) {        
-        const int numSubBuffers = 
-            _contextParams.maxNumDeepEntries / PICK_BUFFER_SUBBUFFER_CAPACITY;
-        const int bufferTotalSize = 
-            PICK_BUFFER_HEADER_SIZE + numSubBuffers + 
-            (numSubBuffers * PICK_BUFFER_SUBBUFFER_CAPACITY * PICK_BUFFER_ENTRY_SIZE);
-
-        if (_pickBuffer->GetNumElements() != bufferTotalSize) {
-            _pickBuffer->Resize(bufferTotalSize);
-        }
-    }
-
     // Resize draw target if needed
     if (_drawTarget) {
         if (size != _drawTarget->GetSize()) {
@@ -638,6 +625,8 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
         _widgetRenderPassState->Prepare(renderIndex->GetResourceRegistry());
     }  
 
+    _ClearPickBuffer();
+
     // Prepare pick buffer binding
     HdStRenderPassState* extendedState =
         dynamic_cast<HdStRenderPassState*>(_pickableRenderPassState.get());
@@ -664,55 +653,58 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
 void
 HdxPickTask::_ClearPickBuffer()
 {
-    if (_pickBuffer) {
-        VtIntArray pickBufferInit;
-        if (_contextParams.resolveMode == HdxPickTokens->resolveDeep)
-        {
-            const int numSubBuffers =
-                _contextParams.maxNumDeepEntries / PICK_BUFFER_SUBBUFFER_CAPACITY;
-            const int entryStorageOffset =
-                PICK_BUFFER_HEADER_SIZE + numSubBuffers;
-            const int entryStorageSize =
-                numSubBuffers * PICK_BUFFER_SUBBUFFER_CAPACITY * PICK_BUFFER_ENTRY_SIZE;
-
-            pickBufferInit.reserve(entryStorageOffset + entryStorageSize);
-
-            pickBufferInit.push_back(numSubBuffers);
-            pickBufferInit.push_back(PICK_BUFFER_SUBBUFFER_CAPACITY);
-            pickBufferInit.push_back(PICK_BUFFER_HEADER_SIZE);
-            pickBufferInit.push_back(entryStorageOffset);
-
-            pickBufferInit.push_back(
-                _contextParams.pickTarget == HdxPickTokens->pickFaces ? 1 : 0);
-            pickBufferInit.push_back(
-                _contextParams.pickTarget == HdxPickTokens->pickEdges ? 1 : 0);
-            pickBufferInit.push_back(
-                _contextParams.pickTarget == HdxPickTokens->pickPoints ? 1 : 0);
-            pickBufferInit.push_back(0);
-
-            for (int j = 0; j < numSubBuffers; ++j)
-                pickBufferInit.push_back(0);
-
-            for (int j = 0; j < entryStorageSize; ++j)
-                pickBufferInit.push_back(-9);
-        }
-        else
-        {
-            pickBufferInit.push_back(0);
-        }
-
-        HdBufferSourceSharedPtr bufferSource =
-            std::make_shared<HdVtBufferSource>(
-                HdxPickPrivateTokens->PickBuffer,
-                VtValue(pickBufferInit));
-
-        _pickBuffer->CopyData(bufferSource);
-
-        HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
-            std::dynamic_pointer_cast<HdStResourceRegistry>(
-                _index->GetResourceRegistry());
-        hdStResourceRegistry->SubmitBlitWork();
+    if (!_pickBuffer) {
+        return;
     }
+
+    VtIntArray pickBufferInit;
+    if (_contextParams.resolveMode == HdxPickTokens->resolveDeep)
+    {
+        const int numSubBuffers =
+            _contextParams.maxNumDeepEntries / PICK_BUFFER_SUBBUFFER_CAPACITY;
+        const int entryStorageOffset =
+            PICK_BUFFER_HEADER_SIZE + numSubBuffers;
+        const int entryStorageSize =
+            numSubBuffers * PICK_BUFFER_SUBBUFFER_CAPACITY * PICK_BUFFER_ENTRY_SIZE;
+
+        pickBufferInit.reserve(entryStorageOffset + entryStorageSize);
+
+        pickBufferInit.push_back(numSubBuffers);
+        pickBufferInit.push_back(PICK_BUFFER_SUBBUFFER_CAPACITY);
+        pickBufferInit.push_back(PICK_BUFFER_HEADER_SIZE);
+        pickBufferInit.push_back(entryStorageOffset);
+
+        pickBufferInit.push_back(
+            _contextParams.pickTarget == HdxPickTokens->pickFaces ? 1 : 0);
+        pickBufferInit.push_back(
+            _contextParams.pickTarget == HdxPickTokens->pickEdges ? 1 : 0);
+        pickBufferInit.push_back(
+            _contextParams.pickTarget == HdxPickTokens->pickPoints ? 1 : 0);
+        pickBufferInit.push_back(0);
+
+        for (int j = 0; j < numSubBuffers; ++j) {
+            pickBufferInit.push_back(0);
+        }
+
+        for (int j = 0; j < entryStorageSize; ++j) {
+            pickBufferInit.push_back(-9);
+        }
+    }
+    else
+    {
+        pickBufferInit.push_back(0);
+    }
+
+    HdBufferSourceSharedPtr bufferSource =
+        std::make_shared<HdVtBufferSource>(
+            HdxPickPrivateTokens->PickBuffer,
+            VtValue(pickBufferInit));
+
+    HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
+        std::dynamic_pointer_cast<HdStResourceRegistry>(
+            _index->GetResourceRegistry());
+
+    hdStResourceRegistry->AddSource(_pickBuffer, bufferSource);
 }
 
 void
@@ -733,8 +725,6 @@ HdxPickTask::Execute(HdTaskContext* ctx)
         _ConditionStencilWithGLCallback(_contextParams.depthMaskCallback,
             _widgetDepthStencilBuffer.get());
     }
-
-    _ClearPickBuffer();
 
     if (_UseOcclusionPass()) {
         _occluderRenderPass->Execute(_occluderRenderPassState,
