@@ -413,6 +413,7 @@ HdxPickTask::_ClearPickBuffer()
         return;
     }
 
+    // populate pick buffer source array
     VtIntArray pickBufferInit;
     if (_contextParams.resolveMode == HdxPickTokens->resolveDeep)
     {
@@ -425,6 +426,7 @@ HdxPickTask::_ClearPickBuffer()
 
         pickBufferInit.reserve(entryStorageOffset + entryStorageSize);
 
+        // populate pick buffer header
         pickBufferInit.push_back(numSubBuffers);
         pickBufferInit.push_back(PICK_BUFFER_SUBBUFFER_CAPACITY);
         pickBufferInit.push_back(PICK_BUFFER_HEADER_SIZE);
@@ -438,18 +440,23 @@ HdxPickTask::_ClearPickBuffer()
             _contextParams.pickTarget == HdxPickTokens->pickPoints ? 1 : 0);
         pickBufferInit.push_back(0);
 
+        // populate pick buffer's sub-buffer size table with zeros  
         for (int j = 0; j < numSubBuffers; ++j) {
             pickBufferInit.push_back(0);
         }
 
+        // populate pick buffer's entry storage with -9s, meaning uninitialized
         for (int j = 0; j < entryStorageSize; ++j) {
             pickBufferInit.push_back(-9);
         }
     }
     else
     {
+        // set pick buffer to invalid state
         pickBufferInit.push_back(0);
     }
+
+    // set the source to the pick buffer
 
     HdBufferSourceSharedPtr bufferSource =
         std::make_shared<HdVtBufferSource>(
@@ -648,6 +655,7 @@ void HdxPickTask::_ResolveDeep()
     const int entryStorageOffset =
         PICK_BUFFER_HEADER_SIZE + numSubBuffers;
 
+    // loop through all the sub-buffers, populating outHits
     for (int subBuffer = 0; subBuffer < numSubBuffers; ++subBuffer)
     {
         const int sizeOffset = PICK_BUFFER_HEADER_SIZE + subBuffer;
@@ -656,6 +664,7 @@ void HdxPickTask::_ResolveDeep()
             entryStorageOffset + 
             subBuffer * PICK_BUFFER_SUBBUFFER_CAPACITY * PICK_BUFFER_ENTRY_SIZE;
 
+        // loop through sub-buffer entries
         for (int j = 0; j < numEntries; ++j)
         {
             int entryOffset = subBufferOffset + (j * PICK_BUFFER_ENTRY_SIZE);
@@ -669,9 +678,10 @@ void HdxPickTask::_ResolveDeep()
                 continue;
             }
 
-            bool rprimValid = _index->GetSceneDelegateAndInstancerIds(hit.objectId,
-                &(hit.delegateId),
-                &(hit.instancerId));
+            bool rprimValid = _index->GetSceneDelegateAndInstancerIds(
+                                hit.objectId,
+                                &(hit.delegateId),
+                                &(hit.instancerId));
 
             if (!TF_VERIFY(rprimValid, "%s\n", hit.objectId.GetText())) {
                 continue;
