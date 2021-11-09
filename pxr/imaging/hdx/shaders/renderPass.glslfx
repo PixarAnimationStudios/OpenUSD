@@ -214,6 +214,7 @@ compareOrSet(
     int instanceIdValue = PickBuffer[instanceIdOffset];
     int partIdValue = PickBuffer[partIdOffset];
 
+    // if all the values are initialized, just compare 
     if ((primIdValue != -9) && 
         (instanceIdValue != -9) && 
         (partIdValue != -9)) {
@@ -221,6 +222,8 @@ compareOrSet(
                 (instanceId == instanceIdValue) && 
                 (partId == partIdValue);
     }
+
+    // try to initialize the values and check if succeeded
 
     primIdValue = atomicCompSwap(PickBuffer[primIdOffset], -9, primId);
     if ((primIdValue != primId) && (primIdValue != -9)) {
@@ -266,12 +269,14 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     
     neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
 
+    // add the item to the pick buffer, but only unique
 #if defined(HD_HAS_PickBuffer)
+
     // if the pick buffer is not initialized, we are done 
     if (PickBuffer[0] == 0)
         return;
 	
-    // fill in pick buffer
+    // prepare some constants
     const int entrySize = 3;
     const int numSubBuffers = PickBuffer[0];
     const int subBufferCapacity = PickBuffer[1];
@@ -281,25 +286,32 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
                         PickBuffer[5] * edgeId +
                         PickBuffer[6] * pointId;
 
+    // calculate the item's hash
     const int fnv1Seed = -2128831035;
     int fnv1Value = fnv1Hash(primId, fnv1Seed);
     fnv1Value = fnv1Hash(instanceId, fnv1Value);
     fnv1Value = fnv1Hash(partId, fnv1Value);
 
+    // more constants
     const int subBufferNumber = fnv1Value % numSubBuffers;
     const int sizeOffset = tableOffset + subBufferNumber;
     const int subBufferOffset = storageOffset + 
                 subBufferNumber * subBufferCapacity * entrySize;
 
+    // loop through the item's sub-buffer to see if the item is already there
+    // if not, add it in atomic fashion
     int entryNumber = 0;
     bool keepMoving = true;
     do
     {
+        // see if we need to add a new entry
         if (entryNumber == PickBuffer[sizeOffset])
         {
             atomicCompSwap(PickBuffer[sizeOffset], entryNumber, entryNumber + 1);
         }
 
+        // if either the item equals to the current entry or we managed to 
+        // initialize the entry with the item's data, we are done
         if (compareOrSet(
                 subBufferOffset + entryNumber * entrySize, 
                 primId, instanceId, partId))
@@ -308,6 +320,7 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         }
         else if(++entryNumber == subBufferCapacity)
         {
+            // having reached the capacity of the sub-buffer, we exit
             keepMoving = false;
         }
     }
