@@ -206,32 +206,33 @@ compareOrSet(
     const int instanceId, 
     const int partId)
 {
-    // compare/set primId
     int primIdOffset = valueOffset;
+    int instanceIdOffset = valueOffset + 1;
+    int partIdOffset = valueOffset + 2;
+
     int primIdValue = PickBuffer[primIdOffset];
-    if (primIdValue == -9) {
-        primIdValue = atomicCompSwap(PickBuffer[primIdOffset], -9, primId);
+    int instanceIdValue = PickBuffer[instanceIdOffset];
+    int partIdValue = PickBuffer[partIdOffset];
+
+    if ((primIdValue != -9) && 
+        (instanceIdValue != -9) && 
+        (partIdValue != -9)) {
+        return  (primId == primIdValue) && 
+                (instanceId == instanceIdValue) && 
+                (partId == partIdValue);
     }
+
+    primIdValue = atomicCompSwap(PickBuffer[primIdOffset], -9, primId);
     if ((primIdValue != primId) && (primIdValue != -9)) {
         return false;
     }
 
-    // compare/set instanceId
-    int instanceIdOffset = valueOffset + 1;
-    int instanceIdValue = PickBuffer[instanceIdOffset];
-    if (instanceIdValue == -9) {
-        instanceIdValue = atomicCompSwap(PickBuffer[instanceIdOffset], -9, instanceId);
-    }
+    instanceIdValue = atomicCompSwap(PickBuffer[instanceIdOffset], -9, instanceId);
     if ((instanceIdValue != instanceId) && (instanceIdValue != -9)) {
         return false;
     }
 
-    // compare/set partId
-    int partIdOffset = valueOffset + 2;
-    int partIdValue = PickBuffer[partIdOffset];
-    if (partIdValue == -9) {
-        partIdValue = atomicCompSwap(PickBuffer[partIdOffset], -9, partId);
-    }
+    partIdValue = atomicCompSwap(PickBuffer[partIdOffset], -9, partId);
     if ((partIdValue != partId) && (partIdValue != -9)) {
         return false;
     }

@@ -245,6 +245,7 @@ private:
     bool _UseOcclusionPass() const;
     bool _UseWidgetPass() const;
 
+    void _ClearPickBuffer();
     void ResolveDeep();
     
     template<typename T>
