@@ -227,6 +227,7 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     
     neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
 
+#if defined(HD_HAS_PickBuffer)
     // if the pick buffer is not initialized, we are done 
     if (PickBuffer[0] == 0)
         return;
@@ -272,6 +273,7 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         }
     }
     while(keepMoving);
+#endif // HD_HAS_PickBuffer
 }
 
 -- glsl HdxRenderPass.RenderColorAndSelection
