@@ -233,7 +233,8 @@ private:
 
     bool _UseOcclusionPass() const;
 
-    void ResolveDeep();
+    void _ClearPickBuffer();
+    void _ResolveDeep();
 
     // Create a shared render pass each for pickables and unpickables
     HdRenderPassSharedPtr _pickableRenderPass;
