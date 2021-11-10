@@ -128,6 +128,10 @@ pxr_library(tf
         instantiateSingleton.h
         instantiateStacked.h
         instantiateType.h
+        pxrTslRobinMap/robin_growth_policy.h
+        pxrTslRobinMap/robin_hash.h
+        pxrTslRobinMap/robin_map.h
+        pxrTslRobinMap/robin_set.h
         preprocessorUtils.h
         preprocessorUtilsLite.h
         safeTypeCompare.h
