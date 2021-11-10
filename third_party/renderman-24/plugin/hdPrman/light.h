@@ -31,7 +31,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
-struct HdPrman_Context;
+class HdPrman_RenderParam;
 
 /// \class HdPrmanLight
 ///
@@ -41,12 +41,12 @@ class HdPrmanLight final : public HdLight
 {
 public:
     HdPrmanLight(SdfPath const& id, TfToken const& lightType);
-    virtual ~HdPrmanLight();
+    ~HdPrmanLight() override;
 
     /// Synchronizes state from the delegate to this object.
     void Sync(HdSceneDelegate *sceneDelegate,
-                      HdRenderParam   *renderParam,
-                      HdDirtyBits     *dirtyBits) override;
+              HdRenderParam   *renderParam,
+              HdDirtyBits     *dirtyBits) override;
 
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
@@ -59,7 +59,7 @@ public:
     void Finalize(HdRenderParam *renderParam) override;
 
 private:
-    void _ResetLight(HdPrman_Context *context, bool clearFilterPaths);
+    void _ResetLight(HdPrman_RenderParam *renderParam, bool clearFilterPaths);
 
     const TfToken _hdLightType;
     riley::LightShaderId _shaderId;

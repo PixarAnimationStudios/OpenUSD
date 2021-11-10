@@ -90,6 +90,26 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// * <typeTag> *!*
 ///   * <tag>
 ///     * _value_
+/// * <usdSchemaDef>
+///   * <metadataKey> (this specified a metadata key with an appropriate
+///                    value, example "schemaName", schemaKind", etc. Refer
+///                    UsdUtilsUpdateSchemaFromSdr for all valid metadata keys 
+///                    for usdSchemaDef)
+///     * _value_
+///   * <apiSchemaAutoApplyTo>
+///     * <autoApplyTo>
+///       * _value_
+///   * <apiSchemaCanOnlyApplyTo>
+///     * <autoApplyTo>
+///       * _value_
+///   * <apiSchemasForAttrPruning>
+///     * <apiSchema>
+///       * _value_
+/// * <sdrGlobalConfig>
+///   * <sdrDefinitionNameFallbackPrefix> (Used as a prefix for parameters that
+///                                        do not have an explicit
+///                                        _sdrDefinitionName_ provided.)
+///     * _value_
 ///
 /// For more information on the specifics of what any of these elements or
 /// attributes mean, see the Renderman documentation on the Args format. Items

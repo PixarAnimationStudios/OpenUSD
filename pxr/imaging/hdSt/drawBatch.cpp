@@ -31,7 +31,6 @@
 #include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/package.h"
-#include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
@@ -333,7 +332,9 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
                                     codeGen.GetMetaData(),
                                     indirect,
                                     instanceDraw,
-                                    customBindings);
+                                    customBindings,
+                                    resourceRegistry->GetHgi()->
+                                        GetCapabilities());
 
     HdStGLSLProgram::ID hash = codeGen.ComputeHash();
 
@@ -353,9 +354,7 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
 
         _glslProgram = programInstance.GetValue();
 
-        if (_glslProgram) {
-            _resourceBinder.IntrospectBindings(_glslProgram->GetProgram());
-        } else {
+        if (!_glslProgram) {
             // Failed to compile and link a valid glsl program.
             return false;
         }

@@ -1,0 +1,31 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "TestUsdUtilsBaseOneAPI": {
+                        "alias": {
+                            "UsdSchemaBase": "BaseOneAPI"
+                        }, 
+                        "bases": [
+                            "UsdAPISchemaBase"
+                        ], 
+                        "schemaKind": "singleApplyAPI"
+                    }, 
+                    "TestUsdUtilsBaseTwoAPI": {
+                        "alias": {
+                            "UsdSchemaBase": "BaseTwoAPI"
+                        }, 
+                        "bases": [
+                            "UsdAPISchemaBase"
+                        ], 
+                        "schemaKind": "singleApplyAPI"
+                    }
+                }
+            }, 
+            "Name": "TestUsdUtilsUpdateSchemaWithSdrAttrPruning", 
+            "ResourcePath": "", 
+            "Type": "resource"
+        }
+    ]
+}

@@ -462,10 +462,27 @@ public:
     /// @{
     // ---------------------------------------------------------------------
 
-    /// Set \p id to one of the HdxColorCorrectionTokens.
+    /// Set \p ccType to one of the HdxColorCorrectionTokens:
+    /// {disabled, sRGB, openColorIO}
+    ///
+    /// If 'openColorIO' is used, \p ocioDisplay, \p ocioView, \p ocioColorSpace
+    /// and \p ocioLook are options the client may supply to configure OCIO.
+    /// \p ocioColorSpace refers to the input (source) color space. 
+    /// The default value is substituted if an option isn't specified.
+    /// You can find the values for these strings inside the
+    /// profile/config .ocio file. For example:
+    ///
+    ///  displays:
+    ///    rec709g22:
+    ///      !<View> {name: studio, colorspace: linear, looks: studio_65_lg2}
+    ///
     USDIMAGINGGL_API
     void SetColorCorrectionSettings(
-        TfToken const& id);
+        TfToken const& ccType,
+        TfToken const& ocioDisplay = {},
+        TfToken const& ocioView = {},
+        TfToken const& ocioColorSpace = {},
+        TfToken const& ocioLook = {});
 
     /// @}
 

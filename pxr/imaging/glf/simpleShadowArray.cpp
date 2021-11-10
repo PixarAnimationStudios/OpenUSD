@@ -44,17 +44,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(GLF_ENABLE_BINDLESS_SHADOW_TEXTURES, true,
-                      "Enable use of bindless shadow maps");
-
 GlfSimpleShadowArray::GlfSimpleShadowArray() :
-    // bindful state
-    _size(0),
-    _numLayers(0),
-    _bindfulTexture(0),
-    _shadowDepthSampler(0),
-    // common state
     _framebuffer(0),
+    _shadowDepthSampler(0),
     _shadowCompareSampler(0),
     _unbindRestoreDrawFramebuffer(0),
     _unbindRestoreReadFramebuffer(0),
@@ -67,85 +59,23 @@ GlfSimpleShadowArray::~GlfSimpleShadowArray()
     _FreeResources();
 }
 
-/*static*/
-bool
-GlfSimpleShadowArray::GetBindlessShadowMapsEnabled()
-{
-    // Note: We do not test the GL context caps for the availability of the
-    // bindless texture and int64 extensions.
-    static bool usingBindlessShadowMaps =
-        TfGetEnvSetting(GLF_ENABLE_BINDLESS_SHADOW_TEXTURES);
-
-    return usingBindlessShadowMaps;
-}
-
-
-// --------- (public) Bindful API ----------
-void
-GlfSimpleShadowArray::SetSize(GfVec2i const & size)
-{
-    if (GetBindlessShadowMapsEnabled()) {
-        TF_CODING_ERROR("Using bindful API %s when bindless "
-            "shadow maps are enabled\n", TF_FUNC_NAME().c_str());
-        return;
-    }
-    if (_size != size) {
-        _FreeBindfulTextures();
-        _size = size;
-    }
-}
-
-void
-GlfSimpleShadowArray::SetNumLayers(size_t numLayers)
-{
-    if (GetBindlessShadowMapsEnabled()) {
-        TF_CODING_ERROR("Using bindful API %s when bindless "
-            "shadow maps are enabled\n", TF_FUNC_NAME().c_str());
-        return;
-    }
-
-    if (_numLayers != numLayers) {
-        _viewMatrix.resize(numLayers, GfMatrix4d().SetIdentity());
-        _projectionMatrix.resize(numLayers, GfMatrix4d().SetIdentity());
-        _FreeBindfulTextures();
-        _numLayers = numLayers;
-    }
-}
-
 GLuint
-GlfSimpleShadowArray::GetShadowMapTexture() const
+GlfSimpleShadowArray::GetShadowMapTexture(int shadowIndex) const
 {
-    if (GetBindlessShadowMapsEnabled()) {
-        TF_CODING_ERROR("Using bindful API in %s when bindless "
-            "shadow maps are enabled\n",  TF_FUNC_NAME().c_str());
-        return -1;
-    }
-    return _bindfulTexture;
+    return _textures[shadowIndex];
 }
-
 GLuint
 GlfSimpleShadowArray::GetShadowMapDepthSampler() const
 {
-    if (GetBindlessShadowMapsEnabled()) {
-        TF_CODING_ERROR("Using bindful API in %s when bindless "
-            "shadow maps are enabled\n",  TF_FUNC_NAME().c_str());
-        return -1;
-    }
     return _shadowDepthSampler;
 }
 
 GLuint
 GlfSimpleShadowArray::GetShadowMapCompareSampler() const
 {
-    if (GetBindlessShadowMapsEnabled()) {
-        TF_CODING_ERROR("Using bindful API in %s when bindless "
-            "shadow maps are enabled\n",  TF_FUNC_NAME().c_str());
-        return -1;
-    }
     return _shadowCompareSampler;
 }
 
-// --------- (public) Bindless API ----------
 void
 GlfSimpleShadowArray::SetShadowMapResolutions(
     std::vector<GfVec2i> const& resolutions)
@@ -156,7 +86,7 @@ GlfSimpleShadowArray::SetShadowMapResolutions(
 
     _resolutions = resolutions;
 
-    _FreeBindlessTextures();
+    _FreeTextures();
 
     size_t numShadowMaps = _resolutions.size();
     if (_viewMatrix.size() != numShadowMaps ||
@@ -167,36 +97,19 @@ GlfSimpleShadowArray::SetShadowMapResolutions(
 
 }
 
-std::vector<uint64_t> const&
-GlfSimpleShadowArray::GetBindlessShadowMapHandles() const
-{
-    return _bindlessTextureHandles;
-}
-
-// --------- (public) Common API ----------
 size_t
 GlfSimpleShadowArray::GetNumShadowMapPasses() const
 {
-    // In both the bindful and bindless cases, we require one pass per shadow
-    // map.
-    if (GetBindlessShadowMapsEnabled()) {
-        return _resolutions.size();
-    } else {
-        return _numLayers;
-    }
+    // we require one pass per shadow map.
+    return _resolutions.size();
 }
 
 GfVec2i
 GlfSimpleShadowArray::GetShadowMapSize(size_t index) const
 {
     GfVec2i shadowMapSize(0);
-    if (GetBindlessShadowMapsEnabled()) {
-        if (TF_VERIFY(index < _resolutions.size())) {
-            shadowMapSize = _resolutions[index];
-        }
-    } else {
-        // In the bindful case, all shadow map textures use the same size.
-        shadowMapSize = _size;
+    if (TF_VERIFY(index < _resolutions.size())) {
+        shadowMapSize = _resolutions[index];
     }
 
     return shadowMapSize;
@@ -350,8 +263,7 @@ GlfSimpleShadowArray::EndCapture(size_t index)
 bool
 GlfSimpleShadowArray::_ShadowMapExists() const
 {
-    return GetBindlessShadowMapsEnabled() ? !_bindlessTextures.empty() : 
-                                             _bindfulTexture;
+    return !_textures.empty();
 }
 
 void
@@ -394,11 +306,7 @@ GlfSimpleShadowArray::_AllocResources()
     }
 
     // Shadow maps
-    if (GetBindlessShadowMapsEnabled()) {
-        _AllocBindlessTextures();
-    } else {
-       _AllocBindfulTextures();
-    }
+    _AllocTextures();
 
     // Framebuffer
     if (!_framebuffer) {
@@ -407,34 +315,16 @@ GlfSimpleShadowArray::_AllocResources()
 }
 
 void
-GlfSimpleShadowArray::_AllocBindfulTextures()
+GlfSimpleShadowArray::_AllocTextures()
 {
-    glGenTextures(1, &_bindfulTexture);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, _bindfulTexture);
-
-    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32F,
-                _size[0], _size[1], _numLayers, 0, 
-                GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-
-    TF_DEBUG(GLF_DEBUG_SHADOW_TEXTURES).Msg(
-        "Created bindful shadow map texture array with %lu %dx%d textures\n"
-        , _numLayers, _size[0], _size[1]);
-}
-
-void
-GlfSimpleShadowArray::_AllocBindlessTextures()
-{
-    if (!TF_VERIFY(_shadowCompareSampler) ||
-        !TF_VERIFY(_bindlessTextures.empty()) ||
-        !TF_VERIFY(_bindlessTextureHandles.empty())) {
+    if (!TF_VERIFY(_shadowDepthSampler) ||
+        !TF_VERIFY(_shadowCompareSampler) ||
+        !TF_VERIFY(_textures.empty())) {
         TF_CODING_ERROR("Unexpected entry state in %s\n",
                         TF_FUNC_NAME().c_str());
         return;
     }
 
-    // Commenting out the line below results in the residency check in
-    // _FreeBindlessTextures failing.
     GlfSharedGLContextScopeHolder sharedContextScopeHolder;
 
     // XXX: Currently, we allocate/reallocate ALL shadow maps each time.
@@ -444,22 +334,11 @@ GlfSimpleShadowArray::_AllocBindlessTextures()
         glBindTexture(GL_TEXTURE_2D, id);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
             size[0], size[1], 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-        _bindlessTextures.push_back(id);
-
-        GLuint64 handle =
-            glGetTextureSamplerHandleARB(id, _shadowCompareSampler);
-        
-        _bindlessTextureHandles.push_back(handle);
-
-        if (TF_VERIFY(!glIsTextureHandleResidentARB(handle))) {
-            glMakeTextureHandleResidentARB(handle);
-        } else {
-            GLF_POST_PENDING_GL_ERRORS();
-        }
+        _textures.push_back(id);
 
         TF_DEBUG(GLF_DEBUG_SHADOW_TEXTURES).Msg(
-            "Created bindless shadow map texture of size %dx%d "
-            "(id %#x, handle %#lx)\n" , size[0], size[1], id, handle);
+            "Created shadow map texture of size %dx%d "
+            "(id %#x)\n" , size[0], size[1], id);
     }
 
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -470,11 +349,7 @@ GlfSimpleShadowArray::_FreeResources()
 {
     GlfSharedGLContextScopeHolder sharedContextScopeHolder;
 
-    if (GetBindlessShadowMapsEnabled()) {
-        _FreeBindlessTextures();
-    } else {
-        _FreeBindfulTextures();
-    }
+    _FreeTextures();
 
     if (_framebuffer) {
         glDeleteFramebuffers(1, &_framebuffer);
@@ -491,41 +366,18 @@ GlfSimpleShadowArray::_FreeResources()
 }
 
 void
-GlfSimpleShadowArray::_FreeBindfulTextures()
-{
-    GlfSharedGLContextScopeHolder sharedContextScopeHolder;
-
-    if (_bindfulTexture) {
-        glDeleteTextures(1, &_bindfulTexture);
-        _bindfulTexture = 0;
-    }
-
-    GLF_POST_PENDING_GL_ERRORS();
-}
-
-void
-GlfSimpleShadowArray::_FreeBindlessTextures()
+GlfSimpleShadowArray::_FreeTextures()
 {
     GlfSharedGLContextScopeHolder sharedContextScopeHolder;
     // XXX: Ideally, we don't deallocate all textures, and only those that have
     // resolution modified.
 
-    if (!_bindlessTextureHandles.empty()) {
-        for (uint64_t handle : _bindlessTextureHandles) {
-            // Handles are made resident on creation.
-            if (TF_VERIFY(glIsTextureHandleResidentARB(handle))) {
-                glMakeTextureHandleNonResidentARB(handle);
-            }
-        }
-        _bindlessTextureHandles.clear();
-    }
-
-    for (GLuint const& id : _bindlessTextures) {
+    for (GLuint const& id : _textures) {
         if (id) {
             glDeleteTextures(1, &id);
         }
     }
-    _bindlessTextures.clear();
+    _textures.clear();
     
     GLF_POST_PENDING_GL_ERRORS();
 }
@@ -543,13 +395,8 @@ GlfSimpleShadowArray::_BindFramebuffer(size_t index)
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
-    if (GetBindlessShadowMapsEnabled()) {
-        glFramebufferTexture(GL_FRAMEBUFFER,
-            GL_DEPTH_ATTACHMENT, _bindlessTextures[index], 0);
-    } else {
-        glFramebufferTextureLayer(GL_FRAMEBUFFER,
-            GL_DEPTH_ATTACHMENT, _bindfulTexture, 0, index);
-    }
+    glFramebufferTexture(GL_FRAMEBUFFER,
+        GL_DEPTH_ATTACHMENT, _textures[index], 0);
 
     GLF_POST_PENDING_GL_ERRORS();
 }
@@ -565,4 +412,3 @@ GlfSimpleShadowArray::_UnbindFramebuffer()
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

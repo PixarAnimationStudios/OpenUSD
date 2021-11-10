@@ -40,10 +40,7 @@ HdBasisCurves::HdBasisCurves(SdfPath const& id)
     /*NOTHING*/
 }
 
-HdBasisCurves::~HdBasisCurves()
-{
-    /*NOTHING*/
-}
+HdBasisCurves::~HdBasisCurves() = default;
 
 /* virtual */
 TfTokenVector const &

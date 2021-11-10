@@ -27,8 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/drawItem.h"
 #include "pxr/imaging/hd/rprimSharedData.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -42,30 +40,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-class HdBufferSource;
-class HdDrawItem;
-class HdMaterial;
+class HdChangeTracker;
 class HdRenderIndex;
 class HdRenderParam;
 
 using HdReprSharedPtr = std::shared_ptr<HdRepr>;
-
-using HdBufferSourceSharedPtr = std::shared_ptr<HdBufferSource>;
-using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
-
-using HdBufferSpecVector = std::vector<struct HdBufferSpec>;
-using HdBufferArrayRangeSharedPtr = std::shared_ptr<HdBufferArrayRange>;
-
-using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
-using HdComputationSharedPtrVector = std::vector<HdComputationSharedPtr>;
 
 /// \class HdRprim
 ///
 /// The render engine state for a given rprim from the scene graph. All data
 /// access (aside from local caches) is delegated to the HdSceneDelegate.
 ///
-class HdRprim {
+class HdRprim
+{
 public:
     HD_API
     HdRprim(SdfPath const& id);
@@ -199,6 +186,10 @@ public:
         return _authoredReprSelector;
     }
 
+    TfToken const& GetRenderTag() const {
+        return _renderTag;
+    }
+
     /// Returns the render tag associated to this rprim
     inline  TfToken GetRenderTag(HdSceneDelegate* delegate) const;
 
@@ -236,6 +227,10 @@ public:
     void UpdateReprSelector(HdSceneDelegate* delegate,
                             HdDirtyBits *dirtyBits);
 
+    HD_API
+    void UpdateRenderTag(HdSceneDelegate* delegate,
+                         HdDirtyBits *dirtyBits);
+
 protected:
     // ---------------------------------------------------------------------- //
     /// \name Rprim Hydra Engine API : Pre-Sync & Sync-Phase
@@ -265,8 +260,8 @@ protected:
     /// repr is synced.  InitRepr occurs before dirty bit propagation.
     ///
     /// See HdRprim::InitRepr()
-       virtual void _InitRepr(TfToken const &reprToken,
-                              HdDirtyBits *dirtyBits) = 0;
+    virtual void _InitRepr(TfToken const &reprToken,
+                           HdDirtyBits *dirtyBits) = 0;
 
     // ---------------------------------------------------------------------- //
     /// \name Rprim Shared API
@@ -296,13 +291,16 @@ protected:
     // authored repr selector
     HdReprSelector _authoredReprSelector;
 
+    // authored render tag
+    TfToken _renderTag;
+
     // total number of reprs is relatively small (less than 5 or so
     // in most case), we use linear container for efficiency.
-    typedef std::vector<std::pair<TfToken, HdReprSharedPtr> >
-        _ReprVector;
+    using _ReprVector = std::vector<std::pair<TfToken, HdReprSharedPtr>>;
     _ReprVector _reprs;
 
-     struct _ReprComparator {
+     struct _ReprComparator
+     {
         _ReprComparator(TfToken const &name) : _name(name) {}
         bool operator() (const std::pair<TfToken, HdReprSharedPtr> &e) const {
             return _name == e.first;
@@ -318,8 +316,9 @@ protected:
     // N : # of descriptors for the repr.
     //
     template<typename DESC_TYPE, int N=1>
-    struct _ReprDescConfigs {
-        typedef std::array<DESC_TYPE, N> DescArray;
+    struct _ReprDescConfigs
+    {
+        using DescArray = std::array<DESC_TYPE, N>;
         static const int MAX_DESCS = N;
 
         DescArray Find(TfToken const &reprToken) const {

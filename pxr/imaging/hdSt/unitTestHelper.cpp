@@ -22,23 +22,12 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/unitTestHelper.h"
-#include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
+#include "pxr/imaging/hdSt/textureUtils.h"
 
-#include "pxr/imaging/hd/camera.h"
-#include "pxr/imaging/hd/rprimCollection.h"
-#include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/imaging/hgi/hgi.h"
-#include "pxr/imaging/hgi/tokens.h"
-
-#include "pxr/imaging/glf/diagnostic.h"
-
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/frustum.h"
-#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/staticTokens.h"
 
+#include <iostream>
 #include <string>
 #include <sstream>
 
@@ -58,58 +47,39 @@ TF_DEFINE_PRIVATE_TOKENS(
     (testCollection)
 );
 
-class HdSt_DrawTask final : public HdTask
+HdSt_DrawTask::HdSt_DrawTask(
+    HdRenderPassSharedPtr const &renderPass,
+    HdStRenderPassStateSharedPtr const &renderPassState,
+    const TfTokenVector &renderTags)
+  : HdTask(SdfPath::EmptyPath())
+  , _renderPass(renderPass)
+  , _renderPassState(renderPassState)
+  , _renderTags(renderTags)
 {
-public:
-    HdSt_DrawTask(HdRenderPassSharedPtr const &renderPass,
-                  HdStRenderPassStateSharedPtr const &renderPassState,
-                  bool withGuides)
-    : HdTask(SdfPath::EmptyPath())
-    , _renderPass(renderPass)
-    , _renderPassState(renderPassState)
-    , _renderTags()
-    {
-        _renderTags.reserve(2);
-        _renderTags.push_back(HdRenderTagTokens->geometry);
+}
 
-        if (withGuides) {
-            _renderTags.push_back(HdRenderTagTokens->guide);
-        }
-    }
-    
-    void Sync(HdSceneDelegate*,
-                      HdTaskContext*,
-                      HdDirtyBits*) override
-    {
-        _renderPass->Sync();
-    }
+void
+HdSt_DrawTask::Sync(
+    HdSceneDelegate*,
+    HdTaskContext*,
+    HdDirtyBits*)
+{
+    _renderPass->Sync();
+}
 
-    void Prepare(HdTaskContext* ctx,
-                 HdRenderIndex* renderIndex) override
-    {
-        _renderPassState->Prepare(
-            renderIndex->GetResourceRegistry());
-    }
+void
+HdSt_DrawTask::Prepare(HdTaskContext* ctx,
+                       HdRenderIndex* renderIndex)
+{
+    _renderPassState->Prepare(
+        renderIndex->GetResourceRegistry());
+}
 
-    void Execute(HdTaskContext* ctx) override
-    {
-        _renderPass->Execute(_renderPassState, GetRenderTags());
-    }
-
-    const TfTokenVector &GetRenderTags() const override
-    {
-        return _renderTags;
-    }
-
-private:
-    HdRenderPassSharedPtr _renderPass;
-    HdStRenderPassStateSharedPtr _renderPassState;
-    TfTokenVector _renderTags;
-
-    HdSt_DrawTask() = delete;
-    HdSt_DrawTask(const HdSt_DrawTask &) = delete;
-    HdSt_DrawTask &operator =(const HdSt_DrawTask &) = delete;
-};
+void
+HdSt_DrawTask::Execute(HdTaskContext* ctx)
+{
+    _renderPass->Execute(_renderPassState, GetRenderTags());
+}
 
 template <typename T>
 static VtArray<T>
@@ -120,95 +90,58 @@ _BuildArray(T values[], int numValues)
     return result;
 }
 
+// --------------------------------------------------------------------------
+
 HdSt_TestDriver::HdSt_TestDriver()
- : _hgi(Hgi::CreatePlatformDefaultHgi())
- , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
- , _engine()
- , _renderDelegate()
- , _renderIndex(nullptr)
- , _sceneDelegate(nullptr)
- , _renderPass()
- , _renderPassState(
-    std::dynamic_pointer_cast<HdStRenderPassState>(
-        _renderDelegate.CreateRenderPassState()))
- , _collection(_tokens->testCollection, HdReprSelector())
 {
-    if (TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "CPU" ||
-        TfGetenv("HD_ENABLE_SMOOTH_NORMALS", "CPU") == "GPU") {
-        _Init(HdReprSelector(HdReprTokens->smoothHull));
-    } else {
-        _Init(HdReprSelector(HdReprTokens->hull));
-    }
+    _CreateRenderPassState();
+
+    // Init sets up the camera in the render pass state and
+    // thus needs to be called after render pass state has been setup.
+    _Init();
 }
 
 HdSt_TestDriver::HdSt_TestDriver(TfToken const &reprName)
- : _hgi(Hgi::CreatePlatformDefaultHgi())
- , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
- , _engine()
- , _renderDelegate()
- , _renderIndex(nullptr)
- , _sceneDelegate(nullptr)
- , _renderPass()
- , _renderPassState(
-    std::dynamic_pointer_cast<HdStRenderPassState>(
-        _renderDelegate.CreateRenderPassState()))
- , _collection(_tokens->testCollection, HdReprSelector())
 {
+    _CreateRenderPassState();
+
+    // Init sets up the camera in the render pass state and
+    // thus needs to be called after render pass state has been setup.
     _Init(HdReprSelector(reprName));
 }
 
-HdSt_TestDriver::HdSt_TestDriver(HdReprSelector const &reprToken)
- : _hgi(Hgi::CreatePlatformDefaultHgi())
- , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
- , _engine()
- , _renderDelegate()
- , _renderIndex(nullptr)
- , _sceneDelegate(nullptr)
- , _renderPass()
- , _renderPassState(
-    std::dynamic_pointer_cast<HdStRenderPassState>(
-        _renderDelegate.CreateRenderPassState()))
-, _collection(_tokens->testCollection, HdReprSelector())
+HdSt_TestDriver::HdSt_TestDriver(HdReprSelector const &reprSelector)
 {
-    _Init(reprToken);
-}
+    _CreateRenderPassState();
 
-HdSt_TestDriver::~HdSt_TestDriver()
-{
-    delete _sceneDelegate;
-    delete _renderIndex;
+    // Init sets up the camera in the render pass state and
+    // thus needs to be called after render pass state has been setup.
+    _Init(reprSelector);
 }
 
 void
-HdSt_TestDriver::_Init(HdReprSelector const &reprToken)
+HdSt_TestDriver::_CreateRenderPassState()
 {
-    _renderIndex = HdRenderIndex::New(&_renderDelegate, {&_hgiDriver});
-    TF_VERIFY(_renderIndex != nullptr);
-
-    _sceneDelegate = new HdUnitTestDelegate(_renderIndex,
-                                            SdfPath::AbsoluteRootPath());
-
-    _cameraId = SdfPath("/testCam");
-    _sceneDelegate->AddCamera(_cameraId);
-    _reprToken = reprToken;
-
-    GfMatrix4d viewMatrix = GfMatrix4d().SetIdentity();
-    viewMatrix *= GfMatrix4d().SetTranslate(GfVec3d(0.0, 1000.0, 0.0));
-    viewMatrix *= GfMatrix4d().SetRotate(GfRotation(GfVec3d(1.0, 0.0, 0.0), -90.0));
-
-    GfFrustum frustum;
-    frustum.SetPerspective(45, true, 1, 1.0, 10000.0);
-    GfMatrix4d projMatrix = frustum.ComputeProjectionMatrix();
-
-    SetCamera(viewMatrix, projMatrix, GfVec4d(0, 0, 512, 512));
-
+    _renderPassStates = {
+        std::dynamic_pointer_cast<HdStRenderPassState>(
+            _GetRenderDelegate()->CreateRenderPassState()) };
     // set depthfunc to GL default
-    _renderPassState->SetDepthFunc(HdCmpFuncLess);
+    _renderPassStates[0]->SetDepthFunc(HdCmpFuncLess);
+}
 
-    // Update collection with repr and add collection to change tracker.
-    _collection.SetReprSelector(reprToken);
-    HdChangeTracker &tracker = _renderIndex->GetChangeTracker();
-    tracker.AddCollection(_collection.GetName());}
+HdRenderPassSharedPtr const &
+HdSt_TestDriver::GetRenderPass()
+{
+    if (_renderPasses.empty()) {
+        std::shared_ptr<HdSt_RenderPass> renderPass =
+            std::make_shared<HdSt_RenderPass>(
+                &GetDelegate().GetRenderIndex(),
+                _GetCollection());
+
+        _renderPasses.push_back(std::move(renderPass));
+    }
+    return _renderPasses[0];
+}
 
 void
 HdSt_TestDriver::Draw(bool withGuides)
@@ -219,73 +152,18 @@ HdSt_TestDriver::Draw(bool withGuides)
 void
 HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides)
 {
+    static const TfTokenVector geometryTags {
+        HdRenderTagTokens->geometry };
+    static const TfTokenVector geometryAndGuideTags {
+        HdRenderTagTokens->geometry,
+        HdRenderTagTokens->guide };
+
     HdTaskSharedPtrVector tasks = {
-        std::make_shared<HdSt_DrawTask>(renderPass, _renderPassState,
-            withGuides)
-    };
-    _engine.Execute(&_sceneDelegate->GetRenderIndex(), &tasks);
-
-    GLF_POST_PENDING_GL_ERRORS();
-}
-
-void
-HdSt_TestDriver::SetCamera(GfMatrix4d const &modelViewMatrix,
-                           GfMatrix4d const &projectionMatrix,
-                           GfVec4d const &viewport)
-{
-    _sceneDelegate->UpdateCamera(
-        _cameraId, HdCameraTokens->worldToViewMatrix, VtValue(modelViewMatrix));
-    _sceneDelegate->UpdateCamera(
-        _cameraId, HdCameraTokens->projectionMatrix, VtValue(projectionMatrix));
-    // Baselines for tests were generated without constraining the view
-    // frustum based on the viewport aspect ratio.
-    _sceneDelegate->UpdateCamera(
-        _cameraId, HdCameraTokens->windowPolicy,
-        VtValue(CameraUtilDontConform));
-    
-    HdSprim const *cam = _renderIndex->GetSprim(HdPrimTypeTokens->camera,
-                                                 _cameraId);
-    TF_VERIFY(cam);
-    _renderPassState->SetCameraAndViewport(
-        dynamic_cast<HdCamera const *>(cam), viewport);
-}
-
-void
-HdSt_TestDriver::SetCameraClipPlanes(std::vector<GfVec4d> const& clipPlanes)
-{
-    _sceneDelegate->UpdateCamera(
-        _cameraId, HdCameraTokens->clipPlanes, VtValue(clipPlanes));
-}
-
-void
-HdSt_TestDriver::SetCullStyle(HdCullStyle cullStyle)
-{
-    _renderPassState->SetCullStyle(cullStyle);
-}
-
-HdRenderPassSharedPtr const &
-HdSt_TestDriver::GetRenderPass()
-{
-    if (!_renderPass) {
-        _renderPass = HdRenderPassSharedPtr(
-            new HdSt_RenderPass(&_sceneDelegate->GetRenderIndex(),
-                                _collection));
-    }
-    return _renderPass;
-}
-
-void
-HdSt_TestDriver::SetRepr(HdReprSelector const &reprToken)
-{
-    _collection.SetReprSelector(reprToken);
-
-    // Mark changes.
-    HdChangeTracker &tracker = _renderIndex->GetChangeTracker();
-    tracker.MarkCollectionDirty(_collection.GetName());
-
-    // Update render pass with updated collection
-    _renderPass->SetRprimCollection(_collection);
-
+        std::make_shared<HdSt_DrawTask>(
+            renderPass,
+            _renderPassStates[0],
+            withGuides ? geometryAndGuideTags : geometryTags) };
+    _GetEngine()->Execute(&GetDelegate().GetRenderIndex(), &tasks);
 }
 
 // --------------------------------------------------------------------------
@@ -406,6 +284,373 @@ HdSt_TestLightingShader::SetLight(int light,
     }
 }
 
+// --------------------------------------------------------------------------
+
+HdSt_TextureTestDriver::HdSt_TextureTestDriver() :
+    _hgi(Hgi::CreatePlatformDefaultHgi())
+  , _indexBuffer()
+  , _vertexBuffer()
+  , _shaderProgram()
+  , _resourceBindings()
+  , _pipeline()
+{
+    _CreateVertexBufferDescriptor();
+}
+
+void
+HdSt_TextureTestDriver::Draw(HgiTextureHandle const &colorDst, 
+                             HgiTextureHandle const &inputTexture,
+                             HgiSamplerHandle const &inputSampler)
+{
+    const HgiTextureDesc &textureDesc = colorDst->GetDescriptor();
+
+    const GfVec4i viewport(0, 0, textureDesc.dimensions[0], 
+        textureDesc.dimensions[1]);
+    float screenSize[2] = { static_cast<float>(viewport[2]), 
+                            static_cast<float>(viewport[3]) };
+    _constantsData.resize(sizeof(screenSize));
+    memcpy(&_constantsData[0], &screenSize, sizeof(screenSize));
+
+    _CreateShaderProgram();
+    _CreateBufferResources();
+    _CreateTextureBindings(inputTexture, inputSampler);
+    _CreatePipeline(colorDst);
+
+    // Create graphics commands
+    HgiGraphicsCmdsDesc gfxDesc;
+    if (colorDst) {
+        gfxDesc.colorAttachmentDescs.push_back(_attachment0);
+        gfxDesc.colorTextures.push_back(colorDst);
+    }
+
+    HgiGraphicsCmdsUniquePtr gfxCmds = _hgi->CreateGraphicsCmds(gfxDesc);
+    gfxCmds->PushDebugGroup("Debug HdSt_TextureTestDriver");
+    gfxCmds->BindResources(_resourceBindings);
+    gfxCmds->BindPipeline(_pipeline);
+    gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
+    gfxCmds->SetViewport(viewport);
+    gfxCmds->SetConstantValues(_pipeline, HgiShaderStageFragment, 0, 
+        _constantsData.size(), _constantsData.data());
+    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1);
+    gfxCmds->PopDebugGroup();
+
+    _hgi->SubmitCmds(gfxCmds.get());
+}
+
+bool
+HdSt_TextureTestDriver::WriteToFile(HgiTextureHandle const &texture, 
+                                    std::string filename) const
+{
+    const HgiTextureDesc &textureDesc = texture->GetDescriptor();
+
+    HioImage::StorageSpec storage;
+    storage.width = textureDesc.dimensions[0];
+    storage.height = textureDesc.dimensions[1];
+    storage.format = HioFormatFloat32Vec4;
+    storage.flipped = true;
+
+    std::vector<uint8_t> buffer;
+    HdStTextureUtils::HgiTextureReadback(_hgi.get(), texture, &buffer);
+    storage.data = buffer.data();
+
+    if (storage.format == HioFormatInvalid) {
+        TF_CODING_ERROR("Hgi texture has format not corresponding to a"
+                        "HioFormat");
+        return false;
+    }
+
+    if (!storage.data) {
+        TF_CODING_ERROR("No data for texture");
+        return false;
+    }
+        
+    HioImageSharedPtr const image = HioImage::OpenForWriting(filename);
+    if (!image) {
+        TF_RUNTIME_ERROR("Failed to open image for writing %s",
+            filename.c_str());
+        return false;
+    }
+
+    if (!image->Write(storage)) {
+        TF_RUNTIME_ERROR("Failed to write image to %s", filename.c_str());
+        return false;
+    }
+
+    return true;
+}
+
+static const std::string vertShaderStr =
+"-- glslfx version 0.1\n"
+"-- configuration\n"
+"{\n"
+"    \"techniques\": {\n"
+"        \"default\": {\n"
+"            \"VertexPassthrough\": {\n"
+"                \"source\": [ \"Vertex.Main\" ]\n"
+"            }\n"
+"        }\n"
+"    }\n"
+"}\n"
+"-- glsl Vertex.Main\n"
+"void main(void)\n"
+"{\n"
+"    gl_Position = position;\n"
+"    uvOut = uvIn;\n"
+"}\n";
+
+static const std::string fragShaderStr = 
+"-- glslfx version 0.1\n"
+"-- configuration\n"
+"{\n"
+"    \"techniques\": {\n"
+"        \"default\": {\n"
+"            \"FullscreenTexture\": {\n"
+"                \"source\": [ \"Fragment.Main\" ]\n"
+"            }\n"
+"        }\n"
+"    }\n"
+"}\n"
+"-- glsl Fragment.Main\n"
+"void main(void)\n"
+"{\n"
+"    vec2 coord = (uvOut * screenSize) / 100.f;\n"
+"    vec4 color = vec4(HdGet_colorIn(coord).xyz, 1.0);\n"
+"    hd_FragColor = color;\n"
+"}\n";
+
+void
+HdSt_TextureTestDriver::_CreateShaderProgram()
+{
+    if (_pipeline) {
+        _hgi->DestroyGraphicsPipeline(&_pipeline);
+    }
+    if (_shaderProgram) {
+        _DestroyShaderProgram();
+    }
+
+    HgiShaderFunctionDesc vertDesc;
+    vertDesc.debugName = TfToken("Vertex");
+    vertDesc.shaderStage = HgiShaderStageVertex;
+    HgiShaderFunctionAddStageInput(
+        &vertDesc, "position", "vec4", "position");
+    HgiShaderFunctionAddStageInput(
+        &vertDesc, "uvIn", "vec2");
+    HgiShaderFunctionAddStageOutput(
+        &vertDesc, "gl_Position", "vec4", "position");
+    HgiShaderFunctionAddStageOutput(
+        &vertDesc, "uvOut", "vec2");
+
+    HgiShaderFunctionDesc fragDesc;
+    fragDesc.debugName = TfToken("Fragment");
+    fragDesc.shaderStage = HgiShaderStageFragment;
+    HgiShaderFunctionAddStageInput(
+        &fragDesc, "uvOut", "vec2");
+    HgiShaderFunctionAddTexture(
+        &fragDesc, "colorIn");
+    HgiShaderFunctionAddStageOutput(
+        &fragDesc, "hd_FragColor", "vec4", "color");
+    HgiShaderFunctionAddConstantParam(
+        &fragDesc, "screenSize", "vec2");
+
+    std::istringstream vertShaderStream(vertShaderStr);
+    std::istringstream fragShaderStream(fragShaderStr);
+    const HioGlslfx vsGlslfx = HioGlslfx(vertShaderStream);
+    const HioGlslfx fsGlslfx = HioGlslfx(fragShaderStream);
+
+    // Setup the vertex shader
+    std::string vsCode;
+    if (_hgi->GetAPIName() == HgiTokens->OpenGL) {
+        vsCode = "#version 450 \n";
+    }
+    vsCode += vsGlslfx.GetSource(TfToken("VertexPassthrough"));
+    TF_VERIFY(!vsCode.empty());
+    vertDesc.shaderCode = vsCode.c_str();
+    HgiShaderFunctionHandle vertFn = _hgi->CreateShaderFunction(vertDesc);
+
+    // Setup the fragment shader
+    std::string fsCode;
+    if (_hgi->GetAPIName() == HgiTokens->OpenGL) {
+        fsCode = "#version 450 \n";
+    }
+    fsCode += fsGlslfx.GetSource(TfToken("FullscreenTexture"));
+    TF_VERIFY(!fsCode.empty());
+    fragDesc.shaderCode = fsCode.c_str();
+    HgiShaderFunctionHandle fragFn = _hgi->CreateShaderFunction(fragDesc);
+
+    // Setup the shader program
+    HgiShaderProgramDesc programDesc;
+    programDesc.debugName = TfToken("FullscreenTriangle").GetString();
+    programDesc.shaderFunctions.push_back(std::move(vertFn));
+    programDesc.shaderFunctions.push_back(std::move(fragFn));
+    _shaderProgram = _hgi->CreateShaderProgram(programDesc);
+
+    if (!_shaderProgram->IsValid() || !vertFn->IsValid() || !fragFn->IsValid()){
+        TF_CODING_ERROR("Failed to create shader program");
+        _PrintCompileErrors();
+        _DestroyShaderProgram();
+        return;
+    }
+}
+
+void
+HdSt_TextureTestDriver::_CreateBufferResources()
+{
+    if (_vertexBuffer) {
+        return;
+    }
+
+    constexpr size_t elementsPerVertex = 6;
+    constexpr size_t vertDataCount = elementsPerVertex * 3;
+    constexpr float vertDataGL[vertDataCount] = 
+            { -1,  1, 0, 1,     0, 1,
+              -1, -1, 0, 1,     0, 0,
+               1, -1, 0, 1,     1, 0};
+
+    constexpr float vertDataOther[vertDataCount] =
+            { -1,  1, 0, 1,     0, -1,
+              -1, -1, 0, 1,     0, 1,
+               1, -1, 0, 1,     1, 1};
+
+    HgiBufferDesc vboDesc;
+    vboDesc.debugName = "HdSt_TextureTestDriver VertexBuffer";
+    vboDesc.usage = HgiBufferUsageVertex;
+    vboDesc.initialData = _hgi->GetAPIName() != HgiTokens->OpenGL 
+        ? vertDataOther : vertDataGL;
+    vboDesc.byteSize = sizeof(vertDataGL);
+    vboDesc.vertexStride = elementsPerVertex * sizeof(vertDataGL[0]);
+    _vertexBuffer = _hgi->CreateBuffer(vboDesc);
+
+    static const int32_t indices[3] = { 0, 1, 2 };
+
+    HgiBufferDesc iboDesc;
+    iboDesc.debugName = "HdSt_TextureTestDriver IndexBuffer";
+    iboDesc.usage = HgiBufferUsageIndex32;
+    iboDesc.initialData = indices;
+    iboDesc.byteSize = sizeof(indices) * sizeof(indices[0]);
+    _indexBuffer = _hgi->CreateBuffer(iboDesc);
+}
+
+bool
+HdSt_TextureTestDriver::_CreateTextureBindings(
+    HgiTextureHandle const &textureHandle, 
+    HgiSamplerHandle const &samplerHandle)
+{
+    HgiResourceBindingsDesc resourceDesc;
+    resourceDesc.debugName = "HdSt_TextureTestDriver";
+
+    if (textureHandle) {
+        HgiTextureBindDesc texBindDesc;
+        texBindDesc.bindingIndex = 0;
+        texBindDesc.stageUsage = HgiShaderStageFragment;
+        texBindDesc.textures.push_back(textureHandle);
+        if (samplerHandle) {
+            texBindDesc.samplers.push_back(samplerHandle);
+        }
+        resourceDesc.textures.push_back(std::move(texBindDesc));
+    }
+
+    // If nothing has changed in the descriptor we avoid re-creating the
+    // resource bindings object.
+    if (_resourceBindings) {
+        HgiResourceBindingsDesc const& desc= _resourceBindings->GetDescriptor();
+        if (desc == resourceDesc) {
+            return true;
+        }
+    }
+
+    _resourceBindings = _hgi->CreateResourceBindings(resourceDesc);
+
+    return true;
+}
+
+void
+HdSt_TextureTestDriver::_CreateVertexBufferDescriptor()
+{
+    HgiVertexAttributeDesc posAttr;
+    posAttr.format = HgiFormatFloat32Vec3;
+    posAttr.offset = 0;
+    posAttr.shaderBindLocation = 0;
+
+    HgiVertexAttributeDesc uvAttr;
+    uvAttr.format = HgiFormatFloat32Vec2;
+    uvAttr.offset = sizeof(float) * 4; // after posAttr
+    uvAttr.shaderBindLocation = 1;
+
+    _vboDesc.bindingIndex = 0;
+    _vboDesc.vertexStride = sizeof(float) * 6; // pos, uv
+    _vboDesc.vertexAttributes = { posAttr, uvAttr };
+}
+
+bool
+HdSt_TextureTestDriver::_CreatePipeline(HgiTextureHandle const& colorDst)
+{   
+    if (_pipeline) {
+        _hgi->DestroyGraphicsPipeline(&_pipeline);
+    }
+
+    // Setup attachments
+    _attachment0.blendEnabled = false;
+    _attachment0.loadOp = HgiAttachmentLoadOpDontCare;
+    _attachment0.storeOp = HgiAttachmentStoreOpStore;
+    _attachment0.srcColorBlendFactor = HgiBlendFactorZero;
+    _attachment0.dstColorBlendFactor = HgiBlendFactorZero;
+    _attachment0.colorBlendOp = HgiBlendOpAdd;
+    _attachment0.srcAlphaBlendFactor = HgiBlendFactorZero;
+    _attachment0.dstAlphaBlendFactor = HgiBlendFactorZero;
+    _attachment0.alphaBlendOp = HgiBlendOpAdd;
+
+    if (colorDst) {
+        _attachment0.format = colorDst->GetDescriptor().format;
+        _attachment0.usage = colorDst->GetDescriptor().usage;
+    } else {
+        _attachment0.format = HgiFormatInvalid;
+    }
+
+    HgiGraphicsPipelineDesc desc;
+    desc.debugName = "TestPipeline";
+    desc.shaderProgram = _shaderProgram;
+    if (_attachment0.format != HgiFormatInvalid) {
+        desc.colorAttachmentDescs.push_back(_attachment0);
+    }
+
+    HgiDepthStencilState depthState;
+    depthState.depthTestEnabled = true;
+    depthState.depthCompareFn = HgiCompareFunctionAlways;
+    depthState.stencilTestEnabled = false;
+    desc.depthState = depthState;
+
+    desc.vertexBuffers = { _vboDesc };
+    desc.depthState.depthWriteEnabled = false;
+    desc.multiSampleState.alphaToCoverageEnable = false;
+    desc.rasterizationState.cullMode = HgiCullModeBack;
+    desc.rasterizationState.polygonMode = HgiPolygonModeFill;
+    desc.rasterizationState.winding = HgiWindingCounterClockwise;
+    desc.shaderProgram = _shaderProgram;
+    desc.shaderConstantsDesc.byteSize = _constantsData.size();
+    desc.shaderConstantsDesc.stageUsage = HgiShaderStageFragment;
+
+    _pipeline = _hgi->CreateGraphicsPipeline(desc);
+
+    return true;
+}
+
+void
+HdSt_TextureTestDriver::_DestroyShaderProgram()
+{
+    for (HgiShaderFunctionHandle fn : _shaderProgram->GetShaderFunctions()) {
+        _hgi->DestroyShaderFunction(&fn);
+    }
+    _hgi->DestroyShaderProgram(&_shaderProgram);
+}
+
+void
+HdSt_TextureTestDriver::_PrintCompileErrors()
+{
+    for (HgiShaderFunctionHandle fn : _shaderProgram->GetShaderFunctions()) {
+        std::cout << fn->GetCompileErrors() << std::endl;
+    }
+    std::cout << _shaderProgram->GetCompileErrors() << std::endl;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

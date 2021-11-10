@@ -34,7 +34,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
-    SDR_DEFAULT_VALUE_AS_SDF_DEFAULT_VALUE, true,
+    SDR_DEFAULT_VALUE_AS_SDF_DEFAULT_VALUE, false,
     "This is set to true, until all the internal codesites using "
     "GetDefaultValue() are updated to use GetDefaultValueAsSdfType(). As "
     "previous implementation for type conformance code would update "

@@ -81,12 +81,6 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         set(PYTHON_LIBRARIES "")
     endif()
 
-    find_package(Boost
-        COMPONENTS
-            program_options
-        REQUIRED
-    )
-
     if (${boost_version_string} VERSION_GREATER_EQUAL "1.67")
         # As of boost 1.67 the boost_python component name includes the
         # associated Python version (e.g. python27, python36). 
@@ -126,12 +120,14 @@ else()
             find_package(PythonInterp 2.7 REQUIRED)
         endif()
     endif()
- 
-    # --Boost
+endif()
+
+# --USD tools
+if(PXR_BUILD_USD_TOOLS)
     find_package(Boost
-        COMPONENTS
-            program_options
-        REQUIRED
+    COMPONENTS
+        program_options
+    REQUIRED
     )
 endif()
 

@@ -300,16 +300,37 @@ HdStRenderDelegate::GetResourceRegistry() const
     return _resourceRegistry;
 }
 
+static
+bool
+_AovHasIdSemantic(TfToken const & name)
+{
+    return name == HdAovTokens->primId ||
+           name == HdAovTokens->instanceId ||
+           name == HdAovTokens->elementId ||
+           name == HdAovTokens->edgeId ||
+           name == HdAovTokens->pointId;
+}
+
 HdAovDescriptor
 HdStRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
 {
     const bool colorDepthMSAA = true; // GL requires color/depth to be matching.
 
     if (name == HdAovTokens->color) {
-        HdFormat colorFormat = HdFormatFloat16Vec4;
-        return HdAovDescriptor(colorFormat,colorDepthMSAA, VtValue(GfVec4f(0)));
+        return HdAovDescriptor(
+                HdFormatFloat16Vec4, colorDepthMSAA, VtValue(GfVec4f(0)));
     } else if (HdAovHasDepthSemantic(name)) {
-        return HdAovDescriptor(HdFormatFloat32, colorDepthMSAA, VtValue(1.0f));
+        return HdAovDescriptor(
+                HdFormatFloat32, colorDepthMSAA, VtValue(1.0f));
+    } else if (HdAovHasDepthStencilSemantic(name)) {
+        return HdAovDescriptor(
+                HdFormatFloat32UInt8, colorDepthMSAA, VtValue(1.0f));
+    } else if (_AovHasIdSemantic(name)) {
+        return HdAovDescriptor(
+                HdFormatUNorm8Vec4, colorDepthMSAA, VtValue(GfVec4f(0)));
+    } else if (name == HdAovTokens->Neye) {
+        return HdAovDescriptor(
+                HdFormatUNorm8Vec4, colorDepthMSAA, VtValue(GfVec4f(0)));
     }
 
     return HdAovDescriptor();

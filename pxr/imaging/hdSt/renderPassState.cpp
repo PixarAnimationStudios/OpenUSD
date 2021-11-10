@@ -27,12 +27,14 @@
 
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/hgiConversions.h"
 #include "pxr/imaging/hdSt/fallbackLightingShader.h"
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
+#include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 
@@ -67,6 +69,9 @@ HdStRenderPassState::HdStRenderPassState()
 HdStRenderPassState::HdStRenderPassState(
     HdStRenderPassShaderSharedPtr const &renderPassShader)
     : HdRenderPassState()
+    , _worldToViewMatrix(1)
+    , _projectionMatrix(1)
+    , _cullMatrix(1.0)
     , _renderPassShader(renderPassShader)
     , _fallbackLightingShader(std::make_shared<HdSt_FallbackLightingShader>())
     , _clipPlanesBufferSize(0)
@@ -112,6 +117,10 @@ HdStRenderPassState::Prepare(
     GLF_GROUP_FUNCTION();
 
     HdRenderPassState::Prepare(resourceRegistry);
+
+    if(!TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM)) {
+        _cullMatrix = GetWorldToViewMatrix() * GetProjectionMatrix();
+    }
 
     HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
         std::static_pointer_cast<HdStResourceRegistry>(resourceRegistry);
@@ -282,11 +291,6 @@ HdStRenderPassState::Prepare(
 
     // notify view-transform to the lighting shader to update its uniform block
     _lightingShader->SetCamera(worldToViewMatrix, projMatrix);
-
-    // Update cull style on renderpass shader
-    // (Note that the geometric shader overrides the render pass's cullStyle 
-    // opinion if the prim has an opinion).
-    _renderPassShader->SetCullStyle(_cullStyle);
 }
 
 void
@@ -342,16 +346,20 @@ HdStRenderPassState::GetShaders() const
     return shaders;
 }
 
-// Note: The geometric shader may override the state set below if necessary,
-// including disabling h/w culling altogether. 
-// Disabling h/w culling is required to handle instancing wherein 
-// instanceScale/instanceTransform can flip the xform handedness.
 namespace {
 
+// Note: The geometric shader may override the state if necessary,
+// including disabling h/w culling altogether.
+// Disabling h/w culling is required to handle instancing wherein
+// instanceScale/instanceTransform can flip the xform handedness.
 void
-_SetGLCullState(HdCullStyle cullstyle)
+_SetGLCullState(
+        HdCullStyle const rsCullStyle,
+        HdSt_ResourceBinder const &binder,
+        HdSt_GeometricShaderSharedPtr const &geometricShader)
 {
-    switch (cullstyle) {
+    // renderPass culling opinions
+    switch (rsCullStyle) {
         case HdCullStyleFront:
         case HdCullStyleFrontUnlessDoubleSided:
             glEnable(GL_CULL_FACE);
@@ -368,6 +376,102 @@ _SetGLCullState(HdCullStyle cullstyle)
             // disable culling
             glDisable(GL_CULL_FACE);
             break;
+    }
+
+    // geometricShader culling opinions
+    HdCullStyle const gsCullStyle = geometricShader->GetCullStyle();
+    if (geometricShader->GetUseHardwareFaceCulling()) {
+        bool const hasMirroredTransform =
+                            geometricShader->GetHasMirroredTransform();
+        bool const doubleSided = geometricShader->GetDoubleSided();
+
+        switch (gsCullStyle) {
+            case HdCullStyleFront:
+                glEnable(GL_CULL_FACE);
+                if (hasMirroredTransform) {
+                    glCullFace(GL_BACK);
+                } else {
+                    glCullFace(GL_FRONT);
+                }
+                break;
+            case HdCullStyleFrontUnlessDoubleSided:
+                if (!doubleSided) {
+                    glEnable(GL_CULL_FACE);
+                    if (hasMirroredTransform) {
+                        glCullFace(GL_BACK);
+                    } else {
+                        glCullFace(GL_FRONT);
+                    }
+                }
+                break;
+            case HdCullStyleBack:
+                glEnable(GL_CULL_FACE);
+                if (hasMirroredTransform) {
+                    glCullFace(GL_FRONT);
+                } else {
+                    glCullFace(GL_BACK);
+                }
+                break;
+            case HdCullStyleBackUnlessDoubleSided:
+                if (!doubleSided) {
+                    glEnable(GL_CULL_FACE);
+                    if (hasMirroredTransform) {
+                        glCullFace(GL_FRONT);
+                    } else {
+                        glCullFace(GL_BACK);
+                    }
+                }
+                break;
+            case HdCullStyleNothing:
+                glDisable(GL_CULL_FACE);
+                break;
+            case HdCullStyleDontCare:
+            default:
+                // Fallback to the renderPass opinion, but account for
+                // combinations of parameters that require extra handling
+                if (doubleSided &&
+                   (rsCullStyle == HdCullStyleBackUnlessDoubleSided ||
+                    rsCullStyle == HdCullStyleFrontUnlessDoubleSided)) {
+                    glDisable(GL_CULL_FACE);
+                } else if (hasMirroredTransform &&
+                    (rsCullStyle == HdCullStyleBack ||
+                     rsCullStyle == HdCullStyleBackUnlessDoubleSided)) {
+                    glEnable(GL_CULL_FACE);
+                    glCullFace(GL_FRONT);
+                } else if (hasMirroredTransform &&
+                    (rsCullStyle == HdCullStyleFront ||
+                     rsCullStyle == HdCullStyleFrontUnlessDoubleSided)) {
+                    glEnable(GL_CULL_FACE);
+                    glCullFace(GL_BACK);
+                }
+                break;
+        }
+    } else {
+        // Use fragment shader culling via discard.
+        glDisable(GL_CULL_FACE);
+
+        if (gsCullStyle != HdCullStyleDontCare) {
+            unsigned int value = gsCullStyle;
+            binder.BindUniformui(HdShaderTokens->cullStyle, 1, &value);
+        }
+    }
+}
+
+void
+_SetGLPolygonMode(float rsLineWidth,
+                  HdSt_GeometricShaderSharedPtr const &geometricShader)
+{
+    if (geometricShader->GetPolygonMode() == HdPolygonModeLine) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        float gsLineWidth = geometricShader->GetLineWidth();
+        if (gsLineWidth > 0) {
+            glLineWidth(gsLineWidth);
+        }
+    } else {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        if (rsLineWidth > 0) {
+            glLineWidth(rsLineWidth);
+        }
     }
 }
 
@@ -395,7 +499,16 @@ _SetColorMask(int drawBufferIndex, HdRenderPassState::ColorMask const& mask)
     }
 }
 
-} // anonymous namespace 
+} // anonymous namespace
+
+void
+HdStRenderPassState::ApplyStateFromGeometricShader(
+        HdSt_ResourceBinder const &binder,
+        HdSt_GeometricShaderSharedPtr const &geometricShader)
+{
+    _SetGLCullState(_cullStyle, binder, geometricShader);
+    _SetGLPolygonMode(_lineWidth, geometricShader);
+}
 
 void
 HdStRenderPassState::Bind()
@@ -447,9 +560,6 @@ HdStRenderPassState::Bind()
         glDisable(GL_STENCIL_TEST);
     }
     
-    // Face culling
-    _SetGLCullState(_cullStyle);
-
     // Line width
     if (_lineWidth > 0) {
         glLineWidth(_lineWidth);
@@ -525,6 +635,7 @@ HdStRenderPassState::Unbind()
     glDisable(GL_STENCIL_TEST);
     glDepthFunc(GL_LESS);
     glPolygonOffset(0, 0);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glLineWidth(1.0f);
 
     glDisable(GL_BLEND);
@@ -711,7 +822,8 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
         attachmentDesc.dstAlphaBlendFactor=HgiBlendFactor(_blendAlphaDstFactor);
         attachmentDesc.alphaBlendOp = HgiBlendOp(_blendAlphaOp);
 
-        if (HdAovHasDepthSemantic(aov.aovName)) {
+        if (HdAovHasDepthSemantic(aov.aovName) ||
+            HdAovHasDepthStencilSemantic(aov.aovName)) {
             desc.depthAttachmentDesc = std::move(attachmentDesc);
             desc.depthTexture = hgiTexHandle;
             if (hgiResolveHandle) {
@@ -729,6 +841,40 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
     }
 
     return desc;
+}
+
+GfMatrix4d
+HdStRenderPassState::GetWorldToViewMatrix() const
+{
+    if (_camera) {
+        return HdRenderPassState::GetWorldToViewMatrix();
+    }
+
+    return _worldToViewMatrix;
+}
+
+GfMatrix4d
+HdStRenderPassState::GetProjectionMatrix() const
+{
+    if (_camera) {
+        return HdRenderPassState::GetProjectionMatrix();
+    }
+    return _projectionMatrix;
+}
+
+HdRenderPassState::ClipPlanesVector const &
+HdStRenderPassState::GetClipPlanes() const
+{
+    if (!_camera) {
+        if (_clippingEnabled) {
+            return _clipPlanes;
+        } else {
+            const static HdRenderPassState::ClipPlanesVector empty;
+            return empty;
+        }
+    }
+
+    return HdRenderPassState::GetClipPlanes();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

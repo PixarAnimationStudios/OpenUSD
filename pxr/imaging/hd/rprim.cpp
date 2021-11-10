@@ -23,25 +23,10 @@
 //
 #include "pxr/imaging/hd/rprim.h"
 
-#include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/changeTracker.h"
-#include "pxr/imaging/hd/computation.h"
-#include "pxr/imaging/hd/drawItem.h"
-#include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/instancer.h"
-#include "pxr/imaging/hd/instanceRegistry.h"
-#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/vtBufferSource.h"
-
-#include "pxr/base/tf/envSetting.h"
-
-#include "pxr/base/arch/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -55,10 +40,7 @@ HdRprim::HdRprim(SdfPath const& id)
     _sharedData.rprimID = id;
 }
 
-HdRprim::~HdRprim()
-{
-    /*NOTHING*/
-}
+HdRprim::~HdRprim() = default;
 
 // -------------------------------------------------------------------------- //
 ///                 Rprim Hydra Engine API : Pre-Sync & Sync-Phase
@@ -190,10 +172,19 @@ void
 HdRprim::UpdateReprSelector(HdSceneDelegate* delegate,
                             HdDirtyBits *dirtyBits)
 {
-    SdfPath const& id = GetId();
-    if (HdChangeTracker::IsReprDirty(*dirtyBits, id)) {
-        _authoredReprSelector = delegate->GetReprSelector(id);
+    if (HdChangeTracker::IsReprDirty(*dirtyBits, GetId())) {
+        _authoredReprSelector = delegate->GetReprSelector(GetId());
         *dirtyBits &= ~HdChangeTracker::DirtyRepr;
+    }
+}
+
+void
+HdRprim::UpdateRenderTag(HdSceneDelegate* delegate,
+                         HdDirtyBits *dirtyBits)
+{
+    if (*dirtyBits & HdChangeTracker::DirtyRenderTag) {
+        _renderTag = delegate->GetRenderTag(GetId());
+        *dirtyBits &= ~HdChangeTracker::DirtyRenderTag;
     }
 }
 

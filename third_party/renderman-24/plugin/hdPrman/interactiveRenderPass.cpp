@@ -23,7 +23,7 @@
 //
 #include "hdPrman/interactiveRenderPass.h"
 #include "hdPrman/camera.h"
-#include "hdPrman/interactiveContext.h"
+#include "hdPrman/interactiveRenderParam.h"
 #include "hdPrman/renderBuffer.h"
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/rixStrings.h"
@@ -42,35 +42,33 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static bool _enableQuickIntegrate = TfGetenvBool(
-    "HD_PRMAN_ENABLE_QUICKINTEGRATE", false);
+TF_DEFINE_ENV_SETTING(HD_PRMAN_ENABLE_QUICKINTEGRATE, false,
+                      "Enable interactive integrator");
+
+static bool _enableQuickIntegrate =
+    TfGetEnvSetting(HD_PRMAN_ENABLE_QUICKINTEGRATE);
 
 HdPrman_InteractiveRenderPass::HdPrman_InteractiveRenderPass(
     HdRenderIndex *index,
     HdRprimCollection const &collection,
-    std::shared_ptr<HdPrman_Context> context)
+    std::shared_ptr<HdPrman_RenderParam> renderParam)
 : HdRenderPass(index, collection)
 , _converged(false)
 , _lastRenderedVersion(0)
 , _lastSettingsVersion(0)
-, _lastCamPropertiesHash(0)
 , _integrator(HdPrmanIntegratorTokens->PxrPathTracer)
 , _quickIntegrator(HdPrmanIntegratorTokens->PxrDirectLighting)
-, _quickIntegrateTime(200.f/1000.f)
+, _quickIntegrateTime(_enableQuickIntegrate ? 0.2f : 0.0f)
 , _quickIntegrate(false)
 , _isPrimaryIntegrator(false)
 {
-    _interactiveContext =
-        std::dynamic_pointer_cast<HdPrman_InteractiveContext>(context);
+    _interactiveRenderParam =
+        std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(renderParam);
 
-    TF_VERIFY(_interactiveContext);
-
-    _quickIntegrateTime = _enableQuickIntegrate ? 200.f/1000.f : 0.f;
+    TF_VERIFY(_interactiveRenderParam);
 }
 
-HdPrman_InteractiveRenderPass::~HdPrman_InteractiveRenderPass()
-{
-}
+HdPrman_InteractiveRenderPass::~HdPrman_InteractiveRenderPass() = default;
 
 bool
 HdPrman_InteractiveRenderPass::IsConverged() const
@@ -86,127 +84,6 @@ _DiffTimeToNow(std::chrono::steady_clock::time_point const& then)
     diff = std::chrono::duration_cast<std::chrono::duration<double>>
                                 (std::chrono::steady_clock::now()-then);
     return(diff.count());
-}
-
-// The crop window for RenderMan.
-//
-// Computed from data window and render buffer size.
-//
-// Recall from the RenderMan API:
-// Only the pixels within the crop window are rendered. Has no
-// affect on how pixels in the image map into the filmback plane.
-// The crop window is relative to the render buffer size, e.g.,
-// the crop window of (0,0,1,1) corresponds to the entire render
-// buffer. The coordinates of the crop window are y-down.
-// Format is (xmin, xmax, ymin, ymax).
-//
-// The limits for the integer locations corresponding to the above crop
-// window are:
-//
-//   rxmin = clamp(ceil( renderbufferwidth*xmin    ), 0, renderbufferwidth - 1)
-//   rxmax = clamp(ceil( renderbufferwidth*xmax - 1), 0, renderbufferwidth - 1)
-//   similar for y
-//
-static
-float
-_DivRoundDown(const int a, const int b)
-{
-    // Note that if the division (performed here)
-    //    float(a) / b
-    // rounds up, then the result (by RenderMan) of
-    //    ceil(b * (float(a) / b))
-    // might be a+1 instead of a.
-    //
-    // We add a slight negative bias to a to avoid this (we could also
-    // set the floating point rounding mode but: how to do this in a
-    // portable way - and on x86 switching the rounding is slow).
-
-    return GfClamp((a - 0.0078125f) / b, 0.0f, 1.0f);
-}
-
-static
-GfVec4f
-_GetCropWindow(
-    HdRenderPassStateSharedPtr const& renderPassState,
-    const int32_t width, const int32_t height)
-{
-    const CameraUtilFraming &framing = renderPassState->GetFraming();
-    if (!framing.IsValid()) {
-        return GfVec4f(0,1,0,1);
-    }
-
-    const GfRect2i &w = framing.dataWindow;
-    return GfVec4f(
-        _DivRoundDown(w.GetMinX(), width),
-        _DivRoundDown(w.GetMaxX() + 1, width),
-        _DivRoundDown(w.GetMinY(), height),
-        _DivRoundDown(w.GetMaxY() + 1, height));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// Screen window space: imagine a plane at unit distance (*) in front
-// of the camera (and parallel to the camera). Coordinates with
-// respect to screen window space are measured in this plane with the
-// y-Axis pointing up. Such coordinates parameterize rays from the
-// camera.
-// (*) This is a simplification achieved by fixing RenderMan's FOV to be
-// 90 degrees.
-//
-// Image space: coordinates of the pixels in the rendered image with the top
-// left pixel having coordinate (0,0), i.e., y-down.
-// The display window from the camera framing is in image space as well
-// as the width and height of the render buffer.
-//
-// We want to map the screen window space to the image space such that the
-// conformed camera frustum from the scene delegate maps to the display window
-// of the CameraUtilFraming. This is achieved by the following code.
-//
-//
-// Compute screen window for given camera.
-//
-static
-GfRange2d
-_GetScreenWindow(const HdCamera * const cam)
-{
-    const GfVec2d size(
-        cam->GetHorizontalAperture(),       cam->GetVerticalAperture());
-    const GfVec2d offset(
-        cam->GetHorizontalApertureOffset(), cam->GetVerticalApertureOffset());
-        
-    const GfRange2d filmbackPlane(-0.5 * size + offset, +0.5 * size + offset);
-
-    if (cam->GetProjection() == HdCamera::Orthographic) {
-        return filmbackPlane;
-    }
-
-    if (cam->GetFocalLength() == 0.0f) {
-        return filmbackPlane;
-    }
-
-    return filmbackPlane / double(cam->GetFocalLength());
-}
-
-static
-double
-_SafeDiv(const double a, const double b)
-{
-    if (b == 0) {
-        TF_CODING_ERROR(
-            "Invalid display window in render pass state for hdPrman");
-        return 1.0;
-    }
-    return a / b;
-}
-
-// Compute the aspect ratio of the display window taking the
-// pixel aspect ratio into account.
-static
-double
-_GetDisplayWindowAspect(const CameraUtilFraming &framing)
-{
-    const GfVec2f &size = framing.displayWindow.GetSize();
-    return framing.pixelAspectRatio * _SafeDiv(size[0], size[1]);
 }
 
 static
@@ -247,98 +124,6 @@ _GetRenderBufferSize(const HdRenderPassAovBindingVector &aovBindings,
     return false;
 }
 
-// Compute the screen window we need to give to RenderMan. This screen
-// window is mapped to the entire render buffer (in image space) by
-// RenderMan.
-//
-// The input is the screenWindowForDisplayWindow: the screen window
-// corresponding to the camera from the scene delegate conformed to match
-// the aspect ratio of the display window.
-//
-// Together with the displayWindow, this input establishes how screen
-// window space is mapped to image space. We know need to take the
-// render buffer rect in image space and convert it to screen window
-// space.
-// 
-static
-GfRange2d
-_ConvertScreenWindowForDisplayWindowToRenderBuffer(
-    const GfRange2d &screenWindowForDisplayWindow,
-    const GfRange2f &displayWindow,
-    const int32_t renderBufferWidth, const int32_t renderBufferHeight)
-{
-    // Scaling factors to go from image space to screen window space.
-    const double screenWindowWidthPerPixel =
-        screenWindowForDisplayWindow.GetSize()[0] /
-        displayWindow.GetSize()[0];
-        
-    const double screenWindowHeightPerPixel =
-        screenWindowForDisplayWindow.GetSize()[1] /
-        displayWindow.GetSize()[1];
-
-    // Assuming an affine mapping between screen window space
-    // and image space, compute what (0,0) corresponds to in
-    // screen window space.
-    const GfVec2d screenWindowMin(
-        screenWindowForDisplayWindow.GetMin()[0]
-        - screenWindowWidthPerPixel * displayWindow.GetMin()[0],
-        // Note that image space is y-Down and screen window
-        // space is y-Up, so this is a bit tricky...
-        screenWindowForDisplayWindow.GetMax()[1]
-        + screenWindowHeightPerPixel * (
-            displayWindow.GetMin()[1] - renderBufferHeight));
-        
-    const GfVec2d screenWindowSize(
-        screenWindowWidthPerPixel * renderBufferWidth,
-        screenWindowHeightPerPixel * renderBufferHeight);
-    
-    return GfRange2d(screenWindowMin, screenWindowMin + screenWindowSize);
-}
-
-// Convert a window into the format expected by RenderMan
-// (xmin, xmax, ymin, ymax).
-static
-GfVec4f
-_ToVec4f(const GfRange2d &window)
-{
-    return { float(window.GetMin()[0]), float(window.GetMax()[0]),
-             float(window.GetMin()[1]), float(window.GetMax()[1]) };
-}
-
-// Compute the screen window we need to give to RenderMan.
-// 
-// See above comments. This also conforms the camera frustum using
-// the window policy specified by the application or the HdCamera.
-//
-static
-GfVec4f
-_ComputeScreenWindow(
-    HdRenderPassStateSharedPtr const& renderPassState,
-    const int32_t renderBufferWidth, const int32_t renderBufferHeight)
-{
-    const CameraUtilFraming &framing = renderPassState->GetFraming();
-
-    // Screen window from camera.
-    const GfRange2d screenWindowForCamera =
-        _GetScreenWindow(renderPassState->GetCamera());
-
-    // Conform to match display window's aspect ratio.
-    const GfRange2d screenWindowForDisplayWindow =
-        CameraUtilConformedWindow(
-            screenWindowForCamera,
-            renderPassState->GetWindowPolicy(),
-            _GetDisplayWindowAspect(framing));
-    
-    // Compute screen window we need to send to RenderMan.
-    const GfRange2d screenWindowForRenderBuffer =
-        _ConvertScreenWindowForDisplayWindowToRenderBuffer(
-            screenWindowForDisplayWindow,
-            framing.displayWindow,
-            renderBufferWidth, renderBufferHeight);
-    
-    return _ToVec4f(screenWindowForRenderBuffer);
-}
-
 void
 HdPrman_InteractiveRenderPass::_Execute(
     HdRenderPassStateSharedPtr const& renderPassState,
@@ -346,44 +131,28 @@ HdPrman_InteractiveRenderPass::_Execute(
 {
     HD_TRACE_FUNCTION();
     
-    static const RtUString us_PxrPerspective("PxrPerspective");
-    static const RtUString us_PxrOrthographic("PxrOrthographic");
     static const RtUString us_PathTracer("PathTracer");
-    static const RtUString us_main_cam_projection("main_cam_projection");
-    static const RtUString us_planeNormal("planeNormal");
-    static const RtUString us_planeOrigin("planeOrigin");
 
-    if (!_interactiveContext) {
+    if (!_interactiveRenderParam) {
         // If this is not an interactive context, don't use Hydra to drive
         // rendering and presentation of the framebuffer.  Instead, assume
         // we are just using Hydra to sync the scene contents to Riley.
         return;
     }
-    if (_interactiveContext->renderThread.IsPauseRequested()) {
+    if (_interactiveRenderParam->renderThread.IsPauseRequested()) {
         // No more updates if pause is pending
         return;
-    }
-
-    riley::Riley *riley = _interactiveContext->riley;
-
-    bool needStartRender = false;
-    const int currentSceneVersion = _interactiveContext->sceneVersion.load();
-    if (currentSceneVersion != _lastRenderedVersion) {
-        needStartRender = true;
-        _lastRenderedVersion = currentSceneVersion;
     }
 
     // Creates displays if needed
     HdRenderPassAovBindingVector const &aovBindings =
         renderPassState->GetAovBindings();
-    if(_interactiveContext->CreateDisplays(aovBindings))
-    {
-        needStartRender = true;
-    }
+
+    _interactiveRenderParam->CreateDisplays(aovBindings);
 
     // Enable/disable the fallback light when the scene provides no lights.
-    _interactiveContext->SetFallbackLightsEnabled(
-        _interactiveContext->sceneLightCount == 0);
+    _interactiveRenderParam->SetFallbackLightsEnabled(
+        _interactiveRenderParam->sceneLightCount == 0);
 
     // Likewise the render settings.
     HdPrmanRenderDelegate * const renderDelegate =
@@ -392,16 +161,49 @@ HdPrman_InteractiveRenderPass::_Execute(
     const int currentSettingsVersion =
         renderDelegate->GetRenderSettingsVersion();
     
-    // XXX: Need to cast away constness to process updated camera params since
-    // the Hydra camera doesn't update the Riley camera directly.
-    HdPrmanCamera * const hdCam =
-        const_cast<HdPrmanCamera *>(
-            dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera()));
-    const bool camParamsChanged =
-        hdCam && hdCam->GetAndResetHasParamsChanged();
-    
-    if (_lastSettingsVersion != currentSettingsVersion || camParamsChanged) {
-        _interactiveContext->StopRender();
+    int32_t renderBufferWidth = 0;
+    int32_t renderBufferHeight = 0;
+
+    if (!_GetRenderBufferSize(aovBindings,
+                              GetRenderIndex(),
+                              &renderBufferWidth, &renderBufferHeight)) {
+        // For legacy clients not using AOVs, take size of viewport.
+        const GfVec4f vp = renderPassState->GetViewport();
+        renderBufferWidth  = vp[2];
+        renderBufferHeight = vp[3];
+    }
+
+    const HdPrmanCamera * const hdCam =
+        dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera());
+
+    HdPrmanCameraContext &cameraContext =
+        _interactiveRenderParam->GetCameraContext();
+    cameraContext.SetCamera(hdCam);
+    if (renderPassState->GetFraming().IsValid()) {
+        // For new clients setting the camera framing.
+        cameraContext.SetFraming(renderPassState->GetFraming());
+    } else {
+        // For old clients using the viewport.
+        const GfVec4f vp = renderPassState->GetViewport();
+        cameraContext.SetFraming(
+            CameraUtilFraming(
+                GfRect2i(
+                    // Note that the OpenGL-style viewport is y-Up
+                    // but the camera framing is y-Down, so converting here.
+                    GfVec2i(vp[0], renderBufferHeight - (vp[1] + vp[3])),
+                    vp[2], vp[3])));
+    }
+
+    cameraContext.SetWindowPolicy(renderPassState->GetWindowPolicy());
+
+    const bool camChanged = cameraContext.IsInvalid();
+    cameraContext.MarkValid();
+
+    if (_lastSettingsVersion != currentSettingsVersion || camChanged) {
+
+        // AcquireRiley will stop rendering and increase sceneVersion
+        // so that the render will be re-started below.
+        riley::Riley * const riley = _interactiveRenderParam->AcquireRiley();
 
         _integrator = renderDelegate->GetRenderSetting<std::string>(
             HdPrmanRenderSettingsTokens->integratorName,
@@ -425,23 +227,31 @@ HdPrman_InteractiveRenderPass::_Execute(
         {
             _quickIntegrateTime = 0.0f;
 
-            RtParamList integratorParams;
-            _interactiveContext->SetIntegratorParamsFromRenderSettings(
+            riley::ShadingNode &integratorNode =
+                _interactiveRenderParam->GetActiveIntegratorShadingNode();
+
+            _interactiveRenderParam->SetIntegratorParamsFromRenderSettings(
                 renderDelegate,
                 _integrator,
-                integratorParams);
-	    _interactiveContext->SetIntegratorParamsFromCamera(
-                renderDelegate, hdCam,
-		_integrator, integratorParams);
+                integratorNode.params);
 
-            riley::ShadingNode integratorNode {
-                riley::ShadingNode::Type::k_Integrator,
-                RtUString(_integrator.c_str()),
-                RtUString(_integrator.c_str()),
-                integratorParams
-            };
-            riley->ModifyIntegrator(_interactiveContext->integratorId,
-                                    &integratorNode);
+            // XXX: Need to cast away constness because
+            // SetIntegratorParamsFromCamera has wrong signature.
+
+            HdPrmanCamera * const nonConstCam =
+                const_cast<HdPrmanCamera *>(hdCam);
+
+            _interactiveRenderParam->SetIntegratorParamsFromCamera(
+                renderDelegate,
+                nonConstCam,
+                _integrator,
+                integratorNode.params);
+
+            RtUString integrator(_integrator.c_str());
+            integratorNode.handle = integratorNode.name = integrator;
+
+            riley->ModifyIntegrator(
+                _interactiveRenderParam->GetActiveIntegratorId(), &integratorNode);
         }
 
         // Update convergence criteria.
@@ -449,27 +259,25 @@ HdPrman_InteractiveRenderPass::_Execute(
             HdRenderSettingsTokens->convergedSamplesPerPixel).Cast<int>();
         int maxSamples = TF_VERIFY(!vtMaxSamples.IsEmpty()) ?
             vtMaxSamples.UncheckedGet<int>() : 64; // RenderMan default
-        _interactiveContext->_options.SetInteger(RixStr.k_hider_maxsamples,
-                                                 maxSamples);
+        _interactiveRenderParam->GetOptions().SetInteger(RixStr.k_hider_maxsamples,
+                                                     maxSamples);
 
         VtValue vtPixelVariance = renderDelegate->GetRenderSetting(
             HdRenderSettingsTokens->convergedVariance).Cast<float>();
         float pixelVariance = TF_VERIFY(!vtPixelVariance.IsEmpty()) ?
             vtPixelVariance.UncheckedGet<float>() : 0.001f;
-        _interactiveContext->_options.SetFloat(RixStr.k_Ri_PixelVariance,
-                                               pixelVariance);
+        _interactiveRenderParam->GetOptions().SetFloat(RixStr.k_Ri_PixelVariance,
+                                                   pixelVariance);
 
         // Set Options from RenderSettings schema
-        _interactiveContext->SetOptionsFromRenderSettings(
+        _interactiveRenderParam->SetOptionsFromRenderSettings(
             renderDelegate,
-            _interactiveContext->_options);
+            _interactiveRenderParam->GetOptions());
         
-        _interactiveContext->riley->SetOptions(
-            _interactiveContext->_GetDeprecatedOptionsPrunedList());
+        riley->SetOptions(
+            _interactiveRenderParam->_GetDeprecatedOptionsPrunedList());
 
         _lastSettingsVersion = currentSettingsVersion;
-
-        needStartRender = true;
 
         // Setup quick integrator and save ids of it and main
         if (_enableQuickIntegrate)
@@ -488,20 +296,14 @@ HdPrman_InteractiveRenderPass::_Execute(
                 riley->CreateIntegrator(riley::UserId::DefaultId(),
                     integratorNode);
         }
-        _mainIntegratorId = _interactiveContext->integratorId;
-    }
 
-
-    int32_t renderBufferWidth = 0;
-    int32_t renderBufferHeight = 0;
-
-    if (!_GetRenderBufferSize(aovBindings,
-                              GetRenderIndex(),
-                              &renderBufferWidth, &renderBufferHeight)) {
-        // For legacy clients not using AOVs, take size of viewport.
-        const GfVec4f vp = renderPassState->GetViewport();
-        renderBufferWidth  = vp[2];
-        renderBufferHeight = vp[3];
+        // This can't be correct: imagine that we call _Execute while the
+        // quick integrator is still working. Then _mainIntegratorId will
+        // be set to the id of the quick integrator and the below code that
+        // tries to switch to the main integrator with
+        // SetIntegrator(_mainIntegratorId) will do nothing.
+        //
+        _mainIntegratorId = _interactiveRenderParam->GetActiveIntegratorId();
     }
 
     // Check if any camera update needed
@@ -509,316 +311,126 @@ HdPrman_InteractiveRenderPass::_Execute(
     // need to sync anything here.  Note that we'll need to solve
     // thread coordination for sprim sync/finalize first.
     const bool resolutionChanged =
-        _interactiveContext->resolution[0] != renderBufferWidth ||
-        _interactiveContext->resolution[1] != renderBufferHeight;
+        _interactiveRenderParam->resolution[0] != renderBufferWidth ||
+        _interactiveRenderParam->resolution[1] != renderBufferHeight;
 
-    const GfMatrix4d proj =
-        renderPassState->GetProjectionMatrix();
-    const GfMatrix4d viewToWorldMatrix =
-        renderPassState->GetWorldToViewMatrix().GetInverse();
-    const CameraUtilFraming &framing =
-        renderPassState->GetFraming();
+    if (camChanged ||
+        resolutionChanged) {
 
-    // These are only those camera properties that used to be Ri options
-    // and are still being queried from the options and passed to the camera.
-    RtParamList camProperties =
-            _interactiveContext->_GetCameraPropertiesFromDeprecatedOptions();
+        // AcquireRiley will stop rendering and increase sceneVersion
+        // so that the render will be re-started below.
+        riley::Riley * const riley = _interactiveRenderParam->AcquireRiley();
 
-    if (camParamsChanged ||
-        resolutionChanged ||
-        proj != _lastProj ||
-        viewToWorldMatrix != _lastViewToWorldMatrix ||
-        framing != _lastFraming ||
-        _lastCamPropertiesHash != camProperties.Hash()) {
-
-        _lastProj = proj;
-        _lastViewToWorldMatrix = viewToWorldMatrix;
-        _lastFraming = framing;
-        _lastCamPropertiesHash = camProperties.Hash();
-
-        _interactiveContext->StopRender();
-
-        const GfVec4f cropWindow =
-            _GetCropWindow(
-                renderPassState, renderBufferWidth, renderBufferHeight);
-        const bool cropWindowChanged = cropWindow != _lastCropWindow;
-
-        if (resolutionChanged || cropWindowChanged) {
-            if (resolutionChanged) {
-                _interactiveContext->resolution[0] = renderBufferWidth;
-                _interactiveContext->resolution[1] = renderBufferHeight;
+        if (resolutionChanged) {
+            _interactiveRenderParam->resolution[0] = renderBufferWidth;
+            _interactiveRenderParam->resolution[1] = renderBufferHeight;
+            
+            _interactiveRenderParam->GetOptions().SetIntegerArray(
+                RixStr.k_Ri_FormatResolution,
+                _interactiveRenderParam->resolution, 2);
+            
+            // There is currently only one render target per context
+            if (_interactiveRenderParam->renderViews.size() == 1) {
+                riley::RenderViewId const renderViewId =
+                    _interactiveRenderParam->renderViews[0];
                 
-                _interactiveContext->_options.SetIntegerArray(
-                    RixStr.k_Ri_FormatResolution,
-                    _interactiveContext->resolution, 2);
-
-                // There is currently only one render target per context
-                if (_interactiveContext->renderViews.size() == 1) {
-                    riley::RenderViewId const renderViewId =
-                        _interactiveContext->renderViews[0];
-                    
-                    auto it =
-                        _interactiveContext->renderTargets.find(renderViewId);
-                    
-                    if (it != _interactiveContext->renderTargets.end()) {
-                        riley::RenderTargetId const rtid = it->second;
-                        const riley::Extent targetExtent = {
-                            static_cast<uint32_t>(
-                                _interactiveContext->resolution[0]),
-                            static_cast<uint32_t>(
-                                _interactiveContext->resolution[1]),
-                            0};
-                        riley->ModifyRenderTarget(
-                            rtid, nullptr,
-                            &targetExtent, nullptr, nullptr, nullptr);
-                    }
+                auto it =
+                    _interactiveRenderParam->renderTargets.find(renderViewId);
+                
+                if (it != _interactiveRenderParam->renderTargets.end()) {
+                    riley::RenderTargetId const rtid = it->second;
+                    const riley::Extent targetExtent = {
+                        static_cast<uint32_t>(
+                            _interactiveRenderParam->resolution[0]),
+                        static_cast<uint32_t>(
+                            _interactiveRenderParam->resolution[1]),
+                        0};
+                    riley->ModifyRenderTarget(
+                        rtid, nullptr,
+                        &targetExtent, nullptr, nullptr, nullptr);
                 }
             }
-            if (cropWindowChanged) {
-                _lastCropWindow = cropWindow;
 
-                _interactiveContext->_options.SetFloatArray(
-                    RixStr.k_Ri_CropWindow,
-                    cropWindow.data(), 4);
-            }
+            cameraContext.SetRileyOptionsInteractive(
+                &(_interactiveRenderParam->GetOptions()),
+                GfVec2i(renderBufferWidth, renderBufferHeight));
             
-            _interactiveContext->riley->SetOptions(
-                _interactiveContext->_GetDeprecatedOptionsPrunedList());
+            riley->SetOptions(
+                _interactiveRenderParam->_GetDeprecatedOptionsPrunedList());
         }
 
-        // Coordinate system notes.
-        //
-        // # Hydra & USD are right-handed
-        // - Camera space is always Y-up, looking along -Z.
-        // - World space may be either Y-up or Z-up, based on stage metadata.
-        // - Individual prims may be marked to be left-handed, which
-        //   does not affect spatial coordinates, it only flips the
-        //   winding order of polygons.
-        //
-        // # Prman is left-handed
-        // - World is Y-up
-        // - Camera looks along +Z.
-
-        const bool isPerspective =
-            round(proj[3][3]) != 1 || proj == GfMatrix4d(1);
-        riley::ShadingNode cameraNode = riley::ShadingNode {
-            riley::ShadingNode::Type::k_Projection,
-            isPerspective ? us_PxrPerspective : us_PxrOrthographic,
-            us_main_cam_projection,
-            RtParamList()
-        };
-
-        // Set riley camera and projection shader params from the Hydra camera,
-        // if available.
-        RtParamList camParams;
-        if (hdCam) {
-            hdCam->SetRileyCameraParams(camParams, cameraNode.params);
-        }
-
-        // XXX Normally we would update RenderMan option 'ScreenWindow' to
-        // account for an orthographic camera,
-        //     options.SetFloatArray(RixStr.k_Ri_ScreenWindow, window, 4);
-        // But we cannot update this option in Renderman once it is running.
-        // We apply the orthographic-width to the viewMatrix scale instead.
-        // Inverse computation of GfFrustum::ComputeProjectionMatrix()
-        GfMatrix4d viewToWorldCorrectionMatrix(1.0);
-
-        if (hdCam && renderPassState->GetFraming().IsValid()) {
-            const GfVec4f screenWindow =
-                _ComputeScreenWindow(
-                    renderPassState,
-                    renderBufferWidth, renderBufferHeight);
-
-            if (hdCam->GetProjection() == HdCamera::Perspective) {
-                // TODO: For lens distortion to be correct, we might
-                // need to set a different FOV and adjust the screenwindow
-                // accordingly.
-                // For now, lens distortion parameters are not passed through
-                // hdPrman anyway.
-                //
-                cameraNode.params.SetFloat(
-                    RixStr.k_fov, 90.0f);
-            }
-            camParams.SetFloatArray(
-                RixStr.k_Ri_ScreenWindow, screenWindow.data(), 4);
-        } else {
-            if (!isPerspective) {
-                const double left   = -(1 + proj[3][0]) / proj[0][0];
-                const double right  =  (1 - proj[3][0]) / proj[0][0];
-                const double bottom = -(1 - proj[3][1]) / proj[1][1];
-                const double top    =  (1 + proj[3][1]) / proj[1][1];
-                const double w = (right-left) / 2;
-                const double h = (top-bottom) / 2;
-                viewToWorldCorrectionMatrix = GfMatrix4d(GfVec4d(w,h,1,1));
-            } else {
-                // Extract FOV from hydra projection matrix. More precisely,
-                // use the smaller value among the horizontal and vertical FOV.
-                //
-                // This seems to match the resolution API which uses the smaller
-                // value among width and height to match to the FOV.
-                // 
-                const float fov_rad =
-                    atan(1.0f / std::max(proj[0][0], proj[1][1])) * 2;
-                const float fov_deg =
-                    fov_rad / M_PI * 180.0;
-                cameraNode.params.SetFloat(RixStr.k_fov, fov_deg);
-            }
-        }
-
-        // Riley camera xform is "move the camera", aka viewToWorld.
-        // Convert right-handed Y-up camera space (USD, Hydra) to
-        // left-handed Y-up (Prman) coordinates.  This just amounts to
-        // flipping the Z axis.
-        GfMatrix4d flipZ(1.0);
-        flipZ[2][2] = -1.0;
-        viewToWorldCorrectionMatrix = flipZ * viewToWorldCorrectionMatrix;
+        cameraContext.UpdateRileyCameraAndClipPlanesInteractive(
+            riley, 
+            GfVec2i(renderBufferWidth, renderBufferHeight));
 
         if (hdCam) {
-            // Use time sampled transforms authored on the scene camera.
-            HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> const& 
-                xforms = hdCam->GetTimeSampleXforms();
-
-            TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
-                xf_rt_values(xforms.count);
-            
-            for (size_t i=0; i < xforms.count; ++i) {
-                xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(
-                    viewToWorldCorrectionMatrix * xforms.values[i]);
-            }
-
-            riley::Transform xform = { unsigned(xforms.count),
-                                       xf_rt_values.data(),
-                                       xforms.times.data() };
-
-            camParams.Update(camProperties);
-
-            // Commit camera.
-            riley->ModifyCamera(
-                _interactiveContext->cameraId, 
-                &cameraNode,
-                &xform, 
-                &camParams);
-
-
-            // Clipping planes
-            for (riley::ClippingPlaneId const& id: _clipPlanes) {
-                _interactiveContext->riley->DeleteClippingPlane(id);
-            }
-            _clipPlanes.clear();
-            HdRenderPassState::ClipPlanesVector hdClipPlanes = 
-                renderPassState->GetClipPlanes();
-            if (!hdClipPlanes.empty()) {
-                // Convert camera's object xform.
-                TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
-                    xf_values(xforms.count);
-                for (size_t i=0; i < xforms.count; ++i) {
-                    xf_values[i] =
-                        HdPrman_GfMatrixToRtMatrix(
-                        xforms.values[i]);
-                }
-                riley::Transform camXform = { unsigned(xforms.count),
-                                           xf_values.data(),
-                                           xforms.times.data() };
-                // Hydra expresses clipping planes as a plane equation
-                // in the camera object space.
-                // Riley API expresses clipping planes in terms of a
-                // time-sampled transform, a normal, and a point.
-                for (GfVec4d plane: hdClipPlanes) {
-                    RtParamList params;
-                    GfVec3f direction(plane[0], plane[1], plane[2]);
-                    float directionLength = direction.GetLength();
-                    if (directionLength == 0.0f) {
-                        continue;
-                    }
-                    // Riley API expects a unit-length normal.
-                    GfVec3f norm = direction / directionLength;
-                    params.SetNormal(us_planeNormal,
-                        RtNormal3(norm[0], norm[1], norm[2]));
-                    // Determine the distance along the normal
-                    // to the plane.
-                    float distance = -plane[3] / directionLength;
-                    // The origin can be any point on the plane.
-                    RtPoint3 origin(norm[0] * distance,
-                                    norm[1] * distance,
-                                    norm[2] * distance);
-                    params.SetPoint(us_planeOrigin, origin);
-                    _clipPlanes.push_back(
-                        _interactiveContext->riley
-                        ->CreateClippingPlane(camXform, params));
-                }
-            }
-        } else {
-            // Use the framing state as a single time sample.
-            float const zerotime = 0.0f;
-            RtMatrix4x4 matrix = HdPrman_GfMatrixToRtMatrix(
-                viewToWorldCorrectionMatrix * viewToWorldMatrix);
-
-            riley::Transform xform = {1, &matrix, &zerotime};
-
-            camParams.Update(camProperties);
-
-            // Commit camera.
-            riley->ModifyCamera(
-                _interactiveContext->cameraId, 
-                &cameraNode,
-                &xform, 
-                &camParams);
+            // Update the framebuffer Z scaling
+            _interactiveRenderParam->framebuffer.proj =
+#if HD_API_VERSION >= 44
+                hdCam->ComputeProjectionMatrix();
+#else
+                hdCam->GetProjectionMatrix();
+#endif
         }
-
-        // Update the framebuffer Z scaling
-        _interactiveContext->framebuffer.proj = proj;
-
-        needStartRender = true;
     }    
+    
+    // We need to capture the value of sceneVersion here after all
+    // the above calls to AcquireRiley since AcquireRiley increases
+    // the sceneVersion.
+    const int currentSceneVersion =
+        _interactiveRenderParam->sceneVersion.load();
+    const bool needsStartRender = 
+        currentSceneVersion != _lastRenderedVersion;
 
-    // NOTE:
-    //
-    // _quickIntegrate enables hdPrman to go into a mode
-    // where it will switch to PxrDirectLighting
-    // integrator for a couple of interations
-    // and then switch back to PxrPathTracer/PbsPathTracer
-    // The thinking is that we want to use PxrDirectLighting for quick
-    // camera tumbles. To enable this mode, the 
-    // HD_PRMAN_ENABLE_QUICKINTEGRATE (bool) env var must be set.
+    if (needsStartRender) {
+        _lastRenderedVersion = currentSceneVersion;
 
-    // If we're rendering but we're still in the quick integrate window,
-    // check and see if we need to switch to the main integrator yet.
-    if (_quickIntegrate &&
-        (!needStartRender) &&
-        _interactiveContext->renderThread.IsRendering() &&
-        _DiffTimeToNow(_frameStart) > _quickIntegrateTime) {
+        // NOTE:
+        //
+        // _quickIntegrate enables hdPrman to go into a mode
+        // where it will switch to PxrDirectLighting
+        // integrator for a couple of interations
+        // and then switch back to PxrPathTracer/PbsPathTracer
+        // The thinking is that we want to use PxrDirectLighting for quick
+        // camera tumbles. To enable this mode, the 
+        // HD_PRMAN_ENABLE_QUICKINTEGRATE (bool) env var must be set.
+        
+        // If we're rendering but we're still in the quick integrate window,
+        // check and see if we need to switch to the main integrator yet.
 
-        _interactiveContext->StopRender();
-        _interactiveContext->SetIntegrator(_mainIntegratorId);
-        _interactiveContext->StartRender();
-
-        _quickIntegrate = false;
-    }
-    // Start (or restart) concurrent rendering.
-    if (needStartRender) {
         if (_quickIntegrateTime > 0 && _isPrimaryIntegrator) {
             if (!_quickIntegrate) {
                 // Start the frame with interactive integrator to give faster
                 // time-to-first-buckets.
-                _interactiveContext->SetIntegrator(_quickIntegratorId);
+                _interactiveRenderParam->SetIntegrator(_quickIntegratorId);
                 _quickIntegrate = true;
             }
         } else if (_quickIntegrateTime <= 0 || _quickIntegrate) {
             // Disable quick integrate
-            _interactiveContext->SetIntegrator(_mainIntegratorId);
+            _interactiveRenderParam->SetIntegrator(_mainIntegratorId);
             _quickIntegrate = false;
         }
-        _interactiveContext->StartRender();
+        _interactiveRenderParam->StartRender();
         _frameStart = std::chrono::steady_clock::now();
+    } else {
+        if (_quickIntegrate &&
+            _interactiveRenderParam->renderThread.IsRendering() &&
+            _DiffTimeToNow(_frameStart) > _quickIntegrateTime) {
+
+            _interactiveRenderParam->StopRender();
+            _interactiveRenderParam->SetIntegrator(_mainIntegratorId);
+            _interactiveRenderParam->StartRender();
+            
+            _quickIntegrate = false;
+        }
     }
 
-    _converged = !_interactiveContext->renderThread.IsRendering();
+    _converged = !_interactiveRenderParam->renderThread.IsRendering();
 
     // Blit from the framebuffer to the currently selected AOVs.
     // Lock the framebuffer when reading so we don't overlap
     // with RenderMan's resize/writing.
-    _interactiveContext->framebuffer.mutex.lock();
-
+    _interactiveRenderParam->framebuffer.mutex.lock();
     for(size_t aov = 0; aov < aovBindings.size(); ++aov) {
         if(!TF_VERIFY(aovBindings[aov].renderBuffer)) {
             continue;
@@ -826,16 +438,21 @@ HdPrman_InteractiveRenderPass::_Execute(
         HdPrmanRenderBuffer *rb = static_cast<HdPrmanRenderBuffer*>(
             aovBindings[aov].renderBuffer);
 
+        if (_interactiveRenderParam->framebuffer.newData) {
+            rb->Blit(_interactiveRenderParam->framebuffer.aovs[aov].format,
+                     _interactiveRenderParam->framebuffer.w,
+                     _interactiveRenderParam->framebuffer.h,
+                     reinterpret_cast<uint8_t*>(
+                         _interactiveRenderParam->
+                         framebuffer.aovs[aov].pixels.data()));
+        }
         // Forward convergence state to the render buffers...
         rb->SetConverged(_converged);
-        rb->Blit(_interactiveContext->framebuffer.aovs[aov].format,
-                 _interactiveContext->framebuffer.w,
-                 _interactiveContext->framebuffer.h,
-                 reinterpret_cast<uint8_t*>(
-                     _interactiveContext->
-                     framebuffer.aovs[aov].pixels.data()));
     }
-    _interactiveContext->framebuffer.mutex.unlock();
+    if (_interactiveRenderParam->framebuffer.newData) {
+        _interactiveRenderParam->framebuffer.newData = false;
+    }
+    _interactiveRenderParam->framebuffer.mutex.unlock();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

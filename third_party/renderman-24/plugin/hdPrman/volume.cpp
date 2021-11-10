@@ -23,10 +23,9 @@
 //
 #include "hdPrman/volume.h"
 
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
-#include "hdPrman/renderParam.h"
 #include "hdPrman/renderPass.h"
 #include "hdPrman/rixStrings.h"
 #include "pxr/usd/sdf/types.h"
@@ -369,7 +368,7 @@ HdPrman_Volume::DeclareFieldPrimvar(RtPrimVarList* primvars,
 }
 
 RtPrimVarList
-HdPrman_Volume::_ConvertGeometry(HdPrman_Context *context,
+HdPrman_Volume::_ConvertGeometry(HdPrman_RenderParam *renderParam,
                                  HdSceneDelegate *sceneDelegate,
                                  const SdfPath &id,
                                  RtUString *primType,

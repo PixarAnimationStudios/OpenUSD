@@ -42,6 +42,7 @@
 #include "pxr/usd/ndr/debugCodes.h"
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
 #include "pxr/usd/sdf/assetPath.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdr/shaderMetadataHelpers.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
@@ -81,6 +82,9 @@ namespace {
     const char* typeTagStr = "typeTag";
     const char* usdSchemaDefStr = "usdSchemaDef";
     const char* apiSchemaAutoApplyToStr = "apiSchemaAutoApplyTo";
+    const char* apiSchemaCanOnlyApplyToStr = "apiSchemaCanOnlyApplyTo";
+    const char* apiSchemasForAttrPruningStr = "apiSchemasForAttrPruning";
+    const char* sdrGlobalConfigStr = "sdrGlobalConfig";
 
     // Helper to make comparisons of `const char*` easier to read; there are
     // lots of these comparisons
@@ -119,10 +123,12 @@ TF_DEFINE_PRIVATE_TOKENS(
 struct SdrShaderRepresentation
 {
     SdrShaderRepresentation(const NdrNodeDiscoveryResult& discoveryResult)
-        : name(discoveryResult.name) {}
+        : hasSdrDefinitionNameProperty(false), name(discoveryResult.name) {}
 
+    bool hasSdrDefinitionNameProperty;
     std::string name;
     std::string helpText;
+    TfToken sdrDefinitionNameFallbackPrefix;
     NdrStringVec primvars;
     NdrStringVec departments;
     NdrStringVec pages;
@@ -627,6 +633,49 @@ _Parse(
             shaderRep.properties.emplace_back(
                 _ParseChildElem(shaderRep, isOutput, childElement, parentPage)
             );
+            // Query the emplaced property to see if ImplementationName metadata
+            // is added, which would imply sdrDefinitionName was set for this
+            // property, if so save the information in shaderRep. 
+            const NdrTokenMap& propMetadata = 
+                shaderRep.properties.back()->GetMetadata();
+            if (propMetadata.find(SdrPropertyMetadata->ImplementationName) != 
+                    propMetadata.end()) {
+                // We do this here so as to maintain constness for shaderRep in
+                // _ParseChildElem
+                shaderRep.hasSdrDefinitionNameProperty = true;
+            }
+        }
+
+        // SdrGlobalConfig
+        // <sdrGlobalConfig> with named sdr node metadata, example
+        // <sdrDefinitionNameFallbackPrefix>, etc
+        // Note that its assumed that such config will be placed in the 
+        // beginning of an args file. And if this element is found after any
+        // parameter which specified an sdrDefinitionName then we will issue an
+        // error, reporting malformed args file.
+        else if (EQUALS(sdrGlobalConfigStr, childElement.name())) {
+            if (shaderRep.hasSdrDefinitionNameProperty) {
+                TF_CODING_ERROR("Malformed args file: "
+                        "sdrDefinitionNameFallbackPrefix needs to be specified"
+                        "before any parameter's sdrDefinitionName is "
+                        "specified/parsed.");
+                return;
+            }
+            xml_node attrChild = childElement.first_child();
+            while (attrChild) {
+                xml_attribute attrValue = attrChild.attribute(valueStr);
+                shaderRep.metadata.emplace(TfToken(attrChild.name()),
+                        attrValue.value());
+                if (EQUALS(SdrNodeMetadata->SdrDefinitionNameFallbackPrefix
+                            .GetText(), attrChild.name())) {
+                    // Cache sdrDefinitionNameFallbackPrefix token, instead of
+                    // creating a token from sdrNodeMetafdata everytime
+                    // sdrDefinitionNameFallbackPrefix gets used.
+                    shaderRep.sdrDefinitionNameFallbackPrefix = 
+                        TfToken(attrValue.value());
+                }
+                attrChild = attrChild.next_sibling();
+            }
         }
 
         // Page
@@ -708,7 +757,9 @@ _Parse(
         // UsdSchemaDef
         // <usdSchemaDef> with named metadata, example
         // <schemaName>, <schemaKind>, <schemaBase>, <apiSchemaAutoApplyTo>
-        // <apiSchemaAutoApplyTo> is a list of autoApplyTo named (schemas).
+        // <apiSchemaAutoApplyTo> is a list of autoApplyTo names (schemas).
+        // <apiSchemaCanOnlyApplyToStr> is a list of autoApplyTo names (schemas).
+        // <apiSchemasForAttrPruning> is a list of apiSchema names (schemas).
         else if (EQUALS(usdSchemaDefStr, childElement.name())) {
             xml_node attrChild = childElement.first_child();
             while(attrChild) {
@@ -717,6 +768,20 @@ _Parse(
                         _GetAttributeValuesFromChildren(attrChild, "name");
                     shaderRep.metadata.emplace(
                             TfToken(apiSchemaAutoApplyToStr),
+                            CreateStringFromStringVec(apiSchemas));
+                } else if (
+                        EQUALS(apiSchemaCanOnlyApplyToStr, attrChild.name())) {
+                    NdrStringVec apiSchemas =
+                        _GetAttributeValuesFromChildren(attrChild, "name");
+                    shaderRep.metadata.emplace(
+                            TfToken(apiSchemaCanOnlyApplyToStr),
+                            CreateStringFromStringVec(apiSchemas));
+                } else if (
+                        EQUALS(apiSchemasForAttrPruningStr, attrChild.name())) {
+                    NdrStringVec apiSchemas =
+                        _GetAttributeValuesFromChildren(attrChild, "name");
+                    shaderRep.metadata.emplace(
+                            TfToken(apiSchemasForAttrPruningStr),
                             CreateStringFromStringVec(apiSchemas));
                 } else {
                     xml_attribute attrValue = attrChild.attribute(valueStr);
@@ -1007,6 +1072,14 @@ _CreateProperty(
         attributes[SdrPropertyMetadata->ImplementationName] = propName;
         propName = definitionName;
         attributes.erase(_xmlAttributeNames->sdrDefinitionNameAttr);
+    } else if (!shaderRep.sdrDefinitionNameFallbackPrefix.IsEmpty()) {
+        // Args files author should have placed such sdr node metadata before
+        // any sdr shader parameter. Hence we should have this metadata parsed
+        // and available to be used here.
+        TfToken definitionName = TfToken(SdfPath::JoinIdentifier(
+                    shaderRep.sdrDefinitionNameFallbackPrefix, propName));
+        attributes[SdrPropertyMetadata->ImplementationName] = propName;
+        propName = definitionName;
     }
  
 

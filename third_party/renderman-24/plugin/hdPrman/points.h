@@ -27,27 +27,29 @@
 #include "pxr/pxr.h"
 #include "hdPrman/gprim.h"
 #include "pxr/imaging/hd/points.h"
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/vertexAdjacency.h"
-#include "pxr/base/gf/matrix4f.h"
 
 #include "Riley.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_Points final : public HdPrman_Gprim<HdPoints> {
+class HdPrman_Points final : public HdPrman_Gprim<HdPoints>
+{
 public:
-    typedef HdPrman_Gprim<HdPoints> BASE;
+    using BASE = HdPrman_Gprim<HdPoints>;
+
     HF_MALLOC_TAG_NEW("new HdPrman_Points");
+
     HdPrman_Points(SdfPath const& id);
-    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+
+    HdDirtyBits GetInitialDirtyBitsMask() const override;
+
 protected:
-    virtual RtPrimVarList
-    _ConvertGeometry(HdPrman_Context *context,
-                      HdSceneDelegate *sceneDelegate,
-                      const SdfPath &id,
-                      RtUString *primType,
-                      std::vector<HdGeomSubset> *geomSubsets) override;
+    RtPrimVarList
+    _ConvertGeometry(HdPrman_RenderParam *renderParam,
+                     HdSceneDelegate *sceneDelegate,
+                     const SdfPath &id,
+                     RtUString *primType,
+                     std::vector<HdGeomSubset> *geomSubsets) override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

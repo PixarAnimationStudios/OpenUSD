@@ -92,6 +92,15 @@ HdStSimpleLightingShader::ComputeHash() const
     boost::hash_combine(hash, numShadows);
     boost::hash_combine(hash, _lightingContext->ComputeShaderSourceHash());
 
+    for (const HdStShaderCode::NamedTextureHandle &namedHandle :
+        _namedTextureHandles) {
+        
+        // Use name and hash only - not the texture itself as this
+        // does not affect the generated shader source.
+        boost::hash_combine(hash, namedHandle.name);
+        boost::hash_combine(hash, namedHandle.hash);
+    }
+
     return (ID)hash;
 }
 
@@ -116,12 +125,6 @@ HdStSimpleLightingShader::GetSource(TfToken const &shaderStageKey) const
     defineStream << "#define NUM_LIGHTS " << numLights<< "\n";
     defineStream << "#define USE_SHADOWS " << (int)(useShadows) << "\n";
     defineStream << "#define NUM_SHADOWS " << numShadows << "\n";
-    if (useShadows) {
-        const bool useBindlessShadowMaps =
-            GlfSimpleShadowArray::GetBindlessShadowMapsEnabled();;
-        defineStream << "#define USE_BINDLESS_SHADOW_TEXTURES "
-                     << int(useBindlessShadowMaps) << "\n";
-    }
 
     const std::string postSurfaceShader =
         _lightingContext->ComputeShaderSource(shaderStageKey);
@@ -198,7 +201,8 @@ HdStSimpleLightingShader::AddBindings(HdBindingRequestVector *customBindings)
     // a domeLight (ignoring RectLights, and multiple domeLights)
 
     _lightTextureParams.clear();
-    if(_HasDomeLight(_lightingContext)) {
+    
+    if (_HasDomeLight(_lightingContext) && _domeLightEnvironmentTextureHandle) {
         // irradiance map
         _lightTextureParams.push_back(
             HdSt_MaterialParam(

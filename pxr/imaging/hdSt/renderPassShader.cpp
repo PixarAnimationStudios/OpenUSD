@@ -134,7 +134,6 @@ HdStRenderPassShader::HdStRenderPassShader(TfToken const &glslfxFile)
     , _glslfx(std::make_unique<HioGlslfx>(glslfxFile))
     , _hash(0)
     , _hashValid(false)
-    , _cullStyle(HdCullStyleNothing)
 {
 }
 
@@ -191,10 +190,6 @@ HdStRenderPassShader::BindResources(const int program,
     TF_FOR_ALL(it, _customBuffers) {
         binder.Bind(it->second);
     }
-
-    // set fallback states (should be moved to HdRenderPassState::Bind)
-    unsigned int cullStyle = _cullStyle;
-    binder.BindUniformui(HdShaderTokens->cullStyle, 1, &cullStyle);
 
     HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
 }

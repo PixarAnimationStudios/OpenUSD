@@ -165,6 +165,19 @@ bool operator!=(
     return !(lhs == rhs);
 }
 
+HgiTessellationLevel::HgiTessellationLevel()
+    : innerTessLevel{0, 0}
+    , outerTessLevel{0, 0, 0, 0}
+{
+}
+
+HgiTessellationState::HgiTessellationState()
+    : tessellationLevel()
+    , primitiveIndexSize(0)
+    , tessEnabled(false)
+{
+}
+
 HgiGraphicsPipelineDesc::HgiGraphicsPipelineDesc()
     : primitiveType(HgiPrimitiveTypeTriangleList)
 {

@@ -204,22 +204,23 @@ struct HdTimeSampleArray
     }
 
     /// Unbox an HdTimeSampleArray holding boxed VtValue<VtArray<T>>
-    /// samples into an array holding VtArray<T> samples.
-    ///
-    /// Similar to VtValue::Get(), this will issue a coding error if the
-    /// VtValue is not holding the expected type.
-    ///
-    /// \see VtValue::Get()
-    void UnboxFrom(HdTimeSampleArray<VtValue, CAPACITY> const& box) {
+    /// samples into an array holding VtArray<T> samples. If any of the values 
+    /// contain the wrong type, their data is discarded. The function returns
+    /// true if all samples have the correct type.
+    bool UnboxFrom(HdTimeSampleArray<VtValue, CAPACITY> const& box) {
+        bool ret = true;
         Resize(box.count);
         times = box.times;
         for (size_t i=0; i < box.count; ++i) {
-            if (box.values[i].GetArraySize() > 0) {
+            if (box.values[i].template IsHolding<TYPE>() &&
+                box.values[i].GetArraySize() > 0) {
                 values[i] = box.values[i].template Get<TYPE>();
             } else {
                 values[i] = TYPE();
+                ret = false;
             }
         }
+        return ret;
     }
 
     size_t count;
@@ -264,24 +265,24 @@ struct HdIndexedTimeSampleArray : public HdTimeSampleArray<TYPE, CAPACITY>
     }
 
     /// Unbox an HdIndexedTimeSampleArray holding boxed VtValue<VtArray<T>>
-    /// samples into an array holding VtArray<T> samples.
-    ///
-    /// Similar to VtValue::Get(), this will issue a coding error if the
-    /// VtValue is not holding the expected type.
-    ///
-    /// \see VtValue::Get()
-    void 
-    UnboxFrom(HdIndexedTimeSampleArray<VtValue, CAPACITY> const& box) {
+    /// samples into an array holding VtArray<T> samples. If any of the values 
+    /// contain the wrong type, their data is discarded. The function returns
+    /// true if all samples have the correct type.
+    bool UnboxFrom(HdIndexedTimeSampleArray<VtValue, CAPACITY> const& box) {
+        bool ret = true;
         Resize(box.count);
         this->times = box.times;
         indices = box.indices;
         for (size_t i=0; i < box.count; ++i) {
-            if (box.values[i].GetArraySize() > 0) {
+            if (box.values[i].template IsHolding<TYPE>() &&
+                box.values[i].GetArraySize() > 0) {
                 this->values[i] = box.values[i].template Get<TYPE>();
             } else {
                 this->values[i] = TYPE();
+                ret = false;
             }
         }
+        return ret;
     }
 
     TfSmallVector<VtIntArray, CAPACITY> indices;

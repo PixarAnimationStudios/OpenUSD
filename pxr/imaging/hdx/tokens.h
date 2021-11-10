@@ -108,8 +108,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdxRenderTagTokens, HDX_API, HDX_RENDERTAG_TOKENS);
 #define HDX_COLOR_CORRECTION_TOKENS             \
     (disabled)                                  \
     (sRGB)                                      \
-    (openColorIO)                               \
-    (channelsOnly)
+    (openColorIO)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxColorCorrectionTokens, HDX_API, 
                          HDX_COLOR_CORRECTION_TOKENS);

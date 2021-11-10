@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/perfLog.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -32,11 +33,7 @@ HdMaterial::HdMaterial(SdfPath const& id)
     // NOTHING
 }
 
-HdMaterial::~HdMaterial()
-{
-    // NOTHING
-}
-
+HdMaterial::~HdMaterial() = default;
 
 void
 HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(

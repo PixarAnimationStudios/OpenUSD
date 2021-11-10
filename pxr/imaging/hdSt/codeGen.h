@@ -116,8 +116,9 @@ private:
     void _GenerateConstantPrimvar();
     void _GenerateInstancePrimvar();
     void _GenerateElementPrimvar();
-    void _GenerateVertexAndFaceVaryingPrimvar(bool hasGS);
-    void _GenerateShaderParameters();
+    void _GenerateVertexAndFaceVaryingPrimvar(bool hasGS, 
+        bool shaderDrawParametersEnabled);
+    void _GenerateShaderParameters(bool bindlessTextureEnabled);
     void _GenerateTopologyVisibilityParameters();
 
     HdSt_ResourceBinder::MetaData _metaData;
@@ -126,6 +127,7 @@ private:
     TfToken _materialTag;
 
     // source buckets
+    std::stringstream _genHeader, _genHeaderFS;
     std::stringstream _genCommon, _genVS, _genTCS, _genTES;
     std::stringstream _genGS, _genFS, _genCS;
     std::stringstream _procVS, _procTCS, _procTES, _procGS;

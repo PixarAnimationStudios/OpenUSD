@@ -128,7 +128,7 @@ _ShaderStageTable[][2] =
     {HgiShaderStageTessellationEval,    VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT},
     {HgiShaderStageGeometry,            VK_SHADER_STAGE_GEOMETRY_BIT},
 };
-static_assert(HgiShaderStageCustomBitsBegin == 1 << 6, "");
+static_assert(HgiShaderStageCustomBitsBegin == 1 << 7, "");
 
 static const uint32_t
 _TextureUsageTable[][2] =

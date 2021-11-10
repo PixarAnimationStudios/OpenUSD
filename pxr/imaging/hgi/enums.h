@@ -46,14 +46,24 @@ using HgiBits = uint32_t;
 ///   The device can execute commands concurrently</li>
 /// <li>HgiDeviceCapabilitiesBitsUnifiedMemory:
 ///   The device shares all GPU and CPU memory</li>
+/// <li>HgiDeviceCapabilitiesBitsBuiltinBarycentrics:
+///   The device can provide built-in barycentric coordinates</li>
+/// <li>HgiDeviceCapabilitiesBitsShaderDrawParameters:
+///   The device can provide additional built-in shader variables corresponding
+///   to draw command parameters</li>
+/// <li>HgiDeviceCapabilitiesBitsMultiDrawIndirect:
+///   THe device supports multiple primitive, indirect drawing</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
 {
-    HgiDeviceCapabilitiesBitsPresentation       = 1 << 0,
-    HgiDeviceCapabilitiesBitsBindlessBuffers    = 1 << 1,
-    HgiDeviceCapabilitiesBitsConcurrentDispatch = 1 << 2,
-    HgiDeviceCapabilitiesBitsUnifiedMemory      = 1 << 3,
+    HgiDeviceCapabilitiesBitsPresentation         = 1 << 0,
+    HgiDeviceCapabilitiesBitsBindlessBuffers      = 1 << 1,
+    HgiDeviceCapabilitiesBitsConcurrentDispatch   = 1 << 2,
+    HgiDeviceCapabilitiesBitsUnifiedMemory        = 1 << 3,
+    HgiDeviceCapabilitiesBitsBuiltinBarycentrics  = 1 << 4,
+    HgiDeviceCapabilitiesBitsShaderDrawParameters = 1 << 5,
+    HgiDeviceCapabilitiesBitsMultiDrawIndirect    = 1 << 6,
 };
 
 using HgiDeviceCapabilities = HgiBits;
@@ -282,21 +292,24 @@ using HgiBufferUsage = HgiBits;
 /// <li>HgiShaderStageTessellationEval:
 ///   Generates the surface geometry (the points) from the transformed control
 ///   points for every coordinate coming out of the tessellator fixed function
-///  stage. </li>
+///  stage.</li>
 /// <li>HgiShaderStageGeometry:
 ///   Governs the processing of Primitives.</li>
+/// <li>HgiShaderStagePostTessellationVertex:
+///   Metal specific stage which performs tessellation and 
+///   vertex processing.</li>
 /// </ul>
 ///
 enum HgiShaderStageBits : HgiBits
 {
-    HgiShaderStageVertex               = 1 << 0,
-    HgiShaderStageFragment             = 1 << 1,
-    HgiShaderStageCompute              = 1 << 2,
-    HgiShaderStageTessellationControl  = 1 << 3,
-    HgiShaderStageTessellationEval     = 1 << 4,
-    HgiShaderStageGeometry             = 1 << 5,
-
-    HgiShaderStageCustomBitsBegin      = 1 << 6,
+    HgiShaderStageVertex                 = 1 << 0,
+    HgiShaderStageFragment               = 1 << 1,
+    HgiShaderStageCompute                = 1 << 2,
+    HgiShaderStageTessellationControl    = 1 << 3,
+    HgiShaderStageTessellationEval       = 1 << 4,
+    HgiShaderStageGeometry               = 1 << 5,
+    HgiShaderStagePostTessellationVertex = 1 << 6,
+    HgiShaderStageCustomBitsBegin        = 1 << 7,
 };
 using HgiShaderStage = HgiBits;
 
@@ -545,6 +558,32 @@ enum HgiMemoryBarrierBits
     HgiMemoryBarrierAll  = 1 << 0
 };
 using HgiMemoryBarrier = HgiBits;
+
+/// \enum HgiBindingType
+///
+/// Describes the type of shader resource binding model to use.
+///
+/// <ul>
+/// <li>HgiBindingTypeValue:
+///   Shader declares binding as a value.
+///   Glsl example: uniform int parameter;
+///   Msl example: int parameter;</li>
+/// <li>HgiBindingTypeArray:
+///   Shader declares binding as array value.
+///   Glsl example: uniform int parameter[n];
+///   Msl example: int parameter[n];</li>
+/// <li>HgiBindingTypePointer:
+///   Shader declares binding as pointer value.
+///   Glsl example: buffer { int parameter[] };
+///   Msl example: int *parameter;</li>
+/// </ul>
+///
+enum HgiBindingType
+{
+    HgiBindingTypeValue = 0,
+    HgiBindingTypeArray,
+    HgiBindingTypePointer,
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

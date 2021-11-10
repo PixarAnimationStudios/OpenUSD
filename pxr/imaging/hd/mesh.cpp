@@ -35,10 +35,7 @@ HdMesh::HdMesh(SdfPath const& id)
     /*NOTHING*/
 }
 
-HdMesh::~HdMesh()
-{
-    /*NOTHING*/
-}
+HdMesh::~HdMesh() = default;
 
 /* virtual */
 TfTokenVector const &

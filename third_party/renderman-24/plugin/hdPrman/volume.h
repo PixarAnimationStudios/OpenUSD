@@ -28,33 +28,35 @@
 #include "hdPrman/gprim.h"
 #include "pxr/imaging/hd/field.h"
 #include "pxr/imaging/hd/volume.h"
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/vertexAdjacency.h"
-#include "pxr/base/gf/matrix4f.h"
 
 #include "Riley.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_Field final : public HdField {
+class HdPrman_Field final : public HdField
+{
 public:
     HdPrman_Field(TfToken const& typeId, SdfPath const& id);
-    virtual void Sync(HdSceneDelegate *sceneDelegate,
-                      HdRenderParam *renderParam,
-                      HdDirtyBits *dirtyBits) override;
-    virtual void Finalize(HdRenderParam *renderParam) override;
-    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+    void Sync(HdSceneDelegate *sceneDelegate,
+              HdRenderParam *renderParam,
+              HdDirtyBits *dirtyBits) override;
+    void Finalize(HdRenderParam *renderParam) override;
+    HdDirtyBits GetInitialDirtyBitsMask() const override;
 private:
     TfToken const _typeId;
 };
 
-class HdPrman_Volume final : public HdPrman_Gprim<HdVolume> {
+class HdPrman_Volume final : public HdPrman_Gprim<HdVolume>
+{
 public:
-    typedef HdPrman_Gprim<HdVolume> BASE;
+    using BASE = HdPrman_Gprim<HdVolume>;
 public:
+
     HF_MALLOC_TAG_NEW("new HdPrman_Volume");
+
     HdPrman_Volume(SdfPath const& id);
-    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+
+    HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     /// The types of volumes that can be emitted to Prman are extensible, since
     /// volumes are emitted via blobbydsos, which themselves are plugins to
@@ -109,16 +111,16 @@ public:
                                     FieldType type);
 
 protected:
-    virtual RtPrimVarList
-    _ConvertGeometry(HdPrman_Context *context,
-                      HdSceneDelegate *sceneDelegate,
-                      const SdfPath &id,
-                      RtUString *primType,
-                      std::vector<HdGeomSubset> *geomSubsets) override;
+    RtPrimVarList
+    _ConvertGeometry(HdPrman_RenderParam *renderParam,
+                     HdSceneDelegate *sceneDelegate,
+                     const SdfPath &id,
+                     RtUString *primType,
+                     std::vector<HdGeomSubset> *geomSubsets) override;
 
-    virtual riley::MaterialId
-    _GetFallbackMaterial(HdPrman_Context *context) override {
-        return context->fallbackVolumeMaterial;
+    riley::MaterialId
+    _GetFallbackMaterial(HdPrman_RenderParam *renderParam) override {
+        return renderParam->GetFallbackVolumeMaterialId();
     }
 
     using _VolumeEmitterMap = std::map<TfToken, HdPrman_VolumeTypeEmitter>;

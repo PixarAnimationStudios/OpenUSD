@@ -140,6 +140,7 @@ private:
     bool _recording;
     HgiGraphicsCmdsDesc _descriptor;
     HgiPrimitiveType _primitiveType;
+    int _primitiveIndexSize;
     HgiGLOpsVector _ops;
     int _pushStack;
 

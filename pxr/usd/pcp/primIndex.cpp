@@ -1400,7 +1400,9 @@ _CheckForCycle(
             const SdfPath& currentPathForCurrentGraph = 
                 it.node.GetRootNode().GetPath();
 
-            childSiteInStackFrame.path = 
+            childSiteInStackFrame.path =
+                currentPathForCurrentGraph == childSiteInStackFrame.path ?
+                requestedPathForCurrentGraph :
                 requestedPathForCurrentGraph.ReplacePrefix(
                     currentPathForCurrentGraph,
                     childSiteInStackFrame.path);

@@ -49,6 +49,12 @@ function(pxr_build_documentation)
 
     set(INST_DOCS_ROOT  "${CMAKE_INSTALL_PREFIX}/docs")
 
+    set(BUILT_DOCS_TAG_FILE "${CMAKE_BINARY_DIR}/docs/USD.tag")
+    install(
+        FILES ${BUILT_DOCS_TAG_FILE}
+        DESTINATION ${INST_DOCS_ROOT}
+    )
+
     set(BUILT_HTML_DOCS "${CMAKE_BINARY_DIR}/docs/doxy_html")
     install(
         DIRECTORY ${BUILT_HTML_DOCS}

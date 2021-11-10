@@ -185,7 +185,7 @@ HgiMetalGraphicsCmds::_CreateEncoder()
 {
     if (!_encoder) {
         _encoder = [
-            _hgi->GetPrimaryCommandBuffer(false)
+            _hgi->GetPrimaryCommandBuffer(this, false)
             renderCommandEncoderWithDescriptor:_renderPassDescriptor];
         
         if (_debugLabel) {
@@ -232,6 +232,8 @@ HgiMetalGraphicsCmds::BindPipeline(HgiGraphicsPipelineHandle pipeline)
     _CreateEncoder();
 
     _primitiveType = pipeline->GetDescriptor().primitiveType;
+    _primitiveIndexSize =
+        pipeline->GetDescriptor().tessellationState.primitiveIndexSize;
     if (HgiMetalGraphicsPipeline* p =
         static_cast<HgiMetalGraphicsPipeline*>(pipeline.Get())) {
         p->BindPipeline(_encoder);
@@ -308,15 +310,26 @@ HgiMetalGraphicsCmds::Draw(
     
     MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
 
-    if (instanceCount == 1) {
-        [_encoder drawPrimitives:type
-                     vertexStart:firstVertex
-                     vertexCount:vertexCount];
+    if (_primitiveType == HgiPrimitiveTypePatchList) {
+        const NSUInteger controlPointCount = _primitiveIndexSize;
+        [_encoder drawPatches:controlPointCount
+                                   patchStart:0
+                                   patchCount:vertexCount/controlPointCount
+                                   patchIndexBuffer:NULL
+                                   patchIndexBufferOffset:0
+                                   instanceCount:instanceCount
+                                   baseInstance:0];
     } else {
-        [_encoder drawPrimitives:type
-                     vertexStart:firstVertex
-                     vertexCount:vertexCount
-                   instanceCount:instanceCount];
+        if (instanceCount == 1) {
+            [_encoder drawPrimitives:type
+                         vertexStart:firstVertex
+                         vertexCount:vertexCount];
+        } else {
+            [_encoder drawPrimitives:type
+                         vertexStart:firstVertex
+                         vertexCount:vertexCount
+                       instanceCount:instanceCount];
+        }
     }
 
     _hasWork = true;
@@ -336,10 +349,22 @@ HgiMetalGraphicsCmds::DrawIndirect(
 
     MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
 
-    for (uint32_t i = 0; i < drawCount; i++) {
-        [_encoder drawPrimitives:type
-                  indirectBuffer:drawBuf->GetBufferId()
-            indirectBufferOffset:bufferOffset + (i * stride)];
+    if (_primitiveType == HgiPrimitiveTypePatchList) {
+        const NSUInteger controlPointCount = _primitiveIndexSize;
+        for (uint32_t i = 0; i < drawCount; i++) {
+            [_encoder drawPatches:controlPointCount
+                 patchIndexBuffer:NULL
+                 patchIndexBufferOffset:0
+                 indirectBuffer:drawBuf->GetBufferId()
+                 indirectBufferOffset:bufferOffset + (i * stride)];
+        }
+    }
+    else {
+        for (uint32_t i = 0; i < drawCount; i++) {
+            [_encoder drawPrimitives:type
+                      indirectBuffer:drawBuf->GetBufferId()
+                indirectBufferOffset:bufferOffset + (i * stride)];
+        }
     }
 }
 

@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/points.h"
+#include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -455,6 +456,11 @@ HdUnitTestDelegate::UpdateTransform(SdfPath const& id,
         HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
         tracker.MarkRprimDirty(id, HdChangeTracker::DirtyTransform);
     }
+    if (_cameras.find(id) != _cameras.end()) {
+        _cameras[id].transform = mat;
+        HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+        tracker.MarkSprimDirty(id, HdChangeTracker::DirtyTransform);
+    }        
 }
 
 void 
@@ -639,11 +645,22 @@ HdUnitTestDelegate::UpdateInstancerPrototypes(float time)
 
 void
 HdUnitTestDelegate::AddRenderBuffer(SdfPath const &id,
-    GfVec3i const& dims, HdFormat format, bool multiSampled)
+                                    HdRenderBufferDescriptor const &desc)
 {
     HdRenderIndex& index = GetRenderIndex();
     index.InsertBprim(HdPrimTypeTokens->renderBuffer, this, id);
-    _renderBuffers[id] = _RenderBuffer(dims, format, multiSampled);
+    _renderBuffers[id] = _RenderBuffer(
+        desc.dimensions, desc.format, desc.multiSampled);
+}
+
+void
+HdUnitTestDelegate::UpdateRenderBuffer(SdfPath const &id, 
+                                       HdRenderBufferDescriptor const &desc)
+{
+    _renderBuffers[id] = _RenderBuffer(
+        desc.dimensions, desc.format, desc.multiSampled);
+    HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+    tracker.MarkBprimDirty(id, HdRenderBuffer::DirtyDescription);
 }
 
 void
@@ -918,6 +935,10 @@ HdUnitTestDelegate::GetTransform(SdfPath const& id)
     if(_meshes.find(id) != _meshes.end()) {
         return GfMatrix4d(_meshes[id].transform);
     }
+    if (_cameras.find(id) != _cameras.end()) {
+        return GfMatrix4d(_cameras[id].transform);
+    }
+
     return GfMatrix4d(1);
 }
 

@@ -74,7 +74,7 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
 {
     if (!_device) {
         if( TfGetenvBool("HGIMETAL_USE_INTEGRATED_GPU", false)) {
-            _device = MTLCopyAllDevices()[1];
+            _device = MTLCopyAllDevices().lastObject;
         }
 
         if (!_device) {
@@ -321,10 +321,10 @@ HgiMetal::GetQueue() const
 }
 
 id<MTLCommandBuffer>
-HgiMetal::GetPrimaryCommandBuffer(bool flush)
+HgiMetal::GetPrimaryCommandBuffer(HgiCmds *requester, bool flush)
 {
     if (_workToFlush) {
-        if (_currentCmds) {
+        if (_currentCmds && requester != _currentCmds) {
             return nil;
         }
     }

@@ -145,17 +145,6 @@ class RenderSettings "RenderSettings" (
     )
 }
 
-class "RenderSettingsAPI" (
-    inherits = </APISchemaBase>
-    customData = {
-        token apiSchemaType = "singleApply"
-        string className = "SettingsAPI"
-    }
-    doc = """UsdRenderSettingsAPI is a base class for API schemas
-    to encode renderer-specific settings."""
-) {
-}
- 
 class RenderVar "RenderVar" (
     inherits = </Typed>
     doc = """A UsdRenderVar describes a custom data variable for

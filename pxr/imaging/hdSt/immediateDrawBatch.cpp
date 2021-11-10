@@ -33,6 +33,7 @@
 #include "pxr/imaging/hdSt/drawItemInstance.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
@@ -172,9 +173,16 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
 
     // Set up geometric shader states
     // all batch item should have the same geometric shader.
-    HdSt_GeometricShaderSharedPtr const &geometricShader
-        = program.GetGeometricShader();
+    HdSt_GeometricShaderSharedPtr const &geometricShader =
+                                                program.GetGeometricShader();
     geometricShader->BindResources(programId, binder, *renderPassState);
+
+    renderPassState->ApplyStateFromGeometricShader(binder, geometricShader);
+
+    if (geometricShader->IsPrimTypePatches()) {
+        glPatchParameteri(GL_PATCH_VERTICES,
+                          geometricShader->GetPrimitiveIndexSize());
+    }
 
     size_t numItemsDrawn = 0;
     for (HdStDrawItemInstance const * drawItemInstance : _drawItemInstances) {
@@ -461,7 +469,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
 
         if (indexCount > 0 && indexBar) {
             glDrawElementsInstancedBaseVertex(
-                geometricShader->GetPrimitiveMode(),
+                HdStGLConversions::GetPrimitiveMode(geometricShader.get()),
                 indexCount,
                 GL_UNSIGNED_INT, // GL_INT is invalid: indexBar->GetResource(HdTokens->indices)->GetGLDataType(),
                 (void *)(firstIndex * sizeof(uint32_t)),
@@ -469,7 +477,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
                 baseVertex);
         } else if (vertexCount > 0) {
             glDrawArraysInstanced(
-                geometricShader->GetPrimitiveMode(),
+                HdStGLConversions::GetPrimitiveMode(geometricShader.get()),
                 baseVertex,
                 vertexCount,
                 instanceCount);

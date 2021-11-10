@@ -114,9 +114,10 @@ std::string Sdf_GetAnonLayerDisplayName(
 std::string Sdf_GetAnonLayerIdentifierTemplate(
     const std::string& tag);
 
-/// Splits the given \p identifier into two portions: the layer path
-/// and the arguments. For example, given the identifier foo.menva?a=b,
-/// this function returns ("foo.menva", "?a=b")
+/// Splits the given \p identifier into two portions: the layer path and the
+/// arguments. For example, given the identifier foo.sdf:SDF_FORMAT_ARGS:a=b,
+/// this function will set \p layerPath to "foo.sdf" and \p arguments to
+/// ":SDF_FORMAT_ARGS:a=b".
 bool Sdf_SplitIdentifier(
     const std::string& identifier,
     std::string* layerPath,

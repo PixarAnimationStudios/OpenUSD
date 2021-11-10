@@ -22,11 +22,23 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import UsdUtils, Sdf, Usd, Sdr, UsdShade, Tf
+from pxr import UsdUtils, Sdf, Usd, Sdr, UsdShade, Tf, Plug
 import os
 import unittest
 
 class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Register applied schemas 
+        pr = Plug.Registry()
+        testPlugins = pr.RegisterPlugins(os.path.abspath("resources"))
+        assert len(testPlugins) == 1, \
+                "Failed to load expected test plugin"
+        assert testPlugins[0].name == \
+            "TestUsdUtilsUpdateSchemaWithSdrAttrPruning", \
+                "Failed to load expected test plugin"
+        return True
+
     def _GetSdrNode(self, assetFile, shaderDefPrimPath):
         stage = Usd.Stage.Open(assetFile)
         self.assertTrue(stage)

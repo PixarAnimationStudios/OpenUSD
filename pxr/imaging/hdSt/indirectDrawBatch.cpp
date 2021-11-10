@@ -23,7 +23,6 @@
 //
 #include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/cullingShaderKey.h"
@@ -31,6 +30,7 @@
 #include "pxr/imaging/hdSt/drawItemInstance.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
@@ -182,14 +182,10 @@ HdSt_IndirectDrawBatch::SetEnableTinyPrimCulling(bool tinyPrimCulling)
 bool
 HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling()
 {
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-
     // GPU frustum culling requires SSBO of bindless buffer
 
     static bool isEnabledGPUFrustumCulling =
-        TfGetEnvSetting(HD_ENABLE_GPU_FRUSTUM_CULLING) &&
-        (caps.shaderStorageBufferEnabled ||
-         caps.bindlessBufferEnabled);
+        TfGetEnvSetting(HD_ENABLE_GPU_FRUSTUM_CULLING);
     return isEnabledGPUFrustumCulling &&
        !TfDebug::IsEnabled(HDST_DISABLE_FRUSTUM_CULLING);
 }
@@ -207,14 +203,10 @@ HdSt_IndirectDrawBatch::IsEnabledGPUCountVisibleInstances()
 bool
 HdSt_IndirectDrawBatch::IsEnabledGPUInstanceFrustumCulling()
 {
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-
     // GPU instance frustum culling requires SSBO of bindless buffer
 
     static bool isEnabledGPUInstanceFrustumCulling =
-        TfGetEnvSetting(HD_ENABLE_GPU_INSTANCE_FRUSTUM_CULLING) &&
-        (caps.shaderStorageBufferEnabled ||
-         caps.bindlessBufferEnabled);
+        TfGetEnvSetting(HD_ENABLE_GPU_INSTANCE_FRUSTUM_CULLING);
     return isEnabledGPUInstanceFrustumCulling;
 }
 
@@ -1209,8 +1201,16 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     binder.BindBufferArray(dispatchBar);
 
     // update geometric shader states
-    program.GetGeometricShader()->BindResources(
-        programId, binder, *renderPassState);
+    HdSt_GeometricShaderSharedPtr const & geometricShader =
+                                                program.GetGeometricShader();
+    geometricShader->BindResources(programId, binder, *renderPassState);
+
+    renderPassState->ApplyStateFromGeometricShader(binder, geometricShader);
+
+    if (geometricShader->IsPrimTypePatches()) {
+        glPatchParameteri(GL_PATCH_VERTICES,
+                          geometricShader->GetPrimitiveIndexSize());
+    }
 
     uint32_t batchCount = _dispatchBuffer->GetCount();
 
@@ -1220,12 +1220,12 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
                 " - indirect: %d\n"
                 " - drawCount: %d\n"
                 " - stride: %zu\n",
-               program.GetGeometricShader()->GetPrimitiveMode(),
+               HdStGLConversions::GetPrimitiveMode(geometricShader.get()),
                0, batchCount,
                _dispatchBuffer->GetCommandNumUints()*sizeof(uint32_t));
 
         glMultiDrawArraysIndirect(
-            program.GetGeometricShader()->GetPrimitiveMode(),
+            HdStGLConversions::GetPrimitiveMode(geometricShader.get()),
             0, // draw command always starts with 0
             batchCount,
             _dispatchBuffer->GetCommandNumUints()*sizeof(uint32_t));
@@ -1236,12 +1236,12 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
                 " - indirect: %d\n"
                 " - drawCount: %d\n"
                 " - stride: %zu\n",
-               program.GetGeometricShader()->GetPrimitiveMode(),
+               HdStGLConversions::GetPrimitiveMode(geometricShader.get()),
                0, batchCount,
                _dispatchBuffer->GetCommandNumUints()*sizeof(uint32_t));
 
         glMultiDrawElementsIndirect(
-            program.GetGeometricShader()->GetPrimitiveMode(),
+            HdStGLConversions::GetPrimitiveMode(geometricShader.get()),
             GL_UNSIGNED_INT,
             0, // draw command always starts with 0
             batchCount,
@@ -1277,7 +1277,7 @@ HdSt_IndirectDrawBatch::ExecuteDraw(
     for (HdStShaderCodeSharedPtr const & shader : shaders) {
         shader->UnbindResources(programId, binder, *renderPassState);
     }
-    program.GetGeometricShader()->UnbindResources(programId, binder, *renderPassState);
+    geometricShader->UnbindResources(programId, binder, *renderPassState);
 
     glUseProgram(0);
 }

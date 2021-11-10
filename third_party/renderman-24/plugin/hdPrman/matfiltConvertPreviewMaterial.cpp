@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
-#include "hdPrman/context.h"
 #include "hdPrman/debugCodes.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/arch/library.h"

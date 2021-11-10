@@ -535,6 +535,42 @@ class FreeCamera(QtCore.QObject):
         self.signalFrustumChanged.emit()
 
     @property
+    def aspectRatio(self):
+        return self._camera.aspectRatio
+
+    @aspectRatio.setter
+    def aspectRatio(self, value):
+        """Sets the aspect ratio by adjusting the horizontal aperture."""
+        self.horizontalAperture = value * self.verticalAperture
+
+    @property
+    def horizontalAperture(self):
+        return self._camera.horizontalAperture
+
+    @horizontalAperture.setter
+    def horizontalAperture(self, value):
+        self._camera.horizontalAperture = value
+        self.signalFrustumChanged.emit()
+
+    @property
+    def verticalAperture(self):
+        return self._camera.verticalAperture
+
+    @verticalAperture.setter
+    def verticalAperture(self, value):
+        self._camera.verticalAperture = value
+        self.signalFrustumChanged.emit()
+    
+    @property
+    def focalLength(self):
+        return self._camera.focalLength
+
+    @focalLength.setter
+    def focalLength(self, value):
+        self._camera.focalLength = value
+        self.signalFrustumChanged.emit()
+
+    @property
     def near(self):
         return self._camera.clippingRange.min
 

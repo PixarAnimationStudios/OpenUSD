@@ -55,10 +55,18 @@ TF_DEFINE_ENV_SETTING(
     "The auto-discovery of parser plugins in ndr can be skipped. "
     "This is used mostly for testing purposes.");
 
-// This function is used for property validation. It is written as a non-static
-// freestanding function so that we can exercise it in a test without needing
-// to expose it in the header file.  It is also written without using unique
-// pointers for ease of python wrapping and testability.
+// This function is used for property validation. It explictly is validating 
+// that the sdfType and sdfTypeDefaultValue have the same type. Note how it is
+// calling the methods GetTypeAsSdfType() and GetDefaultValueAsSdfType() 
+// explicitly as opposed to GetType() and GetDefaultValue(). Thus, if one 
+// starts using this functionality in a another derived class of NdrProperty, 
+// then without implementation of GetDefaultValueAsSdfType(), that method will 
+// always return an empty VtValue.
+//
+// This function is written as a non-static freestanding function so that we can
+// exercise it in a test without needing to expose it in the header file.  It is
+// also written without using unique pointers for ease of python wrapping and 
+// testability.
 NDR_API
 bool
 NdrRegistry_ValidateProperty(
@@ -66,7 +74,7 @@ NdrRegistry_ValidateProperty(
     const NdrPropertyConstPtr& property,
     std::string* errorMessage)
 {
-    const VtValue& defaultValue = property->GetDefaultValue();
+    const VtValue& defaultValue = property->GetDefaultValueAsSdfType();
     const NdrSdfTypeIndicator sdfTypeIndicator = property->GetTypeAsSdfType();
     const SdfValueTypeName sdfType = sdfTypeIndicator.first;
 

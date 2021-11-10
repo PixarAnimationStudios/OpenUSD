@@ -31,7 +31,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
-struct HdPrman_Context;
+class HdPrman_RenderParam;
 
 /// \class HdPrmanCoordSys
 ///
@@ -41,27 +41,27 @@ class HdPrmanCoordSys final : public HdCoordSys
 {
 public:
     HdPrmanCoordSys(SdfPath const& id);
-    virtual ~HdPrmanCoordSys();
+    ~HdPrmanCoordSys() override;
 
     /// Synchronizes state from the delegate to this object.
-    virtual void Sync(HdSceneDelegate *sceneDelegate,
-                      HdRenderParam   *renderParam,
-                      HdDirtyBits     *dirtyBits) override;
-
+    void Sync(HdSceneDelegate *sceneDelegate,
+              HdRenderParam   *renderParam,
+              HdDirtyBits     *dirtyBits) override;
+    
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.
-    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+    HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     riley::CoordinateSystemId GetCoordSysId() const { return _coordSysId; }
 
     /// Return true if this material is valid.
     bool IsValid() const;
 
-    virtual void Finalize(HdRenderParam *renderParam) override;
+    void Finalize(HdRenderParam *renderParam) override;
 
 private:
-    void _ResetCoordSys(HdPrman_Context *context);
+    void _ResetCoordSys(HdPrman_RenderParam *renderParam);
 
     riley::CoordinateSystemId _coordSysId;
 };

@@ -28,14 +28,11 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "hdPrman/api.h"
 
-#include <mutex>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_RenderParam;
 class HdPrman_RenderPass;
-struct HdPrman_Context;
-struct HdPrman_InteractiveContext;
+class HdPrman_RenderParam;
+class HdPrman_InteractiveRenderParam;
 class RixParamList;
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -64,12 +61,12 @@ class HdPrmanRenderDelegate : public HdRenderDelegate
 {
 public:
     HDPRMAN_API 
-    HdPrmanRenderDelegate(std::shared_ptr<HdPrman_Context> context);
+    HdPrmanRenderDelegate(std::shared_ptr<HdPrman_RenderParam> renderParam);
     HDPRMAN_API 
-    HdPrmanRenderDelegate(std::shared_ptr<HdPrman_Context> context,
+    HdPrmanRenderDelegate(std::shared_ptr<HdPrman_RenderParam> renderParam,
         HdRenderSettingsMap const& settingsMap);
     HDPRMAN_API 
-    virtual ~HdPrmanRenderDelegate();
+    ~HdPrmanRenderDelegate() override;
 
     // HdRenderDelegate API implementation.
     HDPRMAN_API
@@ -150,6 +147,10 @@ public:
     HDPRMAN_API 
     bool IsStopSupported() const override;
 
+    /// Return true to indicate whether or not the rendering threads are active.
+    HDPRMAN_API 
+    bool IsStopped() const override;
+
     /// Stop background rendering threads.
     HDPRMAN_API 
     bool Stop() override;
@@ -181,7 +182,6 @@ protected:
     static const TfTokenVector SUPPORTED_SPRIM_TYPES;
     static const TfTokenVector SUPPORTED_BPRIM_TYPES;
 
-    std::shared_ptr<HdPrman_Context> _context;
     std::shared_ptr<HdPrman_RenderParam> _renderParam;
     HdResourceRegistrySharedPtr _resourceRegistry;
     HdRenderPassSharedPtr _renderPass;

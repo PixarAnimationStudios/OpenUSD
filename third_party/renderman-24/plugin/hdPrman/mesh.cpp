@@ -23,11 +23,10 @@
 //
 #include <numeric> // for std::iota
 #include "hdPrman/mesh.h"
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/coordSys.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
-#include "hdPrman/renderParam.h"
 #include "hdPrman/renderPass.h"
 #include "hdPrman/rixStrings.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -85,7 +84,7 @@ HdPrman_Mesh::GetInitialDirtyBitsMask() const
 }
 
 RtPrimVarList
-HdPrman_Mesh::_ConvertGeometry(HdPrman_Context *context,
+HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
                                 HdSceneDelegate *sceneDelegate,
                                 const SdfPath &id,
                                 RtUString *primType,
@@ -145,7 +144,10 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_Context *context,
     {
         HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedPoints;
         sceneDelegate->SamplePrimvar(id, HdTokens->points, &boxedPoints);
-        points.UnboxFrom(boxedPoints);
+        if (!points.UnboxFrom(boxedPoints)) {
+            TF_WARN("<%s> points did not have expected type vec3f[]",
+                    id.GetText());
+        }
     }
 
     primvars.SetTimes(points.count, &points.times[0]);

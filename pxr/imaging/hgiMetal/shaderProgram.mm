@@ -32,6 +32,7 @@ HgiMetalShaderProgram::HgiMetalShaderProgram(HgiShaderProgramDesc const& desc)
     , _vertexFunction(nil)
     , _fragmentFunction(nil)
     , _computeFunction(nil)
+    , _postTessVertexFunction(nil)
 {
     HgiShaderFunctionHandleVector const &shaderFuncs = desc.shaderFunctions;
     for (auto const& func : shaderFuncs) {
@@ -47,6 +48,8 @@ HgiMetalShaderProgram::HgiMetalShaderProgram(HgiShaderProgramDesc const& desc)
             case HgiShaderStageCompute:
                 _computeFunction = metalFunction->GetShaderId();
                 break;
+            case HgiShaderStagePostTessellationVertex:
+                _postTessVertexFunction = metalFunction->GetShaderId();
         }
     }
 }

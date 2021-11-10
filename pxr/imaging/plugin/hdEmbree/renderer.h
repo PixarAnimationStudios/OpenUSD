@@ -51,7 +51,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///    origin.
 ///  - Ambient occlusion.
 ///
-class HdEmbreeRenderer final {
+class HdEmbreeRenderer final
+{
 public:
     /// Renderer constructor.
     HdEmbreeRenderer();

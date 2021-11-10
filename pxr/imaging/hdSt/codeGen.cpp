@@ -39,6 +39,8 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/imaging/hgi/capabilities.h"
+
 #include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/iterator.h"
@@ -438,7 +440,6 @@ namespace {
     };
     std::ostream & operator << (std::ostream & out, const LayoutQualifier &lq)
     {
-        GlfContextCaps const &caps = GlfContextCaps::GetInstance();
         int location = lq.binding.GetLocation();
 
         switch (lq.binding.GetType()) {
@@ -453,9 +454,8 @@ namespace {
         case HdBinding::UNIFORM_ARRAY:
         case HdBinding::BINDLESS_UNIFORM:
         case HdBinding::BINDLESS_SSBO_RANGE:
-            if (caps.explicitUniformLocation) {
-                out << "layout (location = " << location << ") ";
-            }
+            // ARB_explicit_uniform_location is supported since GL 4.3
+            out << "layout (location = " << location << ") ";
             break;
         case HdBinding::TEXTURE_2D:
         case HdBinding::BINDLESS_TEXTURE_2D:
@@ -469,22 +469,14 @@ namespace {
         case HdBinding::BINDLESS_TEXTURE_PTEX_TEXEL:
         case HdBinding::TEXTURE_PTEX_LAYOUT:
         case HdBinding::BINDLESS_TEXTURE_PTEX_LAYOUT:
-            if (caps.shadingLanguage420pack) {
-                out << "layout (binding = "
-                    << lq.binding.GetTextureUnit() << ") ";
-            } else if (caps.explicitUniformLocation) {
-                out << "layout (location = " << location << ") ";
-            }
+            out << "layout (binding = "
+                << lq.binding.GetTextureUnit() << ") ";
             break;
         case HdBinding::SSBO:
             out << "layout (std430, binding = " << location << ") ";
             break;
         case HdBinding::UBO:
-            if (caps.shadingLanguage420pack) {
-                out << "layout (std140, binding = " << location << ") ";
-            } else {
-                out << "layout (std140)";
-            }
+            out << "layout (std140, binding = " << location << ") ";
             break;
         default:
             break;
@@ -523,36 +515,42 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         std::make_shared<HdStGLSLProgram>(HdTokens->drawingShader, registry);
 
     // initialize autogen source buckets
+    _genHeader.str(""); _genHeaderFS.str("");
     _genCommon.str(""); _genVS.str(""); _genTCS.str(""); _genTES.str("");
     _genGS.str(""); _genFS.str(""); _genCS.str("");
     _procVS.str(""); _procTCS.str(""), _procTES.str(""), _procGS.str("");
 
     // GLSL version.
     GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-    _genCommon << "#version " << caps.glslVersion << "\n";
+    const int glslVersion = caps.glslVersion;
+    _genHeader << "#version " << glslVersion << "\n";
 
-    if (caps.bindlessBufferEnabled) {
-        _genCommon << "#extension GL_NV_shader_buffer_load : require\n"
+    const bool bindlessTextureEnabled = caps.bindlessTextureEnabled;
+
+    const bool bindlessBufferEnabled = registry->GetHgi()->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers);
+    const bool shaderDrawParametersEnabled = registry->GetHgi()->
+        GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsShaderDrawParameters);
+    const bool builtinBarycentricsEnabled = registry->GetHgi()->
+        GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+
+    if (bindlessBufferEnabled) {
+        _genHeader << "#extension GL_NV_shader_buffer_load : require\n"
                    << "#extension GL_NV_gpu_shader5 : require\n";
     }
-    if (caps.bindlessTextureEnabled) {
-        _genCommon << "#extension GL_ARB_bindless_texture : require\n";
+    if (bindlessTextureEnabled) {
+        _genHeader << "#extension GL_ARB_bindless_texture : require\n";
     }
-    // XXX: Skip checking the context caps for whether the bindless texture
-    // extension is available when bindless shadow maps are enabled. This needs 
-    // to be done because GlfSimpleShadowArray is used internally in a manner
-    // wherein context caps initialization might not have happened.
-    if (GlfSimpleShadowArray::GetBindlessShadowMapsEnabled()) {
-        _genCommon << "#extension GL_ARB_bindless_texture : require\n";
+    if (!bindlessTextureEnabled) {
+        // XXX: Needed by MaterialX GLSL shader gen
+        _genHeader << "#extension GL_ARB_bindless_texture : require\n";
     }
-    if (caps.glslVersion < 460 && caps.shaderDrawParametersEnabled) {
-        _genCommon << "#extension GL_ARB_shader_draw_parameters : require\n";
+    if (glslVersion < 460 && shaderDrawParametersEnabled) {
+        _genHeader << "#extension GL_ARB_shader_draw_parameters : require\n";
     }
-    if (caps.glslVersion < 430 && caps.explicitUniformLocation) {
-        _genCommon << "#extension GL_ARB_explicit_uniform_location : require\n";
-    }
-    if (caps.glslVersion < 420 && caps.shadingLanguage420pack) {
-        _genCommon << "#extension GL_ARB_shading_language_420pack : require\n";
+    if (builtinBarycentricsEnabled) {
+        _genHeaderFS <<
+                "#extension GL_NV_fragment_shader_barycentric: require\n";
     }
 
     // Used in glslfx files to determine if it is using new/old
@@ -563,7 +561,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // XXX: this is a hacky workaround for experimental support of GL 3.3
     //      the double is used in hd_dvec3 akin, so we are likely able to
     //      refactor that helper functions.
-    if (caps.glslVersion < 400) {
+    if (glslVersion < 400) {
         _genCommon << "#define double float\n"
                    << "#define dvec2 vec2\n"
                    << "#define dvec3 vec3\n"
@@ -764,12 +762,18 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     }
 
     // Barycentric coordinates
-    if (hasGS) {
-        _genGS << "noperspective out vec3 hd_barycentricCoord;\n";
-        _genFS << "noperspective in vec3 hd_barycentricCoord;\n"
-                  "vec3 GetBarycentricCoord() {\n"
-                  "  return hd_barycentricCoord;\n"
+    if (builtinBarycentricsEnabled) {
+        _genFS << "vec3 GetBarycentricCoord() {\n"
+                  "  return gl_BaryCoordNoPerspNV;\n"
                   "}\n";
+    } else {
+        if (hasGS) {
+            _genGS << "noperspective out vec3 hd_barycentricCoord;\n";
+            _genFS << "noperspective in vec3 hd_barycentricCoord;\n"
+                      "vec3 GetBarycentricCoord() {\n"
+                      "  return hd_barycentricCoord;\n"
+                      "}\n";
+        }
     }
 
     // prep interstage plumbing function
@@ -804,35 +808,40 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             // do nothing. no additional code needs to be generated.
             ;
     }
-    switch(_geometricShader->GetPrimitiveType())
-    {
-        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
-        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
-        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BSPLINE:
+    if (!builtinBarycentricsEnabled) {
+        switch(_geometricShader->GetPrimitiveType())
         {
-            // These correspond to built-in fragment shader barycentric coords
-            // except reversed for the second triangle in the quad. Each quad is
-            // split into two triangles with indices (3,0,2) and (1,2,0).
-            _procGS << "  const vec3 coords[4] = vec3[](\n"
-                    << "   vec3(0,0,1), vec3(1,0,0), vec3(0,1,0), vec3(1,0,0)\n"
-                    << "  );\n"
-                    << "  hd_barycentricCoord = coords[index];\n";
-            break;
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BSPLINE:
+            {
+                // These correspond to built-in fragment shader barycentric
+                // coords except reversed for the second triangle in the quad.
+                // Each quad is split into two triangles with indices (3,0,2)
+                // and (1,2,0).
+                _procGS << "  const vec3 coords[4] = vec3[](\n"
+                        << "   vec3(0,0,1), vec3(1,0,0), "
+                        << "vec3(0,1,0), vec3(1,0,0)\n"
+                        << "  );\n"
+                        << "  hd_barycentricCoord = coords[index];\n";
+                break;
+            }
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
+            {
+                // These correspond to built-in fragment shader barycentric
+                // coords.
+                _procGS << "  const vec3 coords[3] = vec3[](\n"
+                        << "   vec3(1,0,0), vec3(0,1,0), vec3(0,0,1)\n"
+                        << "  );\n"
+                        << "  hd_barycentricCoord = coords[index];\n";
+                break;
+            }
+            default: // points, basis curves
+                // do nothing. no additional code needs to be generated.
+                ;
         }
-        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
-        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
-        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
-        {
-            // These correspond to built-in fragment shader barycentric coords.
-            _procGS << "  const vec3 coords[3] = vec3[](\n"
-                    << "   vec3(1,0,0), vec3(0,1,0), vec3(0,0,1)\n"
-                    << "  );\n"
-                    << "  hd_barycentricCoord = coords[index];\n";
-            break;
-        }
-        default: // points, basis curves
-            // do nothing. no additional code needs to be generated.
-            ;
     }
 
     // generate drawing coord and accessors
@@ -842,12 +851,12 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _GenerateConstantPrimvar();
     _GenerateInstancePrimvar();
     _GenerateElementPrimvar();
-    _GenerateVertexAndFaceVaryingPrimvar(hasGS);
+    _GenerateVertexAndFaceVaryingPrimvar(hasGS, shaderDrawParametersEnabled);
 
     _GenerateTopologyVisibilityParameters();
 
     //generate shader parameters (is going last since it has primvar redirects)
-    _GenerateShaderParameters();
+    _GenerateShaderParameters(bindlessTextureEnabled);
 
     // finalize buckets
     _procVS  << "}\n";
@@ -917,21 +926,22 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // compile shaders
     // note: _vsSource, _fsSource etc are used for diagnostics (see header)
     if (hasVS) {
-        _vsSource = _genCommon.str() + _genVS.str();
+        _vsSource = _genHeader.str() + _genCommon.str() + _genVS.str();
         if (!glslProgram->CompileShader(HgiShaderStageVertex, _vsSource)) {
             return HdStGLSLProgramSharedPtr();
         }
         shaderCompiled = true;
     }
     if (hasFS) {
-        _fsSource = _genCommon.str() + _genFS.str();
+        _fsSource = _genHeader.str() + _genHeaderFS.str() +
+                    _genCommon.str() + _genFS.str();
         if (!glslProgram->CompileShader(HgiShaderStageFragment, _fsSource)) {
             return HdStGLSLProgramSharedPtr();
         }
         shaderCompiled = true;
     }
     if (hasTCS) {
-        _tcsSource = _genCommon.str() + _genTCS.str();
+        _tcsSource = _genHeader.str() + _genCommon.str() + _genTCS.str();
         if (!glslProgram->CompileShader(
                 HgiShaderStageTessellationControl, _tcsSource)) {
             return HdStGLSLProgramSharedPtr();
@@ -939,7 +949,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         shaderCompiled = true;
     }
     if (hasTES) {
-        _tesSource = _genCommon.str() + _genTES.str();
+        _tesSource = _genHeader.str() + _genCommon.str() + _genTES.str();
         if (!glslProgram->CompileShader(
                 HgiShaderStageTessellationEval, _tesSource)) {
             return HdStGLSLProgramSharedPtr();
@@ -947,7 +957,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         shaderCompiled = true;
     }
     if (hasGS) {
-        _gsSource = _genCommon.str() + _genGS.str();
+        _gsSource = _genHeader.str() + _genCommon.str() + _genGS.str();
         if (!glslProgram->CompileShader(HgiShaderStageGeometry, _gsSource)) {
             return HdStGLSLProgramSharedPtr();
         }
@@ -974,20 +984,20 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     
     // GLSL version.
     GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-    _genCommon << "#version " << caps.glslVersion << "\n";
+    const int glslVersion = caps.glslVersion;
+    _genCommon << "#version " << glslVersion << "\n";
+    
+    const bool bindlessTextureEnabled = caps.bindlessTextureEnabled;
 
-    if (caps.bindlessBufferEnabled) {
+    const bool bindlessBufferEnabled = registry->GetHgi()->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers);
+
+    if (bindlessBufferEnabled) {
         _genCommon << "#extension GL_NV_shader_buffer_load : require\n"
                    << "#extension GL_NV_gpu_shader5 : require\n";
     }
-    if (caps.bindlessTextureEnabled) {
+    if (bindlessTextureEnabled) {
         _genCommon << "#extension GL_ARB_bindless_texture : require\n";
-    }
-    if (caps.glslVersion < 430 && caps.explicitUniformLocation) {
-        _genCommon << "#extension GL_ARB_explicit_uniform_location : require\n";
-    }
-    if (caps.glslVersion < 420 && caps.shadingLanguage420pack) {
-        _genCommon << "#extension GL_ARB_shading_language_420pack : require\n";
     }
 
     // default workgroup size (must follow #extension directives)
@@ -1170,7 +1180,6 @@ static void _EmitDeclaration(std::stringstream &str,
             << "[" << arraySize << "];\n";
         break;
     case HdBinding::UBO:
-        // note: ubo_ prefix is used in HdResourceBinder::IntrospectBindings.
         str << "uniform ubo_" << name <<  " {\n"
             << "  " << _GetPackedType(type, true)
             << " " << name;
@@ -1451,10 +1460,9 @@ static void _EmitTextureAccessors(
     int const dim,
     bool const hasTextureTransform,
     bool const hasTextureScaleAndBias,
-    bool const isBindless)
+    bool const isBindless,
+    bool const bindlessTextureEnabled)
 {
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-
     TfToken const &name = acc.name;
 
     // Forward declare texture scale and bias
@@ -1470,7 +1478,7 @@ static void _EmitTextureAccessors(
 
     if (!isBindless) {
         // a function returning sampler requires bindless_texture
-        if (caps.bindlessTextureEnabled) {
+        if (bindlessTextureEnabled) {
             accessors
                 << "sampler" << dim << "D\n"
                 << "HdGetSampler_" << name << "() {\n"
@@ -1482,7 +1490,7 @@ static void _EmitTextureAccessors(
                 << " sampler" << dim << "d_" << name << "\n";
         }
     } else {
-        if (caps.bindlessTextureEnabled) {
+        if (bindlessTextureEnabled) {
             accessors
                 << "sampler" << dim << "D\n"
                 << "HdGetSampler_" << name << "() {\n"
@@ -2774,7 +2782,8 @@ HdSt_CodeGen::_GenerateElementPrimvar()
 }
 
 void
-HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS)
+HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS, 
+    bool shaderDrawParametersEnabled)
 {
     // VS specific accessor for the "vertex drawing coordinate"
     // Even though we currently always plumb vertexCoord as part of the drawing
@@ -2782,7 +2791,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS)
     // vertex offset for a draw call.
     GlfContextCaps const &caps = GlfContextCaps::GetInstance();
     _genVS << "int GetBaseVertexOffset() {\n";
-    if (caps.shaderDrawParametersEnabled) {
+    if (shaderDrawParametersEnabled) {
         if (caps.glslVersion < 460) { // use ARB extension
             _genVS << "  return gl_BaseVertexARB;\n";
         } else {
@@ -3134,7 +3143,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS)
 }
 
 void
-HdSt_CodeGen::_GenerateShaderParameters()
+HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
 {
     /*
       ------------- Declarations -------------
@@ -3228,8 +3237,6 @@ HdSt_CodeGen::_GenerateShaderParameters()
     std::stringstream declarations;
     std::stringstream accessors;
 
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-
     TfToken typeName("ShaderData");
     TfToken varName("shaderData");
 
@@ -3294,7 +3301,8 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 /* dim = */ 2,
                 /* hasTextureTransform = */ false,
                 /* hasTextureScaleAndBias = */ true,
-                /* isBindless = */ true);
+                /* isBindless = */ true,
+                bindlessTextureEnabled);
 
         } else if (bindingType == HdBinding::TEXTURE_2D) {
 
@@ -3307,7 +3315,8 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 /* dim = */ 2,
                 /* hasTextureTransform = */ false,
                 /* hasTextureScaleAndBias = */ true,
-                /* isBindless = */ false);
+                /* isBindless = */ false,
+                bindlessTextureEnabled);
 
         } else if (bindingType == HdBinding::BINDLESS_TEXTURE_FIELD) {
 
@@ -3316,7 +3325,8 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 /* dim = */ 3,
                 /* hasTextureTransform = */ true,
                 /* hasTextureScaleAndBias = */ false,
-                /* isBindless = */ true);
+                /* isBindless = */ true,
+                bindlessTextureEnabled);
 
         } else if (bindingType == HdBinding::TEXTURE_FIELD) {
 
@@ -3329,7 +3339,8 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 /* dim = */ 3,
                 /* hasTextureTransform = */ true,
                 /* hasTextureScaleAndBias = */ false,
-                /* isBindless = */ false);
+                /* isBindless = */ false,
+                bindlessTextureEnabled);
 
         } else if (bindingType == HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY) {
             accessors 
@@ -3345,7 +3356,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << "#endif\n";
                 
             // a function returning sampler requires bindless_texture
-            if (caps.bindlessTextureEnabled) {
+            if (bindlessTextureEnabled) {
                 accessors
                     << "sampler2DArray\n"
                     << "HdGetSampler_" << it->second.name << "() {\n"
@@ -3440,7 +3451,7 @@ HdSt_CodeGen::_GenerateShaderParameters()
                 << it->second.name << ";\n";
 
             // a function returning sampler requires bindless_texture
-            if (caps.bindlessTextureEnabled) {
+            if (bindlessTextureEnabled) {
                 accessors
                     << "sampler2DArray\n"
                     << "HdGetSampler_" << it->second.name << "() {\n"

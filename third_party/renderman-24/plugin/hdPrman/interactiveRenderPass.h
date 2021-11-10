@@ -25,8 +25,6 @@
 #define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_INT_RENDER_PASS_H
 
 #include "pxr/pxr.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/imaging/cameraUtil/framing.h"
 #include "pxr/imaging/hd/renderPass.h"
 
 #include "Riley.h"
@@ -35,8 +33,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HdPrman_Context;
-struct HdPrman_InteractiveContext;
+class HdPrman_RenderParam;
+class HdPrman_InteractiveRenderParam;
 
 class HdPrman_InteractiveRenderPass final : public HdRenderPass
 {
@@ -44,7 +42,7 @@ public:
     HdPrman_InteractiveRenderPass(
         HdRenderIndex *index,
         HdRprimCollection const &collection,
-        std::shared_ptr<HdPrman_Context> context);
+        std::shared_ptr<HdPrman_RenderParam> renderParam);
     ~HdPrman_InteractiveRenderPass() override;
 
     bool IsConverged() const override;
@@ -54,15 +52,10 @@ protected:
                   TfTokenVector const &renderTags) override;
 
 private:
-    std::shared_ptr<HdPrman_InteractiveContext> _interactiveContext;
+    std::shared_ptr<HdPrman_InteractiveRenderParam> _interactiveRenderParam;
     bool _converged;
     int _lastRenderedVersion;
     int _lastSettingsVersion;
-    GfMatrix4d _lastProj;
-    GfMatrix4d _lastViewToWorldMatrix;
-    CameraUtilFraming _lastFraming;
-    GfVec4f _lastCropWindow;
-    uint32_t _lastCamPropertiesHash;
 
     std::chrono::steady_clock::time_point _frameStart;
     std::string _integrator;
@@ -72,7 +65,6 @@ private:
     bool _isPrimaryIntegrator;
     riley::IntegratorId _mainIntegratorId;
     riley::IntegratorId _quickIntegratorId;
-    std::vector<riley::ClippingPlaneId> _clipPlanes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

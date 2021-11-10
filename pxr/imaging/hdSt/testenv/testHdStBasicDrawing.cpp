@@ -21,10 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/pxr.h"
-#include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 #include "pxr/imaging/hdSt/unitTestHelper.h"
@@ -51,12 +48,13 @@ public:
     }
 
     // HdSt_UnitTestGLDrawing overrides
-    virtual void InitTest();
-    virtual void DrawTest();
-    virtual void OffscreenTest();
+    void InitTest() override;
+    void DrawTest() override;
+    void OffscreenTest() override;
+    void Present(uint32_t framebuffer) override;
 
 protected:
-    virtual void ParseArgs(int argc, char *argv[]);
+    void ParseArgs(int argc, char *argv[]) override;
 
 private:
     HdSt_TestDriver* _driver;
@@ -71,8 +69,6 @@ private:
 };
 
 ////////////////////////////////////////////////////////////
-
-GLuint vao;
 
 void
 My_TestGLDrawing::InitTest()
@@ -91,11 +87,6 @@ My_TestGLDrawing::InitTest()
     // center camera
     SetCameraTranslate(GetCameraTranslate() - center);
 
-    // XXX: Setup a VAO, the current drawing engine will not yet do this.
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-    glBindVertexArray(0);
-
     if (_testLighting) {
         _lightingShader.reset(new HdSt_TestLightingShader());
         _driver->GetRenderPassState()->SetLightingShader(
@@ -103,35 +94,30 @@ My_TestGLDrawing::InitTest()
     }
 
     _driver->SetCameraClipPlanes(_clipPlanes);
+
+    _driver->SetClearColor(GfVec4f(0.1f, 0.1f, 0.1f, 1.0f));
+    _driver->SetClearDepth(1.0f);
+    _driver->SetupAovs(GetWidth(), GetHeight());
 }
 
 void
 My_TestGLDrawing::DrawTest()
 {
-    GLfloat clearColor[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-
-    GLfloat clearDepth[1] = { 1.0f };
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
     int width = GetWidth(), height = GetHeight();
     GfMatrix4d viewMatrix = GetViewMatrix();
     GfMatrix4d projMatrix = GetProjectionMatrix();
 
     _driver->SetCullStyle(_cullStyle);
 
-    // camera
-    _driver->SetCamera(viewMatrix, projMatrix, GfVec4d(0, 0, width, height));
+    _driver->SetCamera(
+        viewMatrix,
+        projMatrix,
+        CameraUtilFraming(
+            GfRect2i(GfVec2i(0, 0), width, height)));
 
-    glViewport(0, 0, width, height);
-
-    glEnable(GL_DEPTH_TEST);
-
-    glBindVertexArray(vao);
+    _driver->UpdateAovDimensions(width, height);
 
     _driver->Draw();
-
-    glBindVertexArray(0);
 }
 
 void
@@ -140,8 +126,14 @@ My_TestGLDrawing::OffscreenTest()
     DrawTest();
 
     if (!_outputFilePath.empty()) {
-        WriteToFile("color", _outputFilePath);
+        _driver->WriteToFile("color", _outputFilePath);
     }
+}
+
+void
+My_TestGLDrawing::Present(uint32_t framebuffer)
+{
+    _driver->Present(GetWidth(), GetHeight(), framebuffer);
 }
 
 /* virtual */

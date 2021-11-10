@@ -34,10 +34,7 @@ HdPoints::HdPoints(SdfPath const& id)
     /*NOTHING*/
 }
 
-HdPoints::~HdPoints()
-{
-    /*NOTHING*/
-}
+HdPoints::~HdPoints() = default;
 
 /* virtual */
 TfTokenVector const &

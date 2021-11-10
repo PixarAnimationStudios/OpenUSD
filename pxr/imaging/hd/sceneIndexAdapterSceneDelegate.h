@@ -50,7 +50,7 @@ public:
             SdfPath const &delegateID,
             SdfPath ownerPath);
 
-    virtual ~HdSceneIndexAdapterSceneDelegate();
+    ~HdSceneIndexAdapterSceneDelegate() override;
 
     // ------------------------------------------------------------------------
 

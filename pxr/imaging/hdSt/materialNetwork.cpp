@@ -33,6 +33,7 @@
 #endif
 
 #include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hdSt/udimTextureObject.h"
 

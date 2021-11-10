@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // currently is no HdLightFilter class.
 
 class HdSceneDelegate;
-struct HdPrman_Context;
+class HdPrman_RenderParam;
 
 /// \class HdPrmanLightFilter
 ///
@@ -49,7 +49,7 @@ class HdPrmanLightFilter final : public HdSprim
 {
 public:
     HdPrmanLightFilter(SdfPath const& id, TfToken const& lightFilterType);
-    virtual ~HdPrmanLightFilter();
+    ~HdPrmanLightFilter() override;
 
     /// Synchronizes state from the delegate to this object.
     void Sync(HdSceneDelegate *sceneDelegate,
@@ -69,7 +69,7 @@ public:
     void Finalize(HdRenderParam *renderParam) override;
 
 private:
-    void _ResetLightFilter(HdPrman_Context *context);
+    void _ResetLightFilter(HdPrman_RenderParam *renderParam);
 
     const TfToken _hdLightFilterType;
     riley::ShadingNode *_lightFilter;

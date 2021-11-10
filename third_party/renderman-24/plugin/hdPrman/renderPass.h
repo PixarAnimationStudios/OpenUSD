@@ -38,7 +38,7 @@ class HdPrman_RenderPass final : public HdRenderPass
 public:
     HdPrman_RenderPass(HdRenderIndex *index,
                        HdRprimCollection const &collection);
-    virtual ~HdPrman_RenderPass();
+    ~HdPrman_RenderPass() override;
 
 protected:
     void _Execute(

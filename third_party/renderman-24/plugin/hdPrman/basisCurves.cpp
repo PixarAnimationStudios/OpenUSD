@@ -24,9 +24,8 @@
 #include <numeric> // for std::iota
 #include "hdPrman/basisCurves.h"
 
-#include "hdPrman/context.h"
-#include "hdPrman/material.h"
 #include "hdPrman/renderParam.h"
+#include "hdPrman/material.h"
 #include "hdPrman/renderPass.h"
 #include "hdPrman/rixStrings.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
@@ -67,11 +66,11 @@ HdPrman_BasisCurves::GetInitialDirtyBitsMask() const
 }
 
 RtPrimVarList
-HdPrman_BasisCurves::_ConvertGeometry(HdPrman_Context *context,
-                                       HdSceneDelegate *sceneDelegate,
-                                       const SdfPath &id,
-                                       RtUString *primType,
-                                       std::vector<HdGeomSubset> *geomSubsets)
+HdPrman_BasisCurves::_ConvertGeometry(HdPrman_RenderParam *renderParam,
+                                      HdSceneDelegate *sceneDelegate,
+                                      const SdfPath &id,
+                                      RtUString *primType,
+                                      std::vector<HdGeomSubset> *geomSubsets)
 {
     HdBasisCurvesTopology topology =
         GetBasisCurvesTopology(sceneDelegate);

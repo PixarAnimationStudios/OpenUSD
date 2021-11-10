@@ -54,28 +54,9 @@ public:
     GlfSimpleShadowArray(const GlfSimpleShadowArray&) = delete;
     GlfSimpleShadowArray& operator=(const GlfSimpleShadowArray&) = delete;
 
-    // Driven by the env var GLF_ENABLE_BINDLESS_SHADOW_TEXTURE, this returns 
-    // whether bindless shadow maps are enabled, which in turn dictates the API
-    // to use. See below.
-    GLF_API static
-    bool GetBindlessShadowMapsEnabled();
-
-    ///  Bindful API:
-
-    // Set the 2D size of the shadow map texture array.
+    // Returns the GL texture id of the shadow texture.
     GLF_API
-    void SetSize(GfVec2i const & size);
-
-    // Set the depth of the shadow map texture array, which corresponds to the
-    // number of shadow maps necessary. Each shadow casting light uses one
-    // shadow map.
-    GLF_API
-    void SetNumLayers(size_t numLayers);
-
-    // Returns the GL texture id of the texture array.
-    GLF_API
-    GLuint GetShadowMapTexture() const;
-
+    GLuint GetShadowMapTexture(int shadowIndex) const;
     // Returns the GL sampler id of the sampler object used to read the raw
     // depth values.
     GLF_API
@@ -85,7 +66,6 @@ public:
     GLF_API
     GLuint GetShadowMapCompareSampler() const;
 
-    /// Bindless API:
 
     // Set the resolutions of all the shadow maps necessary. The number of
     // resolutions corresponds to the number of shadow map textures necessary,
@@ -93,21 +73,13 @@ public:
     GLF_API
     void SetShadowMapResolutions(std::vector<GfVec2i> const& resolutions);
 
-    // Returns a vector of the 64bit bindless handles corresponding to the
-    // bindless shadow map textures.
-    GLF_API
-    std::vector<uint64_t> const& GetBindlessShadowMapHandles() const;
-
-    /// Common API (for shadow map generation)
-    
     // Returns the number of shadow map generation passes required, which is
     // currently one per shadow map (corresponding to a shadow casting light).
     GLF_API
     size_t GetNumShadowMapPasses() const;
     
-    // Returns the shadow map resolution for a given pass. For bindful shadows,
-    // this returns a single size for all passes, while for bindless, it returns
-    // the resolution of the corresponding shadow map,
+    // Returns the shadow map resolution for a given pass.
+    // this returns the resolution of the corresponding shadow map,
     GLF_API
     GfVec2i GetShadowMapSize(size_t pass) const;
 
@@ -138,33 +110,23 @@ public:
 
 private:
     void _AllocResources();
-    void _AllocBindfulTextures();
-    void _AllocBindlessTextures();
+    void _AllocTextures();
     void _FreeResources();
-    void _FreeBindfulTextures();
-    void _FreeBindlessTextures();
+    void _FreeTextures();
     bool _ShadowMapExists() const;
     void _BindFramebuffer(size_t index);
     void _UnbindFramebuffer();
 
 private:
-    // bindful state
-    GfVec2i _size;
-    size_t _numLayers;
-    GLuint _bindfulTexture;
-    GLuint _shadowDepthSampler;
-
-    // bindless state
     std::vector<GfVec2i> _resolutions;
-    std::vector<GLuint> _bindlessTextures;
-    std::vector<uint64_t> _bindlessTextureHandles;
+    std::vector<GLuint> _textures;
 
-    // common state
     std::vector<GfMatrix4d> _viewMatrix;
     std::vector<GfMatrix4d> _projectionMatrix;
 
     GLuint _framebuffer;
 
+    GLuint _shadowDepthSampler;
     GLuint _shadowCompareSampler;
 
     GLuint _unbindRestoreDrawFramebuffer;

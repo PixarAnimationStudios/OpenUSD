@@ -11,7 +11,6 @@ pxr_plugin(hioOiio
     LIBRARIES
         ar
         arch
-        garch
         gf
         hio
         tf

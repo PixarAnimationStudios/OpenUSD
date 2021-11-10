@@ -34,7 +34,10 @@ _GetMacroBlob()
     // On the metal side, the ref(space,type) parameter defines
     // if items are in device or thread domain.
     const static std::string header =
-        "#define REF(space,type) inout type\n";
+        "#define REF(space,type) inout type\n"
+        "#define HD_NEEDS_FORWARD_DECL\n"
+        "#define HD_FWD_DECL(decl) decl\n"
+        ;
     return header;
 }
 
@@ -170,6 +173,10 @@ HgiGLShaderGenerator::_Execute(
     const std::string &originalShaderShader) 
 {
     ss << _GetVersion() << " \n";
+
+    for (const std::string attr : _shaderLayoutAttributes) {
+        ss << attr;
+    }
 
     HgiGLShaderSectionUniquePtrVector* shaderSections = GetShaderSections();
     //For all shader sections, visit the areas defined for all

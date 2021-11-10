@@ -23,21 +23,13 @@
 //
 #include "pxr/pxr.h"
 
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/garch/glDebugWindow.h"
-#include "pxr/imaging/glf/drawTarget.h"
 
-#include "pxr/imaging/hd/driver.h"
-#include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/mesh.h"
-#include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/selection.h"
-#include "pxr/imaging/hd/task.h"
-#include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
+#include "pxr/imaging/hdSt/unitTestHelper.h"
 
 #include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
@@ -47,14 +39,6 @@
 #include "pxr/imaging/hdx/unitTestDelegate.h"
 #include "pxr/imaging/hdx/unitTestUtils.h"
 
-#include "pxr/imaging/hgi/hgi.h"
-#include "pxr/imaging/hgi/tokens.h"
-
-#include "pxr/base/gf/frustum.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/vec2i.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/gf/vec4d.h"
 #include "pxr/base/tf/errorMark.h"
 
 #include <iostream>
@@ -69,87 +53,48 @@ TF_DEFINE_PRIVATE_TOKENS(
     (pickables)
 );
 
-class My_TestGLDrawing : public HdSt_UnitTestGLDrawing {
+class Hdx_TestDriver : public HdSt_TestDriverBase<Hdx_UnitTestDelegate>
+{
 public:
-    My_TestGLDrawing() 
-    {
-        SetCameraRotate(0, 0);
-        SetCameraTranslate(GfVec3f(0));
-        _reprName = HdReprTokens->wireOnSurf;
-        _refineLevel = 0;
-    }
-    ~My_TestGLDrawing();
+    Hdx_TestDriver(TfToken const &reprName);
 
-    void DrawScene();
-    void DrawMarquee();
-    
-    // HdSt_UnitTestGLDrawing overrides
-    void InitTest() override;
-    void UninitTest() override;
-    void DrawTest() override;
-    void OffscreenTest() override;
+    void DrawWithSelection(GfVec4d const &viewport, 
+        HdxSelectionTrackerSharedPtr selTracker);
 
-    void MousePress(int button, int x, int y, int modKeys) override;
-    void MouseRelease(int button, int x, int y, int modKeys) override;
-    void MouseMove(int x, int y, int modKeys) override;
+    HdSelectionSharedPtr Pick(GfVec2i const &startPos, GfVec2i const &endPos,
+        int width, int height, GfFrustum const &frustum, 
+        GfMatrix4d const &viewMatrix, TfToken const &pickTarget,
+        TfToken const &resolveMode, HdxPickHitVector *allHits);
 
 protected:
-    void ParseArgs(int argc, char *argv[]) override;
-    void _InitScene();
-    void _Clear();
-    HdSelectionSharedPtr _Pick(
-        GfVec2i const& startPos, GfVec2i const& endPos,
-        TfToken const& pickTarget,
-        TfToken const& resolveMode,
-        HdxPickHitVector *allHits);
+    void _Init(HdReprSelector const &reprSelector) override;
 
 private:
-    // Hgi and HdDriver should be constructed before HdEngine to ensure they
-    // are destructed last. Hgi may be used during engine/delegate destruction.
-    HgiUniquePtr _hgi;
-    std::unique_ptr<HdDriver> _driver;
-    HdEngine _engine;
-    HdStRenderDelegate _renderDelegate;
-    HdRenderIndex *_renderIndex;
-    std::unique_ptr<Hdx_UnitTestDelegate> _delegate;
-    
     HdRprimCollection _pickablesCol;
-    HdxUnitTestUtils::Marquee _marquee;
-    HdxSelectionTrackerSharedPtr _selTracker;
 
-    TfToken _reprName;
-    int _refineLevel;
-    GfVec2i _startPos, _endPos;
 };
 
-////////////////////////////////////////////////////////////
-
-GLuint vao;
-
-static GfMatrix4d
-_GetTranslate(float tx, float ty, float tz)
+Hdx_TestDriver::Hdx_TestDriver(TfToken const &reprName)
 {
-    GfMatrix4d m(1.0f);
-    m.SetRow(3, GfVec4f(tx, ty, tz, 1.0));
-    return m;
-}
-
-My_TestGLDrawing::~My_TestGLDrawing()
-{
-    delete _renderIndex;
+    _Init(HdReprSelector(reprName));
 }
 
 void
-My_TestGLDrawing::InitTest()
-{
-    _hgi = Hgi::CreatePlatformDefaultHgi();
-    _driver.reset(new HdDriver{HgiTokens->renderDriver, VtValue(_hgi.get())});
+Hdx_TestDriver::_Init(HdReprSelector const &reprSelector)
+{   
+    _SetupSceneDelegate();
+    
+    Hdx_UnitTestDelegate &delegate = GetDelegate();
 
-    _renderIndex = HdRenderIndex::New(&_renderDelegate, {_driver.get()});
-    TF_VERIFY(_renderIndex != nullptr);
-    _delegate.reset(new Hdx_UnitTestDelegate(_renderIndex));
-    _delegate->SetRefineLevel(_refineLevel);
-    _selTracker.reset(new HdxSelectionTracker);
+    // prepare render task
+    SdfPath renderSetupTask("/renderSetupTask");
+    SdfPath renderTask("/renderTask");
+    SdfPath selectionTask("/selectionTask");
+    SdfPath pickTask("/pickTask");
+    delegate.AddRenderSetupTask(renderSetupTask);
+    delegate.AddRenderTask(renderTask);
+    delegate.AddSelectionTask(selectionTask);
+    delegate.AddPickTask(pickTask);
 
     // Add a meshPoints repr since it isn't populated in 
     // HdRenderIndex::_ConfigureReprs
@@ -160,51 +105,162 @@ My_TestGLDrawing::InitTest()
                                          /*flatShadingEnabled=*/true,
                                          /*blendWireframeColor=*/false));
 
-    // prepare render task
-    SdfPath renderSetupTask("/renderSetupTask");
-    SdfPath renderTask("/renderTask");
-    SdfPath selectionTask("/selectionTask");
-    SdfPath pickTask("/pickTask");
-    _delegate->AddRenderSetupTask(renderSetupTask);
-    _delegate->AddRenderTask(renderTask);
-    _delegate->AddSelectionTask(selectionTask);
-    _delegate->AddPickTask(pickTask);
-
-    // render task parameters.
-    VtValue vParam = _delegate->GetTaskParam(renderSetupTask, HdTokens->params);
-    HdxRenderTaskParams param = vParam.Get<HdxRenderTaskParams>();
-    param.enableLighting = true; // use default lighting
-    _delegate->SetTaskParam(renderSetupTask, HdTokens->params,
-                            VtValue(param));
     // Use wireframe and enable points for edge and point picking.
     const auto sceneReprSel = HdReprSelector(HdReprTokens->wireOnSurf,
                                              HdReprTokens->disabled,
                                              _tokens->meshPoints);
-    _delegate->SetTaskParam(renderTask, HdTokens->collection,
-                            VtValue(HdRprimCollection(HdTokens->geometry, 
-                                                      sceneReprSel)));
+
+    // render task parameters.
+    VtValue vParam = delegate.GetTaskParam(renderSetupTask, HdTokens->params);
+    HdxRenderTaskParams param = vParam.Get<HdxRenderTaskParams>();
+    param.enableLighting = true; // use default lighting
+    delegate.SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
+    delegate.SetTaskParam(renderTask, HdTokens->collection,
+        VtValue(HdRprimCollection(HdTokens->geometry, sceneReprSel)));
+        
     HdxSelectionTaskParams selParam;
     selParam.enableSelection = true;
     selParam.selectionColor = GfVec4f(1, 1, 0, 1);
     selParam.locateColor = GfVec4f(1, 0, 1, 1);
-    _delegate->SetTaskParam(selectionTask, HdTokens->params,
-                            VtValue(selParam));
+    delegate.SetTaskParam(
+        selectionTask, HdTokens->params, VtValue(selParam));
+
+    // picking
+    _pickablesCol = HdRprimCollection(_tokens->pickables, sceneReprSel);
+    // We have to unfortunately explictly add collections besides 'geometry'
+    // See HdRenderIndex constructor.
+    delegate.GetRenderIndex().GetChangeTracker().AddCollection(
+        _tokens->pickables);
+}
+
+void
+Hdx_TestDriver::DrawWithSelection(GfVec4d const &viewport, 
+    HdxSelectionTrackerSharedPtr selTracker)
+{
+    SdfPath renderSetupTask("/renderSetupTask");
+    SdfPath renderTask("/renderTask");
+    SdfPath selectionTask("/selectionTask");
+
+    HdxRenderTaskParams param = GetDelegate().GetTaskParam(
+        renderSetupTask, HdTokens->params).Get<HdxRenderTaskParams>();
+    param.viewport = viewport;
+    param.aovBindings = _aovBindings;
+    GetDelegate().SetTaskParam(
+        renderSetupTask, HdTokens->params, VtValue(param));
+
+    HdTaskSharedPtrVector tasks;
+    tasks.push_back(GetDelegate().GetRenderIndex().GetTask(renderSetupTask));
+    tasks.push_back(GetDelegate().GetRenderIndex().GetTask(renderTask));
+    tasks.push_back(GetDelegate().GetRenderIndex().GetTask(selectionTask));
+
+    _GetEngine()->SetTaskContextData(
+        HdxTokens->selectionState, VtValue(selTracker));
+    _GetEngine()->Execute(&GetDelegate().GetRenderIndex(), &tasks);
+}
+
+HdSelectionSharedPtr
+Hdx_TestDriver::Pick(GfVec2i const &startPos, GfVec2i const &endPos,
+    int width, int height, GfFrustum const &frustum, 
+    GfMatrix4d const &viewMatrix, TfToken const &pickTarget,
+    TfToken const &resolveMode, HdxPickHitVector *allHits)
+{
+    HdxPickTaskContextParams p;
+    p.resolution = HdxUnitTestUtils::CalculatePickResolution(
+        startPos, endPos, GfVec2i(4,4));
+    p.pickTarget = pickTarget;
+    p.resolveMode = resolveMode;
+    p.viewMatrix = viewMatrix;
+    p.projectionMatrix = HdxUnitTestUtils::ComputePickingProjectionMatrix(
+        startPos, endPos, GfVec2i(width, height), frustum);
+    p.collection = _pickablesCol;
+    p.outHits = allHits;
+
+    HdTaskSharedPtrVector tasks;
+    tasks.push_back(GetDelegate().GetRenderIndex().GetTask(
+        SdfPath("/pickTask")));
+    VtValue pickParams(p);
+    _GetEngine()->SetTaskContextData(HdxPickTokens->pickParams, pickParams);
+    _GetEngine()->Execute(&GetDelegate().GetRenderIndex(), &tasks);
+
+    return HdxUnitTestUtils::TranslateHitsToSelection(
+        p.pickTarget, HdSelection::HighlightModeSelect, *allHits);
+}
+
+// --------------------------------------------------------------------------
+
+class My_TestGLDrawing : public HdSt_UnitTestGLDrawing
+{
+public:
+    My_TestGLDrawing() 
+    {
+        SetCameraRotate(0, 0);
+        SetCameraTranslate(GfVec3f(0));
+        _reprName = HdReprTokens->wireOnSurf;
+        _refineLevel = 0;
+    }
+
+    void DrawScene();
+    void DrawMarquee();
+    
+    // HdSt_UnitTestGLDrawing overrides
+    void InitTest() override;
+    void UninitTest() override;
+    void DrawTest() override;
+    void OffscreenTest() override;
+    void Present(uint32_t framebuffer) override;
+    void MousePress(int button, int x, int y, int modKeys) override;
+    void MouseRelease(int button, int x, int y, int modKeys) override;
+    void MouseMove(int x, int y, int modKeys) override;
+
+protected:
+    void ParseArgs(int argc, char *argv[]) override;
+    void _InitScene();
+    HdSelectionSharedPtr _Pick(
+        GfVec2i const& startPos, GfVec2i const& endPos,
+        TfToken const& pickTarget,
+        TfToken const& resolveMode,
+        HdxPickHitVector *allHits);
+
+private:
+    std::unique_ptr<Hdx_TestDriver> _driver;
+
+    HdxUnitTestUtils::Marquee _marquee;
+    HdxSelectionTrackerSharedPtr _selTracker;
+
+    TfToken _reprName;
+    int _refineLevel;
+    GfVec2i _startPos, _endPos;
+};
+
+////////////////////////////////////////////////////////////
+
+static GfMatrix4d
+_GetTranslate(float tx, float ty, float tz)
+{
+    GfMatrix4d m(1.0f);
+    m.SetRow(3, GfVec4f(tx, ty, tz, 1.0));
+    return m;
+}
+
+void
+My_TestGLDrawing::InitTest()
+{
+    _driver = std::make_unique<Hdx_TestDriver>(_reprName);
+    
+    Hdx_UnitTestDelegate &delegate = _driver->GetDelegate();
+
+    delegate.SetRefineLevel(_refineLevel);
+    _selTracker.reset(new HdxSelectionTracker);
 
     // prepare scene
     _InitScene();
     SetCameraTranslate(GfVec3f(0, 0, -20));
 
-    // picking related init
-    _pickablesCol = HdRprimCollection(_tokens->pickables, 
-                                      sceneReprSel);
     _marquee.InitGLResources();
-    _delegate->GetRenderIndex().GetChangeTracker().AddCollection(
-        _tokens->pickables);
 
-    // XXX: Setup a VAO, the current drawing engine will not yet do this.
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-    glBindVertexArray(0);
+    _driver->SetClearColor(GfVec4f(0.1f, 0.1f, 0.1f, 1.0f));
+    _driver->SetClearDepth(1.0f);
+    _driver->SetupAovs(GetWidth(), GetHeight());
 }
 
 void
@@ -216,14 +272,16 @@ My_TestGLDrawing::UninitTest()
 void
 My_TestGLDrawing::_InitScene()
 {
-    _delegate->AddCube(SdfPath("/cube0"), _GetTranslate( 5, 0, 5));
-    _delegate->AddCube(SdfPath("/cube1"), _GetTranslate(-5, 0, 5));
-    _delegate->AddCube(SdfPath("/cube2"), _GetTranslate(-5, 0,-5));
-    _delegate->AddCube(SdfPath("/cube3"), _GetTranslate( 5, 0,-5));
+    Hdx_UnitTestDelegate &delegate = _driver->GetDelegate();
+
+    delegate.AddCube(SdfPath("/cube0"), _GetTranslate( 5, 0, 5));
+    delegate.AddCube(SdfPath("/cube1"), _GetTranslate(-5, 0, 5));
+    delegate.AddCube(SdfPath("/cube2"), _GetTranslate(-5, 0,-5));
+    delegate.AddCube(SdfPath("/cube3"), _GetTranslate( 5, 0,-5));
 
     {
-        _delegate->AddInstancer(SdfPath("/instancerTop"));
-        _delegate->AddCube(SdfPath("/protoTop"),
+        delegate.AddInstancer(SdfPath("/instancerTop"));
+        delegate.AddCube(SdfPath("/protoTop"),
                          GfMatrix4d(1), false, SdfPath("/instancerTop"));
 
         std::vector<SdfPath> prototypes;
@@ -249,16 +307,16 @@ My_TestGLDrawing::_InitScene()
         translate[2] = GfVec3f(-3, 0, 2);
         prototypeIndex[2] = 0;
 
-        _delegate->SetInstancerProperties(SdfPath("/instancerTop"),
+        delegate.SetInstancerProperties(SdfPath("/instancerTop"),
                                         prototypeIndex,
                                         scale, rotate, translate);
     }
 
     {
-        _delegate->AddInstancer(SdfPath("/instancerBottom"));
-        _delegate->AddTet(SdfPath("/protoBottom"),
+        delegate.AddInstancer(SdfPath("/instancerBottom"));
+        delegate.AddTet(SdfPath("/protoBottom"),
                          GfMatrix4d(1), false, SdfPath("/instancerBottom"));
-        _delegate->SetRefineLevel(SdfPath("/protoBottom"), 2);
+        delegate.SetRefineLevel(SdfPath("/protoBottom"), 2);
 
         std::vector<SdfPath> prototypes;
         prototypes.push_back(SdfPath("/protoBottom"));
@@ -283,7 +341,7 @@ My_TestGLDrawing::_InitScene()
         translate[2] = GfVec3f(-3, 0, -2);
         prototypeIndex[2] = 0;
 
-        _delegate->SetInstancerProperties(SdfPath("/instancerBottom"),
+        delegate.SetInstancerProperties(SdfPath("/instancerBottom"),
                                         prototypeIndex,
                                         scale, rotate, translate);
     }
@@ -298,56 +356,21 @@ My_TestGLDrawing::_Pick(GfVec2i const& startPos, GfVec2i const& endPos,
     if (!allHits) {
         return HdSelectionSharedPtr();
     }
-    HdxPickTaskContextParams p;
-    p.resolution = HdxUnitTestUtils::CalculatePickResolution(
-        startPos, endPos, GfVec2i(4,4));
-    p.pickTarget = pickTarget;
-    p.resolveMode = resolveMode;
-    p.viewMatrix = GetViewMatrix();
-    p.projectionMatrix = HdxUnitTestUtils::ComputePickingProjectionMatrix(
-        startPos, endPos, GfVec2i(GetWidth(), GetHeight()), GetFrustum());
-    p.collection = _pickablesCol;
-    p.outHits = allHits;
 
-    HdTaskSharedPtrVector tasks;
-    tasks.push_back(_renderIndex->GetTask(SdfPath("/pickTask")));
-    VtValue pickParams(p);
-    _engine.SetTaskContextData(HdxPickTokens->pickParams, pickParams);
-    _engine.Execute(_renderIndex, &tasks);
-
-    return HdxUnitTestUtils::TranslateHitsToSelection(
-        p.pickTarget, HdSelection::HighlightModeSelect, *allHits);
-}
-
-void
-My_TestGLDrawing::_Clear()
-{
-    GLfloat clearColor[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-
-    GLfloat clearDepth[1] = { 1.0f };
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
+    return _driver->Pick(startPos, endPos, GetWidth(), GetHeight(),
+        GetFrustum(), GetViewMatrix(), pickTarget, resolveMode, allHits);
 }
 
 void
 My_TestGLDrawing::DrawTest()
 {
-    _Clear();
-
     DrawScene();
-
     DrawMarquee();
 }
 
 void
 My_TestGLDrawing::OffscreenTest()
 {
-    GLfloat clearColor[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-
-    GLfloat clearDepth[1] = { 1.0f };
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
     DrawScene();
  
     HdxPickHitVector allHits;
@@ -428,8 +451,6 @@ My_TestGLDrawing::OffscreenTest()
 void
 My_TestGLDrawing::DrawScene()
 {
-    _Clear();
-
     int width = GetWidth(), height = GetHeight();
 
     GfMatrix4d viewMatrix = GetViewMatrix();
@@ -438,40 +459,23 @@ My_TestGLDrawing::DrawScene()
     GfVec4d viewport(0, 0, width, height);
 
     GfMatrix4d projMatrix = frustum.ComputeProjectionMatrix();
-    _delegate->SetCamera(viewMatrix, projMatrix);
+    _driver->GetDelegate().SetCamera(viewMatrix, projMatrix);
 
-    glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+    _driver->UpdateAovDimensions(width, height);
 
-    SdfPath renderSetupTask("/renderSetupTask");
-    SdfPath renderTask("/renderTask");
-    SdfPath selectionTask("/selectionTask");
-
-    // viewport
-    HdxRenderTaskParams param
-        = _delegate->GetTaskParam(
-            renderSetupTask, HdTokens->params).Get<HdxRenderTaskParams>();
-    param.viewport = viewport;
-    _delegate->SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
-
-    HdTaskSharedPtrVector tasks;
-    tasks.push_back(_renderIndex->GetTask(renderSetupTask));
-    tasks.push_back(_renderIndex->GetTask(renderTask));
-    tasks.push_back(_renderIndex->GetTask(selectionTask));
-
-    glEnable(GL_DEPTH_TEST);
-    glBindVertexArray(vao);
-
-    VtValue selTracker(_selTracker);
-    _engine.SetTaskContextData(HdxTokens->selectionState, selTracker);
-    _engine.Execute(&_delegate->GetRenderIndex(), &tasks);
-
-    glBindVertexArray(0);
+    _driver->DrawWithSelection(viewport, _selTracker);
 }
 
 void
 My_TestGLDrawing::DrawMarquee()
 {
     _marquee.Draw(GetWidth(), GetHeight(), _startPos, _endPos);
+}
+
+void
+My_TestGLDrawing::Present(uint32_t framebuffer)
+{
+    _driver->Present(GetWidth(), GetHeight(), framebuffer);
 }
 
 void

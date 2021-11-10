@@ -87,6 +87,8 @@ public:
     // Clear functionality.
     bool pendingClear;
 
+    std::atomic<bool> newData;
+
     riley::DisplayId dspyId;
     riley::RenderTargetId rtId;
 };

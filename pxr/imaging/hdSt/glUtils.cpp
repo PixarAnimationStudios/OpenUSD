@@ -30,8 +30,6 @@
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
-
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec2i.h"
@@ -111,19 +109,11 @@ HdStGLUtils::ReadBuffer(uint64_t vbo,
     //
     const GLsizeiptr vboSize = stride * (numElems-1) + bytesPerElement;
 
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-
     // Read data from GL
     std::vector<unsigned char> tmp(vboSize);
 
     if (vbo > 0) {
-        if (caps.directStateAccessEnabled) {
-            glGetNamedBufferSubData(vbo, vboOffset, vboSize, &tmp[0]);
-        } else {
-            glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            glGetBufferSubData(GL_ARRAY_BUFFER, vboOffset, vboSize, &tmp[0]);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-        }
+        glGetNamedBufferSubData(vbo, vboOffset, vboSize, &tmp[0]);
     }
 
     // Convert data to Vt

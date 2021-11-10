@@ -15,6 +15,7 @@ pxr_library(hgi
         cmds
         computeCmds
         computePipeline
+        debugCodes
         graphicsCmds
         graphicsCmdsDesc
         graphicsPipeline
