@@ -666,13 +666,13 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     glBindVertexArray(0);
     glDeleteVertexArrays(1, &vao);
 
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFB);
+
     // For 'resolveDeep' mode, read hits from the pick buffer.
     if (_contextParams.resolveMode == HdxPickTokens->resolveDeep) {
         _ResolveDeep();
         return;
     }
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFB);
 
     // Capture the result buffers and cast to the appropriate types.
     std::vector<uint8_t> primIds;
