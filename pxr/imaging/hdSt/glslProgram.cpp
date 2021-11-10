@@ -410,10 +410,8 @@ HdStGLSLProgram::GetComputeProgram(
                             + ": " + errorString);
             return nullptr;
         }
-        std::string version = "#version 430\n";
         if (!newProgram->CompileShader(
-                HgiShaderStageCompute,
-                version + glslfx.GetSource(shaderToken))) {
+                HgiShaderStageCompute, glslfx.GetSource(shaderToken))) {
             TF_CODING_ERROR("Fail to compile " + shaderToken.GetString());
             return nullptr;
         }
@@ -464,7 +462,7 @@ HdStGLSLProgram::GetComputeProgram(
         Hgi *hgi = resourceRegistry->GetHgi();
 
         HgiShaderFunctionDesc computeDesc;
-        std::string sourceCode("#version 430\n"
+        std::string sourceCode(
             "layout(local_size_x=1, local_size_y=1, local_size_z=1) in;\n");
 
         sourceCode += defines;

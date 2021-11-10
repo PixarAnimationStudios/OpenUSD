@@ -195,10 +195,6 @@ HdxVisualizeAovTask::_CreateShaderResources(
             &vertDesc, "position", "vec4");
         HgiShaderFunctionAddStageInput(
             &vertDesc, "uvIn", "vec2");
-        if(_hgi->GetAPIName() == HgiTokens->OpenGL ||
-        _hgi->GetAPIName() == HgiTokens->Vulkan) {
-            vsCode = "#version 450 \n";
-        }
         HgiShaderFunctionAddStageOutput(
             &vertDesc, "gl_Position", "vec4", "position");
         HgiShaderFunctionAddStageOutput(
@@ -234,10 +230,6 @@ HdxVisualizeAovTask::_CreateShaderResources(
         TfToken const &mixin = _GetFragmentMixin();
         fragDesc.debugName = mixin.GetString();
         fragDesc.shaderStage = HgiShaderStageFragment;
-        if (_hgi->GetAPIName() == HgiTokens->OpenGL ||
-            _hgi->GetAPIName() == HgiTokens->Vulkan) {
-            fsCode = "#version 450 \n";
-        }
         fsCode += glslfx.GetSource(mixin);
         fragDesc.shaderCode = fsCode.c_str();
 

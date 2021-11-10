@@ -459,9 +459,6 @@ HdSt_TextureTestDriver::_CreateShaderProgram()
 
     // Setup the vertex shader
     std::string vsCode;
-    if (_hgi->GetAPIName() == HgiTokens->OpenGL) {
-        vsCode = "#version 450 \n";
-    }
     vsCode += vsGlslfx.GetSource(TfToken("VertexPassthrough"));
     TF_VERIFY(!vsCode.empty());
     vertDesc.shaderCode = vsCode.c_str();
@@ -469,9 +466,6 @@ HdSt_TextureTestDriver::_CreateShaderProgram()
 
     // Setup the fragment shader
     std::string fsCode;
-    if (_hgi->GetAPIName() == HgiTokens->OpenGL) {
-        fsCode = "#version 450 \n";
-    }
     fsCode += fsGlslfx.GetSource(TfToken("FullscreenTexture"));
     TF_VERIFY(!fsCode.empty());
     fragDesc.shaderCode = fsCode.c_str();

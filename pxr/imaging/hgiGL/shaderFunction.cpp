@@ -32,7 +32,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGLShaderFunction::HgiGLShaderFunction(
-    HgiShaderFunctionDesc const& desc)
+    HgiShaderFunctionDesc const& desc,
+    int shaderVersion)
     : HgiShaderFunction(desc)
     , _shaderId(0)
 {
@@ -47,7 +48,10 @@ HgiGLShaderFunction::HgiGLShaderFunction(
         glObjectLabel(GL_SHADER, _shaderId, -1, _descriptor.debugName.c_str());
     }
 
-    HgiGLShaderGenerator shaderGenerator {desc};
+    const std::string versionStr = 
+        "#version " + std::to_string(shaderVersion) + "\n";
+
+    HgiGLShaderGenerator shaderGenerator(desc, versionStr);
     std::stringstream ss;
     shaderGenerator.Execute(ss);
     std::string shaderStr = ss.str();

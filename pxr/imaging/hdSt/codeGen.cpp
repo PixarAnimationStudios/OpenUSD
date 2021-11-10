@@ -531,8 +531,6 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     const bool builtinBarycentricsEnabled = registry->GetHgi()->
         GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
 
-    _genHeader << "#version " << glslVersion << "\n";
-
     if (bindlessBufferEnabled) {
         _genHeader << "#extension GL_NV_shader_buffer_load : require\n"
                    << "#extension GL_NV_gpu_shader5 : require\n";
@@ -982,15 +980,11 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     _procVS.str(""); _procTCS.str(""), _procTES.str(""), _procGS.str("");
     
     // GL capabilities 
-    const int glslVersion = registry->GetHgi()->GetCapabilities()->
-       GetShaderVersion();
     const bool bindlessBufferEnabled = registry->GetHgi()->GetCapabilities()->
         IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers);
     const bool bindlessTextureEnabled = registry->GetHgi()->GetCapabilities()->
         IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
     
-    _genCommon << "#version " << glslVersion << "\n";
-
     if (bindlessBufferEnabled) {
         _genCommon << "#extension GL_NV_shader_buffer_load : require\n"
                    << "#extension GL_NV_gpu_shader5 : require\n";

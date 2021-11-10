@@ -178,7 +178,8 @@ HgiGL::DestroyBuffer(HgiBufferHandle* bufHandle)
 HgiShaderFunctionHandle
 HgiGL::CreateShaderFunction(HgiShaderFunctionDesc const& desc)
 {
-    return HgiShaderFunctionHandle(new HgiGLShaderFunction(desc),GetUniqueId());
+    return HgiShaderFunctionHandle(new HgiGLShaderFunction(
+        desc, GetCapabilities()->GetShaderVersion()), GetUniqueId());
 }
 
 void

@@ -145,9 +145,6 @@ HdxFullscreenShader::SetProgram(
     std::string vsCode;
     //pass this guy in as a reference -->
     
-    if(_hgi->GetAPIName() == HgiTokens->OpenGL) {
-        vsCode = "#version 450 \n";
-    }
     vsCode +=vsGlslfx.GetSource(_tokens->fullscreenVertex);
     TF_VERIFY(!vsCode.empty());
 
@@ -157,9 +154,6 @@ HdxFullscreenShader::SetProgram(
     // Setup the fragment shader
     std::string fsCode;
     
-    if(_hgi->GetAPIName() == HgiTokens->OpenGL) {
-        fsCode = "#version 450 \n";
-    }
     fsCode += fsGlslfx.GetSource(_shaderName);
     TF_VERIFY(!fsCode.empty());
     fragDesc.shaderCode = fsCode.c_str();

@@ -42,7 +42,8 @@ class HgiVulkanShaderGenerator final: public HgiShaderGenerator
 {
 public:
     HGIVULKAN_API
-    explicit HgiVulkanShaderGenerator(const HgiShaderFunctionDesc &descriptor);
+    explicit HgiVulkanShaderGenerator(const HgiShaderFunctionDesc &descriptor,
+        const std::string &version);
 
     //This is not commonly consumed by the end user, but is available.
     HGIVULKAN_API
@@ -73,6 +74,7 @@ private:
     
     HgiVulkanShaderSectionUniquePtrVector _shaderSections;
     uint32_t _bindIndex;
+    std::string _version;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

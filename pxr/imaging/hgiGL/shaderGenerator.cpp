@@ -42,8 +42,10 @@ _GetMacroBlob()
 }
 
 HgiGLShaderGenerator::HgiGLShaderGenerator(
-    const HgiShaderFunctionDesc &descriptor)
+    const HgiShaderFunctionDesc &descriptor,
+    const std::string &version)
   : HgiShaderGenerator(descriptor)
+  , _version(version)
 {
     //Write out all GL shaders and add to shader sections
     GetShaderSections()->push_back(
@@ -172,7 +174,8 @@ HgiGLShaderGenerator::_Execute(
     std::ostream &ss,
     const std::string &originalShaderShader) 
 {
-    ss << _GetVersion() << " \n";
+    // Version number must be first line in glsl shader
+    ss << _version << " \n";
 
     for (const std::string attr : _shaderLayoutAttributes) {
         ss << attr;
@@ -215,12 +218,9 @@ HgiGLShaderGenerator::_Execute(
     }
 
     ss << "\n";
-    const char* cstr = originalShaderShader.c_str();
 
-    //write all the original shader except the version string
-    ss.write(
-        cstr + _GetVersion().length(),
-        originalShaderShader.length() - _GetVersion().length());
+    // write all the original shader
+    ss << originalShaderShader;
 }
 
 HgiGLShaderSectionUniquePtrVector*

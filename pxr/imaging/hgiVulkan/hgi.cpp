@@ -176,8 +176,8 @@ HgiShaderFunctionHandle
 HgiVulkan::CreateShaderFunction(HgiShaderFunctionDesc const& desc)
 {
     return HgiShaderFunctionHandle(
-        new HgiVulkanShaderFunction(GetPrimaryDevice(), desc),
-        GetUniqueId());
+        new HgiVulkanShaderFunction(GetPrimaryDevice(), desc,
+        GetCapabilities()->GetShaderVersion()), GetUniqueId());
 }
 
 /* Multi threaded */

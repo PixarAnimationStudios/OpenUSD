@@ -42,9 +42,11 @@ _GetMacroBlob()
 }
 
 HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
-    const HgiShaderFunctionDesc &descriptor)
+    const HgiShaderFunctionDesc &descriptor,
+    const std::string &version)
   : HgiShaderGenerator(descriptor)
   , _bindIndex(0)
+  , _version(version)
 {
     //Write out all GL shaders and add to shader sections
     GetShaderSections()->push_back(
@@ -180,7 +182,8 @@ HgiVulkanShaderGenerator::_Execute(
     std::ostream &ss,
     const std::string &originalShaderShader) 
 {
-    ss << _GetVersion() << " \n";
+    // Version number must be first line in glsl shader
+    ss << _version << " \n";
 
     HgiVulkanShaderSectionUniquePtrVector* shaderSections = GetShaderSections();
     //For all shader sections, visit the areas defined for all
@@ -219,12 +222,9 @@ HgiVulkanShaderGenerator::_Execute(
     }
 
     ss << "\n";
-    const char* cstr = originalShaderShader.c_str();
 
-    //write all the original shader except the version string
-    ss.write(
-        cstr + _GetVersion().length(),
-        originalShaderShader.length() - _GetVersion().length());
+    // write all the original shader
+    ss << originalShaderShader;
 }
 
 HgiVulkanShaderSectionUniquePtrVector*
