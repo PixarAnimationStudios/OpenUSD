@@ -763,6 +763,7 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 
     // For 'resolveDeep' mode, read hits from the pick buffer.
     if (_contextParams.resolveMode == HdxPickTokens->resolveDeep) {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFB);   //TODO Is this needed here?
         _ResolveDeep();
         return;
     }
