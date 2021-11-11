@@ -160,12 +160,6 @@ void wrapUsdPhysicsCollisionAPI()
 namespace {
 
 WRAP_CUSTOM {
-    _class
-    .def("GetCollisionPhysicsMaterialPrim", &UsdPhysicsCollisionAPI::GetCollisionPhysicsMaterialPrim)
-
-    ;
 }
-
-
 
 }

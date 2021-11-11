@@ -258,11 +258,18 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/usdPhysics/metrics.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usdGeom/metrics.h"
-#include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/base/gf/transform.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
+#include "pxr/usd/usdShade/material.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _physicsPurposeTokens,
+    ((materialPurposePhysics, "physics"))
+);
+
 
 const float COMPARE_TOLERANCE = 1e-05f;
 
@@ -350,7 +357,7 @@ bool GetCoM(const UsdPrim& usdPrim, GfVec3f& com, UsdGeomXformCache& xfCache)
 }
 
 // get density form a collision prim, it will also check its materials eventually
-MassApiData GetCollisionShapeMassAPIData(const UsdPhysicsCollisionAPI& collisionAPI, float bodyDensity, float& density)
+MassApiData GetCollisionShapeMassAPIData(const UsdPhysicsCollisionAPI& collisionAPI, float bodyDensity, float& density, const UsdShadeMaterial& materialPrim)
 {    
     
     MassApiData shapeMassInfo = ParseMassApi(collisionAPI.GetPrim());
@@ -363,15 +370,12 @@ MassApiData GetCollisionShapeMassAPIData(const UsdPhysicsCollisionAPI& collision
     density = shapeMassInfo.density;
     if (density <= 0.0f) // density not set, so we take it from the materials
     {
-        const UsdPrim materialPrim = collisionAPI.GetCollisionPhysicsMaterialPrim();
-
         if (materialPrim)
         {
-            const UsdPhysicsMaterialAPI materialAPI = UsdPhysicsMaterialAPI(materialPrim);
+            const UsdPhysicsMaterialAPI materialAPI = UsdPhysicsMaterialAPI(materialPrim.GetPrim());
 
             if (materialAPI)
             {
-
                 UsdAttribute densityAttr = materialAPI.GetDensityAttr();                
                 densityAttr.Get(&density);
             }
@@ -493,23 +497,67 @@ float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f& _diagonalInertia, G
     {
         std::vector<MassProperties> massProps;
         std::vector<GfMatrix4f> massTransf;
+        std::vector<UsdPrim> collisionPrims;        
 
         // traverse all collisions below this body and get their collision information
+        // first gather all collisions
         UsdPrimRange range(usdPrim);
         for (auto it = range.begin(); it != range.end(); ++it)
         {
             const UsdPrim collisionPrim = *it;
             if (collisionPrim && collisionPrim.HasAPI<UsdPhysicsCollisionAPI>())
             {
-                const UsdPhysicsCollisionAPI collisionAPI(collisionPrim);
-                float shapeDensity = 0.0f;
-
-                MassApiData massAPIdata = GetCollisionShapeMassAPIData(collisionAPI, rigidBodyMassInfo.density, shapeDensity);
-
-                GfMatrix4f matrix;
-                massProps.push_back(ParseCollisionShapeForMass(collisionPrim, massAPIdata, shapeDensity, matrix, xfCache, massInfoFn));
-                massTransf.push_back(matrix);
+                collisionPrims.push_back(collisionPrim);
             }
+        }
+
+        // get materials for all prims
+        std::vector<UsdShadeMaterial> physicsMaterials = UsdShadeMaterialBindingAPI::ComputeBoundMaterials(collisionPrims, _physicsPurposeTokens->materialPurposePhysics);
+        bool hasMaterials = true;
+        for (UsdShadeMaterial& material : physicsMaterials)
+        {
+            if (!material)
+            {
+                hasMaterials = false;                
+            }
+            else
+            {
+                if (!material.GetPrim().HasAPI<UsdPhysicsMaterialAPI>())
+                {
+                    hasMaterials = false;
+                    material = UsdShadeMaterial();
+                }
+            }
+        }
+
+        if (!hasMaterials)
+        {
+            std::vector<UsdShadeMaterial> generalMaterials = UsdShadeMaterialBindingAPI::ComputeBoundMaterials(collisionPrims);
+            for (size_t i = 0; i < physicsMaterials.size(); i++)
+            {
+                if (!physicsMaterials[i])
+                {
+                    const UsdShadeMaterial& generalMaterial = generalMaterials[i];
+                    if (generalMaterial && generalMaterial.GetPrim().HasAPI<UsdPhysicsMaterialAPI>())
+                    {
+                        physicsMaterials[i] = generalMaterial;
+                    }
+                }
+            }
+
+        }
+
+        for (size_t i = 0; i < collisionPrims.size(); i++)
+        {
+            const UsdPrim& collisionPrim = collisionPrims[i];
+            const UsdPhysicsCollisionAPI collisionAPI(collisionPrim);
+            float shapeDensity = 0.0f;
+
+            MassApiData massAPIdata = GetCollisionShapeMassAPIData(collisionAPI, rigidBodyMassInfo.density, shapeDensity, physicsMaterials[i]);
+
+            GfMatrix4f matrix;
+            massProps.push_back(ParseCollisionShapeForMass(collisionPrim, massAPIdata, shapeDensity, matrix, xfCache, massInfoFn));
+            massTransf.push_back(matrix);
         }
 
         if (!massProps.empty())
