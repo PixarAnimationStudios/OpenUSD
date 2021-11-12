@@ -43,11 +43,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-bool
-_HasDrawItems(HdRenderPassSharedPtr pass)
+static bool
+_HasDrawItems(HdRenderPassSharedPtr pass,
+              const TfTokenVector &renderTags)
 {
     HdSt_RenderPass *hdStRenderPass = static_cast<HdSt_RenderPass*>(pass.get());
-    return hdStRenderPass && hdStRenderPass->HasDrawItems();
+    return hdStRenderPass && hdStRenderPass->HasDrawItems(renderTags);
 }
 
 HdxShadowTask::HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id)
@@ -291,14 +292,14 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
         // Bind the framebuffer that will store shadowId shadow map
         shadows->BeginCapture(shadowId, true);
 
-        if (_HasDrawItems(_passes[shadowId])) {
+        if (_HasDrawItems(_passes[shadowId], GetRenderTags())) {
             // Render the actual geometry in the "defaultMaterialTag" collection
             _passes[shadowId]->Execute(
                 _renderPassStates[shadowId],
                 GetRenderTags());
         }
 
-        if (_HasDrawItems(_passes[shadowId + numShadowMaps])) {
+        if (_HasDrawItems(_passes[shadowId + numShadowMaps], GetRenderTags())) {
             // Render the actual geometry in the "masked" materialTag collection
             _passes[shadowId + numShadowMaps]->Execute(
                 _renderPassStates[shadowId + numShadowMaps],

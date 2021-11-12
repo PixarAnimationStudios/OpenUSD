@@ -112,6 +112,13 @@ HdStMesh::HdStMesh(SdfPath const& id)
 HdStMesh::~HdStMesh() = default;
 
 void
+HdStMesh::UpdateRenderTag(HdSceneDelegate *delegate,
+                          HdRenderParam *renderParam)
+{
+    HdStUpdateRenderTag(delegate, renderParam, this);
+}
+
+void
 HdStMesh::Sync(HdSceneDelegate *delegate,
                HdRenderParam   *renderParam,
                HdDirtyBits     *dirtyBits,
@@ -223,6 +230,8 @@ HdStMesh::Finalize(HdRenderParam *renderParam)
             geomSubsetDescIndex++;
         }
     }
+
+    stRenderParam->DecreaseRenderTagCount(GetRenderTag());
 }
 
 HdMeshTopologySharedPtr

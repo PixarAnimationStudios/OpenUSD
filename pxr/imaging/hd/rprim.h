@@ -228,8 +228,8 @@ public:
                             HdDirtyBits *dirtyBits);
 
     HD_API
-    void UpdateRenderTag(HdSceneDelegate* delegate,
-                         HdDirtyBits *dirtyBits);
+    virtual void UpdateRenderTag(HdSceneDelegate *delegate,
+                                 HdRenderParam *renderParam);
 
 protected:
     // ---------------------------------------------------------------------- //

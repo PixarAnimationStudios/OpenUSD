@@ -225,6 +225,28 @@ HdStGetInstancerPrimvarDescriptors(
 }
 
 // -----------------------------------------------------------------------------
+// Tracking render tag changes
+// -----------------------------------------------------------------------------
+
+void
+HdStUpdateRenderTag(HdSceneDelegate *delegate,
+                    HdRenderParam *renderParam,
+                    HdRprim *rprim)
+{
+    HdStRenderParam * const stRenderParam =
+        static_cast<HdStRenderParam*>(renderParam);
+
+    const TfToken prevRenderTag = rprim->GetRenderTag();
+    rprim->HdRprim::UpdateRenderTag(delegate, renderParam);
+    const TfToken &renderTag = rprim->GetRenderTag();
+    if (renderTag == prevRenderTag) {
+        return;
+    }
+    stRenderParam->DecreaseRenderTagCount(prevRenderTag);
+    stRenderParam->IncreaseRenderTagCount(renderTag);
+}
+
+// -----------------------------------------------------------------------------
 // Material processing utilities
 // -----------------------------------------------------------------------------
 

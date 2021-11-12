@@ -78,70 +78,109 @@ HdStRenderParam::GetGeomSubsetDrawItemsVersion() const
     return _geomSubsetDrawItemsVersion.load(std::memory_order_relaxed);
 }
 
-static
-bool
-_IsMaterialTagCounted(const TfToken &materialTag)
-{
-    return !materialTag.IsEmpty();
-}
+////////////////////////////////////////////////////////////////////////////////
+// materialTag tracking
 
 bool
 HdStRenderParam::HasMaterialTag(const TfToken &materialTag) const
 {
-    if (!_IsMaterialTagCounted(materialTag)) {
+    return _HasTag(&_materialTagToCountMutex,&_materialTagToCount, materialTag);
+}
+
+void
+HdStRenderParam::IncreaseMaterialTagCount(const TfToken &materialTag)
+{
+    _AdjustTagCount(&_materialTagToCountMutex, &_materialTagToCount,
+        materialTag, +1);
+}
+
+void
+HdStRenderParam::DecreaseMaterialTagCount(const TfToken &materialTag)
+{
+    _AdjustTagCount(&_materialTagToCountMutex, &_materialTagToCount,
+        materialTag, -1);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// renderTag tracking
+
+bool
+HdStRenderParam::HasAnyRenderTag(const TfTokenVector &renderTags) const
+{
+    for (const TfToken &tag : renderTags) {
+        if (_HasTag(&_renderTagToCountMutex, &_renderTagToCount, tag)) {
+            return true;
+        }
+    } 
+    return false;
+}
+
+void
+HdStRenderParam::IncreaseRenderTagCount(const TfToken &renderTag)
+{
+    _AdjustTagCount(&_renderTagToCountMutex, &_renderTagToCount,
+        renderTag, +1);
+}
+
+void
+HdStRenderParam::DecreaseRenderTagCount(const TfToken &renderTag)
+{
+    _AdjustTagCount(&_renderTagToCountMutex, &_renderTagToCount,
+        renderTag, -1);
+}
+
+void
+HdStRenderParam::_AdjustTagCount(
+    std::shared_timed_mutex *mutex,
+    _TagToCountMap *tagToCountMap,
+    const TfToken &tag,
+    const int increment)
+{
+    if (tag.IsEmpty()) {
+        return;
+    }
+
+    {
+        // Map already had entry for tag.
+        // Shared lock is sufficient because the entry's integer is atomic.
+        std::shared_lock<std::shared_timed_mutex> l(*mutex);
+        const auto it = tagToCountMap->find(tag);
+        if (it != tagToCountMap->end()) {
+            it->second += increment;
+            return;
+        }
+    }
+
+    {
+        // Map had no entry for tag.
+        std::unique_lock<std::shared_timed_mutex> l(*mutex);
+        (*tagToCountMap)[tag] += increment;
+    }
+
+    // Note that it is difficult to remove zero entries from the map here during
+    // multi-threaded access.
+    // It is probably not worth implementing a garbage collection for this map.
+}
+
+bool
+HdStRenderParam::_HasTag(
+    std::shared_timed_mutex *mutex,
+    const _TagToCountMap *tagToCountMap,
+    const TfToken &tag) const
+{
+    if (tag.IsEmpty()) {
         return true;
     }
 
-    std::shared_lock<std::shared_timed_mutex> lock(_materialTagToCountMutex);
+    std::shared_lock<std::shared_timed_mutex> lock(*mutex);
 
-    const auto it = _materialTagToCount.find(materialTag);
-    if (it == _materialTagToCount.end()) {
+    const auto it = tagToCountMap->find(tag);
+    if (it == tagToCountMap->end()) {
         return false;
     }
     
     return it->second > 0;
 }
 
-void
-HdStRenderParam::_AdjustMaterialTagCount(const TfToken &materialTag,
-                                         const int i)
-{
-    if (!_IsMaterialTagCounted(materialTag)) {
-        return;
-    }
-
-    {
-        // Map already had entry for materialTag.
-        // Shared lock is sufficient because the entry's integer is atomic.
-        std::shared_lock<std::shared_timed_mutex> l(_materialTagToCountMutex);
-        const auto it = _materialTagToCount.find(materialTag);
-        if (it != _materialTagToCount.end()) {
-            it->second += i;
-            return;
-        }
-    }
-
-    {
-        // Map had no entry for materialTag.
-        std::unique_lock<std::shared_timed_mutex> l(_materialTagToCountMutex);
-        _materialTagToCount[materialTag] += i;
-    }
-}
-
-void
-HdStRenderParam::IncreaseMaterialTagCount(const TfToken &materialTag)
-{
-    _AdjustMaterialTagCount(materialTag, +1);
-}
-
-void
-HdStRenderParam::DecreaseMaterialTagCount(const TfToken &materialTag)
-{
-    _AdjustMaterialTagCount(materialTag, -1);
-
-    // Note that it is difficult to remove zero entries from the map here during
-    // multi-threaded access.
-    // It is probably not worth implementing a garbage collection for this map.
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE

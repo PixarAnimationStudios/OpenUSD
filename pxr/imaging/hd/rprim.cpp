@@ -179,13 +179,10 @@ HdRprim::UpdateReprSelector(HdSceneDelegate* delegate,
 }
 
 void
-HdRprim::UpdateRenderTag(HdSceneDelegate* delegate,
-                         HdDirtyBits *dirtyBits)
+HdRprim::UpdateRenderTag(HdSceneDelegate *delegate,
+                         HdRenderParam *renderParam)
 {
-    if (*dirtyBits & HdChangeTracker::DirtyRenderTag) {
-        _renderTag = delegate->GetRenderTag(GetId());
-        *dirtyBits &= ~HdChangeTracker::DirtyRenderTag;
-    }
+    _renderTag = delegate->GetRenderTag(GetId());
 }
 
 // -------------------------------------------------------------------------- //

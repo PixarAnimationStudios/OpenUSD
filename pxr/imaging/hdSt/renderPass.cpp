@@ -125,17 +125,19 @@ HdSt_RenderPass::~HdSt_RenderPass()
 }
 
 bool
-HdSt_RenderPass::HasDrawItems() const
+HdSt_RenderPass::HasDrawItems(TfTokenVector const &renderTags) const
 {
-    // Note that using the material tag alone isn't a sufficient filter.
-    // The collection paths and task render tags also matter. Factoring them 
-    // requires querying the render index, which is an expensive operation that
-    // we avoid here.
+    // Note that using the material tag and render tags is not a sufficient
+    // filter. The collection paths also matter for computing the correct 
+    // subset.  So this method may produce false positives, but serves its 
+    // purpose of identifying when work can be skipped due to definite lack of
+    // draw items that pass the material tag and render tags filter.
     const HdStRenderParam * const renderParam =
         static_cast<HdStRenderParam *>(
             GetRenderIndex()->GetRenderDelegate()->GetRenderParam());
-    
-    return renderParam->HasMaterialTag(GetRprimCollection().GetMaterialTag());
+
+    return renderParam->HasMaterialTag(GetRprimCollection().GetMaterialTag()) &&
+        (renderTags.empty() || renderParam->HasAnyRenderTag(renderTags));
 }
 
 static
@@ -350,8 +352,8 @@ HdSt_RenderPass::_UpdateDrawItems(TfTokenVector const& renderTags)
     bool taskRenderTagsChanged = false;
     if (_taskRenderTagsVersion != taskRenderTagsVersion) {
         _taskRenderTagsVersion = taskRenderTagsVersion;
-        if (_renderTags != renderTags) {
-            _renderTags = renderTags;
+        if (_prevRenderTags != renderTags) {
+            _prevRenderTags = renderTags;
             taskRenderTagsChanged = true;
         }
     }

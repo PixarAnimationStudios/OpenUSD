@@ -876,10 +876,11 @@ HdRenderIndex::UpdateRenderTag(SdfPath const& id,
     }
 
     if (bits & HdChangeTracker::DirtyRenderTag) {
-        info->rprim->UpdateRenderTag(info->sceneDelegate, &bits);
-        _tracker.MarkRprimClean(id, bits);
+        info->rprim->UpdateRenderTag(info->sceneDelegate,
+                                    _renderDelegate->GetRenderParam());
+        _tracker.MarkRprimClean(id,
+                                bits & ~HdChangeTracker::DirtyRenderTag);
     }
-
     return info->rprim->GetRenderTag();
 }
 
@@ -1325,7 +1326,8 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
     _CollectionReprSpecVector reprSpecs = _GatherReprSpecs(_collectionsToSync);
     HdReprSelectorVector reprSelectors = _GetReprSelectors(reprSpecs);
 
-    // b. Update dirty list state and get dirty rprim ids
+    // b. Update dirty list params, if needed sync render tags, 
+    // and get dirty rprim ids
     _rprimDirtyList.UpdateRenderTagsAndReprSelectors(taskRenderTags,
                                                      reprSelectors);
 

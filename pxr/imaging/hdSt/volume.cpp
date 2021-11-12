@@ -119,6 +119,13 @@ HdStVolume::_InitRepr(TfToken const &reprToken, HdDirtyBits* dirtyBits)
 }
 
 void
+HdStVolume::UpdateRenderTag(HdSceneDelegate *delegate,
+                            HdRenderParam *renderParam)
+{
+    HdStUpdateRenderTag(delegate, renderParam, this);
+}
+
+void
 HdStVolume::Sync(HdSceneDelegate *delegate,
                  HdRenderParam   *renderParam,
                  HdDirtyBits     *dirtyBits,
@@ -155,6 +162,7 @@ HdStVolume::Finalize(HdRenderParam *renderParam)
 
     // Decrement material tag count for volume material tag
     stRenderParam->DecreaseMaterialTagCount(HdStMaterialTagTokens->volume);
+    stRenderParam->DecreaseRenderTagCount(GetRenderTag());
 }
 
 void

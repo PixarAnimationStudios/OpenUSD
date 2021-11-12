@@ -64,6 +64,10 @@ public:
     ~HdStMesh() override;
 
     HDST_API
+    void UpdateRenderTag(HdSceneDelegate *delegate,
+                         HdRenderParam *renderParam) override;
+
+    HDST_API
     void Sync(HdSceneDelegate *delegate,
               HdRenderParam   *renderParam,
               HdDirtyBits     *dirtyBits,
