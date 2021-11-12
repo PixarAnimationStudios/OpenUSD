@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+# pylint: disable=range-builtin-not-iterating
+#
 from __future__ import print_function
 from __future__ import division
 
@@ -100,7 +102,7 @@ class TestGfMultiInterval(unittest.TestCase):
         num = 7
 
         # Test Add()
-        for s in subsets(list(range(num))):
+        for s in subsets(range(num)):
             for p in permute(s):
                 x = Gf.MultiInterval()
                 for i in p:
@@ -120,7 +122,7 @@ class TestGfMultiInterval(unittest.TestCase):
         self.assertEqual(len(uniqueSets), 2**num)
 
         # Test Remove()
-        for s in subsets(list(range(num))):
+        for s in subsets(range(num)):
             for p in permute(s):
                 x = Gf.MultiInterval( Gf.Interval(0, num) )
                 for i in p:
