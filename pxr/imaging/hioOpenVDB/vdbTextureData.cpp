@@ -24,7 +24,7 @@
 
 #include "pxr/imaging/hioOpenVDB/vdbTextureData.h"
 #include "pxr/imaging/hioOpenVDB/debugCodes.h"
-#include "pxr/imaging/hioOpenVDB/vdbAssetInterface.h"
+#include "pxr/imaging/hioOpenVDB/utils.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 #include "pxr/imaging/hio/fieldTextureData.h"
@@ -33,11 +33,6 @@
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/trace/trace.h"
 
-#include "pxr/usd/ar/asset.h"
-#include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/ar/resolvedPath.h"
-
-#include "openvdb/io/Stream.h"
 #include "openvdb/openvdb.h"
 #include "openvdb/tools/Dense.h"
 #include "openvdb/tools/GridTransformer.h"
@@ -403,52 +398,6 @@ _GridHolderBase::New(const openvdb::GridBase::Ptr &grid)
     return nullptr;
 }
 
-// Classes for converting a char buffer and size to an istream, similar to the
-// functionality of boost::iostreams. These are pretty generic and could be
-// moved to a lower level library if desired in the future.
-class _CharBuf : public std::basic_streambuf<char> 
-{
-public:
-    _CharBuf(const char *p, size_t l)
-    {
-        setg((char*)p, (char*)p, (char*)p + l);
-    }
-
-    pos_type seekpos(pos_type pos, std::ios_base::openmode which) override
-    {
-        return seekoff(pos - pos_type(off_type(0)), std::ios_base::beg, which);
-    }
-
-    pos_type seekoff(off_type off,
-                std::ios_base::seekdir dir,
-                std::ios_base::openmode which = std::ios_base::in) override
-    {
-        // Should use switch(dir) but that results in a compiler error due to
-        // a missing case (_S_ios_seekdir_end) which isn't actually a case.
-        if (dir == std::ios_base::cur)
-            gbump(off);
-        else if (dir == std::ios_base::end)
-            setg(eback(), egptr() + off, egptr());
-        else if (dir == std::ios_base::beg)
-            setg(eback(), eback() + off, egptr());
-        return gptr() - eback();
-    }
-};
-
-class _CharStream : public std::istream 
-{
-public:
-    _CharStream(const char *p, size_t l)
-      : std::istream(&_buffer),
-        _buffer(p, l)
-    {
-        rdbuf(&_buffer);
-    }
-
-private:
-    _CharBuf _buffer;
-};
-
 // Load the grid with given name from the OpenVDB file at given path
 _GridHolderBase*
 _LoadGrid(const std::string &filePath, std::string const &gridName)
@@ -494,42 +443,9 @@ _LoadGrid(const std::string &filePath, std::string const &gridName)
             f.close();
         }
     } else {
-        // Try reading the vdb with ArAsset.
-        std::shared_ptr<ArAsset> asset;
-        {
-            TRACE_FUNCTION_SCOPE("Opening VDB ArAsset");
-            asset = ArGetResolver().OpenAsset(ArResolvedPath(filePath));
-        }
-
-        // Try casting asset to a HioOpenVDBArAssetInterface, which provides
-        // direct access to vdb grids, without writing them to a stream.
-        if (HioOpenVDBArAssetInterface* const vdbAsset =
-                dynamic_cast<HioOpenVDBArAssetInterface*>(asset.get())) {
-            TRACE_FUNCTION_SCOPE("Reading VDB grids from "
-                                 "HioOpenVDBArAssetInterface.");
-            result = vdbAsset->GetGrid(gridName);
-
-        } else {
-            // Use an openvdb::io::Stream to read raw bytes provided by ArAsset.
-            // ArAsset provides a char buffer and size, but Stream requires a
-            // std::istream. To bridge the gap, we use the _CharStream above to
-            // wrap the char buffer from ArAsset in a std::istream.
-            TRACE_FUNCTION_SCOPE("Streaming VDB grids from ArAsset bytes");
-            std::shared_ptr<const char> vdbBytes = asset->GetBuffer();
-            const size_t vdbNumBytes = asset->GetSize();
-            _CharStream vdbSource(vdbBytes.get(), vdbNumBytes);
-
-            openvdb::io::Stream s(vdbSource);
-            openvdb::GridPtrVecPtr grids = s.getGrids();
-
-            // Find the grid in the grid vector.
-            for (const openvdb::GridBase::Ptr grid : *grids) {
-                if (grid->getName() == gridName) {
-                    result = grid;
-                    break;
-                }
-            }
-        }
+        // The filePath is not actually a path on disk. Attempt to resolve
+        // it as an ArAsset and retrieve a vdb grid from that asset.
+        result = HioOpenVDBGridFromAsset(gridName, filePath);
 
         if (!result) {
             TF_WARN("OpenVDB asset path %s has no grid %s",

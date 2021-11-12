@@ -32,6 +32,10 @@ if (${PXR_ENABLE_MATERIALX_SUPPORT})
     endif()
 endif()
 
+if (${PXR_ENABLE_OPENVDB_SUPPORT})
+    list(APPEND optionalLibs hioOpenVDB)
+endif()
+
 pxr_plugin(${PXR_PACKAGE}
     LIBRARIES
         ar
