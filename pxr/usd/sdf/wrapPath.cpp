@@ -415,8 +415,6 @@ void wrapPath() {
         .def("__hash__", &This::GetHash)
         ;
 
-    s.attr("menvaStart") = SdfPathTokens->menvaStart;
-    s.attr("menvaEnd") = &SdfPathTokens->menvaEnd; 
     s.attr("absoluteIndicator") = &SdfPathTokens->absoluteIndicator; 
     s.attr("childDelimiter") = &SdfPathTokens->childDelimiter; 
     s.attr("propertyDelimiter") = &SdfPathTokens->propertyDelimiter; 
