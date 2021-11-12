@@ -135,11 +135,21 @@ HdSt_DomeLightComputationGPU::Execute(
 
     HdStResourceRegistry* hdStResourceRegistry =
         static_cast<HdStResourceRegistry*>(resourceRegistry);
+
+    constexpr int localSize = 8;
+
     HdStGLSLProgramSharedPtr const computeProgram =
         HdStGLSLProgram::GetComputeProgram(
             HdStPackageDomeLightShader(), 
             _shaderToken,
-            static_cast<HdStResourceRegistry*>(resourceRegistry));
+            "",
+            static_cast<HdStResourceRegistry*>(resourceRegistry), 
+            [&] (HgiShaderFunctionDesc &computeDesc) {
+                computeDesc.debugName = _shaderToken.GetString();
+                computeDesc.shaderStage = HgiShaderStageCompute;
+                computeDesc.computeDescriptor.localSize = 
+                    GfVec3i(localSize, localSize, 1);
+            });
     if (!TF_VERIFY(computeProgram)) {
         return;
     }
@@ -165,7 +175,6 @@ HdSt_DomeLightComputationGPU::Execute(
     int height = downsize ? srcDim[1] / 2 : srcDim[1];
     
     // Make sure dimensions align with the local size used in the Compute Shader
-    constexpr int localSize = 8;
     width = _MakeMultipleOf(width, localSize);
     height = _MakeMultipleOf(height, localSize);
 
@@ -264,7 +273,7 @@ HdSt_DomeLightComputationGPU::Execute(
     }
 
     // Queue compute work
-    computeCmds->Dispatch(width / localSize, height / localSize);
+    computeCmds->Dispatch(width, height);
 
     computeCmds->PopDebugGroup();
 

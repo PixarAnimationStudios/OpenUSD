@@ -95,6 +95,7 @@ private:
     bool _pushConstantsDirty;
     uint8_t* _pushConstants;
     uint32_t _pushConstantsByteSize;
+    GfVec3i _localWorkGroupSize;
 
     // Cmds is used only one frame so storing multi-frame state on will not
     // survive.

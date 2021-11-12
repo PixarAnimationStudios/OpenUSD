@@ -95,6 +95,14 @@ public:
         HdStResourceRegistry *resourceRegistry,
         PopulateDescriptorCallback populateDescriptor);
 
+    HDST_API
+    static HdStGLSLProgramSharedPtr GetComputeProgram(
+        TfToken const &shaderFileName,
+        TfToken const &shaderToken,
+        std::string const &defines,
+        HdStResourceRegistry *resourceRegistry,
+        PopulateDescriptorCallback populateDescriptor);
+
     /// Returns the role of the GPU data in this resource.
     TfToken const & GetRole() const {return _role;}
 

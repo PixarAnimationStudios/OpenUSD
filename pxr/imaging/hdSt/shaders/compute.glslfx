@@ -201,6 +201,9 @@ int getNormalsIndex(int idx)
 void main()
 {
     int index = int(hd_GlobalInvocationID.x);
+    if (index >= indexEnd) {
+        return;
+    }
     
     int offIndex = index * 2 + adjacencyOffset;
     
@@ -264,6 +267,10 @@ vec3 computeNormalForPrimIndex(int primIndex);
 void main()
 {
     int primIndex = int(hd_GlobalInvocationID.x);
+    if (primIndex >= primIndexEnd) {
+        return;
+    }
+
     int pParam = primitiveParam[getPrimitiveParamIndex(primIndex)];
     int edgeFlag = getEdgeFlag(pParam);
     int faceIndex = getFaceIndex(pParam);
@@ -377,6 +384,9 @@ vec3 computeNormalForPrimIndex(int primIndex)
 void main()
 {
     int index = int(hd_GlobalInvocationID.x);
+    if (index >= indexEnd) {
+        return;
+    }
 
     int quadInfoIndex = index * quadInfoStride + quadInfoOffset;
     int numVert = quadInfo[quadInfoIndex];

@@ -41,6 +41,11 @@ HgiShaderFunctionBufferDesc::HgiShaderFunctionBufferDesc()
 
 HgiShaderFunctionParamDesc::HgiShaderFunctionParamDesc() = default;
 
+HgiShaderFunctionComputeDesc::HgiShaderFunctionComputeDesc()
+    : localSize(GfVec3i(0, 0, 0))
+{ 
+}
+
 HgiShaderFunctionTessellationDesc::HgiShaderFunctionTessellationDesc()
 = default;
 
@@ -52,6 +57,7 @@ HgiShaderFunctionDesc::HgiShaderFunctionDesc()
   , stageInputs()
   , stageOutputs()
   , tessellationDescriptor()
+  , computeDescriptor()
 {
 }
 
@@ -109,6 +115,20 @@ bool operator!=(
 }
 
 bool operator==(
+        const HgiShaderFunctionComputeDesc& lhs,
+        const HgiShaderFunctionComputeDesc& rhs)
+{
+    return lhs.localSize == rhs.localSize;
+}
+
+bool operator!=(
+    const HgiShaderFunctionComputeDesc& lhs,
+    const HgiShaderFunctionComputeDesc& rhs)
+{
+    return !(lhs == rhs);
+}
+
+bool operator==(
         const HgiShaderFunctionTessellationDesc& lhs,
         const HgiShaderFunctionTessellationDesc& rhs)
 {
@@ -136,6 +156,7 @@ bool operator==(
            lhs.constantParams == rhs.constantParams &&
            lhs.stageInputs == rhs.stageInputs &&
            lhs.stageOutputs == rhs.stageOutputs &&
+           lhs.computeDescriptor == rhs.computeDescriptor;
            lhs.tessellationDescriptor == rhs.tessellationDescriptor;
 }
 

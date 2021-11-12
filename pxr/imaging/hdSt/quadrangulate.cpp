@@ -512,6 +512,7 @@ HdSt_QuadrangulateComputationGPU::Execute(
         int primvarOffset;
         int primvarStride;
         int numComponents;
+        int indexEnd;
     } uniform;
 
     // select shader by datatype
@@ -527,6 +528,8 @@ HdSt_QuadrangulateComputationGPU::Execute(
           [&](HgiShaderFunctionDesc &computeDesc) {
             computeDesc.debugName = shaderToken.GetString();
             computeDesc.shaderStage = HgiShaderStageCompute;
+            computeDesc.computeDescriptor.localSize = GfVec3i(64, 1, 1);
+
             if (shaderToken == HdStGLSLProgramTokens->quadrangulateFloat) {
                 HgiShaderFunctionAddWritableBuffer(
                     &computeDesc, "primvar", HdStTokens->_float,
@@ -548,6 +551,7 @@ HdSt_QuadrangulateComputationGPU::Execute(
                 "primvarOffset",      // interleave offset
                 "primvarStride",      // interleave stride
                 "numComponents",      // interleave datasize
+                "indexEnd"
             };
             static_assert((sizeof(Uniform) / sizeof(int)) ==
                           (sizeof(params) / sizeof(params[0])), "");
@@ -599,6 +603,7 @@ HdSt_QuadrangulateComputationGPU::Execute(
         HdGetComponentCount(primvar->GetTupleType().type);
 
     int numNonQuads = (int)quadInfo->numVerts.size();
+    uniform.indexEnd = numNonQuads;
 
     Hgi* hgi = hdStResourceRegistry->GetHgi();
 

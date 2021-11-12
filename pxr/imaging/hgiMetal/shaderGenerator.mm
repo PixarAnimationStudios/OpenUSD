@@ -920,10 +920,15 @@ HgiMetalShaderGenerator::HgiMetalShaderGenerator(
     id<MTLDevice> device)
   : HgiShaderGenerator(descriptor)
   , _generatorShaderSections(_BuildShaderStageEntryPoints(descriptor))
+  , _computeThreadGroupSize(GfVec3i(0))
 {
     CreateShaderSection<HgiMetalMacroShaderSection>(
         _GetHeader(device),
         "Headers");
+
+    if (descriptor.shaderStage == HgiShaderStageCompute) {
+        _computeThreadGroupSize = descriptor.computeDescriptor.localSize;
+    }
 }
 
 HgiMetalShaderGenerator::~HgiMetalShaderGenerator() = default;
@@ -978,6 +983,16 @@ void HgiMetalShaderGenerator::_Execute(
         //handle compute
         returnSS << "void";
     }
+
+    if (_computeThreadGroupSize[0] > 0 &&
+        _computeThreadGroupSize[1] > 0 &&
+        _computeThreadGroupSize[2] > 0) {
+        ss << "[[max_total_threads_per_threadgroup("
+           << _computeThreadGroupSize[0] << " * "
+           << _computeThreadGroupSize[1] << " * "
+           << _computeThreadGroupSize[2] << ")]]\n";
+    }
+
     ss << _generatorShaderSections->GetEntryPointStageName();
     ss << " " << returnSS.str() << " "
        << _generatorShaderSections->GetEntryPointFunctionName() << "(\n";

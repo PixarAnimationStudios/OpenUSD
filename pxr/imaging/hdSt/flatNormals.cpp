@@ -241,6 +241,7 @@ HdSt_FlatNormalsComputationGPU::Execute(
         int indexStride;
         int pParamOffset;
         int pParamStride;
+        int primIndexEnd;
     } uniform;
 
     HdStResourceRegistry* hdStResourceRegistry =
@@ -250,6 +251,7 @@ HdSt_FlatNormalsComputationGPU::Execute(
           [&](HgiShaderFunctionDesc &computeDesc) {
             computeDesc.debugName = shaderToken.GetString();
             computeDesc.shaderStage = HgiShaderStageCompute;
+            computeDesc.computeDescriptor.localSize = GfVec3i(64, 1, 1);
 
             TfToken srcType;
             TfToken dstType;
@@ -290,7 +292,8 @@ HdSt_FlatNormalsComputationGPU::Execute(
                 "indexOffset",        // interleave offset
                 "indexStride",        // interleave stride
                 "pParamOffset",       // interleave offset
-                "pParamStride"        // interleave stride
+                "pParamStride",       // interleave stride
+                "primIndexEnd"
             };
             static_assert((sizeof(Uniform) / sizeof(int)) ==
                           (sizeof(params) / sizeof(params[0])), "");
@@ -340,6 +343,9 @@ HdSt_FlatNormalsComputationGPU::Execute(
         HdDataSizeOfType(HdGetComponentType(primitiveParam->GetTupleType().type));
     uniform.pParamOffset = primitiveParam->GetOffset() / pParamComponentSize;
     uniform.pParamStride = primitiveParam->GetStride() / pParamComponentSize;
+    
+    const int numPrims = topologyRange->GetNumElements();
+    uniform.primIndexEnd = numPrims;
 
     Hgi* hgi = hdStResourceRegistry->GetHgi();
 
@@ -395,7 +401,6 @@ HdSt_FlatNormalsComputationGPU::Execute(
         pipeline, BufferBinding_Uniforms, sizeof(uniform), &uniform);
 
     // Queue compute work
-    int numPrims = topologyRange->GetNumElements();
     computeCmds->Dispatch(numPrims, 1);
 
     computeCmds->PopDebugGroup();

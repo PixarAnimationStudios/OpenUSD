@@ -281,6 +281,8 @@ HdStGLSLProgram::CompileShader(
     HgiShaderFunctionDesc shaderFnDesc;
     shaderFnDesc.shaderCode = shaderSource.c_str();
     shaderFnDesc.shaderStage = stage;
+    // Default work group size
+    shaderFnDesc.computeDescriptor.localSize = GfVec3i(1, 1, 1);
     HgiShaderFunctionHandle shaderFn = hgi->CreateShaderFunction(shaderFnDesc);
 
     if (!_ValidateCompilation(shaderFn, shaderType, shaderSource, _debugID)) {
@@ -443,14 +445,28 @@ HdStGLSLProgram::GetComputeProgram(
     HdStResourceRegistry *resourceRegistry,
     PopulateDescriptorCallback populateDescriptor)
 {
+    return GetComputeProgram(HdStPackageComputeShader(),
+                             shaderToken,
+                             defines,
+                             resourceRegistry,
+                             populateDescriptor);
+}
+
+HdStGLSLProgramSharedPtr
+HdStGLSLProgram::GetComputeProgram(
+    TfToken const &shaderFileName,
+    TfToken const &shaderToken,
+    std::string const &defines,
+    HdStResourceRegistry *resourceRegistry,
+    PopulateDescriptorCallback populateDescriptor)
+{
     // Find the program from registry
     HdInstance<HdStGLSLProgramSharedPtr> programInstance =
                 resourceRegistry->RegisterGLSLProgram(
                         _ComputeHash(shaderToken, defines));
 
     if (programInstance.IsFirstInstance()) {
-        // if not exists, create new one
-        TfToken const &shaderFileName = HdStPackageComputeShader();
+        // If program does not exist, create new one
         const HioGlslfx glslfx(shaderFileName, HioGlslfxTokens->defVal);
         std::string errorString;
         if (!glslfx.IsValid(&errorString)){
@@ -462,14 +478,9 @@ HdStGLSLProgram::GetComputeProgram(
         Hgi *hgi = resourceRegistry->GetHgi();
 
         HgiShaderFunctionDesc computeDesc;
-        std::string sourceCode(
-            "layout(local_size_x=1, local_size_y=1, local_size_z=1) in;\n");
-
-        sourceCode += defines;
-
         populateDescriptor(computeDesc);
 
-        sourceCode += glslfx.GetSource(shaderToken);
+        const std::string sourceCode = defines + glslfx.GetSource(shaderToken);
         computeDesc.shaderCode = sourceCode.c_str();
 
         HgiShaderFunctionHandle computeFn =

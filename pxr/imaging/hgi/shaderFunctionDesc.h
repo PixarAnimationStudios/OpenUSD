@@ -160,6 +160,40 @@ bool operator!=(
     const HgiShaderFunctionParamDesc& lhs,
     const HgiShaderFunctionParamDesc& rhs);
 
+/// \struct HgiShaderFunctionComputeDesc
+///
+/// Describes a compute function's description
+///
+/// <ul>
+/// <li>localSize:
+///   Optional. Specifices the 3D size of the local thread grouping. Defaults to
+///   0, meaning it is not set. When x > 0, y and z must also be set > 0. 
+///   When localSize is set to > 0, the following source is generated:
+///   GLSL: layout(local_size_x = localSize[0],
+///      local_size_y = localSize[1], local_size_z = localSize[2]) in;
+///   MSL: [[max_total_threads_per_threadgroup(localSize[0] * 
+///      localSize[1] * localSize[w])]]
+/// </li>
+/// </ul>
+///
+struct HgiShaderFunctionComputeDesc
+{
+    HGI_API
+    HgiShaderFunctionComputeDesc();
+
+    GfVec3i localSize;
+};
+
+HGI_API
+bool operator==(
+        const HgiShaderFunctionComputeDesc& lhs,
+        const HgiShaderFunctionComputeDesc& rhs);
+
+HGI_API
+bool operator!=(
+        const HgiShaderFunctionComputeDesc& lhs,
+        const HgiShaderFunctionComputeDesc& rhs);
+
 /// \struct HgiShaderFunctionTessellationDesc
 ///
 /// Describes a tessellation function's description
@@ -217,6 +251,8 @@ bool operator!=(
 ///   List of descriptions of the outputs of the shader.</li>
 /// <li>tessellationDesc:
 ///   Description of tessellation shader function.</li>
+/// <li>computeDescriptor:
+///   Description of compute shader function.</li>
 /// </ul>
 ///
 struct HgiShaderFunctionDesc
@@ -232,6 +268,7 @@ struct HgiShaderFunctionDesc
     std::vector<HgiShaderFunctionParamDesc> stageInputs;
     std::vector<HgiShaderFunctionParamDesc> stageOutputs;
     HgiShaderFunctionTessellationDesc tessellationDescriptor;
+    HgiShaderFunctionComputeDesc computeDescriptor;
 };
 
 using HgiShaderFunctionDescVector =

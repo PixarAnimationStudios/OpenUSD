@@ -41,6 +41,7 @@ HgiVulkanComputeCmds::HgiVulkanComputeCmds(HgiVulkan* hgi)
     , _pushConstantsDirty(false)
     , _pushConstants(nullptr)
     , _pushConstantsByteSize(0)
+    , _localWorkGroupSize(GfVec3i(1, 1, 1))
 {
 }
 
@@ -74,6 +75,22 @@ HgiVulkanComputeCmds::BindPipeline(HgiComputePipelineHandle pipeline)
     if (TF_VERIFY(pso)) {
         _pipelineLayout = pso->GetVulkanPipelineLayout();
         pso->BindPipeline(_commandBuffer->GetVulkanCommandBuffer());
+    }
+
+    // Get and store local work group size from shader function desc
+    const HgiShaderFunctionHandleVector shaderFunctionsHandles = 
+        pipeline.Get()->GetDescriptor().shaderProgram.Get()->GetDescriptor().
+            shaderFunctions;
+
+    for (const auto &handle : shaderFunctionsHandles) {
+        const HgiShaderFunctionDesc &shaderDesc = handle.Get()->GetDescriptor();
+        if (shaderDesc.shaderStage == HgiShaderStageCompute) {
+            if (shaderDesc.computeDescriptor.localSize[0] > 0 && 
+                shaderDesc.computeDescriptor.localSize[1] > 0 &&
+                shaderDesc.computeDescriptor.localSize[2] > 0) {
+                _localWorkGroupSize = shaderDesc.computeDescriptor.localSize;
+            }
+        }
     }
 }
 
@@ -109,10 +126,34 @@ HgiVulkanComputeCmds::Dispatch(int dimX, int dimY)
     _CreateCommandBuffer();
     _BindResources();
 
+    const int threadsPerGroupX = _localWorkGroupSize[0];
+    const int threadsPerGroupY = _localWorkGroupSize[1];
+    int numWorkGroupsX = (dimX + (threadsPerGroupX - 1)) / threadsPerGroupX;
+    int numWorkGroupsY = (dimY + (threadsPerGroupY - 1)) / threadsPerGroupY;
+
+    // Determine device's num compute work group limits
+    const VkPhysicalDeviceLimits limits = 
+        _hgi->GetCapabilities()->vkDeviceProperties.limits;
+    const GfVec3i maxNumWorkGroups = GfVec3i(
+        limits.maxComputeWorkGroupCount[0],
+        limits.maxComputeWorkGroupCount[1],
+        limits.maxComputeWorkGroupCount[2]);
+
+    if (numWorkGroupsX > maxNumWorkGroups[0]) {
+        TF_WARN("Max number of work group available from device is %i, larger "
+                "than %i", maxNumWorkGroups[0], numWorkGroupsX);
+        numWorkGroupsX = maxNumWorkGroups[0];
+    }
+    if (numWorkGroupsY > maxNumWorkGroups[1]) {
+        TF_WARN("Max number of work group available from device is %i, larger "
+                "than %i", maxNumWorkGroups[1], numWorkGroupsY);
+        numWorkGroupsY = maxNumWorkGroups[1];
+    }
+
     vkCmdDispatch(
         _commandBuffer->GetVulkanCommandBuffer(),
-        (uint32_t) dimX,
-        (uint32_t) dimY,
+        (uint32_t) numWorkGroupsX,
+        (uint32_t) numWorkGroupsY,
         1);
 }
 

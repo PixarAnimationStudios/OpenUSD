@@ -1000,9 +1000,6 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
         _genCommon << "#extension GL_ARB_bindless_texture : require\n";
     }
 
-    // default workgroup size (must follow #extension directives)
-    _genCommon << "layout(local_size_x = 1, local_size_y = 1) in;\n";
-
     // Used in glslfx files to determine if it is using new/old
     // imaging system. It can also be used as API guards when
     // we need new versions of Storm shading. 

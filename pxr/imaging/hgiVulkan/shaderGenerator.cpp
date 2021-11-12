@@ -48,9 +48,28 @@ HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
   , _bindIndex(0)
   , _version(version)
 {
-    //Write out all GL shaders and add to shader sections
+    // Write out all GL shaders and add to shader sections
     GetShaderSections()->push_back(
         std::make_unique<HgiVulkanMacroShaderSection>(_GetMacroBlob(), ""));
+
+    if (descriptor.shaderStage == HgiShaderStageCompute) {
+        int workSizeX = descriptor.computeDescriptor.localSize[0];
+        int workSizeY = descriptor.computeDescriptor.localSize[1];
+        int workSizeZ = descriptor.computeDescriptor.localSize[2];
+
+        if (workSizeX == 0 || workSizeY == 0 || workSizeZ == 0) {
+            workSizeX = 1;
+            workSizeY = 1;
+            workSizeZ = 1;
+        }
+      
+        _shaderLayoutAttributes.push_back(
+            std::string("layout(") +
+            "local_size_x = " + std::to_string(workSizeX) + ", "
+            "local_size_y = " + std::to_string(workSizeY) + ", "
+            "local_size_z = " + std::to_string(workSizeZ) + ") in;\n"
+        );
+    }
 
     // The ordering here is important (buffers before textures), because we
     // need to increment the bind location for resources in the same order
@@ -184,6 +203,10 @@ HgiVulkanShaderGenerator::_Execute(
 {
     // Version number must be first line in glsl shader
     ss << _version << " \n";
+    
+    for (const std::string &attr : _shaderLayoutAttributes) {
+        ss << attr;
+    }
 
     HgiVulkanShaderSectionUniquePtrVector* shaderSections = GetShaderSections();
     //For all shader sections, visit the areas defined for all

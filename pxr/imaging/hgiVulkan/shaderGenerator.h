@@ -74,6 +74,7 @@ private:
     
     HgiVulkanShaderSectionUniquePtrVector _shaderSections;
     uint32_t _bindIndex;
+    std::vector<std::string> _shaderLayoutAttributes;
     std::string _version;
 };
 

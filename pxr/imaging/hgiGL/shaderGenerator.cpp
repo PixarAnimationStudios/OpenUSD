@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hgiGL/shaderGenerator.h"
 #include "pxr/imaging/hgi/tokens.h"
@@ -47,10 +48,52 @@ HgiGLShaderGenerator::HgiGLShaderGenerator(
   : HgiShaderGenerator(descriptor)
   , _version(version)
 {
-    //Write out all GL shaders and add to shader sections
+    // Write out all GL shaders and add to shader sections
     GetShaderSections()->push_back(
         std::make_unique<HgiGLMacroShaderSection>(
             _GetMacroBlob(), ""));
+
+    if (descriptor.shaderStage == HgiShaderStageCompute) {
+
+        int workSizeX = descriptor.computeDescriptor.localSize[0];
+        int workSizeY = descriptor.computeDescriptor.localSize[1];
+        int workSizeZ = descriptor.computeDescriptor.localSize[2];
+
+        if (workSizeX == 0 || workSizeY == 0 || workSizeZ == 0) {
+            workSizeX = 1;
+            workSizeY = 1;
+            workSizeZ = 1;
+        }
+
+        // Determine device's compute work group local size limits
+        int maxLocalSize[3] = { 0, 0, 0 };
+        glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &maxLocalSize[0]);
+        glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &maxLocalSize[1]);
+        glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &maxLocalSize[2]);
+
+        if (workSizeX > maxLocalSize[0]) {
+            TF_WARN("Max size of compute work group available from device is "
+                    "%i, larger than %i", maxLocalSize[0], workSizeX);
+            workSizeX = maxLocalSize[0];
+        }
+        if (workSizeY > maxLocalSize[1]) {
+            TF_WARN("Max size of compute work group available from device is "
+                    "%i, larger than %i", maxLocalSize[1], workSizeY);
+            workSizeY = maxLocalSize[1];
+        }
+        if (workSizeZ > maxLocalSize[2]) {
+            TF_WARN("Max size of compute work group available from device is "
+                    "%i, larger than %i", maxLocalSize[2], workSizeZ);
+            workSizeZ = maxLocalSize[2];
+        }
+      
+        _shaderLayoutAttributes.push_back(
+            std::string("layout(") +
+            "local_size_x = " + std::to_string(workSizeX) + ", "
+            "local_size_y = " + std::to_string(workSizeY) + ", "
+            "local_size_z = " + std::to_string(workSizeZ) + ") in;\n"
+        );
+    }
 
     _WriteTextures(descriptor.textures);
     _WriteBuffers(descriptor.buffers);
@@ -175,9 +218,9 @@ HgiGLShaderGenerator::_Execute(
     const std::string &originalShaderShader) 
 {
     // Version number must be first line in glsl shader
-    ss << _version << " \n";
+    ss << _version << "\n";
 
-    for (const std::string attr : _shaderLayoutAttributes) {
+    for (const std::string &attr : _shaderLayoutAttributes) {
         ss << attr;
     }
 

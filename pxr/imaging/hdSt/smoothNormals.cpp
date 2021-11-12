@@ -178,6 +178,7 @@ HdSt_SmoothNormalsComputationGPU::Execute(
         int pointsStride;
         int normalsOffset;
         int normalsStride;
+        int indexEnd;
     } uniform;
 
     HdStResourceRegistry* hdStResourceRegistry =
@@ -187,6 +188,7 @@ HdSt_SmoothNormalsComputationGPU::Execute(
           [&](HgiShaderFunctionDesc &computeDesc) {
             computeDesc.debugName = shaderToken.GetString();
             computeDesc.shaderStage = HgiShaderStageCompute;
+            computeDesc.computeDescriptor.localSize = GfVec3i(64, 1, 1);
 
             TfToken srcType;
             TfToken dstType;
@@ -220,6 +222,7 @@ HdSt_SmoothNormalsComputationGPU::Execute(
                 "pointsStride",       // interleave stride
                 "normalsOffset",      // interleave offset
                 "normalsStride",      // interleave stride
+                "indexEnd"
             };
             static_assert((sizeof(Uniform) / sizeof(int)) ==
                           (sizeof(params) / sizeof(params[0])), "");
@@ -266,7 +269,6 @@ HdSt_SmoothNormalsComputationGPU::Execute(
         HdDataSizeOfType(HdGetComponentType(normals->GetTupleType().type));
     uniform.normalsOffset = normals->GetOffset() / normalComponentSize;
     uniform.normalsStride = normals->GetStride() / normalComponentSize;
-
     // The number of points is based off the size of the output,
     // However, the number of points in the adjacency table
     // is computed based off the largest vertex indexed from
@@ -274,10 +276,11 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     //
     // Therefore, we need to clamp the number of points
     // to the number of entries in the adjancency table.
-    int numDestPoints = range->GetNumElements();
-    int numSrcPoints = _adjacency->GetNumPoints();
+    const int numDestPoints = range->GetNumElements();
+    const int numSrcPoints = _adjacency->GetNumPoints();
 
-    int numPoints = std::min(numSrcPoints, numDestPoints);
+    const int numPoints = std::min(numSrcPoints, numDestPoints);
+    uniform.indexEnd = numPoints;
 
     Hgi* hgi = hdStResourceRegistry->GetHgi();
 

@@ -1840,6 +1840,7 @@ _EvalStencilsGPU(
           [&](HgiShaderFunctionDesc &computeDesc) {
             computeDesc.debugName = shaderToken.GetString();
             computeDesc.shaderStage = HgiShaderStageCompute;
+            computeDesc.computeDescriptor.localSize = GfVec3i(64, 1, 1);
 
             HgiShaderFunctionAddBuffer(&computeDesc,
                 "sizes", HdStTokens->_int,
