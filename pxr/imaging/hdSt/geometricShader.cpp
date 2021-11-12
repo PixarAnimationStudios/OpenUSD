@@ -157,6 +157,10 @@ HdSt_GeometricShader::GetPrimitiveIndexSize() const
         case PrimitiveType::PRIM_MESH_REFINED_QUADS:
             primIndexSize = 4;
             break;
+        case PrimitiveType::PRIM_MESH_COARSE_TRIQUADS:
+        case PrimitiveType::PRIM_MESH_REFINED_TRIQUADS:
+            primIndexSize = 6;
+            break;
         case PrimitiveType::PRIM_MESH_BSPLINE:
             primIndexSize = 16;
             break;
@@ -210,6 +214,8 @@ HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
             break;
         case PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
         case PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+        case PrimitiveType::PRIM_MESH_COARSE_TRIQUADS:
+        case PrimitiveType::PRIM_MESH_REFINED_TRIQUADS:
         case PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES:
         case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
         case PrimitiveType::PRIM_MESH_BSPLINE:

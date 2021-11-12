@@ -202,6 +202,8 @@ HdStGLConversions::GetPrimitiveMode(
             break;
         case PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
         case PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+        case PrimitiveType::PRIM_MESH_COARSE_TRIQUADS:
+        case PrimitiveType::PRIM_MESH_REFINED_TRIQUADS:
         case PrimitiveType::PRIM_VOLUME:
             primMode = GL_TRIANGLES;
             break;

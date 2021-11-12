@@ -786,8 +786,10 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     {
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIQUADS:
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIQUADS:
         {
             _procGS << "vec4 GetPatchCoord(int index);\n"
                     << "void ProcessPrimvars(int index) {\n"
@@ -825,6 +827,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             }
             case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
             case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIQUADS:
+            case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIQUADS:
             case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
             {
                 // These correspond to built-in fragment shader barycentric
@@ -902,6 +906,9 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     }
     if (geometryShader.find("OsdInterpolatePatchCoord") != std::string::npos) {
         _genGS <<  OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
+    }
+    if (fragmentShader.find("OsdInterpolatePatchCoord") != std::string::npos) {
+        _genFS <<  OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
     }
 
     // geometric shader
@@ -2012,6 +2019,25 @@ HdSt_CodeGen::_GenerateDrawingCoord()
                          /*arraySize=*/std::max(1, _metaData.instancerNumLevels));
     }
 
+    std::stringstream primitiveID;
+
+    if (HdSt_GeometricShader::IsPrimTypeTriQuads(
+                                _geometricShader->GetPrimitiveType())) {
+        primitiveID << "int GetPrimitiveID() {\n"
+                    << "  return gl_PrimitiveID / 2;\n"
+                    << "}\n"
+                    << "int GetTriQuadID() {\n"
+                    << "  return gl_PrimitiveID & 1;\n"
+                    << "}\n";
+    } else {
+        primitiveID << "int GetPrimitiveID() {\n"
+                    << "  return gl_PrimitiveID;\n"
+                    << "}\n";
+    }
+
+    _genGS << primitiveID.str();
+    _genFS << primitiveID.str();
+
     // instance index indirection
     _genCommon << "struct hd_instanceIndex { int indices[HD_INSTANCE_INDEX_WIDTH]; };\n";
 
@@ -2121,7 +2147,7 @@ HdSt_CodeGen::_GenerateDrawingCoord()
            << "flat out hd_drawingCoord gsDrawingCoord;\n"
            << "hd_drawingCoord GetDrawingCoord() { \n"
            << "  hd_drawingCoord dc = vsDrawingCoord[0]; \n"
-           << "  dc.primitiveCoord += gl_PrimitiveIDIn; \n"
+           << "  dc.primitiveCoord += GetPrimitiveID(); \n"
            << "  return dc; \n"
            << "}\n";
 
@@ -2130,7 +2156,7 @@ HdSt_CodeGen::_GenerateDrawingCoord()
     _genFS << "flat in hd_drawingCoord gsDrawingCoord;\n"
            << "hd_drawingCoord GetDrawingCoord() { \n"
            << "  hd_drawingCoord dc = gsDrawingCoord; \n"
-           << "  dc.primitiveCoord += gl_PrimitiveID; \n"
+           << "  dc.primitiveCoord += GetPrimitiveID(); \n"
            << "  return dc; \n"
            << "}\n";
 
@@ -2484,6 +2510,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
             switch (_geometricShader->GetPrimitiveType()) {
                 case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
                 case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+                case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIQUADS:
                 {
                     // refined quads (catmulClark uniform subdiv) or
                     // refined tris (loop uniform subdiv)
@@ -2519,6 +2546,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
 
                 case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
                 case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+                case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIQUADS:
                 {
                     // coarse quads or coarse triangles
                     // ptexId matches the primitiveID for quadrangulated or
@@ -2534,7 +2562,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                         << "#if defined(HD_HAS_coarseFaceIndex)\n "
                         << "  return ivec3(HdGet_coarseFaceIndex().x, 0, 0);\n"
                         << "#else\n "
-                        << "  return ivec3(gl_PrimitiveID, 0, 0);\n"
+                        << "  return ivec3(GetPrimitiveID(), 0, 0);\n"
                         << "#endif\n"
                         << "}\n";
                     // edge flag encodes edges which have been
@@ -2667,10 +2695,12 @@ HdSt_CodeGen::_GenerateElementPrimvar()
     switch (_geometricShader->GetPrimitiveType()) {
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_QUADS:
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIQUADS:
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BSPLINE:
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS:
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+        case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIQUADS:
             // This is no longer used by Storm but is generated for backward
             // compatibility with production shaders.
             accessors

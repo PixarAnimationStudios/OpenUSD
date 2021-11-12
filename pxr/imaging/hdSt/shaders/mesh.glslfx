@@ -512,6 +512,94 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl Mesh.Geometry.TriQuad
+
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 3) out;
+
+in VertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} inData[3];
+
+out VertexData
+{
+    vec4 Peye;
+    vec3 Neye;
+} outData;
+
+out vec4 gsPatchCoord;
+out vec2 gsTessCoord;
+
+vec4 GetPatchCoord(int index)
+{
+    vec2 uv[4];
+    uv[0] = vec2(0, 0);
+    uv[1] = vec2(1, 0);
+    uv[2] = vec2(1, 1);
+    uv[3] = vec2(0, 1);
+
+    ivec3 patchParam = GetPatchParam();
+    return OsdInterpolatePatchCoord(uv[index], patchParam);
+}
+
+void emit(int index, vec4 Peye, vec3 Neye)
+{
+    outData.Peye = Peye;
+    outData.Neye = Neye;
+
+    gsPatchCoord = GetPatchCoord(index);
+    gsTessCoord = vec2(0);
+
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    ApplyClipPlanes(outData.Peye);
+
+    ProcessPrimvars(index);
+
+    EmitVertex();
+}
+
+vec4 ComputeSelectionOffset();
+
+void main(void)
+{
+    gl_PrimitiveID = gl_PrimitiveIDIn;
+
+    bool isFlipped = IsFlipped(); // consider handedness AND negative-scale
+
+    vec3 Neye0 = GetNormal(inData[0].Neye, 0);
+    Neye0 = GetTriGeometryNormal(Neye0, inData[0].Peye, inData[1].Peye,
+        inData[2].Peye, isFlipped);
+    vec3 Neye1 = GetNormal(inData[1].Neye, 1);
+    Neye1 = GetTriGeometryNormal(Neye1, inData[0].Peye, inData[1].Peye,
+        inData[2].Peye, isFlipped);
+    vec3 Neye2 = GetNormal(inData[2].Neye, 2);
+    Neye2 = GetTriGeometryNormal(Neye2, inData[0].Peye, inData[1].Peye,
+        inData[2].Peye, isFlipped);
+
+    vec4 Peye0 = DisplacementTerminal(
+        0, inData[0].Peye, Neye0, GetPatchCoord(0));
+    vec4 Peye1 = DisplacementTerminal(
+        1, inData[1].Peye, Neye1, GetPatchCoord(1));
+    vec4 Peye2 = DisplacementTerminal(
+        2, inData[2].Peye, Neye2, GetPatchCoord(2));
+
+    // For wireframe, add a polygon offset to selected faces to ensure they
+    // rasterize over unselected faces.
+    vec4 selOffset = ComputeSelectionOffset();
+    Peye0 += selOffset;
+    Peye1 += selOffset;
+    Peye2 += selOffset;
+
+    // triangle 0: vertices (0,1,2)
+    emit(0, Peye0, Neye0);
+    emit(1, Peye1, Neye1);
+    emit(2, Peye2, Neye2);
+    EndPrimitive();
+}
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.Geometry.Quad
 
 layout(lines_adjacency) in;

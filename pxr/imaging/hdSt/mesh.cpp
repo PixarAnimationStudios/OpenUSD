@@ -2358,11 +2358,19 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
             primType = PrimitiveType::PRIM_MESH_REFINED_TRIANGLES;
         } else {
             // uniform catmark/bilinear subdivision generates quads.
-            primType = PrimitiveType::PRIM_MESH_REFINED_QUADS;
+            if (_topology->TriangulateQuads()) {
+                primType = PrimitiveType::PRIM_MESH_REFINED_TRIQUADS;
+            } else {
+                primType = PrimitiveType::PRIM_MESH_REFINED_QUADS;
+            }
         }
     } else if (_UseQuadIndices(renderIndex, _topology)) {
         // quadrangulate coarse mesh (e.g. for ptex)
-        primType = PrimitiveType::PRIM_MESH_COARSE_QUADS;
+        if (_topology->TriangulateQuads()) {
+            primType = PrimitiveType::PRIM_MESH_COARSE_TRIQUADS;
+        } else {
+            primType = PrimitiveType::PRIM_MESH_COARSE_QUADS;
+        }
     }
 
     // Determine fvar patch type based on refinement level, uniform/adaptive
@@ -2383,7 +2391,8 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
             fvarPatchType = FvarPatchType::PATCH_REFINED_QUADS;
         }
     } else if (((refineLevel == 0) && 
-               (primType == PrimitiveType::PRIM_MESH_COARSE_QUADS)) || 
+               ((primType == PrimitiveType::PRIM_MESH_COARSE_QUADS) || 
+                (primType == PrimitiveType::PRIM_MESH_COARSE_TRIQUADS))) || 
                ((refineLevel > 0) && (!_topology->RefinesToTriangles()))) {
         fvarPatchType = FvarPatchType::PATCH_COARSE_QUADS;  
     }

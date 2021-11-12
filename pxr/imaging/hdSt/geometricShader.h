@@ -68,6 +68,8 @@ public:
         PRIM_MESH_REFINED_TRIANGLES, // e.g: loop subdiv
         PRIM_MESH_COARSE_QUADS,      // e.g: quadrangulation for ptex
         PRIM_MESH_REFINED_QUADS,     // e.g: catmark/bilinear subdiv
+        PRIM_MESH_COARSE_TRIQUADS,   // e.g: triangulated quadrangulation
+        PRIM_MESH_REFINED_TRIQUADS,  // e.g: triangulated catmark/bilinear
         PRIM_MESH_BSPLINE,           // e.g. catmark limit surface patches
         PRIM_MESH_BOXSPLINETRIANGLE, // e.g. loop limit surface patches
         PRIM_VOLUME                  // Simply draws triangles of bounding
@@ -90,6 +92,8 @@ public:
                 primType == PrimitiveType::PRIM_MESH_REFINED_TRIANGLES ||
                 primType == PrimitiveType::PRIM_MESH_COARSE_QUADS      ||
                 primType == PrimitiveType::PRIM_MESH_REFINED_QUADS     ||
+                primType == PrimitiveType::PRIM_MESH_COARSE_TRIQUADS   ||
+                primType == PrimitiveType::PRIM_MESH_REFINED_TRIQUADS  ||
                 primType == PrimitiveType::PRIM_MESH_BSPLINE   ||
                 primType == PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE);
     }
@@ -105,9 +109,15 @@ public:
                 primType == PrimitiveType::PRIM_MESH_REFINED_QUADS);
     }
 
+    static inline bool IsPrimTypeTriQuads(PrimitiveType primType) {
+        return (primType == PrimitiveType::PRIM_MESH_COARSE_TRIQUADS ||
+                primType == PrimitiveType::PRIM_MESH_REFINED_TRIQUADS);
+    }
+
     static inline bool IsPrimTypeRefinedMesh(PrimitiveType primType) {
         return (primType == PrimitiveType::PRIM_MESH_REFINED_TRIANGLES ||
                 primType == PrimitiveType::PRIM_MESH_REFINED_QUADS ||
+                primType == PrimitiveType::PRIM_MESH_REFINED_TRIQUADS ||
                 primType == PrimitiveType::PRIM_MESH_BSPLINE ||
                 primType == PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE);
     }
