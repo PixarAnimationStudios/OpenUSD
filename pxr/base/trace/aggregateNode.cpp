@@ -32,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TraceAggregateNodeRefPtr
 TraceAggregateNode::Append(Id id, const TfToken &key,
-                  TimeStamp ts, int c, int xc)
+                           TimeStamp ts, int c, int xc)
 {
     TraceAggregateNodeRefPtr n = GetChild(key);
     if (n) {
@@ -132,6 +132,62 @@ TraceAggregateNode::GetChild(const TfToken &key)
     }
     else {
         return TraceAggregateNodeRefPtr(0);
+    }
+}
+
+void
+TraceAggregateNode::AdjustForOverheadAndNoise(
+    TimeStamp scopeOverhead,
+    TimeStamp timerQuantum,
+    uint64_t *numDescendantNodes)
+{
+
+    // Walk everything depth-first and accumulate descendant counts.  On the way
+    // out, subtract scopeOverhead times number of descendant scopes from
+    // inclusive time.
+
+    uint64_t localNumDescendantNodes = _children.size();
+    for (TraceAggregateNodeRefPtr const &child: _children) {
+        child->AdjustForOverheadAndNoise(
+            scopeOverhead, timerQuantum, &localNumDescendantNodes);
+    }
+
+    TimeStamp totalOverhead = scopeOverhead * localNumDescendantNodes;
+    if (totalOverhead > _ts) {
+        totalOverhead = _ts;
+    }
+    _ts -= totalOverhead;
+
+    // Our exclusive time should be our inclusive time minus the inclusive times
+    // of our direct children.  But if we have any children whose measurements
+    // are overly "noisy" then we mark their inclusive/exclusive times as zero,
+    // and do not deduct them from our exclusive time.
+    //
+    // Each sample measurement has an error of +/- \p timerQuantum, so if
+    // the number of samples times the quantum is of some threshold fraction of
+    // the inclusive time, we consider the child "noisy".
+    auto isNoisy = [timerQuantum](TimeStamp totalTime, int count) {
+        // Consider a scope noisy if timerQuantum times count is 5% or more of
+        // totalTime.  (count * timerQuantum) >= (totalTime / 20)
+        return count * timerQuantum * 20 >= totalTime;
+    };        
+    
+    TimeStamp newExclusiveTs = _ts;
+    for (TraceAggregateNodeRefPtr const &child: _children) {
+        if (isNoisy(child->_ts, child->_count)) {
+            child->_ts = child->_exclusiveTs = 0;
+        }
+        else {
+            newExclusiveTs -=
+                (newExclusiveTs > child->_ts) ? child->_ts : newExclusiveTs;
+        }
+    }
+            
+    _exclusiveTs = newExclusiveTs;
+    
+    // Publish number of descendant nodes.
+    if (numDescendantNodes) {
+        *numDescendantNodes += localNumDescendantNodes;
     }
 }
 
@@ -373,8 +429,8 @@ TraceAggregateNode::CalculateInclusiveCounterValues()
         c->CalculateInclusiveCounterValues();
     }
 
-    // Rest the inclusive count to the exclusive count. Then accumulate inclusive
-    // counts of children.
+    // Rest the inclusive count to the exclusive count. Then accumulate
+    // inclusive counts of children.
     for (_CounterValues::value_type& v : _counterValues) {
         v.second.inclusive = v.second.exclusive;
     }

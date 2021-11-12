@@ -52,6 +52,7 @@ class TestTrace(unittest.TestCase):
 
         gr = Trace.Reporter.globalReporter
         self.assertIsInstance(gr, Trace.Reporter)
+        gr.shouldAdjustForOverheadAndNoise = False
 
         if not os.getenv('PXR_ENABLE_GLOBAL_TRACE', False):
             self.assertEqual(gc.enabled , False)

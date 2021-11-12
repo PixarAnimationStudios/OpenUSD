@@ -43,6 +43,7 @@ class TestTraceReporter(unittest.TestCase):
     def test_Reporter(self):
         gc = Trace.Collector()
         gr = Trace.Reporter.globalReporter
+        gr.shouldAdjustForOverheadAndNoise = False
 
         # Create a call graph with manually specified times so that the times in the 
         # report graph can be validated.

@@ -113,6 +113,9 @@ public:
     /// Set whether automatic tracing of all python scopes is enabled.
     TRACE_API void SetPythonTracingEnabled(bool enabled);
 #endif // PXR_PYTHON_SUPPORT_ENABLED
+
+    /// Return the overhead cost to measure a scope.
+    TRACE_API TimeStamp GetScopeOverhead() const;
     
     /// Clear all pending events from the collector. No TraceCollection will be 
     /// made for these events.
@@ -264,6 +267,16 @@ public:
         _EndScope(key, Category::GetId());
     }
 
+    /// Record a scope event described by \a key that started at \a start for
+    /// the DefaultCategory.
+    ///
+    /// This method is used by the TRACE_FUNCTION, TRACE_SCOPE and
+    /// TRACE_FUNCTION_SCOPE macros.
+    /// \sa BeginScope \sa EndScope
+    TRACE_API
+    static void
+    Scope(const TraceKey& key, TimeStamp start, TimeStamp stop) noexcept;
+
     /// Record a scope event described by \a key that started at \a start if 
     /// \p Category is enabled.
     ///
@@ -271,15 +284,14 @@ public:
     /// TRACE_FUNCTION_SCOPE macros.
     /// \sa BeginScope \sa EndScope
     template <typename Category = DefaultCategory>
-    void Scope(const TraceKey& key, TimeStamp start) {
+    void Scope(const TraceKey& key, TimeStamp start, TimeStamp stop) {
         if (ARCH_LIKELY(!Category::IsEnabled()))
             return;
-
         _PerThreadData *threadData = _GetThreadData();
         threadData->EmplaceEvent(
-            TraceEvent::Timespan, key,  start, Category::GetId());
+            TraceEvent::Timespan, key, start, stop, Category::GetId());
     }
-
+    
     /// Record multiple data events with category \a cat if \p Category is 
     /// enabled.
     /// \sa StoreData
@@ -403,7 +415,7 @@ private:
 
     // Return a pointer to existing per-thread data or create one if none
     // exists.
-    TRACE_API _PerThreadData* _GetThreadData();
+    TRACE_API _PerThreadData* _GetThreadData() noexcept;
 
     TRACE_API TimeStamp _BeginEvent(const Key& key, TraceCategoryId cat);
 
@@ -432,6 +444,8 @@ private:
     // This is the fast execution path called from the TRACE_FUNCTION
     // and TRACE_SCOPE macros    
     TRACE_API void _EndScope(const TraceKey& key, TraceCategoryId cat);
+
+    TRACE_API void _MeasureScopeOverhead();
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     // Callback function registered as a python tracing function.
@@ -606,6 +620,8 @@ private:
     TraceConcurrentList<_PerThreadData> _allPerThreadData;
 
     std::string _label;
+
+    TimeStamp _measuredScopeOverhead;
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     std::atomic<int> _isPythonTracingEnabled;
