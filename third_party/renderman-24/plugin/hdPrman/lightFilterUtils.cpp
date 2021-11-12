@@ -775,43 +775,39 @@ void HdPrmanLightFilterGenerateCoordSysAndLinks(
     riley::Riley *riley,
     const riley::ShadingNode &lightNode)
 {
-    static const RtUString us_PxrRodLightFilter("PxrRodLightFilter");
-    static const RtUString us_PxrBarnLightFilter("PxrBarnLightFilter");
-
-    if (filter->name == us_PxrRodLightFilter ||
-        filter->name == us_PxrBarnLightFilter) {
-        // Sample filter transform
-        HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
-        sceneDelegate->SampleTransform(filterPath, &xf);
-        TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
-            xf_rt_values(xf.count);
-        for (size_t i=0; i < xf.count; ++i) {
-            xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(xf.values[i]);
-        }
-        const riley::Transform xform = {
-            unsigned(xf.count), xf_rt_values.data(), xf.times.data()};
-
-        // The coordSys name is the final component of the id,
-        // after stripping namespaces.
-        RtParamList attrs;
-        const char *csName =
-                    SdfPath::StripNamespace(filterPath.GetName()).c_str();
-        attrs.SetString(RixStr.k_name, RtUString(csName));
-
-        riley::CoordinateSystemId csId;
-        csId = riley->CreateCoordinateSystem(riley::UserId::DefaultId(),
-                                             xform, attrs);
-
-        (*coordsysIds).push_back(csId);
-
-        filter->params.SetString(RtUString("coordsys"),
-                                 RtUString(csName));
-
-        if (filter->name == us_PxrBarnLightFilter) {
-            filter->params.SetString(RtUString("__lightFilterParentShader"),
-                                     lightNode.name);
-        }
+    // Sample filter transform
+    HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
+    sceneDelegate->SampleTransform(filterPath, &xf);
+    TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> 
+        xf_rt_values(xf.count);
+    for (size_t i=0; i < xf.count; ++i) {
+        xf_rt_values[i] = HdPrman_GfMatrixToRtMatrix(xf.values[i]);
     }
+    const riley::Transform xform = {
+        unsigned(xf.count), xf_rt_values.data(), xf.times.data()};
+
+    // The coordSys name is the final component of the id,
+    // after stripping namespaces.
+    RtParamList attrs;
+    const char *csName =
+                SdfPath::StripNamespace(filterPath.GetName()).c_str();
+    attrs.SetString(RixStr.k_name, RtUString(csName));
+
+    riley::CoordinateSystemId csId;
+    csId = riley->CreateCoordinateSystem(riley::UserId::DefaultId(),
+                                         xform, attrs);
+
+    (*coordsysIds).push_back(csId);
+
+    // Only certain light filters require a coordsys, but we do not
+    // know which, here, so we provide it in all cases.
+    filter->params.SetString(RtUString("coordsys"),
+                             RtUString(csName));
+
+    // Only certain light filters require a __lightFilterParentShader,
+    // but we do not know which, here, so we provide it in all cases.
+    filter->params.SetString(RtUString("__lightFilterParentShader"),
+                             lightNode.name);
 
     // Light filter linking
     VtValue val = sceneDelegate->GetLightParamValue(filterPath,
