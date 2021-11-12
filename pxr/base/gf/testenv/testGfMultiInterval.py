@@ -100,7 +100,7 @@ class TestGfMultiInterval(unittest.TestCase):
         num = 7
 
         # Test Add()
-        for s in subsets(range(num)):
+        for s in subsets(list(range(num))):
             for p in permute(s):
                 x = Gf.MultiInterval()
                 for i in p:
@@ -120,7 +120,7 @@ class TestGfMultiInterval(unittest.TestCase):
         self.assertEqual(len(uniqueSets), 2**num)
 
         # Test Remove()
-        for s in subsets(range(num)):
+        for s in subsets(list(range(num))):
             for p in permute(s):
                 x = Gf.MultiInterval( Gf.Interval(0, num) )
                 for i in p:

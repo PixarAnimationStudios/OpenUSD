@@ -116,7 +116,7 @@ class TestGfDecomposeRotation(unittest.TestCase):
 
         # Test that decomposing and then recomposing yields the same matrix
         # for all rotation orders.
-        for key in axes.keys():
+        for key in list(axes.keys()):
             result = \
                 Gf.Rotation.DecomposeRotation(rot,
                                               twAxis = axes[key][2],
@@ -707,7 +707,7 @@ class TestGfDecomposeRotation(unittest.TestCase):
         # XXX: Note that we only use right handed matrices as the tests for 
         # lefthanded matrices are inconsistent right now.
         mats = []
-        for key in axes.keys():
+        for key in list(axes.keys()):
             mat = Gf.Matrix3d(1.0)
             mat.SetRow(0, axes[key][0])
             mat.SetRow(1, axes[key][1])
@@ -796,7 +796,7 @@ class TestClosestEulerRotation(unittest.TestCase):
     def testTwoChannels(self):
         for i in range(self._NUM_TESTS):
             # Pick two random channels
-            index1, index2 = self.rand.sample(range(4), 2)
+            index1, index2 = self.rand.sample(list(range(4)), 2)
             vals  = [None] * 4
             hints = [0] * 4
             vals[index1]   = self.rand.uniform(-self._TEST_RANGE, self._TEST_RANGE)
