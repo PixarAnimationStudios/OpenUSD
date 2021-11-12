@@ -763,7 +763,8 @@ _Rescale(double in,
 
 static GfRay _ComputeUntransformedRay(GfFrustum::ProjectionType projectionType,
                                       const GfRange2d &window,
-                                      const GfVec2d &windowPos)
+                                      const GfVec2d &windowPos,
+                                      const double nearDist)
 {
     // Compute position on window, from provided normalized
     // (-1 to 1) coordinates.
@@ -777,11 +778,13 @@ static GfRay _ComputeUntransformedRay(GfFrustum::ProjectionType projectionType,
     GfVec3d pos;
     GfVec3d dir;
     if (projectionType == GfFrustum::Perspective) {
+        // Note that the ray is starting at the origin and not
+        // the near plane.
         pos = GfVec3d(0);
         dir = GfVec3d(winX, winY, -1.0).GetNormalized();
     }
     else {
-        pos.Set(winX, winY, 0.0);
+        pos.Set(winX, winY, -nearDist);
         dir = -GfVec3d::ZAxis();
     }
 
@@ -792,7 +795,8 @@ static GfRay _ComputeUntransformedRay(GfFrustum::ProjectionType projectionType,
 GfRay
 GfFrustum::ComputeRay(const GfVec2d &windowPos) const
 {
-    GfRay ray = _ComputeUntransformedRay(_projectionType, _window, windowPos);
+    const GfRay ray = _ComputeUntransformedRay(
+        _projectionType, _window, windowPos, _nearFar.GetMin());
 
     // Transform these by the inverse of the view matrix.
     const GfMatrix4d &viewInverse = ComputeViewInverse();
@@ -806,7 +810,8 @@ GfFrustum::ComputeRay(const GfVec2d &windowPos) const
 GfRay
 GfFrustum::ComputePickRay(const GfVec2d &windowPos) const
 {
-    GfRay ray = _ComputeUntransformedRay(_projectionType, _window, windowPos);
+    const GfRay ray = _ComputeUntransformedRay(
+        _projectionType, _window, windowPos, _nearFar.GetMin());
     return _ComputePickRayOffsetToNearPlane(ray.GetStartPoint(), 
                                             ray.GetDirection());
 }
