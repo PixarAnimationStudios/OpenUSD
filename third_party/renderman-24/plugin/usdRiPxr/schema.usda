@@ -16,6 +16,66 @@ over "GLOBAL" (
 {
 }
 
+class "PxrProjectionPluginBase" (
+    inherits = </Typed>
+    customData = {
+        string className = "ProjectionPluginBase"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+        }
+    }
+    doc = """Base Schema class which other PxrProjection plugins will inherit.
+    It also provides UsdShade connectability for all classes that derive from
+    it."""
+)
+{
+}
+
+class "PxrSampleFilterPluginBase" (
+    inherits = </Typed>
+    customData = {
+        string className = "SampleFilterPluginBase"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+        }
+    }
+    doc = """Base Schema class which other PxrSampleFiler plugins will inherit. 
+    It also provides UsdShade connectability for all classes that derive from
+    it."""
+)
+{
+}
+
+class "PxrDisplayFilterPluginBase" (
+    inherits = </Typed>
+    customData = {
+        string className = "DisplayFilterPluginBase"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+        }
+    }
+    doc = """Base Schema class which other PxrDisplayFiler plugins will inherit.
+    It also provides UsdShade connectability for all classes that derive from
+    it."""
+)
+{
+}
+
+class "PxrIntegratorPluginBase" (
+    inherits = </Typed>
+    customData = {
+        string className = "IntegratorPluginBase"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+        }
+    }
+    doc = """Base Schema class which other PxrIntegrator plugins will inherit.
+    It also provides UsdShade connectability for all classes that derive from
+    it."""
+)
+{
+}
+
 class "PxrCameraProjectionAPI" (
     customData = {
         token[] apiSchemaAutoApplyTo = ["Camera"]
