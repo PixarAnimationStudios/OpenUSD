@@ -40,6 +40,7 @@ pxr_library(hd
         command
         compExtCompInputSource
         computation
+        containerDataSourceEditor
         coordSys
         coordSysBindingSchema
         dataSource
