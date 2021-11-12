@@ -82,8 +82,8 @@ TfStringPrintf(const char *fmt, ...)
     return s;
 }
 
-double
-TfStringToDouble(const char *ptr)
+static inline double
+_StringToDoubleImpl(const char *ptr, int len)
 {
     pxr_double_conversion::StringToDoubleConverter
         strToDouble(pxr_double_conversion::DoubleToStringConverter::NO_FLAGS,
@@ -92,7 +92,19 @@ TfStringToDouble(const char *ptr)
                     /* infinity symbol */ "inf",
                     /* nan symbol */ "nan");
     int numDigits_unused;
-    return strToDouble.StringToDouble(ptr, static_cast<int>(strlen(ptr)), &numDigits_unused);
+    return strToDouble.StringToDouble(ptr, len, &numDigits_unused);
+}
+
+double
+TfStringToDouble(const char *ptr, int len)
+{
+    return _StringToDoubleImpl(ptr, len);
+}    
+
+double
+TfStringToDouble(const char *ptr)
+{
+    return _StringToDoubleImpl(ptr, static_cast<int>(strlen(ptr)));
 }
 
 double
