@@ -1,0 +1,8 @@
+#usda 1.0
+
+def Xform "NestedInstance" (
+    instanceable = true
+    references = @./instance.usda@</Instance>
+)
+{
+}

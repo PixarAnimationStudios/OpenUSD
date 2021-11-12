@@ -1,0 +1,20 @@
+#usda 1.0
+
+def Xform "Group"
+{
+    def Xform "Geom"
+    {
+        def Mesh "cube"
+        {
+            float3[] extent = [(-2, -1, -1), (2, 1, 1)]
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 2, 3, 4, 5, 6, 7, 0, 6, 5, 1, 4, 7, 3, 2, 0, 3, 7, 6, 4, 2, 1, 5]
+            token interpolateBoundary = "edgeAndCorner"
+            uniform token orientation = "rightHanded"
+            float3[] points = [(1, 1, 1), (-1, 1, 1), (-1, -1, 1), (1, -1, 1), (-1, -1, -1), (-1, 1, -1), (1, 1, -1), (1, -1, -1)]
+            float3[] primvars:displayColor = [(0.5, 0.5, 0.5)]
+            token subdivisionScheme = "none"
+        }
+    }
+}
+

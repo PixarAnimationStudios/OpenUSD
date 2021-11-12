@@ -1,0 +1,44 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+def Scope "Scene" (
+    kind = "component"
+)
+{
+    def Scope "Looks"
+    {
+        def Material "mat"
+        {
+            # PxrSurface is not a valid 'universal' surface connection.
+            # It is not support by Storm.
+            # We expect Storm to use its fallback shader
+            token outputs:surface.connect = </Scene/Looks/mat/Surface.outputs:surface>
+            token outputs:ri:surface.connect = </Scene/Looks/mat/Surface.outputs:out>
+
+            color3f displayColor = (1, 0.1, 0.1)
+            def Shader "Surface"
+            {
+                uniform token info:id = "PxrSurface"
+                token outputs:out
+            }
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def Sphere "SphereWithFloatRadius"
+        {
+            rel material:binding = </Scene/Looks/mat>
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            float radius = 2
+            custom double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+}
+

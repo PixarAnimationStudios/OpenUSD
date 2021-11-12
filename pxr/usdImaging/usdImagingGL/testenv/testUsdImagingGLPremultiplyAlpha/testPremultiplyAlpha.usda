@@ -1,0 +1,219 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+def Scope "Scene" (
+        kind = "component"
+)
+{
+    def Scope "Looks"
+    {
+        def Material "Mat1"
+        {
+            string inputs:coords = "st"
+            token outputs:surface.connect = </Scene/Looks/Mat1/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect  = </Scene/Looks/Mat1/Tex.outputs:rgb>
+                float inputs:opacity.connect = </Scene/Looks/Mat1/Tex.outputs:a>
+                float inputs:roughness = 1
+                token outputs:surface
+            }
+
+            def Shader "Tex"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @lowAlphaStripesTex.png@
+                token inputs:wrapS = "clamp"
+                token inputs:wrapT = "clamp"
+                float2 inputs:st.connect = </Scene/Looks/Mat1/Primvar.outputs:result>
+                float3 outputs:rgb
+                float outputs:a
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </Scene/Looks/Mat1.inputs:coords>
+                float2 outputs:result
+            }
+        }
+
+        def Material "Mat2"
+        {
+            string inputs:coords = "st"
+            token outputs:surface.connect = </Scene/Looks/Mat2/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </Scene/Looks/Mat2/Tex.outputs:rgb>
+                float inputs:opacity = 1;
+                float inputs:roughness = 1
+                token outputs:surface
+            }
+
+            def Shader "Tex"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @lowAlphaStripesTex.png@
+                token inputs:wrapS = "clamp"
+                token inputs:wrapT = "clamp"
+                float2 inputs:st.connect = </Scene/Looks/Mat2/Primvar.outputs:result>
+                float3 outputs:rgb
+                float outputs:a
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </Scene/Looks/Mat2.inputs:coords>
+                float2 outputs:result
+            }     
+        }
+
+        def Material "Mat3"
+        {
+            string inputs:coords = "st"
+            token outputs:surface.connect = </Scene/Looks/Mat3/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </Scene/Looks/Mat3/Tex.outputs:rgb>
+                float inputs:opacity = 1;
+                float inputs:roughness.connect = </Scene/Looks/Mat3/Tex.outputs:r>
+                token outputs:surface
+            }
+
+            def Shader "Tex"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @lowAlphaStripesTex.png@
+                token inputs:wrapS = "clamp"
+                token inputs:wrapT = "clamp"
+                float2 inputs:st.connect = </Scene/Looks/Mat3/Primvar.outputs:result>
+                float3 outputs:rgb
+                float outputs:r
+                float outputs:g
+                float outputs:b
+                float outputs:a
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </Scene/Looks/Mat3.inputs:coords>
+                float2 outputs:result
+            }     
+        }
+
+        def Material "Mat4"
+        {
+            string inputs:coords = "st"
+            token outputs:surface.connect = </Scene/Looks/Mat4/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </Scene/Looks/Mat4/Tex.outputs:rgb>
+                float inputs:opacity = 0.5;
+                float inputs:roughness = 1
+                token outputs:surface
+            }
+
+            def Shader "Tex"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @lowAlphaStripesTex.png@
+                token inputs:wrapS = "clamp"
+                token inputs:wrapT = "clamp"
+                float2 inputs:st.connect = </Scene/Looks/Mat4/Primvar.outputs:result>
+                float3 outputs:rgb
+                float outputs:r
+                float outputs:g
+                float outputs:b
+                float outputs:a
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                string inputs:varname.connect = </Scene/Looks/Mat4.inputs:coords>
+                float2 outputs:result
+            }     
+        }
+    }
+
+    def Xform "Lights"
+    {
+        def DomeLight "Light"
+        {
+        }
+    }
+
+    def Scope "Geom"
+    {
+        def Mesh "Plane1" {
+            rel material:binding = </Scene/Looks/Mat1>
+            uniform bool doubleSided = 1
+            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
+            color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+            Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-1,-1,0), (1, -1,0), (1, 1, 0), (-1, 1, 0)]
+
+            uniform token[] xformOpOrder = [ "xformOp:translate" ]
+            Vec3f xformOp:translate=(0,0,0)
+        }
+
+        def Mesh "Plane2" {
+            rel material:binding = </Scene/Looks/Mat2>
+            uniform bool doubleSided = 1
+            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
+            color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+            Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-1,-1,0), (1, -1,0), (1, 1, 0), (-1, 1, 0)]
+
+            uniform token[] xformOpOrder = [ "xformOp:translate" ]
+            Vec3f xformOp:translate=(2.5,0,0)
+        }
+
+        def Mesh "Plane3" {
+            rel material:binding = </Scene/Looks/Mat3>
+            uniform bool doubleSided = 1
+            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
+            color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+            Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-1,-1,0), (1, -1,0), (1, 1, 0), (-1, 1, 0)]
+
+            uniform token[] xformOpOrder = [ "xformOp:translate" ]
+            Vec3f xformOp:translate=(5,0,0)
+        }
+
+         def Mesh "Plane4" {
+            rel material:binding = </Scene/Looks/Mat4>
+            uniform bool doubleSided = 1
+            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
+            color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+            Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-1,-1,0), (1, -1,0), (1, 1, 0), (-1, 1, 0)]
+
+            uniform token[] xformOpOrder = [ "xformOp:translate" ]
+            Vec3f xformOp:translate=(7.5,0,0)
+        }
+    }
+}

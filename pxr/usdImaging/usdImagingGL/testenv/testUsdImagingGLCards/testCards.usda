@@ -1,0 +1,286 @@
+#usda 1.0
+
+def Xform "World" (
+    kind = "group"
+)
+{
+    def Capsule "MyCapsule" (
+        kind = "component"
+        prepend apiSchemas = ["GeomModelAPI"]
+    )
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        uniform token model:cardGeometry = "box"
+        uniform token model:drawMode = "cards"
+        uniform float3 model:drawModeColor = (0, 1, 1)
+        custom double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "MySphere" (
+        kind = "component"
+        prepend apiSchemas = ["GeomModelAPI"]
+    )
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        uniform token model:drawMode = "cards"
+        uniform float3 model:drawModeColor = (1, 0, 1)
+        custom double3 xformOp:translate = (-4, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cylinder "MyCylinder" (
+        kind = "assembly"
+        prepend apiSchemas = ["GeomModelAPI"]
+    )
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        uniform token model:drawMode = "bounds"
+        custom double3 xformOp:translate = (-8, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cube "MyCube" (
+        kind = "assembly"
+        prepend apiSchemas = ["GeomModelAPI"]
+    )
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        uniform bool model:applyDrawMode = 1
+        uniform token model:drawMode = "bounds"
+        uniform float3 model:drawModeColor = (1, 0, 0)
+        custom double3 xformOp:translate = (-12, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cone "MyCone" (
+        kind = "component"
+        prepend apiSchemas = ["GeomModelAPI"]
+    )
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        uniform token model:drawMode = "origin"
+        uniform float3 model:drawModeColor = (1, 1, 1)
+        custom double3 xformOp:translate = (-16, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "MyXform" (
+        kind = "group"
+    )
+    {
+        uniform token model:drawMode = "cards"
+        custom double3 xformOp:translate = (0, 0, 4)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Capsule "MyCapsule" (
+            kind = "component"
+            prepend apiSchemas = ["GeomModelAPI"]
+        )
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            uniform token model:cardGeometry = "box"
+            uniform asset model:cardTextureXNeg = @WoodPlanks.jpg@
+            uniform asset model:cardTextureXPos = @WoodPlanks.jpg@
+            uniform asset model:cardTextureZNeg = @WoodPlanks.jpg@
+            uniform asset model:cardTextureZPos = @WoodPlanks.jpg@
+            custom double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "MySphere" (
+            kind = "component"
+            prepend apiSchemas = ["GeomModelAPI"]
+        )
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            custom double3 xformOp:translate = (-4, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cylinder "MyCylinder" (
+            kind = "assembly"
+            prepend apiSchemas = ["GeomModelAPI"]
+        )
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            uniform token model:drawMode = "bounds"
+            custom double3 xformOp:translate = (-8, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "MyCube" (
+            kind = "assembly"
+            prepend apiSchemas = ["GeomModelAPI"]
+        )
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            uniform bool model:applyDrawMode = 1
+            uniform token model:drawMode = "bounds"
+            uniform float3 model:drawModeColor = (1, 0, 0)
+            custom double3 xformOp:translate = (-12, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cone "MyCone" (
+            kind = "component"
+            prepend apiSchemas = ["GeomModelAPI"]
+        )
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            uniform asset model:cardTextureXPos = @WoodPlanksDonut.png@
+            uniform asset model:cardTextureYPos = @WoodPlanksDonut.png@
+            custom double3 xformOp:translate = (-16, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Xform "MyXform2" (
+        kind = "group"
+    )
+    {
+        def Xform "P" (
+            kind = "group"
+            prepend apiSchemas = ["GeomModelAPI"]
+        )
+        {
+            uniform bool model:applyDrawMode = 1
+            uniform token model:cardGeometry = "box"
+            uniform token model:drawMode = "cards"
+            uniform float3 model:drawModeColor = (0, 1, 0)
+            custom double3 xformOp:translate = (0, 0, 8)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Cube "MyCube" (
+                kind = "component"
+                prepend apiSchemas = ["GeomModelAPI"]
+            )
+            {
+                float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+                uniform float3 model:drawModeColor = (1, 0, 0)
+                custom double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Sphere "MySphere" (
+                kind = "component"
+                prepend apiSchemas = ["GeomModelAPI"]
+            )
+            {
+                float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+                uniform float3 model:drawModeColor = (0, 0, 1)
+                custom double3 xformOp:translate = (-4, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+    }
+
+    def Xform "MyXform2Instance" (
+        instanceable = true
+        kind = "group"
+        references = </World/MyXform2>
+    )
+    {
+        custom double3 xformOp:translate = (-12, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "MyConeProto" (
+        kind = "group"
+    )
+    {
+        custom double3 xformOp:translate = (-16, 0, 12)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cone "Cone" (
+            kind = "component"
+            prepend apiSchemas = ["GeomModelAPI"]
+        )
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            uniform float3 model:drawModeColor = (0, 1, 0)
+        }
+    }
+
+    def Xform "MyConeInstance" (
+        instanceable = true
+        kind = "group"
+        references = </World/MyConeProto>
+    )
+    {
+        uniform token model:drawMode = "bounds"
+        custom double3 xformOp:translate = (-12, 0, 12)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "MyConeInstance2" (
+        instanceable = true
+        kind = "group"
+        references = </World/MyConeProto>
+    )
+    {
+        uniform token model:drawMode = "origin"
+        custom double3 xformOp:translate = (-8, 0, 12)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "MyConeInstance3" (
+        kind = "component"
+        prepend apiSchemas = ["GeomModelAPI"]
+        instanceable = true
+        references = </World/MyConeProto>
+    )
+    {
+        custom double3 xformOp:translate = (-8,0,8)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        uniform token model:drawMode = "cards"
+        uniform float3 model:drawModeColor = (0,0,1)
+    }
+
+    def Xform "MyPIXform" (
+        kind = "group"
+    )
+    {
+        custom double3 xformOp:translate = (0, 0, 12)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def PointInstancer "PI" (
+            kind = "group"
+        )
+        {
+            uniform token model:drawMode = "cards"
+            point3f[] positions = [(0, 0, 0), (-4, 0, 0)]
+            int[] protoIndices = [0, 1]
+            rel prototypes = [
+                </World/MyPIXform/PI/Protos/P1>,
+                </World/MyPIXform/PI/Protos/P2>,
+            ]
+
+            def "Protos" (
+                kind = "group"
+            )
+            {
+                def Sphere "P1" (
+                    instanceable = true
+                    kind = "component"
+                    prepend apiSchemas = ["GeomModelAPI"]
+                )
+                {
+                    float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+                    uniform asset model:cardTextureXPos = @WoodPlanks.jpg@
+                    uniform asset model:cardTextureYPos = @WoodPlanks.jpg@
+                }
+
+                def Sphere "P2" (
+                    kind = "assembly"
+                )
+                {
+                    float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+                    uniform asset model:cardTextureXPos = @WoodPlanks.jpg@
+                    uniform asset model:cardTextureYPos = @WoodPlanks.jpg@
+                }
+            }
+        }
+    }
+}
+

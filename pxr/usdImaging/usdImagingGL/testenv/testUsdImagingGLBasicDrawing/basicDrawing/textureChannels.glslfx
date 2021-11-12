@@ -1,0 +1,55 @@
+-- glslfx version 0.1
+
+-- configuration
+{
+    "textures": {
+        "textureChannels1": {
+            "description": "one channel color texture",
+            "default": [0.0]
+        },
+        "textureChannels2": {
+            "description": "two channel color texture",
+            "default": [0.0, 0.0]
+        },
+        "textureChannels3": {
+            "description": "three channel color texture",
+            "default": [0.0, 0.0, 0.0]
+        },
+        "textureChannels4": {
+            "description": "four channel color texture",
+            "default": [0.0, 0.0, 0.0, 0.0]
+        }
+    },
+    "techniques": {
+        "default": {
+            "surfaceShader": {
+                "source": [
+                    "Surface.ScalarTexture" ]
+            }
+        }
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Surface.ScalarTexture
+                                                                                    
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    // Sample texture values w/o type conversion to make sure
+    // that the default types were parsed correctly.
+    float color1 = HdGet_textureChannels1();
+    vec2 color2 = HdGet_textureChannels2();
+    vec3 color3 = HdGet_textureChannels3();
+    vec4 color4 = HdGet_textureChannels4();
+
+    // Add up texture values (fallbacks are all zero) to make sure
+    // that connected texture values are passed through correctly.
+    vec4 textureColor = vec4(0, 0, 0, 1);
+    textureColor.r += color1;
+    textureColor.rg += color2;
+    textureColor.rgb += color3;
+    textureColor.rgba += color4;
+
+    color.rgb = FallbackLighting(Peye.xyz, Neye, textureColor.rgb);
+    return color;
+}

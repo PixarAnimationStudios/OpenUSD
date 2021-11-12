@@ -1,0 +1,74 @@
+#usda 1.0
+(
+    """Test USD file tests filtering of unused point-instancer primvars."""
+    upAxis = "Y"
+)
+
+class Xform "Mesh"
+{
+    def Sphere "Geom"
+    {
+        double3 xformOp:scale = (0.5, 0.5, 0.5)
+        token[] xformOpOrder = ["xformOp:scale"]
+    }
+}
+
+def Xform "World"
+{
+    def Material "Material"
+    {
+        token outputs:surface.connect = </World/Material/PreviewSurface.outputs:surface>
+
+        def Shader "PreviewSurface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </World/Material/PrimvarReader.outputs:result>
+            token outputs:surface
+        }
+
+        def Shader "PrimvarReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float3"
+            string inputs:varname = "perInstanceColor"
+            float3 outputs:result
+        }
+    }
+
+    def Xform "Geom"
+    {
+        double3 xformOp:translate = (0, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+
+        def PointInstancer "Instancer" {
+            point3f[] positions = [(-1,0,0), (0,0,0), (1,0,0)]
+            int[] protoIndices = [0,0,0]
+            rel prototypes = [<Prototypes/Mesh>]
+
+            color3f[] primvars:unused_0 = [ (1,1,1), (1,1,1), (1,1,1) ] (interpolation = "varying")
+            color3f[] primvars:unused_1 = [ (1,1,1), (1,1,1), (1,1,1) ] (interpolation = "varying")
+            color3f[] primvars:unused_2 = [ (1,1,1), (1,1,1), (1,1,1) ] (interpolation = "varying")
+            color3f[] primvars:unused_3 = [ (1,1,1), (1,1,1), (1,1,1) ] (interpolation = "varying")
+            color3f[] primvars:unused_4 = [ (1,1,1), (1,1,1), (1,1,1) ] (interpolation = "varying")
+            color3f[] primvars:unused_5 = [ (1,1,1), (1,1,1), (1,1,1) ] (interpolation = "varying")
+            color3f[] primvars:unused_6 = [ (1,1,1), (1,1,1), (1,1,1) ] (interpolation = "varying")
+            color3f[] primvars:unused_7 = [ (1,1,1), (1,1,1), (1,1,1) ] (interpolation = "varying")
+            color3f[] primvars:unused_8 = [ (1,1,1), (1,1,1), (1,1,1) ] (interpolation = "varying")
+            color3f[] primvars:unused_9 = [ (1,1,1), (1,1,1), (1,1,1) ] (interpolation = "varying")
+
+            color3f[] primvars:perInstanceColor = [
+                (0.8, 0.1, 0.1),
+                (0.1, 0.8, 0.1),
+                (0.1, 0.1, 0.8)
+            ] (interpolation = "varying")
+
+            def Scope "Prototypes"
+            {
+                def Xform "Mesh" (inherits = </Mesh>)
+                {
+                    rel material:binding = </World/Material>
+                }
+            }
+
+        }
+    }
+}

@@ -1,0 +1,95 @@
+#usda 1.0
+(
+    "make sure that inproperly initialized extents are still drawn"
+    upAxis = "Z"
+)
+
+def Xform "world"
+{
+    def "spheres"
+    {
+        def Sphere "sphere1"
+        {
+            float3[] extent = []
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+            double3 xformOp:translate:shift = (0, 0, 4)
+            uniform token[] xformOpOrder = ["xformOp:translate:shift"]
+        }
+
+        def Sphere "sphere2"
+        {
+            float3[] extent = [(0, 0, 0)]
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+            double3 xformOp:translate:shift = (4, 0, 4)
+            uniform token[] xformOpOrder = ["xformOp:translate:shift"]
+        }
+
+        def Sphere "sphere3"
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+            double3 xformOp:translate:shift = (8, 0, 4)
+            uniform token[] xformOpOrder = ["xformOp:translate:shift"]
+        }
+
+        def Sphere "sphere4"
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1), (2, 2, 2)]
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+            double3 xformOp:translate:shift = (12, 0, 4)
+            uniform token[] xformOpOrder = ["xformOp:translate:shift"]
+        }
+    }
+
+    def "cubes"
+    {
+        def Cube "cube1"
+        {
+            float3[] extent = []
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            double3 xformOp:translate:shift = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate:shift"]
+        }
+
+        def Cube "cube2"
+        {
+            float3[] extent = [(0, 0, 0)]
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            double3 xformOp:translate:shift = (4, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate:shift"]
+        }
+
+        def Cube "cube3"
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            double3 xformOp:translate:shift = (8, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate:shift"]
+        }
+
+        def Cube "cube4"
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1), (2, 2, 2)]
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            double3 xformOp:translate:shift = (12, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate:shift"]
+        }
+    }
+
+    def NurbsCurves "nurbsCurve"
+    {
+        int[] curveVertexCounts = [8]
+        float3[] extent.timeSamples = {
+            0: [],
+        }
+        double[] knots = [0, 0, 0, 0, 1.01, 2.17, 3.26, 4.34, 5.43, 5.43, 5.43, 5.43]
+        int[] order = [4]
+        point3f[] points = [(6.21, -9.44, 13.38), (6.02, -9.57, 13.21), (5.34, -10.15, 12.4), (4.53, -11.03, 12.4), (4.02, -11.61, 10.89), (3.72, -11.92, 10.42), (3.28, -12.26, 9.7), (2.63, -12.07, 8.47)]
+        color3f[] primvars:displayColor = [(0, 0, 1)]
+        double2[] ranges = [(0, 54.304758334769296)]
+        float[] widths = [1]
+        double3 xformOp:translate:shift = (12, 10, -9)
+        uniform token[] xformOpOrder = ["xformOp:translate:shift"]
+    }
+}
+

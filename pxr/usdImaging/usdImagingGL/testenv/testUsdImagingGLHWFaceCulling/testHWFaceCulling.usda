@@ -1,0 +1,54 @@
+#usda 1.0
+(
+    endFrame = 2
+    startFrame = 0
+    upAxis = "Y"
+)
+
+def Xform "World" (
+    kind = "group"
+)
+{
+
+    def Mesh "MeshLeftHanded" (
+        kind = "component"
+    )
+    {   
+        bool doubleSided = 0
+        float3[] extent = [(-1, -1, 0), (1, 2, 0)]
+        int[] faceVertexCounts = [3, 4, 4]
+        int[] faceVertexIndices = [0, 1, 6, 1, 2, 5, 6, 5, 2, 3, 4]
+        float3[] points = [(-1, -1, 0), (1, -1, 0), (1, 1, 0), (1, 2, 0), (0, 2, 0), (0, 1, 0), (-1, 1, -0)]
+
+        float3 xformOp:translate = (0, 0, 0)
+        float3 xformOp:scale.timeSamples = {
+            0: (1, 1, 1),
+            1: (-1, 1, 1),
+            2: (1, 1, 1)
+        }
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        color3f[] primvars:displayColor = [(1, 0, 0)]
+    }
+
+    def Mesh "MeshDoubleSided" (
+        kind = "component"
+    )
+    {   float3[] extent = [(-1, -1, 0), (1, 2, 0)]
+        int[] faceVertexCounts = [3, 4, 4]
+        int[] faceVertexIndices = [0, 1, 6, 1, 2, 5, 6, 5, 2, 3, 4]
+        float3[] points = [(-1, -1, 0), (1, -1, 0), (1, 1, 0), (1, 2, 0), (0, 2, 0), (0, 1, 0), (-1, 1, -0)]
+
+        bool doubleSided.timeSamples = {
+            0: 1,
+            1: 0,
+            2: 1
+        }
+
+        float3 xformOp:translate = (3, 0, 0)
+        # rotate such that we're looking at the back
+        float xformOp:rotateY = 180
+
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY"]
+        color3f[] primvars:displayColor = [(0, 1, 0)]
+    }
+}

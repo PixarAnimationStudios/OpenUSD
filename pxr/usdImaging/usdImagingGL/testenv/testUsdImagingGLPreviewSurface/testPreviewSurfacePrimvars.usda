@@ -1,0 +1,2189 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Z"
+)
+
+def Xform "Scene" (
+kind = "component"
+)
+{
+    def Scope "Looks"
+    {
+        def Material "Material_0_0"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_0/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:roughness = 0.0
+            }
+        }
+
+        def Material "Material_0_1"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_1/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:roughness = 0.1
+            }
+        }
+
+        def Material "Material_0_2"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_2/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:roughness = 0.2
+            }
+        }
+
+        def Material "Material_0_3"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_3/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:roughness = 0.3
+            }
+        }
+
+        def Material "Material_0_4"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_4/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:roughness = 0.4
+            }
+        }
+
+        def Material "Material_0_5"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_5/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:roughness = 0.5
+            }
+        }
+
+        def Material "Material_0_6"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_6/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:roughness = 0.6
+            }
+        }
+
+        def Material "Material_0_7"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_7/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:roughness = 0.7
+            }
+        }
+
+        def Material "Material_0_8"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_8/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:roughness = 0.8
+            }
+        }
+
+        def Material "Material_0_9"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_9/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:roughness = 0.9
+            }
+        }
+
+        def Material "Material_1_0"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_1_0/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.1
+                float inputs:roughness = 0.0
+            }
+        }
+
+        def Material "Material_1_1"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_1_1/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.1
+                float inputs:roughness = 0.1
+            }
+        }
+
+        def Material "Material_1_2"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_1_2/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.1
+                float inputs:roughness = 0.2
+            }
+        }
+
+        def Material "Material_1_3"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_1_3/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.1
+                float inputs:roughness = 0.3
+            }
+        }
+
+        def Material "Material_1_4"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_1_4/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.1
+                float inputs:roughness = 0.4
+            }
+        }
+
+        def Material "Material_1_5"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_1_5/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.1
+                float inputs:roughness = 0.5
+            }
+        }
+
+        def Material "Material_1_6"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_1_6/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.1
+                float inputs:roughness = 0.6
+            }
+        }
+
+        def Material "Material_1_7"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_1_7/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.1
+                float inputs:roughness = 0.7
+            }
+        }
+
+        def Material "Material_1_8"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_1_8/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.1
+                float inputs:roughness = 0.8
+            }
+        }
+
+        def Material "Material_1_9"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_1_9/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.1
+                float inputs:roughness = 0.9
+            }
+        }
+
+        def Material "Material_2_0"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_2_0/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.2
+                float inputs:roughness = 0.0
+            }
+        }
+
+        def Material "Material_2_1"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_2_1/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.2
+                float inputs:roughness = 0.1
+            }
+        }
+
+        def Material "Material_2_2"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_2_2/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.2
+                float inputs:roughness = 0.2
+            }
+        }
+
+        def Material "Material_2_3"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_2_3/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.2
+                float inputs:roughness = 0.3
+            }
+        }
+
+        def Material "Material_2_4"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_2_4/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.2
+                float inputs:roughness = 0.4
+            }
+        }
+
+        def Material "Material_2_5"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_2_5/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.2
+                float inputs:roughness = 0.5
+            }
+        }
+
+        def Material "Material_2_6"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_2_6/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.2
+                float inputs:roughness = 0.6
+            }
+        }
+
+        def Material "Material_2_7"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_2_7/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.2
+                float inputs:roughness = 0.7
+            }
+        }
+
+        def Material "Material_2_8"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_2_8/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.2
+                float inputs:roughness = 0.8
+            }
+        }
+
+        def Material "Material_2_9"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_2_9/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.2
+                float inputs:roughness = 0.9
+            }
+        }
+
+        def Material "Material_3_0"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_3_0/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.3
+                float inputs:roughness = 0.0
+            }
+        }
+
+        def Material "Material_3_1"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_3_1/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.3
+                float inputs:roughness = 0.1
+            }
+        }
+
+        def Material "Material_3_2"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_3_2/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.3
+                float inputs:roughness = 0.2
+            }
+        }
+
+        def Material "Material_3_3"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_3_3/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.3
+                float inputs:roughness = 0.3
+            }
+        }
+
+        def Material "Material_3_4"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_3_4/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.3
+                float inputs:roughness = 0.4
+            }
+        }
+
+        def Material "Material_3_5"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_3_5/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.3
+                float inputs:roughness = 0.5
+            }
+        }
+
+        def Material "Material_3_6"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_3_6/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.3
+                float inputs:roughness = 0.6
+            }
+        }
+
+        def Material "Material_3_7"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_3_7/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.3
+                float inputs:roughness = 0.7
+            }
+        }
+
+        def Material "Material_3_8"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_3_8/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.3
+                float inputs:roughness = 0.8
+            }
+        }
+
+        def Material "Material_3_9"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_3_9/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.3
+                float inputs:roughness = 0.9
+            }
+        }
+
+        def Material "Material_4_0"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_4_0/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.4
+                float inputs:roughness = 0.0
+            }
+        }
+
+        def Material "Material_4_1"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_4_1/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.4
+                float inputs:roughness = 0.1
+            }
+        }
+
+        def Material "Material_4_2"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_4_2/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.4
+                float inputs:roughness = 0.2
+            }
+        }
+
+        def Material "Material_4_3"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_4_3/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.4
+                float inputs:roughness = 0.3
+            }
+        }
+
+        def Material "Material_4_4"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_4_4/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.4
+                float inputs:roughness = 0.4
+            }
+        }
+
+        def Material "Material_4_5"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_4_5/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.4
+                float inputs:roughness = 0.5
+            }
+        }
+
+        def Material "Material_4_6"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_4_6/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.4
+                float inputs:roughness = 0.6
+            }
+        }
+
+        def Material "Material_4_7"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_4_7/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.4
+                float inputs:roughness = 0.7
+            }
+        }
+
+        def Material "Material_4_8"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_4_8/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.4
+                float inputs:roughness = 0.8
+            }
+        }
+
+        def Material "Material_4_9"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_4_9/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.4
+                float inputs:roughness = 0.9
+            }
+        }
+
+        def Material "Material_5_0"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_5_0/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.5
+                float inputs:roughness = 0.0
+            }
+        }
+
+        def Material "Material_5_1"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_5_1/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.5
+                float inputs:roughness = 0.1
+            }
+        }
+
+        def Material "Material_5_2"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_5_2/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.5
+                float inputs:roughness = 0.2
+            }
+        }
+
+        def Material "Material_5_3"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_5_3/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.5
+                float inputs:roughness = 0.3
+            }
+        }
+
+        def Material "Material_5_4"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_5_4/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.5
+                float inputs:roughness = 0.4
+            }
+        }
+
+        def Material "Material_5_5"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_5_5/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.5
+                float inputs:roughness = 0.5
+            }
+        }
+
+        def Material "Material_5_6"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_5_6/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.5
+                float inputs:roughness = 0.6
+            }
+        }
+
+        def Material "Material_5_7"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_5_7/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.5
+                float inputs:roughness = 0.7
+            }
+        }
+
+        def Material "Material_5_8"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_5_8/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.5
+                float inputs:roughness = 0.8
+            }
+        }
+
+        def Material "Material_5_9"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_5_9/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.5
+                float inputs:roughness = 0.9
+            }
+        }
+
+        def Material "Material_6_0"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_6_0/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.6
+                float inputs:roughness = 0.0
+            }
+        }
+
+        def Material "Material_6_1"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_6_1/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.6
+                float inputs:roughness = 0.1
+            }
+        }
+
+        def Material "Material_6_2"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_6_2/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.6
+                float inputs:roughness = 0.2
+            }
+        }
+
+        def Material "Material_6_3"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_6_3/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.6
+                float inputs:roughness = 0.3
+            }
+        }
+
+        def Material "Material_6_4"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_6_4/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.6
+                float inputs:roughness = 0.4
+            }
+        }
+
+        def Material "Material_6_5"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_6_5/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.6
+                float inputs:roughness = 0.5
+            }
+        }
+
+        def Material "Material_6_6"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_6_6/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.6
+                float inputs:roughness = 0.6
+            }
+        }
+
+        def Material "Material_6_7"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_6_7/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.6
+                float inputs:roughness = 0.7
+            }
+        }
+
+        def Material "Material_6_8"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_6_8/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.6
+                float inputs:roughness = 0.8
+            }
+        }
+
+        def Material "Material_6_9"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_6_9/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.6
+                float inputs:roughness = 0.9
+            }
+        }
+
+        def Material "Material_7_0"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_7_0/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.7
+                float inputs:roughness = 0.0
+            }
+        }
+
+        def Material "Material_7_1"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_7_1/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.7
+                float inputs:roughness = 0.1
+            }
+        }
+
+        def Material "Material_7_2"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_7_2/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.7
+                float inputs:roughness = 0.2
+            }
+        }
+
+        def Material "Material_7_3"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_7_3/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.7
+                float inputs:roughness = 0.3
+            }
+        }
+
+        def Material "Material_7_4"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_7_4/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.7
+                float inputs:roughness = 0.4
+            }
+        }
+
+        def Material "Material_7_5"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_7_5/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.7
+                float inputs:roughness = 0.5
+            }
+        }
+
+        def Material "Material_7_6"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_7_6/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.7
+                float inputs:roughness = 0.6
+            }
+        }
+
+        def Material "Material_7_7"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_7_7/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.7
+                float inputs:roughness = 0.7
+            }
+        }
+
+        def Material "Material_7_8"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_7_8/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.7
+                float inputs:roughness = 0.8
+            }
+        }
+
+        def Material "Material_7_9"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_7_9/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.7
+                float inputs:roughness = 0.9
+            }
+        }
+
+        def Material "Material_8_0"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_8_0/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.8
+                float inputs:roughness = 0.0
+            }
+        }
+
+        def Material "Material_8_1"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_8_1/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.8
+                float inputs:roughness = 0.1
+            }
+        }
+
+        def Material "Material_8_2"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_8_2/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.8
+                float inputs:roughness = 0.2
+            }
+        }
+
+        def Material "Material_8_3"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_8_3/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.8
+                float inputs:roughness = 0.3
+            }
+        }
+
+        def Material "Material_8_4"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_8_4/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.8
+                float inputs:roughness = 0.4
+            }
+        }
+
+        def Material "Material_8_5"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_8_5/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.8
+                float inputs:roughness = 0.5
+            }
+        }
+
+        def Material "Material_8_6"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_8_6/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.8
+                float inputs:roughness = 0.6
+            }
+        }
+
+        def Material "Material_8_7"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_8_7/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.8
+                float inputs:roughness = 0.7
+            }
+        }
+
+        def Material "Material_8_8"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_8_8/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.8
+                float inputs:roughness = 0.8
+            }
+        }
+
+        def Material "Material_8_9"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_8_9/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.8
+                float inputs:roughness = 0.9
+            }
+        }
+
+        def Material "Material_9_0"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_9_0/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.9
+                float inputs:roughness = 0.0
+            }
+        }
+
+        def Material "Material_9_1"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_9_1/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.9
+                float inputs:roughness = 0.1
+            }
+        }
+
+        def Material "Material_9_2"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_9_2/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.9
+                float inputs:roughness = 0.2
+            }
+        }
+
+        def Material "Material_9_3"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_9_3/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.9
+                float inputs:roughness = 0.3
+            }
+        }
+
+        def Material "Material_9_4"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_9_4/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.9
+                float inputs:roughness = 0.4
+            }
+        }
+
+        def Material "Material_9_5"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_9_5/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.9
+                float inputs:roughness = 0.5
+            }
+        }
+
+        def Material "Material_9_6"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_9_6/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.9
+                float inputs:roughness = 0.6
+            }
+        }
+
+        def Material "Material_9_7"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_9_7/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.9
+                float inputs:roughness = 0.7
+            }
+        }
+
+        def Material "Material_9_8"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_9_8/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.9
+                float inputs:roughness = 0.8
+            }
+        }
+
+        def Material "Material_9_9"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_9_9/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+                float inputs:metallic = 0.9
+                float inputs:roughness = 0.9
+            }
+        }
+
+    }
+
+    def Xform "Geom"
+    {
+        def Xform "Geom0"
+        {
+            def "pSphere0" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_0>
+                double3 xformOp:translate = (0, 0, 0)
+            }
+
+            def "pSphere1" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_1>
+                double3 xformOp:translate = (3, 0, 0)
+            }
+
+            def "pSphere2" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_2>
+                double3 xformOp:translate = (6, 0, 0)
+            }
+
+            def "pSphere3" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_3>
+                double3 xformOp:translate = (9, 0, 0)
+            }
+
+            def "pSphere4" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_4>
+                double3 xformOp:translate = (12, 0, 0)
+            }
+
+            def "pSphere5" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_5>
+                double3 xformOp:translate = (15, 0, 0)
+            }
+
+            def "pSphere6" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_6>
+                double3 xformOp:translate = (18, 0, 0)
+            }
+
+            def "pSphere7" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_7>
+                double3 xformOp:translate = (21, 0, 0)
+            }
+
+            def "pSphere8" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_8>
+                double3 xformOp:translate = (24, 0, 0)
+            }
+
+            def "pSphere9" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_9>
+                double3 xformOp:translate = (27, 0, 0)
+            }
+
+        }
+
+        def Xform "Geom1"
+        {
+            def "pSphere0" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_1_0>
+                double3 xformOp:translate = (0, 0, 3)
+            }
+
+            def "pSphere1" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_1_1>
+                double3 xformOp:translate = (3, 0, 3)
+            }
+
+            def "pSphere2" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_1_2>
+                double3 xformOp:translate = (6, 0, 3)
+            }
+
+            def "pSphere3" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_1_3>
+                double3 xformOp:translate = (9, 0, 3)
+            }
+
+            def "pSphere4" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_1_4>
+                double3 xformOp:translate = (12, 0, 3)
+            }
+
+            def "pSphere5" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_1_5>
+                double3 xformOp:translate = (15, 0, 3)
+            }
+
+            def "pSphere6" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_1_6>
+                double3 xformOp:translate = (18, 0, 3)
+            }
+
+            def "pSphere7" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_1_7>
+                double3 xformOp:translate = (21, 0, 3)
+            }
+
+            def "pSphere8" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_1_8>
+                double3 xformOp:translate = (24, 0, 3)
+            }
+
+            def "pSphere9" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_1_9>
+                double3 xformOp:translate = (27, 0, 3)
+            }
+
+        }
+
+        def Xform "Geom2"
+        {
+            def "pSphere0" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_2_0>
+                double3 xformOp:translate = (0, 0, 6)
+            }
+
+            def "pSphere1" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_2_1>
+                double3 xformOp:translate = (3, 0, 6)
+            }
+
+            def "pSphere2" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_2_2>
+                double3 xformOp:translate = (6, 0, 6)
+            }
+
+            def "pSphere3" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_2_3>
+                double3 xformOp:translate = (9, 0, 6)
+            }
+
+            def "pSphere4" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_2_4>
+                double3 xformOp:translate = (12, 0, 6)
+            }
+
+            def "pSphere5" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_2_5>
+                double3 xformOp:translate = (15, 0, 6)
+            }
+
+            def "pSphere6" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_2_6>
+                double3 xformOp:translate = (18, 0, 6)
+            }
+
+            def "pSphere7" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_2_7>
+                double3 xformOp:translate = (21, 0, 6)
+            }
+
+            def "pSphere8" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_2_8>
+                double3 xformOp:translate = (24, 0, 6)
+            }
+
+            def "pSphere9" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_2_9>
+                double3 xformOp:translate = (27, 0, 6)
+            }
+
+        }
+
+        def Xform "Geom3"
+        {
+            def "pSphere0" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_3_0>
+                double3 xformOp:translate = (0, 0, 9)
+            }
+
+            def "pSphere1" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_3_1>
+                double3 xformOp:translate = (3, 0, 9)
+            }
+
+            def "pSphere2" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_3_2>
+                double3 xformOp:translate = (6, 0, 9)
+            }
+
+            def "pSphere3" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_3_3>
+                double3 xformOp:translate = (9, 0, 9)
+            }
+
+            def "pSphere4" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_3_4>
+                double3 xformOp:translate = (12, 0, 9)
+            }
+
+            def "pSphere5" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_3_5>
+                double3 xformOp:translate = (15, 0, 9)
+            }
+
+            def "pSphere6" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_3_6>
+                double3 xformOp:translate = (18, 0, 9)
+            }
+
+            def "pSphere7" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_3_7>
+                double3 xformOp:translate = (21, 0, 9)
+            }
+
+            def "pSphere8" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_3_8>
+                double3 xformOp:translate = (24, 0, 9)
+            }
+
+            def "pSphere9" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_3_9>
+                double3 xformOp:translate = (27, 0, 9)
+            }
+
+        }
+
+        def Xform "Geom4"
+        {
+            def "pSphere0" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_4_0>
+                double3 xformOp:translate = (0, 0, 12)
+            }
+
+            def "pSphere1" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_4_1>
+                double3 xformOp:translate = (3, 0, 12)
+            }
+
+            def "pSphere2" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_4_2>
+                double3 xformOp:translate = (6, 0, 12)
+            }
+
+            def "pSphere3" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_4_3>
+                double3 xformOp:translate = (9, 0, 12)
+            }
+
+            def "pSphere4" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_4_4>
+                double3 xformOp:translate = (12, 0, 12)
+            }
+
+            def "pSphere5" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_4_5>
+                double3 xformOp:translate = (15, 0, 12)
+            }
+
+            def "pSphere6" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_4_6>
+                double3 xformOp:translate = (18, 0, 12)
+            }
+
+            def "pSphere7" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_4_7>
+                double3 xformOp:translate = (21, 0, 12)
+            }
+
+            def "pSphere8" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_4_8>
+                double3 xformOp:translate = (24, 0, 12)
+            }
+
+            def "pSphere9" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_4_9>
+                double3 xformOp:translate = (27, 0, 12)
+            }
+
+        }
+
+        def Xform "Geom5"
+        {
+            def "pSphere0" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_5_0>
+                double3 xformOp:translate = (0, 0, 15)
+            }
+
+            def "pSphere1" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_5_1>
+                double3 xformOp:translate = (3, 0, 15)
+            }
+
+            def "pSphere2" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_5_2>
+                double3 xformOp:translate = (6, 0, 15)
+            }
+
+            def "pSphere3" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_5_3>
+                double3 xformOp:translate = (9, 0, 15)
+            }
+
+            def "pSphere4" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_5_4>
+                double3 xformOp:translate = (12, 0, 15)
+            }
+
+            def "pSphere5" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_5_5>
+                double3 xformOp:translate = (15, 0, 15)
+            }
+
+            def "pSphere6" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_5_6>
+                double3 xformOp:translate = (18, 0, 15)
+            }
+
+            def "pSphere7" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_5_7>
+                double3 xformOp:translate = (21, 0, 15)
+            }
+
+            def "pSphere8" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_5_8>
+                double3 xformOp:translate = (24, 0, 15)
+            }
+
+            def "pSphere9" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_5_9>
+                double3 xformOp:translate = (27, 0, 15)
+            }
+
+        }
+
+        def Xform "Geom6"
+        {
+            def "pSphere0" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_6_0>
+                double3 xformOp:translate = (0, 0, 18)
+            }
+
+            def "pSphere1" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_6_1>
+                double3 xformOp:translate = (3, 0, 18)
+            }
+
+            def "pSphere2" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_6_2>
+                double3 xformOp:translate = (6, 0, 18)
+            }
+
+            def "pSphere3" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_6_3>
+                double3 xformOp:translate = (9, 0, 18)
+            }
+
+            def "pSphere4" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_6_4>
+                double3 xformOp:translate = (12, 0, 18)
+            }
+
+            def "pSphere5" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_6_5>
+                double3 xformOp:translate = (15, 0, 18)
+            }
+
+            def "pSphere6" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_6_6>
+                double3 xformOp:translate = (18, 0, 18)
+            }
+
+            def "pSphere7" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_6_7>
+                double3 xformOp:translate = (21, 0, 18)
+            }
+
+            def "pSphere8" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_6_8>
+                double3 xformOp:translate = (24, 0, 18)
+            }
+
+            def "pSphere9" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_6_9>
+                double3 xformOp:translate = (27, 0, 18)
+            }
+
+        }
+
+        def Xform "Geom7"
+        {
+            def "pSphere0" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_7_0>
+                double3 xformOp:translate = (0, 0, 21)
+            }
+
+            def "pSphere1" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_7_1>
+                double3 xformOp:translate = (3, 0, 21)
+            }
+
+            def "pSphere2" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_7_2>
+                double3 xformOp:translate = (6, 0, 21)
+            }
+
+            def "pSphere3" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_7_3>
+                double3 xformOp:translate = (9, 0, 21)
+            }
+
+            def "pSphere4" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_7_4>
+                double3 xformOp:translate = (12, 0, 21)
+            }
+
+            def "pSphere5" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_7_5>
+                double3 xformOp:translate = (15, 0, 21)
+            }
+
+            def "pSphere6" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_7_6>
+                double3 xformOp:translate = (18, 0, 21)
+            }
+
+            def "pSphere7" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_7_7>
+                double3 xformOp:translate = (21, 0, 21)
+            }
+
+            def "pSphere8" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_7_8>
+                double3 xformOp:translate = (24, 0, 21)
+            }
+
+            def "pSphere9" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_7_9>
+                double3 xformOp:translate = (27, 0, 21)
+            }
+
+        }
+
+        def Xform "Geom8"
+        {
+            def "pSphere0" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_8_0>
+                double3 xformOp:translate = (0, 0, 24)
+            }
+
+            def "pSphere1" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_8_1>
+                double3 xformOp:translate = (3, 0, 24)
+            }
+
+            def "pSphere2" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_8_2>
+                double3 xformOp:translate = (6, 0, 24)
+            }
+
+            def "pSphere3" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_8_3>
+                double3 xformOp:translate = (9, 0, 24)
+            }
+
+            def "pSphere4" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_8_4>
+                double3 xformOp:translate = (12, 0, 24)
+            }
+
+            def "pSphere5" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_8_5>
+                double3 xformOp:translate = (15, 0, 24)
+            }
+
+            def "pSphere6" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_8_6>
+                double3 xformOp:translate = (18, 0, 24)
+            }
+
+            def "pSphere7" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_8_7>
+                double3 xformOp:translate = (21, 0, 24)
+            }
+
+            def "pSphere8" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_8_8>
+                double3 xformOp:translate = (24, 0, 24)
+            }
+
+            def "pSphere9" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_8_9>
+                double3 xformOp:translate = (27, 0, 24)
+            }
+
+        }
+
+        def Xform "Geom9"
+        {
+            def "pSphere0" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_9_0>
+                double3 xformOp:translate = (0, 0, 27)
+            }
+
+            def "pSphere1" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_9_1>
+                double3 xformOp:translate = (3, 0, 27)
+            }
+
+            def "pSphere2" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_9_2>
+                double3 xformOp:translate = (6, 0, 27)
+            }
+
+            def "pSphere3" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_9_3>
+                double3 xformOp:translate = (9, 0, 27)
+            }
+
+            def "pSphere4" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_9_4>
+                double3 xformOp:translate = (12, 0, 27)
+            }
+
+            def "pSphere5" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_9_5>
+                double3 xformOp:translate = (15, 0, 27)
+            }
+
+            def "pSphere6" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_9_6>
+                double3 xformOp:translate = (18, 0, 27)
+            }
+
+            def "pSphere7" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_9_7>
+                double3 xformOp:translate = (21, 0, 27)
+            }
+
+            def "pSphere8" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_9_8>
+                double3 xformOp:translate = (24, 0, 27)
+            }
+
+            def "pSphere9" (
+                references = </Prototypes/Sphere>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_9_9>
+                double3 xformOp:translate = (27, 0, 27)
+            }
+
+        }
+
+    }
+}
+
+def Scope "Prototypes"(
+    active=false
+    )
+{
+    def Sphere "Sphere"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        color3f[] primvars:displayColor = [(0.0, 1.0, 0.0)]
+        uniform token[] xformOpOrder = [ "xformOp:translate" ]
+    }
+}
+class Shader "_class_Preview"
+{
+    uniform token info:id = "UsdPreviewSurface"
+
+    color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+    color3f inputs:diffuseColor.connect  = </Primvar.outputs:result>
+
+    token outputs:surface
+}
+
+def Shader "Primvar"
+{
+    uniform token info:id = "UsdPrimvarReader_float3"
+
+    token inputs:varname = "displayColor"
+    float3 outputs:result
+}

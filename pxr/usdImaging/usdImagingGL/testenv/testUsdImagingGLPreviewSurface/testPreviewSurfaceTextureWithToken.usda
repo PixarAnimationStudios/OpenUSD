@@ -1,0 +1,87 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+over "Collections" (
+    prepend apiSchemas = ["CollectionAPI:material:MainMaterial"]
+)
+{
+    uniform token collection:material:MainMaterial:expansionRule = "expandPrims"
+    rel collection:material:MainMaterial:includes = </Scene/Geom/Plane>
+}
+
+def Scope "Scene" (
+    kind = "component"
+)
+{
+    rel material:binding:collection:preview:MainMaterial = [
+        </Collections.collection:material:MainMaterial>,
+        </Scene/Looks/MainMaterial>,
+    ]
+
+    def Scope "Looks"
+    {
+        def Material "MainMaterial"
+        {
+            token inputs:coords = "st"
+            token outputs:displacement.connect = </Scene/Looks/MainMaterial/PbrPreview.outputs:displacement>
+            token outputs:surface.connect = </Scene/Looks/MainMaterial/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                float inputs:clearcoat = 0
+                float inputs:clearcoatRoughness = 0.01
+                color3f inputs:diffuseColor = (1, 0, 0)
+                color3f inputs:diffuseColor.connect = </Scene/Looks/MainMaterial/Diffuse.outputs:rgb>
+                token inputs:test = "test"
+
+                # Outputs available in this shader
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "Diffuse"
+            {
+                uniform token info:id = "UsdUVTexture"
+                float3 inputs:fallback = (0, 0, 1)
+                # This used to cause a crash
+                asset inputs:file = @Env_StinsonBesach.jpg@
+                float2 inputs:st.connect = </Scene/Looks/MainMaterial/Primvar.outputs:result>
+                token inputs:wrapS = "mirror"
+                token inputs:wrapT = "repeat"
+                float3 outputs:rgb
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </Scene/Looks/MainMaterial.inputs:coords>
+                float2 outputs:result
+            }
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def Mesh "Plane"
+        {
+            float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            point3f[] points = [(-2, -2, -2), (2, -2, -2), (2, 2, -2), (-2, 2, -2)]
+            color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                interpolation = "vertex"
+            )
+            float2[] primvars:st_inverted = [(0, 2), (2, 2), (2, 0), (0, 0)] (
+                interpolation = "vertex"
+            )
+        }
+    }
+}
+
