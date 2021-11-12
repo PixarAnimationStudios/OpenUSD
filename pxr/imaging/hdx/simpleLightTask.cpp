@@ -272,6 +272,9 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
         }
     }
 
+    // In case there is a mismatch, conform _numLights to this array size.
+    _numLights = _glfSimpleLights.size();
+
     lightingContext->SetUseLighting(_numLights > 0);
     lightingContext->SetLights(_glfSimpleLights);
     lightingContext->SetCamera(viewMatrix, projectionMatrix);
@@ -288,6 +291,12 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
 
     if (shadowIndex > -1) {
         for (size_t lightId = 0; lightId < _numLights; ++lightId) {
+            if (lightId >= _glfSimpleLights.size()) {
+                TF_CODING_ERROR(
+                    "lightId %zu >= _glfSimpleLights.size() %zu", 
+                    lightId, _glfSimpleLights.size());
+                continue;
+            }
             if (!_glfSimpleLights[lightId].HasShadow()) {
                 continue;
             }
