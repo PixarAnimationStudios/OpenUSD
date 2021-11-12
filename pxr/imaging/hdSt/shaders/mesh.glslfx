@@ -45,10 +45,7 @@ out VertexData
     vec3 Neye;
 } outData;
 
-out vec4 tesPatchCoord;
-out vec2 tesTessCoord;
 out vec4 gsPatchCoord;
-out vec2 gsTessCoord;
 
 // Fwd declare methods defined in pointId.glslfx, that are used below.
 int GetPointId();
@@ -69,8 +66,7 @@ void main(void)
     // the following stages include tessellation or geometry shader.
     // we rely on that compiler (linker) optimizes out these redundant
     // assignment and attribute plumbing.
-    tesPatchCoord = gsPatchCoord = vec4(0);
-    tesTessCoord = gsTessCoord = vec2(0);
+    gsPatchCoord = vec4(0);
 
     int pointId = GetPointId();
     gl_PointSize = GetPointRasterSize(pointId);
@@ -319,7 +315,6 @@ out VertexData
 } outData;
 
 out vec4 gsPatchCoord;
-out vec2 gsTessCoord;
 
 
 vec4 GetPatchCoord(int index)
@@ -332,7 +327,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
     outData.Peye = Peye;
     outData.Neye = Neye;
     gsPatchCoord = GetPatchCoord(index);
-    gsTessCoord = vec2(0);
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
@@ -442,7 +436,6 @@ out VertexData
 } outData;
 
 out vec4 gsPatchCoord;
-out vec2 gsTessCoord;
 
 vec4 GetPatchCoord(int index)
 {
@@ -461,7 +454,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
     outData.Neye = Neye;
 
     gsPatchCoord = GetPatchCoord(index);
-    gsTessCoord = vec2(0);
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
@@ -529,9 +521,6 @@ out VertexData
     vec3 Neye;
 } outData;
 
-out vec4 gsPatchCoord;
-out vec2 gsTessCoord;
-
 vec4 GetPatchCoord(int index)
 {
     vec2 uv[4];
@@ -548,9 +537,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
 {
     outData.Peye = Peye;
     outData.Neye = Neye;
-
-    gsPatchCoord = GetPatchCoord(index);
-    gsTessCoord = vec2(0);
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
@@ -618,7 +604,6 @@ out VertexData
 } outData;
 
 out vec4 gsPatchCoord;
-out vec2 gsTessCoord;
 
 vec4 GetPatchCoord(int index)
 {
@@ -638,7 +623,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
     outData.Neye = Neye;
 
     gsPatchCoord = GetPatchCoord(index);
-    gsTessCoord = vec2(0);
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
@@ -717,6 +701,38 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl Mesh.Fragment.PatchCoord
+
+in vec4 gsPatchCoord;
+
+vec4 GetInterpolatedPatchCoord()
+{
+    return gsPatchCoord;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Fragment.PatchCoord.TriQuad
+
+vec3 GetBarycentricCoord(); // codeGen
+
+vec2 GetInterpolatedPatchUV()
+{
+    vec3 barycentric = GetBarycentricCoord();
+    if (GetTriQuadID() == 0) {
+        vec2 uv[3] = { vec2(0,0), vec2(1,0), vec2(1,1) };
+        return uv[0]*barycentric.x + uv[1]*barycentric.y + uv[2]*barycentric.z;
+    } else {
+        vec2 uv[3] = { vec2(1,1), vec2(0,1), vec2(0,0) };
+        return uv[0]*barycentric.x + uv[1]*barycentric.y + uv[2]*barycentric.z;
+    }
+}
+
+vec4 GetInterpolatedPatchCoord()
+{
+    return OsdInterpolatePatchCoord(GetInterpolatedPatchUV(), GetPatchParam());
+}
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.Fragment
 
 in VertexData
@@ -724,9 +740,6 @@ in VertexData
     vec4 Peye;
     vec3 Neye;
 } inData;
-
-in vec4 gsPatchCoord;
-in vec2 gsTessCoord;
 
 #ifndef HD_HAS_ptexFaceOffset
 #define HD_HAS_ptexFaceOffset
@@ -738,8 +751,8 @@ int HdGet_ptexFaceOffset()
 
 vec4 GetPatchCoord(int localIndex)
 {
-    return vec4(gsPatchCoord.xyz,
-                gsPatchCoord.w + HdGet_ptexFaceOffset());
+    vec4 patchCoord = GetInterpolatedPatchCoord();
+    return vec4(patchCoord.xyz, patchCoord.w + HdGet_ptexFaceOffset());
 }
 
 vec3 ComputeScreenSpacePeye()

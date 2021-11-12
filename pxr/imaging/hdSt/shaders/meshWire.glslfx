@@ -134,47 +134,10 @@ vec3 GetEdgeDistanceTriangle()
     return max(vec3(0.0), param / fwidth(param));
 }
 
---- --------------------------------------------------------------------------
--- glsl MeshWire.Fragment.EdgeParamQuad
-
 vec4 GetEdgeParamQuad()
 {
     // Expand coordinates to opposite corners of quad
     vec2 leftBottom = GetPatchCoord(0).xy;
-    vec2 rightTop = vec2(1.0) - leftBottom;
-
-    // Match quad edge order
-    return vec4(leftBottom.y, rightTop.x, rightTop.y, leftBottom.x);
-}
-
-vec4 GetEdgeDistanceQuad()
-{
-    vec4 param = GetEdgeParamQuad();
-    return max(vec4(0.0), param / fwidth(param));
-}
-
---- --------------------------------------------------------------------------
--- glsl MeshWire.Fragment.EdgeParamTriQuad
-
-vec2 GetInterpolatedPatchUV()
-{
-    vec3 barycentric = GetBarycentricCoord();
-    if (GetTriQuadID() == 0) {
-        vec2 uv[3] = { vec2(0,0), vec2(1,0), vec2(1,1) };
-        return uv[0]*barycentric.x + uv[1]*barycentric.y + uv[2]*barycentric.z;
-    } else {
-        vec2 uv[3] = { vec2(1,1), vec2(0,1), vec2(0,0) };
-        return uv[0]*barycentric.x + uv[1]*barycentric.y + uv[2]*barycentric.z;
-    }
-}
-
-vec4 GetEdgeParamQuad()
-{
-    vec4 patchCoord = OsdInterpolatePatchCoord(
-                                GetInterpolatedPatchUV(), GetPatchParam());
-
-    // Expand coordinates to opposite corners of quad
-    vec2 leftBottom = patchCoord.xy;
     vec2 rightTop = vec2(1.0) - leftBottom;
 
     // Match quad edge order

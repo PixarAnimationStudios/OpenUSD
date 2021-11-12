@@ -64,8 +64,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((edgeCommonFS,            "MeshWire.Fragment.EdgeCommon"))
     ((edgeParamFS,             "MeshWire.Fragment.EdgeParam"))
-    ((edgeParamQuadFS,         "MeshWire.Fragment.EdgeParamQuad"))
-    ((edgeParamTriQuadFS,      "MeshWire.Fragment.EdgeParamTriQuad"))
 
     ((edgeOnlyBlendFS,         "MeshWire.Fragment.EdgeOnlyBlendColor"))
     ((edgeOnlyNoBlendFS,       "MeshWire.Fragment.EdgeOnlyNoBlend"))
@@ -115,6 +113,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainTriangleGS,          "Mesh.Geometry.Triangle"))
     ((mainTriQuadGS,           "Mesh.Geometry.TriQuad"))
     ((mainQuadGS,              "Mesh.Geometry.Quad"))
+    ((mainPatchCoordFS,        "Mesh.Fragment.PatchCoord"))
+    ((mainPatchCoordTriQuadFS, "Mesh.Fragment.PatchCoord.TriQuad"))
     ((mainFS,                  "Mesh.Fragment"))
 
     // instancing related mixins
@@ -349,11 +349,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         }
         FS[fsIndex++] = _tokens->edgeCommonFS;
         FS[fsIndex++] = _tokens->edgeParamFS;
-        if (isPrimTypeTriQuads) {
-            FS[fsIndex++] = _tokens->edgeParamTriQuadFS;
-        } else {
-            FS[fsIndex++] = _tokens->edgeParamQuadFS;
-        }
         if (isPrimTypePatches) {
             FS[fsIndex++] = _tokens->patchEdgeOnlyFS;
         } else {
@@ -381,11 +376,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         }
         FS[fsIndex++] = _tokens->edgeCommonFS;
         FS[fsIndex++] = _tokens->edgeParamFS;
-        if (isPrimTypeTriQuads) {
-            FS[fsIndex++] = _tokens->edgeParamTriQuadFS;
-        } else {
-            FS[fsIndex++] = _tokens->edgeParamQuadFS;
-        }
         if (isPrimTypeTris || isPrimTypePatchesBoxSplineTriangle) {
             FS[fsIndex++] = _tokens->patchEdgeTriangleFS;
         } else {
@@ -400,11 +390,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     } else {
         FS[fsIndex++] = _tokens->edgeNoneFS;
         FS[fsIndex++] = _tokens->edgeParamFS;
-        if (isPrimTypeTriQuads) {
-            FS[fsIndex++] = _tokens->edgeParamTriQuadFS;
-        } else {
-            FS[fsIndex++] = _tokens->edgeParamQuadFS;
-        }
     }
 
     // Shading terminal mixin
@@ -477,6 +462,11 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                                       _tokens->pointIdFallbackFS;
     FS[fsIndex++] = hasTopologicalVisibility? _tokens->topVisFS :
                                               _tokens->topVisFallbackFS;
+    if (isPrimTypeTriQuads) {
+        FS[fsIndex++] = _tokens->mainPatchCoordTriQuadFS;
+    } else {
+        FS[fsIndex++] = _tokens->mainPatchCoordFS;
+    }
     FS[fsIndex++] = _tokens->mainFS;
     FS[fsIndex] = TfToken();
 }
