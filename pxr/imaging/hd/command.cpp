@@ -25,8 +25,4 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdCommandArgDescriptor::HdCommandArgDescriptor() = default;
-
-HdCommandDescriptor::HdCommandDescriptor() = default;
-
 PXR_NAMESPACE_CLOSE_SCOPE
