@@ -24,7 +24,6 @@
 
 #include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/testGLContext.h"
 
@@ -174,11 +173,9 @@ int main()
 {
     TfErrorMark mark;
 
-    // Test uses ContextCaps, so need to create a GL instance.
     GlfTestGLContext::RegisterGLContextCallbacks();
     GarchGLApiLoad();
     GlfSharedGLContextScopeHolder sharedContext;
-    GlfContextCaps::InitInstance();
 
     CameraAndLightTest();
 

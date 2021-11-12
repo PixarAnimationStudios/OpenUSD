@@ -27,7 +27,6 @@
 
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/imaging/glf/bindingMap.h"
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/debugCodes.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/simpleLight.h"

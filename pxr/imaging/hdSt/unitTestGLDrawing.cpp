@@ -25,7 +25,6 @@
 #include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/garch/glDebugWindow.h"
 
@@ -88,7 +87,6 @@ HdSt_UnitTestWindow::OnInitializeGL()
 {
     GarchGLApiLoad();
     GlfRegisterDefaultDebugOutputMessageCallback();
-    GlfContextCaps::InitInstance();
 
     std::cout << glGetString(GL_VENDOR) << "\n";
     std::cout << glGetString(GL_RENDERER) << "\n";

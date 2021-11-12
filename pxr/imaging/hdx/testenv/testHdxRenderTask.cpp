@@ -24,7 +24,6 @@
 
 #include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/glf/glContext.h"
@@ -63,7 +62,6 @@ int main(int argc, char *argv[])
     glViewport(0, 0, 256, 256);
     // wrap into GlfGLContext so that GlfDrawTarget works
     GlfGLContextSharedPtr ctx = GlfGLContext::GetCurrentGLContext();
-    GlfContextCaps::InitInstance();
 
     // Hgi and HdDriver should be constructed before HdEngine to ensure they
     // are destructed last. Hgi may be used during engine/delegate destruction.
