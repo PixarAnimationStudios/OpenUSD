@@ -53,23 +53,10 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory<HgiFactory<HgiMetal>>();
 }
 
-static int _GetAPIVersion()
-{
-    if (@available(macOS 10.15, ios 13.0, *)) {
-        return APIVersion_Metal3_0;
-    }
-    if (@available(macOS 10.13, ios 11.0, *)) {
-        return APIVersion_Metal2_0;
-    }
-    
-    return APIVersion_Metal1_0;
-}
-
 HgiMetal::HgiMetal(id<MTLDevice> device)
 : _device(device)
 , _currentCmds(nullptr)
 , _frameDepth(0)
-, _apiVersion(_GetAPIVersion())
 , _workToFlush(false)
 {
     if (!_device) {
@@ -108,6 +95,13 @@ HgiMetal::~HgiMetal()
     [_commandBuffer release];
     [_captureScopeFullFrame release];
     [_commandQueue release];
+}
+
+bool
+HgiMetal::IsBackendSupported() const
+{
+    // Want Metal 2.0 and Metal Shading Language 2.2 or higher.
+    return (@available(macOS 10.15, ios 13.0, *));
 }
 
 id<MTLDevice>
@@ -345,7 +339,7 @@ HgiMetal::GetSecondaryCommandBuffer()
 int
 HgiMetal::GetAPIVersion() const
 {
-    return _apiVersion;
+    return GetCapabilities()->GetAPIVersion();
 }
 
 void

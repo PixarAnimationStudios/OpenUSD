@@ -61,6 +61,9 @@ public:
     ~HgiMetal() override;
 
     HGIMETAL_API
+    bool IsBackendSupported() const override;
+
+    HGIMETAL_API
     HgiGraphicsCmdsUniquePtr CreateGraphicsCmds(
         HgiGraphicsCmdsDesc const& desc) override;
     
@@ -211,7 +214,6 @@ private:
     std::unique_ptr<HgiMetalCapabilities> _capabilities;
 
     int _frameDepth;
-    int _apiVersion;
     bool _workToFlush;
 };
 

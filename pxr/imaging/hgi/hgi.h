@@ -139,6 +139,17 @@ public:
     HGI_API
     static HgiUniquePtr CreatePlatformDefaultHgi();
 
+    /// Determine if Hgi instance can run on current hardware.
+    /// Thread safety: This call is thread safe.
+    HGI_API
+    virtual bool IsBackendSupported() const = 0;
+
+    /// Constructs a temporary Hgi object for the current platform and calls
+    /// the object's IsBackendSupported() function.
+    /// Thread safety: Not thread safe.
+    HGI_API
+    static bool IsSupported();
+
     /// Returns a GraphicsCmds object (for temporary use) that is ready to
     /// record draw commands. GraphicsCmds is a lightweight object that
     /// should be re-acquired each frame (don't hold onto it after EndEncoding).

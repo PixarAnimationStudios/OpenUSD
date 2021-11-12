@@ -87,6 +87,13 @@ HgiGL::~HgiGL()
     delete _device;
 }
 
+bool
+HgiGL::IsBackendSupported() const
+{
+    // Want OpenGL 4.5 or higher.
+    return GetCapabilities()->GetAPIVersion() >= 450;
+}
+
 HgiGLDevice*
 HgiGL::GetPrimaryDevice() const
 {

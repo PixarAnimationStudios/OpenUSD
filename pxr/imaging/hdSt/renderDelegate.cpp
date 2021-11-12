@@ -54,7 +54,6 @@
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/hio/glslfx.h"
 
@@ -533,7 +532,7 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
 bool
 HdStRenderDelegate::IsSupported()
 {
-    return (GlfContextCaps::GetInstance().glVersion >= 400);
+    return Hgi::IsSupported();
 }
 
 TfTokenVector

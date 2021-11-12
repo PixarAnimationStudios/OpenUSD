@@ -62,6 +62,9 @@ public:
     ~HgiGL() override;
 
     HGIGL_API
+    bool IsBackendSupported() const override;
+
+    HGIGL_API
     HgiGraphicsCmdsUniquePtr CreateGraphicsCmds(
         HgiGraphicsCmdsDesc const& desc) override;
 
