@@ -147,9 +147,16 @@ public:
     /// Return quadrangulated indices of the input topology. indices and
     /// primitiveParams are output parameters.
     HD_API
-    void ComputeQuadIndices(VtVec4iArray *indices,
+    void ComputeQuadIndices(VtIntArray *indices,
                             VtIntArray *primitiveParams,
                             VtVec2iArray *edgeIndices = nullptr) const;
+
+    /// Return triquad indices (triangulated after quadrangulation) of the
+    /// input topology. indices and primitiveParams are output parameters.
+    HD_API
+    void ComputeTriQuadIndices(VtIntArray *indices,
+                               VtIntArray *primitiveParams,
+                               VtVec2iArray *edgeIndices = nullptr) const;
 
     /// Return a quadrangulation of a per-vertex primvar. source is
     /// a buffer of size numElements and type corresponding to dataType
@@ -204,6 +211,13 @@ private:
     int _ComputeNumQuads(VtIntArray const &numVerts,
                          VtIntArray const &holeIndices,
                          bool *invalidFaceFound = nullptr) const;
+
+    /// Return quad indices (optionally triangulated after quadrangulation).
+    void _ComputeQuadIndices(
+                            VtIntArray *indices,
+                            VtIntArray *primitiveParams,
+                            VtVec2iArray *edgeIndices,
+                            bool triangulate = false) const;
 
     HdMeshTopology const* _topology;
     SdfPath const _id;
@@ -310,6 +324,43 @@ private:
 
     std::vector<GfVec2i> _edgeVertices;
     std::vector<_Edge> _edgesByIndex;
+};
+
+/// \class HdMeshTriQuadBuilder
+///
+/// Helper class for emitting a buffer of quad indices, optionally
+/// splitting each quad into two triangles.
+///
+class HdMeshTriQuadBuilder
+{
+public:
+    static int const NumIndicesPerQuad = 4;
+    static int const NumIndicesPerTriQuad = 6;
+
+    HdMeshTriQuadBuilder(int * indicesBuffer, bool triangulate)
+        : _outputPtr(indicesBuffer)
+        , _triangulate(triangulate)
+        { }
+
+    void EmitQuadFace(GfVec4i const & quadIndices) {
+        if (_triangulate) {
+            *_outputPtr++ = quadIndices[0];
+            *_outputPtr++ = quadIndices[1];
+            *_outputPtr++ = quadIndices[2];
+            *_outputPtr++ = quadIndices[2];
+            *_outputPtr++ = quadIndices[3];
+            *_outputPtr++ = quadIndices[0];
+        } else {
+            *_outputPtr++ = quadIndices[0];
+            *_outputPtr++ = quadIndices[1];
+            *_outputPtr++ = quadIndices[2];
+            *_outputPtr++ = quadIndices[3];
+        }
+    }
+
+private:
+    int * _outputPtr;
+    bool const _triangulate;
 };
 
 

@@ -123,18 +123,21 @@ HdSt_MeshTopologySharedPtr
 HdSt_MeshTopology::New(
         const HdMeshTopology &src,
         int refineLevel,
-        RefineMode refineMode)
+        RefineMode refineMode,
+        QuadsMode quadsMode)
 {
     return HdSt_MeshTopologySharedPtr(
-        new HdSt_MeshTopology(src, refineLevel, refineMode));
+        new HdSt_MeshTopology(src, refineLevel, refineMode, quadsMode));
 }
 
 // explicit
 HdSt_MeshTopology::HdSt_MeshTopology(
         const HdMeshTopology& src,
         int refineLevel,
-        RefineMode refineMode)
+        RefineMode refineMode,
+        QuadsMode quadsMode)
  : HdMeshTopology(src, refineLevel)
+ , _quadsMode(quadsMode)
  , _quadInfo(nullptr)
  , _quadrangulateTableRange()
  , _quadInfoBuilder()

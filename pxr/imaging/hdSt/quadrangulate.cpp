@@ -150,8 +150,13 @@ HdSt_QuadIndexBuilderComputation::HdSt_QuadIndexBuilderComputation(
 void
 HdSt_QuadIndexBuilderComputation::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
-    specs->emplace_back(HdTokens->indices,
-                        HdTupleType{HdTypeInt32Vec4, 1});
+    if (_topology->TriangulateQuads()) {
+        specs->emplace_back(HdTokens->indices,
+                            HdTupleType{HdTypeInt32, 6});
+    } else {
+        specs->emplace_back(HdTokens->indices,
+                            HdTupleType{HdTypeInt32, 4});
+    }
     // coarse-quads uses int2 as primitive param.
     specs->emplace_back(HdTokens->primitiveParam,
                         HdTupleType{HdTypeInt32, 1});
@@ -173,17 +178,29 @@ HdSt_QuadIndexBuilderComputation::Resolve()
     HD_TRACE_FUNCTION();
 
     // generate quad index buffer
-    VtVec4iArray quadsFaceVertexIndices;
+    VtIntArray quadsFaceVertexIndices;
     VtIntArray primitiveParam;
     VtVec2iArray quadsEdgeIndices;
     HdMeshUtil meshUtil(_topology, _id);
-    meshUtil.ComputeQuadIndices(
-            &quadsFaceVertexIndices,
-            &primitiveParam,
-            &quadsEdgeIndices);
+    if (_topology->TriangulateQuads()) {
+        meshUtil.ComputeTriQuadIndices(
+                &quadsFaceVertexIndices,
+                &primitiveParam,
+                &quadsEdgeIndices);
+    } else {
+        meshUtil.ComputeQuadIndices(
+                &quadsFaceVertexIndices,
+                &primitiveParam,
+                &quadsEdgeIndices);
+    }
 
-    _SetResult(std::make_shared<HdVtBufferSource>(HdTokens->indices,
-                                           VtValue(quadsFaceVertexIndices)));
+    if (_topology->TriangulateQuads()) {
+        _SetResult(std::make_shared<HdVtBufferSource>(HdTokens->indices,
+                                       VtValue(quadsFaceVertexIndices), 6));
+    } else {
+        _SetResult(std::make_shared<HdVtBufferSource>(HdTokens->indices,
+                                       VtValue(quadsFaceVertexIndices), 4));
+    }
 
     _primitiveParam.reset(new HdVtBufferSource(HdTokens->primitiveParam,
                                                VtValue(primitiveParam)));

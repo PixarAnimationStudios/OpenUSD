@@ -74,6 +74,12 @@ public:
         RefineModePatches
     };
 
+    /// Specifies whether quads are triangulated or untriangulated.
+    enum QuadsMode {
+        QuadsTriangulated = 0,
+        QuadsUntriangulated
+    };
+
     /// Specifies type of interpolation to use in refinement
     enum Interpolation {
         INTERPOLATE_VERTEX,
@@ -84,7 +90,8 @@ public:
     static HdSt_MeshTopologySharedPtr New(
         const HdMeshTopology &src,
         int refineLevel,
-        RefineMode refineMode = RefineModeUniform);
+        RefineMode refineMode = RefineModeUniform,
+        QuadsMode quadsMode = QuadsUntriangulated);
 
     virtual ~HdSt_MeshTopology();
 
@@ -108,6 +115,16 @@ public:
     ///
     /// \name Quadrangulation
     /// @{
+
+    /// Returns the quads mode (triangulated or untriangulated).
+    QuadsMode GetQuadsMode() const {
+        return _quadsMode;
+    }
+
+    /// Helper function returns whether quads are triangulated.
+    bool TriangulateQuads() const {
+        return _quadsMode == QuadsTriangulated;
+    }
 
     /// Returns the quadinfo computation for the use of primvar
     /// quadrangulation.
@@ -274,6 +291,8 @@ public:
     /// @}
 
 private:
+    QuadsMode _quadsMode;
+
     // quadrangulation info on CPU
     std::unique_ptr<HdQuadInfo const> _quadInfo;
 
@@ -298,7 +317,8 @@ private:
     explicit HdSt_MeshTopology(
         const HdMeshTopology &src,
         int refineLevel,
-        RefineMode refineMode);
+        RefineMode refineMode,
+        QuadsMode quadsMode);
 
     // No default construction or copying.
     HdSt_MeshTopology()                                      = delete;

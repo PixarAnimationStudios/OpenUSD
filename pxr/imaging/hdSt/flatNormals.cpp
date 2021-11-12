@@ -183,6 +183,7 @@ HdSt_FlatNormalsComputationGPU::Execute(
     // select shader by datatype
     TfToken shaderToken;
     int indexArity = HdGetComponentCount(indices->GetTupleType().type);
+    int indexCount = indices->GetTupleType().count;
     if (indexArity == 3) {
         if (_srcDataType == HdTypeFloatVec3) {
             if (_dstDataType == HdTypeFloatVec3) {
@@ -197,7 +198,7 @@ HdSt_FlatNormalsComputationGPU::Execute(
                 shaderToken = HdStGLSLProgramTokens->flatNormalsTriDoubleToPacked;
             }
         }
-    } else if (indexArity == 4) {
+    } else if (indexCount == 4) {
         if (_srcDataType == HdTypeFloatVec3) {
             if (_dstDataType == HdTypeFloatVec3) {
                 shaderToken = HdStGLSLProgramTokens->flatNormalsQuadFloatToFloat;
@@ -209,6 +210,20 @@ HdSt_FlatNormalsComputationGPU::Execute(
                 shaderToken = HdStGLSLProgramTokens->flatNormalsQuadDoubleToDouble;
             } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
                 shaderToken = HdStGLSLProgramTokens->flatNormalsQuadDoubleToPacked;
+            }
+        }
+    } else if (indexCount == 6) {
+        if (_srcDataType == HdTypeFloatVec3) {
+            if (_dstDataType == HdTypeFloatVec3) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsTriQuadFloatToFloat;
+            } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsTriQuadFloatToPacked;
+            }
+        } else if (_srcDataType == HdTypeDoubleVec3) {
+            if (_dstDataType == HdTypeDoubleVec3) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsTriQuadDoubleToDouble;
+            } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsTriQuadDoubleToPacked;
             }
         }
     }

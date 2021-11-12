@@ -43,6 +43,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (flatNormalsQuadFloatToPacked)              \
     (flatNormalsQuadDoubleToDouble)             \
     (flatNormalsQuadDoubleToPacked)             \
+    (flatNormalsTriQuadFloatToFloat)            \
+    (flatNormalsTriQuadFloatToPacked)           \
+    (flatNormalsTriQuadDoubleToDouble)          \
+    (flatNormalsTriQuadDoubleToPacked)          \
     (quadrangulateFloat)                        \
     (quadrangulateDouble)
 
