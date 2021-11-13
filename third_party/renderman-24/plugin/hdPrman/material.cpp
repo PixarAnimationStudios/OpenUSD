@@ -290,9 +290,11 @@ _ConvertNodes(
                      nodePath.GetText());
             continue;
         }
-        // Filter by omitFromRender metadata to pre-empt warnings from RenderMan.
+        // Filter by omitFromRender metadata to pre-empt warnings
+        // from RenderMan.
         std::string omitFromRenderValStr;
-        if (TfMapLookup(prop->GetMetadata(), _tokens->omitFromRender, &omitFromRenderValStr)) {
+        if (TfMapLookup(prop->GetMetadata(), _tokens->omitFromRender,
+            &omitFromRenderValStr)) {
             if (_GetStringAsBool(omitFromRenderValStr, false)) {
                 continue;
             }
