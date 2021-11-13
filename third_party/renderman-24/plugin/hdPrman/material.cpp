@@ -54,6 +54,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (PxrDisplace)
     (bxdf)
     (OSL)
+    (omitFromRender)
 );
 
 TF_MAKE_STATIC_DATA(NdrTokenVec, _sourceTypes) {
@@ -160,6 +161,23 @@ _ConvertOptionTokenToInt(
 }
 
 using _PathSet = std::unordered_set<SdfPath, SdfPath::Hash>;
+
+// See also TfGetenvBool().
+static bool
+_GetStringAsBool(std::string value, bool defaultValue)
+{
+    if (value.empty()) {
+        return defaultValue;
+    } else {
+        for (char& c: value) {
+            c = tolower(c);
+        }
+        return value == "true" ||
+            value == "yes"  ||
+            value == "on"   ||
+            value == "1";
+    }
+}
 
 // Recursively convert a HdMaterialNode2 and its upstream dependencies
 // to Riley equivalents.  Avoids adding redundant nodes in the case
@@ -271,6 +289,13 @@ _ConvertNodes(
                      sdrEntry->GetName().c_str(),
                      nodePath.GetText());
             continue;
+        }
+        // Filter by omitFromRender metadata to pre-empt warnings from RenderMan.
+        std::string omitFromRenderValStr;
+        if (TfMapLookup(prop->GetMetadata(), _tokens->omitFromRender, &omitFromRenderValStr)) {
+            if (_GetStringAsBool(omitFromRenderValStr, false)) {
+                continue;
+            }
         }
         TfToken propType = prop->GetType();
         if (propType.IsEmpty()) {
