@@ -76,6 +76,60 @@ class "PxrIntegratorPluginBase" (
 {
 }
 
+class "PxrRenderTerminalsAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["RenderSettings"]
+        token[] apiSchemaCanOnlyApplyTo = ["RenderSettings"]
+        string className = "RenderTerminalsAPI"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+        }
+        dictionary schemaTokens = {
+            dictionary sampleFilters = {
+                string doc = "Terminal for connecting sample filters"
+            }
+            dictionary displayFilters = {
+                string doc = "Terminal for connecting display filters"
+            }
+            dictionary integrator = {
+                string doc = "Terminal for connecting an integrator"
+            }
+        }
+    }
+    doc = """API schema that provides a means of connecting a sample filter,
+    display filter and an integrator. The API can be applied to provide hooks to
+    the same for rman settings."""
+    inherits = </APISchemaBase>
+)
+{
+    token outputs:ri:sampleFilters (
+        customData = {
+            string apiName = "sampleFilters"
+        }
+        displayGroup = "OutputFilters"
+        doc = """Represents the sample filter terminals for a render setting. A
+        sample filter inheriting PxrSampleFilterPluginBase can be connected to
+        this terminal."""
+    )
+    token outputs:ri:displayFilters (
+        customData = {
+            string apiName = "displayFilters"
+        }
+        displayGroup = "OutputFilters"
+        doc = """Represents the display filter terminals for a render setting. A
+        display filter inheriting PxrDisplayFilterPluginBase can be connected to
+        this terminal."""
+    )
+    token outputs:ri:integrator (
+        customData = {
+            string apiName = "integrator"
+        }
+        doc = """Represents the integrator terminal for a render setting. A
+        integrator inheriting PxrIntegratorPluginBase can be connected to this
+        terminal."""
+    )
+}
+
 class "PxrCameraProjectionAPI" (
     customData = {
         token[] apiSchemaAutoApplyTo = ["Camera"]

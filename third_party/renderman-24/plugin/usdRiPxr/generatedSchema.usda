@@ -35,6 +35,31 @@ class "PxrIntegratorPluginBase" (
 {
 }
 
+class "PxrRenderTerminalsAPI" (
+    doc = """API schema that provides a means of connecting a sample filter,
+    display filter and an integrator. The API can be applied to provide hooks to
+    the same for rman settings."""
+)
+{
+    token outputs:ri:displayFilters (
+        displayGroup = "OutputFilters"
+        doc = """Represents the display filter terminals for a render setting. A
+        display filter inheriting PxrDisplayFilterPluginBase can be connected to
+        this terminal."""
+    )
+    token outputs:ri:integrator (
+        doc = """Represents the integrator terminal for a render setting. A
+        integrator inheriting PxrIntegratorPluginBase can be connected to this
+        terminal."""
+    )
+    token outputs:ri:sampleFilters (
+        displayGroup = "OutputFilters"
+        doc = """Represents the sample filter terminals for a render setting. A
+        sample filter inheriting PxrSampleFilterPluginBase can be connected to
+        this terminal."""
+    )
+}
+
 class "PxrCameraProjectionAPI" (
     doc = """API schema that is auto-applied _only_ to UsdGeomCamera and 
     provides a RenderMan-specific projection output terminal to UsdGeomCamera
