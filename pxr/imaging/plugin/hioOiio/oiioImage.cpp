@@ -316,7 +316,7 @@ _FindAttribute(ImageSpec const & spec, std::string const & metadataKey)
     case TypeDesc::SCALAR:
         switch (type.basetype) {
         case TypeDesc::STRING:
-            return VtValue(std::string((char*)param->data()));
+            return VtValue(std::string(*(const char**)param->data()));
         case TypeDesc::INT8:
             return VtValue(*((char*)param->data()));
         case TypeDesc::UINT8:
