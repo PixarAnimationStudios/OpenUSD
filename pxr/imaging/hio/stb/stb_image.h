@@ -4554,7 +4554,7 @@ typedef struct
    stbi__context *s;
    stbi_uc *idata, *expanded, *out;
    int depth;
-   float gamma = 0;
+   float gamma;
 } stbi__png;
 
 
@@ -5033,6 +5033,7 @@ static int stbi__parse_png_file(stbi__png *z, int scan, int req_comp)
    z->expanded = NULL;
    z->idata = NULL;
    z->out = NULL;
+   z->gamma = 0.0f;
 
    if (!stbi__check_png_header(s)) return 0;
 
