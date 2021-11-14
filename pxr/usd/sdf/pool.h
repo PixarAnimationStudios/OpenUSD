@@ -237,7 +237,14 @@ private:
     static inline Handle _GetHandle(char const *ptr) {
         if (ptr) {
             for (unsigned region = 1; region != NumRegions+1; ++region) {
+                // Suppress undefined-var-template warnings from clang; _regionStarts
+                // is expected to be instantiated in another translation unit via 
+                // the SDF_INSTANTIATE_POOL macro.
+                ARCH_PRAGMA_PUSH
+                ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
                 char const *start = _regionStarts[region];
+                ARCH_PRAGMA_POP
+                
                 ptrdiff_t diff = ptr - start;
                 // Indexes start at 1 to avoid hash collisions when combining
                 // multiple pool indexes in a single hash, so strictly greater
