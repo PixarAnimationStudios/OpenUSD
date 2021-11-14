@@ -283,7 +283,8 @@ Sdf_SpecType::Cast(const SdfSpec& from, const std::type_info& to)
         return TfType();
     }
 
-    const TfType& schemaType = TfType::Find(typeid(from.GetSchema()));
+    const auto& schema = from.GetSchema();
+    const TfType& schemaType = TfType::Find(typeid(schema));
     if (!TF_VERIFY(!schemaType.IsUnknown())) {
         return TfType();
     }
@@ -326,7 +327,8 @@ Sdf_SpecType::CanCast(const SdfSpec& from, const std::type_info& to)
         return false;
     }
 
-    const TfType& fromSchemaType = TfType::Find(typeid(from.GetSchema()));
+    const auto& schema = from.GetSchema();
+    const TfType& fromSchemaType = TfType::Find(typeid(schema));
     const Sdf_SpecTypeInfo::SchemaTypes* toSchemaTypes = 
         TfMapLookupPtr(specTypeInfo.specTypeToSchemaTypes, toType);
     if (!toSchemaTypes) {
