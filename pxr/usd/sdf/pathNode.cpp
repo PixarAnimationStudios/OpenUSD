@@ -148,7 +148,7 @@ inline bool operator==(_ParentAnd<void> const &x, _ParentAndRef<void> const &y)
     return x.parent == y.parent;
 }
 
-inline size_t
+ARCH_USED_FUNCTION inline size_t
 hash_value(const Sdf_PathNode *p)
 {
     return TfHash()(p);

@@ -766,7 +766,7 @@ struct Task {
     }
 
     // Stream insertion operator for debugging.
-    friend std::ostream &operator<<(std::ostream &os, Task const &task) {
+    ARCH_USED_FUNCTION friend std::ostream &operator<<(std::ostream &os, Task const &task) {
         os << TfStringPrintf(
             "Task(type=%s, nodePath=<%s>, nodeSite=<%s>",
             TfEnum::GetName(task.type).c_str(),
