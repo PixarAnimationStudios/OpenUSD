@@ -86,6 +86,7 @@
 
 #include <tbb/concurrent_queue.h>
 
+#include <cmath>
 #include <iostream>
 #include <memory>
 #include <tuple>
