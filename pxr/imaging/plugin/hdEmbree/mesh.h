@@ -37,8 +37,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdEmbreePrototypeContext;
-class HdEmbreeInstanceContext;
+// 'HdEmbreePrototypeContext' defined as a struct here but previously declared as a class;
+// this is valid, but may result in linker errors under the Microsoft C++ ABI [-Werror,-Wmismatched-tags]
+struct HdEmbreePrototypeContext;
+struct HdEmbreeInstanceContext;
 
 /// \class HdEmbreeMesh
 ///
