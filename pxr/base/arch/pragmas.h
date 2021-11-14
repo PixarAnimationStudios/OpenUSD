@@ -99,6 +99,12 @@
     #define ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND \
         _Pragma("clang diagnostic ignored \"-Wobjc-method-access\"")
 
+    // Used in python wrappers: .def( self -= self )
+    // Warning is raised because of a clang bug:
+    // https://bugs.llvm.org/show_bug.cgi?id=43124
+    #define ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED \
+        _Pragma("clang diagnostic ignored \"-Wself-assign-overloaded\"")
+
 #elif defined(ARCH_COMPILER_MSVC)
 
     #define ARCH_PRAGMA_PUSH \
@@ -253,6 +259,10 @@
 
 #if !defined ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND
     #define ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND
+#endif
+
+#if !defined ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED
+    #define ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED
 #endif
 
 #endif // PXR_BASE_ARCH_PRAGMAS_H

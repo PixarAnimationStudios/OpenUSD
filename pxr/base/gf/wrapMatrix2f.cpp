@@ -352,7 +352,10 @@ void wrapMatrix2f()
         .def( double() * self )
         .def( self += self )
         .def( self + self )
+        ARCH_PRAGMA_PUSH
+        ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED
         .def( self -= self )
+        ARCH_PRAGMA_POP
         .def( self - self )
         .def( -self )
         .def( self / self )
