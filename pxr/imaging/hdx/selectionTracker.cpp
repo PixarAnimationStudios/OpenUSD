@@ -347,7 +347,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
 
     size_t const N = 1000;
     WorkParallelForN(numPrims/N + 1,
-       [&ids, index, N, &selectedPrims](size_t begin, size_t end) mutable {
+       [&ids, index, &selectedPrims](size_t begin, size_t end) mutable {
         end = std::min(end*N, ids.size());
         begin = begin*N;
         for (size_t i = begin; i < end; i++) {

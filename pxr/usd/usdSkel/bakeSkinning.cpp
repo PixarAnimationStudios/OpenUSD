@@ -2421,7 +2421,7 @@ UsdSkelBakeSkinning(const UsdSkelCache& skelCache,
             // but different layers may be written to at the same time.
             WorkParallelForN(
                 parms.layers.size(),
-                [time, ti, &parms, &skinningAdapters, &bytesStoredPerLayer]
+                [time, ti, &skinningAdapters, &bytesStoredPerLayer]
                 (size_t start, size_t end)
                 {
                     for (size_t i = start; i < end; ++i) {

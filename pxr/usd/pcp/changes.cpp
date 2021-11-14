@@ -1560,7 +1560,7 @@ PcpChanges::DidChangeAssetResolver(const PcpCache* cache)
     );
 
     cache->ForEachLayerStack(
-        [this, &cache, debugSummary](const PcpLayerStackPtr& layerStack) {
+        [this, &cache](const PcpLayerStackPtr& layerStack) {
             // This matches logic in _DidChange when processing changes
             // to a layer's resolved path.
             if (Pcp_NeedToRecomputeDueToAssetPathChange(layerStack)) {
