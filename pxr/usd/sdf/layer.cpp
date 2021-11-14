@@ -3940,7 +3940,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
         if (!updater.unrecognizedFields.empty()) {
             vector<string> fieldDescrs;
             fieldDescrs.reserve(updater.unrecognizedFields.size());
-            for (std::pair<TfToken, SdfPath> const &tokenPath:
+            for (const auto &tokenPath:
                      updater.unrecognizedFields) {
                 fieldDescrs.push_back(
                     TfStringPrintf("'%s' first seen at <%s>",

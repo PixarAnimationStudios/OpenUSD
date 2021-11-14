@@ -1192,6 +1192,7 @@ PcpCache::ReloadReferences(PcpChanges* changes, const SdfPath& primPath)
     SdfLayerHandleSet layersToReload;
     for (const PcpLayerStackPtr& layerStack: layerStacksAtOrUnderPrim) {
         for (const SdfLayerHandle& layer: layerStack->GetLayers()) {
+        for (const auto& layer: layerStack->GetLayers()) {
             if (!_layerStack->HasLayer(layer)) {
                 layersToReload.insert(layer);
             }
