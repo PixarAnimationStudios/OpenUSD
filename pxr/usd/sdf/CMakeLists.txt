@@ -1,6 +1,17 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE sdf)
 
+set(_generated_code path.lex.cpp textFileFormat.lex.cpp)
+
+if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    foreach(_source ${_generated_code})
+        set_source_files_properties(${_source}
+            PROPERTIES
+                COMPILE_OPTIONS -Wno-unneeded-internal-declaration
+        )
+    endforeach()
+endif()
+
 pxr_library(sdf
     LIBRARIES
         arch
@@ -117,8 +128,7 @@ pxr_library(sdf
 
     CPPFILES
         # Flex/Bison generated code
-        path.lex.cpp
-        textFileFormat.lex.cpp
+        ${_generated_code}
 
     PYTHON_CPPFILES
         moduleDeps.cpp
