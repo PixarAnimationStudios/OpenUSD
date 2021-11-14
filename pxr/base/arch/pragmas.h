@@ -111,6 +111,9 @@
     #define ARCH_PRAGMA_UNUSED_VARIABLE \
         _Pragma("clang diagnostic ignored \"-Wunused-variable\"")
 
+    #define ARCH_PRAGMA_UNUSED_PRIVATE_FIELD \
+       _Pragma("clang diagnostic ignored \"-Wunused-private-field\"")
+
 
 #elif defined(ARCH_COMPILER_MSVC)
 
@@ -278,6 +281,10 @@
 
 #if !defined ARCH_PRAGMA_UNUSED_VARIABLE
     #define ARCH_PRAGMA_UNUSED_VARIABLE
+#endif
+
+#if !defined ARCH_PRAGMA_UNUSED_PRIVATE_FIELD
+    #define ARCH_PRAGMA_UNUSED_PRIVATE_FIELD
 #endif
 
 #endif // PXR_BASE_ARCH_PRAGMAS_H
