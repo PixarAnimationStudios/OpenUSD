@@ -143,7 +143,10 @@ PXR_NAMESPACE_OPEN_SCOPE
         _TF_TOKENS_DECLARE_MEMBERS(seq)                                     \
     };                                                                      \
     }                                                                       \
-    static TfStaticData<_TF_TOKENS_STRUCT_NAME_PRIVATE(key)> key
+    ARCH_PRAGMA_PUSH                                                        \
+    ARCH_PRAGMA_UNUSED_VARIABLE                                             \
+    static TfStaticData<_TF_TOKENS_STRUCT_NAME_PRIVATE(key)> key            \
+    ARCH_PRAGMA_POP
 
 ///////////////////////////////////////////////////////////////////////////////
 // Private Macros

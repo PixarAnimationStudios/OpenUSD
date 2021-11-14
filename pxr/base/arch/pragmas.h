@@ -108,6 +108,10 @@
     #define ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED \
         _Pragma("clang diagnostic ignored \"-Wself-assign-overloaded\"")
 
+    #define ARCH_PRAGMA_UNUSED_VARIABLE \
+        _Pragma("clang diagnostic ignored \"-Wunused-variable\"")
+
+
 #elif defined(ARCH_COMPILER_MSVC)
 
     #define ARCH_PRAGMA_PUSH \
@@ -270,6 +274,10 @@
 
 #if !defined ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED
     #define ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED
+#endif
+
+#if !defined ARCH_PRAGMA_UNUSED_VARIABLE
+    #define ARCH_PRAGMA_UNUSED_VARIABLE
 #endif
 
 #endif // PXR_BASE_ARCH_PRAGMAS_H
