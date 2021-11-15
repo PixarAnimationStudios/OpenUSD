@@ -466,10 +466,7 @@ void wrapVec4d()
         .def(self == self)
         .def(self != self)
         .def(self += self)
-        ARCH_PRAGMA_PUSH
-        ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED
         .def(self -= self)
-        ARCH_PRAGMA_POP
         .def(self *= double())
         .def(self * double())
         .def(double() * self)

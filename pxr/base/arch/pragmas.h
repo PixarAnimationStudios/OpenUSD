@@ -102,12 +102,6 @@
     #define ARCH_PRAGMA_REINTERPRET_BASE_CLASS \
         _Pragma("clang diagnostic ignored \"-Wreinterpret-base-class\"")
 
-    // Used in python wrappers: .def( self -= self )
-    // Warning is raised because of a clang bug:
-    // https://bugs.llvm.org/show_bug.cgi?id=43124
-    #define ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED \
-        _Pragma("clang diagnostic ignored \"-Wself-assign-overloaded\"")
-
     #define ARCH_PRAGMA_UNUSED_PRIVATE_FIELD \
        _Pragma("clang diagnostic ignored \"-Wunused-private-field\"")
 
@@ -270,10 +264,6 @@
 
 #if !defined ARCH_PRAGMA_REINTERPRET_BASE_CLASS
     #define ARCH_PRAGMA_REINTERPRET_BASE_CLASS
-#endif
-
-#if !defined ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED
-    #define ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED
 #endif
 
 #if !defined ARCH_PRAGMA_UNUSED_PRIVATE_FIELD

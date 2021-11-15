@@ -127,10 +127,7 @@ void wrapRange{{ SUFFIX }}()
     
         .def(str(self))
         .def(self += self)
-        ARCH_PRAGMA_PUSH
-        ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED
         .def(self -= self)
-        ARCH_PRAGMA_POP
         .def(self *= double())
         .def(self /= double())
         .def(self + self)
