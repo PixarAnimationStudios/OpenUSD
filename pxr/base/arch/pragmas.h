@@ -108,9 +108,6 @@
     #define ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED \
         _Pragma("clang diagnostic ignored \"-Wself-assign-overloaded\"")
 
-    #define ARCH_PRAGMA_UNUSED_VARIABLE \
-        _Pragma("clang diagnostic ignored \"-Wunused-variable\"")
-
     #define ARCH_PRAGMA_UNUSED_PRIVATE_FIELD \
        _Pragma("clang diagnostic ignored \"-Wunused-private-field\"")
 
@@ -277,10 +274,6 @@
 
 #if !defined ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED
     #define ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED
-#endif
-
-#if !defined ARCH_PRAGMA_UNUSED_VARIABLE
-    #define ARCH_PRAGMA_UNUSED_VARIABLE
 #endif
 
 #if !defined ARCH_PRAGMA_UNUSED_PRIVATE_FIELD
