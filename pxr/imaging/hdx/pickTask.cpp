@@ -684,15 +684,13 @@ HdxPickTask::_ClearPickBuffer()
             _contextParams.pickTarget == HdxPickTokens->pickPoints ? 1 : 0);
         pickBufferInit.push_back(0);
 
-        // populate pick buffer's sub-buffer size table with zeros  
-        for (int j = 0; j < numSubBuffers; ++j) {
-            pickBufferInit.push_back(0);
-        }
+        // populate pick buffer's sub-buffer size table with zeros
+        pickBufferInit.resize(pickBufferInit.size() + numSubBuffers, 
+            [](int* b, int* e) { std::uninitialized_fill(b, e, 0); });
 
         // populate pick buffer's entry storage with -9s, meaning uninitialized
-        for (int j = 0; j < entryStorageSize; ++j) {
-            pickBufferInit.push_back(-9);
-        }
+        pickBufferInit.resize(pickBufferInit.size() + entryStorageSize,
+            [](int* b, int* e) { std::uninitialized_fill(b, e, -9); });
     }
     else
     {

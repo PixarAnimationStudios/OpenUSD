@@ -176,6 +176,8 @@ vec4 IntToVec4(int id)
                 ((id >> 24) & 0xff) / 255.0);
 }
 
+// calculate an integer hash value based on integer key and offset
+// this is used for the pick buffer hash map
 int fnv1Hash(int key, int offset)
 {
     const int prime = 16777619;
@@ -305,8 +307,7 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     do
     {
         // see if we need to add a new entry
-        if (entryNumber == PickBuffer[sizeOffset])
-        {
+        if (entryNumber == PickBuffer[sizeOffset]) {
             atomicCompSwap(PickBuffer[sizeOffset], entryNumber, entryNumber + 1);
         }
 
@@ -314,12 +315,10 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         // initialize the entry with the item's data, we are done
         if (compareOrSet(
                 subBufferOffset + entryNumber * entrySize, 
-                primId, instanceId, partId))
-        {
+                primId, instanceId, partId)) {
             keepMoving = false;
         }
-        else if(++entryNumber == subBufferCapacity)
-        {
+        else if(++entryNumber == subBufferCapacity) {
             // having reached the capacity of the sub-buffer, we exit
             keepMoving = false;
         }
