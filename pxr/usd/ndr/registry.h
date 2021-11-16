@@ -36,6 +36,7 @@
 #include "pxr/usd/ndr/nodeDiscoveryResult.h"
 #include "pxr/usd/ndr/parserPlugin.h"
 #include "pxr/usd/sdf/assetPath.h"
+#include <map>
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
