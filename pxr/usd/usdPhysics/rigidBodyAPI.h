@@ -333,7 +333,8 @@ public:
     /// \p massInfoFn Callback function to get collision mass information.
     /// \return Computed mass of the rigid body
     USDPHYSICS_API
-    float ComputeMassProperties(GfVec3f& diagonalInertia, GfVec3f& com, GfQuatf& principalAxes, const MassInformationFn& massInfoFn) const;
+    float ComputeMassProperties(GfVec3f* diagonalInertia, GfVec3f* com, GfQuatf* principalAxes, 
+        const MassInformationFn& massInfoFn) const;
 
 };
 

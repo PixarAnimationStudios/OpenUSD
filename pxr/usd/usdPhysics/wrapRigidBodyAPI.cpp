@@ -223,7 +223,7 @@ namespace {
         GfVec3f diagonalInertia;
         GfVec3f com;
         GfQuatf principalAxes;
-        float mass = self.ComputeMassProperties(diagonalInertia, com, principalAxes, massInfoFn);        
+        float mass = self.ComputeMassProperties(&diagonalInertia, &com, &principalAxes, massInfoFn);        
         return boost::python::make_tuple( mass, diagonalInertia, com, principalAxes );
     }
         
