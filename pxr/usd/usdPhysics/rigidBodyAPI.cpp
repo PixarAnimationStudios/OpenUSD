@@ -388,7 +388,7 @@ _MassApiData _GetCollisionShapeMassAPIData(const UsdPhysicsCollisionAPI& collisi
 
 
 // gather mass information for given collision shape
-MassProperties _ParseCollisionShapeForMass(const UsdPrim& prim, 
+UsdPhysicsMassProperties _ParseCollisionShapeForMass(const UsdPrim& prim, 
     const _MassApiData& inShapeMassInfo, float density, GfMatrix4f* transform, 
     UsdGeomXformCache* xformCache, const UsdPhysicsRigidBodyAPI::MassInformationFn& massInfoFn)
 {
@@ -402,7 +402,7 @@ MassProperties _ParseCollisionShapeForMass(const UsdPrim& prim,
             "Provided mass information not valid for a prim %s.",
             prim.GetPrimPath().GetString().c_str());
 
-        return MassProperties();
+        return UsdPhysicsMassProperties();
     }
 
     GfMatrix3f inertia = massInfo.inertia;
@@ -446,7 +446,7 @@ MassProperties _ParseCollisionShapeForMass(const UsdPrim& prim,
 
     if (shapeMassInfo.hasPa)
     {
-        inertia = MassProperties::RotateInertia(inertia, shapeMassInfo.principalAxes);
+        inertia = UsdPhysicsMassProperties::RotateInertia(inertia, shapeMassInfo.principalAxes);
     }
 
     // center of mass provided, update the inertia
@@ -455,7 +455,7 @@ MassProperties _ParseCollisionShapeForMass(const UsdPrim& prim,
         if (!shapeMassInfo.hasInertia)
         {
             // update inertia if we override the CoM but use the computed inertia
-            MassProperties massProps(shapeMassInfo.mass, inertia, massInfo.centerOfMass);            
+            UsdPhysicsMassProperties massProps(shapeMassInfo.mass, inertia, massInfo.centerOfMass);            
             massProps.Translate(centerOfMass - massProps.GetCenterOfMass());
             inertia = massProps.GetInertiaTensor();
         }
@@ -467,14 +467,14 @@ MassProperties _ParseCollisionShapeForMass(const UsdPrim& prim,
     transform->SetRotateOnly(GfQuatd(massInfo.localRot));
 
     // return final collision mass properties
-    return MassProperties(shapeMassInfo.mass, inertia, massInfo.centerOfMass);
+    return UsdPhysicsMassProperties(shapeMassInfo.mass, inertia, massInfo.centerOfMass);
 }
 
 // compute mass properties for given rigid body
 float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia, 
     GfVec3f* _com, GfQuatf* _principalAxes, const MassInformationFn& massInfoFn) const
 {
-    MassProperties massProps;
+    UsdPhysicsMassProperties massProps;
 
     const UsdPrim usdPrim = GetPrim();
     const UsdStagePtr stage = usdPrim.GetStage();
@@ -499,7 +499,7 @@ float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia,
     // to gather final mass information
     if (accumulateMass || !rigidBodyMassInfo.hasInertia || !hasCoM)
     {
-        std::vector<MassProperties> massProps;
+        std::vector<UsdPhysicsMassProperties> massProps;
         std::vector<GfMatrix4f> massTransf;
         std::vector<UsdPrim> collisionPrims;        
 
@@ -518,39 +518,12 @@ float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia,
         // get materials for all prims
         std::vector<UsdShadeMaterial> physicsMaterials = 
             UsdShadeMaterialBindingAPI::ComputeBoundMaterials(collisionPrims, _physicsPurposeTokens->materialPurposePhysics);
-        bool hasMaterials = true;
         for (UsdShadeMaterial& material : physicsMaterials)
         {
-            if (!material)
+            if (material && !material.GetPrim().HasAPI<UsdPhysicsMaterialAPI>())
             {
-                hasMaterials = false;                
+                material = UsdShadeMaterial();
             }
-            else
-            {
-                if (!material.GetPrim().HasAPI<UsdPhysicsMaterialAPI>())
-                {
-                    hasMaterials = false;
-                    material = UsdShadeMaterial();
-                }
-            }
-        }
-
-        if (!hasMaterials)
-        {
-            std::vector<UsdShadeMaterial> generalMaterials = 
-                UsdShadeMaterialBindingAPI::ComputeBoundMaterials(collisionPrims);
-            for (size_t i = 0; i < physicsMaterials.size(); i++)
-            {
-                if (!physicsMaterials[i])
-                {
-                    const UsdShadeMaterial& generalMaterial = generalMaterials[i];
-                    if (generalMaterial && generalMaterial.GetPrim().HasAPI<UsdPhysicsMaterialAPI>())
-                    {
-                        physicsMaterials[i] = generalMaterial;
-                    }
-                }
-            }
-
         }
 
         for (size_t i = 0; i < collisionPrims.size(); i++)
@@ -570,8 +543,8 @@ float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia,
         if (!massProps.empty())
         {
             // compute accumulated mass properties from all gathered collisions
-            MassProperties accumulatedMassProps =
-                MassProperties::Sum(massProps.data(), massTransf.data(), uint32_t(massProps.size()));
+            UsdPhysicsMassProperties accumulatedMassProps =
+                UsdPhysicsMassProperties::Sum(massProps.data(), massTransf.data(), uint32_t(massProps.size()));
 
             // if we had to compute mass, set the new mass
             if (accumulateMass)
@@ -598,7 +571,7 @@ float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia,
             }
 
             GfQuatf accPa;
-            const GfVec3f accInertia = MassProperties::GetMassSpaceInertia(accumulatedMassProps.GetInertiaTensor(), accPa);
+            const GfVec3f accInertia = UsdPhysicsMassProperties::GetMassSpaceInertia(accumulatedMassProps.GetInertiaTensor(), accPa);
 
             // check for inertia override
             if (!rigidBodyMassInfo.hasInertia)

@@ -36,20 +36,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-GfQuatf IndexedRotation(uint32_t axis, float s, float c)
+GfQuatf UsdPhysicsIndexedRotation(uint32_t axis, float s, float c)
 {
     float v[3] = { 0, 0, 0 };
     v[axis] = s;
     return GfQuatf(v[0], v[1], v[2], c);
 }
 
-uint32_t GetNextIndex3(uint32_t i)
+uint32_t UsdPhysicsGetNextIndex3(uint32_t i)
 {
     return (i + 1 + (i >> 1)) & 3;
 }
 
 
-GfVec3f Diagonalize(const GfMatrix3f& m, GfQuatf& massFrame)
+GfVec3f UsdPhysicsDiagonalize(const GfMatrix3f& m, GfQuatf& massFrame)
 {
     const uint32_t MAX_ITERS = 24;
 
@@ -66,7 +66,7 @@ GfVec3f Diagonalize(const GfMatrix3f& m, GfQuatf& massFrame)
                                                                          // off-diagonal
                                                                          // element
 
-        uint32_t a1 = GetNextIndex3(a), a2 = GetNextIndex3(a1);
+        uint32_t a1 = UsdPhysicsGetNextIndex3(a), a2 = UsdPhysicsGetNextIndex3(a1);
         if (d[a1][a2] == 0.0f || fabs(d[a1][a1] - d[a2][a2]) > 2e6 * fabs(2.0 * d[a1][a2]))
             break;
 
@@ -75,13 +75,13 @@ GfVec3f Diagonalize(const GfMatrix3f& m, GfQuatf& massFrame)
 
         GfQuatf r;
         if (absw > 1000)
-            r = IndexedRotation(a, 1 / (4 * w), 1.0f); // h will be very close to 1, so use small angle approx instead
+            r = UsdPhysicsIndexedRotation(a, 1 / (4 * w), 1.0f); // h will be very close to 1, so use small angle approx instead
         else
         {
             float t = 1 / (absw + sqrt(w * w + 1)); // absolute value of tan phi
             float h = 1 / sqrt(t * t + 1); // absolute value of cos phi
 
-            r = IndexedRotation(a, sqrt((1 - h) / 2) * ((w >= 0.0f) ? 1.0f : -1.0f), sqrt((1 + h) / 2));
+            r = UsdPhysicsIndexedRotation(a, sqrt((1 - h) / 2) * ((w >= 0.0f) ? 1.0f : -1.0f), sqrt((1 + h) / 2));
         }
 
         q = (q * r).GetNormalized();
@@ -95,17 +95,17 @@ GfVec3f Diagonalize(const GfMatrix3f& m, GfQuatf& massFrame)
 // MASSPROPERTIES                                                             //
 // -------------------------------------------------------------------------- //
 
-/// \class MassProperties
+/// \class UsdPhysicsMassProperties
 ///
 /// Mass properties computation class. Used to combine together individual mass 
 /// properties and produce final one.
 ///
-class MassProperties
+class UsdPhysicsMassProperties
 {
 public:
 
     /// Construct a MassProperties
-    USDPHYSICS_API MassProperties() : _inertiaTensor(0.0f), _centerOfMass(0.0f), _mass(1.0f)
+    USDPHYSICS_API UsdPhysicsMassProperties() : _inertiaTensor(0.0f), _centerOfMass(0.0f), _mass(1.0f)
     {
         _inertiaTensor[0][0] = 1.0;
         _inertiaTensor[1][1] = 1.0;
@@ -113,7 +113,7 @@ public:
     }
 
     /// Construct from individual elements.
-    USDPHYSICS_API MassProperties(const float m, const GfMatrix3f& inertiaT, const GfVec3f& com)
+    USDPHYSICS_API UsdPhysicsMassProperties(const float m, const GfMatrix3f& inertiaT, const GfVec3f& com)
         : _inertiaTensor(inertiaT), _centerOfMass(com), _mass(m)
     {
     }
@@ -121,9 +121,9 @@ public:
     /// Scale mass properties.
     /// \p scale The linear scaling factor to apply to the mass properties.
     /// \return The scaled mass properties.    
-    USDPHYSICS_API MassProperties operator*(const float scale) const
+    USDPHYSICS_API UsdPhysicsMassProperties operator*(const float scale) const
     {
-        return MassProperties(_mass * scale, _inertiaTensor * scale, _centerOfMass);
+        return UsdPhysicsMassProperties(_mass * scale, _inertiaTensor * scale, _centerOfMass);
     }
 
     /// Translate the center of mass by a given vector and adjust the inertia tensor accordingly.
@@ -141,7 +141,7 @@ public:
     USDPHYSICS_API static GfVec3f GetMassSpaceInertia(const GfMatrix3f& inertia, GfQuatf& massFrame)
     {
 
-        GfVec3f diagT = Diagonalize(inertia, massFrame);
+        GfVec3f diagT = UsdPhysicsDiagonalize(inertia, massFrame);
         return diagT;
     }
 
@@ -178,7 +178,7 @@ public:
     /// \p transforms Reference transforms for each mass properties entry.
     /// \p count The number of mass properties to sum up.
     /// \return The summed up mass properties.    
-    USDPHYSICS_API static MassProperties Sum(const MassProperties* props, const GfMatrix4f* transforms, const uint32_t count)
+    USDPHYSICS_API static UsdPhysicsMassProperties Sum(const UsdPhysicsMassProperties* props, const GfMatrix4f* transforms, const uint32_t count)
     {
         float combinedMass = 0.0f;
         GfVec3f combinedCoM(0.0f);
@@ -202,7 +202,7 @@ public:
                 props[i]._mass, combinedCoM - comTm);
         }
 
-        return MassProperties(combinedMass, combinedInertiaT, combinedCoM);
+        return UsdPhysicsMassProperties(combinedMass, combinedInertiaT, combinedCoM);
     }
 
     /// Get inertia tensor
