@@ -83,8 +83,7 @@ Tf_HasAttribute(
     if (path.back() == '/' || path.back() == '\\')
         resolveSymlinks = true;
 
-    const DWORD attribs =
-        GetFileAttributesW(ArchWindowsUtf8ToUtf16(path).c_str());
+    DWORD attribs = GetFileAttributesW(ArchWindowsUtf8ToUtf16(path).c_str());
     if (attribs == INVALID_FILE_ATTRIBUTES) {
         if (attribute == 0 &&
             (GetLastError() == ERROR_FILE_NOT_FOUND ||
@@ -94,6 +93,21 @@ Tf_HasAttribute(
         }
         return false;
     }
+
+    // Ignore reparse points on network volumes. They can't be resolved
+    // properly, so simply remove the reparse point attribute and treat
+    // if like a regular file/directory.
+    if ((attribs & FILE_ATTRIBUTE_REPARSE_POINT) != 0) {
+        // Calling PathIsNetworkPath sometimes sets the "last error" to an
+        // error code indicating an incomplete overlapped I/O function. We
+        // want to ignore this error.
+        DWORD olderr = GetLastError();
+        if (PathIsNetworkPathW(ArchWindowsUtf8ToUtf16(path).c_str())) {
+            attribs &= ~FILE_ATTRIBUTE_REPARSE_POINT;
+        }
+        SetLastError(olderr);
+    }
+
     if (!resolveSymlinks || (attribs & FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
         return attribute == 0 || (attribs & attribute) == expected;
     }
