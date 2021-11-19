@@ -220,7 +220,7 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     vec4 wireColor = GetWireframeColor();
     
     // If wireColor is unset (zero), the fill color is just dimmed a bit.
-    if (wireColor == vec4(0)) wireColor.a = 0.5;
+    if (all(equal(wireColor, vec4(0)))) wireColor.a = 0.5;
 
     vec4 Cedge = vec4(mix(Cfill.rgb, wireColor.rgb, wireColor.a), 1);
     Cfill.rgb = mix(Cfill.rgb, Cedge.rgb, p);
@@ -268,7 +268,7 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     vec4 wireColor = GetWireframeColor();
 
     // If wireColor is unset (zero), the fill color is just dimmed a bit.
-    if (wireColor == vec4(0)) wireColor.a = 0.5;
+    if (all(equal(wireColor, vec4(0)))) wireColor.a = 0.5;
 
     vec4 Cedge = vec4(mix(Cfill.rgb, wireColor.rgb, wireColor.a), 1);
     Cfill.rgb = mix(Cfill.rgb, Cedge.rgb, p);

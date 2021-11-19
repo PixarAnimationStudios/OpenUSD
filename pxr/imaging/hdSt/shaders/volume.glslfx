@@ -353,7 +353,7 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayLength)
 
         // If this is the first time the ray is hitting a non-empty voxel,
         // record the coordinates.
-        if (result.firstHitPeye == vec3(0.0)) {
+        if (all(equal(result.firstHitPeye, vec3(0.0)))) {
             if (  extinctionValue > 0 ||
                   scatteringValue > 0 ||
                   any(greaterThan(emissionValue, vec3(0)))) {
