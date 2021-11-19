@@ -990,7 +990,7 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
         raise RuntimeError("Template not found: {0}".format(str(tnf)))
     except TemplateSyntaxError as tse:
         raise RuntimeError("Syntax error in template {0} at line {1}: {2}"
-                           .format(tse.filename, tse.lineno, tse.message))
+                           .format(tse.filename, tse.lineno, tse))
 
     if useExportAPI:
         Print('Writing API:')
@@ -1106,7 +1106,7 @@ def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env,
         raise RuntimeError("Template not found: {0}".format(str(tnf)))
     except TemplateSyntaxError as tse:
         raise RuntimeError("Syntax error in template {0} at line {1}: {2}"
-                           .format(tse.filename, tse.lineno, tse.message))
+                           .format(tse.filename, tse.lineno, tse))
 
     #
     # Generate plugInfo.json.
