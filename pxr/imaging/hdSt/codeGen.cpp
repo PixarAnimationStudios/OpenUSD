@@ -689,15 +689,13 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                << _metaData.instancerNumLevels << "\n"
                << "#define HD_INSTANCE_INDEX_WIDTH "
                << (_metaData.instancerNumLevels+1) << "\n"; 
-   if (!_geometricShader->IsPrimTypePoints()) {
-      TF_FOR_ALL (it, _metaData.elementData) {
-        _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
-      }
-      if (hasGS) {
-        TF_FOR_ALL (it, _metaData.fvarData) {
-           _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
+    if (!_geometricShader->IsPrimTypePoints()) {
+        TF_FOR_ALL (it, _metaData.elementData) {
+            _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
         }
-      }
+        TF_FOR_ALL (it, _metaData.fvarData) {
+            _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
+        }
     }
     TF_FOR_ALL (it, _metaData.vertexData) {
         _genCommon << "#define HD_HAS_" << it->second.name << " 1\n";
@@ -753,9 +751,15 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         HdSt_GeometricShader::FvarPatchType::PATCH_BSPLINE ||
         _geometricShader->GetFvarPatchType() == 
         HdSt_GeometricShader::FvarPatchType::PATCH_BOXSPLINETRIANGLE) {
-        _genGS << "#define OSD_PATCH_BASIS_GLSL\n";
-        _genGS << 
-            OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchBasisShaderSource();
+        using PatchShaderSource = OpenSubdiv::Osd::GLSLPatchShaderSource;
+
+        if (hasGS) {
+            _genGS << "#define OSD_PATCH_BASIS_GLSL\n";
+            _genGS << PatchShaderSource::GetPatchBasisShaderSource();
+        } else {
+            _genFS << "#define OSD_PATCH_BASIS_GLSL\n";
+            _genFS << PatchShaderSource::GetPatchBasisShaderSource();
+        }
     }
 
     // Barycentric coordinates
@@ -769,6 +773,10 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             _genFS << "noperspective in vec3 hd_barycentricCoord;\n"
                       "vec3 GetBarycentricCoord() {\n"
                       "  return hd_barycentricCoord;\n"
+                      "}\n";
+        } else {
+            _genFS << "vec3 GetBarycentricCoord() {\n"
+                      "  return vec3(0);\n"
                       "}\n";
         }
     }
@@ -1670,7 +1678,7 @@ static void _EmitTextureAccessors(
     }      
 }
 
-// Accessing face varying primvar data of a vertex in the GS requires special
+// Accessing face varying primvar data from the GS or FS requires special
 // case handling for refinement while providing a branchless solution.
 // When dealing with vertices on a refined face when the face-varying data has 
 // not been refined, we use the patch coord to get its parametrization on the 
@@ -1683,7 +1691,8 @@ static void _EmitTextureAccessors(
 // When the fvar patch type is b-spline or box-spline, we solve over 16 or 12
 // refined values, respectively, also accessed via the refined indices, getting 
 // the weights from OsdEvaluatePatchBasisNormalized(). 
-static void _EmitFVarGSAccessor(
+static void _EmitFVarAccessor(
+                bool hasGS,
                 std::stringstream &str,
                 TfToken const &name,
                 TfToken const &type,
@@ -1807,6 +1816,7 @@ static void _EmitFVarGSAccessor(
     }
 
     str << "vec4 GetPatchCoord(int index);\n"
+        << "vec2 GetPatchCoordLocalST();\n"
         << _GetUnpackedType(type, false)
         << " HdGet_" << name << "(int localIndex) {\n";         
 
@@ -1845,15 +1855,24 @@ static void _EmitFVarGSAccessor(
         }
         case HdSt_GeometricShader::FvarPatchType::PATCH_REFINED_QUADS:
         {
-            str << "  vec2 lut[4] = vec2[4](vec2(0,0), vec2(1,0), "
-                << "vec2(1,1), vec2(0,1));\n"
-                << "  vec2 localST = lut[localIndex];\n";
+            if (hasGS) {
+                str << "  vec2 lut[4] = vec2[4](vec2(0,0), vec2(1,0), "
+                    << "vec2(1,1), vec2(0,1));\n"
+                    << "  vec2 localST = lut[localIndex];\n";
+            } else {
+                str << "  vec2 localST = GetPatchCoordLocalST();\n";
+            }
             break;
         }
         case HdSt_GeometricShader::FvarPatchType::PATCH_REFINED_TRIANGLES:
         {
-            str << "  vec2 lut[3] = vec2[3](vec2(0,0), vec2(1,0), vec2(0,1));\n"
-                << "  vec2 localST = lut[localIndex];\n";
+            if (hasGS) {
+                str << "  vec2 lut[3] = vec2[3](vec2(0,0), vec2(1,0), "
+                    << "vec2(0,1));\n"
+                    << "  vec2 localST = lut[localIndex];\n";
+            } else {
+                str << "  vec2 localST = GetPatchCoordLocalST();\n";
+            }
             break;
         }
         default:
@@ -3069,30 +3088,31 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
     */
 
     // face varying
-    std::stringstream fvarDeclarations;
+    std::stringstream fvarDeclarationsGS;
+    std::stringstream fvarDeclarationsFS;
     std::stringstream interstageFVarData;
 
-     if (hasGS) {
-        // FVar primvars are emitted only by the GS.
-        // If the GS isn't active, we can skip processing them.
-        TF_FOR_ALL (it, _metaData.fvarData) {
-            HdBinding binding = it->first;
-            TfToken const &name = it->second.name;
-            TfToken const &dataType = it->second.dataType;
-            const int channel = it->second.channel;
+    // FVar primvars are emitted by GS or FS
+    TF_FOR_ALL (it, _metaData.fvarData) {
+        HdBinding binding = it->first;
+        TfToken const &name = it->second.name;
+        TfToken const &dataType = it->second.dataType;
+        const int channel = it->second.channel;
 
-            _EmitDeclaration(fvarDeclarations, name, dataType, binding);
+        if (hasGS) {
+            _EmitDeclaration(fvarDeclarationsGS, name, dataType, binding);
 
             interstageFVarData << "  " << _GetPackedType(dataType, false)
                                << " " << name << ";\n";
 
             // primvar accessors (only in GS and FS)
-            _EmitFVarGSAccessor(accessorsGS, name, dataType, binding,
-                                _geometricShader->GetPrimitiveType(),
-                                _geometricShader->GetFvarPatchType(),
-                                channel);
+            _EmitFVarAccessor(hasGS, accessorsGS, name, dataType, binding,
+                              _geometricShader->GetPrimitiveType(),
+                              _geometricShader->GetFvarPatchType(),
+                              channel);
         
-            _EmitStructAccessor(accessorsFS, _tokens->inPrimvars, name, dataType,
+            _EmitStructAccessor(accessorsFS, _tokens->inPrimvars,
+                                name, dataType,
                                 /*arraySize=*/1, NULL);
 
             if (_geometricShader->GetFvarPatchType() == 
@@ -3100,14 +3120,23 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
                 _geometricShader->GetFvarPatchType() == 
                 HdSt_GeometricShader::FvarPatchType::PATCH_BOXSPLINETRIANGLE) {
                     _procGS << "  outPrimvars." << name 
-                    <<" = HdGet_" << name << "(index, localST);\n";
+                            << " = HdGet_" << name << "(index, localST);\n";
             } else {
                 _procGS << "  outPrimvars." << name 
-                    <<" = HdGet_" << name << "(index);\n";
+                        << " = HdGet_" << name << "(index);\n";
             }
-            
+        } else if (!_geometricShader->IsPrimTypePoints()) {
+            _EmitDeclaration(fvarDeclarationsFS, name, dataType, binding);
+
+            _EmitFVarAccessor(hasGS, accessorsFS, name, dataType, binding,
+                              _geometricShader->GetPrimitiveType(),
+                              _geometricShader->GetFvarPatchType(),
+                              channel);
         }
     }
+
+    _genGS  << fvarDeclarationsGS.str();
+    _genFS  << fvarDeclarationsFS.str();
 
     if (!interstageVertexData.str().empty()) {
         _genVS  << vertexInputs.str()
@@ -3133,22 +3162,26 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
                 << "} outPrimvars;\n"
                 << accessorsTES.str();
 
-        _genGS  << fvarDeclarations.str()
-                << "in Primvars {\n"
+        _genGS  << "in Primvars {\n"
                 << interstageVertexData.str()
-                << "} inPrimvars[HD_NUM_PRIMITIVE_VERTS];\n"
-                << "out Primvars {\n"
+                << "} inPrimvars[HD_NUM_PRIMITIVE_VERTS];\n";
+    }
+
+    if (!interstageVertexData.str().empty() ||
+        !interstageFVarData.str().empty()) {
+        _genGS  << "out Primvars {\n"
                 << interstageVertexData.str()
                 << interstageFVarData.str()
-                << "} outPrimvars;\n"
-                << accessorsGS.str();
+                << "} outPrimvars;\n";
 
         _genFS  << "in Primvars {\n"
                 << interstageVertexData.str()
                 << interstageFVarData.str()
-                << "} inPrimvars;\n"
-                << accessorsFS.str();
+                << "} inPrimvars;\n";
     }
+
+    _genGS  << accessorsGS.str();
+    _genFS  << accessorsFS.str();
 
     // ---------
     _genFS << "vec4 GetPatchCoord(int index);\n";

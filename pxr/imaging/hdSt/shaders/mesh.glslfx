@@ -715,7 +715,7 @@ vec4 GetInterpolatedPatchCoord()
 
 vec3 GetBarycentricCoord(); // codeGen
 
-vec2 GetInterpolatedPatchUV()
+vec2 GetPatchCoordLocalST()
 {
     vec3 barycentric = GetBarycentricCoord();
     if (GetTriQuadID() == 0) {
@@ -729,7 +729,7 @@ vec2 GetInterpolatedPatchUV()
 
 vec4 GetInterpolatedPatchCoord()
 {
-    return OsdInterpolatePatchCoord(GetInterpolatedPatchUV(), GetPatchParam());
+    return OsdInterpolatePatchCoord(GetPatchCoordLocalST(), GetPatchParam());
 }
 
 --- --------------------------------------------------------------------------
