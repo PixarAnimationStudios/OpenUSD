@@ -704,8 +704,6 @@ vec4 GetInterpolatedPatchCoord()
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Fragment.PatchCoord.Triangle
 
-vec3 GetBarycentricCoord(); // codeGen
-
 vec2 GetPatchCoordLocalST()
 {
     vec3 barycentric = GetBarycentricCoord();
@@ -721,8 +719,6 @@ vec4 GetInterpolatedPatchCoord()
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Fragment.PatchCoord.Quad
 
-vec3 GetBarycentricCoord(); // codeGen
-
 vec2 GetPatchCoordLocalST()
 {
     vec3 barycentric = GetBarycentricCoord();
@@ -736,8 +732,6 @@ vec4 GetInterpolatedPatchCoord()
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Fragment.PatchCoord.TriQuad
-
-vec3 GetBarycentricCoord(); // codeGen
 
 vec2 GetPatchCoordLocalST()
 {

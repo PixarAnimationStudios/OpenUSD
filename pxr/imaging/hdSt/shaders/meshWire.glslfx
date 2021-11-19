@@ -90,8 +90,6 @@ vec3 GetPrimitiveEdgeMask()
 --- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.EdgeCommon
 
-vec3 GetBarycentricCoord(); // codeGen
-
 // Returns the distance of the current fragment (in viewport pixel units) from
 // the nearest edge.
 float GetMinEdgeDistance()
@@ -115,8 +113,6 @@ float GetEdgeOpacity() {
 
 --- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.EdgeParam
-
-vec4 GetPatchCoord(int localIndex); // codeGen
 
 vec3 GetEdgeParamTriangle()
 {
