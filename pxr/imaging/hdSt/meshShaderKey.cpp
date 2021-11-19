@@ -345,9 +345,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                                    _tokens->faceCullSingleSidedFS);
 
     // Wire (edge) related mixins
-    if ((geomStyle == HdMeshGeomStyleEdgeOnly ||
-         geomStyle == HdMeshGeomStyleHullEdgeOnly)) {
-
+    if (renderWireframe || renderEdges) {
         if (isPrimTypeRefinedMesh) {
             if (isPrimTypeTriQuads) {
                 FS[fsIndex++] = _tokens->edgeMaskRefinedTriQuadFS;
@@ -363,46 +361,30 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         } else {
             FS[fsIndex++] = _tokens->edgeMaskQuadFS;
         }
+
         FS[fsIndex++] = _tokens->edgeCommonFS;
         FS[fsIndex++] = _tokens->edgeParamFS;
-        if (isPrimTypePatches) {
-            FS[fsIndex++] = _tokens->patchEdgeOnlyFS;
-        } else {
-            FS[fsIndex++] = blendWireframeColor ? _tokens->edgeOnlyBlendFS
-                                        : _tokens->edgeOnlyNoBlendFS;
-        }
 
-    } else if ((geomStyle == HdMeshGeomStyleEdgeOnSurf ||
-                geomStyle == HdMeshGeomStyleHullEdgeOnSurf)) {
-
-        if (isPrimTypeRefinedMesh) {
-            if (isPrimTypeTriQuads) {
-                FS[fsIndex++] = _tokens->edgeMaskRefinedTriQuadFS;
-            } else if (isPrimTypeQuads) {
-                FS[fsIndex++] = _tokens->edgeMaskRefinedQuadFS;
+        if (renderWireframe) {
+            if (isPrimTypePatches) {
+                FS[fsIndex++] = _tokens->patchEdgeOnlyFS;
             } else {
-                FS[fsIndex++] = _tokens->edgeMaskNoneFS;
+                FS[fsIndex++] = blendWireframeColor
+                                    ? _tokens->edgeOnlyBlendFS
+                                    : _tokens->edgeOnlyNoBlendFS;
             }
-        } else if (isPrimTypeTris) {
-            FS[fsIndex++] = _tokens->edgeMaskTriangleFS;
-        } else if (isPrimTypeTriQuads) {
-            FS[fsIndex++] = _tokens->edgeMaskTriQuadFS;
         } else {
-            FS[fsIndex++] = _tokens->edgeMaskQuadFS;
+            if (isPrimTypeTris || isPrimTypePatchesBoxSplineTriangle) {
+                FS[fsIndex++] = _tokens->patchEdgeTriangleFS;
+            } else {
+                FS[fsIndex++] = _tokens->patchEdgeQuadFS;
+            }
+            if (isPrimTypeRefinedMesh) {
+                FS[fsIndex++] = _tokens->patchEdgeOnSurfFS;
+            } else {
+                FS[fsIndex++] = _tokens->edgeOnSurfFS;
+            }
         }
-        FS[fsIndex++] = _tokens->edgeCommonFS;
-        FS[fsIndex++] = _tokens->edgeParamFS;
-        if (isPrimTypeTris || isPrimTypePatchesBoxSplineTriangle) {
-            FS[fsIndex++] = _tokens->patchEdgeTriangleFS;
-        } else {
-            FS[fsIndex++] = _tokens->patchEdgeQuadFS;
-        }
-        if (isPrimTypeRefinedMesh) {
-            FS[fsIndex++] = _tokens->patchEdgeOnSurfFS;
-        } else {
-            FS[fsIndex++] = _tokens->edgeOnSurfFS;
-        }
-
     } else {
         FS[fsIndex++] = _tokens->edgeNoneFS;
         FS[fsIndex++] = _tokens->edgeParamFS;
