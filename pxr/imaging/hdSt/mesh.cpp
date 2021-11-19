@@ -42,6 +42,8 @@
 #include "pxr/imaging/hdSt/smoothNormals.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
+#include "pxr/imaging/hgi/capabilities.h"
+
 #include "pxr/base/arch/hash.h"
 
 #include "pxr/base/gf/matrix4d.h"
@@ -616,8 +618,15 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             _limitNormals = true;
         }
 
+        bool const hasBuiltinBarycentrics =
+            resourceRegistry->GetHgi()->GetCapabilities()->
+                IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+
         HdSt_MeshTopologySharedPtr topology =
-            HdSt_MeshTopology::New(meshTopology, refineLevel, refineMode);
+            HdSt_MeshTopology::New(meshTopology, refineLevel, refineMode,
+                hasBuiltinBarycentrics
+                    ? HdSt_MeshTopology::QuadsTriangulated
+                    : HdSt_MeshTopology::QuadsUntriangulated);
         
         // Gather and sanitize geom subsets
         const HdGeomSubsets &oldGeomSubsets = _topology ? 
@@ -2472,12 +2481,15 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
         material && material->HasDisplacement();
     bool hasPtex = material && material->HasPtex();
 
+    // FaceVarying primvars or ptex requires per-face interpolation.
+    bool const hasPerFaceInterpolation = hasFaceVaryingPrimvars || hasPtex;
+
     bool hasTopologicalVisibility =
         (bool) drawItem->GetTopologyVisibilityRange();
 
     // Enable displacement shading only if the repr enables it, and the
     // entrypoint exists.
-    bool useCustomDisplacement = hasCustomDisplacementTerminal &&
+    bool hasCustomDisplacement = hasCustomDisplacementTerminal &&
         desc.useCustomDisplacement && _displacementEnabled;
 
     bool hasInstancer = !GetInstancerId().IsEmpty();
@@ -2492,27 +2504,32 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    // create a shaderKey and set to the geometric shader.
-    HdSt_MeshShaderKey shaderKey(primType,
-                                 shadingTerminal,
-                                 useCustomDisplacement,
-                                 normalsSource,
-                                 normalsInterpolation,
-                                 _doubleSided || desc.doubleSided,
-                                 hasFaceVaryingPrimvars || hasPtex,
-                                 hasTopologicalVisibility,
-                                 blendWireframeColor,
-                                 cullStyle,
-                                 geomStyle,
-                                 desc.lineWidth,
-                                 _hasMirroredTransform,
-                                 hasInstancer,
-                                 desc.enableScalarOverride,
-                                 fvarPatchType);
-
     HdStResourceRegistrySharedPtr resourceRegistry =
         std::static_pointer_cast<HdStResourceRegistry>(
             renderIndex.GetResourceRegistry());
+
+    bool const hasBuiltinBarycentrics =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+            IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+
+    // create a shaderKey and set to the geometric shader.
+    HdSt_MeshShaderKey shaderKey(primType,
+                                 shadingTerminal,
+                                 normalsSource,
+                                 normalsInterpolation,
+                                 cullStyle,
+                                 geomStyle,
+                                 fvarPatchType,
+                                 desc.lineWidth,
+                                 _doubleSided || desc.doubleSided,
+                                 hasBuiltinBarycentrics,
+                                 hasCustomDisplacement,
+                                 hasPerFaceInterpolation,
+                                 hasTopologicalVisibility,
+                                 blendWireframeColor,
+                                 _hasMirroredTransform,
+                                 hasInstancer,
+                                 desc.enableScalarOverride);
 
     HdSt_GeometricShaderSharedPtr geomShader =
         HdSt_GeometricShader::Create(shaderKey, resourceRegistry);

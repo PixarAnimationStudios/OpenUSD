@@ -48,20 +48,21 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
 
     HdSt_MeshShaderKey(HdSt_GeometricShader::PrimitiveType primType,
                        TfToken shadingTerminal,
-                       bool useCustomDisplacement,
                        NormalSource normalsSource,
                        HdInterpolation normalsInterpolation,
-                       bool doubleSided,
-                       bool forceGeometryShader,
-                       bool hasTopologicalVisibility,
-                       bool blendWireframeColor,
                        HdCullStyle cullStyle,
                        HdMeshGeomStyle geomStyle,
+                       HdSt_GeometricShader::FvarPatchType fvarPatchType,
                        float lineWidth,
+                       bool doubleSided,
+                       bool hasBuiltinBarycentrics,
+                       bool hasCustomDisplacement,
+                       bool hasPerFaceInterpolation,
+                       bool hasTopologicalVisibility,
+                       bool blendWireframeColor,
                        bool hasMirroredTransform,
                        bool hasInstancer,
-                       bool enableScalarOverride, 
-                       HdSt_GeometricShader::FvarPatchType fvarPatchType);
+                       bool enableScalarOverride);
 
     // Note: it looks like gcc 4.8 has a problem issuing
     // a wrong warning as "array subscript is above array bounds"

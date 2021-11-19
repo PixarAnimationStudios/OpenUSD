@@ -139,20 +139,21 @@ TF_DEFINE_PRIVATE_TOKENS(
 HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     HdSt_GeometricShader::PrimitiveType primitiveType,
     TfToken shadingTerminal,
-    bool useCustomDisplacement,
     NormalSource normalsSource,
     HdInterpolation normalsInterpolation,
-    bool doubleSided,
-    bool forceGeometryShader,
-    bool hasTopologicalVisibility,
-    bool blendWireframeColor,
     HdCullStyle cullStyle,
     HdMeshGeomStyle geomStyle,
+    HdSt_GeometricShader::FvarPatchType fvarPatchType,
     float lineWidth,
+    bool doubleSided,
+    bool hasBuiltinBarycentrics,
+    bool hasCustomDisplacement,
+    bool hasPerFaceInterpolation,
+    bool hasTopologicalVisibility,
+    bool blendWireframeColor,
     bool hasMirroredTransform,
     bool hasInstancer,
-    bool enableScalarOverride,
-    HdSt_GeometricShader::FvarPatchType fvarPatchType)
+    bool enableScalarOverride)
     : primType(primitiveType)
     , cullStyle(cullStyle)
     , hasMirroredTransform(hasMirroredTransform)
@@ -186,6 +187,12 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     const bool isPrimTypePatchesBoxSplineTriangle =
         primType ==
             HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE;
+
+    const bool renderWireframe = geomStyle == HdMeshGeomStyleEdgeOnly ||
+                                 geomStyle == HdMeshGeomStyleHullEdgeOnly;    
+
+    const bool renderEdges = geomStyle == HdMeshGeomStyleEdgeOnSurf ||
+                             geomStyle == HdMeshGeomStyleHullEdgeOnSurf;
 
     /* Normals configurations:
      * Smooth normals:
@@ -262,8 +269,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     GS[gsIndex++] = (normalsSource == NormalSourceGeometryShader) ?
             _tokens->normalsGeometryFlat : _tokens->normalsGeometryNoFlat;
 
-    const bool renderWireframe = geomStyle == HdMeshGeomStyleEdgeOnly ||
-                                 geomStyle == HdMeshGeomStyleHullEdgeOnly;    
     // emit "ComputeSelectionOffset" GS function.
     if (renderWireframe) {
         // emit necessary selection decoding and helper mixins
@@ -276,7 +281,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // Displacement shading can be disabled explicitly, or if the entrypoint
     // doesn't exist (resolved in HdStMesh).
-    GS[gsIndex++] = (!useCustomDisplacement) ?
+    GS[gsIndex++] = (!hasCustomDisplacement) ?
         _tokens->noCustomDisplacementGS :
         _tokens->customDisplacementGS;
 
@@ -289,16 +294,25 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                                     : _tokens->mainTriangleGS;
     GS[gsIndex] = TfToken();
 
-    // Optimization : If the mesh is skipping displacement shading, we have an
-    // opportunity to fully disable the geometry stage.
-    if (!useCustomDisplacement
+    // Optimization : See if we can skip the geometry shader.
+    bool canSkipGS =
+            // whether we can skip executing the displacement shading terminal
+            !hasCustomDisplacement
+            // whether we can skip geometry shader normals plumbing
             && (normalsSource != NormalSourceLimit)
             && (normalsSource != NormalSourceGeometryShader)
-            && (geomStyle == HdMeshGeomStyleSurf ||
-                geomStyle == HdMeshGeomStyleHull)
-            && HdSt_GeometricShader::IsPrimTypeTriangles(primType)
-            && (!forceGeometryShader)) {
+            // whether we can skip splitting quads to triangles
+            && (isPrimTypeTris ||
+                isPrimTypeTriQuads)
+            // whether we can skip generating coords for edges
+            && ((!renderWireframe && !renderEdges) ||
+                hasBuiltinBarycentrics)
+            // whether we can skip generating coords for per-face interpolation
+            && (!hasPerFaceInterpolation ||
+                hasBuiltinBarycentrics)
+            ;
             
+    if (canSkipGS) {
         GS[0] = TfToken();
     }
 
@@ -309,6 +323,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     }
 
     bool gsStageEnabled = !GS[0].IsEmpty();
+
     // fragment shader
     uint8_t fsIndex = 0;
     FS[fsIndex++] = _tokens->instancing;
@@ -448,6 +463,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                                       _tokens->pointIdFallbackFS;
     FS[fsIndex++] = hasTopologicalVisibility? _tokens->topVisFS :
                                               _tokens->topVisFallbackFS;
+
     if (isPrimTypeTris && !gsStageEnabled) {
         FS[fsIndex++] = _tokens->mainPatchCoordTriangleFS;
     } else if (isPrimTypeQuads && !gsStageEnabled) {
