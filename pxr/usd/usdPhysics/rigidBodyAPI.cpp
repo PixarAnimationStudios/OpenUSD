@@ -313,14 +313,15 @@ _MassApiData _ParseMassApi(const UsdPrim& usdPrim)
             result.hasInertia = true;
             result.diagonalInertia = dg;
         }
-
-        // check for authored value, we dont have a sentinel value
-        if (principalAxes.HasAuthoredValue())
+        
+        // 0 0 0 0 is the sentinel value
+        GfQuatf pa;
+        principalAxes.Get(&pa);
+        if (!GfIsClose(pa.GetImaginary(), GfVec3f(0.0f), COMPARE_TOLERANCE) || fabsf(pa.GetReal()) > COMPARE_TOLERANCE)
         {
             result.hasPa = true;
-            principalAxes.Get(&result.principalAxes);
+            result.principalAxes = pa;            
         }
-
     }
     return result;
 }
@@ -336,11 +337,12 @@ bool _GetCoM(const UsdPrim& usdPrim, GfVec3f* com, UsdGeomXformCache* xfCache)
         const UsdAttribute comAttribute = massAPI.GetCenterOfMassAttr();
 
         // no sentinel value we need to check for authored value        
-        if (comAttribute.HasAuthoredValue())
-        {            
-            GfVec3f v;
-            comAttribute.Get(&v);
+        GfVec3f v;
+        comAttribute.Get(&v);        
 
+        // -inf -inf -inf is the sentinel value, though any inf works
+        if (isfinite(v[0]) && isfinite(v[1]) && isfinite(v[2]))
+        {
             // need to extract scale as physics in general does not support scale, 
             //we need to scale the com
             GfMatrix4d mat = xfCache->GetLocalToWorldTransform(usdPrim);

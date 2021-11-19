@@ -239,7 +239,7 @@ class "PhysicsMassAPI"
         0.0 it is ignored. Units: mass/distance/distance/distance."""
     )
 
-	point3f physics:centerOfMass = (0.0, 0.0, 0.0) (
+	point3f physics:centerOfMass = (-inf, -inf, -inf) (
         customData = {
             string apiName = "centerOfMass"
         }
@@ -257,7 +257,7 @@ class "PhysicsMassAPI"
         ignored. Units: mass*distance*distance."""
     )
 
-	quatf physics:principalAxes = (1, 0, 0, 0) (
+	quatf physics:principalAxes = (0, 0, 0, 0) (
         customData = {
             string apiName = "principalAxes"
         }
