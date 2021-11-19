@@ -55,7 +55,7 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
         sceneDelegate->SampleTransform(id, &_sampleXforms);
     }
 
-    if (bits & (DirtyTransform | DirtyParams)) {
+    if (bits & AllDirty) {
         HdPrman_RenderParam * const param =
             static_cast<HdPrman_RenderParam*>(renderParam);
         param->GetCameraContext().MarkCameraInvalid(this);
