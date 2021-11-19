@@ -1,0 +1,126 @@
+.bolditalic {
+  font-weight: bold;
+  font-style: italic;
+}
+
+.bi {
+  font-weight: bold;
+  font-style: italic;
+}
+
+.bu {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.iu {
+  font-style: italic;
+  text-decoration: underline;
+}
+
+.mono {
+  font-family: monospace
+}
+
+.underline {
+    text-decoration: underline;
+}
+
+.icon-home:before {
+    vertical-align: middle;
+    content: url("https://graphics.pixar.com/usd/images/USDLogo24.svg");
+}
+
+#usd-home > h1 {
+    display: none;
+}
+
+img.usd-logo-image {
+    height: 1.5em;
+}
+
+.usd-index-brief {
+    padding-left: 1em;
+    padding-right: 1em;
+}
+
+.usd-index-brief > p {
+    margin-bottom: 1em;
+}
+
+.usd-title-image-outer {
+    --title-image-width: calc
+    position: relative;
+    float: left;
+}
+
+.usd-title-image-inner p {
+    line-height: normal;
+    color: white;
+    border-radius: 4px;
+    padding: 1vw;
+    padding-left: 2vw;
+    background-color: rgba(0, 0, 0, 0.3);
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    font-family: Roboto Slab,ff-tisa-web-pro,Georgia,Arial,sans-serif;
+    font-weight: 700;
+    font-size: 3vw;
+}
+
+.usd-title-text {
+    text-shadow: 0 0 0.25em black;
+}
+
+div.usd-tutorial-admonition {
+    float: right;
+    border-radius: 0.25em;
+    border-style: solid;
+    border-width: thin;
+    padding: 0.1em;
+    margin: 0.5em;
+}
+
+div.usd-tutorial-admonition > p {
+    line-height: normal;
+    font-size: 0.7em;
+    margin: 0.5em;
+}
+
+.sdfpath::before {
+  content: "<";
+}
+
+.sdfpath::after {
+  content: ">";
+}
+
+.fourcolumn {
+  -webkit-column-count: 4; /* Chrome, Safari, Opera */
+  -moz-column-count: 4; /* Firefox */
+  column-count: 4;
+}
+
+.twocolumn {
+  -webkit-column-count: 2; /* Chrome, Safari, Opera */
+  -moz-column-count: 2; /* Firefox */
+  column-count: 2;
+}
+
+.wy-nav-content {
+  max-width: none;
+}
+
+.wy-side-nav-search input[type=text] {
+    border-color: transparent;
+}
+
+.version_warning {
+  padding: .5em; 
+  text-align: center;
+  background-color: #FFBABA;
+  color: #6A0E0E;
+} 
+
