@@ -36,8 +36,14 @@ static const RtUString _us_main_cam_projection("main_cam_projection");
 HdPrmanCameraContext::HdPrmanCameraContext()
   : _camera(nullptr)
   , _policy(CameraUtilFit)
+  , _shutterOpenTime(0.0f)
+  , _shutterCloseTime(1.0f)
+  , _shutteropeningPoints{ // matches RenderMan default
+            0.0f, 0.0f, // points before open time
+            0.0f, 0.0f, 
+            1.0f, 0.0f, // points after close time
+            1.0f, 0.0f}
   , _invalid(false)
-  , _enableMotionBlur(false)
 {
 }
 
@@ -91,11 +97,28 @@ HdPrmanCameraContext::SetWindowPolicy(
 }
 
 void
-HdPrmanCameraContext::SetEnableMotionBlur(
-    const bool enable)
+HdPrmanCameraContext::SetShutterCurve(const float shutterOpenTime,
+                                      const float shutterCloseTime,
+                                      const float shutteropeningPoints[8])
 {
-    _enableMotionBlur = enable;
-    _invalid = true;
+    if (_shutterOpenTime != shutterOpenTime) {
+        _shutterOpenTime = shutterOpenTime;
+        _invalid = true;
+    }
+    if (_shutterCloseTime != shutterCloseTime) {
+        _shutterCloseTime = shutterCloseTime;
+        _invalid = true;
+    }
+    size_t i = 0;
+    for (; i < TfArraySize(_shutteropeningPoints); i++) {
+        if (_shutteropeningPoints[i] != shutteropeningPoints[i]) {
+            _invalid = true;
+            break;
+        }
+    }
+    for (; i < TfArraySize(_shutteropeningPoints); i++) {
+        _shutteropeningPoints[i] = shutteropeningPoints[i];
+    }
 }
 
 bool
@@ -330,18 +353,11 @@ HdPrmanCameraContext::_ComputeCameraParams(
         result.SetFloat(RixStr.k_farClip, clippingRange.GetMax());
     }
 
-    if (_enableMotionBlur) {
-        result.SetFloat(RixStr.k_shutterOpenTime, 0.0f);
-        result.SetFloat(RixStr.k_shutterCloseTime, 0.0f);
-
-        const float shutterCurve[8] = {
-            0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.3f, 0.0f
-        };
-        
-        result.SetFloatArray(
-            RixStr.k_shutteropening,
-            shutterCurve, TfArraySize(shutterCurve));
-    }
+    result.SetFloat(RixStr.k_shutterOpenTime, _shutterOpenTime);
+    result.SetFloat(RixStr.k_shutterCloseTime, _shutterCloseTime);
+    result.SetFloatArray(
+        RixStr.k_shutteropening,
+        _shutteropeningPoints, TfArraySize(_shutteropeningPoints));
 
     // XXX : Ideally we would want to set the proper shutter open and close,
     // however we can not fully change the shutter without restarting

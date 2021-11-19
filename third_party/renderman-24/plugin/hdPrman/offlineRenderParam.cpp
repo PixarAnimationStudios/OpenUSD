@@ -34,6 +34,23 @@ HdPrman_OfflineRenderParam::HdPrman_OfflineRenderParam()
     _InitializePrman(); 
 }
 
+static
+void
+_SetDefaultShutterCurve(HdPrmanCameraContext &context)
+{
+    static float shutterPoints[8] =
+        { 0.0f, 0.0f,  // points before open time
+          0.0f, 0.0f,
+
+          0.0f, 1.0f,  // points after close time
+          0.3f, 0.0f };
+        
+    context.SetShutterCurve(
+        0.0f,  // open time
+        0.0f,  // close time
+        shutterPoints);
+}
+
 void
 HdPrman_OfflineRenderParam::Initialize(
     RtParamList rileyOptions, 
@@ -49,7 +66,8 @@ HdPrman_OfflineRenderParam::Initialize(
         _AddRenderOutput(ro.name, ro.type, ro.params);
     }
 
-    GetCameraContext().SetEnableMotionBlur(true);
+    _SetDefaultShutterCurve(GetCameraContext());
+
     GetCameraContext().Begin(AcquireRiley());
 
     // Resolution will be updated by
@@ -98,7 +116,8 @@ HdPrman_OfflineRenderParam::InitializeWithDefaults()
             RtParamList());
     }
 
-    GetCameraContext().SetEnableMotionBlur(true);
+    _SetDefaultShutterCurve(GetCameraContext());
+    
     GetCameraContext().Begin(AcquireRiley());
 
     // Output
