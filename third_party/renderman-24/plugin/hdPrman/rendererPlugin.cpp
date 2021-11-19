@@ -29,6 +29,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+// Macro defined in hdPrmanLoader/rendererPlugin.h to export
+// a symbol here that can be picked up by HdPrmanLoader::Load.
 HDPRMAN_LOADER_CREATE_DELEGATE
 {
     bool isInteractive = true;

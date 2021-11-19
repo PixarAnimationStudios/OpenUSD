@@ -87,7 +87,6 @@ pxr_plugin(${PXR_PACKAGE}
         framebuffer
         offlineRenderPass
         renderBuffer
-        rendererPlugin
         renderPass
         resourceRegistry
 
@@ -100,6 +99,7 @@ pxr_plugin(${PXR_PACKAGE}
     CPPFILES
         virtualStructConditionalGrammar.tab.cpp
         virtualStructConditionalGrammar.lex.cpp
+        rendererPlugin.cpp
 
     RESOURCE_FILES
         plugInfo.json
