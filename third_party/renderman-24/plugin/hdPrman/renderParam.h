@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
 #include "hdPrman/xcpt.h"
+#include "hdPrman/cameraContext.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -166,9 +167,7 @@ public:
 
     // Provides external access to resources used to set parameters for
     // options and the active integrator.
-    virtual RtParamList &GetOptions() = 0;
     virtual riley::IntegratorId GetActiveIntegratorId() = 0;
-    virtual HdPrmanCameraContext &GetCameraContext() = 0;
 
     const riley::MaterialId GetFallbackMaterialId() const {
         return _fallbackMaterialId;
@@ -193,6 +192,11 @@ public:
     bool HasSceneLights() const { return _sceneLightCount > 0; }
     void IncreaseSceneLightCount() { ++_sceneLightCount; }
     void DecreaseSceneLightCount() { --_sceneLightCount; }
+    
+    // Provides external access to resources used to set parameters for
+    // options and the active integrator.
+    RtParamList &GetOptions() { return _options; }
+    HdPrmanCameraContext &GetCameraContext() { return _cameraContext; }
 
 protected:
     void _InitializePrman();
@@ -265,6 +269,9 @@ private:
     _GeomToHdCoordSysMap _geomToHdCoordSysMap;
     _HdToRileyCoordSysMap _hdToRileyCoordSysMap;
     std::mutex _coordSysMutex;
+
+    RtParamList _options;
+    HdPrmanCameraContext _cameraContext;
 
     // A quick way to disable motion blur, making shutter close same as open
     bool _instantaneousShutter;

@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
 #include "hdPrman/renderParam.h"
-#include "hdPrman/cameraContext.h"
 
 #include "Riley.h"
 
@@ -68,18 +67,11 @@ public:
         TfToken outputFilename,
         std::vector<RenderOutput> const & renderOutputs);
 
-    riley::CameraId cameraId;
-
     // Returns Riley scene. Since this is the offline renderParam, it
     // currently does not stop the render.
     riley::Riley * AcquireRiley() override;
 
-    // Provides external access to resources used to set parameters for
-    // options and the active integrator.
-    RtParamList &GetOptions() override;
     riley::IntegratorId GetActiveIntegratorId() override;
-
-    HdPrmanCameraContext &GetCameraContext() override;
 
     void SetResolutionOfRenderTargets(const GfVec2i &res);
 
@@ -95,10 +87,6 @@ private:
     riley::RenderTargetId _rtid;
     std::vector<riley::RenderViewId> _renderViews;
     std::vector<riley::RenderOutputId> _renderOutputs;
-
-    RtParamList _options;
-
-    HdPrmanCameraContext _cameraContext;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

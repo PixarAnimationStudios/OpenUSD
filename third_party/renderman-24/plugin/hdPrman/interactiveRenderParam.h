@@ -31,7 +31,6 @@
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/framebuffer.h"
 #include "hdPrman/renderBuffer.h"
-#include "hdPrman/cameraContext.h"
 
 #include "Riley.h"
 
@@ -116,12 +115,7 @@ public:
     // copy of the options, to be provided to SetOptions().
     RtParamList _GetDeprecatedOptionsPrunedList();
 
-    // Provides external access to resources used to set parameters for
-    // options and the active integrator.
-    RtParamList &GetOptions() override;
     riley::IntegratorId GetActiveIntegratorId() override;
-
-    HdPrmanCameraContext &GetCameraContext() override;
 
     void UpdateQuickIntegrator(HdRenderDelegate * renderDelegate);
 
@@ -145,15 +139,10 @@ private:
 
     void _RenderThreadCallback();
 
-    // Full option description
-    RtParamList _options;
-
     riley::IntegratorId _quickIntegratorId;
     RtParamList _quickIntegratorParams;
 
     bool _didBeginRiley;
-
-    HdPrmanCameraContext _cameraContext;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

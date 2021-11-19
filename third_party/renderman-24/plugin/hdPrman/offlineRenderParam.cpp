@@ -55,13 +55,14 @@ _SetDefaultShutterCurve(HdPrmanCameraContext &context)
 void
 HdPrman_OfflineRenderParam::Begin(HdPrmanRenderDelegate * const renderDelegate)
 {
-    HdPrman_UpdateSearchPathsFromEnvironment(_options);
+    RtParamList &options = GetOptions();
 
     // Ri:Shutter needs to be set before any prims are synced for
     // motion blur to work.
-    SetOptionsFromRenderSettings(renderDelegate, _options);
+    SetOptionsFromRenderSettings(renderDelegate, options);
 
-    _riley->SetOptions(_options);
+    HdPrman_UpdateSearchPathsFromEnvironment(options);
+    _riley->SetOptions(options);
 
     _CreateIntegrator(renderDelegate);
 }
@@ -193,22 +194,10 @@ HdPrman_OfflineRenderParam::IsValid() const
 }
 
 
-RtParamList&
-HdPrman_OfflineRenderParam::GetOptions()
-{
-    return _options;
-}
-
 riley::IntegratorId
 HdPrman_OfflineRenderParam::GetActiveIntegratorId()
 {
     return GetIntegratorId();
-}
-
-HdPrmanCameraContext &
-HdPrman_OfflineRenderParam::GetCameraContext()
-{
-    return _cameraContext;
 }
 
 void

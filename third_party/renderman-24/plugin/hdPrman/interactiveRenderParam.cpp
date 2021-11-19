@@ -156,6 +156,8 @@ HdPrman_InteractiveRenderParam::Begin(HdRenderDelegate *renderDelegate)
 
     // Options
     {
+        RtParamList &options = GetOptions();
+
         // Set thread limit for Renderman. Leave a few threads for app.
         static const unsigned appThreads = 4;
         unsigned nThreads = std::max(WorkGetConcurrencyLimit()-appThreads, 1u);
@@ -171,7 +173,7 @@ HdPrman_InteractiveRenderParam::Begin(HdRenderDelegate *renderDelegate)
                 nThreads = vtThreads.UncheckedGet<int>();
             }
         }
-        _options.SetInteger(RixStr.k_limits_threads, nThreads);
+        options.SetInteger(RixStr.k_limits_threads, nThreads);
 
         // Set resolution from render settings
         const VtValue resolutionVal = renderDelegate->GetRenderSetting(
@@ -181,8 +183,8 @@ HdPrman_InteractiveRenderParam::Begin(HdRenderDelegate *renderDelegate)
             auto const& res = resolutionVal.UncheckedGet<GfVec2i>();
             resolution[0] = res[0];
             resolution[1] = res[1];
-            _options.SetIntegerArray(RixStr.k_Ri_FormatResolution,
-                                     resolution, 2);
+            options.SetIntegerArray(RixStr.k_Ri_FormatResolution,
+                                    resolution, 2);
         }
 
         // Read the maxSamples out of settings (if it exists).
@@ -191,8 +193,8 @@ HdPrman_InteractiveRenderParam::Begin(HdRenderDelegate *renderDelegate)
             HdRenderSettingsTokens->convergedSamplesPerPixel).Cast<int>();
         int maxSamples = TF_VERIFY(!vtMaxSamples.IsEmpty()) ?
             vtMaxSamples.UncheckedGet<int>() : 16;
-        _options.SetInteger(RixStr.k_hider_minsamples, 1);
-        _options.SetInteger(RixStr.k_hider_maxsamples, maxSamples);
+        options.SetInteger(RixStr.k_hider_minsamples, 1);
+        options.SetInteger(RixStr.k_hider_maxsamples, maxSamples);
 
         // Read the variance threshold out of settings (if it exists). Use a
         // default of 0.001.
@@ -200,36 +202,36 @@ HdPrman_InteractiveRenderParam::Begin(HdRenderDelegate *renderDelegate)
             HdRenderSettingsTokens->convergedVariance).Cast<float>();
         float pixelVariance = TF_VERIFY(!vtPixelVariance.IsEmpty()) ?
             vtPixelVariance.UncheckedGet<float>() : 0.001f;
-        _options.SetFloat(RixStr.k_Ri_PixelVariance, pixelVariance);
+        options.SetFloat(RixStr.k_Ri_PixelVariance, pixelVariance);
 
-        HdPrman_UpdateSearchPathsFromEnvironment(_options);
+        HdPrman_UpdateSearchPathsFromEnvironment(options);
 
         // Path tracer config.
-        _options.SetInteger(RixStr.k_hider_incremental, 1);
-        _options.SetInteger(RixStr.k_hider_jitter, 1);
-        _options.SetInteger(RixStr.k_trace_maxdepth, 10);
-        _options.SetFloat(RixStr.k_Ri_FormatPixelAspectRatio, 1.0f);
-        _options.SetString(RixStr.k_bucket_order, us_circle);
+        options.SetInteger(RixStr.k_hider_incremental, 1);
+        options.SetInteger(RixStr.k_hider_jitter, 1);
+        options.SetInteger(RixStr.k_trace_maxdepth, 10);
+        options.SetFloat(RixStr.k_Ri_FormatPixelAspectRatio, 1.0f);
+        options.SetString(RixStr.k_bucket_order, us_circle);
 
         // Camera lens
-        _options.SetFloatArray(RixStr.k_Ri_Shutter, shutterInterval, 2);
+        options.SetFloatArray(RixStr.k_Ri_Shutter, shutterInterval, 2);
 
         // OSL verbose
         int oslVerbose = TfGetEnvSetting(HD_PRMAN_OSL_VERBOSE);
         if (oslVerbose > 0)
-            _options.SetInteger(RtUString("user:osl:verbose"), oslVerbose);
+            options.SetInteger(RtUString("user:osl:verbose"), oslVerbose);
 
         // Searchpaths (TEXTUREPATH, etc)
-        HdPrman_UpdateSearchPathsFromEnvironment(_options);
+        HdPrman_UpdateSearchPathsFromEnvironment(options);
         
         // Set Options from RenderSettings schema
         SetOptionsFromRenderSettings(
-            static_cast<HdPrmanRenderDelegate*>(renderDelegate), _options);
+            static_cast<HdPrmanRenderDelegate*>(renderDelegate), options);
         
         _riley->SetOptions(_GetDeprecatedOptionsPrunedList());
     }
 
-    _cameraContext.Begin(_riley);
+    GetCameraContext().Begin(_riley);
 
     _CreateIntegrator(renderDelegate);
     _CreateQuickIntegrator(renderDelegate);
@@ -627,7 +629,7 @@ HdPrman_InteractiveRenderParam::CreateDisplays(
     riley::RenderViewId const renderView = riley->CreateRenderView(
         riley::UserId::DefaultId(),
         framebuffer.rtId,
-        _cameraContext.GetCameraId(),
+        GetCameraContext().GetCameraId(),
         GetActiveIntegratorId(),
         {0, nullptr},
         {0, nullptr},
@@ -636,22 +638,10 @@ HdPrman_InteractiveRenderParam::CreateDisplays(
     renderTargets[renderView] = framebuffer.rtId;
 }
 
-RtParamList&
-HdPrman_InteractiveRenderParam::GetOptions() 
-{
-    return _options;
-}
-
 riley::IntegratorId
 HdPrman_InteractiveRenderParam::GetActiveIntegratorId()
 {
     return _activeIntegratorId;
-}
-
-HdPrmanCameraContext &
-HdPrman_InteractiveRenderParam::GetCameraContext()
-{
-    return _cameraContext;
 }
 
 RtParamList 
@@ -664,7 +654,7 @@ HdPrman_InteractiveRenderParam::_GetDeprecatedOptionsPrunedList()
         RixStr.k_Ri_PixelFilterWidth,
         RixStr.k_Ri_ScreenWindow};
 
-    RtParamList prunedOptions = _options;
+    RtParamList prunedOptions = GetOptions();
     uint32_t paramId;
     for (auto name : _deprecatedRileyOptions) {
         if (prunedOptions.GetParamId(name, paramId)) {
