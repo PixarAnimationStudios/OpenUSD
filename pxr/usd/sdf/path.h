@@ -82,6 +82,8 @@ private:
     typedef Sdf_PathNodeHandleImpl this_type;
 
 public:
+    static constexpr bool IsCounted = Counted;
+
     constexpr Sdf_PathNodeHandleImpl() noexcept {};
 
     explicit
@@ -100,7 +102,7 @@ public:
         }
     }
 
-    Sdf_PathNodeHandleImpl(Sdf_PathNodeHandleImpl const &rhs)
+    Sdf_PathNodeHandleImpl(Sdf_PathNodeHandleImpl const &rhs) noexcept
         : _poolHandle(rhs._poolHandle) {
         if (_poolHandle) {
             _AddRef();
@@ -963,6 +965,11 @@ private:
     // Accept rvalues.
     explicit SdfPath(Sdf_PathPrimNodeHandle &&primNode)
         : _primPart(std::move(primNode)) {}
+
+    SdfPath(Sdf_PathPrimNodeHandle &&primPart,
+            Sdf_PathPropNodeHandle &&propPart)
+        : _primPart(std::move(primPart))
+        , _propPart(std::move(propPart)) {}
 
     // Construct from prim & prop parts.
     SdfPath(Sdf_PathPrimNodeHandle const &primPart,

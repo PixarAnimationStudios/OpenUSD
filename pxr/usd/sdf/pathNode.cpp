@@ -31,6 +31,7 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stl.h"
 
@@ -83,26 +84,68 @@ typedef Sdf_PathNodePrivateAccess Access;
 
 namespace {
 
-template <class T>
+template <class T=void>
 struct _ParentAnd { const Sdf_PathNode *parent; T value; };
 
 // Allow void for 'expression' path case, which has no additional data.
 template <> struct _ParentAnd<void> { const Sdf_PathNode *parent; };
 
+template <class T=void>
+struct _ParentAndRef {
+    const Sdf_PathNode *parent; T const &value;
+    operator _ParentAnd<T>() const {
+        return { parent, value };
+    }
+};
+
+// Allow void for 'expression' path case, which has no additional data.
+template <> struct _ParentAndRef<void>
+{
+    const Sdf_PathNode *parent;
+    operator _ParentAnd<void>() const {
+        return { parent };
+    }
+};
+
+
+
 template <class T>
-inline _ParentAnd<T>
-_MakeParentAnd(const Sdf_PathNode *parent, const T &value) {
-    _ParentAnd<T> ret;
-    ret.parent = parent;
-    ret.value = value;
-    return ret;
+inline bool operator==(_ParentAnd<T> const &x, _ParentAnd<T> const &y)
+{
+    return x.parent == y.parent && x.value == y.value;
+}
+template <class T>
+inline bool operator==(_ParentAndRef<T> const &x, _ParentAndRef<T> const &y)
+{
+    return x.parent == y.parent && x.value == y.value;
+}
+template <class T>
+inline bool operator==(_ParentAndRef<T> const &x, _ParentAnd<T> const &y)
+{
+    return x.parent == y.parent && x.value == y.value;
+}
+template <class T>
+inline bool operator==(_ParentAnd<T> const &x, _ParentAndRef<T> const &y)
+{
+    return x.parent == y.parent && x.value == y.value;
 }
 
-inline _ParentAnd<void>
-_MakeParentAnd(const Sdf_PathNode *parent) {
-    _ParentAnd<void> ret;
-    ret.parent = parent;
-    return ret;
+inline bool operator==(_ParentAnd<void> const &x, _ParentAnd<void> const &y)
+{
+    return x.parent == y.parent;
+}
+inline bool operator==(_ParentAndRef<void> const &x,
+                       _ParentAndRef<void> const &y)
+{
+    return x.parent == y.parent;
+}
+inline bool operator==(_ParentAndRef<void> const &x, _ParentAnd<void> const &y)
+{
+    return x.parent == y.parent;
+}
+inline bool operator==(_ParentAnd<void> const &x, _ParentAndRef<void> const &y)
+{
+    return x.parent == y.parent;
 }
 
 inline size_t
@@ -111,42 +154,66 @@ hash_value(const Sdf_PathNode *p)
     return TfHash()(p);
 }
 
-template <class T>
-struct _HashParentAnd
+template <class PaT>
+inline size_t _OuterHash(PaT const &pat)
 {
-    inline bool equal(const T &l, const T &r) const {
-        return l.parent == r.parent && l.value == r.value;
-    }
+    return TfHash::Combine(pat.parent, pat.value);
+}
 
-    inline size_t hash(const T &t) const {
-        size_t h = reinterpret_cast<uintptr_t>(t.parent) >> 4;
-        boost::hash_combine(h, t.value);
-        return h;
-    }
- };
-
-template <>
-struct _HashParentAnd<_ParentAnd<void> >
+inline size_t _OuterHash(_ParentAnd<void> const &pat)
 {
-    inline bool equal(const _ParentAnd<void> &l,
-                      const _ParentAnd<void> &r) const {
-        return l.parent == r.parent;
-    }
-
-    inline size_t hash(const _ParentAnd<void> &t) const {
-        return reinterpret_cast<uintptr_t>(t.parent) >> 4;
-    }
+    return TfHash::Combine(pat.parent);
 };
+
+inline size_t _OuterHash(_ParentAndRef<void> const &pat)
+{
+    return TfHash::Combine(pat.parent);
+};
+
+template <class HashState, class T>
+inline void TfHashAppend(HashState &h, _ParentAnd<T> const &pat)
+{
+    h.Append(pat.parent, pat.value);
+}
+
+template <class HashState, class T>
+inline void TfHashAppend(HashState &h, _ParentAndRef<T> const &pat)
+{
+    h.Append(pat.parent, pat.value);
+}
+
+template <class HashState>
+inline void TfHashAppend(HashState &h, _ParentAnd<void> const &pat)
+{
+    h.Append(pat.parent);
+}
+
+template <class HashState>
+inline void TfHashAppend(HashState &h, _ParentAndRef<void> const &pat)
+{
+    h.Append(pat.parent);
+}
+
+static constexpr unsigned NumNodeMaps = 128;
 
 template <class T>
 struct _PrimTable {
     using Pool = Sdf_PathPrimPartPool;
     using PoolHandle = Sdf_PathPrimHandle;
     using NodeHandle = Sdf_PathPrimNodeHandle;
-    using Type = tbb::concurrent_hash_map<
-        _ParentAnd<T>, PoolHandle, _HashParentAnd<_ParentAnd<T> > >;
+
+    struct _MapAndMutex {
+        pxr_tsl::robin_map<_ParentAnd<T>, PoolHandle, TfHash> map;
+        mutable tbb::spin_mutex mutex;
+    };
+
+    _MapAndMutex &GetMapAndMutexFor(_ParentAndRef<T> const &pat) {
+        size_t z = _OuterHash(pat);
+        return _mapsAndMutexes[z & (NumNodeMaps-1)];
+    }
     
-    Type map;
+    _MapAndMutex _mapsAndMutexes[NumNodeMaps];
+     
 };
 
 template <class T>
@@ -154,10 +221,18 @@ struct _PropTable {
     using Pool = Sdf_PathPropPartPool;
     using PoolHandle = Sdf_PathPropHandle;
     using NodeHandle = Sdf_PathPropNodeHandle;
-    using Type = tbb::concurrent_hash_map<
-        _ParentAnd<T>, PoolHandle, _HashParentAnd<_ParentAnd<T> > >;
 
-    Type map;
+    struct _MapAndMutex {
+        pxr_tsl::robin_map<_ParentAnd<T>, PoolHandle, TfHash> map;
+        mutable tbb::spin_mutex mutex;
+    };
+
+    _MapAndMutex &GetMapAndMutexFor(_ParentAndRef<T> const &pat) {
+        size_t z = _OuterHash(pat);
+        return _mapsAndMutexes[z & (NumNodeMaps-1)];
+    }
+    
+    _MapAndMutex _mapsAndMutexes[NumNodeMaps];
 };
 
 using _PrimTokenTable = _PrimTable<TfToken>;
@@ -169,22 +244,38 @@ using _PropVoidTable = _PropTable<void>;
 template <class PathNode, class Table, class ... Args>
 inline typename Table::NodeHandle
 _FindOrCreate(Table &table,
+              const TfFunctionRef<bool ()> &isValid,
               const Sdf_PathNode *parent,
               const Args & ... args)
 {
-    typename Table::Type::accessor accessor;
-    if (table.map.insert(accessor, _MakeParentAnd(parent, args...)) ||
-        Access::GetRefCount(accessor->second).fetch_and_increment() == 0) {
-        // Either there was no entry in the table, or there was but it had begun
-        // dying (another client dropped its refcount to 0).  We have to create
-        // a new entry in the table.  When the client that is killing the other
-        // node it looks for itself in the table, it will either not find itself
-        // or will find a different node and so won't remove it.
-        typename Table::PoolHandle newNode =
-            Access::New<PathNode, typename Table::Pool>(parent, args...);
-        accessor->second = newNode;
+    std::pair<_ParentAndRef<Args...>, typename Table::PoolHandle>
+        newItem { { parent, args... }, {} };
+    auto &mapAndMutex = table.GetMapAndMutexFor(newItem.first);
+    tbb::spin_mutex::scoped_lock lock(mapAndMutex.mutex);
+
+    auto iresult = mapAndMutex.map.insert(newItem);
+    if (iresult.second) {
+        // There was no entry in the table, check for validity, and back out the
+        // insertion if it's invalid.
+        if (ARCH_UNLIKELY(!isValid())) {
+            mapAndMutex.map.erase(iresult.first);
+            return typename Table::NodeHandle();
+        }
     }
-    return typename Table::NodeHandle(accessor->second, /* add_ref = */ false);
+    if (iresult.second ||
+        (Table::NodeHandle::IsCounted &&
+         Access::GetRefCount(
+             iresult.first->second).fetch_and_increment() == 0)) {
+        // There was either no entry, or there was one but it had begun dying
+        // (another client dropped its refcount to 0).  We have to create a new
+        // entry in the table.  When the client that is deleting the other node
+        // it looks for itself in the table.  It will either not find itself or
+        // will find a different node and so won't remove it.
+        iresult.first.value() =
+            Access::New<PathNode, typename Table::Pool>(parent, args...);
+    }
+    return typename Table::NodeHandle(
+        iresult.first->second, /* add_ref = */ false);
 }
 
 template <class Table, class ... Args>
@@ -197,10 +288,14 @@ _Remove(const Sdf_PathNode *pathNode,
     // there's an entry present it may not be pathNode, since another node may
     // have been created since we decremented our refcount and started being
     // destroyed.  If it is this node, we remove it.
-    typename Table::Type::accessor accessor;
-    if (table.map.find(accessor, _MakeParentAnd(parent.get(), args...)) &&
-        accessor->second.GetPtr() == reinterpret_cast<char const *>(pathNode)) {
-        table.map.erase(accessor);
+    _ParentAndRef<Args...> pat { parent.get(), args... };
+    auto &mapAndMutex = table.GetMapAndMutexFor(pat);
+    tbb::spin_mutex::scoped_lock lock(mapAndMutex.mutex);
+
+    auto iter = mapAndMutex.map.find(pat);
+    if (iter != mapAndMutex.map.end() &&
+        iter->second.GetPtr() == reinterpret_cast<char const *>(pathNode)) {
+        mapAndMutex.map.erase(iter);
     }
 }
 
@@ -223,26 +318,17 @@ Sdf_PropPartPathNode::operator delete(void *p)
         PoolHandle::GetHandle(reinterpret_cast<char *>(p)));
 }
 
-// Preallocate some space in the prim and prim property tables.
-TF_MAKE_STATIC_DATA(_PropTargetTable, _mapperNodes) {}
-TF_MAKE_STATIC_DATA(_PropTargetTable, _targetNodes) {}
-TF_MAKE_STATIC_DATA(_PropTokenTable, _mapperArgNodes) {}
-TF_MAKE_STATIC_DATA(_PrimTokenTable, _primNodes) {
-    _primNodes->map.rehash(32768); }
-TF_MAKE_STATIC_DATA(_PropTokenTable, _primPropertyNodes) {
-    _primPropertyNodes->map.rehash(32768); }
-TF_MAKE_STATIC_DATA(_PropTokenTable, _relAttrNodes) {}
-TF_MAKE_STATIC_DATA(_PrimVarSelTable, _primVarSelNodes) {}
-TF_MAKE_STATIC_DATA(_PropVoidTable, _expressionNodes) {}
+static _PropTargetTable *_mapperNodes = new _PropTargetTable;
+static _PropTargetTable *_targetNodes = new _PropTargetTable;
+static _PropTokenTable *_mapperArgNodes = new _PropTokenTable;
+static _PrimTokenTable *_primNodes = new _PrimTokenTable;
+static _PropTokenTable *_primPropertyNodes = new _PropTokenTable;
+static _PropTokenTable *_relAttrNodes = new _PropTokenTable;
+static _PrimVarSelTable *_primVarSelNodes = new _PrimVarSelTable;
+static _PropVoidTable *_expressionNodes = new _PropVoidTable;
 
-TF_MAKE_STATIC_DATA(Sdf_PathNode const *, _absoluteRootNode) {
-    *_absoluteRootNode = Sdf_RootPathNode::New(true);
-    TF_AXIOM((*_absoluteRootNode)->GetCurrentRefCount() == 1);
-}
-TF_MAKE_STATIC_DATA(Sdf_PathNode const *, _relativeRootNode) {
-    *_relativeRootNode = Sdf_RootPathNode::New(false);
-    TF_AXIOM((*_relativeRootNode)->GetCurrentRefCount() == 1);
-}
+static Sdf_PathNode const *_absoluteRootNode = Sdf_RootPathNode::New(true);
+static Sdf_PathNode const *_relativeRootNode = Sdf_RootPathNode::New(false);
 
 Sdf_PathNode const *
 Sdf_RootPathNode::New(bool isAbsolute)
@@ -256,77 +342,90 @@ Sdf_RootPathNode::New(bool isAbsolute)
 
 Sdf_PathNode const *
 Sdf_PathNode::GetAbsoluteRootNode() {
-    return *_absoluteRootNode;
+    return _absoluteRootNode;
 }
 
 Sdf_PathNode const *
 Sdf_PathNode::GetRelativeRootNode() {
-    return *_relativeRootNode;
+    return _relativeRootNode;
 }
 
 Sdf_PathPrimNodeHandle
 Sdf_PathNode::FindOrCreatePrim(Sdf_PathNode const *parent,
-                               const TfToken &name)
+                               const TfToken &name,
+                               TfFunctionRef<bool ()> isValid)
 {
-    return _FindOrCreate<Sdf_PrimPathNode>(*_primNodes, parent, name);
+    return _FindOrCreate<Sdf_PrimPathNode>(*_primNodes, isValid, parent, name);
 }
     
 Sdf_PathPropNodeHandle
 Sdf_PathNode::FindOrCreatePrimProperty(Sdf_PathNode const *parent, 
-                                       const TfToken &name)
+                                       const TfToken &name,
+                                       TfFunctionRef<bool ()> isValid)
 {
     // NOTE!  We explicitly set the parent to null here in order to create a
     // separate prefix tree for property-like paths.
 
     return _FindOrCreate<Sdf_PrimPropertyPathNode>(
-        *_primPropertyNodes, nullptr, name);
+        *_primPropertyNodes, isValid, nullptr, name);
 }
     
 Sdf_PathPrimNodeHandle
 Sdf_PathNode::FindOrCreatePrimVariantSelection(
     Sdf_PathNode const *parent, 
     const TfToken &variantSet,
-    const TfToken &variant)
+    const TfToken &variant,
+    TfFunctionRef<bool ()> isValid)
 {
     return _FindOrCreate<Sdf_PrimVariantSelectionNode>(
-        *_primVarSelNodes, parent, VariantSelectionType(variantSet, variant));
+        *_primVarSelNodes, isValid, parent,
+        VariantSelectionType(variantSet, variant));
 }
 
 Sdf_PathPropNodeHandle
 Sdf_PathNode::FindOrCreateTarget(Sdf_PathNode const *parent, 
-                                 SdfPath const &targetPath)
+                                 SdfPath const &targetPath,
+                                 TfFunctionRef<bool ()> isValid)
 {
-    return _FindOrCreate<Sdf_TargetPathNode>(*_targetNodes, parent, targetPath);
+    return _FindOrCreate<Sdf_TargetPathNode>(
+        *_targetNodes, isValid, parent, targetPath);
 }
 
 Sdf_PathPropNodeHandle
 Sdf_PathNode
 ::FindOrCreateRelationalAttribute(Sdf_PathNode const *parent, 
-                                  const TfToken &name)
+                                  const TfToken &name,
+                                  TfFunctionRef<bool ()> isValid)
 {
     return _FindOrCreate<Sdf_RelationalAttributePathNode>(
-        *_relAttrNodes, parent, name);
+        *_relAttrNodes, isValid, parent, name);
 }
 
 Sdf_PathPropNodeHandle
 Sdf_PathNode
 ::FindOrCreateMapper(Sdf_PathNode const *parent, 
-                     SdfPath const &targetPath)
+                     SdfPath const &targetPath,
+                     TfFunctionRef<bool ()> isValid)
 {
-    return _FindOrCreate<Sdf_MapperPathNode>(*_mapperNodes, parent, targetPath);
+    return _FindOrCreate<Sdf_MapperPathNode>(
+        *_mapperNodes, isValid, parent, targetPath);
 }
 
 Sdf_PathPropNodeHandle
 Sdf_PathNode::FindOrCreateMapperArg(Sdf_PathNode const *parent, 
-                                    const TfToken &name)
+                                    const TfToken &name,
+                                    TfFunctionRef<bool ()> isValid)
 {
-    return _FindOrCreate<Sdf_MapperArgPathNode>(*_mapperArgNodes, parent, name);
+    return _FindOrCreate<Sdf_MapperArgPathNode>(
+        *_mapperArgNodes, isValid, parent, name);
 }
     
 Sdf_PathPropNodeHandle
-Sdf_PathNode::FindOrCreateExpression(Sdf_PathNode const *parent)
+Sdf_PathNode::FindOrCreateExpression(Sdf_PathNode const *parent,
+                                     TfFunctionRef<bool ()> isValid)
 {
-    return _FindOrCreate<Sdf_ExpressionPathNode>(*_expressionNodes, parent);
+    return _FindOrCreate<Sdf_ExpressionPathNode>(
+        *_expressionNodes, isValid, parent);
 }
 
 Sdf_PathNode::Sdf_PathNode(bool isAbsolute) :
@@ -661,10 +760,14 @@ _GatherChildrenFrom(Sdf_PathNode const *parent,
                     Table const &table,
                     vector<Sdf_PathNodeConstRefPtr> *result)
 {
-    TF_FOR_ALL(i, table.map) {
-        if (i->first.parent == parent)
-            result->emplace_back(
-                reinterpret_cast<Sdf_PathNode const *>(i->second.GetPtr()));
+    for (size_t outerIndex = 0; outerIndex != NumNodeMaps; ++outerIndex) {
+        auto &mapAndMutex = table._mapsAndMutexes[outerIndex];
+        tbb::spin_mutex::scoped_lock lock(mapAndMutex.mutex);
+        TF_FOR_ALL(i, mapAndMutex.map) {
+            if (i->first.parent == parent)
+                result->emplace_back(
+                    reinterpret_cast<Sdf_PathNode const *>(i->second.GetPtr()));
+        }
     }
 }
 
