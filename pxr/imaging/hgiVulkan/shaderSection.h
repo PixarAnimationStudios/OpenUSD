@@ -172,6 +172,7 @@ public:
         const std::string &identifier,
         const uint32_t layoutIndex,
         const uint32_t dimensions,
+        const bool writable,
         const HgiShaderSectionAttributeVector &attributes,
         const std::string &defaultValue = std::string());
 
@@ -193,6 +194,7 @@ private:
     HgiVulkanTextureShaderSection(const HgiVulkanTextureShaderSection&) = delete;
 
     const uint32_t _dimensions;
+    const bool _writable;
 };
 
 /// \class HgiVulkanBufferShaderSection

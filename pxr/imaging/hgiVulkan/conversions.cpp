@@ -324,6 +324,45 @@ _primitiveTypeTable[HgiPrimitiveTypeCount][2] =
 };
 static_assert(HgiPrimitiveTypeCount==5, "");
 
+static const std::string
+_imageLayoutFormatTable[HgiFormatCount][2] =
+{ 
+    {"HgiFormatUNorm8",            "r8"},
+    {"HgiFormatUNorm8Vec2",        "rg8"},
+    {"HgiFormatUNorm8Vec4",        "rgba8"},
+    {"HgiFormatSNorm8",            "r8_snorm"},
+    {"HgiFormatSNorm8Vec2",        "rg8_snorm"},
+    {"HgiFormatSNorm8Vec4",        "rgba8_snorm"},
+    {"HgiFormatFloat16",           "r16f"},
+    {"HgiFormatFloat16Vec2",       "rg16f"},
+    {"HgiFormatFloat16Vec3",       ""},
+    {"HgiFormatFloat16Vec4",       "rgba16f"},
+    {"HgiFormatFloat32",           "r32f"},
+    {"HgiFormatFloat32Vec2",       "rg32f"},
+    {"HgiFormatFloat32Vec3",       ""},
+    {"HgiFormatFloat32Vec4",       "rgba32f" },
+    {"HgiFormatInt16",             "r16i"},
+    {"HgiFormatInt16Vec2",         "rg16i"},
+    {"HgiFormatInt16Vec3",         ""},
+    {"HgiFormatInt16Vec4",         "rgba16i"},
+    {"HgiFormatUInt16",            "r16ui"},
+    {"HgiFormatUInt16Vec2",        "rg16ui"},
+    {"HgiFormatUInt16Vec3",        ""},
+    {"HgiFormatUInt16Vec4",        "rgba16ui"},
+    {"HgiFormatInt32",             "r32i"},
+    {"HgiFormatInt32Vec2",         "rg32i"},
+    {"HgiFormatInt32Vec3",         ""},
+    {"HgiFormatInt32Vec4",         "rgba32i"},
+    {"HgiFormatUNorm8Vec4srgb",    ""},
+    {"HgiFormatBC6FloatVec3",      ""},
+    {"HgiFormatBC6UFloatVec3",     ""},
+    {"HgiFormatBC7UNorm8Vec4",     ""},
+    {"HgiFormatBC7UNorm8Vec4srgb", ""},
+    {"HgiFormatBC1UNorm8Vec4",     ""},
+    {"HgiFormatBC3UNorm8Vec4",     ""},
+    {"HgiFormatFloat32UInt8",      ""},
+};
+
 VkFormat
 HgiVulkanConversions::GetFormat(HgiFormat inFormat)
 {
@@ -528,6 +567,18 @@ VkPrimitiveTopology
 HgiVulkanConversions::GetPrimitiveType(HgiPrimitiveType pt)
 {
     return VkPrimitiveTopology(_primitiveTypeTable[pt][1]);
+}
+
+std::string
+HgiVulkanConversions::GetImageLayoutFormatQualifier(HgiFormat inFormat)
+{
+    const std::string layoutQualifier = _imageLayoutFormatTable[inFormat][1];
+    if (layoutQualifier.empty()) {
+        TF_WARN("Given HgiFormat is not a supported image unit format, "
+                "defaulting to rgba16f");
+        return _imageLayoutFormatTable[9][1];
+    }
+    return layoutQualifier;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

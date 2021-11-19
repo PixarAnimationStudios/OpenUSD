@@ -48,6 +48,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// <li>format
 ///   Format of the texture. This is required in APIs where sampler types depend
 ///   on the texture (e.g., GL) </li>
+/// <li>writable
+///   Whether the texture is writable.</li>
 /// </ul>
 ///
 struct HgiShaderFunctionTextureDesc
@@ -58,6 +60,7 @@ struct HgiShaderFunctionTextureDesc
     std::string nameInShader;
     uint32_t dimensions;
     HgiFormat format;
+    bool writable;
 };
 
 using HgiShaderFunctionTextureDescVector =
@@ -288,6 +291,15 @@ bool operator!=(
 HGI_API
 void
 HgiShaderFunctionAddTexture(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    uint32_t dimensions = 2,
+    const HgiFormat &format = HgiFormatFloat32Vec4);
+
+/// Adds writable texture descriptor to given shader function descriptor.
+HGI_API
+void
+HgiShaderFunctionAddWritableTexture(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     uint32_t dimensions = 2,

@@ -24,6 +24,7 @@
 #include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hgiGL/shaderGenerator.h"
+#include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -106,11 +107,18 @@ void
 HgiGLShaderGenerator::_WriteTextures(
     const HgiShaderFunctionTextureDescVector &textures)
 {
-    //Extract texture descriptors and add appropriate texture sections
-    for(size_t i=0; i<textures.size(); i++) {
+    // Extract texture descriptors and add appropriate texture sections
+    for (size_t i=0; i<textures.size(); i++) {
         const HgiShaderFunctionTextureDesc &textureDescription = textures[i];
-        const HgiShaderSectionAttributeVector attrs = {
+        HgiShaderSectionAttributeVector attrs = {
             HgiShaderSectionAttribute{"binding", std::to_string(i)}};
+
+        if (textureDescription.writable) {
+            attrs.insert(attrs.begin(), HgiShaderSectionAttribute{
+                HgiGLConversions::GetImageLayoutFormatQualifier(
+                    textureDescription.format), 
+                ""});
+        }
 
         GetShaderSections()->push_back(
             std::make_unique<HgiGLTextureShaderSection>(
@@ -118,6 +126,7 @@ HgiGLShaderGenerator::_WriteTextures(
                 i,
                 textureDescription.dimensions,
                 textureDescription.format,
+                textureDescription.writable,
                 attrs));
     }
 }

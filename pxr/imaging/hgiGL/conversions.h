@@ -89,6 +89,9 @@ public:
 
     HGIGL_API
     static GLenum GetPrimitiveType(HgiPrimitiveType pt);
+    
+    HGIGL_API
+    static std::string GetImageLayoutFormatQualifier(HgiFormat inFormat);
 };
 
 

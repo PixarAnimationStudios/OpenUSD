@@ -28,6 +28,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiShaderFunctionTextureDesc::HgiShaderFunctionTextureDesc()
   : dimensions(2)
   , format(HgiFormatInvalid)
+  , writable(false)
 {
 }
 
@@ -67,7 +68,8 @@ bool operator==(
 {
     return lhs.nameInShader == rhs.nameInShader &&
            lhs.dimensions == rhs.dimensions &&
-           lhs.format == rhs.format;
+           lhs.format == rhs.format &&
+           lhs.writable == rhs.writable;
 }
 
 bool operator!=(
@@ -156,7 +158,7 @@ bool operator==(
            lhs.constantParams == rhs.constantParams &&
            lhs.stageInputs == rhs.stageInputs &&
            lhs.stageOutputs == rhs.stageOutputs &&
-           lhs.computeDescriptor == rhs.computeDescriptor;
+           lhs.computeDescriptor == rhs.computeDescriptor &&
            lhs.tessellationDescriptor == rhs.tessellationDescriptor;
 }
 
@@ -178,6 +180,23 @@ HgiShaderFunctionAddTexture(
     texDesc.nameInShader = nameInShader;
     texDesc.dimensions = dimensions;
     texDesc.format = format;
+    texDesc.writable = false;
+
+    desc->textures.push_back(std::move(texDesc));
+}
+
+void
+HgiShaderFunctionAddWritableTexture(
+    HgiShaderFunctionDesc * const desc,
+    const std::string &nameInShader,
+    const uint32_t dimensions /* = 2 */,
+    const HgiFormat &format /* = HgiFormatFloat32Vec4*/)
+{
+    HgiShaderFunctionTextureDesc texDesc;
+    texDesc.nameInShader = nameInShader;
+    texDesc.dimensions = dimensions;
+    texDesc.format = format;
+    texDesc.writable = true;
 
     desc->textures.push_back(std::move(texDesc));
 }

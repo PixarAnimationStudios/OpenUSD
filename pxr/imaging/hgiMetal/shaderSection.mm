@@ -131,22 +131,60 @@ HgiMetalTextureShaderSection::HgiMetalTextureShaderSection(
     const std::string &samplerSharedIdentifier,
     const HgiShaderSectionAttributeVector &attributes,
     const HgiMetalSamplerShaderSection *samplerShaderSectionDependency,
-    const std::string &defaultValue,
-    uint32_t dimension)
+    uint32_t dimensions,
+    HgiFormat format,
+    bool writable,
+    const std::string &defaultValue)
   : HgiMetalShaderSection(
       "textureBind_" + samplerSharedIdentifier, 
       attributes,
       defaultValue)
-  , _samplerShaderSectionDependency(samplerShaderSectionDependency)
-  , _dimensionsVar(dimension)
   , _samplerSharedIdentifier(samplerSharedIdentifier)
+  , _samplerShaderSectionDependency(samplerShaderSectionDependency)
+  , _dimensionsVar(dimensions)
+  , _format(format)
+  , _writable(writable)
 {
+    HgiFormat baseFormat = HgiGetComponentBaseFormat(_format);
+
+    switch (baseFormat) {
+    case HgiFormatFloat32:
+        _baseType = "float";
+        _returnType = "vec";
+        break;
+    case HgiFormatFloat16:
+        _baseType = "half";
+        _returnType = "vec";
+        break;
+    case HgiFormatInt32:
+        _baseType = "int32_t";
+        _returnType = "ivec";
+        break;
+    case HgiFormatInt16:
+        _baseType = "int16_t";
+        _returnType = "ivec";
+        break;
+    case HgiFormatUInt16:
+        _baseType = "uint16_t";
+        _returnType = "uvec";
+        break;
+    default:
+        TF_CODING_ERROR("Invalid Format");
+        _baseType = "float";
+        _returnType = "vec";
+        break;
+    }
 }
 
 void
 HgiMetalTextureShaderSection::WriteType(std::ostream& ss) const
 {
-    ss << "texture" << _dimensionsVar << "d<float>";
+    ss << "texture" << _dimensionsVar << "d";
+    ss << "<" << _baseType;
+    if (_writable) {
+        ss << ", access::write";
+    }
+    ss << ">";
 }
 
 bool
@@ -160,33 +198,111 @@ HgiMetalTextureShaderSection::VisitScopeMemberDeclarations(std::ostream &ss)
 bool
 HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
 {
-    const std::string defValue = _GetDefaultValue().empty()
-        ? "0.0f"
-        : _GetDefaultValue();
+    const std::string intType = _dimensionsVar == 1 ? 
+        "uint" : "uint" + std::to_string(_dimensionsVar);
 
-    ss << "#define HdGetSampler_" << _samplerSharedIdentifier
-    << "() ";
-    WriteIdentifier(ss);
-    ss << "\n";
+    if (_writable) {
+        // Write a function that lets you write to the texture with 
+        // HdSet_texName(uv, data).
+        ss << "void HdSet_" << _samplerSharedIdentifier;
+        ss << "(" << intType << " coord, float4 data) {\n";
+        ss << "    ";
+        WriteIdentifier(ss);
+        ss << ".write(data, coord);\n";
+        ss << "}\n";
 
-    ss << "vec4 HdGet_" << _samplerSharedIdentifier
-       << "(vec2 coord) {\n";
-    ss << "    vec4 result = is_null_texture(";
-    WriteIdentifier(ss);
-    ss << ") ? "<< defValue << ": ";
-    WriteIdentifier(ss);
-    ss << ".sample(";
-    _samplerShaderSectionDependency->WriteIdentifier(ss);
-        ss << ", coord);\n";
-    ss << "    return result;\n";
-    ss << "}\n";
+        // HdGetSize_texName()
+        ss << intType;
+        ss << " HdGet_" << _samplerSharedIdentifier << "Size() { \n";
+        ss << "    ";
+        if (_dimensionsVar == 1) {
+            ss << "return ";
+            WriteIdentifier(ss);
+            ss << ".get_width();\n";
+        } else if (_dimensionsVar == 2) {
+            ss << "return " << intType << "(";
+            WriteIdentifier(ss);
+            ss << ".get_width(), ";
+            WriteIdentifier(ss);
+            ss << ".get_height());\n";
+        } else if (_dimensionsVar == 3) {
+            ss << "return " << intType << "(";
+            WriteIdentifier(ss);
+            ss << ".get_width(), ";
+            WriteIdentifier(ss);
+            ss << ".get_height(), ";
+            WriteIdentifier(ss);
+            ss << ".get_depth());\n";   
+        }
+        ss << "}\n";
+    } else {
+        const std::string defValue = _GetDefaultValue().empty()
+            ? "0.0f"
+            : _GetDefaultValue();
 
-    ss << "vec4 HdTexelFetch_"
-       << _samplerSharedIdentifier << "(ivec2 coord) {\n";
-    ss << "    vec4 result =  " << "textureBind_" << _samplerSharedIdentifier
-       << ".read(ushort2(coord.x, coord.y));\n";
-    ss << "    return result;\n";
-    ss << "}\n";
+        ss << "#define HdGetSampler_" << _samplerSharedIdentifier
+        << "() ";
+        WriteIdentifier(ss);
+        ss << "\n";
+
+        ss << "vec4 HdGet_" << _samplerSharedIdentifier
+        << "(vec2 coord) {\n";
+        ss << "    vec4 result = is_null_texture(";
+        WriteIdentifier(ss);
+        ss << ") ? "<< defValue << ": ";
+        WriteIdentifier(ss);
+        ss << ".sample(";
+        _samplerShaderSectionDependency->WriteIdentifier(ss);
+            ss << ", coord);\n";
+        ss << "    return result;\n";
+        ss << "}\n";
+
+        // HdGetSize_texName()
+        ss << intType;
+        ss << " HdGetSize_" << _samplerSharedIdentifier << "() { \n";
+        ss << "    ";
+        if (_dimensionsVar == 1) {
+            ss << "return ";
+            WriteIdentifier(ss);
+            ss << ".get_width();\n";
+        } else if (_dimensionsVar == 2) {
+            ss << "return " << intType << "(";
+            WriteIdentifier(ss);
+            ss << ".get_width(), ";
+            WriteIdentifier(ss);
+            ss << ".get_height());\n";
+        } else if (_dimensionsVar == 3) {
+            ss << "return " << intType << "(";
+            WriteIdentifier(ss);
+            ss << ".get_width(), ";
+            WriteIdentifier(ss);
+            ss << ".get_height(), ";
+            WriteIdentifier(ss);
+            ss << ".get_depth());\n";   
+        }
+        ss << "}\n";
+
+        // HdTextureLod_texName()
+        ss << "vec4 HdTextureLod_" << _samplerSharedIdentifier
+        << "(vec2 coord, float lod) {\n";
+        ss << "    vec4 result = is_null_texture(";
+        WriteIdentifier(ss);
+        ss << ") ? "<< defValue << ": ";
+        WriteIdentifier(ss);
+        ss << ".sample(";
+        _samplerShaderSectionDependency->WriteIdentifier(ss);
+        ss << ", coord, level(lod));\n";
+        ss << "    return result;\n";
+        ss << "}\n";
+
+        // HdTexelFetch_texName()
+        ss << "vec4 HdTexelFetch_"
+        << _samplerSharedIdentifier << "(ivec2 coord) {\n";
+        ss << "    vec4 result =  " << "textureBind_" << _samplerSharedIdentifier
+        << ".read(ushort2(coord.x, coord.y));\n";
+        ss << "    return result;\n";
+        ss << "}\n";
+    }
 
     return true;
 }

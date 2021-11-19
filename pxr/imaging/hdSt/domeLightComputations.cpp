@@ -137,6 +137,7 @@ HdSt_DomeLightComputationGPU::Execute(
         static_cast<HdStResourceRegistry*>(resourceRegistry);
 
     constexpr int localSize = 8;
+    const bool hasUniforms = _roughness >= 0.0f;
 
     HdStGLSLProgramSharedPtr const computeProgram =
         HdStGLSLProgram::GetComputeProgram(
@@ -149,6 +150,17 @@ HdSt_DomeLightComputationGPU::Execute(
                 computeDesc.shaderStage = HgiShaderStageCompute;
                 computeDesc.computeDescriptor.localSize = 
                     GfVec3i(localSize, localSize, 1);
+
+                HgiShaderFunctionAddTexture(&computeDesc, "inTexture");
+                HgiShaderFunctionAddWritableTexture(&computeDesc, "outTexture",
+                    2, HgiFormatFloat16Vec4);
+                if (hasUniforms) {
+                    HgiShaderFunctionAddConstantParam(
+                        &computeDesc, "inRoughness", HdStTokens->_float);
+                }
+                HgiShaderFunctionAddStageInput(
+                    &computeDesc, "hd_GlobalInvocationID", "uvec3",
+                    HgiShaderKeywordTokens->hdGlobalInvocationID);
             });
     if (!TF_VERIFY(computeProgram)) {
         return;
@@ -248,8 +260,6 @@ HdSt_DomeLightComputationGPU::Execute(
     } uniform;
 
     uniform.roughness = _roughness;
-
-    bool hasUniforms = uniform.roughness >= 0.0f;
 
     HgiComputePipelineDesc desc;
     desc.debugName = "DomeLightComputation";

@@ -169,6 +169,12 @@ size_t HgiGetDataSize(
     HgiFormat f,
     const GfVec3i &dimensions);
 
+/// Returns the scalar type of the format, in the form of an HgiFormat, if
+/// possible.
+HGI_API
+HgiFormat HgiGetComponentBaseFormat(
+    HgiFormat f);
+
 /// Returns mip infos.
 ///
 /// If dataByteSize is specified, the levels stops when the total memory

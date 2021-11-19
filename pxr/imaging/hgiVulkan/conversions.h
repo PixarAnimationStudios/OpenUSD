@@ -112,6 +112,9 @@ public:
 
     HGIVULKAN_API
     static VkPrimitiveTopology GetPrimitiveType(HgiPrimitiveType pt);
+
+    HGIVULKAN_API
+    static std::string GetImageLayoutFormatQualifier(HgiFormat inFormat);
 };
 
 

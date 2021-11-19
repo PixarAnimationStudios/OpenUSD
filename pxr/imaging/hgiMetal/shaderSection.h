@@ -170,8 +170,10 @@ public:
         const std::string &samplerSharedIdentifier,
         const HgiShaderSectionAttributeVector &attributes,
         const HgiMetalSamplerShaderSection *samplerShaderSectionDependency,
-        const std::string &defaultValue = std::string(),
-        uint32_t dimension = 2);
+        uint32_t dimensions,
+        HgiFormat format,
+        bool writable,
+        const std::string &defaultValue = std::string());
 
     HGIMETAL_API
     void WriteType(std::ostream& ss) const override;
@@ -187,9 +189,13 @@ private:
         const HgiMetalTextureShaderSection&) = delete;
     HgiMetalTextureShaderSection(const HgiMetalTextureShaderSection&) = delete;
 
+    const std::string _samplerSharedIdentifier;
     const HgiMetalSamplerShaderSection* const _samplerShaderSectionDependency;
     const uint32_t _dimensionsVar;
-    const std::string _samplerSharedIdentifier;
+    const HgiFormat _format;
+    const bool _writable;
+    std::string _baseType;
+    std::string _returnType;
 };
 
 /// \class HgiMetalBufferShaderSection

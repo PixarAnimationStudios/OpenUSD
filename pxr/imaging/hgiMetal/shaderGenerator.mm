@@ -783,6 +783,9 @@ void HgiMetalShaderGenerator::_BuildTextureShaderSections(
                 texName,
                 textureAttributes,
                 samplerSection,
+                textures[i].dimensions,
+                textures[i].format,
+                textures[i].writable,
                 std::string());
 
         //fx texturing struct depends on the sampler

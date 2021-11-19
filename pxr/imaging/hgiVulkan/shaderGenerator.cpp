@@ -23,6 +23,7 @@
 //
 
 #include "pxr/imaging/hgiVulkan/shaderGenerator.h"
+#include "pxr/imaging/hgiVulkan/conversions.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -99,17 +100,25 @@ void
 HgiVulkanShaderGenerator::_WriteTextures(
     const HgiShaderFunctionTextureDescVector& textures)
 {
-    for(const HgiShaderFunctionTextureDesc& desc : textures) {
-        const HgiShaderSectionAttributeVector attrs = {
+    for (const HgiShaderFunctionTextureDesc& desc : textures) {
+        HgiShaderSectionAttributeVector attrs = {
             HgiShaderSectionAttribute{
                 "binding",
                 std::to_string(_bindIndex)}};
+
+        if (desc.writable) {
+            attrs.insert(attrs.begin(), HgiShaderSectionAttribute{
+                HgiVulkanConversions::GetImageLayoutFormatQualifier(
+                    desc.format), 
+                ""});
+        }
 
         GetShaderSections()->push_back(
             std::make_unique<HgiVulkanTextureShaderSection>(
                 desc.nameInShader,
                 _bindIndex,
                 desc.dimensions,
+                desc.writable,
                 attrs));
 
         // In Vulkan buffers and textures cannot have the same binding index.

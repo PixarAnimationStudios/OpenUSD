@@ -101,7 +101,11 @@ bool
 HgiMetal::IsBackendSupported() const
 {
     // Want Metal 2.0 and Metal Shading Language 2.2 or higher.
-    return (@available(macOS 10.15, ios 13.0, *));
+    if (@available(macOS 10.15, ios 13.0, *)) {
+        return true;
+    }
+
+    return false;
 }
 
 id<MTLDevice>
