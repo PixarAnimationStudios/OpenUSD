@@ -114,6 +114,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainTriQuadGS,           "Mesh.Geometry.TriQuad"))
     ((mainQuadGS,              "Mesh.Geometry.Quad"))
     ((mainPatchCoordFS,        "Mesh.Fragment.PatchCoord"))
+    ((mainPatchCoordTriangleFS,"Mesh.Fragment.PatchCoord.Triangle"))
+    ((mainPatchCoordQuadFS,    "Mesh.Fragment.PatchCoord.Quad"))
     ((mainPatchCoordTriQuadFS, "Mesh.Fragment.PatchCoord.TriQuad"))
     ((mainFS,                  "Mesh.Fragment"))
 
@@ -462,7 +464,11 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                                       _tokens->pointIdFallbackFS;
     FS[fsIndex++] = hasTopologicalVisibility? _tokens->topVisFS :
                                               _tokens->topVisFallbackFS;
-    if (isPrimTypeTriQuads) {
+    if (isPrimTypeTris && !gsStageEnabled) {
+        FS[fsIndex++] = _tokens->mainPatchCoordTriangleFS;
+    } else if (isPrimTypeQuads && !gsStageEnabled) {
+        FS[fsIndex++] = _tokens->mainPatchCoordQuadFS;
+    } else if (isPrimTypeTriQuads) {
         FS[fsIndex++] = _tokens->mainPatchCoordTriQuadFS;
     } else {
         FS[fsIndex++] = _tokens->mainPatchCoordFS;

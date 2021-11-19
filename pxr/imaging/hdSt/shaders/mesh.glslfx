@@ -45,8 +45,6 @@ out VertexData
     vec3 Neye;
 } outData;
 
-out vec4 gsPatchCoord;
-
 // Fwd declare methods defined in pointId.glslfx, that are used below.
 int GetPointId();
 float GetPointRasterSize(int);
@@ -61,12 +59,6 @@ void main(void)
     outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
 
     outData.Neye = GetNormal(vec3(0), 0); // normalized
-
-    // Fill out redundantly, since at this point we don't know
-    // the following stages include tessellation or geometry shader.
-    // we rely on that compiler (linker) optimizes out these redundant
-    // assignment and attribute plumbing.
-    gsPatchCoord = vec4(0);
 
     int pointId = GetPointId();
     gl_PointSize = GetPointRasterSize(pointId);
@@ -315,7 +307,6 @@ out VertexData
 } outData;
 
 out vec4 gsPatchCoord;
-
 
 vec4 GetPatchCoord(int index)
 {
@@ -708,6 +699,39 @@ in vec4 gsPatchCoord;
 vec4 GetInterpolatedPatchCoord()
 {
     return gsPatchCoord;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Fragment.PatchCoord.Triangle
+
+vec3 GetBarycentricCoord(); // codeGen
+
+vec2 GetPatchCoordLocalST()
+{
+    vec3 barycentric = GetBarycentricCoord();
+    return barycentric.yz;
+}
+
+vec4 GetInterpolatedPatchCoord()
+{
+    return OsdInterpolatePatchCoordTriangle(
+                        GetPatchCoordLocalST(), GetPatchParam());
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Fragment.PatchCoord.Quad
+
+vec3 GetBarycentricCoord(); // codeGen
+
+vec2 GetPatchCoordLocalST()
+{
+    vec3 barycentric = GetBarycentricCoord();
+    return barycentric.yz;
+}
+
+vec4 GetInterpolatedPatchCoord()
+{
+    return OsdInterpolatePatchCoord(GetPatchCoordLocalST(), GetPatchParam());
 }
 
 --- --------------------------------------------------------------------------
