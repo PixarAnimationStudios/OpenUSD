@@ -43,9 +43,6 @@ class HdPrmanCamera;
 /// track whether the camera or camera-related settings such as the
 /// framing have changed so that updating riley is necessary.
 ///
-/// TODO: Move more camera-related code in interactiveRenderPass.cpp
-/// and HdPrmanCamera::SetRileyCameraParams here.
-///
 class HdPrmanCameraContext final
 {
 public:

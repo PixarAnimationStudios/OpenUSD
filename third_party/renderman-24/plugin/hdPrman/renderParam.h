@@ -28,6 +28,7 @@
 #include "hdPrman/api.h"
 #include "hdPrman/xcpt.h"
 #include "hdPrman/cameraContext.h"
+#include "hdPrman/renderViewContext.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -222,8 +223,9 @@ protected:
     // Riley instance.
     riley::Riley *_riley;
 
-    riley::DisplayId _displayId;
-    riley::RenderTargetId _renderTargetId;
+    HdPrmanRenderViewContext &GetRenderViewContext() {
+        return _renderViewContext;
+    }
 
 private:
     riley::ShadingNode _ComputeIntegratorNode(
@@ -277,6 +279,7 @@ private:
 
     RtParamList _options;
     HdPrmanCameraContext _cameraContext;
+    HdPrmanRenderViewContext _renderViewContext;
 
     // A quick way to disable motion blur, making shutter close same as open
     bool _instantaneousShutter;

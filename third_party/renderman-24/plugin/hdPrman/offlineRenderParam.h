@@ -81,8 +81,6 @@ private:
         RtParamList const& params);
     void _SetRenderTargetAndDisplay(
         riley::Extent format,TfToken outputFilename);
-    std::vector<riley::RenderViewId> _renderViews;
-    std::vector<riley::RenderOutputId> _renderOutputs;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

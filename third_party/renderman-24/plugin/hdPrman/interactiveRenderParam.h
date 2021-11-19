@@ -98,9 +98,6 @@ public:
     // Scene version counter.
     std::atomic<int> sceneVersion;
 
-    // Active render viewports
-    std::vector<riley::RenderViewId> renderViews;
-
     // For now, the renderPass needs the render target for each view, for
     // resolution edits, so we need to keep track of these too.
     void SetActiveIntegratorId(riley::IntegratorId integratorId);

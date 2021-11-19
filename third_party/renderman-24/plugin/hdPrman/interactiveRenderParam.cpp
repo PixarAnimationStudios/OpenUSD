@@ -97,6 +97,11 @@ HdPrman_InteractiveRenderParam::_RenderThreadCallback()
             break;
         }
 
+        HdPrmanRenderViewContext &ctx = GetRenderViewContext();
+
+        const std::vector<riley::RenderViewId> renderViews = {
+            ctx.renderViewId };
+        
         _riley->Render(
             { static_cast<uint32_t>(renderViews.size()),
               renderViews.data()},
@@ -249,10 +254,11 @@ HdPrman_InteractiveRenderParam::SetActiveIntegratorId(
 
     riley::Riley * riley = AcquireRiley();
 
-    for (auto const& id : renderViews) {
-        riley->ModifyRenderView(id, nullptr, nullptr, &_activeIntegratorId,
-                                nullptr, nullptr, nullptr);
-    }
+    HdPrmanRenderViewContext &ctx = GetRenderViewContext();
+
+    riley->ModifyRenderView(
+        ctx.renderViewId,
+        nullptr, nullptr, &_activeIntegratorId, nullptr, nullptr, nullptr);
 }
 
 void 
@@ -369,6 +375,8 @@ HdPrman_InteractiveRenderParam::CreateDisplays(
 
     std::lock_guard<std::mutex> lock(framebuffer.mutex);
 
+    HdPrmanRenderViewContext &ctx = GetRenderViewContext();
+
     static const RtUString us_bufferID("bufferID");
     static const RtUString us_hydra("hydra");
     static const RtUString us_ci("ci");
@@ -380,13 +388,11 @@ HdPrman_InteractiveRenderParam::CreateDisplays(
         framebuffer.aovs.clear();
         framebuffer.w = 0;
         framebuffer.h = 0;
-        riley->DeleteRenderTarget(_renderTargetId);
-        riley->DeleteDisplay(_displayId);
+        riley->DeleteRenderTarget(ctx.renderTargetId);
+        riley->DeleteDisplay(ctx.displayId);
     }
     // Displays & Display Channels
     riley::FilterSize const filterwidth = { 1.0f, 1.0f };
-
-    std::vector<riley::RenderOutputId> renderOutputs;
 
     RtParamList renderOutputParams;
 
@@ -538,7 +544,7 @@ HdPrman_InteractiveRenderParam::CreateDisplays(
             }
         }
 
-        renderOutputs.push_back(
+        ctx.renderOutputIds.push_back(
             riley->CreateRenderOutput(riley::UserId::DefaultId(),
                                       aovName,
                                       rt,
@@ -556,7 +562,7 @@ HdPrman_InteractiveRenderParam::CreateDisplays(
         // This assumption is reflected in framebuffer.cpp HydraDspyData
         if(rt == riley::RenderOutputType::k_Color && componentCount == 4)
         {
-            renderOutputs.push_back(
+            ctx.renderOutputIds.push_back(
                 riley->CreateRenderOutput(riley::UserId::DefaultId(),
                                           RixStr.k_a,
                                           riley::RenderOutputType::k_Float,
@@ -573,9 +579,9 @@ HdPrman_InteractiveRenderParam::CreateDisplays(
         static_cast<uint32_t>(resolution[0]),
         static_cast<uint32_t>(resolution[1]), 1};
     RtParamList renderTargetParams;
-    _renderTargetId = riley->CreateRenderTarget(
+    ctx.renderTargetId = riley->CreateRenderTarget(
         riley::UserId::DefaultId(),
-        {(uint32_t)renderOutputs.size(), renderOutputs.data()},
+        {(uint32_t)ctx.renderOutputIds.size(), ctx.renderOutputIds.data()},
         renderTargetFormat, RtUString("weighted"), 1.0f, renderTargetParams);
 
     RtUString driver(us_hydra);
@@ -609,30 +615,27 @@ HdPrman_InteractiveRenderParam::CreateDisplays(
             framebuffer.id);
     }
 
-    _displayId = riley->CreateDisplay(
+    ctx.displayId = riley->CreateDisplay(
         riley::UserId::DefaultId(),
-        _renderTargetId,
+        ctx.renderTargetId,
         RixStr.k_framebuffer,
         driver,
-        {(uint32_t)renderOutputs.size(), renderOutputs.data()},
+        {(uint32_t)ctx.renderOutputIds.size(), ctx.renderOutputIds.data()},
         displayParams);
 
     // For now, we always recreate RenderViews
-    for (auto id : renderViews)
-    {
-        riley->DeleteRenderView(id);
+    if (ctx.renderViewId != riley::RenderViewId::InvalidId()) {
+        riley->DeleteRenderView(ctx.renderViewId);
     }
-    renderViews.clear();
 
-    riley::RenderViewId const renderView = riley->CreateRenderView(
+    ctx.renderViewId = riley->CreateRenderView(
         riley::UserId::DefaultId(),
-        _renderTargetId,
+        ctx.renderTargetId,
         GetCameraContext().GetCameraId(),
         GetActiveIntegratorId(),
         {0, nullptr},
         {0, nullptr},
         RtParamList());
-    renderViews.push_back(renderView);
 }
 
 riley::IntegratorId

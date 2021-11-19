@@ -1682,13 +1682,15 @@ void
 HdPrman_RenderParam::SetResolutionOfRenderTarget(
     const int32_t resolution[2])
 {
+    HdPrmanRenderViewContext &ctx = GetRenderViewContext();
+
     const riley::Extent extent = {
         static_cast<uint32_t>(resolution[0]),
         static_cast<uint32_t>(resolution[1]),
         0};
 
     AcquireRiley()->ModifyRenderTarget(
-        _renderTargetId,
+        ctx.renderTargetId,
         nullptr,
         &extent,
         nullptr,

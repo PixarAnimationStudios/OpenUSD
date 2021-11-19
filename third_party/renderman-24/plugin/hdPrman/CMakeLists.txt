@@ -76,6 +76,7 @@ pxr_plugin(${PXR_PACKAGE}
         paramsSetter
         renderDelegate
         renderParam
+        renderViewContext
         rixStrings
         volume
         xcpt

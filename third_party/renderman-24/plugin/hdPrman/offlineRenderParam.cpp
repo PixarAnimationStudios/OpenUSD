@@ -101,8 +101,10 @@ HdPrman_OfflineRenderParam::_AddRenderOutput(
     riley::RenderOutputType type,
     RtParamList const& params)
 {
+    HdPrmanRenderViewContext &ctx = GetRenderViewContext();
+
     riley::FilterSize const filterwidth = { 1.0f, 1.0f };
-    _renderOutputs.push_back(
+    ctx.renderOutputIds.push_back(
         _riley->CreateRenderOutput(riley::UserId::DefaultId(),
             name,
             type,
@@ -119,9 +121,11 @@ HdPrman_OfflineRenderParam::_SetRenderTargetAndDisplay(
     riley::Extent format,
     TfToken outputFilename)
 {
-    _renderTargetId = _riley->CreateRenderTarget(
+    HdPrmanRenderViewContext &ctx = GetRenderViewContext();
+
+    ctx.renderTargetId = _riley->CreateRenderTarget(
             riley::UserId::DefaultId(),
-            {(uint32_t) _renderOutputs.size(), _renderOutputs.data()},
+            {(uint32_t) ctx.renderOutputIds.size(), ctx.renderOutputIds.data()},
             format,
             RtUString("weighted"),
             1.0,
@@ -140,21 +144,20 @@ HdPrman_OfflineRenderParam::_SetRenderTargetAndDisplay(
     TfToken dspyFormat = extToDisplayDriver.at(outputExt);
     _riley->CreateDisplay(
         riley::UserId::DefaultId(),
-        _renderTargetId,
+        ctx.renderTargetId,
         RtUString(outputFilename.GetText()),
         RtUString(dspyFormat.GetText()), 
-        {(uint32_t)_renderOutputs.size(), _renderOutputs.data()},
+        {(uint32_t)ctx.renderOutputIds.size(), ctx.renderOutputIds.data()},
         RtParamList());
 
-    riley::RenderViewId const renderView = _riley->CreateRenderView(
+    ctx.renderViewId = _riley->CreateRenderView(
         riley::UserId::DefaultId(), 
-        _renderTargetId,
+        ctx.renderTargetId,
         GetCameraContext().GetCameraId(),
         GetActiveIntegratorId(),
         {0, nullptr}, 
         {0, nullptr}, 
         RtParamList());
-    _renderViews.push_back(renderView);
     
     _riley->SetDefaultDicingCamera(GetCameraContext().GetCameraId());
 }
@@ -168,8 +171,12 @@ HdPrman_OfflineRenderParam::Render()
     static RtUString const US_BATCH = RtUString("batch");   
     renderOptions.SetString(US_RENDERMODE, US_BATCH);   
 
+    HdPrmanRenderViewContext &ctx = GetRenderViewContext();
+
+    const std::vector<riley::RenderViewId> renderViews = { ctx.renderViewId };
+
     _riley->Render(
-        {static_cast<uint32_t>(_renderViews.size()), _renderViews.data()},
+        {static_cast<uint32_t>(renderViews.size()), renderViews.data()},
             renderOptions);
 }
 
