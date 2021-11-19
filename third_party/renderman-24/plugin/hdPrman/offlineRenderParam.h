@@ -68,13 +68,6 @@ public:
         TfToken outputFilename,
         std::vector<RenderOutput> const & renderOutputs);
 
-    // Optional facility to quickly add a light to Riley
-    HDPRMAN_API
-    void SetFallbackLight(
-        riley::ShadingNode node,
-        riley::Transform xform,
-        RtParamList params);
-
     riley::CameraId cameraId;
 
     // Returns Riley scene. Since this is the offline renderParam, it
@@ -104,7 +97,6 @@ private:
     riley::RenderTargetId _rtid;
     std::vector<riley::RenderViewId> _renderViews;
     std::vector<riley::RenderOutputId> _renderOutputs;
-    riley::LightInstanceId _fallbackLightId;
 
     RtParamList _options;
 

@@ -324,14 +324,9 @@ HdPrmanRenderDelegate::CreateSprim(TfToken const& typeId,
                typeId == HdPrimTypeTokens->pluginLight) {
         sprim = new HdPrmanLight(sprimId, typeId);
 
-        if (_IsInteractive()) {
-            // Disregard fallback prims in count.
-            if (sprim->GetId() != SdfPath()) {
-                std::shared_ptr<HdPrman_InteractiveRenderParam> interactiveRenderParam =
-                    std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(
-                        _renderParam);
-                interactiveRenderParam->sceneLightCount++;
-            }
+        // Disregard fallback prims in count.
+        if (sprim->GetId() != SdfPath()) {
+            _renderParam->IncreaseSceneLightCount();
         }
     } else if (typeId == HdPrimTypeTokens->extComputation) {
         sprim = new HdExtComputation(sprimId);
@@ -381,13 +376,9 @@ HdPrmanRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 void
 HdPrmanRenderDelegate::DestroySprim(HdSprim *sprim)
 {
-    if (_IsInteractive() && dynamic_cast<HdPrmanLight*>(sprim)) {
-        // Disregard fallback prims in count.
-        if (sprim->GetId() != SdfPath()) {
-            std::shared_ptr<HdPrman_InteractiveRenderParam> interactiveRenderParam =
-                std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(_renderParam);
-            interactiveRenderParam->sceneLightCount--;
-        }
+    // Disregard fallback prims in count.
+    if (sprim->GetId() != SdfPath()) {
+        _renderParam->DecreaseSceneLightCount();
     }
     delete sprim;
 }

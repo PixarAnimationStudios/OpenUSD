@@ -511,33 +511,6 @@ int main(int argc, char *argv[])
                 product.name,
                 renderOutputs);
 
-        // Optionally add a fallback light if no lights present in USD file.
-        if (UsdLuxListAPI(stage->GetPseudoRoot()).ComputeLightList(
-            UsdLuxListAPI::ComputeModeIgnoreCache).empty()) {
-            // Light shader
-            riley::ShadingNode lightNode {
-                riley::ShadingNode::Type::k_Light, // type
-                us_PxrDomeLight, // name
-                us_lightA, // handle
-                RtParamList() 
-            };
-            lightNode.params.SetFloat(RixStr.k_intensity, 1.0f);
-            lightNode.params.SetInteger(us_traceLightPaths, 1);
-            lightNode.params.SetString(us_lightGroup, us_A);            
-
-            // Light instance
-            float const zerotime = 0.0f;
-            RtMatrix4x4 matrix = RixConstants::k_IdentityMatrix;
-            riley::Transform xform = { 1, &matrix, &zerotime };
-            RtParamList lightAttributes;
-            lightAttributes.SetInteger(RixStr.k_visibility_camera, 0);
-            lightAttributes.SetInteger(RixStr.k_visibility_indirect, 1);
-            lightAttributes.SetInteger(RixStr.k_visibility_transmission, 1);
-            lightAttributes.SetString(RixStr.k_grouping_membership,
-                                      us_default);
-            renderParam->SetFallbackLight(lightNode, xform, lightAttributes);
-        }
-
         // Hydra setup
         //
         // Assemble a Hydra pipeline to feed USD data to Riley. 

@@ -108,9 +108,7 @@ HdPrman_InteractiveRenderParam::_RenderThreadCallback()
 }
 
 HdPrman_InteractiveRenderParam::HdPrman_InteractiveRenderParam() :
-    sceneLightCount(0),
     resolution{0, 0},
-    _fallbackLightEnabled(false),
     _didBeginRiley(false)
 {
     TfRegistryManager::GetInstance().SubscribeTo<HdPrman_RenderParam>();
@@ -148,11 +146,6 @@ HdPrman_InteractiveRenderParam::Begin(HdRenderDelegate *renderDelegate)
     // Riley setup
     //
     static const RtUString us_circle("circle");
-    static const RtUString us_default("default");
-    static const RtUString us_lightA("lightA");
-    static const RtUString us_PxrDomeLight("PxrDomeLight");
-
-    riley::CoordinateSystemList const k_NoCoordsys = { 0, nullptr };
 
     // XXX Shutter settings from studio katana defaults:
     // - /root.renderSettings.shutter{Open,Close}
@@ -242,47 +235,7 @@ HdPrman_InteractiveRenderParam::Begin(HdRenderDelegate *renderDelegate)
     _CreateQuickIntegrator(renderDelegate);
     _activeIntegratorId = GetIntegratorId();
 
-    // Light
-    {
-        // Light shader
-        riley::ShadingNode lightNode {
-            riley::ShadingNode::Type::k_Light, // type
-            us_PxrDomeLight, // name
-            us_lightA, // handle
-            RtParamList()
-        };
-        _fallbackLightShader = _riley->CreateLightShader(
-            riley::UserId::DefaultId(), {1, &lightNode}, {0, nullptr});
-
-        // Constant identity transform
-        float const zerotime = 0.0f;
-        RtMatrix4x4 matrix = RixConstants::k_IdentityMatrix;
-        riley::Transform xform = { 1, &matrix, &zerotime };
-
-        // Light instance
-        SdfPath fallbackLightId("/_FallbackLight");
-        _fallbackLightEnabled = true;
-        // Initialize default categories.
-        ConvertCategoriesToAttributes(
-            fallbackLightId, VtArray<TfToken>(), _fallbackLightAttrs);
-        _fallbackLightAttrs.SetString(RixStr.k_grouping_membership,
-                                       us_default);
-        _fallbackLightAttrs.SetString(RixStr.k_identifier_name,
-                                      RtUString(fallbackLightId.GetText()));
-        _fallbackLightAttrs.SetInteger(RixStr.k_visibility_camera, 0);
-        _fallbackLightAttrs.SetInteger(RixStr.k_visibility_indirect, 1);
-        _fallbackLightAttrs.SetInteger(RixStr.k_visibility_transmission, 1);
-        _fallbackLight = _riley->CreateLightInstance(
-              riley::UserId::DefaultId(),
-              riley::GeometryPrototypeId::InvalidId(), // no group
-              riley::GeometryPrototypeId::InvalidId(), // no geo
-              riley::MaterialId::InvalidId(), // no material
-              _fallbackLightShader,
-              k_NoCoordsys,
-              xform,
-              _fallbackLightAttrs);
-    }
-
+    _CreateFallbackLight();
     _CreateFallbackMaterials();
 }
 
@@ -339,29 +292,6 @@ HdPrman_InteractiveRenderParam::End()
         _ri->PRManEnd();
         _ri = nullptr;
     }
-}
-
-void
-HdPrman_InteractiveRenderParam::SetFallbackLightsEnabled(bool enabled)
-{
-    if (_fallbackLightEnabled == enabled) {
-        return;
-    }
-    _fallbackLightEnabled = enabled;
-
-    // Stop render and crease sceneVersion to trigger restart.
-    riley::Riley * riley = AcquireRiley();
-
-    _fallbackLightAttrs.SetInteger(RixStr.k_lighting_mute, !enabled);
-
-    riley->ModifyLightInstance(
-          riley::GeometryPrototypeId::InvalidId(), // no group
-          _fallbackLight,
-          nullptr, // no material change
-          nullptr, // no shader change
-          nullptr, // no coordsys change
-          nullptr, // no xform change
-          &_fallbackLightAttrs);
 }
 
 void

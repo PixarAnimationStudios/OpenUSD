@@ -63,9 +63,6 @@ public:
     // The d_hydra.so renderman display driver handles updates via IPC.
     HdPrmanFramebuffer framebuffer;
 
-    // Count of scene lights.  Maintained by the delegate.
-    int sceneLightCount;
-
     HdPrman_InteractiveRenderParam();
     ~HdPrman_InteractiveRenderParam() override;
 
@@ -75,8 +72,6 @@ public:
     void StartRender();
     // End connection to Renderman, cancelling any ongoing render.
     void End();
-    // Indicate whether fallback lights should be enabled.
-    void SetFallbackLightsEnabled(bool);
 
     // Request Riley (and the HdRenderThread) to stop.
     void StopRender();
@@ -156,13 +151,6 @@ private:
     riley::IntegratorId _quickIntegratorId;
     RtParamList _quickIntegratorParams;
 
-    // The fallback light.  HdPrman_RenderPass calls
-    // SetFallbackLightsEnabled() to maintain visibility
-    // of the fallback light XOR other lights in the scene.
-    riley::LightInstanceId _fallbackLight;
-    riley::LightShaderId _fallbackLightShader;
-    RtParamList _fallbackLightAttrs;
-    bool _fallbackLightEnabled;
     bool _didBeginRiley;
 
     HdPrmanCameraContext _cameraContext;

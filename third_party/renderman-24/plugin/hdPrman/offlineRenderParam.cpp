@@ -86,6 +86,7 @@ HdPrman_OfflineRenderParam::Initialize(
     _SetRenderTargetAndDisplay(outputFormat, outputFilename);
 
     _CreateFallbackMaterials();
+    _CreateFallbackLight();
 }
 
 HdPrman_OfflineRenderParam::~HdPrman_OfflineRenderParam()
@@ -175,30 +176,6 @@ HdPrman_OfflineRenderParam::_SetRenderTargetAndDisplay(
     _renderViews.push_back(renderView);
     
     _riley->SetDefaultDicingCamera(GetCameraContext().GetCameraId());
-}
-
-void 
-HdPrman_OfflineRenderParam::SetFallbackLight(
-    riley::ShadingNode node, 
-    riley::Transform xform,
-    RtParamList params)
-{
-    riley::CoordinateSystemList const k_NoCoordsys = { 0, nullptr };
-
-    riley::LightShaderId lightShader = _riley->CreateLightShader(
-        riley::UserId::DefaultId(), 
-        {1, &node}, 
-        {0, nullptr});
-    
-    _fallbackLightId = _riley->CreateLightInstance(
-      riley::UserId::DefaultId(),
-      riley::GeometryPrototypeId::InvalidId(), // no group
-      riley::GeometryPrototypeId::InvalidId(), // no geo
-      riley::MaterialId::InvalidId(), // no material
-      lightShader,
-      k_NoCoordsys,
-      xform,
-      params);
 }
 
 void
