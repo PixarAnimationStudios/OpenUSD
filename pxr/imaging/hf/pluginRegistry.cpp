@@ -27,7 +27,6 @@
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/plug/plugin.h"
-#include "pxr/base/plug/registry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -169,6 +168,13 @@ HfPluginRegistry::_SetFactory(TfType &type, _FactoryFn &func)
 }
 
 void
+HfPluginRegistry::_CollectAdditionalMetadata(
+    const PlugRegistry &plugRegistry, const TfType &pluginType)
+{
+    // base implementation does nothing.
+}
+
+void
 HfPluginRegistry::_DiscoverPlugins()
 {
     // This should only be done once on an empty cache.
@@ -207,6 +213,8 @@ HfPluginRegistry::_DiscoverPlugins()
                                         displayName,
                                         priority);
         }
+
+        _CollectAdditionalMetadata(pluginRegistry, pluginType);
     }
 
     // Sort entries according to policy (in operator <)

@@ -468,6 +468,12 @@ public:
         const TfToken &command,
         const HdCommandArgs &args = HdCommandArgs());
 
+    ///
+    /// Populated when instantiated via the HdRendererPluginRegistry
+    HD_API
+    const std::string &GetRendererDisplayName() {
+        return _displayName;
+    }
 
 protected:
     /// This class must be derived from.
@@ -490,6 +496,19 @@ protected:
     /// Render settings state.
     HdRenderSettingsMap _settingsMap;
     unsigned int _settingsVersion;
+
+private:
+
+    friend class HdRendererPluginRegistry;
+    ///
+    /// Populated when instantiated via the HdRendererPluginRegistry and
+    /// currently used to associate a renderer delegate instance with related
+    /// code and resources. 
+    void _SetRendererDisplayName(const std::string &displayName) {
+        _displayName = displayName;
+    }
+    std::string _displayName;
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

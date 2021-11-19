@@ -129,6 +129,8 @@ pxr_library(hd
         sceneIndex
         sceneIndexAdapterSceneDelegate
         sceneIndexObserver
+        sceneIndexPlugin
+        sceneIndexPluginRegistry
         schema
         selection
         smoothNormals

@@ -43,6 +43,7 @@
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sceneIndexAdapterSceneDelegate.h"
+#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -105,10 +106,25 @@ HdRenderIndex::HdRenderIndex(
     // data structures now.
     if (_IsEnabledSceneIndexEmulation()) {
         _emulationSceneIndex = HdLegacyPrimSceneIndex::New();
-        
-        _siSd = std::make_unique<HdSceneIndexAdapterSceneDelegate>(
+
+        HdSceneIndexBaseRefPtr terminalSceneIndex = _emulationSceneIndex;
+
+        terminalSceneIndex =
             HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
-                _emulationSceneIndex, SdfPath::AbsoluteRootPath()), 
+                terminalSceneIndex, SdfPath::AbsoluteRootPath());
+
+        const std::string &rendererDisplayName =
+            renderDelegate->GetRendererDisplayName();
+
+        if (!rendererDisplayName.empty()) {
+            terminalSceneIndex =
+                HdSceneIndexPluginRegistry::GetInstance()
+                    .AppendSceneIndicesForRenderer(
+                        rendererDisplayName, terminalSceneIndex);
+        }
+
+        _siSd = std::make_unique<HdSceneIndexAdapterSceneDelegate>(
+            terminalSceneIndex, 
             this, 
             SdfPath::AbsoluteRootPath(), 
             SdfPath::AbsoluteRootPath());
