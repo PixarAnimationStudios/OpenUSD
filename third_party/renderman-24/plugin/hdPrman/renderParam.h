@@ -179,6 +179,9 @@ public:
         return _fallbackVolumeMaterialId;
     }
 
+    int GetLastSettingsVersion() const { return _lastSettingsVersion; }
+    void SetLastSettingsVersion(int version);
+
 protected:
     void _InitializePrman();
     void _CreateFallbackMaterials();
@@ -238,6 +241,8 @@ private:
 
     // RIX or XPU
     bool _xpu;
+
+    int _lastSettingsVersion;
 };
 
 // Helper to convert matrix types, handling double->float conversion.

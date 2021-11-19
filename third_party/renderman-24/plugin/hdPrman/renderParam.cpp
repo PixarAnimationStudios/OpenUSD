@@ -70,7 +70,8 @@ HdPrman_RenderParam::HdPrman_RenderParam() :
     _ri(nullptr),
     _mgr(nullptr),
     _riley(nullptr),
-    _instantaneousShutter(false)
+    _instantaneousShutter(false),
+    _lastSettingsVersion(0)
 {
 }
 
@@ -1529,6 +1530,12 @@ HdPrman_RenderParam::_CreateFallbackMaterials()
             {static_cast<uint32_t>(materialNodes.size()), materialNodes.data()},
             RtParamList());
     }
+}
+
+void
+HdPrman_RenderParam::SetLastSettingsVersion(const int version)
+{
+    _lastSettingsVersion = version;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

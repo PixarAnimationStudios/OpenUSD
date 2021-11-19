@@ -24,6 +24,7 @@
 #include "hdPrman/offlineRenderPass.h"
 #include "hdPrman/offlineRenderParam.h"
 #include "hdPrman/camera.h"
+#include "hdPrman/renderDelegate.h"
 #include "pxr/imaging/hd/renderPassState.h"
 
 #include "hdPrman/rixStrings.h"     // Strings
@@ -81,15 +82,29 @@ HdPrman_OfflineRenderPass::_Execute(
     cameraContext.SetWindowPolicy(renderPassState->GetWindowPolicy());
 
     const bool camChanged = cameraContext.IsInvalid();
-    cameraContext.MarkValid();
 
-    if (camChanged) {
+    HdPrmanRenderDelegate * const renderDelegate =
+        static_cast<HdPrmanRenderDelegate*>(
+            GetRenderIndex()->GetRenderDelegate());
+    const int currentSettingsVersion =
+        renderDelegate->GetRenderSettingsVersion();
+
+    const int lastVersion = _offlineRenderParam->GetLastSettingsVersion();
+
+    if (lastVersion != currentSettingsVersion || camChanged) {
+        
+        cameraContext.MarkValid();
+        _offlineRenderParam->SetLastSettingsVersion(currentSettingsVersion);
+
         cameraContext.UpdateRileyCameraAndClipPlanes(
             _offlineRenderParam->AcquireRiley());
 
         RtParamList &options = _offlineRenderParam->GetOptions();
         cameraContext.SetRileyOptions(
             &options);
+        _offlineRenderParam->SetOptionsFromRenderSettings(
+            renderDelegate,
+            options);
 
         _offlineRenderParam->AcquireRiley()->SetOptions(options);
 

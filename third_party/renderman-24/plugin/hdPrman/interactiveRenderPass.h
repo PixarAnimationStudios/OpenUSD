@@ -55,7 +55,6 @@ private:
     std::shared_ptr<HdPrman_InteractiveRenderParam> _interactiveRenderParam;
     bool _converged;
     int _lastRenderedVersion;
-    int _lastSettingsVersion;
 
     std::chrono::steady_clock::time_point _frameStart;
     std::string _integrator;

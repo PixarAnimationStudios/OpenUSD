@@ -55,7 +55,6 @@ HdPrman_InteractiveRenderPass::HdPrman_InteractiveRenderPass(
 : HdRenderPass(index, collection)
 , _converged(false)
 , _lastRenderedVersion(0)
-, _lastSettingsVersion(0)
 , _integrator(HdPrmanIntegratorTokens->PxrPathTracer)
 , _quickIntegrator(HdPrmanIntegratorTokens->PxrDirectLighting)
 , _quickIntegrateTime(_enableQuickIntegrate ? 0.2f : 0.0f)
@@ -199,7 +198,9 @@ HdPrman_InteractiveRenderPass::_Execute(
     const bool camChanged = cameraContext.IsInvalid();
     cameraContext.MarkValid();
 
-    if (_lastSettingsVersion != currentSettingsVersion || camChanged) {
+    const int lastVersion = _interactiveRenderParam->GetLastSettingsVersion();
+
+    if (lastVersion != currentSettingsVersion || camChanged) {
 
         // AcquireRiley will stop rendering and increase sceneVersion
         // so that the render will be re-started below.
@@ -277,7 +278,7 @@ HdPrman_InteractiveRenderPass::_Execute(
         riley->SetOptions(
             _interactiveRenderParam->_GetDeprecatedOptionsPrunedList());
 
-        _lastSettingsVersion = currentSettingsVersion;
+        _interactiveRenderParam->SetLastSettingsVersion(currentSettingsVersion);
 
         // Setup quick integrator and save ids of it and main
         if (_enableQuickIntegrate)
