@@ -115,25 +115,11 @@ HdPrman_OfflineRenderParam::_AddRenderOutput(
 }
 
 void
-HdPrman_OfflineRenderParam::SetResolutionOfRenderTargets(const GfVec2i &res)
-{
-    riley::Extent const format = {uint32_t(res[0]), uint32_t(res[1]), 1};
-
-    _riley->ModifyRenderTarget(
-        _rtid,
-        nullptr,
-        &format,
-        nullptr,
-        nullptr,
-        nullptr);
-}
-
-void
 HdPrman_OfflineRenderParam::_SetRenderTargetAndDisplay(
     riley::Extent format,
     TfToken outputFilename)
 {
-    _rtid = _riley->CreateRenderTarget(
+    _renderTargetId = _riley->CreateRenderTarget(
             riley::UserId::DefaultId(),
             {(uint32_t) _renderOutputs.size(), _renderOutputs.data()},
             format,
@@ -154,7 +140,7 @@ HdPrman_OfflineRenderParam::_SetRenderTargetAndDisplay(
     TfToken dspyFormat = extToDisplayDriver.at(outputExt);
     _riley->CreateDisplay(
         riley::UserId::DefaultId(),
-        _rtid,
+        _renderTargetId,
         RtUString(outputFilename.GetText()),
         RtUString(dspyFormat.GetText()), 
         {(uint32_t)_renderOutputs.size(), _renderOutputs.data()},
@@ -162,7 +148,7 @@ HdPrman_OfflineRenderParam::_SetRenderTargetAndDisplay(
 
     riley::RenderViewId const renderView = _riley->CreateRenderView(
         riley::UserId::DefaultId(), 
-        _rtid,
+        _renderTargetId,
         GetCameraContext().GetCameraId(),
         GetActiveIntegratorId(),
         {0, nullptr}, 

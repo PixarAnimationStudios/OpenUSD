@@ -380,12 +380,10 @@ HdPrman_InteractiveRenderParam::CreateDisplays(
         framebuffer.aovs.clear();
         framebuffer.w = 0;
         framebuffer.h = 0;
-        riley->DeleteRenderTarget(framebuffer.rtId);
-        riley->DeleteDisplay(framebuffer.dspyId);
+        riley->DeleteRenderTarget(_renderTargetId);
+        riley->DeleteDisplay(_displayId);
     }
     // Displays & Display Channels
-    riley::RenderTargetId rtid = riley::RenderTargetId::InvalidId();
-
     riley::FilterSize const filterwidth = { 1.0f, 1.0f };
 
     std::vector<riley::RenderOutputId> renderOutputs;
@@ -575,11 +573,13 @@ HdPrman_InteractiveRenderParam::CreateDisplays(
         static_cast<uint32_t>(resolution[0]),
         static_cast<uint32_t>(resolution[1]), 1};
     RtParamList renderTargetParams;
-    rtid = riley->CreateRenderTarget(
+    _renderTargetId = riley->CreateRenderTarget(
         riley::UserId::DefaultId(),
         {(uint32_t)renderOutputs.size(), renderOutputs.data()},
         renderTargetFormat, RtUString("weighted"), 1.0f, renderTargetParams);
-    framebuffer.rtId = rtid;
+
+    RtUString driver(us_hydra);
+    RtParamList displayParams;
 
     if(IsXpu())
     {
@@ -596,28 +596,26 @@ HdPrman_InteractiveRenderParam::CreateDisplays(
             }
         }
 
-        RtParamList displayParams;
-        displayParams.SetString(RixStr.k_Ri_name, RixStr.k_framebuffer);
-        displayParams.SetString(RixStr.k_Ri_type,
-                                RtUString(hdPrmanPath.c_str()));
-        displayParams.SetInteger(us_bufferID, framebuffer.id);
-        framebuffer.dspyId = riley->CreateDisplay(
-            riley::UserId::DefaultId(), framebuffer.rtId, RixStr.k_framebuffer,
-            RtUString(hdPrmanPath.c_str()),
-            {(uint32_t)renderOutputs.size(), renderOutputs.data()},
-            displayParams);
+        driver = RtUString(hdPrmanPath.c_str());
+
+        displayParams.SetString(
+            RixStr.k_Ri_name,
+            RixStr.k_framebuffer);
+        displayParams.SetString(
+            RixStr.k_Ri_type,
+            driver);
+        displayParams.SetInteger(
+            us_bufferID,
+            framebuffer.id);
     }
-    else
-    {
-        RtParamList displayParams;
-        framebuffer.dspyId = riley->CreateDisplay(
-            riley::UserId::DefaultId(),
-            framebuffer.rtId,
-            RixStr.k_framebuffer,
-            us_hydra,
-            {(uint32_t)renderOutputs.size(), renderOutputs.data()},
-            displayParams);
-    }
+
+    _displayId = riley->CreateDisplay(
+        riley::UserId::DefaultId(),
+        _renderTargetId,
+        RixStr.k_framebuffer,
+        driver,
+        {(uint32_t)renderOutputs.size(), renderOutputs.data()},
+        displayParams);
 
     // For now, we always recreate RenderViews
     for (auto id : renderViews)
@@ -628,14 +626,13 @@ HdPrman_InteractiveRenderParam::CreateDisplays(
 
     riley::RenderViewId const renderView = riley->CreateRenderView(
         riley::UserId::DefaultId(),
-        framebuffer.rtId,
+        _renderTargetId,
         GetCameraContext().GetCameraId(),
         GetActiveIntegratorId(),
         {0, nullptr},
         {0, nullptr},
         RtParamList());
     renderViews.push_back(renderView);
-    renderTargets[renderView] = framebuffer.rtId;
 }
 
 riley::IntegratorId
@@ -750,6 +747,5 @@ HdPrman_InteractiveRenderParam::UpdateQuickIntegrator(
             &node);
     }
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

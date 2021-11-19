@@ -73,8 +73,6 @@ public:
 
     riley::IntegratorId GetActiveIntegratorId() override;
 
-    void SetResolutionOfRenderTargets(const GfVec2i &res);
-
 private:
     // Finishes the renderer
     void _End();
@@ -83,8 +81,6 @@ private:
         RtParamList const& params);
     void _SetRenderTargetAndDisplay(
         riley::Extent format,TfToken outputFilename);
-
-    riley::RenderTargetId _rtid;
     std::vector<riley::RenderViewId> _renderViews;
     std::vector<riley::RenderOutputId> _renderOutputs;
 };

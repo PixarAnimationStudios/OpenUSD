@@ -103,8 +103,6 @@ public:
 
     // For now, the renderPass needs the render target for each view, for
     // resolution edits, so we need to keep track of these too.
-    std::map<riley::RenderViewId, riley::RenderTargetId> renderTargets;
-
     void SetActiveIntegratorId(riley::IntegratorId integratorId);
 
     int32_t resolution[2];

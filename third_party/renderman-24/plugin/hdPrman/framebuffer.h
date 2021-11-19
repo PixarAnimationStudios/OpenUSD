@@ -88,9 +88,6 @@ public:
     bool pendingClear;
 
     std::atomic<bool> newData;
-
-    riley::DisplayId dspyId;
-    riley::RenderTargetId rtId;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

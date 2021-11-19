@@ -1678,4 +1678,22 @@ HdPrman_RenderParam::SetFallbackLightsEnabled(bool enabled)
           &_fallbackLightAttrs);
 }
 
+void
+HdPrman_RenderParam::SetResolutionOfRenderTarget(
+    const int32_t resolution[2])
+{
+    const riley::Extent extent = {
+        static_cast<uint32_t>(resolution[0]),
+        static_cast<uint32_t>(resolution[1]),
+        0};
+
+    AcquireRiley()->ModifyRenderTarget(
+        _renderTargetId,
+        nullptr,
+        &extent,
+        nullptr,
+        nullptr,
+        nullptr);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

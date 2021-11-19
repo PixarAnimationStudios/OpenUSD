@@ -112,8 +112,10 @@ HdPrman_OfflineRenderPass::_Execute(
 
         _offlineRenderParam->AcquireRiley()->SetOptions(options);
 
-        _offlineRenderParam->SetResolutionOfRenderTargets(
-            cameraContext.GetResolutionFromDisplayWindow());
+        const GfVec2i resolution = 
+            cameraContext.GetResolutionFromDisplayWindow();
+
+        _offlineRenderParam->SetResolutionOfRenderTarget(resolution.data());
     }
 
     _offlineRenderParam->Render();

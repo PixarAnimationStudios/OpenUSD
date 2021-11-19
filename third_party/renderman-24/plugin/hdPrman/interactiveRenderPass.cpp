@@ -274,27 +274,8 @@ HdPrman_InteractiveRenderPass::_Execute(
                 RixStr.k_Ri_FormatResolution,
                 _interactiveRenderParam->resolution, 2);
             
-            // There is currently only one render target per context
-            if (_interactiveRenderParam->renderViews.size() == 1) {
-                riley::RenderViewId const renderViewId =
-                    _interactiveRenderParam->renderViews[0];
-                
-                auto it =
-                    _interactiveRenderParam->renderTargets.find(renderViewId);
-                
-                if (it != _interactiveRenderParam->renderTargets.end()) {
-                    riley::RenderTargetId const rtid = it->second;
-                    const riley::Extent targetExtent = {
-                        static_cast<uint32_t>(
-                            _interactiveRenderParam->resolution[0]),
-                        static_cast<uint32_t>(
-                            _interactiveRenderParam->resolution[1]),
-                        0};
-                    riley->ModifyRenderTarget(
-                        rtid, nullptr,
-                        &targetExtent, nullptr, nullptr, nullptr);
-                }
-            }
+            _interactiveRenderParam->SetResolutionOfRenderTarget(
+                _interactiveRenderParam->resolution);
 
             cameraContext.SetRileyOptionsInteractive(
                 &(_interactiveRenderParam->GetOptions()),
