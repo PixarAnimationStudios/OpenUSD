@@ -78,10 +78,8 @@ def _compareFiles(installedFiles, generatedFiles, configuration):
     return diffs
 
 def _copyGeneratedFiles(installedFiles, generatedFiles, diffs):
-    baseNames = map(basename, installedFiles)
-    for baseName, generatedFile, installedFile in zip(baseNames, 
-                                                      generatedFiles, 
-                                                      installedFiles):
+    for generatedFile, installedFile in zip(generatedFiles, installedFiles):
+        baseName = basename(installedFile)
         if baseName in diffs:
             print('Changed: ' + baseName)
             print(diffs[baseName])
