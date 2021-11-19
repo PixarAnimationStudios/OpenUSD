@@ -76,7 +76,7 @@ void wrapTimeCode()
 {
     typedef SdfTimeCode This;
 
-    class_<This>("TimeCode", init<>())
+    auto selfCls = class_<This>("TimeCode", init<>())
         .def(init<double>())
 
         .def("GetValue", &This::GetValue)
@@ -109,6 +109,12 @@ void wrapTimeCode()
         .def( self - self )
         .def( double() - self )
         ;
+
+#if PY_MAJOR_VERSION == 2
+    // Needed to support "from __future__ import division" in python 2.
+    selfCls.attr("__truediv__") = selfCls.attr("__div__");
+    selfCls.attr("__rtruediv__") = selfCls.attr("__rdiv__");
+#endif
 
     implicitly_convertible<double, This>();
 
