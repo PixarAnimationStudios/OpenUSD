@@ -23,6 +23,7 @@ pxr_plugin(hioOiio
 
     CPPFILES
         oiioImage.cpp
+        metadata.cpp
 
     RESOURCE_FILES
         plugInfo.json
