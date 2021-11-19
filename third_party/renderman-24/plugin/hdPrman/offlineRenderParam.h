@@ -52,7 +52,8 @@ public:
     ~HdPrman_OfflineRenderParam() override;
 
     // Start connection to Renderman.
-    void Begin(HdRenderDelegate *renderDelegate);
+    HDPRMAN_API
+    void Begin(HdPrmanRenderDelegate *renderDelegate);
 
     // Produces a render
     HDPRMAN_API
@@ -64,7 +65,6 @@ public:
 
     HDPRMAN_API
     void Initialize(
-        RtParamList rileyOptions, 
         TfToken outputFilename,
         std::vector<RenderOutput> const & renderOutputs);
 
@@ -86,8 +86,6 @@ public:
 private:
     // Finishes the renderer
     void _End();
-    void _SetRileyOptions(RtParamList options);
-    void _SetRileyIntegrator(riley::ShadingNode node);
     void _AddRenderOutput(RtUString name, 
         riley::RenderOutputType type,
         RtParamList const& params);

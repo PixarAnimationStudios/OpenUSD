@@ -335,7 +335,6 @@ int main(int argc, char *argv[])
     defaultSettings["ri:hider:maxsamples"] = 64;
     defaultSettings["ri:trace:maxdepth"] = 10;
     defaultSettings["ri:Ri:PixelVariance"] = 0.01f;
-    defaultSettings["ri:Ri:Shutter"] = VtArray<float>({0.0f, 0.5f});
 
     // Update product settings.
     for (auto &product: renderSpec.products) {
@@ -397,6 +396,11 @@ int main(int argc, char *argv[])
             }
         }
         
+        HdRenderSettingsMap settingsMap;
+
+        settingsMap[HdPrmanRenderSettingsTokens->shutterOpen] = 0.0f;
+        settingsMap[HdPrmanRenderSettingsTokens->shutterClose] = 0.5f;
+        
         // Shutter settings from studio production.
         //
         // XXX Up to RenderMan 22, there is a global Ri:Shutter interval
@@ -409,24 +413,17 @@ int main(int argc, char *argv[])
         // the cameras, and shutterCurve will exist an a UsdRi schema.
         //
         if (usdCam) {
-            float interval[2] = {0.0, 0.5};
-            if (usdCam.GetShutterOpenAttr().Get(&interval[0], frameNum) ||
-                usdCam.GetShutterCloseAttr().Get(&interval[1], frameNum)) {
+            float shutterOpen;
+            float shutterClose;
+            if (usdCam.GetShutterOpenAttr().Get(&shutterOpen, frameNum) ||
+                usdCam.GetShutterCloseAttr().Get(&shutterClose, frameNum)) {
                 // XXX Scene-wide shutter will change to be per-camera;
                 // see RMAN-14078
-                product.extraSettings["ri:Ri:Shutter"] =
-                    VtArray<float>({interval[0], interval[1]});
+                settingsMap[HdPrmanRenderSettingsTokens->shutterOpen] =
+                    shutterOpen;
+                settingsMap[HdPrmanRenderSettingsTokens->shutterClose] =
+                    shutterClose;
             }
-        }
-
-        // Options
-        RtParamList rileyOptions;
-        {
-            // Searchpaths (TEXTUREPATH, etc)
-            HdPrman_UpdateSearchPathsFromEnvironment(rileyOptions);
-
-            // Product extraSettings become Riley options.
-            _ConvertSettings(product.extraSettings, rileyOptions);
         }
 
         // Displays & Display Channels
@@ -474,8 +471,6 @@ int main(int argc, char *argv[])
         // the appropriate materialBindingPurposes from the USD scene.
         // We should also configure the scene to filter for the
         // requested includedPurposes.
-        HdRenderSettingsMap settingsMap;
-        
         if (!visualizerStyle.empty()) {
             const std::string integratorName("PxrVisualizer");
             
@@ -495,7 +490,15 @@ int main(int argc, char *argv[])
             settingsMap[HdPrmanRenderSettingsTokens->integratorName] =
                 integratorName;
         }
-        
+
+        for (const auto &item : product.extraSettings) {
+            const std::string &key =
+                TfStringStartsWith(item.first, "ri:")
+                ? item.first
+                : "ri:" + item.first;
+            settingsMap[TfToken(key)] = item.second;
+        }
+
         // Set up frontend -> index -> backend
         // TODO We should configure the render delegate to request
         // the appropriate materialBindingPurposes from the USD scene.
@@ -507,7 +510,6 @@ int main(int argc, char *argv[])
         
         // Basic configuration       
         renderParam->Initialize(
-                rileyOptions,
                 product.name,
                 renderOutputs);
 

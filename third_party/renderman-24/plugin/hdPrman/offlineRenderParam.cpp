@@ -23,6 +23,7 @@
 //
 
 #include "hdPrman/offlineRenderParam.h"
+#include "hdPrman/renderDelegate.h"
 #include "hdPrman/rixStrings.h"     // Strings
 #include "pxr/base/tf/pathUtils.h"  // Extract extension from tf token
 #include "RixShadingUtils.h"        // RixConstants
@@ -52,25 +53,24 @@ _SetDefaultShutterCurve(HdPrmanCameraContext &context)
 }
 
 void
-HdPrman_OfflineRenderParam::Begin(HdRenderDelegate * const renderDelegate)
+HdPrman_OfflineRenderParam::Begin(HdPrmanRenderDelegate * const renderDelegate)
 {
     HdPrman_UpdateSearchPathsFromEnvironment(_options);
 
-    _SetRileyOptions(_options);
+    // Ri:Shutter needs to be set before any prims are synced for
+    // motion blur to work.
+    SetOptionsFromRenderSettings(renderDelegate, _options);
+
+    _riley->SetOptions(_options);
 
     _CreateIntegrator(renderDelegate);
 }
 
 void
 HdPrman_OfflineRenderParam::Initialize(
-    RtParamList rileyOptions, 
     TfToken outputFilename,
     std::vector<RenderOutput> const & renderOutputs)
 {
-    _options = rileyOptions;
-
-    _SetRileyOptions(_options);
-
     for (auto const& ro : renderOutputs) {
         _AddRenderOutput(ro.name, ro.type, ro.params);
     }
@@ -92,12 +92,6 @@ HdPrman_OfflineRenderParam::Initialize(
 HdPrman_OfflineRenderParam::~HdPrman_OfflineRenderParam()
 {
     _End();
-}
-
-void
-HdPrman_OfflineRenderParam::_SetRileyOptions(RtParamList options)
-{
-    _riley->SetOptions(options);
 }
 
 void

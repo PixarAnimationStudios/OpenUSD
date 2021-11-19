@@ -1199,7 +1199,7 @@ _GetShutterInterval(
         }
 
         if (shutterCloseVal.IsHolding<float>()) {
-            *shutterOpen = shutterCloseVal.UncheckedGet<float>();
+            *shutterClose = shutterCloseVal.UncheckedGet<float>();
         } else if (shutterCloseVal.IsHolding<double>()) {
             double v = shutterCloseVal.UncheckedGet<double>();
             *shutterClose = static_cast<float>(v);
@@ -1265,12 +1265,11 @@ HdPrman_RenderParam::SetOptionsFromRenderSettings(
     float shutterOpen = 0.0f;
     float shutterClose = 0.0f;
     _GetShutterInterval(renderSettings, &shutterOpen, &shutterClose);
-    float shutterInterval[2] = { shutterOpen, shutterOpen };
 
-    if (!_instantaneousShutter)
-    {
-        shutterInterval[1] = shutterClose;
-    }
+    const float shutterInterval[2] = {
+        shutterOpen,
+        _instantaneousShutter ? shutterOpen : shutterClose };
+
     options.SetFloatArray(RixStr.k_Ri_Shutter, shutterInterval, 2); 
 }
 
