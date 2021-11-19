@@ -118,7 +118,7 @@ public:
     HDPRMAN_API
     void SetIntegratorParamsFromRenderSettings(
                         HdPrmanRenderDelegate *renderDelegate,
-                        std::string& integratorName,
+                        const std::string& integratorName,
                         RtParamList& params);
 
     // Set integrator params from the camera.
@@ -168,7 +168,6 @@ public:
     // options and the active integrator.
     virtual RtParamList &GetOptions() = 0;
     virtual riley::IntegratorId GetActiveIntegratorId() = 0;
-    virtual riley::ShadingNode & GetActiveIntegratorShadingNode() = 0;
     virtual HdPrmanCameraContext &GetCameraContext() = 0;
 
     const riley::MaterialId GetFallbackMaterialId() const {
@@ -182,9 +181,16 @@ public:
     int GetLastSettingsVersion() const { return _lastSettingsVersion; }
     void SetLastSettingsVersion(int version);
 
+    void UpdateIntegrator(HdRenderDelegate * renderDelegate);
+
+    riley::IntegratorId GetIntegratorId() const { return _integratorId; }
+
+    RtParamList &GetIntegratorParams() { return _integratorParams; }
+
 protected:
     void _InitializePrman();
     void _CreateFallbackMaterials();
+    void _CreateIntegrator(HdRenderDelegate * renderDelegate);
 
     // Top-level entrypoint to PRMan.
     // Singleton used to access RixInterfaces.
@@ -203,6 +209,9 @@ protected:
     riley::Riley *_riley;
 
 private:
+    riley::ShadingNode _ComputeIntegratorNode(
+        HdRenderDelegate * renderDelegate);
+
     // Refcounts for each category mentioned by a light link.
     // This is used to convey information from lights back to the
     // geometry -- in Renderman, geometry must subscribe
@@ -230,6 +239,9 @@ private:
 
     // Fallback material for volumes that don't have materials.
     riley::MaterialId _fallbackVolumeMaterialId;
+
+    riley::IntegratorId _integratorId;
+    RtParamList _integratorParams;
 
     // Coordinate system conversion cache.
     _GeomToHdCoordSysMap _geomToHdCoordSysMap;

@@ -52,16 +52,25 @@ _SetDefaultShutterCurve(HdPrmanCameraContext &context)
 }
 
 void
+HdPrman_OfflineRenderParam::Begin(HdRenderDelegate * const renderDelegate)
+{
+    HdPrman_UpdateSearchPathsFromEnvironment(_options);
+
+    _SetRileyOptions(_options);
+
+    _CreateIntegrator(renderDelegate);
+}
+
+void
 HdPrman_OfflineRenderParam::Initialize(
     RtParamList rileyOptions, 
-    riley::ShadingNode integratorNode,
     TfToken outputFilename,
     std::vector<RenderOutput> const & renderOutputs)
 {
     _options = rileyOptions;
-    _activeIntegratorShadingNode = integratorNode;
+
     _SetRileyOptions(_options);
-    _SetRileyIntegrator(_activeIntegratorShadingNode);
+
     for (auto const& ro : renderOutputs) {
         _AddRenderOutput(ro.name, ro.type, ro.params);
     }
@@ -79,88 +88,6 @@ HdPrman_OfflineRenderParam::Initialize(
     _CreateFallbackMaterials();
 }
 
-void
-HdPrman_OfflineRenderParam::InitializeWithDefaults()
-{
-    int res[2] = {512,512};
-
-    // Options
-    {
-        HdPrman_UpdateSearchPathsFromEnvironment(_options);
-
-        float aspect = 10.0;
-        _options.SetIntegerArray(RixStr.k_Ri_FormatResolution, res, 2);
-        _options.SetFloat(RixStr.k_Ri_FormatPixelAspectRatio, aspect);
-        _SetRileyOptions(_options);
-    }
-    
-    // Integrator
-    riley::ShadingNode integratorNode;
-    {
-        static const RtUString us_PxrPathTracer("PxrPathTracer");
-        static const RtUString us_PathTracer("PathTracer");
-        riley::ShadingNode integratorNode {
-            riley::ShadingNode::Type::k_Integrator,
-            us_PxrPathTracer,
-            us_PathTracer,
-            RtParamList()
-        };
-        _SetRileyIntegrator(integratorNode);
-    }
-
-    // Displays & Display Channels
-    {
-        _AddRenderOutput(
-            RtUString("Ci"), 
-            riley::RenderOutputType::k_Color, 
-            RtParamList());
-    }
-
-    _SetDefaultShutterCurve(GetCameraContext());
-    
-    GetCameraContext().Begin(AcquireRiley());
-
-    // Output
-    {
-        riley::Extent const format = {uint32_t(res[0]), uint32_t(res[1]), 1};
-        _SetRenderTargetAndDisplay(format, TfToken("default.exr"));
-    }
-    
-    _CreateFallbackMaterials();
-
-    // Default light
-    {
-        static const RtUString us_PxrDomeLight("PxrDomeLight");
-        static const RtUString us_lightA("lightA");
-        static const RtUString us_traceLightPaths("traceLightPaths");
-        static const RtUString us_lightGroup("lightGroup");
-        static const RtUString us_A("A");
-        static const RtUString us_default("default");
-
-        // Light shader
-        riley::ShadingNode lightNode {
-            riley::ShadingNode::Type::k_Light, // type
-            us_PxrDomeLight, // name
-            us_lightA, // handle
-            RtParamList() 
-        };
-        lightNode.params.SetFloat(RixStr.k_intensity, 1.0f);
-        lightNode.params.SetInteger(us_traceLightPaths, 1);
-        lightNode.params.SetString(us_lightGroup, us_A);            
-
-        // Light instance
-        float const zerotime = 0.0f;
-        RtMatrix4x4 matrix = RixConstants::k_IdentityMatrix;
-        riley::Transform xform = { 1, &matrix, &zerotime };
-        RtParamList lightAttributes;
-        lightAttributes.SetInteger(RixStr.k_visibility_camera, 0);
-        lightAttributes.SetInteger(RixStr.k_visibility_indirect, 1);
-        lightAttributes.SetInteger(RixStr.k_visibility_transmission, 1);
-        lightAttributes.SetString(RixStr.k_grouping_membership, us_default);
-        SetFallbackLight(lightNode, xform, lightAttributes);
-    }
-}
-
 HdPrman_OfflineRenderParam::~HdPrman_OfflineRenderParam()
 {
     _End();
@@ -170,12 +97,6 @@ void
 HdPrman_OfflineRenderParam::_SetRileyOptions(RtParamList options)
 {
     _riley->SetOptions(options);
-}
-
-void
-HdPrman_OfflineRenderParam::_SetRileyIntegrator(riley::ShadingNode node)
-{
-    _integratorId = _riley->CreateIntegrator(riley::UserId::DefaultId(), node);
 }
 
 void
@@ -247,7 +168,7 @@ HdPrman_OfflineRenderParam::_SetRenderTargetAndDisplay(
         riley::UserId::DefaultId(), 
         _rtid,
         GetCameraContext().GetCameraId(),
-        _integratorId,
+        GetActiveIntegratorId(),
         {0, nullptr}, 
         {0, nullptr}, 
         RtParamList());
@@ -310,13 +231,7 @@ HdPrman_OfflineRenderParam::GetOptions()
 riley::IntegratorId
 HdPrman_OfflineRenderParam::GetActiveIntegratorId()
 {
-    return _integratorId;
-}
-
-riley::ShadingNode &
-HdPrman_OfflineRenderParam::GetActiveIntegratorShadingNode()
-{
-    return _activeIntegratorShadingNode;
+    return GetIntegratorId();
 }
 
 HdPrmanCameraContext &

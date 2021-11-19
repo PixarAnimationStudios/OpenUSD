@@ -51,6 +51,9 @@ public:
     HDPRMAN_API
     ~HdPrman_OfflineRenderParam() override;
 
+    // Start connection to Renderman.
+    void Begin(HdRenderDelegate *renderDelegate);
+
     // Produces a render
     HDPRMAN_API
     void Render();
@@ -60,11 +63,8 @@ public:
     bool IsValid() const;
 
     HDPRMAN_API
-    void InitializeWithDefaults();
-    HDPRMAN_API
     void Initialize(
         RtParamList rileyOptions, 
-        riley::ShadingNode integratorNode,
         TfToken outputFilename,
         std::vector<RenderOutput> const & renderOutputs);
 
@@ -85,7 +85,6 @@ public:
     // options and the active integrator.
     RtParamList &GetOptions() override;
     riley::IntegratorId GetActiveIntegratorId() override;
-    riley::ShadingNode & GetActiveIntegratorShadingNode() override;
 
     HdPrmanCameraContext &GetCameraContext() override;
 
@@ -101,9 +100,6 @@ private:
         RtParamList const& params);
     void _SetRenderTargetAndDisplay(
         riley::Extent format,TfToken outputFilename);
-
-    riley::IntegratorId _integratorId;
-    riley::ShadingNode _activeIntegratorShadingNode;
 
     riley::RenderTargetId _rtid;
     std::vector<riley::RenderViewId> _renderViews;

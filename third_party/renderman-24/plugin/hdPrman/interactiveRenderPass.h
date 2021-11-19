@@ -57,13 +57,7 @@ private:
     int _lastRenderedVersion;
 
     std::chrono::steady_clock::time_point _frameStart;
-    std::string _integrator;
-    std::string _quickIntegrator;
     float _quickIntegrateTime;
-    bool _quickIntegrate;
-    bool _isPrimaryIntegrator;
-    riley::IntegratorId _mainIntegratorId;
-    riley::IntegratorId _quickIntegratorId;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

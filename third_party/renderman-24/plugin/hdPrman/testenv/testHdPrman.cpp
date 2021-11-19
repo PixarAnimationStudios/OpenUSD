@@ -71,13 +71,8 @@ TF_DEFINE_PRIVATE_TOKENS(
  static const RtUString us_default("default");
  static const RtUString us_lightA("lightA");
  static const RtUString us_lightGroup("lightGroup");
- static const RtUString us_PathTracer("PathTracer");
  static const RtUString us_PxrDomeLight("PxrDomeLight");
- static const RtUString us_PxrPathTracer("PxrPathTracer");
- static const RtUString us_PxrVisualizer("PxrVisualizer");
- static const RtUString us_style("style");
  static const RtUString us_traceLightPaths("traceLightPaths");
- static const RtUString us_wireframe("wireframe");
 
 static TfStopwatch timer_prmanRender;
 
@@ -434,27 +429,6 @@ int main(int argc, char *argv[])
             _ConvertSettings(product.extraSettings, rileyOptions);
         }
 
-        // Integrator
-        // TODO Figure out how to represent this in UsdRi.
-        // Perhaps a UsdRiIntegrator prim, plus an adapter
-        // in UsdImaging that adds it as an sprim?
-        riley::ShadingNode integratorNode;
-        {
-            integratorNode = riley::ShadingNode {
-                riley::ShadingNode::Type::k_Integrator,
-                us_PxrPathTracer,
-                us_PathTracer,
-                RtParamList() };
-
-            // If PxrVisualizer was requested, configure it.
-            if (!visualizerStyle.empty()) {
-                integratorNode.name = us_PxrVisualizer;
-                integratorNode.params.SetInteger(us_wireframe, 1);
-                integratorNode.params.SetString(us_style,
-                    RtUString(visualizerStyle.c_str()));
-            }
-        }
-
         // Displays & Display Channels
         std::vector<HdPrman_OfflineRenderParam::RenderOutput> renderOutputs;
         for (size_t index: product.renderVarIndices) {
@@ -495,10 +469,45 @@ int main(int argc, char *argv[])
         // Only allow "raster" for now.
         TF_VERIFY(product.type == TfToken("raster"));
 
+        // Set up frontend -> index -> backend
+        // TODO We should configure the render delegate to request
+        // the appropriate materialBindingPurposes from the USD scene.
+        // We should also configure the scene to filter for the
+        // requested includedPurposes.
+        HdRenderSettingsMap settingsMap;
+        
+        if (!visualizerStyle.empty()) {
+            const std::string integratorName("PxrVisualizer");
+            
+            // TODO Figure out how to represent this in UsdRi.
+            // Perhaps a UsdRiIntegrator prim, plus an adapter
+            // in UsdImaging that adds it as an sprim?
+            settingsMap[HdPrmanRenderSettingsTokens->integratorName] =
+                integratorName;
+            
+            const std::string prefix = 
+                "ri:integrator:" + integratorName + ":";
+            
+            settingsMap[TfToken(prefix + "wireframe")] = 1;
+            settingsMap[TfToken(prefix + "style")] = visualizerStyle;
+        } else {
+            const std::string integratorName("PxrPathTracer");
+            settingsMap[HdPrmanRenderSettingsTokens->integratorName] =
+                integratorName;
+        }
+        
+        // Set up frontend -> index -> backend
+        // TODO We should configure the render delegate to request
+        // the appropriate materialBindingPurposes from the USD scene.
+        // We should also configure the scene to filter for the
+        // requested includedPurposes.
+        HdPrmanRenderDelegate hdPrmanBackend(renderParam, settingsMap);
+        
+        renderParam->Begin(&hdPrmanBackend);
+        
         // Basic configuration       
         renderParam->Initialize(
                 rileyOptions,
-                integratorNode,
                 product.name,
                 renderOutputs);
 
@@ -545,13 +554,6 @@ int main(int argc, char *argv[])
         // simple usage example like this, if you don't consider the range of
         // other scenarios Hydra is meant to handle.
         {
-            // Set up frontend -> index -> backend
-            // TODO We should configure the render delegate to request
-            // the appropriate materialBindingPurposes from the USD scene.
-            // We should also configure the scene to filter for the
-            // requested includedPurposes.
-            HdRenderSettingsMap settingsMap;
-            HdPrmanRenderDelegate hdPrmanBackend(renderParam, settingsMap);
             std::unique_ptr<HdRenderIndex> hdRenderIndex(
                 HdRenderIndex::New(&hdPrmanBackend, HdDriverVector()));
             UsdImagingDelegate hdUsdFrontend(hdRenderIndex.get(),

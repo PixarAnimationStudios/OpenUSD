@@ -56,6 +56,11 @@ TF_DEFINE_ENV_SETTING(HD_PRMAN_NTHREADS, 0,
 TF_DEFINE_ENV_SETTING(HD_PRMAN_OSL_VERBOSE, 0,
                       "Override osl verbose in HdPrman");
 
+extern TfEnvSetting<bool> HD_PRMAN_ENABLE_QUICKINTEGRATE;
+
+static bool _enableQuickIntegrate =
+    TfGetEnvSetting(HD_PRMAN_ENABLE_QUICKINTEGRATE);
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (sourceName)
@@ -233,34 +238,9 @@ HdPrman_InteractiveRenderParam::Begin(HdRenderDelegate *renderDelegate)
 
     _cameraContext.Begin(_riley);
 
-    // Integrator
-    // This needs to be set before setting
-    // the active render target, below.
-    _integratorId = riley::IntegratorId::InvalidId();
-    {
-        std::string integratorName = 
-            renderDelegate->GetRenderSetting<std::string>(
-                HdPrmanRenderSettingsTokens->integratorName,
-                HdPrmanIntegratorTokens->PxrPathTracer.GetString());
-        RtParamList params;
-
-        SetIntegratorParamsFromRenderSettings(
-                            static_cast<HdPrmanRenderDelegate*>(renderDelegate),
-                            integratorName,
-                            params);
-        RtUString rmanIntegrator(integratorName.c_str()); 
-        riley::ShadingNode &integratorNode = _activeIntegratorShadingNode;
-        integratorNode = {
-            riley::ShadingNode::Type::k_Integrator,
-            rmanIntegrator,
-            rmanIntegrator,
-            params
-        };
-
-        _integratorId = _riley->CreateIntegrator(riley::UserId::DefaultId(),
-                                               integratorNode);
-    }
-
+    _CreateIntegrator(renderDelegate);
+    _CreateQuickIntegrator(renderDelegate);
+    _activeIntegratorId = GetIntegratorId();
 
     // Light
     {
@@ -307,11 +287,15 @@ HdPrman_InteractiveRenderParam::Begin(HdRenderDelegate *renderDelegate)
 }
 
 void 
-HdPrman_InteractiveRenderParam::SetIntegrator(riley::IntegratorId iid)
+HdPrman_InteractiveRenderParam::SetActiveIntegratorId(
+    const riley::IntegratorId iid)
 {
-    _integratorId = iid;
+    _activeIntegratorId = iid;
+
+    riley::Riley * riley = AcquireRiley();
+
     for (auto const& id : renderViews) {
-        _riley->ModifyRenderView(id, nullptr, nullptr, &_integratorId,
+        riley->ModifyRenderView(id, nullptr, nullptr, &_activeIntegratorId,
                                 nullptr, nullptr, nullptr);
     }
 }
@@ -714,7 +698,7 @@ HdPrman_InteractiveRenderParam::CreateDisplays(
         riley::UserId::DefaultId(),
         framebuffer.rtId,
         _cameraContext.GetCameraId(),
-        _integratorId,
+        GetActiveIntegratorId(),
         {0, nullptr},
         {0, nullptr},
         RtParamList());
@@ -731,13 +715,7 @@ HdPrman_InteractiveRenderParam::GetOptions()
 riley::IntegratorId
 HdPrman_InteractiveRenderParam::GetActiveIntegratorId()
 {
-    return _integratorId;
-}
-
-riley::ShadingNode &
-HdPrman_InteractiveRenderParam::GetActiveIntegratorShadingNode()
-{
-    return _activeIntegratorShadingNode;
+    return _activeIntegratorId;
 }
 
 HdPrmanCameraContext &
@@ -784,5 +762,74 @@ HdPrman_InteractiveRenderParam::AcquireRiley()
 
     return _riley;
 }
+
+riley::ShadingNode
+HdPrman_InteractiveRenderParam::_ComputeQuickIntegratorNode(
+    HdRenderDelegate * const renderDelegate)
+{
+    const std::string &integratorName =
+        renderDelegate->GetRenderSetting<std::string>(
+            HdPrmanRenderSettingsTokens->interactiveIntegrator,
+            HdPrmanIntegratorTokens->PxrDirectLighting.GetString());
+
+    const RtUString rtIntegratorName(integratorName.c_str());
+
+    SetIntegratorParamsFromRenderSettings(
+        static_cast<HdPrmanRenderDelegate*>(renderDelegate),
+        integratorName,
+        _quickIntegratorParams);
+
+    // XXX: Need to cast away constness because
+    // SetIntegratorParamsFromCamera has wrong signature.
+    
+    HdPrmanCamera * const nonConstCam =
+        const_cast<HdPrmanCamera *>(GetCameraContext().GetCamera());
+
+    if (nonConstCam) {
+        SetIntegratorParamsFromCamera(
+            static_cast<HdPrmanRenderDelegate*>(renderDelegate),
+            nonConstCam,
+            integratorName,
+            _quickIntegratorParams);
+    }
+
+    static const RtUString numLightSamples("numLightSamples");
+    static const RtUString numBxdfSamples("numBxdfSamples");
+
+    _quickIntegratorParams.SetInteger(numLightSamples, 1);
+    _quickIntegratorParams.SetInteger(numBxdfSamples, 1);        
+
+    return riley::ShadingNode{
+        riley::ShadingNode::Type::k_Integrator,
+        rtIntegratorName,
+        rtIntegratorName,
+        _quickIntegratorParams};
+}
+
+void
+HdPrman_InteractiveRenderParam::_CreateQuickIntegrator(
+    HdRenderDelegate * const renderDelegate)
+{
+    if (_enableQuickIntegrate) {
+        _quickIntegratorId = _riley->CreateIntegrator(
+            riley::UserId::DefaultId(),
+            _ComputeQuickIntegratorNode(renderDelegate));
+    }
+}
+
+void
+HdPrman_InteractiveRenderParam::UpdateQuickIntegrator(
+    HdRenderDelegate * const renderDelegate)
+{
+    if (_enableQuickIntegrate) {
+        const riley::ShadingNode node =
+            _ComputeQuickIntegratorNode(renderDelegate);
+        
+        AcquireRiley()->ModifyIntegrator(
+            _quickIntegratorId,
+            &node);
+    }
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

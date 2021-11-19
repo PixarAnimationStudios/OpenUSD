@@ -55,11 +55,7 @@ HdPrman_InteractiveRenderPass::HdPrman_InteractiveRenderPass(
 : HdRenderPass(index, collection)
 , _converged(false)
 , _lastRenderedVersion(0)
-, _integrator(HdPrmanIntegratorTokens->PxrPathTracer)
-, _quickIntegrator(HdPrmanIntegratorTokens->PxrDirectLighting)
-, _quickIntegrateTime(_enableQuickIntegrate ? 0.2f : 0.0f)
-, _quickIntegrate(false)
-, _isPrimaryIntegrator(false)
+, _quickIntegrateTime(0.2f)
 {
     _interactiveRenderParam =
         std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(renderParam);
@@ -121,6 +117,19 @@ _GetRenderBufferSize(const HdRenderPassAovBindingVector &aovBindings,
     }
 
     return false;
+}
+
+static
+bool
+_UsesPrimaryIntegrator(const HdRenderDelegate * const renderDelegate)
+{
+    const std::string &integrator =
+        renderDelegate->GetRenderSetting<std::string>(
+            HdPrmanRenderSettingsTokens->integratorName,
+            HdPrmanIntegratorTokens->PxrPathTracer.GetString());
+    return
+        integrator == HdPrmanIntegratorTokens->PxrPathTracer.GetString() ||
+        integrator == HdPrmanIntegratorTokens->PbsPathTracer.GetString();
 }
 
 void
@@ -206,53 +215,14 @@ HdPrman_InteractiveRenderPass::_Execute(
         // so that the render will be re-started below.
         riley::Riley * const riley = _interactiveRenderParam->AcquireRiley();
 
-        _integrator = renderDelegate->GetRenderSetting<std::string>(
-            HdPrmanRenderSettingsTokens->integratorName,
-            HdPrmanIntegratorTokens->PxrPathTracer.GetString());
-        _isPrimaryIntegrator =
-            _integrator ==
-                HdPrmanIntegratorTokens->PxrPathTracer.GetString() ||
-            _integrator ==
-                HdPrmanIntegratorTokens->PbsPathTracer.GetString();
+        _interactiveRenderParam->UpdateIntegrator(renderDelegate);
+        _interactiveRenderParam->UpdateQuickIntegrator(renderDelegate);
+
         if (_enableQuickIntegrate)
         {
-            _quickIntegrator = renderDelegate->GetRenderSetting<std::string>(
-                HdPrmanRenderSettingsTokens->interactiveIntegrator,
-                HdPrmanIntegratorTokens->PxrDirectLighting.GetString());
-
             _quickIntegrateTime = renderDelegate->GetRenderSetting<int>(
                 HdPrmanRenderSettingsTokens->interactiveIntegratorTimeout,
                 200) / 1000.f;
-        }
-        else
-        {
-            _quickIntegrateTime = 0.0f;
-
-            riley::ShadingNode &integratorNode =
-                _interactiveRenderParam->GetActiveIntegratorShadingNode();
-
-            _interactiveRenderParam->SetIntegratorParamsFromRenderSettings(
-                renderDelegate,
-                _integrator,
-                integratorNode.params);
-
-            // XXX: Need to cast away constness because
-            // SetIntegratorParamsFromCamera has wrong signature.
-
-            HdPrmanCamera * const nonConstCam =
-                const_cast<HdPrmanCamera *>(hdCam);
-
-            _interactiveRenderParam->SetIntegratorParamsFromCamera(
-                renderDelegate,
-                nonConstCam,
-                _integrator,
-                integratorNode.params);
-
-            RtUString integrator(_integrator.c_str());
-            integratorNode.handle = integratorNode.name = integrator;
-
-            riley->ModifyIntegrator(
-                _interactiveRenderParam->GetActiveIntegratorId(), &integratorNode);
         }
 
         // Update convergence criteria.
@@ -279,32 +249,6 @@ HdPrman_InteractiveRenderPass::_Execute(
             _interactiveRenderParam->_GetDeprecatedOptionsPrunedList());
 
         _interactiveRenderParam->SetLastSettingsVersion(currentSettingsVersion);
-
-        // Setup quick integrator and save ids of it and main
-        if (_enableQuickIntegrate)
-        {
-            riley::ShadingNode integratorNode {
-                riley::ShadingNode::Type::k_Integrator,
-                RtUString(_quickIntegrator.c_str()),
-                us_PathTracer,
-                RtParamList()
-            };
-            integratorNode.params.SetInteger(
-                RtUString("numLightSamples"), 1);
-            integratorNode.params.SetInteger(
-                RtUString("numBxdfSamples"), 1);
-            _quickIntegratorId =
-                riley->CreateIntegrator(riley::UserId::DefaultId(),
-                    integratorNode);
-        }
-
-        // This can't be correct: imagine that we call _Execute while the
-        // quick integrator is still working. Then _mainIntegratorId will
-        // be set to the id of the quick integrator and the below code that
-        // tries to switch to the main integrator with
-        // SetIntegrator(_mainIntegratorId) will do nothing.
-        //
-        _mainIntegratorId = _interactiveRenderParam->GetActiveIntegratorId();
     }
 
     // Check if any camera update needed
@@ -375,17 +319,10 @@ HdPrman_InteractiveRenderPass::_Execute(
         }
     }    
     
-    // We need to capture the value of sceneVersion here after all
-    // the above calls to AcquireRiley since AcquireRiley increases
-    // the sceneVersion.
-    const int currentSceneVersion =
-        _interactiveRenderParam->sceneVersion.load();
-    const bool needsStartRender = 
-        currentSceneVersion != _lastRenderedVersion;
-
-    if (needsStartRender) {
-        _lastRenderedVersion = currentSceneVersion;
-
+    const bool needsRestart =
+        _interactiveRenderParam->sceneVersion.load() != _lastRenderedVersion;
+    
+    if (needsRestart) {
         // NOTE:
         //
         // _quickIntegrate enables hdPrman to go into a mode
@@ -396,37 +333,50 @@ HdPrman_InteractiveRenderPass::_Execute(
         // camera tumbles. To enable this mode, the 
         // HD_PRMAN_ENABLE_QUICKINTEGRATE (bool) env var must be set.
         
-        // If we're rendering but we're still in the quick integrate window,
-        // check and see if we need to switch to the main integrator yet.
-
-        if (_quickIntegrateTime > 0 && _isPrimaryIntegrator) {
-            if (!_quickIntegrate) {
-                // Start the frame with interactive integrator to give faster
-                // time-to-first-buckets.
-                _interactiveRenderParam->SetIntegrator(_quickIntegratorId);
-                _quickIntegrate = true;
-            }
-        } else if (_quickIntegrateTime <= 0 || _quickIntegrate) {
-            // Disable quick integrate
-            _interactiveRenderParam->SetIntegrator(_mainIntegratorId);
-            _quickIntegrate = false;
+        // Start renders using the quick integrator if:
+        // - the corresponding env var is enabled
+        // - the time out is positive
+        // - the main integrator is an (expensive) primary integrator.
+        const bool useQuickIntegrator =
+            _enableQuickIntegrate && 
+            _quickIntegrateTime > 0 &&
+            _UsesPrimaryIntegrator(renderDelegate);
+        const riley::IntegratorId integratorId =
+            useQuickIntegrator
+                ? _interactiveRenderParam->GetQuickIntegratorId()
+                : _interactiveRenderParam->GetIntegratorId();
+        if (integratorId != _interactiveRenderParam->GetActiveIntegratorId()) {
+            _interactiveRenderParam->SetActiveIntegratorId(integratorId);
         }
+
         _interactiveRenderParam->StartRender();
         _frameStart = std::chrono::steady_clock::now();
     } else {
-        if (_quickIntegrate &&
-            _interactiveRenderParam->renderThread.IsRendering() &&
-            _DiffTimeToNow(_frameStart) > _quickIntegrateTime) {
-
-            _interactiveRenderParam->StopRender();
-            _interactiveRenderParam->SetIntegrator(_mainIntegratorId);
-            _interactiveRenderParam->StartRender();
-            
-            _quickIntegrate = false;
+        // If we are using the quick integrator...
+        if (_interactiveRenderParam->GetActiveIntegratorId() !=
+                _interactiveRenderParam->GetIntegratorId()) {
+            // ... and the quick integrate time has passed, ...
+            if (_DiffTimeToNow(_frameStart) > _quickIntegrateTime) {
+                // Set the active integrator.
+                // Note that SetActiveIntegrator is stopping the renderer
+                // (implicitly through AcquireRiley).
+                _interactiveRenderParam->SetActiveIntegratorId(
+                    _interactiveRenderParam->GetIntegratorId());
+                _interactiveRenderParam->StartRender();
+            }
         }
     }
 
-    _converged = !_interactiveRenderParam->renderThread.IsRendering();
+    // We need to capture the value of sceneVersion here after all
+    // the above calls to AcquireRiley since AcquireRiley increases
+    // the sceneVersion. Note that setting the call to SetActiveIntegratorId
+    // is also implicitly calling AcquireRiley.
+    _lastRenderedVersion = _interactiveRenderParam->sceneVersion.load();
+
+    _converged =
+        (_interactiveRenderParam->GetActiveIntegratorId() ==
+         _interactiveRenderParam->GetIntegratorId())
+        && !_interactiveRenderParam->renderThread.IsRendering();
 
     // Blit from the framebuffer to the currently selected AOVs.
     // Lock the framebuffer when reading so we don't overlap

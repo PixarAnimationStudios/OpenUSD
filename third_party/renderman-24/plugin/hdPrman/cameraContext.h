@@ -136,6 +136,8 @@ public:
                          const float shutterCloseTime,
                          const float shutteropeningPoints[8]);
 
+    const HdPrmanCamera *GetCamera() const { return _camera; }
+
 private:
     /// Computes the screen window for the camera and conforms
     /// it to have the display window's aspect ratio using the

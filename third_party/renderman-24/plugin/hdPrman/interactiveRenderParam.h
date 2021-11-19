@@ -111,7 +111,7 @@ public:
     // resolution edits, so we need to keep track of these too.
     std::map<riley::RenderViewId, riley::RenderTargetId> renderTargets;
 
-    void SetIntegrator(riley::IntegratorId integratorId);
+    void SetActiveIntegratorId(riley::IntegratorId integratorId);
 
     int32_t resolution[2];
 
@@ -125,14 +125,24 @@ public:
     // options and the active integrator.
     RtParamList &GetOptions() override;
     riley::IntegratorId GetActiveIntegratorId() override;
-    riley::ShadingNode &GetActiveIntegratorShadingNode() override;
 
     HdPrmanCameraContext &GetCameraContext() override;
 
+    void UpdateQuickIntegrator(HdRenderDelegate * renderDelegate);
+
+    riley::IntegratorId GetQuickIntegratorId() const {
+        return _quickIntegratorId;
+    }
+
 private:
+    riley::ShadingNode _ComputeQuickIntegratorNode(
+        HdRenderDelegate * renderDelegate);
+
+    void _CreateQuickIntegrator(HdRenderDelegate * renderDelegate);
+
     // The integrator to use.
     // Updated from render pass state.
-    riley::IntegratorId _integratorId;
+    riley::IntegratorId _activeIntegratorId;
 
     // Initialize things, like riley, that need to succeed
     // in order for Begin to be called.
@@ -143,6 +153,9 @@ private:
     // Full option description
     RtParamList _options;
 
+    riley::IntegratorId _quickIntegratorId;
+    RtParamList _quickIntegratorParams;
+
     // The fallback light.  HdPrman_RenderPass calls
     // SetFallbackLightsEnabled() to maintain visibility
     // of the fallback light XOR other lights in the scene.
@@ -151,8 +164,6 @@ private:
     RtParamList _fallbackLightAttrs;
     bool _fallbackLightEnabled;
     bool _didBeginRiley;
-
-    riley::ShadingNode _activeIntegratorShadingNode;
 
     HdPrmanCameraContext _cameraContext;
 };

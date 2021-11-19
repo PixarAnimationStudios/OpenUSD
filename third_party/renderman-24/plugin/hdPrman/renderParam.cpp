@@ -28,6 +28,7 @@
 #include "hdPrman/material.h"
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/rixStrings.h"
+#include "hdPrman/cameraContext.h"
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -1274,11 +1275,9 @@ HdPrman_RenderParam::SetOptionsFromRenderSettings(
 void
 HdPrman_RenderParam::SetIntegratorParamsFromRenderSettings(
     HdPrmanRenderDelegate *renderDelegate,
-    std::string& integratorName,
+    const std::string& integratorName,
     RtParamList& params)
 {
-    static const RtUString us_PxrPathTracer("PxrPathTracer");
-
     HdRenderSettingsMap renderSettings = renderDelegate->GetRenderSettingsMap();
 
     TfToken preFix(std::string("ri:integrator:") + integratorName);
@@ -1536,6 +1535,59 @@ void
 HdPrman_RenderParam::SetLastSettingsVersion(const int version)
 {
     _lastSettingsVersion = version;
+}
+
+riley::ShadingNode
+HdPrman_RenderParam::_ComputeIntegratorNode(
+    HdRenderDelegate * const renderDelegate)
+{
+    const std::string &integratorName =
+        renderDelegate->GetRenderSetting<std::string>(
+            HdPrmanRenderSettingsTokens->integratorName,
+            HdPrmanIntegratorTokens->PxrPathTracer.GetString());
+
+    const RtUString rtIntegratorName(integratorName.c_str());
+
+    SetIntegratorParamsFromRenderSettings(
+        static_cast<HdPrmanRenderDelegate*>(renderDelegate),
+        integratorName,
+        _integratorParams);
+
+    // XXX: Need to cast away constness because
+    // SetIntegratorParamsFromCamera has wrong signature.
+    
+    HdPrmanCamera * const nonConstCam =
+        const_cast<HdPrmanCamera *>(GetCameraContext().GetCamera());
+
+    if (nonConstCam) {
+        SetIntegratorParamsFromCamera(
+            static_cast<HdPrmanRenderDelegate*>(renderDelegate),
+            nonConstCam,
+            integratorName,
+            _integratorParams);
+    }
+
+    return riley::ShadingNode{
+        riley::ShadingNode::Type::k_Integrator,
+        rtIntegratorName,
+        rtIntegratorName,
+        _integratorParams};
+}
+
+void
+HdPrman_RenderParam::_CreateIntegrator(HdRenderDelegate * const renderDelegate)
+{
+    _integratorId = _riley->CreateIntegrator(
+        riley::UserId::DefaultId(), _ComputeIntegratorNode(renderDelegate));
+}
+
+void
+HdPrman_RenderParam::UpdateIntegrator(HdRenderDelegate * const renderDelegate)
+{
+    const riley::ShadingNode node = _ComputeIntegratorNode(renderDelegate);
+
+    AcquireRiley()->ModifyIntegrator(
+        _integratorId, &node);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

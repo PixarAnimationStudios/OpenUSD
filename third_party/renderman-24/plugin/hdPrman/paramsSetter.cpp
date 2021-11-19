@@ -84,21 +84,16 @@ HdPrmanParamsSetter::Sync(HdSceneDelegate *sceneDelegate,
             intergratorParamsValue.UncheckedGet<std::map<TfToken, VtValue>>();
 
         if (!valueDict.empty()) {
-            riley::ShadingNode &integratorNode = 
-                param->GetActiveIntegratorShadingNode();
-
             for (const auto &tokenvalpair : valueDict) {
                 param->SetParamFromVtValue(
                     RtUString(tokenvalpair.first.data()), tokenvalpair.second,
-                        TfToken(), integratorNode.params);
+                    TfToken(), param->GetIntegratorParams());
             }
 
-            riley->ModifyIntegrator(
-                param->GetActiveIntegratorId(), &integratorNode);
+            param->UpdateIntegrator(
+                sceneDelegate->GetRenderIndex().GetRenderDelegate());
         }
     }
-
-
 
     *dirtyBits = HdChangeTracker::Clean;
 }
