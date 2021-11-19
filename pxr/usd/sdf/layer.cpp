@@ -66,6 +66,7 @@
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stackTrace.h"
+#include "pxr/base/work/withScopedParallelism.h"
 
 #include <tbb/queuing_rw_mutex.h>
 
@@ -249,7 +250,7 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
     // being initialized, this will be false, blocking progress until
     // initialization completes.
     while (!_initializationComplete) {
-        std::this_thread::yield();
+        _initDispatcher.Wait();
     }
 
     // For various reasons, initialization may have failed.
@@ -820,6 +821,9 @@ SdfLayer::FindOrOpen(const string &identifier,
     // instance), we'll deadlock.
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
+    // Isolate.
+    return WorkWithScopedParallelism([&]() -> SdfLayerRefPtr {
+    
     _FindOrOpenLayerInfo layerInfo;
     if (!_ComputeInfoToFindOrOpenLayer(identifier, args, &layerInfo,
                                        /* computeAssetInfo = */ true)) {
@@ -861,6 +865,7 @@ SdfLayer::FindOrOpen(const string &identifier,
     // Otherwise we create the layer and insert it into the registry.
     return _OpenLayerAndUnlockRegistry(lock, layerInfo,
                                        /* metadataOnly */ false);
+    });
 }
 
 /* static */
