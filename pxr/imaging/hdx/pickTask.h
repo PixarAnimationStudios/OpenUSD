@@ -96,7 +96,8 @@ struct HdxPickHit {
     int pointIndex;
     GfVec3f worldSpaceHitPoint;
     GfVec3f worldSpaceHitNormal;
-    // normalizedDepth is in the range [0,1].
+    // normalizedDepth is in the range [0,1].  Nb: the pick depth buffer won't
+    // contain items drawn with renderTag "widget" for simplicity.
     float normalizedDepth;
 
     inline bool IsValid() const {
@@ -215,7 +216,8 @@ public:
 private:
     HdxPickTaskParams _params;
     HdxPickTaskContextParams _contextParams;
-    TfTokenVector _renderTags;
+    TfTokenVector _allRenderTags;
+    TfTokenVector _nonWidgetRenderTags;
 
     // We need to cache a pointer to the render index so Execute() can
     // map prim ID to paths.
@@ -224,11 +226,14 @@ private:
     void _InitIfNeeded();
     void _CreateAovBindings();
     void _CleanupAovBindings();
+    void _ResizeOrCreateBufferForAOV(
+        const HdRenderPassAovBinding& aovBinding);
 
     void _ConditionStencilWithGLCallback(
             HdxPickTaskContextParams::DepthMaskCallback maskCallback);
 
     bool _UseOcclusionPass() const;
+    bool _UseWidgetPass() const;
 
     template<typename T>
     T const *  _ReadAovBuffer(TfToken const & aovName,
@@ -236,14 +241,17 @@ private:
 
     HdRenderBuffer const * _FindAovBuffer(TfToken const & aovName) const;
 
-    // Create a shared render pass each for pickables and unpickables
+    // Create a shared render pass each for pickables, unpickables, and 
+    // widgets (which may draw on top even when occluded).
     HdRenderPassSharedPtr _pickableRenderPass;
     HdRenderPassSharedPtr _occluderRenderPass;
+    HdRenderPassSharedPtr _widgetRenderPass;
 
     // Having separate render pass states allows us to use different
     // shader mixins if we choose to (we don't currently).
     HdRenderPassStateSharedPtr _pickableRenderPassState;
     HdRenderPassStateSharedPtr _occluderRenderPassState;
+    HdRenderPassStateSharedPtr _widgetRenderPassState;
 
     Hgi* _hgi;
 
@@ -251,6 +259,8 @@ private:
     HdRenderPassAovBindingVector _pickableAovBindings;
     HdRenderPassAovBinding _occluderAovBinding;
     size_t _pickableDepthIndex;
+    std::unique_ptr<HdStRenderBuffer> _widgetDepthBuffer;
+    HdRenderPassAovBindingVector _widgetAovBindings;
 
     HdxPickTask() = delete;
     HdxPickTask(const HdxPickTask &) = delete;

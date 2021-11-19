@@ -26,9 +26,11 @@
 
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
+#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
@@ -51,6 +53,7 @@
 #include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/staticData.h"
 #include "pxr/base/arch/hash.h"
 
 #include <algorithm>
@@ -59,6 +62,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_SHARED_VERTEX_PRIMVAR, 1,
                       "Enable sharing of vertex primvar");
+
+TF_MAKE_STATIC_DATA(
+    HdSt_MaterialNetworkShaderSharedPtr,
+    _fallbackWidgetShader)
+{
+    *_fallbackWidgetShader = std::make_shared<HdStGLSLFXShader>(
+        std::make_shared<HioGlslfx>(HdStPackageWidgetShader()));
+    (*_fallbackWidgetShader)->SetIsSceneMaterial(false);
+}
 
 // -----------------------------------------------------------------------------
 // Draw invalidation utilities
@@ -356,11 +368,18 @@ HdStGetMaterialNetworkShader(
     HdStMaterial const * material = static_cast<HdStMaterial const *>(
             renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
     if (material == nullptr) {
-        TF_DEBUG(HD_RPRIM_UPDATED).Msg("Using fallback material for %s\n",
-            prim->GetId().GetText());
+        if (prim->GetRenderTag(delegate) == HdRenderTagTokens->widget) {
+            TF_DEBUG(HD_RPRIM_UPDATED).Msg("Using built-in widget material for "
+                "%s\n", prim->GetId().GetText());
+               
+            return *_fallbackWidgetShader;
+        } else {
+            TF_DEBUG(HD_RPRIM_UPDATED).Msg("Using fallback material for %s\n",
+                prim->GetId().GetText());
 
-        material = static_cast<HdStMaterial const *>(
+            material = static_cast<HdStMaterial const *>(
                 renderIndex.GetFallbackSprim(HdPrimTypeTokens->material));
+        }
     }
 
     return material->GetMaterialNetworkShader();

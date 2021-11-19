@@ -101,7 +101,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdxPrimitiveTokens, HDX_API, HDX_PRIMITIVE_TOKENS);
     (inCameraGuide)             \
     (streamline)                \
     (interactiveOnlyGeom)       \
-    (path)
+    (path)                      \
+    (widget)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxRenderTagTokens, HDX_API, HDX_RENDERTAG_TOKENS);
 

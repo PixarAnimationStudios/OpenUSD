@@ -69,6 +69,7 @@ HdSt_MaterialNetworkShader::HdSt_MaterialNetworkShader()
  , _computedTextureSourceHash(0)
  , _isValidComputedTextureSourceHash(false)
  , _materialTag()
+ , _isSceneMaterial(true)
 {
 }
 
@@ -470,6 +471,18 @@ HdSt_MaterialNetworkShader::AddFallbackValueToSpecsAndSources(
             sourceName, param.fallbackValue);
     source->GetBufferSpecs(specs);
     sources->push_back(std::move(source));
+}
+
+bool
+HdSt_MaterialNetworkShader::IsSceneMaterial() const
+{
+    return _isSceneMaterial;
+}
+
+void
+HdSt_MaterialNetworkShader::SetIsSceneMaterial(bool isSceneMaterial)
+{
+    _isSceneMaterial = isSceneMaterial;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

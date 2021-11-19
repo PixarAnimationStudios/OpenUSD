@@ -237,10 +237,13 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
     boost::hash_combine(shaderHash,
                         firstDrawItem->GetGeometricShader()->ComputeHash());
 
-    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader  =
-        state->GetUseSceneMaterials()
-            ? firstDrawItem->GetMaterialNetworkShader()
-            : _GetFallbackMaterialNetworkShader();
+    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader =
+        firstDrawItem->GetMaterialNetworkShader();
+    if (materialNetworkShader && materialNetworkShader->IsSceneMaterial()) {
+        if (!state->GetUseSceneMaterials()) {
+            materialNetworkShader = _GetFallbackMaterialNetworkShader();
+        }
+    }
 
     size_t materialNetworkShaderHash =
         materialNetworkShader ? materialNetworkShader->ComputeHash() : 0;

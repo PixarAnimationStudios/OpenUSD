@@ -93,6 +93,9 @@ static TfTokenVector _aovOutputs {
     HdAovTokens->Neye,
     HdAovTokens->depthStencil
 };
+TF_DEFINE_PRIVATE_TOKENS(_tokens,
+    (widgetDepth)
+);
 
 static SdfPath 
 _GetAovPath(TfToken const& aovName)
@@ -107,7 +110,8 @@ _GetAovPath(TfToken const& aovName)
 // -------------------------------------------------------------------------- //
 HdxPickTask::HdxPickTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdTask(id)
-    , _renderTags()
+    , _allRenderTags()
+    , _nonWidgetRenderTags()
     , _index(nullptr)
     , _hgi(nullptr)
     , _pickableDepthIndex(0)
@@ -122,44 +126,19 @@ HdxPickTask::~HdxPickTask()
 void
 HdxPickTask::_InitIfNeeded()
 {
-    GfVec3i dimensions(_contextParams.resolution[0],
-                       _contextParams.resolution[1], 1);
-
     if (_pickableAovBuffers.empty()) {
         _CreateAovBindings();
     }
 
-    HdRenderDelegate * renderDelegate = _index->GetRenderDelegate();
-    
     for (HdRenderPassAovBinding const & aovBinding : _pickableAovBindings) {
-        VtValue existingResource = aovBinding.renderBuffer->GetResource(false);
-
-        if (existingResource.IsHolding<HgiTextureHandle>()) {
-            int32_t width = aovBinding.renderBuffer->GetWidth();
-            int32_t height = aovBinding.renderBuffer->GetHeight();
-            if (width == dimensions[0] && height == dimensions[1]) {
-                continue;
-            }
-        }
-
-        // If the resolution has changed then reallocate the
-        // renderBuffer and  texture.
-        HdAovDescriptor aovDesc = renderDelegate->
-            GetDefaultAovDescriptor(aovBinding.aovName);
-
-        aovBinding.renderBuffer->Allocate(dimensions,
-                                          aovDesc.format,
-                                          false);
-
-        VtValue newResource = aovBinding.renderBuffer->GetResource(false);
-
-        if (!newResource.IsHolding<HgiTextureHandle>()) {
-            TF_CODING_ERROR("No texture on render buffer for AOV "
-                            "%s", aovBinding.aovName.GetText());
-        }
+        _ResizeOrCreateBufferForAOV(aovBinding);
+    }
+    for (HdRenderPassAovBinding const & aovBinding : _widgetAovBindings) {
+        _ResizeOrCreateBufferForAOV(aovBinding);
     }
 
-    if (_pickableRenderPass == nullptr || _occluderRenderPass == nullptr) {
+    if (_pickableRenderPass == nullptr || _occluderRenderPass == nullptr ||
+        _widgetRenderPass == nullptr) {
         // The collection created below is just for satisfying the HdRenderPass
         // constructor. The collections for the render passes are set in Query.
         HdRprimCollection col(HdTokens->geometry,
@@ -168,10 +147,13 @@ HdxPickTask::_InitIfNeeded()
             _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
         _occluderRenderPass =
             _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
-        
+        _widgetRenderPass = 
+            _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
+
         // initialize renderPassStates with ID render shader
         _pickableRenderPassState = _InitIdRenderPassState(_index);
         _occluderRenderPassState = _InitIdRenderPassState(_index);
+        _widgetRenderPassState = _InitIdRenderPassState(_index);
         // Turn off color writes for the occluders, wherein we want to only
         // condition the depth buffer and not write out any IDs.
         // XXX: This is a hacky alternative to using a different shader mixin
@@ -223,6 +205,32 @@ HdxPickTask::_CreateAovBindings()
             _occluderAovBinding = binding;
         }
     }
+
+    // Set up widget render pass' depth binding, a fresh empty depth buffer,
+    // so that inter-widget occlusion is correct while widgets all draw in front
+    // of any previously-drawn items.  While writing to other AOVs, don't clear
+    // them at all, so that previously-drawn items are retained.
+    {
+        _widgetDepthBuffer = std::make_unique<HdStRenderBuffer>(
+            hdStResourceRegistry.get(), _GetAovPath(_tokens->widgetDepth));
+
+        HdAovDescriptor depthDesc = renderDelegate->GetDefaultAovDescriptor(
+            HdAovTokens->depth);
+        
+
+        _widgetAovBindings = _pickableAovBindings;
+        for (auto& binding : _widgetAovBindings) {
+            binding.clearValue = VtValue();
+        }
+
+        HdRenderPassAovBinding widgetDepthBinding;
+        widgetDepthBinding.aovName = _tokens->widgetDepth;
+        widgetDepthBinding.renderBufferId = _GetAovPath(_tokens->widgetDepth);
+        widgetDepthBinding.aovSettings = depthDesc.aovSettings;
+        widgetDepthBinding.renderBuffer = _widgetDepthBuffer.get();
+        widgetDepthBinding.clearValue = VtValue(GfVec4f(1));
+        _widgetAovBindings.back() = widgetDepthBinding;
+    }
 }
 
 void
@@ -234,9 +242,47 @@ HdxPickTask::_CleanupAovBindings()
         for (auto const & aovBuffer : _pickableAovBuffers) {
             aovBuffer->Finalize(renderParam);
         }
+        _widgetDepthBuffer->Finalize(renderParam);
     }
     _pickableAovBuffers.clear();
     _pickableAovBindings.clear();
+}
+
+void
+HdxPickTask::_ResizeOrCreateBufferForAOV(
+    const HdRenderPassAovBinding& aovBinding)
+
+{
+    HdRenderDelegate * renderDelegate = _index->GetRenderDelegate();
+
+    GfVec3i dimensions(_contextParams.resolution[0],
+                       _contextParams.resolution[1], 1);
+
+    VtValue existingResource = aovBinding.renderBuffer->GetResource(false);
+
+    if (existingResource.IsHolding<HgiTextureHandle>()) {
+        int32_t width = aovBinding.renderBuffer->GetWidth();
+        int32_t height = aovBinding.renderBuffer->GetHeight();
+        if (width == dimensions[0] && height == dimensions[1]) {
+            return;
+        }
+    }
+
+    // If the resolution has changed then reallocate the
+    // renderBuffer and  texture.
+    HdAovDescriptor aovDesc = renderDelegate->
+        GetDefaultAovDescriptor(aovBinding.aovName);
+
+    aovBinding.renderBuffer->Allocate(dimensions,
+                                      aovDesc.format,
+                                      false);
+
+    VtValue newResource = aovBinding.renderBuffer->GetResource(false);
+
+    if (!newResource.IsHolding<HgiTextureHandle>()) {
+        TF_CODING_ERROR("No texture on render buffer for AOV "
+                        "%s", aovBinding.aovName.GetText());
+    }
 }
 
 void
@@ -316,6 +362,12 @@ HdxPickTask::_UseOcclusionPass() const
            !_contextParams.collection.GetExcludePaths().empty();
 }
 
+bool
+HdxPickTask::_UseWidgetPass() const
+{
+    return _allRenderTags != _nonWidgetRenderTags;
+}
+
 template<typename T>
 T const *
 HdxPickTask::_ReadAovBuffer(TfToken const & aovName,
@@ -372,7 +424,17 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     }
 
     if ((*dirtyBits) & HdChangeTracker::DirtyRenderTags) {
-        _renderTags = _GetTaskRenderTags(delegate);
+        _allRenderTags = _GetTaskRenderTags(delegate);
+        // Split the supplied render tags into the "widget" tag if any,
+        // and the remaining tags.  Later we render these groups in separate
+        // passes.
+        _nonWidgetRenderTags.clear();
+        _nonWidgetRenderTags.reserve(_allRenderTags.size());
+        for (const TfToken& tag : _allRenderTags) {
+            if (tag != HdxRenderTagTokens->widget) {
+                _nonWidgetRenderTags.push_back(tag);
+            }
+        }
     }
 
     _GetTaskContextData(ctx, HdxPickTokens->pickParams, &_contextParams);
@@ -395,7 +457,8 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     }
     
     HdRenderPassStateSharedPtr states[] = {_pickableRenderPassState,
-                                           _occluderRenderPassState};
+                                           _occluderRenderPassState,
+                                           _widgetRenderPassState};
 
     // Are we using stencil conditioning?
     bool needStencilConditioning =
@@ -445,7 +508,12 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     }
 
     _pickableRenderPassState->SetAovBindings(_pickableAovBindings);
-    _occluderRenderPassState->SetAovBindings({_occluderAovBinding});
+    if (_UseOcclusionPass()) {
+        _occluderRenderPassState->SetAovBindings({_occluderAovBinding});
+    }
+    if (_UseWidgetPass()) {
+        _widgetRenderPassState->SetAovBindings(_widgetAovBindings);
+    }
 
     // Update the collections
     //
@@ -456,6 +524,13 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     //
     // (ii) [mandatory] id render for "pickable" prims: This writes out the
     // various id's for prims that pass the depth test.
+    //
+    // (iii) [optional] id render for "widget" prims.  This pass, along with
+    // bound color and depth input AOVs, allows widget materials the choice of 
+    // drawing always-on-top, blending to show through occluders, or being
+    // occluded as normal, depending on their shader behavior.  Note this 
+    // drawing scheme leaves widgets out of the shared depth buffer for 
+    // simplicity.
     if (_UseOcclusionPass()) {
         // Pass (i) from above
         HdRprimCollection occluderCol =
@@ -466,10 +541,18 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     // Pass (ii) from above
     _pickableRenderPass->SetRprimCollection(_contextParams.collection);
 
+    // Pass (iii) from above
+    if (_UseWidgetPass()) {
+        _widgetRenderPass->SetRprimCollection(_contextParams.collection);
+    }
+
     if (_UseOcclusionPass()) {
         _occluderRenderPass->Sync();
     }
     _pickableRenderPass->Sync();
+    if (_UseWidgetPass()) {
+        _widgetRenderPass->Sync();
+    }
 
     *dirtyBits = HdChangeTracker::Clean;
 }
@@ -482,6 +565,9 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
         _occluderRenderPassState->Prepare(renderIndex->GetResourceRegistry());
     }
     _pickableRenderPassState->Prepare(renderIndex->GetResourceRegistry());
+    if (_UseWidgetPass()) {
+        _widgetRenderPassState->Prepare(renderIndex->GetResourceRegistry());
+    }
 }
 
 void
@@ -517,7 +603,7 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 
     if (_UseOcclusionPass()) {
         _occluderRenderPass->Execute(_occluderRenderPassState,
-                                     GetRenderTags());
+                                     _nonWidgetRenderTags);
         // Prevent the depth from being cleared so that occluders are retained.
         _pickableAovBindings[_pickableDepthIndex].clearValue = VtValue();
     }
@@ -534,7 +620,12 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     // Push the changes to the clearValue into the renderPassState.
     _pickableRenderPassState->SetAovBindings(_pickableAovBindings);
     _pickableRenderPass->Execute(_pickableRenderPassState,
-                                 GetRenderTags());
+                                 _nonWidgetRenderTags);
+
+    if (_UseWidgetPass()) {
+        _widgetRenderPass->Execute(_widgetRenderPassState,
+            {HdxRenderTagTokens->widget});
+    }
 
     glDisable(GL_STENCIL_TEST);
 
@@ -609,7 +700,7 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 const TfTokenVector &
 HdxPickTask::GetRenderTags() const
 {
-    return _renderTags;
+    return _allRenderTags;
 }
 
 // -------------------------------------------------------------------------- //

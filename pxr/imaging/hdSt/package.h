@@ -58,6 +58,9 @@ TfToken HdStPackageImageShader();
 HDST_API
 TfToken HdStPackageSimpleLightingShader();
 
+HDST_API
+TfToken HdStPackageWidgetShader();
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
