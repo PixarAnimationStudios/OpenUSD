@@ -137,15 +137,48 @@ _SetupValue(const std::string& typeName, Sdf_TextParserContext *context)
 
 template <class T>
 static bool
+_GeneralHasDuplicates(const std::vector<T> &v)
+{
+    // Copy and sort to look for dupes.
+    std::vector<T> copy(v);
+    std::sort(copy.begin(), copy.end());
+    return std::adjacent_find(copy.begin(), copy.end()) != copy.end();
+}
+
+template <class T>
+static inline bool
 _HasDuplicates(const std::vector<T> &v)
 {
-    std::set<T> s;
-    TF_FOR_ALL(i, v) {
-        if (!s.insert(*i).second) {
-            return true;
-        }
+    // Many of the vectors we see here are either just a few elements long
+    // (references, payloads) or are already sorted and unique (topology
+    // indexes, etc).
+    if (v.size() <= 1) {
+        return false;
     }
-    return false;
+
+    // Many are of small size, just check all pairs.
+    if (v.size() <= 10) {
+       using iter = typename std::vector<T>::const_iterator;
+       iter iend = std::prev(v.end()), jend = v.end();
+       for (iter i = v.begin(); i != iend; ++i) {
+           for (iter j = std::next(i); j != jend; ++j) {
+               if (*i == *j) {
+                   return true;
+               }
+           }
+       }
+       return false;
+    }
+
+    // Check for strictly sorted order.
+    if (std::adjacent_find(v.begin(), v.end(),
+                           [](T const &l, T const &r) {
+                               return l >= r;
+                           }) == v.end()) {
+        return false;
+    }
+    // Otherwise do a more expensive copy & sort to check for dupes.
+    return _GeneralHasDuplicates(v);
 }
 
 namespace

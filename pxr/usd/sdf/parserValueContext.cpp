@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/parserValueContext.h"
 #include "pxr/base/tf/iterator.h"
+#include "pxr/base/work/utils.h"
 #include "pxr/usd/sdf/fileIO_Common.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -136,7 +137,7 @@ Sdf_ParserValueContext::Clear()
     // This allows us to skip over them here.
 
     tupleDepth = 0;
-    vars.clear();
+    WorkSwapDestroyAsync(vars);
     workingShape.clear();
 
     _isRecordingString = false;

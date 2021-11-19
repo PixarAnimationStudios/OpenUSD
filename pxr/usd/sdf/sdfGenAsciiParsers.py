@@ -118,7 +118,7 @@ def _runBisonAndFlexCommands(configuration):
     # generate all components of a flex/bison command, these
     # include the desired executables, flag settings 
     bisonFlags = lambda base: ['-d', '-p', base + 'Yy', '-o']
-    flexFlags  = lambda base: ['-P'+ base + "Yy", '-t']  
+    flexFlags  = lambda base: ['-P'+ base + "Yy", '-Cfe', '-o']
 
     bisonExecutable = configuration[BISON_EXE]
     flexExecutable  = configuration[FLEX_EXE]
@@ -130,15 +130,17 @@ def _runBisonAndFlexCommands(configuration):
 
     flexCommand  = lambda index: ([flexExecutable] 
                                   + flexFlags(base)
+                                  + [flexGenSources[index]]
                                   + [flexFiles[index]])
     
     for index, base in enumerate(bases):
         print('Running bison on %s' % (base + '.yy'))
+        print('    ', ' '.join(bisonCommand(index)))
         call(bisonCommand(index))
 
         print('Running flex on %s' % (base + '.ll'))
-        with open(flexGenSources[index], 'w') as outputFile:
-            call(flexCommand(index), stdout=outputFile)
+        print('    ', ' '.join(flexCommand(index)))
+        call(flexCommand(index))
 
     # prepend license header to all generated files.
     licenseText = '\n'.join([
