@@ -17,7 +17,6 @@ over "GLOBAL" (
 }
 
 class "PxrProjectionPluginBase" (
-    inherits = </Typed>
     customData = {
         string className = "ProjectionPluginBase"
         dictionary extraPlugInfo = {
@@ -27,42 +26,42 @@ class "PxrProjectionPluginBase" (
     doc = """Base Schema class which other PxrProjection plugins will inherit.
     It also provides UsdShade connectability for all classes that derive from
     it."""
+    inherits = </Typed>
 )
 {
 }
 
 class "PxrSampleFilterPluginBase" (
-    inherits = </Typed>
     customData = {
         string className = "SampleFilterPluginBase"
         dictionary extraPlugInfo = {
             bool providesUsdShadeConnectableAPIBehavior = 1
         }
     }
-    doc = """Base Schema class which other PxrSampleFiler plugins will inherit. 
+    doc = """Base Schema class which other PxrSampleFilter plugins will inherit. 
     It also provides UsdShade connectability for all classes that derive from
     it."""
+    inherits = </Typed>
 )
 {
 }
 
 class "PxrDisplayFilterPluginBase" (
-    inherits = </Typed>
     customData = {
         string className = "DisplayFilterPluginBase"
         dictionary extraPlugInfo = {
             bool providesUsdShadeConnectableAPIBehavior = 1
         }
     }
-    doc = """Base Schema class which other PxrDisplayFiler plugins will inherit.
+    doc = """Base Schema class which other PxrDisplayFilter plugins will inherit.
     It also provides UsdShade connectability for all classes that derive from
     it."""
+    inherits = </Typed>
 )
 {
 }
 
 class "PxrIntegratorPluginBase" (
-    inherits = </Typed>
     customData = {
         string className = "IntegratorPluginBase"
         dictionary extraPlugInfo = {
@@ -72,6 +71,7 @@ class "PxrIntegratorPluginBase" (
     doc = """Base Schema class which other PxrIntegrator plugins will inherit.
     It also provides UsdShade connectability for all classes that derive from
     it."""
+    inherits = </Typed>
 )
 {
 }
@@ -85,14 +85,14 @@ class "PxrRenderTerminalsAPI" (
             bool providesUsdShadeConnectableAPIBehavior = 1
         }
         dictionary schemaTokens = {
-            dictionary sampleFilters = {
-                string doc = "Terminal for connecting sample filters"
-            }
             dictionary displayFilters = {
                 string doc = "Terminal for connecting display filters"
             }
             dictionary integrator = {
                 string doc = "Terminal for connecting an integrator"
+            }
+            dictionary sampleFilters = {
+                string doc = "Terminal for connecting sample filters"
             }
         }
     }
@@ -102,15 +102,6 @@ class "PxrRenderTerminalsAPI" (
     inherits = </APISchemaBase>
 )
 {
-    token outputs:ri:sampleFilters (
-        customData = {
-            string apiName = "sampleFilters"
-        }
-        displayGroup = "OutputFilters"
-        doc = """Represents the sample filter terminals for a render setting. A
-        sample filter inheriting PxrSampleFilterPluginBase can be connected to
-        this terminal."""
-    )
     token outputs:ri:displayFilters (
         customData = {
             string apiName = "displayFilters"
@@ -127,6 +118,15 @@ class "PxrRenderTerminalsAPI" (
         doc = """Represents the integrator terminal for a render setting. A
         integrator inheriting PxrIntegratorPluginBase can be connected to this
         terminal."""
+    )
+    token outputs:ri:sampleFilters (
+        customData = {
+            string apiName = "sampleFilters"
+        }
+        displayGroup = "OutputFilters"
+        doc = """Represents the sample filter terminals for a render setting. A
+        sample filter inheriting PxrSampleFilterPluginBase can be connected to
+        this terminal."""
     )
 }
 
@@ -158,6 +158,304 @@ class "PxrCameraProjectionAPI" (
         }
         displayGroup = "Outputs"
         doc = "Represents the projection output terminal on a camera prim."
+    )
+}
+
+class PxrBlockerLightFilter "PxrBlockerLightFilter" (
+    customData = {
+        string className = "BlockerLightFilter"
+    }
+    inherits = </LightFilter>
+)
+{
+    int inputs:ri:lightFilter:colorRamp = 4 (
+        displayGroup = "Color Ramp"
+        doc = """colorRamp: This is Optional.  It sets the color gradient
+                  for the transition.
+           """
+    )
+    color3f[] inputs:ri:lightFilter:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:colorRamp_Interpolation = "linear" (
+        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    float[] inputs:ri:lightFilter:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:combineMode = "mult" (
+        allowedTokens = ["mult", "max", "min", "screen"]
+        connectability = "interfaceOnly"
+        displayName = "Combine Mode"
+        doc = """
+\t<p>
+        combineMode: Light filters on a light are grouped by their combine mode. Light filters
+        in the same group are executed together and combined by the corresponding
+        operation:
+        </p>
+\t<ol>
+\t\t<li>max: the maximum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>min: the minimum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>screen: similar to the max operation, but it combines gradients
+              in a smoother way. This works best for grey scale light filters.</li>
+\t\t<li>mult (default): the results of all the filters are multiplied together
+              (Technically, they are applied one after the other.)</li>
+\t</ol>
+\t<p>
+        The groups are executed in the above order and are multiplied together,
+        which means a filter that turns things black in the mult group will zero out
+        all other filters.
+        </p>
+"""
+    )
+    float inputs:ri:lightFilter:density = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Density"
+        doc = "density: How much effect the filter has (0-1)."
+    )
+    float inputs:ri:lightFilter:depth = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Depth"
+        doc = "depth: Depth of inner region of the rod (z axis)."
+    )
+    float inputs:ri:lightFilter:diffuse = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Diffuse"
+        doc = "diffuse: How much this light filter affects diffuse lighting."
+    )
+    float inputs:ri:lightFilter:edge = 0.25 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Edge"
+        doc = "edge: Thickness of edge region."
+    )
+    int inputs:ri:lightFilter:falloff = 6 (
+        connectability = "interfaceOnly"
+        displayGroup = "Falloff"
+        doc = "falloff: Controls the transition from the core to the edge."
+    )
+    float[] inputs:ri:lightFilter:falloff_Floats = [0, 0, 0.2, 0.8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Falloff"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:falloff_Interpolation = "bspline" (
+        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
+        displayGroup = "Falloff"
+        hidden = true
+    )
+    float[] inputs:ri:lightFilter:falloff_Knots = [0, 0, 0.3, 0.7, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Falloff"
+        hidden = true
+    )
+    float inputs:ri:lightFilter:height = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Height"
+        doc = "height: Height of inner region of the rod (y axis)."
+    )
+    float inputs:ri:lightFilter:intensity = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Intensity"
+        doc = """intensity: Multiplier for both the diffuse and specular result.
+            """
+    )
+    bool inputs:ri:lightFilter:invert = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Invert"
+        doc = "invert: Inverts the entire effect of the filter."
+    )
+    float inputs:ri:lightFilter:radius = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Radius"
+        doc = "radius: Radius of corners of inner rod box."
+    )
+    float inputs:ri:lightFilter:saturation = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Saturation"
+        doc = """saturation: Saturation of the light before hitting the surface
+                  (0=greyscale,1=normal,>1=boosted colors)."""
+    )
+    float inputs:ri:lightFilter:specular = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Specular"
+        doc = "specular: How much this light filter affects specular lighting."
+    )
+    float inputs:ri:lightFilter:width = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Width"
+        doc = "width: Width of inner region of the rod (x axis)."
+    )
+    uniform token ri:lightFilter:shaderId = "PxrBlockerLightFilter" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrGoboLightFilter "PxrGoboLightFilter" (
+    customData = {
+        string className = "GoboLightFilter"
+    }
+    inherits = </LightFilter>
+)
+{
+    token inputs:ri:lightFilter:combineMode = "mult" (
+        allowedTokens = ["mult", "max", "min", "screen"]
+        connectability = "interfaceOnly"
+        displayName = "Combine Mode"
+        doc = """
+\t<p>
+        combineMode: Light filters on a light are grouped by their combine mode. Light filters
+        in the same group are executed together and combined by the corresponding
+        operation:
+        </p>
+\t<ol>
+\t\t<li>max: the maximum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>min: the minimum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>screen: similar to the max operation, but it combines gradients
+              in a smoother way. This works best for grey scale light filters.</li>
+\t\t<li>mult (default): the results of all the filters are multiplied together
+              (technically: they are applied one after the other)</li>
+\t</ol>
+\t<p>
+        The groups are executed in the above order and are multiplied together,
+        which means a filter that turns things black in the mult group will zero out
+        all other filters.
+        </p>
+"""
+    )
+    float inputs:ri:lightFilter:density = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Density"
+        doc = "density: Controls the strength of the projected effect."
+    )
+    float inputs:ri:lightFilter:diffuse = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Diffuse"
+        doc = "diffuse: How much this light filter affects diffuse lighting."
+    )
+    color3f inputs:ri:lightFilter:fillColor = (1, 1, 1) (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Fill Color"
+        doc = """
+                fillColor: If the texture is not repeating, this specifies the
+                color for the region outside of and behind the projected rectangle.
+            """
+    )
+    float inputs:ri:lightFilter:height = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Height"
+        doc = "height: Height of the rect the light is shining through."
+    )
+    float inputs:ri:lightFilter:intensity = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Intensity"
+        doc = """intensity: Multiplier for both the diffuse and specular result.
+            """
+    )
+    bool inputs:ri:lightFilter:invert = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Invert"
+        doc = """invert: When this is on, the texture will be inverted before it is applied.
+            """
+    )
+    bool inputs:ri:lightFilter:linearize = 0 (
+        displayGroup = "Map"
+        displayName = "Linearize"
+        doc = "Linearize the texture, assuming an sRGB transfer function."
+    )
+    asset inputs:ri:lightFilter:map = @ratGrid.tex@ (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Map"
+        doc = "map: Filename of the projected texture."
+    )
+    float inputs:ri:lightFilter:offsetU = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Offset U"
+        doc = "offsetU: Offset of the texture in the U direction"
+    )
+    float inputs:ri:lightFilter:offsetV = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Offset V"
+        doc = "offsetV: Offset of the texture in the V direction"
+    )
+    bool inputs:ri:lightFilter:premultipliedAlpha = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Premultiplied Alpha"
+        doc = """
+                premultipliedAlpha: Textures are usually premultiplied by their alpha. If this not
+                the case, uncheck this.
+            """
+    )
+    int inputs:ri:lightFilter:refreshMap = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        doc = """
+                Press this button to force a refresh of the texture during
+                Live Rendering.
+            """
+    )
+    float inputs:ri:lightFilter:scaleU = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Scale U"
+        doc = "scaleU: Scale of the texture in the U direction"
+    )
+    float inputs:ri:lightFilter:scaleV = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Scale V"
+        doc = "scaleV: Scale of the texture in the V direction"
+    )
+    float inputs:ri:lightFilter:specular = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Specular"
+        doc = "specular: How much this light filter affects specular lighting."
+    )
+    int inputs:ri:lightFilter:tileMode = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Tile Mode"
+        doc = '''tileMode:
+                "No Repeat"   - texture does not repeat.
+                "Edge Extent" - extends the color of the edge to infinity.
+                "Tile"        - texture repeats (tileable texture).
+            '''
+    )
+    float inputs:ri:lightFilter:width = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Width"
+        doc = "width: Width of the rect the light is shining through."
+    )
+    uniform token ri:lightFilter:shaderId = "PxrGoboLightFilter" (
+        displayGroup = "Internal"
     )
 }
 
@@ -214,10 +512,6 @@ class PxrAovLight "PxrAovLight" (
         doc = """
                 If this is on, it inverts the signal for the AOV.
             """
-    )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
     )
     bool inputs:ri:light:onVolumeBoundaries = 1 (
         connectability = "interfaceOnly"
@@ -279,6 +573,16 @@ class "PxrCylinderLightAPI" (
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
             """
     )
+    bool inputs:ri:light:emissionFocusNormalize = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Emission Focus Normalize"
+        doc = """
+                 When normalize is enabled, the emissionFocus will scale itself so that it
+                 does not change the total energy output of the light.
+                 (Note that there is no way to set emissionFocusTint in this mode).
+             """
+    )
     int inputs:ri:light:fixedSampleCount = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -289,16 +593,6 @@ class "PxrCylinderLightAPI" (
                 sampling performed by the integrator. It's recommended to leave this at the default unless
                 you experience unsolvable noise from the light.
             """
-    )
-    bool inputs:ri:light:focusNormalize = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus Normalize"
-        doc = """
-                 When normalize is enabled, the emissionFocus will scale itself so that it
-                 does not change the total energy output of the light.
-                 (Note that there is no way to set emissionFocusTint in this mode).
-             """
     )
     float inputs:ri:light:importanceMultiplier = 1 (
         connectability = "interfaceOnly"
@@ -350,10 +644,6 @@ class "PxrCylinderLightAPI" (
         doc = """
                 MsApprox: Coloration of contributing light.
             """
-    )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
     )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
@@ -419,6 +709,16 @@ class "PxrDiskLightAPI" (
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
             """
     )
+    bool inputs:ri:light:emissionFocusNormalize = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Emission Focus Normalize"
+        doc = """
+                 When normalize is enabled, the emissionFocus will scale itself so that it
+                 does not change the total energy output of the light.
+                 (Note that there is no way to set emissionFocusTint in this mode).
+             """
+    )
     int inputs:ri:light:fixedSampleCount = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -429,16 +729,6 @@ class "PxrDiskLightAPI" (
                 sampling performed by the integrator.  It's recommended to leave this at the default unless
                 you experience unsolvable noise from the light.
             """
-    )
-    bool inputs:ri:light:focusNormalize = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus Normalize"
-        doc = """
-                 When normalize is enabled, the emissionFocus will scale itself so that it
-                 does not change the total energy output of the light.
-                 (Note that there is no way to set emissionFocusTint in this mode).
-             """
     )
     float inputs:ri:light:importanceMultiplier = 1 (
         connectability = "interfaceOnly"
@@ -490,10 +780,6 @@ class "PxrDiskLightAPI" (
         doc = """
                 MsApprox: Coloration of contributing light.
             """
-    )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
     )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
@@ -560,6 +846,16 @@ class "PxrDistantLightAPI" (
                 to prevent occlusion during the search of caustic paths.
             """
     )
+    bool inputs:ri:light:emissionFocusNormalize = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Emission Focus Normalize"
+        doc = """
+                 When normalize is enabled, the emissionFocus will scale itself so that it
+                 does not change the total energy output of the light.
+                 (Note that there is no way to set emissionFocusTint in this mode).
+             """
+    )
     int inputs:ri:light:fixedSampleCount = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -570,16 +866,6 @@ class "PxrDistantLightAPI" (
                 sampling performed by the integrator. You might find need for this if you have
                 unsolvable noise from this light and need more samples.
             """
-    )
-    bool inputs:ri:light:focusNormalize = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus Normalize"
-        doc = """
-                 When normalize is enabled, the emissionFocus will scale itself so that it
-                 does not change the total energy output of the light.
-                 (Note that there is no way to set emissionFocusTint in this mode).
-             """
     )
     float inputs:ri:light:importanceMultiplier = 1 (
         connectability = "interfaceOnly"
@@ -621,10 +907,6 @@ class "PxrDistantLightAPI" (
         doc = """
                 MsApprox: Coloration of contributing light.
             """
-    )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
     )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
@@ -757,10 +1039,6 @@ class "PxrDomeLightAPI" (
         doc = """
                 MsApprox: Coloration of contributing light.
             """
-    )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
     )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
@@ -955,10 +1233,6 @@ class PxrEnvDayLight "PxrEnvDayLight" (
         doc = """
                 MsApprox: Coloration of contributing light.
             """
-    )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
     )
     color3f inputs:ri:light:skyTint = (1, 1, 1) (
         connectability = "interfaceOnly"
@@ -1280,10 +1554,6 @@ class "PxrPortalLightAPI" (
                 MsApprox: Coloration of contributing light.
             """
     )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
-    )
     string inputs:ri:light:portalName (
         displayGroup = "Advanced"
         hidden = true
@@ -1380,6 +1650,16 @@ class "PxrRectLightAPI" (
                 colorMapSaturation: Adjust the texture's saturation.
             """
     )
+    bool inputs:ri:light:emissionFocusNormalize = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Emission Focus Normalize"
+        doc = """
+                 When normalize is enabled, the emissionFocus will scale itself so that it
+                 does not change the total energy output of the light.
+                 (Note that there is no way to set emissionFocusTint in this mode).
+             """
+    )
     int inputs:ri:light:fixedSampleCount = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -1391,16 +1671,6 @@ class "PxrRectLightAPI" (
                 have lots of lights, resulting in some lights that are under-sampled, you may want to set it
                 to non-zero.
             """
-    )
-    bool inputs:ri:light:focusNormalize = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus Normalize"
-        doc = """
-                 When normalize is enabled, the emissionFocus will scale itself so that it
-                 does not change the total energy output of the light.
-                 (Note that there is no way to set emissionFocusTint in this mode).
-             """
     )
     float inputs:ri:light:importanceMultiplier = 1 (
         connectability = "interfaceOnly"
@@ -1452,10 +1722,6 @@ class "PxrRectLightAPI" (
         doc = """
                 MsApprox: Coloration of contributing light.
             """
-    )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
     )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
@@ -1521,6 +1787,16 @@ class "PxrSphereLightAPI" (
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
             """
     )
+    bool inputs:ri:light:emissionFocusNormalize = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Emission Focus Normalize"
+        doc = """
+                 When normalize is enabled, the emissionFocus will scale itself so that it
+                 does not change the total energy output of the light.
+                 (Note that there is no way to set emissionFocusTint in this mode).
+             """
+    )
     int inputs:ri:light:fixedSampleCount = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -1531,16 +1807,6 @@ class "PxrSphereLightAPI" (
                 sampling performed by the integrator. It's recommended to leave this at the default unless
                 you experience unsolvable noise from the light.
             """
-    )
-    bool inputs:ri:light:focusNormalize = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus Normalize"
-        doc = """
-                 When normalize is enabled, the emissionFocus will scale itself so that it
-                 does not change the total energy output of the light.
-                 (Note that there is no way to set emissionFocusTint in this mode).
-             """
     )
     float inputs:ri:light:importanceMultiplier = 1 (
         connectability = "interfaceOnly"
@@ -1592,10 +1858,6 @@ class "PxrSphereLightAPI" (
         doc = """
                 MsApprox: Coloration of contributing light.
             """
-    )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
     )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
@@ -1815,10 +2077,6 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
                     leftEdge: When edge is > 0, this scales the edge of the left region (-x axis).
                 """
     )
-    string inputs:ri:lightFilter:notes = "" (
-        displayGroup = "Notes"
-        doc = "General comment field for this light filter."
-    )
     int inputs:ri:lightFilter:preBarn = 2 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape"
@@ -1912,154 +2170,6 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
         doc = "width: Width of the inner region of the barn (x axis)."
     )
     uniform token ri:lightFilter:shaderId = "PxrBarnLightFilter" (
-        displayGroup = "Internal"
-    )
-}
-
-class PxrBlockerLightFilter "PxrBlockerLightFilter" (
-    customData = {
-        string className = "BlockerLightFilter"
-    }
-    inherits = </LightFilter>
-)
-{
-    int inputs:ri:lightFilter:colorRamp = 4 (
-        displayGroup = "Color Ramp"
-        doc = """colorRamp: This is Optional.  It sets the color gradient
-                  for the transition.
-           """
-    )
-    color3f[] inputs:ri:lightFilter:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
-        displayGroup = "Color Ramp"
-        hidden = true
-    )
-    token inputs:ri:lightFilter:colorRamp_Interpolation = "linear" (
-        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
-        displayGroup = "Color Ramp"
-        hidden = true
-    )
-    float[] inputs:ri:lightFilter:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
-        displayGroup = "Color Ramp"
-        hidden = true
-    )
-    token inputs:ri:lightFilter:combineMode = "mult" (
-        allowedTokens = ["mult", "max", "min", "screen"]
-        connectability = "interfaceOnly"
-        displayName = "Combine Mode"
-        doc = """
-\t<p>
-        combineMode: Light filters on a light are grouped by their combine mode. Light filters
-        in the same group are executed together and combined by the corresponding
-        operation:
-        </p>
-\t<ol>
-\t\t<li>max: the maximum result from all filters is used.
-              This works best for grey scale light filters.</li>
-\t\t<li>min: the minimum result from all filters is used.
-              This works best for grey scale light filters.</li>
-\t\t<li>screen: similar to the max operation, but it combines gradients
-              in a smoother way. This works best for grey scale light filters.</li>
-\t\t<li>mult (default): the results of all the filters are multiplied together
-              (Technically, they are applied one after the other.)</li>
-\t</ol>
-\t<p>
-        The groups are executed in the above order and are multiplied together,
-        which means a filter that turns things black in the mult group will zero out
-        all other filters.
-        </p>
-"""
-    )
-    float inputs:ri:lightFilter:density = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Density"
-        doc = "density: How much effect the filter has (0-1)."
-    )
-    float inputs:ri:lightFilter:depth = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Rod Shape"
-        displayName = "Depth"
-        doc = "depth: Depth of inner region of the rod (z axis)."
-    )
-    float inputs:ri:lightFilter:diffuse = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Diffuse"
-        doc = "diffuse: How much this light filter affects diffuse lighting."
-    )
-    float inputs:ri:lightFilter:edge = 0.25 (
-        connectability = "interfaceOnly"
-        displayGroup = "Rod Shape"
-        displayName = "Edge"
-        doc = "edge: Thickness of edge region."
-    )
-    int inputs:ri:lightFilter:falloff = 6 (
-        connectability = "interfaceOnly"
-        displayGroup = "Falloff"
-        doc = "falloff: Controls the transition from the core to the edge."
-    )
-    float[] inputs:ri:lightFilter:falloff_Floats = [0, 0, 0.2, 0.8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
-        displayGroup = "Falloff"
-        hidden = true
-    )
-    token inputs:ri:lightFilter:falloff_Interpolation = "bspline" (
-        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
-        displayGroup = "Falloff"
-        hidden = true
-    )
-    float[] inputs:ri:lightFilter:falloff_Knots = [0, 0, 0.3, 0.7, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
-        displayGroup = "Falloff"
-        hidden = true
-    )
-    float inputs:ri:lightFilter:height = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Rod Shape"
-        displayName = "Height"
-        doc = "height: Height of inner region of the rod (y axis)."
-    )
-    float inputs:ri:lightFilter:intensity = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Intensity"
-        doc = """intensity: Multiplier for both the diffuse and specular result.
-            """
-    )
-    bool inputs:ri:lightFilter:invert = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Invert"
-        doc = "invert: Inverts the entire effect of the filter."
-    )
-    string inputs:ri:lightFilter:notes = "" (
-        displayGroup = "Notes"
-        doc = "General comment field for this light filter."
-    )
-    float inputs:ri:lightFilter:radius = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Rod Shape"
-        displayName = "Radius"
-        doc = "radius: Radius of corners of inner rod box."
-    )
-    float inputs:ri:lightFilter:saturation = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Saturation"
-        doc = """saturation: Saturation of the light before hitting the surface
-                  (0=greyscale,1=normal,>1=boosted colors)."""
-    )
-    float inputs:ri:lightFilter:specular = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Specular"
-        doc = "specular: How much this light filter affects specular lighting."
-    )
-    float inputs:ri:lightFilter:width = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Rod Shape"
-        displayName = "Width"
-        doc = "width: Width of inner region of the rod (x axis)."
-    )
-    uniform token ri:lightFilter:shaderId = "PxrBlockerLightFilter" (
         displayGroup = "Internal"
     )
 }
@@ -2345,10 +2455,6 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
         displayName = "Midpoint"
         doc = "midpoint: Midpoint for the contrast control."
     )
-    string inputs:ri:lightFilter:notes = "" (
-        displayGroup = "Notes"
-        doc = "General comment field for this light filter."
-    )
     float inputs:ri:lightFilter:offsetU = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Texture Mapping"
@@ -2489,164 +2595,6 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
     )
 }
 
-class PxrGoboLightFilter "PxrGoboLightFilter" (
-    customData = {
-        string className = "GoboLightFilter"
-    }
-    inherits = </LightFilter>
-)
-{
-    token inputs:ri:lightFilter:combineMode = "mult" (
-        allowedTokens = ["mult", "max", "min", "screen"]
-        connectability = "interfaceOnly"
-        displayName = "Combine Mode"
-        doc = """
-\t<p>
-        combineMode: Light filters on a light are grouped by their combine mode. Light filters
-        in the same group are executed together and combined by the corresponding
-        operation:
-        </p>
-\t<ol>
-\t\t<li>max: the maximum result from all filters is used.
-              This works best for grey scale light filters.</li>
-\t\t<li>min: the minimum result from all filters is used.
-              This works best for grey scale light filters.</li>
-\t\t<li>screen: similar to the max operation, but it combines gradients
-              in a smoother way. This works best for grey scale light filters.</li>
-\t\t<li>mult (default): the results of all the filters are multiplied together
-              (technically: they are applied one after the other)</li>
-\t</ol>
-\t<p>
-        The groups are executed in the above order and are multiplied together,
-        which means a filter that turns things black in the mult group will zero out
-        all other filters.
-        </p>
-"""
-    )
-    float inputs:ri:lightFilter:density = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Density"
-        doc = "density: Controls the strength of the projected effect."
-    )
-    float inputs:ri:lightFilter:diffuse = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Diffuse"
-        doc = "diffuse: How much this light filter affects diffuse lighting."
-    )
-    color3f inputs:ri:lightFilter:fillColor = (1, 1, 1) (
-        connectability = "interfaceOnly"
-        displayGroup = "Map"
-        displayName = "Fill Color"
-        doc = """
-                fillColor: If the texture is not repeating, this specifies the
-                color for the region outside of and behind the projected rectangle.
-            """
-    )
-    float inputs:ri:lightFilter:height = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Map"
-        displayName = "Height"
-        doc = "height: Height of the rect the light is shining through."
-    )
-    float inputs:ri:lightFilter:intensity = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Intensity"
-        doc = """intensity: Multiplier for both the diffuse and specular result.
-            """
-    )
-    bool inputs:ri:lightFilter:invert = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Invert"
-        doc = """invert: When this is on, the texture will be inverted before it is applied.
-            """
-    )
-    bool inputs:ri:lightFilter:linearize = 0 (
-        displayGroup = "Map"
-        displayName = "Linearize"
-        doc = "Linearize the texture, assuming an sRGB transfer function."
-    )
-    asset inputs:ri:lightFilter:map = @ratGrid.tex@ (
-        connectability = "interfaceOnly"
-        displayGroup = "Map"
-        displayName = "Map"
-        doc = "map: Filename of the projected texture."
-    )
-    string inputs:ri:lightFilter:notes = "" (
-        displayGroup = "Notes"
-        doc = "General comment field for this light filter."
-    )
-    float inputs:ri:lightFilter:offsetU = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Texture Mapping"
-        displayName = "Offset U"
-        doc = "offsetU: Offset of the texture in the U direction"
-    )
-    float inputs:ri:lightFilter:offsetV = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Texture Mapping"
-        displayName = "Offset V"
-        doc = "offsetV: Offset of the texture in the V direction"
-    )
-    bool inputs:ri:lightFilter:premultipliedAlpha = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Map"
-        displayName = "Premultiplied Alpha"
-        doc = """
-                premultipliedAlpha: Textures are usually premultiplied by their alpha. If this not
-                the case, uncheck this.
-            """
-    )
-    int inputs:ri:lightFilter:refreshMap = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Map"
-        doc = """
-                Press this button to force a refresh of the texture during
-                Live Rendering.
-            """
-    )
-    float inputs:ri:lightFilter:scaleU = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Texture Mapping"
-        displayName = "Scale U"
-        doc = "scaleU: Scale of the texture in the U direction"
-    )
-    float inputs:ri:lightFilter:scaleV = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Texture Mapping"
-        displayName = "Scale V"
-        doc = "scaleV: Scale of the texture in the V direction"
-    )
-    float inputs:ri:lightFilter:specular = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Specular"
-        doc = "specular: How much this light filter affects specular lighting."
-    )
-    int inputs:ri:lightFilter:tileMode = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Texture Mapping"
-        displayName = "Tile Mode"
-        doc = '''tileMode:
-                "No Repeat"   - texture does not repeat.
-                "Edge Extent" - extends the color of the edge to infinity.
-                "Tile"        - texture repeats (tileable texture).
-            '''
-    )
-    float inputs:ri:lightFilter:width = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Map"
-        displayName = "Width"
-        doc = "width: Width of the rect the light is shining through."
-    )
-    uniform token ri:lightFilter:shaderId = "PxrGoboLightFilter" (
-        displayGroup = "Internal"
-    )
-}
-
 class PxrIntMultLightFilter "PxrIntMultLightFilter" (
     customData = {
         string className = "IntMultLightFilter"
@@ -2709,10 +2657,6 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
                 will be divided by (instead of multiplied by) the light filter's
                 intensity.
             """
-    )
-    string inputs:ri:lightFilter:notes = "" (
-        displayGroup = "Notes"
-        doc = "General comment field for this light filter."
     )
     float inputs:ri:lightFilter:saturation = 1 (
         connectability = "interfaceOnly"
@@ -2821,10 +2765,6 @@ class PxrRampLightFilter "PxrRampLightFilter" (
         displayGroup = "Multiplier"
         displayName = "Invert"
         doc = "invert: If the multipliers should be inverted"
-    )
-    string inputs:ri:lightFilter:notes = "" (
-        displayGroup = "Notes"
-        doc = "General comment field for this light filter."
     )
     int inputs:ri:lightFilter:ramp = 4 (
         connectability = "interfaceOnly"
@@ -3038,10 +2978,6 @@ class PxrRodLightFilter "PxrRodLightFilter" (
         doc = """
                    leftEdge: When edge is > 0, this scales the left edge up or down (-x axis).
                 """
-    )
-    string inputs:ri:lightFilter:notes = "" (
-        displayGroup = "Notes"
-        doc = "General comment field for this light filter."
     )
     float inputs:ri:lightFilter:radius = 1 (
         connectability = "interfaceOnly"
