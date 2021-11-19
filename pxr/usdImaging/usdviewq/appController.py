@@ -4166,7 +4166,7 @@ class AppController(QtCore.QObject):
 
             item.setExpanded(True)
             item.setToolTip(0, layer.identifier)
-            if not spec:
+            if not spec or not node.CanContributeSpecs():
                 for i in range(item.columnCount()):
                     item.setForeground(i, UIPropertyValueSourceColors.NONE)
             for subtree in layerTree.childTrees:
