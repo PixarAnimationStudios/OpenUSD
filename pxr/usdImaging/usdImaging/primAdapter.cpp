@@ -658,6 +658,18 @@ UsdImagingPrimAdapter::_GetMaterialRenderContexts() const
         GetMaterialRenderContexts();
 }
 
+bool 
+UsdImagingPrimAdapter::_GetSceneMaterialsEnabled() const
+{
+    return _delegate->_sceneMaterialsEnabled;
+}
+
+bool 
+UsdImagingPrimAdapter::_GetSceneLightsEnabled() const
+{
+    return _delegate->_sceneLightsEnabled;
+}
+
 bool
 UsdImagingPrimAdapter::_IsPrimvarFilteringNeeded() const
 {

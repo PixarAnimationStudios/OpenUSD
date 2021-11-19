@@ -2685,22 +2685,15 @@ UsdImagingDelegate::GetMaterialId(SdfPath const &rprimId)
 VtValue
 UsdImagingDelegate::GetMaterialResource(SdfPath const &materialId)
 {
-    VtValue vtMatResource;
-
-    // If custom shading is disabled, use fallback
-    if (!_sceneMaterialsEnabled) {
-        return vtMatResource;
-    }
-
     SdfPath cachePath = ConvertIndexPathToCachePath(materialId);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
 
-    if (TF_VERIFY(primInfo)) {
-        vtMatResource = primInfo->adapter->GetMaterialResource(
-            primInfo->usdPrim, cachePath, _time);
+    if (!TF_VERIFY(primInfo)) {
+        return VtValue();
     }
 
-    return vtMatResource;
+    return primInfo->adapter->GetMaterialResource(
+        primInfo->usdPrim, cachePath, _time);
 }
 
 VtValue 

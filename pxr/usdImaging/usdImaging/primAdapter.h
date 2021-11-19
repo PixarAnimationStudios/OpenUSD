@@ -654,6 +654,14 @@ protected:
     USDIMAGING_API
     TfTokenVector _GetMaterialRenderContexts() const;
 
+    /// Returns whether custom shading of prims is enabled.
+    USDIMAGING_API
+    bool _GetSceneMaterialsEnabled() const;
+
+    /// Returns whether lights found in the usdscene are enabled.
+    USDIMAGING_API
+    bool _GetSceneLightsEnabled() const;
+
     // Returns true if render delegate wants primvars to be filtered based.
     // This will filter the primvars based on the bound material primvar needs.
     USDIMAGING_API

@@ -237,6 +237,10 @@ UsdImagingMaterialAdapter::GetMaterialResource(UsdPrim const &prim,
                                                UsdTimeCode time) const
 {
     TRACE_FUNCTION();
+    if (!_GetSceneMaterialsEnabled()) {
+        return VtValue();
+    }
+
     UsdShadeMaterial material(prim);
     if (!material) {
         TF_RUNTIME_ERROR("Expected material prim at <%s> to be of type "

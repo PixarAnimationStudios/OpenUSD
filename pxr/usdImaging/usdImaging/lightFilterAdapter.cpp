@@ -175,6 +175,10 @@ UsdImagingLightFilterAdapter::GetMaterialResource(UsdPrim const &prim,
                                                   SdfPath const& cachePath, 
                                                   UsdTimeCode time) const
 {
+    if (!_GetSceneLightsEnabled()) {
+        return VtValue();
+    }
+
     UsdLuxLightFilter lightFilter(prim);
     if (!lightFilter) {
         TF_RUNTIME_ERROR("Expected light filter prim at <%s> to be a subclass of type "
