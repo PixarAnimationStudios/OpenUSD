@@ -21,6 +21,10 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
+# pylint: disable=round-builtin
+
+from __future__ import division
 from __future__ import print_function
 
 from .qt import QtCore, QtGui, QtWidgets
