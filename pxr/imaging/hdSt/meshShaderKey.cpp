@@ -83,7 +83,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((selElementSelGS,         "Selection.Geometry.ElementSel"))
 
     // edge id mixins (for edge picking & selection)
-    ((edgeIdFallbackFS,        "EdgeId.Fragment.Fallback"))
     ((edgeIdCommonFS,          "EdgeId.Fragment.Common"))
     ((edgeIdTriangleSurfFS,    "EdgeId.Fragment.TriangleSurface"))
     ((edgeIdTriangleLineFS,    "EdgeId.Fragment.TriangleLines"))
@@ -424,7 +423,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                                             _tokens->noScalarOverrideFS;
 
     // EdgeId mixin(s) for edge picking and selection
-    if (gsStageEnabled) {
+    // Note: When rendering a mesh as points, we handle this in code gen.
+    if (!isPrimTypePoints) {
         FS[fsIndex++] = _tokens->edgeIdCommonFS;
         if (isPrimTypeTris || isPrimTypePatchesBoxSplineTriangle) {
             if (polygonMode == HdPolygonModeLine) {
@@ -441,22 +441,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             }
             FS[fsIndex++] = _tokens->edgeIdQuadParamFS;
         }
-    } else {
-        // the GS stage is skipped if we're dealing with points or triangles.
-        // (see "Optimization" above)
-
-        // for triangles, emit the fallback version.
-        if (isPrimTypeTris) {
-            FS[fsIndex++] = _tokens->edgeIdFallbackFS;
-        }
-
-        // for points, it isn't so simple. we don't know if the 'edgeIndices'
-        // buffer was bound.
-        // if the points repr alone is used, then it won't be generated.
-        // (see GetPointsIndexBuilderComputation)
-        // if any other *IndexBuilderComputation was used, and we then use the
-        // points repr, the binding will exist.
-        // we handle this scenario in hdStCodeGen since it has the binding info.
     }
 
     // PointId mixin for point picking and selection
