@@ -1105,10 +1105,6 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
     {
         _csSource = _genCommon.str() + _genCS.str();
         if (!glslProgram->CompileShader(HgiShaderStageCompute, _csSource)) {
-            HgiShaderProgramHandle const& prg = glslProgram->GetProgram();
-            std::string const& logString = prg->GetCompileErrors();
-            TF_WARN("Failed to compile compute shader: %s",
-                    logString.c_str());
             return HdStGLSLProgramSharedPtr();
         }
     }
