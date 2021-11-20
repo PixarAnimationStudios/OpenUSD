@@ -72,6 +72,10 @@ HdxSimpleLightTask::_ComputeShadowMatrices(
     const HdCamera * const camera,
     HdxShadowMatrixComputationSharedPtr const &computation) const
 {
+    if (!TF_VERIFY(computation)) {
+        return std::vector<GfMatrix4d>();
+    }
+
     const CameraUtilConformWindowPolicy camPolicy = camera->GetWindowPolicy();
 
     if (_framing.IsValid()) {
@@ -189,7 +193,6 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
             HdStLight const *light = static_cast<const HdStLight *>(
                     renderIndex.GetSprim(lightPerTypeIt->first, *lightPathIt));
             if (!TF_VERIFY(light)) {
-                _glfSimpleLights.push_back(GlfSimpleLight());
                 continue;
             }
 
@@ -240,28 +243,22 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
             // Setup the rest of the light parameters necessary 
             // to calculate shadows.
             if (glfl.HasShadow()) {
-                if (!TF_VERIFY(lightShadowParams.shadowMatrix)) {
-                    glfl.SetHasShadow(false);
-                    continue;
-                }
-
                 const std::vector<GfMatrix4d> shadowMatrices =
                     _ComputeShadowMatrices(
                         camera, lightShadowParams.shadowMatrix);
 
                 if (shadowMatrices.empty()) {
                     glfl.SetHasShadow(false);
-                    continue;
+                } else {
+                    glfl.SetShadowIndexStart(shadowIndex + 1);
+                    glfl.SetShadowIndexEnd(shadowIndex + shadowMatrices.size());
+                    shadowIndex += shadowMatrices.size();
+
+                    glfl.SetShadowMatrices(shadowMatrices);
+                    glfl.SetShadowBias(lightShadowParams.bias);
+                    glfl.SetShadowBlur(lightShadowParams.blur);
+                    glfl.SetShadowResolution(lightShadowParams.resolution);
                 }
-
-                glfl.SetShadowIndexStart(shadowIndex + 1);
-                glfl.SetShadowIndexEnd(shadowIndex + shadowMatrices.size());
-                shadowIndex += shadowMatrices.size();
-
-                glfl.SetShadowMatrices(shadowMatrices);
-                glfl.SetShadowBias(lightShadowParams.bias);
-                glfl.SetShadowBlur(lightShadowParams.blur);
-                glfl.SetShadowResolution(lightShadowParams.resolution);
 
                 for (size_t i = 0; i < shadowMatrices.size(); ++i) {
                     shadowMapResolutions.push_back(
