@@ -25,7 +25,6 @@
 
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/drawItemsCache.h"
-#include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/renderParam.h"
@@ -42,10 +41,8 @@
 #include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/imaging/hd/renderDelegate.h"
-#include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/gf/frustum.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -246,16 +243,13 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
             /* flip = */ _hgi->GetAPIName() == HgiTokens->OpenGL));
 
 
-    // XXX: The Bind/Unbind calls below set/restore GL state.
-    // This will be reworked to use Hgi.
-    stRenderPassState->Bind();
+    // Camera state needs to be updated once per pass (not per batch).
+    stRenderPassState->ApplyStateFromCamera();
 
     _cmdBuffer.ExecuteDraw(gfxCmds.get(), stRenderPassState, resourceRegistry);
 
     gfxCmds->PopDebugGroup();
     _hgi->SubmitCmds(gfxCmds.get());
-
-    stRenderPassState->Unbind();
 }
 
 void

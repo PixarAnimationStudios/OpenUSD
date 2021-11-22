@@ -999,6 +999,8 @@ HdSt_IndirectDrawBatch::PrepareDraw(
 
     GLF_GROUP_FUNCTION();
 
+    renderPassState->Bind();
+
     //
     // compile
     //
@@ -1058,6 +1060,8 @@ HdSt_IndirectDrawBatch::PrepareDraw(
             _EndGPUCountVisibleInstances(resourceRegistry, &_numVisibleItems);
         }
     }
+
+    renderPassState->Unbind();
 }
 
 void
@@ -1103,6 +1107,8 @@ HdSt_IndirectDrawBatch::_ExecuteDraw(
 
     GLF_GROUP_FUNCTION();
     
+    renderPassState->Bind();
+
     //
     // draw
     //
@@ -1304,6 +1310,8 @@ HdSt_IndirectDrawBatch::_ExecuteDraw(
     geometricShader->UnbindResources(programId, binder, *renderPassState);
 
     glUseProgram(0);
+
+    renderPassState->Unbind();
 }
 
 static HgiGraphicsPipelineSharedPtr

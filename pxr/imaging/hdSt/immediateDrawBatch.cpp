@@ -183,6 +183,8 @@ HdSt_ImmediateDrawBatch::_ExecuteDraw(
     if (!TF_VERIFY(glslProgram)) return;
     if (!TF_VERIFY(glslProgram->Validate())) return;
 
+    renderPassState->Bind();
+
     const HdSt_ResourceBinder &binder = program.GetBinder();
     const HdStShaderCodeSharedPtrVector &shaders = program.GetComposedShaders();
 
@@ -548,6 +550,8 @@ HdSt_ImmediateDrawBatch::_ExecuteDraw(
     }
 
     glUseProgram(0);
+
+    renderPassState->Unbind();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

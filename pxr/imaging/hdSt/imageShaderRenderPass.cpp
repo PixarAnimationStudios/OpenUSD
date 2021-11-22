@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/imageShaderRenderPass.h"
 #include "pxr/imaging/hdSt/imageShaderShaderKey.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -30,15 +29,12 @@
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
-#include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
-#include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hd/drawingCoord.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/hgi.h"
-#include "pxr/imaging/hgi/tokens.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -149,17 +145,14 @@ HdSt_ImageShaderRenderPass::_Execute(
         return;
     }
 
-    // XXX: The Bind/Unbind calls below set/restore GL state.
-    // This will be reworked to use Hgi.
-    stRenderPassState->Bind();
+    // Camera state needs to be updated once per pass (not per batch).
+    stRenderPassState->ApplyStateFromCamera();
 
     _immediateBatch->ExecuteDraw(
                         gfxCmds.get(), stRenderPassState, resourceRegistry);
 
     gfxCmds->PopDebugGroup();
     _hgi->SubmitCmds(gfxCmds.get());
-
-    stRenderPassState->Unbind();
 }
 
 

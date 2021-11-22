@@ -123,6 +123,9 @@ public:
         HdSt_ResourceBinder const &binder,
         HdSt_GeometricShaderSharedPtr const &geometricShader);
 
+    HDST_API
+    void ApplyStateFromCamera();
+
     /// scene materials
     HDST_API
     void SetUseSceneMaterials(bool state);

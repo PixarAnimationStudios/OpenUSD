@@ -511,20 +511,20 @@ HdStRenderPassState::ApplyStateFromGeometricShader(
 }
 
 void
-HdStRenderPassState::Bind()
+HdStRenderPassState::ApplyStateFromCamera()
 {
-    GLF_GROUP_FUNCTION();
-
-    if (!glBlendColor) {
-        return;
-    }
-    
     // notify view-transform to the lighting shader to update its uniform block
     // this needs to be done in execute as a multi camera setup may have been 
     // synced with a different view matrix baked in for shadows.
     // SetCamera will no-op if the transforms are the same as before.
     _lightingShader->SetCamera(GetWorldToViewMatrix(),
                                GetProjectionMatrix());
+}
+
+void
+HdStRenderPassState::Bind()
+{
+    GLF_GROUP_FUNCTION();
 
     // when adding another GL state change here, please document
     // which states to be altered at the comment in the header file
@@ -622,19 +622,18 @@ HdStRenderPassState::Unbind()
     GLF_GROUP_FUNCTION();
     // restore back to the GL defaults
 
-    if (!glBlendColor) {
-        return;
+    if (!GetDepthBiasUseDefault()) {
+        glDisable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(0, 0);
     }
 
     glDisable(GL_CULL_FACE);
-    glDisable(GL_POLYGON_OFFSET_FILL);
     glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     glDisable(GL_SAMPLE_ALPHA_TO_ONE);
     glDisable(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_STENCIL_TEST);
     glDepthFunc(GL_LESS);
-    glPolygonOffset(0, 0);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glLineWidth(1.0f);
 
