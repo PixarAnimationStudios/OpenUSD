@@ -255,6 +255,7 @@
                             "UsdAPISchemaBase"
                         ], 
                         "providesUsdShadeConnectableAPIBehavior": true, 
+                        "requiresUsdShadeEncapsulation": false, 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrRodLightFilter": {

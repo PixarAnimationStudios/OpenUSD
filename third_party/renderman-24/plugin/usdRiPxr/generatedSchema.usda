@@ -9,6 +9,10 @@ class "PxrProjectionPluginBase" (
     it."""
 )
 {
+    token outputs:result (
+        doc = """Connect PxrCameraProjectionAPI's outputs:ri:projection terminal
+        to this output"""
+    )
 }
 
 class "PxrSampleFilterPluginBase" (
@@ -17,6 +21,10 @@ class "PxrSampleFilterPluginBase" (
     it."""
 )
 {
+    token outputs:result (
+        doc = """Connect PxrRenderTerminalsAPI's outputs:ri:sampleFilters
+        terminal to this output to add the filter for processing."""
+    )
 }
 
 class "PxrDisplayFilterPluginBase" (
@@ -25,6 +33,10 @@ class "PxrDisplayFilterPluginBase" (
     it."""
 )
 {
+    token outputs:result (
+        doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
+        terminal to this output to add the filter for processing."""
+    )
 }
 
 class "PxrIntegratorPluginBase" (

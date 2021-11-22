@@ -29,6 +29,10 @@ class "PxrProjectionPluginBase" (
     inherits = </Typed>
 )
 {
+    token outputs:result (
+        doc = """Connect PxrCameraProjectionAPI's outputs:ri:projection terminal
+        to this output"""
+    )
 }
 
 class "PxrSampleFilterPluginBase" (
@@ -44,6 +48,10 @@ class "PxrSampleFilterPluginBase" (
     inherits = </Typed>
 )
 {
+    token outputs:result (
+        doc = """Connect PxrRenderTerminalsAPI's outputs:ri:sampleFilters
+        terminal to this output to add the filter for processing."""
+    )
 }
 
 class "PxrDisplayFilterPluginBase" (
@@ -59,6 +67,10 @@ class "PxrDisplayFilterPluginBase" (
     inherits = </Typed>
 )
 {
+    token outputs:result (
+        doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
+        terminal to this output to add the filter for processing."""
+    )
 }
 
 class "PxrIntegratorPluginBase" (
@@ -83,6 +95,7 @@ class "PxrRenderTerminalsAPI" (
         string className = "RenderTerminalsAPI"
         dictionary extraPlugInfo = {
             bool providesUsdShadeConnectableAPIBehavior = 1
+            bool requiresUsdShadeEncapsulation = 0
         }
         dictionary schemaTokens = {
             dictionary displayFilters = {
