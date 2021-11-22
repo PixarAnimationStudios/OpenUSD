@@ -42,6 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdStDrawItem;
 class HdStDrawItemInstance;
 class HgiCapabilities;
+class HgiGraphicsCmds;
 
 using HdStRenderPassStateSharedPtr = std::shared_ptr<class HdStRenderPassState>;
 using HdStResourceRegistrySharedPtr = 
@@ -76,7 +77,8 @@ public:
 
     /// Execute the command buffer
     HDST_API
-    void ExecuteDraw(HdStRenderPassStateSharedPtr const &renderPassState,
+    void ExecuteDraw(HgiGraphicsCmds *gfxCmds,
+                     HdStRenderPassStateSharedPtr const &renderPassState,
                      HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     /// Cull drawItemInstances based on passed in combined view and projection matrix

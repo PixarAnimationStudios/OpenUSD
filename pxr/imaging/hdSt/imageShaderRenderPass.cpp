@@ -41,20 +41,7 @@
 #include "pxr/imaging/hgi/tokens.h"
 
 
-// XXX We do not want to include specific HgiXX backends, but we need to do
-// this temporarily until Storm has transitioned fully to Hgi.
-#include "pxr/imaging/hgiGL/graphicsCmds.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
-
-void
-_ExecuteDraw(
-    HdSt_DrawBatchSharedPtr const& drawBatch,
-    HdStRenderPassStateSharedPtr const& stRenderPassState,
-    HdStResourceRegistrySharedPtr const& resourceRegistry)
-{
-    drawBatch->ExecuteDraw(stRenderPassState, resourceRegistry);
-}
 
 HdSt_ImageShaderRenderPass::HdSt_ImageShaderRenderPass(
     HdRenderIndex *index,
@@ -158,40 +145,19 @@ HdSt_ImageShaderRenderPass::_Execute(
     const HgiGraphicsCmdsDesc desc =
         stRenderPassState->MakeGraphicsCmdsDesc(GetRenderIndex());
     HgiGraphicsCmdsUniquePtr gfxCmds = _hgi->CreateGraphicsCmds(desc);
-
-    // XXX When there are no aovBindings we get a null work object.
-    // This would ideally never happen, but currently happens for some
-    // custom prims that spawn an imagingGLengine  with a task controller that
-    // has no aovBindings.
-
-    if (gfxCmds) {
-        gfxCmds->PushDebugGroup(__ARCH_PRETTY_FUNCTION__);
+    if (!TF_VERIFY(gfxCmds)) {
+        return;
     }
 
     // XXX: The Bind/Unbind calls below set/restore GL state.
     // This will be reworked to use Hgi.
     stRenderPassState->Bind();
 
-    // Draw
-    HdSt_DrawBatchSharedPtr const& batch = _immediateBatch;
-    HgiGLGraphicsCmds* glGfxCmds = 
-        dynamic_cast<HgiGLGraphicsCmds*>(gfxCmds.get());
+    _immediateBatch->ExecuteDraw(
+                        gfxCmds.get(), stRenderPassState, resourceRegistry);
 
-    if (gfxCmds && glGfxCmds) {
-        // XXX Tmp code path to allow non-hgi code to insert functions into
-        // HgiGL ops-stack. Will be removed once Storms uses Hgi everywhere
-        auto executeDrawOp = [batch, stRenderPassState, resourceRegistry] {
-            _ExecuteDraw(batch, stRenderPassState, resourceRegistry);
-        };
-        glGfxCmds->InsertFunctionOp(executeDrawOp);
-    } else {
-        _ExecuteDraw(batch, stRenderPassState, resourceRegistry);
-    }
-
-    if (gfxCmds) {
-        gfxCmds->PopDebugGroup();
-        _hgi->SubmitCmds(gfxCmds.get());
-    }
+    gfxCmds->PopDebugGroup();
+    _hgi->SubmitCmds(gfxCmds.get());
 
     stRenderPassState->Unbind();
 }

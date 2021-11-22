@@ -23,6 +23,10 @@
 //
 #include "pxr/imaging/garch/glApi.h"
 
+// XXX We do not want to include specific HgiXX backends, but we need to do
+// this temporarily until Storm has transitioned fully to Hgi.
+#include "pxr/imaging/hgiGL/graphicsCmds.h"
+
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/cullingShaderKey.h"
@@ -1058,6 +1062,26 @@ HdSt_IndirectDrawBatch::PrepareDraw(
 
 void
 HdSt_IndirectDrawBatch::ExecuteDraw(
+    HgiGraphicsCmds *gfxCmds,
+    HdStRenderPassStateSharedPtr const &renderPassState,
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
+{
+    HgiGLGraphicsCmds* glGfxCmds = dynamic_cast<HgiGLGraphicsCmds*>(gfxCmds);
+
+    if (glGfxCmds) {
+        // XXX Tmp code path to allow non-hgi code to insert functions into
+        // HgiGL ops-stack. Will be removed once Storms uses Hgi everywhere
+        auto executeDrawOp = [this, renderPassState, resourceRegistry] {
+            this->_ExecuteDraw(renderPassState, resourceRegistry);
+        };
+        glGfxCmds->InsertFunctionOp(executeDrawOp);
+    } else {
+        _ExecuteDraw(renderPassState, resourceRegistry);
+    }
+}
+
+void
+HdSt_IndirectDrawBatch::_ExecuteDraw(
     HdStRenderPassStateSharedPtr const &renderPassState,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {

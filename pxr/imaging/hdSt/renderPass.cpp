@@ -48,10 +48,6 @@
 #include "pxr/base/gf/frustum.h"
 
 
-// XXX We do not want to include specific HgiXX backends, but we need to do
-// this temporarily until Storm has transitioned fully to Hgi.
-#include "pxr/imaging/hgiGL/graphicsCmds.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_DRAW_ITEMS_CACHE, false,
@@ -62,15 +58,6 @@ _IsDrawItemsCacheEnabled()
 {
     static const bool enabled = TfGetEnvSetting(HDST_ENABLE_DRAW_ITEMS_CACHE);
     return enabled;
-}
-
-void
-_ExecuteDraw(
-    HdStCommandBuffer* cmdBuffer,
-    HdStRenderPassStateSharedPtr const& stRenderPassState,
-    HdStResourceRegistrySharedPtr const& resourceRegistry)
-{
-    cmdBuffer->ExecuteDraw(stRenderPassState, resourceRegistry);
 }
 
 unsigned int
@@ -245,9 +232,11 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
     if (!TF_VERIFY(gfxCmds)) {
         return;
     }
+
     HdRprimCollection const &collection = GetRprimCollection();
     std::string passName = "HdSt_RenderPass: " +
         collection.GetMaterialTag().GetString();
+
     gfxCmds->PushDebugGroup(passName.c_str());
 
     gfxCmds->SetViewport(
@@ -256,29 +245,15 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
             desc,
             /* flip = */ _hgi->GetAPIName() == HgiTokens->OpenGL));
 
-    HdStCommandBuffer* cmdBuffer = &_cmdBuffer;
-    HgiGLGraphicsCmds* glGfxCmds = 
-        dynamic_cast<HgiGLGraphicsCmds*>(gfxCmds.get());
 
     // XXX: The Bind/Unbind calls below set/restore GL state.
     // This will be reworked to use Hgi.
     stRenderPassState->Bind();
 
-    if (glGfxCmds) {
-        // XXX Tmp code path to allow non-hgi code to insert functions into
-        // HgiGL ops-stack. Will be removed once Storms uses Hgi everywhere
-        auto executeDrawOp = [cmdBuffer, stRenderPassState, resourceRegistry] {
-            _ExecuteDraw(cmdBuffer, stRenderPassState, resourceRegistry);
-        };
-        glGfxCmds->InsertFunctionOp(executeDrawOp);
-    } else {
-        _ExecuteDraw(cmdBuffer, stRenderPassState, resourceRegistry);
-    }
+    _cmdBuffer.ExecuteDraw(gfxCmds.get(), stRenderPassState, resourceRegistry);
 
-    if (gfxCmds) {
-        gfxCmds->PopDebugGroup();
-        _hgi->SubmitCmds(gfxCmds.get());
-    }
+    gfxCmds->PopDebugGroup();
+    _hgi->SubmitCmds(gfxCmds.get());
 
     stRenderPassState->Unbind();
 }

@@ -90,6 +90,7 @@ HdStCommandBuffer::PrepareDraw(
 
 void
 HdStCommandBuffer::ExecuteDraw(
+    HgiGraphicsCmds *gfxCmds,
     HdStRenderPassStateSharedPtr const &renderPassState,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
@@ -107,7 +108,7 @@ HdStCommandBuffer::ExecuteDraw(
     // draw batches
     //
     for (auto const& batch : _drawBatches) {
-        batch->ExecuteDraw(renderPassState, resourceRegistry);
+        batch->ExecuteDraw(gfxCmds, renderPassState, resourceRegistry);
     }
     HD_PERF_COUNTER_SET(HdPerfTokens->drawBatches, _drawBatches.size());
 }
