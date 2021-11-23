@@ -118,9 +118,6 @@ class RenderSettings "RenderSettings" (
     be rendered.  \\ref UsdRenderHowSettingsAffectRendering"""
     customData = {
          string className = "Settings"
-         string extraIncludes = """
-#include "pxr/base/gf/frustum.h"
-"""
     }
 )
 {

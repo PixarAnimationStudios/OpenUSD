@@ -26,8 +26,6 @@
 #include "pxr/usd/usdRender/product.h"
 #include "pxr/usd/usdRender/var.h"
 #include "pxr/usd/usdGeom/camera.h"
-#include "pxr/base/gf/camera.h"
-#include "pxr/base/gf/frustum.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
