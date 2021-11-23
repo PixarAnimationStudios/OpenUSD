@@ -3068,3 +3068,497 @@ class PxrRodLightFilter "PxrRodLightFilter" (
     )
 }
 
+class PxrCamera "PxrCamera" (
+    customData = {
+        string className = "Camera"
+    }
+    doc = """
+    A camera model that approximates a number of real world physical
+    effects.  This supports all of the traditional prman perspective camera
+    settings including shaped motion blur and bokeh.
+  """
+    inherits = </PxrProjectionPluginBase>
+)
+{
+    float inputs:ri:assymX = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Lens Distortion"
+        displayName = "Assymetric Distortion X"
+        doc = """
+        Distortion applied only in the X direction.  Horizontal lines will
+        remain straight.  Positive values produce pincushion-like
+        distortion.  Negative values produce barrel-like distortion.
+      """
+    )
+    float inputs:ri:assymY = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Lens Distortion"
+        displayName = "Assymetric Distortion Y"
+        doc = """
+        Distortion applied only in the Y direction.  Vertical lines will
+        remain straight.  Positive values produce pincushion-like
+        distortion.  Negative values produce barrel-like distortion.
+      """
+    )
+    color3f inputs:ri:axial = (0, 0, 0) (
+        connectability = "interfaceOnly"
+        displayGroup = "Chromatic Aberration"
+        displayName = "Axial"
+        doc = """
+        Axial (or longitudinal) chromatic aberration.  This specifies the
+        chromatic focal shift for the red, green, and blue primaries
+        respectively.  When unequal, this can produce a tinge on bokeh and
+        out of focus objects.  It will increase color noise, however.
+      """
+    )
+    float inputs:ri:detail = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Detail Bias"
+        doc = """
+        Detail bias.  Positive values will shift all texture lookups
+        towards coarser, lower resolution, MIP map levels than would
+        normally be used.  Negative values will shift them towards finer,
+        higher resolution, levels.  Also affects the level-of-detail
+        selected for geometry.
+      """
+    )
+    float inputs:ri:duration = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Shutter"
+        displayName = "Duration"
+        doc = """
+        Exposure duration.  Zero means an ideal rolling shutter where each
+        line is exposed instantaneously when read.  The default, one, is
+        equivalent to a global shutter where all lines are exposed and read
+        at the same time.
+      """
+    )
+    vector3f inputs:ri:enhance = (0, 0, 1) (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Enhancement"
+        doc = """
+        Enhancement.  Embiggens the region around a pixel (X,Y) by zoom
+        factor Z for trouble-shooting.  The magnified pixel will remain
+        anchored in place relative to the image.  Camera effects such as
+        vignetting will be scaled accordingly.  Intentionally does not
+        affect level-of-detail, dicing, displacement, or MIP map levels.
+      """
+    )
+    float inputs:ri:focalDistance = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Standard Perspective"
+        displayName = "Focal Distance"
+        doc = """
+         Distance at which objects will be in focus.  This should be in
+         units of distance along the view direction in camera coordinates.
+         Effectively ignored if F-stop is huge.
+      """
+    )
+    float inputs:ri:focalLength = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Standard Perspective"
+        displayName = "Focal Length"
+        doc = """
+         Focal length of the camera lens.  Used to determine depth of
+         field and defocus.  This should be in units of distance along the
+         view direction in camera coordinates.  Effectively ignored if
+         F-stop is huge.
+      """
+    )
+    point3f inputs:ri:focus1 = (0, 0, 0) (
+        connectability = "interfaceOnly"
+        displayGroup = "Tilt-Shift"
+        displayName = "Focus 1"
+        doc = """
+        First point to keep in focus.  Specified in world space.  If all
+        three focus points are set then the tilt angles and focal distance
+        will be automatically solved to match the plane of focus they
+        define.  Note that there may not be a solution.
+      """
+    )
+    point3f inputs:ri:focus2 = (0, 0, 0) (
+        connectability = "interfaceOnly"
+        displayGroup = "Tilt-Shift"
+        displayName = "Focus 2"
+        doc = """
+        Second point to keep in focus.  Specified in world space.  If all
+        three focus points are set then the tilt angles and focal distance
+        will be automatically solved to match the plane of focus they
+        define.  Note that there may not be a solution.
+      """
+    )
+    point3f inputs:ri:focus3 = (0, 0, 0) (
+        connectability = "interfaceOnly"
+        displayGroup = "Tilt-Shift"
+        displayName = "Focus 3"
+        doc = """
+        Third point to keep in focus.  Specified in world space.  If all
+        three focus points are set then the tilt angles and focal distance
+        will be automatically solved to match the plane of focus they
+        define.  Note that there may not be a solution.
+      """
+    )
+    float inputs:ri:fov = 90 (
+        connectability = "interfaceOnly"
+        displayGroup = "Standard Perspective"
+        displayName = "Field of View"
+        doc = """
+        Field of view (FOV) in degrees at the beginning of the frame.  For
+        rectangular images this is normally the FOV along the narrower
+        image dimension.
+      """
+    )
+    float inputs:ri:fovEnd = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Standard Perspective"
+        displayName = "Field of View (End)"
+        doc = """
+        Field of view (FOV) in degrees at the end of the frame.  Used to
+        motion blur very fast zooms.  The default, zero, means to assume it
+        is the same as at the beginning of the frame.
+      """
+    )
+    float inputs:ri:fStop = 16 (
+        connectability = "interfaceOnly"
+        displayGroup = "Standard Perspective"
+        displayName = "F-stop"
+        doc = """
+        F-stop or aperture number.  Used to determine depth of field and
+        defocus.  This determines the lens diameter.  If the f-stop is a
+        huge number, then effectively a pin-hole camera is used and depth
+        of field is turned off.
+      """
+    )
+    asset inputs:ri:matte = @@ (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Matte file"
+        doc = """
+        Matte file.  An EXR image that cuts away parts of the render.  If
+        it is a deep image, it removes anything in the render that is
+        farther away than opaque objects in the matte file, leaving behind
+        transparent holes.  If it is a shallow image, it removes parts of
+        the render where the matte file is opaque.
+      """
+    )
+    float inputs:ri:natural = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Vignetting"
+        displayName = "Natural"
+        doc = """
+        Natural vignetting.  When one, directions off of the primary camera
+        axis will be darkened realistically.  Wide-angle perspectives will
+        show this effect more strongly.  Setting to zero disables this and
+        intermediate values will blend accordingly.
+      """
+    )
+    float inputs:ri:optical = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Vignetting"
+        displayName = "Optical"
+        doc = """
+        Optical vignetting.  Simulates light blockage due to a hood or
+        other additional lens elements.  With depth of field enabled, this
+        creates cat's eye bokeh.  However, it also increases image noise.
+      """
+    )
+    float inputs:ri:radial1 = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Lens Distortion"
+        displayName = "Radial Distortion 1"
+        doc = """
+        Quadratic radial lens distortion coefficient.  Positive values
+        produce pincushion distortion.  Negative values produce barrel
+        distortion.
+      """
+    )
+    float inputs:ri:radial2 = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Lens Distortion"
+        displayName = "Radial Distortion 2"
+        doc = """
+        Quartic radial lens distortion coefficient.  Positive values
+        produce pincushion distortion.  Negative values produce barrel
+        distortion.
+      """
+    )
+    float inputs:ri:roll = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Tilt-Shift"
+        displayName = "Roll Angle"
+        doc = """
+        Roll the lens clockwise.  If the lens tilt is non-zero this can be
+        used to rotate the plane of focus around the image center.  Ignored
+        if focus points are set.
+      """
+    )
+    float inputs:ri:shiftX = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Tilt-Shift"
+        displayName = "Shift X"
+        doc = """
+        Shift the lens horizontally.  This can be used to correct for
+        perspective distortion.  Positive values shift towards the right.
+      """
+    )
+    float inputs:ri:shiftY = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Tilt-Shift"
+        displayName = "Shift Y"
+        doc = '''
+        Shift the lens vertically.  This can be used to correct for
+        perspective distortion "keystone" effects.  To keep vertical lines
+        parallel, aim the camera horizontally and adjust this to include
+        the subject.  Positive values shift towards the top.
+      '''
+    )
+    float inputs:ri:squeeze = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Lens Distortion"
+        displayName = "Anamorphic Squeeze"
+        doc = """
+        Anamorphic lens squeeze.  Values greater than one decrease the
+        effect of the lens distortion in the X direction.  Values less than
+        one increase it.
+      """
+    )
+    token inputs:ri:sweep = "down" (
+        allowedTokens = ["down", "right", "up", "left"]
+        connectability = "interfaceOnly"
+        displayGroup = "Shutter"
+        displayName = "Sweep"
+        doc = """
+        Shutter direction.  Specifies the direction that the shutter
+        sweeps.  The default, down, is the most common direction for
+        rolling shutters.
+      """
+    )
+    float inputs:ri:tilt = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Tilt-Shift"
+        displayName = "Tilt Angle"
+        doc = """
+        Angle in degrees to tilt the lens.  Makes the plane of focus
+        non-parallel to the image plane.  Has no effect unless depth of
+        field is enabled.  Positive tilts up, bringing the focus in the top
+        of the image closer and pushing the focus in the bottom further.
+        Negative does the reverse.  Ignored if focus points are set.
+      """
+    )
+    color3f inputs:ri:transverse = (1, 1, 1) (
+        connectability = "interfaceOnly"
+        displayGroup = "Chromatic Aberration"
+        displayName = "Transverse"
+        doc = """
+        Transverse (or lateral) chromatic aberration.  This specifies the
+        magnification factors for the red, green, and blue primaries
+        respectively.  When unequal, this can produce a tinge which is most
+        pronounced near the image edges.  It will increase color noise,
+        however.
+      """
+    )
+    uniform token ri:projection:shaderId = "PxrCamera" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrCylinderCamera "PxrCylinderCamera" (
+    customData = {
+        string className = "CylinderCamera"
+    }
+    doc = """
+    A simple camera model that projects through a section of a cylinder
+    from the point at the cylinder's center.  For very wide aspect images,
+    this may be useful for rendering a circular panorama.
+  """
+    inherits = </PxrProjectionPluginBase>
+)
+{
+    float inputs:ri:hsweep = 360 (
+        connectability = "interfaceOnly"
+        displayName = "Horizontal Sweep"
+        doc = """
+      The horizontal angle of the cylinder subtended by the image.  The
+      default, 360, means that the image wraps all the way around and the
+      left and right edges of the image align.
+    """
+    )
+    float inputs:ri:vsweep = 90 (
+        connectability = "interfaceOnly"
+        displayName = "Vertical Sweep"
+        doc = """
+      The vertical field of view of the image.
+    """
+    )
+    uniform token ri:projection:shaderId = "PxrCylinderCamera" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrPanini "PxrPanini" (
+    customData = {
+        string className = "Panini"
+    }
+    doc = """
+    The Panini projection is designed for producing ultra-wide angle images
+    with large fields of view.  It can be particularly effective for
+    architectural scenes.  Like the traditional rectilinear perspective
+    projection, vertical lines remain vertical when the view direction is
+    horizontal, and radial lines that converge towards the vanishing point
+    also remain straight.  However, it can do this while accommodating wide
+    angles up to 180 degrees and beyond.
+  """
+    inherits = </PxrProjectionPluginBase>
+)
+{
+    float inputs:ri:compression = 1 (
+        connectability = "interfaceOnly"
+        displayName = "Compression"
+        doc = """
+      Determines the type of projection and the amount of compression at
+      the peripheriphy.  At 0.0, this produces the equivalent of the
+      traditional perspective projection and the FOV is limited to less
+      than 180 degrees.  At 1.0, this produces the full Panini projection
+      and allows the FOV to go up to almost 360 degrees.
+    """
+    )
+    float inputs:ri:fov = 90 (
+        connectability = "interfaceOnly"
+        displayName = "Field of View"
+        doc = """
+      Field of view (FOV) in degrees.  For rectangular images this is
+      normally the FOV along the wider image dimension.  Note that the
+      actual FOV may be limited to somewhere between 180 and 360 depending
+      on the Compression setting.
+    """
+    )
+    uniform token ri:projection:shaderId = "PxrPanini" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrPerspective "PxrPerspective" (
+    customData = {
+        string className = "Perspective"
+    }
+    doc = """
+    A simple pinhole camera.
+  """
+    inherits = </PxrProjectionPluginBase>
+)
+{
+    float inputs:ri:focalDistance = 1 (
+        connectability = "interfaceOnly"
+        displayName = "Focal Distance"
+        doc = """
+       Distance at which objects will be in focus.  This should be in
+       units of distance along the view direction in camera coordinates.
+       Effectively ignored if F-stop is huge.
+    """
+    )
+    float inputs:ri:focalLength = 0 (
+        connectability = "interfaceOnly"
+        displayName = "Focal Length"
+        doc = """
+       Focal length of the camera lens.  Used to determine depth of
+       field and defocus.  This should be in units of distance along the
+       view direction in camera coordinates.  Effectively ignored if
+       F-stop is huge.
+    """
+    )
+    float inputs:ri:fov = 90 (
+        connectability = "interfaceOnly"
+        displayName = "Field of View"
+        doc = """
+      Field of view (FOV) in degrees.  For rectangular images this is
+      normally the FOV along the narrower image dimension.
+    """
+    )
+    float inputs:ri:fovEnd = 0 (
+        connectability = "interfaceOnly"
+        displayName = "Field of View (End)"
+        doc = """
+      Field of view (FOV) in degrees at the end of the frame.  Used to
+      motion blur very fast zooms.  The default, zero, means to assume it
+      is the same as at the beginning of the frame.
+    """
+    )
+    float inputs:ri:fStop = 16 (
+        connectability = "interfaceOnly"
+        displayName = "F-stop"
+        doc = """
+      F-stop or aperture number.  Used to determine depth of field and
+      defocus.  This determines the lens diameter.  If the f-stop is a
+      huge number, then effectively a pin-hole camera is used and depth
+      of field is turned off.
+    """
+    )
+    uniform token ri:projection:shaderId = "PxrPerspective" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrSphereCamera "PxrSphereCamera" (
+    customData = {
+        string className = "SphereCamera"
+    }
+    doc = """
+    A simple camera model that projects through a section of a sphere from
+    the point at the sphere's center.  With its default settings, this may
+    be useful for rendering a latlong environment map.
+  """
+    inherits = </PxrProjectionPluginBase>
+)
+{
+    float inputs:ri:hsweep = 360 (
+        connectability = "interfaceOnly"
+        displayName = "Horizontal Sweep"
+        doc = """
+      The horizontal angle of the sphere subtended by the image.  The
+      default, 360, means that the image wraps all the way around and the
+      left and right edges of the image align.
+    """
+    )
+    float inputs:ri:vsweep = 180 (
+        connectability = "interfaceOnly"
+        displayName = "Vertical Sweep"
+        doc = """
+      The vertical angle of the sphere subtended by the image.  The
+      default, 180, means that the top and bottom of the image shows the
+      through the sphere's poles directly above and below the camera.
+    """
+    )
+    uniform token ri:projection:shaderId = "PxrSphereCamera" (
+        displayGroup = "Internal"
+    )
+}
+
+class OmnidirectionalStereo "OmnidirectionalStereo" (
+    customData = {
+        string className = "OmnidirectionalStereo"
+    }
+    doc = """
+        This camera projection renders the scene as a stereo pair of 360 degree
+        projections. It is intended to be rendered in a square format with
+        the top half as the left eye and the bottom half as the right eye.
+
+        Author: Mach Kobayashi
+  """
+    inherits = </PxrProjectionPluginBase>
+)
+{
+    float inputs:ri:interpupilaryDistance = 0.0635 (
+        connectability = "interfaceOnly"
+        displayName = "Interpupilary Distance"
+        doc = """
+        The distance between the two eyes. The default, 0.0635, should work if
+        your scene is measured in meters.
+      """
+    )
+    uniform token ri:projection:shaderId = "OmnidirectionalStereo" (
+        displayGroup = "Internal"
+    )
+}
+
