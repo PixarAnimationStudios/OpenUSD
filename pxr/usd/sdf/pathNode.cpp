@@ -318,17 +318,23 @@ Sdf_PropPartPathNode::operator delete(void *p)
         PoolHandle::GetHandle(reinterpret_cast<char *>(p)));
 }
 
-static _PropTargetTable *_mapperNodes = new _PropTargetTable;
-static _PropTargetTable *_targetNodes = new _PropTargetTable;
-static _PropTokenTable *_mapperArgNodes = new _PropTokenTable;
-static _PrimTokenTable *_primNodes = new _PrimTokenTable;
-static _PropTokenTable *_primPropertyNodes = new _PropTokenTable;
-static _PropTokenTable *_relAttrNodes = new _PropTokenTable;
-static _PrimVarSelTable *_primVarSelNodes = new _PrimVarSelTable;
-static _PropVoidTable *_expressionNodes = new _PropVoidTable;
+TF_MAKE_STATIC_DATA(_PropTargetTable, _mapperNodes) {}
+TF_MAKE_STATIC_DATA(_PropTargetTable, _targetNodes) {}
+TF_MAKE_STATIC_DATA(_PropTokenTable, _mapperArgNodes) {}
+TF_MAKE_STATIC_DATA(_PrimTokenTable, _primNodes) {}
+TF_MAKE_STATIC_DATA(_PropTokenTable, _primPropertyNodes) {}
+TF_MAKE_STATIC_DATA(_PropTokenTable, _relAttrNodes) {}
+TF_MAKE_STATIC_DATA(_PrimVarSelTable, _primVarSelNodes) {}
+TF_MAKE_STATIC_DATA(_PropVoidTable, _expressionNodes) {}
 
-static Sdf_PathNode const *_absoluteRootNode = Sdf_RootPathNode::New(true);
-static Sdf_PathNode const *_relativeRootNode = Sdf_RootPathNode::New(false);
+TF_MAKE_STATIC_DATA(Sdf_PathNode const *, _absoluteRootNode) {
+    *_absoluteRootNode = Sdf_RootPathNode::New(true);
+    TF_AXIOM((*_absoluteRootNode)->GetCurrentRefCount() == 1);
+}
+TF_MAKE_STATIC_DATA(Sdf_PathNode const *, _relativeRootNode) {
+    *_relativeRootNode = Sdf_RootPathNode::New(false);
+    TF_AXIOM((*_relativeRootNode)->GetCurrentRefCount() == 1);
+}
 
 Sdf_PathNode const *
 Sdf_RootPathNode::New(bool isAbsolute)
@@ -342,12 +348,12 @@ Sdf_RootPathNode::New(bool isAbsolute)
 
 Sdf_PathNode const *
 Sdf_PathNode::GetAbsoluteRootNode() {
-    return _absoluteRootNode;
+    return *_absoluteRootNode;
 }
 
 Sdf_PathNode const *
 Sdf_PathNode::GetRelativeRootNode() {
-    return _relativeRootNode;
+    return *_relativeRootNode;
 }
 
 Sdf_PathPrimNodeHandle
