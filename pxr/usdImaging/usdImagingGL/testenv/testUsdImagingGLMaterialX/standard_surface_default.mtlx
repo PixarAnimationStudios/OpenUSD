@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+
+  <standard_surface name="SR_smooth" type="surfaceshader">
+    <input name="base_color" type="color3" value="0.2, 0.4, 1" />
+    <input name="specular_roughness" type="float" value="0.01" />
+  </standard_surface>
+  <surfacematerial name="Default_Smooth" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_smooth" />
+  </surfacematerial>
+  
+  <standard_surface name="SR_green" type="surfaceshader">
+    <input name="base_color" type="color3" value="0.2, 0.4, 0.2" />
+  </standard_surface>
+  <surfacematerial name="Default_Green" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_green" />
+  </surfacematerial>
+
+  <standard_surface name="SR_white" type="surfaceshader">
+  </standard_surface>
+  <surfacematerial name="Default_White" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_white" />
+  </surfacematerial>
+
+</materialx>
