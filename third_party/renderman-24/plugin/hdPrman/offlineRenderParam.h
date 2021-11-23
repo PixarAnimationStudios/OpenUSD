@@ -37,13 +37,6 @@ class HdPrman_OfflineRenderParam: public HdPrman_RenderParam
 {
 public:
 
-    struct RenderOutput
-    {
-        RtUString name;
-        riley::RenderOutputType type; 
-        RtParamList params;
-    };
-
     HDPRMAN_API
     HdPrman_OfflineRenderParam();
 
@@ -61,11 +54,6 @@ public:
     // Checks whether context was successfully initialized.
     HDPRMAN_API
     bool IsValid() const;
-
-    HDPRMAN_API
-    void Initialize(
-        TfToken outputFilename,
-        std::vector<RenderOutput> const & renderOutputs);
 
     // Returns Riley scene. Since this is the offline renderParam, it
     // currently does not stop the render.

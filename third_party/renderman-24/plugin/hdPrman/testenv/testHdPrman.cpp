@@ -33,8 +33,6 @@
 
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/prim.h"
-#include "pxr/usd/sdr/registry.h"
-#include "pxr/usd/usdLux/listAPI.h"
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdRender/product.h"
 #include "pxr/usd/usdRender/settings.h"
@@ -49,9 +47,6 @@
 
 #include "hdPrman/offlineRenderParam.h"
 #include "hdPrman/renderDelegate.h"
-#include "hdPrman/rixStrings.h"
-
-#include "RixShadingUtils.h"
 
 #include <fstream>
 #include <memory>
@@ -66,13 +61,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Collection Names
     (testCollection)
 );
-
- static const RtUString us_A("A");
- static const RtUString us_default("default");
- static const RtUString us_lightA("lightA");
- static const RtUString us_lightGroup("lightGroup");
- static const RtUString us_PxrDomeLight("PxrDomeLight");
- static const RtUString us_traceLightPaths("traceLightPaths");
 
 static TfStopwatch timer_prmanRender;
 
@@ -165,7 +153,6 @@ PrintUsage(const char* cmd, const char *err=nullptr)
             "[--visualize STYLE] [--perf PERF] [--trace TRACE]\n"
             "OUTPUT defaults to UsdRenderSettings if not specified.\n"
             "FRAME defaults to 0 if not specified.\n"
-            "CAM_PROJECTION default to PxrPerspective if not specified\n"
             "CAM_PATH defaults to empty path if not specified\n"
             "RENDERSETTINGS_PATH defaults to empty path is not specified\n"
             "STYLE indicates a PxrVisualizer style to use instead of "
@@ -176,41 +163,6 @@ PrintUsage(const char* cmd, const char *err=nullptr)
 }
 
 ////////////////////////////////////////////////////////////////////////
-
-// Helper to convert a dictionary of Hydra settings to Riley params.
-static void
-_ConvertSettings(VtDictionary const& settings, RtParamList& params)
-{
-    for (auto const& entry: settings) {
-        // Strip "ri:" namespace from USD.
-        // Note that some Renderman options have their own "Ri:"
-        // prefix, unrelated to USD, which we leave intact.
-        RtUString riName;
-        if (TfStringStartsWith(entry.first, "ri:")) {
-            riName = RtUString(entry.first.c_str()+3);
-        } else {
-            riName = RtUString(entry.first.c_str());
-        }
-        if (entry.second.IsHolding<int>()) {
-            params.SetInteger(riName, entry.second.UncheckedGet<int>());
-        } else if (entry.second.IsHolding<float>()) {
-            params.SetFloat(riName, entry.second.UncheckedGet<float>());
-        } else if (entry.second.IsHolding<std::string>()) {
-            params.SetString(riName,
-                RtUString(entry.second.UncheckedGet<std::string>().c_str()));
-        } else if (entry.second.IsHolding<VtArray<int>>()) {
-            auto const& array = entry.second.UncheckedGet<VtArray<int>>();
-            params.SetIntegerArray(riName, &array[0], array.size());
-        } else if (entry.second.IsHolding<VtArray<float>>()) {
-            auto const& array = entry.second.UncheckedGet<VtArray<float>>();
-            params.SetFloatArray(riName, &array[0], array.size());
-        } else {
-            TF_CODING_ERROR("Unimplemented setting %s of type %s\n",
-                            entry.first.c_str(),
-                            entry.second.GetTypeName().c_str());
-        }
-    }
-}
 
 int main(int argc, char *argv[])
 {
@@ -231,8 +183,6 @@ int main(int argc, char *argv[])
     std::string perfOutput, traceOutput;
 
     int frameNum = 0;
-    std::string cameraProjection("PxrPerspective");
-    static const std::string PxrOrthographic("PxrOrthographic");
     SdfPath sceneCamPath, renderSettingsPath;
     float sceneCamAspect = -1.0;
     std::string visualizerStyle;
@@ -280,7 +230,6 @@ int main(int argc, char *argv[])
     // Render settings
     //
 
-    UsdRenderSpec renderSpec;
     UsdRenderSettings settings;
     if (renderSettingsPath.IsEmpty()) {
         settings = UsdRenderSettings::GetStageRenderSettings(stage);
@@ -288,6 +237,8 @@ int main(int argc, char *argv[])
         // If a path was specified, try to use the requested settings prim.
         settings = UsdRenderSettings(stage->GetPrimAtPath(renderSettingsPath));
     }
+
+    UsdRenderSpec renderSpec;
     if (settings) {
         // If we found USD settings, read those.
         renderSpec = UsdRenderComputeSpec(settings, frameNum, {"ri:"});
@@ -381,9 +332,6 @@ int main(int argc, char *argv[])
     for (auto product: renderSpec.products) {
         printf("Rendering %s...\n", product.name.GetText());
 
-        std::shared_ptr<HdPrman_OfflineRenderParam> renderParam =
-            std::make_shared<HdPrman_OfflineRenderParam>();
-
         // Find USD camera prim.
         UsdGeomCamera usdCam;
         if (!product.cameraPath.IsEmpty()) {
@@ -426,42 +374,66 @@ int main(int argc, char *argv[])
             }
         }
 
-        // Displays & Display Channels
-        std::vector<HdPrman_OfflineRenderParam::RenderOutput> renderOutputs;
-        for (size_t index: product.renderVarIndices) {
-            auto const& renderVar = renderSpec.renderVars[index];
+        VtDictionary renderSpecDict;
 
-            // Map source to Ri name.
-            std::string name = renderVar.sourceName;
-            if (renderVar.sourceType == UsdRenderTokens->lpe) {
-                name = "lpe:" + name;
+        {
+            VtArray<VtDictionary> renderVarDicts;
+
+            // Displays & Display Channels
+            for (size_t index: product.renderVarIndices) {
+                auto const& renderVar = renderSpec.renderVars[index];
+
+                // Map source to Ri name.
+                std::string name = renderVar.sourceName;
+                if (renderVar.sourceType == UsdRenderTokens->lpe) {
+                    name = "lpe:" + name;
+                }
+
+                VtDictionary renderVarDict;
+                renderVarDict[HdPrmanExperimentalRenderSpecTokens->name] =
+                    name;
+                renderVarDict[HdPrmanExperimentalRenderSpecTokens->type] =
+                    renderVar.dataType;
+                renderVarDict[HdPrmanExperimentalRenderSpecTokens->params] =
+                    renderVar.extraSettings;
+
+                renderVarDicts.push_back(renderVarDict);
             }
-
-            // Map dataType from token to Ri enum.
-            // XXX use usd tokens?
-            riley::RenderOutputType renderOutputType;
-            if (renderVar.dataType == TfToken("color3f")) {
-                renderOutputType = riley::RenderOutputType::k_Color;
-            } else if (renderVar.dataType == TfToken("float")) {
-                renderOutputType = riley::RenderOutputType::k_Float;
-            } else if (renderVar.dataType == TfToken("int")) {
-                renderOutputType = riley::RenderOutputType::k_Integer;
-            } else {
-                TF_RUNTIME_ERROR("Unimplemented renderVar dataType '%s'; "
-                                 "skipping", renderVar.dataType.GetText());
-                continue;
-            }
-
-            RtParamList params; 
-            // RenderVar extraSettings become Riley channel params.
-            _ConvertSettings(renderVar.extraSettings, params);
-
-            HdPrman_OfflineRenderParam::RenderOutput ro;
-            ro.name = RtUString(name.c_str());
-            ro.type = renderOutputType;
-            ro.params = params;
-            renderOutputs.push_back(ro);
+            
+            renderSpecDict[HdPrmanExperimentalRenderSpecTokens->renderVars] =
+                renderVarDicts;
         }
+
+        {
+            VtArray<VtDictionary> renderProducts;
+
+            {
+                VtDictionary renderProduct;
+                renderProduct[HdPrmanExperimentalRenderSpecTokens->name] =
+                    product.name;
+
+                {
+                    VtIntArray renderVarIndices;
+                    const size_t num = product.renderVarIndices.size();
+                    for (size_t i = 0; i < num; i++) {
+                        renderVarIndices.push_back(i);
+                    }
+
+                    renderProduct[
+                        HdPrmanExperimentalRenderSpecTokens->renderVarIndices] =
+                        renderVarIndices;
+                }
+
+                renderProducts.push_back(renderProduct);
+            }
+        
+            renderSpecDict[HdPrmanExperimentalRenderSpecTokens->renderProducts]=
+                renderProducts;
+        }
+        
+
+        settingsMap[HdPrmanRenderSettingsTokens->experimentalRenderSpec] =
+            renderSpecDict;
 
         // Only allow "raster" for now.
         TF_VERIFY(product.type == TfToken("raster"));
@@ -504,15 +476,14 @@ int main(int argc, char *argv[])
         // the appropriate materialBindingPurposes from the USD scene.
         // We should also configure the scene to filter for the
         // requested includedPurposes.
+
+        std::shared_ptr<HdPrman_OfflineRenderParam> renderParam =
+            std::make_shared<HdPrman_OfflineRenderParam>();
+
         HdPrmanRenderDelegate hdPrmanBackend(renderParam, settingsMap);
         
         renderParam->Begin(&hdPrmanBackend);
         
-        // Basic configuration       
-        renderParam->Initialize(
-                product.name,
-                renderOutputs);
-
         // Hydra setup
         //
         // Assemble a Hydra pipeline to feed USD data to Riley. 

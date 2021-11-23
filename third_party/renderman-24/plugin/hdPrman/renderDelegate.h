@@ -35,19 +35,32 @@ class HdPrman_RenderParam;
 class HdPrman_InteractiveRenderParam;
 class RixParamList;
 
-TF_DEFINE_PRIVATE_TOKENS(
-    HdPrmanRenderSettingsTokens,
-    ((integrator,                     "integrator"))
-    ((integratorName,                 "ri:integrator:name"))
-    ((interactiveIntegrator,          "interactiveIntegrator"))
-    ((interactiveIntegratorTimeout,   "interactiveIntegratorTimeout"))
-    ((dataWindowNDC,                  "dataWindowNDC"))
-    ((pixelAspectRatio,               "pixelAspectRatio")) 
-    ((resolution,                     "resolution"))
-    ((instantaneousShutter,           "instantaneousShutter"))
-    ((shutterOpen,                    "shutter:open"))
-    ((shutterClose,                   "shutter:close"))
-);
+#define HDPRMAN_RENDER_SETTINGS_TOKENS                                 \
+    ((integrator,                     "integrator"))                   \
+    ((integratorName,                 "ri:integrator:name"))           \
+    ((interactiveIntegrator,          "interactiveIntegrator"))        \
+    ((interactiveIntegratorTimeout,   "interactiveIntegratorTimeout")) \
+    ((dataWindowNDC,                  "dataWindowNDC"))                \
+    ((pixelAspectRatio,               "pixelAspectRatio"))             \
+    ((resolution,                     "resolution"))                   \
+    ((instantaneousShutter,           "instantaneousShutter"))         \
+    ((shutterOpen,                    "shutter:open"))                 \
+    ((shutterClose,                   "shutter:close"))                \
+    ((experimentalRenderSpec,         "experimental:renderSpec"))
+
+TF_DECLARE_PUBLIC_TOKENS(HdPrmanRenderSettingsTokens, HDPRMAN_API,
+    HDPRMAN_RENDER_SETTINGS_TOKENS);
+
+#define HDPRMAN_EXPERIMENTAL_RENDER_SPEC_TOKENS \
+    (renderProducts)               \
+    (renderVars)                   \
+    (renderVarIndices)             \
+    (name)                         \
+    (type)                         \
+    (params)
+
+TF_DECLARE_PUBLIC_TOKENS(HdPrmanExperimentalRenderSpecTokens, HDPRMAN_API,
+    HDPRMAN_EXPERIMENTAL_RENDER_SPEC_TOKENS);
 
 #define HDPRMAN_INTEGRATOR_TOKENS \
     (PxrPathTracer)               \

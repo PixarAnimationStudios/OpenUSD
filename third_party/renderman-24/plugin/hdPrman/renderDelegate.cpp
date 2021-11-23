@@ -64,6 +64,12 @@ TF_DEFINE_PRIVATE_TOKENS(
                  /* establish a formal convention */
 );
 
+TF_DEFINE_PUBLIC_TOKENS(HdPrmanRenderSettingsTokens,
+    HDPRMAN_RENDER_SETTINGS_TOKENS);
+
+TF_DEFINE_PUBLIC_TOKENS(HdPrmanExperimentalRenderSpecTokens,
+    HDPRMAN_EXPERIMENTAL_RENDER_SPEC_TOKENS);
+
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanIntegratorTokens,
     HDPRMAN_INTEGRATOR_TOKENS);
 

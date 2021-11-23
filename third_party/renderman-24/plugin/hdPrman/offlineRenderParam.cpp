@@ -52,6 +52,56 @@ _SetDefaultShutterCurve(HdPrmanCameraContext &context)
         shutterPoints);
 }
 
+static
+riley::RenderOutputType
+_ToRenderOutputType(const TfToken &t)
+{
+    if (t == TfToken("color3f")) {
+        return riley::RenderOutputType::k_Color;
+    } else if (t == TfToken("float")) {
+        return riley::RenderOutputType::k_Float;
+    } else if (t == TfToken("int")) {
+        return riley::RenderOutputType::k_Integer;
+    } else {
+        TF_RUNTIME_ERROR("Unimplemented renderVar dataType '%s'; "
+                         "skipping", t.GetText());
+        return riley::RenderOutputType::k_Integer;
+    }
+}
+
+// Helper to convert a dictionary of Hydra settings to Riley params.
+static
+RtParamList
+_ToRtParamList(VtDictionary const& dict)
+{
+    RtParamList params;
+
+    for (auto const& entry: dict) {
+        RtUString riName(entry.first.c_str());
+
+        if (entry.second.IsHolding<int>()) {
+            params.SetInteger(riName, entry.second.UncheckedGet<int>());
+        } else if (entry.second.IsHolding<float>()) {
+            params.SetFloat(riName, entry.second.UncheckedGet<float>());
+        } else if (entry.second.IsHolding<std::string>()) {
+            params.SetString(riName,
+                RtUString(entry.second.UncheckedGet<std::string>().c_str()));
+        } else if (entry.second.IsHolding<VtArray<int>>()) {
+            auto const& array = entry.second.UncheckedGet<VtArray<int>>();
+            params.SetIntegerArray(riName, &array[0], array.size());
+        } else if (entry.second.IsHolding<VtArray<float>>()) {
+            auto const& array = entry.second.UncheckedGet<VtArray<float>>();
+            params.SetFloatArray(riName, &array[0], array.size());
+        } else {
+            TF_CODING_ERROR("Unimplemented setting %s of type %s\n",
+                            entry.first.c_str(),
+                            entry.second.GetTypeName().c_str());
+        }
+    }
+
+    return params;
+}
+
 void
 HdPrman_OfflineRenderParam::Begin(HdPrmanRenderDelegate * const renderDelegate)
 {
@@ -65,15 +115,32 @@ HdPrman_OfflineRenderParam::Begin(HdPrmanRenderDelegate * const renderDelegate)
     _riley->SetOptions(options);
 
     _CreateIntegrator(renderDelegate);
-}
 
-void
-HdPrman_OfflineRenderParam::Initialize(
-    TfToken outputFilename,
-    std::vector<RenderOutput> const & renderOutputs)
-{
-    for (auto const& ro : renderOutputs) {
-        _AddRenderOutput(ro.name, ro.type, ro.params);
+    const VtDictionary &renderSpec =
+        renderDelegate->GetRenderSetting<VtDictionary>(
+            HdPrmanRenderSettingsTokens->experimentalRenderSpec,
+            VtDictionary());
+
+    const VtArray<VtDictionary> &renderVarDicts =
+        VtDictionaryGet<VtArray<VtDictionary>>(
+            renderSpec,
+            HdPrmanExperimentalRenderSpecTokens->renderVars);
+
+    for (const VtDictionary &renderVarDict : renderVarDicts) {
+        const std::string &nameStr = VtDictionaryGet<std::string>(
+            renderVarDict, HdPrmanExperimentalRenderSpecTokens->name);
+        const RtUString name(nameStr.c_str());
+
+        _AddRenderOutput(
+            name,
+            _ToRenderOutputType(
+                VtDictionaryGet<TfToken>(
+                    renderVarDict,
+                    HdPrmanExperimentalRenderSpecTokens->type)),
+            _ToRtParamList(
+                VtDictionaryGet<VtDictionary>(
+                    renderVarDict,
+                    HdPrmanExperimentalRenderSpecTokens->params)));
     }
 
     _SetDefaultShutterCurve(GetCameraContext());
@@ -83,6 +150,23 @@ HdPrman_OfflineRenderParam::Initialize(
     // Resolution will be updated by
     // SetResolutionOfRenderTargets called by render pass.
     const riley::Extent outputFormat = { 512, 512, 1 };
+
+    TfToken outputFilename;
+
+    const VtArray<VtDictionary> & renderProducts =
+        VtDictionaryGet<VtArray<VtDictionary>>(
+            renderSpec,
+            HdPrmanExperimentalRenderSpecTokens->renderProducts);
+
+    // TODO:
+    // Deal with more than one render product.
+    // Respect the renderVarIndices.
+    if (!renderProducts.empty()) {
+        outputFilename =
+            VtDictionaryGet<TfToken>(
+                renderProducts[0],
+                HdPrmanExperimentalRenderSpecTokens->name);
+    }
 
     _SetRenderTargetAndDisplay(outputFormat, outputFilename);
 
