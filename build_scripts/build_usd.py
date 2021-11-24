@@ -226,20 +226,38 @@ def GetPythonInfo(context):
         pythonLibPath = os.path.join(pythonBaseDir, "lib",
                                      _GetPythonLibraryFilename(context))
     else:
-        pythonIncludeDir = sysconfig.get_config_var("INCLUDEPY")
-        if Windows():
+        pythonIncludeDir = sysconfig.get_path("include")
+        if not pythonIncludeDir or not os.path.isdir(pythonIncludeDir):
+            # as a backup, and for legacy reasons - not preferred because
+            # it may be baked at build time
+            pythonIncludeDir = sysconfig.get_config_var("INCLUDEPY")
+
+        # if in a venv, installed_base will be the "original" python,
+        # which is where the libs are ("base" will be the venv dir)
+        pythonBaseDir = sysconfig.get_config_var("installed_base")
+        if not pythonBaseDir or not os.path.isdir(pythonBaseDir):
+            # for python-2.7
             pythonBaseDir = sysconfig.get_config_var("base")
+
+        if Windows():
             pythonLibPath = os.path.join(pythonBaseDir, "libs",
                                          _GetPythonLibraryFilename(context))
         elif Linux():
-            pythonLibDir = sysconfig.get_config_var("LIBDIR")
             pythonMultiarchSubdir = sysconfig.get_config_var("multiarchsubdir")
-            if pythonMultiarchSubdir:
-                pythonLibDir = pythonLibDir + pythonMultiarchSubdir
-            pythonLibPath = os.path.join(pythonLibDir,
-                                         _GetPythonLibraryFilename(context))
+            # Try multiple ways to get the python lib dir
+            for pythonLibDir in (sysconfig.get_config_var("LIBDIR"),
+                                 os.path.join(pythonBaseDir, "lib")):
+                if pythonMultiarchSubdir:
+                    pythonLibPath = \
+                        os.path.join(pythonLibDir + pythonMultiarchSubdir,
+                                     _GetPythonLibraryFilename(context))
+                    if os.path.isfile(pythonLibPath):
+                        break
+                pythonLibPath = os.path.join(pythonLibDir,
+                                             _GetPythonLibraryFilename(context))
+                if os.path.isfile(pythonLibPath):
+                    break
         elif MacOS():
-            pythonBaseDir = sysconfig.get_config_var("base")
             pythonLibPath = os.path.join(pythonBaseDir, "lib",
                                          _GetPythonLibraryFilename(context))
         else:
