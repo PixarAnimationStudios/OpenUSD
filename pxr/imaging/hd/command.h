@@ -44,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 struct HdCommandArgDescriptor
 {
-    HdCommandArgDescriptor() noexcept = default;
+    HdCommandArgDescriptor() = default;
 
     HdCommandArgDescriptor(const TfToken &argName,
                            const VtValue &defaultValue_) 
