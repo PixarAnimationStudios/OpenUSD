@@ -45,9 +45,6 @@ protected:
   /// Mark collection as dirty for update
   virtual void _MarkCollectionDirty() override; 
 
-  /// Prepare the scene for rendering 
-  virtual void _Prepare(TfTokenVector const &renderTags) override;
-
   /// Draw the scene with the bound renderpass state.
   ///   \param renderPassState Input parameters (including viewer parameters)
   ///                          for this renderpass.
@@ -56,7 +53,6 @@ protected:
                 TfTokenVector const &renderTags) override;
 
 private:
-  void _PrepareDrawItems(TfTokenVector const& renderTags);
   GlfDrawTargetRefPtr                            _drawTarget;
 
   // draw items are organized by glsl program

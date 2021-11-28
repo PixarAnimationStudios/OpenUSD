@@ -142,54 +142,6 @@ LoFiRenderPass::_MarkCollectionDirty()
 }
 
 void
-LoFiRenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
-{
-  HD_TRACE_FUNCTION();
-  //GLF_GROUP_FUNCTION();
-
-  HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
-  HdRprimCollection const &collection = GetRprimCollection();
-
-  const int collectionVersion =
-    tracker.GetCollectionVersion(collection.GetName());
-
-  const int renderTagVersion =
-    tracker.GetRenderTagVersion();
-
-  const bool collectionChanged = _collectionChanged ||
-    (_collectionVersion != collectionVersion);
-
-  const bool renderTagsChanged = _renderTagVersion != renderTagVersion;
-
-  if (collectionChanged || renderTagsChanged) {
-    HD_PERF_COUNTER_INCR(HdPerfTokens->collectionsRefreshed);
-    /*
-    TF_DEBUG(HD_COLLECTION_CHANGED).Msg("CollectionChanged: %s "
-                                        "(repr = %s)"
-                                        "version: %d -> %d\n",
-                                          collection.GetName().GetText(),
-                                          collection.GetReprSelector().GetText(),
-                                          _collectionVersion,
-                                          collectionVersion);
-    */
-    _drawItems = GetRenderIndex()->GetDrawItems(collection, renderTags);
-    _drawItemCount = _drawItems.size();
-    _drawItemsChanged = true;
-
-    _collectionVersion = collectionVersion;
-    _collectionChanged = false;
-
-    _renderTagVersion = renderTagVersion;
-  }
-}
-
-void
-LoFiRenderPass::_Prepare(TfTokenVector const &renderTags)
-{
-    _PrepareDrawItems(renderTags);
-}
-
-void
 LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
                           TfTokenVector const &renderTags)
 {
@@ -199,8 +151,6 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
   GfVec4f viewport = renderPassState->GetViewport();
   HdRenderPass* renderPass = (HdRenderPass*)this;
   //auto drawItems = GetRenderIndex()->GetDrawItems(GetRprimCollection(), renderTags);
-
-  _PrepareDrawItems(renderTags);
 
   _programDrawItemsMap.clear();
 

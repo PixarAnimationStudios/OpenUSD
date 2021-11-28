@@ -99,7 +99,7 @@ LoFiTextureObject::_SubtractFromTotalTextureMemory(
     const HgiTextureHandle &texture)
 {
     if (texture) {
-        _AdjustTotalTextureMemory(-texture->GetByteSizeOfResource());
+        _AdjustTotalTextureMemory(-(int)texture->GetByteSizeOfResource());
     }
 }
 
