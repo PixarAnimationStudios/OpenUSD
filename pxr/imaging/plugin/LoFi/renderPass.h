@@ -53,6 +53,7 @@ protected:
                 TfTokenVector const &renderTags) override;
 
 private:
+  void _UpdateDrawItems(TfTokenVector const& renderTags);
   GlfDrawTargetRefPtr                            _drawTarget;
 
   // draw items are organized by glsl program
