@@ -230,7 +230,8 @@ private:
         const HdRenderPassAovBinding& aovBinding);
 
     void _ConditionStencilWithGLCallback(
-            HdxPickTaskContextParams::DepthMaskCallback maskCallback);
+            HdxPickTaskContextParams::DepthMaskCallback maskCallback,
+            HdRenderBuffer const * depthStencilBuffer);
 
     bool _UseOcclusionPass() const;
     bool _UseWidgetPass() const;
@@ -259,7 +260,7 @@ private:
     HdRenderPassAovBindingVector _pickableAovBindings;
     HdRenderPassAovBinding _occluderAovBinding;
     size_t _pickableDepthIndex;
-    std::unique_ptr<HdStRenderBuffer> _widgetDepthBuffer;
+    std::unique_ptr<HdStRenderBuffer> _widgetDepthStencilBuffer;
     HdRenderPassAovBindingVector _widgetAovBindings;
 
     HdxPickTask() = delete;

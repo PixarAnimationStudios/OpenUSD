@@ -94,7 +94,7 @@ static TfTokenVector _aovOutputs {
     HdAovTokens->depthStencil
 };
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
-    (widgetDepth)
+    (widgetDepthStencil)
 );
 
 static SdfPath 
@@ -206,28 +206,29 @@ HdxPickTask::_CreateAovBindings()
         }
     }
 
-    // Set up widget render pass' depth binding, a fresh empty depth buffer,
-    // so that inter-widget occlusion is correct while widgets all draw in front
-    // of any previously-drawn items.  While writing to other AOVs, don't clear
-    // them at all, so that previously-drawn items are retained.
+    // Set up widget render pass' depth binding, a fresh empty depthStencil
+    // buffer, so that inter-widget occlusion is correct while widgets all draw
+    // in front of any previously-drawn items.  While writing to other AOVs,
+    // don't clear them at all, so that previously-drawn items are retained.
     {
-        _widgetDepthBuffer = std::make_unique<HdStRenderBuffer>(
-            hdStResourceRegistry.get(), _GetAovPath(_tokens->widgetDepth));
+        _widgetDepthStencilBuffer = std::make_unique<HdStRenderBuffer>(
+            hdStResourceRegistry.get(),
+            _GetAovPath(_tokens->widgetDepthStencil));
 
         HdAovDescriptor depthDesc = renderDelegate->GetDefaultAovDescriptor(
             HdAovTokens->depth);
         
-
         _widgetAovBindings = _pickableAovBindings;
         for (auto& binding : _widgetAovBindings) {
             binding.clearValue = VtValue();
         }
 
         HdRenderPassAovBinding widgetDepthBinding;
-        widgetDepthBinding.aovName = _tokens->widgetDepth;
-        widgetDepthBinding.renderBufferId = _GetAovPath(_tokens->widgetDepth);
+        widgetDepthBinding.aovName = _tokens->widgetDepthStencil;
+        widgetDepthBinding.renderBufferId = _GetAovPath(
+            _tokens->widgetDepthStencil);
         widgetDepthBinding.aovSettings = depthDesc.aovSettings;
-        widgetDepthBinding.renderBuffer = _widgetDepthBuffer.get();
+        widgetDepthBinding.renderBuffer = _widgetDepthStencilBuffer.get();
         widgetDepthBinding.clearValue = VtValue(GfVec4f(1));
         _widgetAovBindings.back() = widgetDepthBinding;
     }
@@ -242,7 +243,7 @@ HdxPickTask::_CleanupAovBindings()
         for (auto const & aovBuffer : _pickableAovBuffers) {
             aovBuffer->Finalize(renderParam);
         }
-        _widgetDepthBuffer->Finalize(renderParam);
+        _widgetDepthStencilBuffer->Finalize(renderParam);
     }
     _pickableAovBuffers.clear();
     _pickableAovBindings.clear();
@@ -287,10 +288,9 @@ HdxPickTask::_ResizeOrCreateBufferForAOV(
 
 void
 HdxPickTask::_ConditionStencilWithGLCallback(
-    HdxPickTaskContextParams::DepthMaskCallback maskCallback)
+    HdxPickTaskContextParams::DepthMaskCallback maskCallback,
+    HdRenderBuffer const * depthStencilBuffer)
 {
-    HdRenderBuffer const * depthStencilBuffer =
-        _FindAovBuffer(HdAovTokens->depthStencil);
     VtValue const resource = depthStencilBuffer->GetResource(false);
     HgiTextureHandle depthTexture = resource.UncheckedGet<HgiTextureHandle>();
 
@@ -590,7 +590,10 @@ HdxPickTask::Execute(HdTaskContext* ctx)
         (_contextParams.depthMaskCallback != nullptr);
 
     if (needStencilConditioning) {
-        _ConditionStencilWithGLCallback(_contextParams.depthMaskCallback);
+        _ConditionStencilWithGLCallback(_contextParams.depthMaskCallback,
+            _pickableAovBindings[_pickableDepthIndex].renderBuffer);
+        _ConditionStencilWithGLCallback(_contextParams.depthMaskCallback,
+            _widgetDepthStencilBuffer.get());
     }
 
     //
@@ -612,7 +615,8 @@ HdxPickTask::Execute(HdTaskContext* ctx)
         _pickableAovBindings[_pickableDepthIndex].clearValue = VtValue();
     }
     else {
-        // If there was no occlusion pass then clear the depth.
+        // If there was no occlusion pass and we didn't condition the
+        // depthStencil buffer then clear the depth.
         _pickableAovBindings[_pickableDepthIndex].clearValue =
             VtValue(GfVec4f(1.0f));
     }
@@ -623,6 +627,14 @@ HdxPickTask::Execute(HdTaskContext* ctx)
                                  _nonWidgetRenderTags);
 
     if (_UseWidgetPass()) {
+        if (needStencilConditioning) {
+            // Prevent widget depthStencil from being cleared so that stencil is
+            // retained.
+            _widgetAovBindings.back().clearValue = VtValue();
+        } else {
+            _widgetAovBindings.back().clearValue = VtValue(GfVec4f(1.0f));
+        }
+        _widgetRenderPassState->SetAovBindings(_widgetAovBindings);
         _widgetRenderPass->Execute(_widgetRenderPassState,
             {HdxRenderTagTokens->widget});
     }
