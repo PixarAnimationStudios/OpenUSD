@@ -32,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdPrman_OfflineRenderParam::HdPrman_OfflineRenderParam()
 {
-    _InitializePrman(); 
+    _CreateRiley();
 }
 
 static
@@ -176,7 +176,7 @@ HdPrman_OfflineRenderParam::Begin(HdPrmanRenderDelegate * const renderDelegate)
 
 HdPrman_OfflineRenderParam::~HdPrman_OfflineRenderParam()
 {
-    _End();
+    _DestroyRiley();
 }
 
 void
@@ -275,31 +275,6 @@ riley::IntegratorId
 HdPrman_OfflineRenderParam::GetActiveIntegratorId()
 {
     return GetIntegratorId();
-}
-
-void
-HdPrman_OfflineRenderParam::_End()
-{
-    std::cout << "Destroy Prman" << std::endl;
-    // Reset to initial state.
-    if (_mgr) {
-        if(_riley) {
-            _mgr->DestroyRiley(_riley);
-        }
-        _mgr = nullptr;
-    }
-
-    _riley = nullptr;
-
-    if (_rix) {
-        RixXcpt* rix_xcpt = (RixXcpt*)_rix->GetRixInterface(k_RixXcpt);
-        rix_xcpt->Unregister(&_xcpt);
-    }
-
-    if (_ri) {
-        _ri->PRManEnd();
-        _ri = nullptr;
-    }
 }
 
 riley::Riley *

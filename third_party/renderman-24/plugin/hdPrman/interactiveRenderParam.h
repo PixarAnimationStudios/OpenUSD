@@ -69,8 +69,6 @@ public:
     void Begin(HdRenderDelegate *renderDelegate);
     // Starts riley and the thread if needed, and tells the thread render
     void StartRender();
-    // End connection to Renderman, cancelling any ongoing render.
-    void End();
 
     // Request Riley (and the HdRenderThread) to stop.
     void StopRender();
@@ -127,10 +125,6 @@ private:
     // The integrator to use.
     // Updated from render pass state.
     riley::IntegratorId _activeIntegratorId;
-
-    // Initialize things, like riley, that need to succeed
-    // in order for Begin to be called.
-    void _Initialize();
 
     void _RenderThreadCallback();
 

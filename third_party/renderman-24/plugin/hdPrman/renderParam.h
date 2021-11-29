@@ -202,10 +202,12 @@ public:
     void SetResolutionOfRenderTarget(const int32_t resolution[2]);
 
 protected:
-    void _InitializePrman();
+    void _CreateRiley();
     void _CreateFallbackMaterials();
     void _CreateFallbackLight();
     void _CreateIntegrator(HdRenderDelegate * renderDelegate);
+
+    void _DestroyRiley();
 
     // Top-level entrypoint to PRMan.
     // Singleton used to access RixInterfaces.

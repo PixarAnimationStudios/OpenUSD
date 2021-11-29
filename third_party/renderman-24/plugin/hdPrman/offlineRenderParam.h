@@ -62,8 +62,6 @@ public:
     riley::IntegratorId GetActiveIntegratorId() override;
 
 private:
-    // Finishes the renderer
-    void _End();
     void _AddRenderOutput(RtUString name, 
         riley::RenderOutputType type,
         RtParamList const& params);

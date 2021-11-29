@@ -1425,7 +1425,7 @@ HdPrman_RenderParam::SetParamFromVtValue(
 }
 
 void
-HdPrman_RenderParam::_InitializePrman()
+HdPrman_RenderParam::_CreateRiley()
 {
     _rix = RixGetContext();
     if (!_rix) {
@@ -1478,6 +1478,29 @@ HdPrman_RenderParam::_InitializePrman()
 
     _xpu = (!rileyvariant.empty() ||
             (rileyvariant.find("xpu") != std::string::npos));
+}
+
+void
+HdPrman_RenderParam::_DestroyRiley()
+{
+    if (_mgr) {
+        if(_riley) {
+            _mgr->DestroyRiley(_riley);
+        }
+        _mgr = nullptr;
+    }
+
+    _riley = nullptr;
+
+    if (_rix) {
+        RixXcpt* rix_xcpt = (RixXcpt*)_rix->GetRixInterface(k_RixXcpt);
+        rix_xcpt->Unregister(&_xcpt);
+    }
+
+    if (_ri) {
+        _ri->PRManEnd();
+        _ri = nullptr;
+    }
 }
 
 static

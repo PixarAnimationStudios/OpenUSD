@@ -120,21 +120,17 @@ HdPrman_InteractiveRenderParam::HdPrman_InteractiveRenderParam() :
     renderThread.SetRenderCallback(
         std::bind(
             &HdPrman_InteractiveRenderParam::_RenderThreadCallback, this));
-    _Initialize();
+    _CreateRiley();
+    
+    // Register RenderMan display driver
+    HdPrmanFramebuffer::Register(_rix);
 }
 
 HdPrman_InteractiveRenderParam::~HdPrman_InteractiveRenderParam()
 {
-    End();
-}
+    StopRender();
 
-void 
-HdPrman_InteractiveRenderParam::_Initialize()
-{
-    _InitializePrman();
-
-    // Register RenderMan display driver
-    HdPrmanFramebuffer::Register(_rix);
+    _DestroyRiley();
 }
 
 bool 
@@ -275,31 +271,6 @@ HdPrman_InteractiveRenderParam::StartRender()
     }
 
     renderThread.StartRender();
-}
-
-void 
-HdPrman_InteractiveRenderParam::End()
-{
-    if (renderThread.IsThreadRunning()) {
-        renderThread.StopThread();
-    }
-
-    // Reset to initial state.
-    if (_mgr) {
-        if(_riley) {
-            _mgr->DestroyRiley(_riley);
-        }
-        _mgr = nullptr;
-    }
-    _riley = nullptr;
-    if (_rix) {
-        RixXcpt* rix_xcpt = (RixXcpt*)_rix->GetRixInterface(k_RixXcpt);
-        rix_xcpt->Unregister(&_xcpt);
-    }
-    if (_ri) {
-        _ri->PRManEnd();
-        _ri = nullptr;
-    }
 }
 
 void
