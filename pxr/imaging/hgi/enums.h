@@ -588,6 +588,32 @@ enum HgiBindingType
     HgiBindingTypePointer,
 };
 
+/// \enum HgiInterpolationType
+///
+/// Describes the type of shader resource binding model to use.
+///
+/// <ul>
+/// <li>HgiInterpolationDefault:
+///   The shader input will have default interpolation.
+///   Glsl example: vec2 parameter;
+///   Msl example: vec2 parameter;</li>
+/// <li>HgiInterpolationFlat:
+///   The shader input will have no interpolation.
+///   Glsl example: flat vec2 parameter;
+///   Msl example: vec2 parameter[[flat]];</li>
+/// <li>HgiBindingTypeNoPerspective:
+///   The shader input will be linearly interpolated in screen-space
+///   Glsl example: noperspective vec2 parameter;
+///   Msl example: vec2 parameter[[center_no_perspective]];</li>
+/// </ul>
+///
+enum HgiInterpolationType
+{
+    HgiInterpolationDefault = 0,
+    HgiInterpolationFlat,
+    HgiInterpolationNoPerspective,
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
