@@ -24,6 +24,7 @@
 #
 # pylint: disable=range-builtin-not-iterating
 #
+from __future__ import division
 import unittest
 import sys, math
 from pxr import Gf, Vt
