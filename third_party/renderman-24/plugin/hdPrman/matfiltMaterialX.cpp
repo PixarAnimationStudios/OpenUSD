@@ -240,7 +240,10 @@ _GatherNodeGraphNodes(
 
 // Compile the given oslSource returning the path to the compiled oso code 
 static std::string 
-_CompileOslSource(std::string const& name, std::string const& oslSource)
+_CompileOslSource(
+    std::string const& name, 
+    std::string const& oslSource,
+    mx::FileSearchPath const& searchPaths)
 {
 #ifdef PXR_OSL_SUPPORT_ENABLED
 
@@ -248,11 +251,20 @@ _CompileOslSource(std::string const& name, std::string const& oslSource)
         .Msg("--------- MaterialX Generated Shader '%s' ----------\n%s"
              "---------------------------\n\n", name.c_str(), oslSource.c_str());
 
+    // Include the filepath to the MaterialX OSL directory (stdlib/osl)
+    std::vector<std::string> oslArgs;
+    oslArgs.reserve(searchPaths.size());
+    const mx::FilePath stdlibOslPath = "stdlib/osl";
+    for (mx::FilePath const& path : searchPaths) {
+        const mx::FilePath fullPath = path/stdlibOslPath;
+        oslArgs.push_back(fullPath.exists() ? "-I" + fullPath.asString()
+                                            : "-I" + path.asString());
+    }
+
     // Compile oslSource
     std::string oslCompiledSource;
     OSL::OSLCompiler oslCompiler;
-    oslCompiler.compile_buffer(oslSource, oslCompiledSource, 
-                {"-I" + std::string(PXR_MATERIALX_STDLIB_DIR) + "/stdlib/osl"});
+    oslCompiler.compile_buffer(oslSource, oslCompiledSource, oslArgs);
 
     // Save compiled shader
     std::string compiledFilePath = ArchMakeTmpFileName("MX." + name, ".oso");
@@ -343,8 +355,8 @@ _UpdateNetwork(
             }
 
             // Compile the oslSource
-            std::string compiledShaderPath = _CompileOslSource(shaderName, 
-                                                               oslSource);
+            std::string compiledShaderPath = 
+                _CompileOslSource(shaderName, oslSource, searchPath);
             if (compiledShaderPath.empty()) {
                 continue;
             }
