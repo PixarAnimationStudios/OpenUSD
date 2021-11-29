@@ -135,6 +135,7 @@ public:
         , _resource(nullptr)
         , _bar(nullptr)
         , _isInterleaved(false)
+        , _isWritable(false)
     {}
 
     /// A data binding, not backed by neither BufferArrayRange nor
@@ -147,6 +148,7 @@ public:
         , _resource(nullptr)
         , _bar(nullptr)
         , _isInterleaved(false)
+        , _isWritable(false)
     {}
 
     /// A buffer resource binding. Binds a given buffer resource to a specified
@@ -159,6 +161,7 @@ public:
         , _resource(resource)
         , _bar(nullptr)
         , _isInterleaved(false)
+        , _isWritable(false)
     {}
 
     /// A named struct binding. From an interleaved BufferArray, an array of
@@ -168,13 +171,14 @@ public:
     /// Data types can be derived from each HdBufferResource of bar.
     HdBindingRequest(HdBinding::Type type, TfToken const& name,
                     HdBufferArrayRangeSharedPtr bar,
-                    bool interleave)
+                    bool interleave, bool writable = false)
         : _bindingType(type)
         , _dataType(HdTypeInvalid)
         , _name(name)
         , _resource(nullptr)
         , _bar(bar)
         , _isInterleaved(interleave)
+        , _isWritable(writable)
     {}
 
     // ---------------------------------------------------------------------- //
@@ -200,6 +204,12 @@ public:
     ///  structs.
     bool IsInterleavedBufferArray() const {
         return _bar && _isInterleaved;
+    }
+
+    /// True when the resource is being bound so that it can be written to.
+    /// This affects whether it will be declared 'const' or not.
+    bool isWritable() const {
+        return _bar && _isWritable;
     }
 
     /// This binding is typelss. CodeGen only allocate location and
@@ -294,7 +304,7 @@ private:
     // Struct binding request
     HdBufferArrayRangeSharedPtr _bar;
     bool _isInterleaved;
-
+    bool _isWritable;
 };
 
 
