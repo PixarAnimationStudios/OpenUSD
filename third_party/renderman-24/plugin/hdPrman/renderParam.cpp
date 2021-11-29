@@ -1595,14 +1595,22 @@ void
 HdPrman_RenderParam::_CreateFallbackLight()
 {
     static const RtUString us_PxrDomeLight("PxrDomeLight");
-    static const RtUString us_lightA("lightA");
-    
+    static const RtUString us_lightA("lightA");    
+    static const RtUString us_traceLightPaths("traceLightPaths");
+    static const RtUString us_lightGroup("lightGroup");
+    static const RtUString us_A("A");
+
+    RtParamList nodeParams;
+    nodeParams.SetFloat(RixStr.k_intensity, 1.0f);
+    nodeParams.SetInteger(us_traceLightPaths, 1);
+    nodeParams.SetString(us_lightGroup, us_A);
+
     // Light shader
     const riley::ShadingNode lightNode {
         riley::ShadingNode::Type::k_Light, // type
             us_PxrDomeLight, // name
             us_lightA, // handle
-            RtParamList()
+            nodeParams
             };
     _fallbackLightShader = _riley->CreateLightShader(
         riley::UserId::DefaultId(), {1, &lightNode}, {0, nullptr});
