@@ -823,6 +823,8 @@ void HgiMetalShaderGenerator::_BuildBufferShaderSections(
         CreateShaderSection<HgiMetalBufferShaderSection>(
             bufName,
             bufType,
+            buffers[i].binding,
+            buffers[i].writable,
             attributes);
     }
 }

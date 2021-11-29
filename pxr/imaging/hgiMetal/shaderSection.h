@@ -57,6 +57,12 @@ public:
     HGIMETAL_API
     virtual bool VisitScopeFunctionDefinitions(std::ostream &ss);
     HGIMETAL_API
+    virtual bool VisitScopeConstructorDeclarations(std::ostream &ss);
+    HGIMETAL_API
+    virtual bool VisitScopeConstructorInitialization(std::ostream &ss);
+    HGIMETAL_API
+    virtual bool VisitScopeConstructorInstantiation(std::ostream &ss);
+    HGIMETAL_API
     virtual bool VisitEntryPointParameterDeclarations(std::ostream &ss);
     HGIMETAL_API
     virtual bool VisitEntryPointFunctionExecutions(
@@ -210,6 +216,8 @@ public:
     HgiMetalBufferShaderSection(
         const std::string &samplerSharedIdentifier,
         const std::string &type,
+        const HgiBindingType binding,
+        const bool writable,
         const HgiShaderSectionAttributeVector &attributes);
 
     HGIMETAL_API
@@ -217,6 +225,12 @@ public:
 
     HGIMETAL_API
     bool VisitScopeMemberDeclarations(std::ostream &ss) override;
+    HGIMETAL_API
+    bool VisitScopeConstructorDeclarations(std::ostream &ss) override;
+    HGIMETAL_API
+    bool VisitScopeConstructorInitialization(std::ostream &ss) override;
+    HGIMETAL_API
+    bool VisitScopeConstructorInstantiation(std::ostream &ss) override;
     HGIMETAL_API
     bool VisitEntryPointParameterDeclarations(std::ostream &ss)  override;
     HGIMETAL_API
@@ -231,6 +245,8 @@ private:
     HgiMetalBufferShaderSection(const HgiMetalBufferShaderSection&) = delete;
 
     const std::string _type;
+    const HgiBindingType _binding;
+    const bool _writable;
     const std::string _samplerSharedIdentifier;
 };
 

@@ -47,7 +47,25 @@ HgiMetalShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
 }
 
 bool
+HgiMetalShaderSection::VisitScopeConstructorDeclarations(std::ostream &ss)
+{
+    return false;
+}
+
+bool
+HgiMetalShaderSection::VisitScopeConstructorInitialization(std::ostream &ss)
+{
+    return false;
+}
+
+bool
 HgiMetalShaderSection::VisitEntryPointParameterDeclarations(std::ostream &ss)
+{
+    return false;
+}
+
+bool
+HgiMetalShaderSection::VisitScopeConstructorInstantiation(std::ostream &ss)
 {
     return false;
 }
@@ -310,12 +328,16 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
 HgiMetalBufferShaderSection::HgiMetalBufferShaderSection(
     const std::string &samplerSharedIdentifier,
     const std::string &type,
+    const HgiBindingType binding,
+    const bool writable,
     const HgiShaderSectionAttributeVector &attributes)
   : HgiMetalShaderSection(
       samplerSharedIdentifier,
       attributes,
       "")
   , _type(type)
+  , _binding(binding)
+  , _writable(writable)
   , _samplerSharedIdentifier(samplerSharedIdentifier)
 {
 }
@@ -329,11 +351,65 @@ HgiMetalBufferShaderSection::WriteType(std::ostream& ss) const
 bool
 HgiMetalBufferShaderSection::VisitScopeMemberDeclarations(std::ostream &ss)
 {
+    if (!_writable) {
+        ss << "const ";
+    }
     ss << "device ";
     WriteType(ss);
-    ss << "* ";
+
+    switch (_binding) {
+    case HgiBindingTypeValue:
+        ss << "& ";
+        break;
+    case HgiBindingTypeArray:
+    case HgiBindingTypePointer:
+        ss << "* ";
+        break;
+    }
+
     WriteIdentifier(ss);
     ss << ";\n";
+    return true;
+}
+
+bool
+HgiMetalBufferShaderSection::VisitScopeConstructorDeclarations(
+    std::ostream &ss)
+{
+    if (!_writable) {
+        ss << "const ";
+    }
+    ss << "device ";
+    WriteType(ss);
+    ss << "* _";
+    WriteIdentifier(ss);
+    return true;
+}
+
+bool
+HgiMetalBufferShaderSection::VisitScopeConstructorInitialization(
+    std::ostream &ss)
+{
+    WriteIdentifier(ss);
+    switch (_binding) {
+    case HgiBindingTypeValue:
+        ss << "(*_";
+        break;
+    case HgiBindingTypeArray:
+    case HgiBindingTypePointer:
+        ss << "(_";
+        break;
+    }
+    WriteIdentifier(ss);
+    ss << ")";
+    return true;
+}
+
+bool
+HgiMetalBufferShaderSection::VisitScopeConstructorInstantiation(
+    std::ostream &ss)
+{
+    WriteIdentifier(ss);
     return true;
 }
 
@@ -341,6 +417,9 @@ bool
 HgiMetalBufferShaderSection::VisitEntryPointParameterDeclarations(
     std::ostream &ss)
 {
+    if (!_writable) {
+        ss << "const ";
+    }
     ss << "device ";
     WriteType(ss);
     ss << "* ";
@@ -355,12 +434,7 @@ HgiMetalBufferShaderSection::VisitEntryPointFunctionExecutions(
     std::ostream& ss,
     const std::string &scopeInstanceName)
 {
-    ss << scopeInstanceName << ".";
-    WriteIdentifier(ss);
-    ss << " = ";
-    WriteIdentifier(ss);
-    ss << ";";
-    return true;
+    return false;
 }
 
 
