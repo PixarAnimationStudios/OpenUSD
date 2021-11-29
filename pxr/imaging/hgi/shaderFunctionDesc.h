@@ -86,13 +86,13 @@ bool operator!=(
 /// <li>type:
 ///   Type of the param within the shader file.</li>
 /// <li>bindIndex:
-///   The index of the resource.
+///   The index of the resource.</li>
 /// <li>arraySize:
-///   The array size of array type bindings.
+///   The size of the array when binding is a HgiBindingTypeArray.</li>
 /// <li>bindingType:
-///   The binding type.
+///   The binding model to use to expose the buffer to the shader.</li>
 /// <li>writeable:
-///   Whether the resource is writable.
+///   Whether the resource is writable.</li>
 /// </ul>
 ///
 struct HgiShaderFunctionBufferDesc
