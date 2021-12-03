@@ -75,9 +75,10 @@ TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_API, HDX_TOKENS);
     (lightTypeSpot)             \
                                 \
     (aovInputTask)              \
+    (colorCorrectionTask)       \
+    (colorizeSelectionTask)     \
     (drawTargetTask)            \
     (drawTargetResolveTask)     \
-    (colorizeSelectionTask)     \
     (oitRenderTask)             \
     (oitResolveTask)            \
     (oitVolumeRenderTask)       \
