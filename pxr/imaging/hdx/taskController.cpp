@@ -221,7 +221,7 @@ HdxTaskController::~HdxTaskController()
     const TfToken cameraLightType = 
         (GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight))
             ? HdPrimTypeTokens->simpleLight
-            : HdPrimTypeTokens->sphereLight;
+            : HdPrimTypeTokens->distantLight;
     for (auto const& id : _lightIds) {
         GetRenderIndex()->RemoveSprim(cameraLightType, id);
         GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->domeLight, id);
@@ -779,6 +779,7 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
 {
     _delegate.SetParameter(pathName, HdLightTokens->intensity, VtValue(1.0f));
     _delegate.SetParameter(pathName, HdLightTokens->exposure, VtValue(0.f));
+    _delegate.SetParameter(pathName, HdLightTokens->normalize, false);
     _delegate.SetParameter(pathName, HdLightTokens->color, 
         VtValue(GfVec3f(1, 1, 1)));
     _delegate.SetParameter(pathName, HdTokens->transform,
@@ -804,6 +805,11 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
         const GfVec4d& pos = light.GetPosition();
         trans.SetTranslateOnly(GfVec3d(pos[0], pos[1], pos[2]));
         _delegate.SetParameter(pathName, HdTokens->transform, VtValue(trans));
+
+        // Initialize distant light specific parameters with default values 
+        _delegate.SetParameter(pathName, HdLightTokens->angle, VtValue(0.53f));
+        _delegate.SetParameter(pathName, HdLightTokens->intensity, 
+            VtValue(50000.0f));
     }
 }
 
@@ -825,7 +831,7 @@ HdxTaskController::_RemoveLightSprim(size_t const& pathIdx)
         const TfToken cameraLightType = (GetRenderIndex()->
                 IsSprimTypeSupported(HdPrimTypeTokens->simpleLight))
             ? HdPrimTypeTokens->simpleLight
-            : HdPrimTypeTokens->sphereLight;
+            : HdPrimTypeTokens->distantLight;
         GetRenderIndex()->RemoveSprim(cameraLightType, _lightIds[pathIdx]);
         GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->domeLight, 
                         _lightIds[pathIdx]);
@@ -845,7 +851,7 @@ HdxTaskController::_ReplaceLightSprim(size_t const& pathIdx,
         const TfToken cameraLightType = (GetRenderIndex()->
                 IsSprimTypeSupported(HdPrimTypeTokens->simpleLight))
             ? HdPrimTypeTokens->simpleLight
-            : HdPrimTypeTokens->sphereLight;
+            : HdPrimTypeTokens->distantLight;
         GetRenderIndex()->InsertSprim(cameraLightType, &_delegate, pathName);
     }
     // set the parameters for lights[i] and mark as dirty
@@ -1522,7 +1528,7 @@ HdxTaskController::_SupportBuiltInLightTypes()
     bool dome = index->IsSprimTypeSupported(HdPrimTypeTokens->domeLight);
     // Camera Light
     bool camera = index->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight);
-    camera |= index->IsSprimTypeSupported(HdPrimTypeTokens->sphereLight);
+    camera |= index->IsSprimTypeSupported(HdPrimTypeTokens->distantLight);
     return dome && camera;
 } 
 
