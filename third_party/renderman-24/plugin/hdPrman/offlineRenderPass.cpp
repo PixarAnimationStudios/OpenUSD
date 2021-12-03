@@ -57,10 +57,6 @@ HdPrman_OfflineRenderPass::_Execute(
     HdRenderPassStateSharedPtr const& renderPassState,
     TfTokenVector const &renderTags)
 {
-    // Enable/disable the fallback light when the scene provides no lights.
-    _offlineRenderParam->SetFallbackLightsEnabled(
-        !_offlineRenderParam->HasSceneLights());
-
     const HdPrmanCamera * const hdCam =
         dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera());
 

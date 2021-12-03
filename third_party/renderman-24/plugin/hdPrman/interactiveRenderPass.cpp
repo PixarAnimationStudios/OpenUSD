@@ -158,10 +158,6 @@ HdPrman_InteractiveRenderPass::_Execute(
 
     _interactiveRenderParam->CreateDisplays(aovBindings);
 
-    // Enable/disable the fallback light when the scene provides no lights.
-    _interactiveRenderParam->SetFallbackLightsEnabled(
-        !_interactiveRenderParam->HasSceneLights());
-
     // Likewise the render settings.
     HdPrmanRenderDelegate * const renderDelegate =
         static_cast<HdPrmanRenderDelegate*>(

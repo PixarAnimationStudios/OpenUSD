@@ -171,7 +171,6 @@ HdPrman_OfflineRenderParam::Begin(HdPrmanRenderDelegate * const renderDelegate)
     _SetRenderTargetAndDisplay(outputFormat, outputFilename);
 
     _CreateFallbackMaterials();
-    _CreateFallbackLight();
 }
 
 HdPrman_OfflineRenderParam::~HdPrman_OfflineRenderParam()

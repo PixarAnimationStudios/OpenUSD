@@ -187,9 +187,6 @@ public:
 
     RtParamList &GetIntegratorParams() { return _integratorParams; }
 
-    // Indicate whether fallback lights should be enabled.
-    void SetFallbackLightsEnabled(bool);
-
     bool HasSceneLights() const { return _sceneLightCount > 0; }
     void IncreaseSceneLightCount() { ++_sceneLightCount; }
     void DecreaseSceneLightCount() { --_sceneLightCount; }
@@ -265,14 +262,6 @@ private:
 
     riley::IntegratorId _integratorId;
     RtParamList _integratorParams;
-
-    // The fallback light.  HdPrman_RenderPass calls
-    // SetFallbackLightsEnabled() to maintain visibility
-    // of the fallback light XOR other lights in the scene.
-    riley::LightInstanceId _fallbackLight;
-    riley::LightShaderId _fallbackLightShader;
-    RtParamList _fallbackLightAttrs;
-    bool _fallbackLightEnabled;
 
     // Coordinate system conversion cache.
     _GeomToHdCoordSysMap _geomToHdCoordSysMap;

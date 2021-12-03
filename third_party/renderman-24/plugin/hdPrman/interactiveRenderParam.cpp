@@ -238,7 +238,6 @@ HdPrman_InteractiveRenderParam::Begin(HdRenderDelegate *renderDelegate)
     _CreateQuickIntegrator(renderDelegate);
     _activeIntegratorId = GetIntegratorId();
 
-    _CreateFallbackLight();
     _CreateFallbackMaterials();
 }
 
