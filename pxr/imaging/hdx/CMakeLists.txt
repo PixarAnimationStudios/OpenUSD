@@ -98,7 +98,7 @@ pxr_library(hdx
         shaders/selection.glslfx
         shaders/skydome.glslfx
         shaders/visualize.glslfx
-        textures/StinsonBeach.exr
+        textures/StinsonBeach.hdr
         textures/StinsonBeach.tex
 
     DOXYGEN_FILES
