@@ -177,7 +177,7 @@ ArchMallocHook::IsInitialized()
        _underlyingMemalignFunc || _underlyingFreeFunc;
 }
 
-#if defined(ARCH_OS_LINUX)
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_FREEBSD)
 template <typename T>
 static bool _GetSymbol(T* addr, const char* name, string* errMsg) {
     if (void* symbol = dlsym(RTLD_DEFAULT, name)) {
