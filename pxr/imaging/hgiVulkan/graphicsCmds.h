@@ -89,7 +89,8 @@ public:
     void Draw(
         uint32_t vertexCount,
         uint32_t firstVertex,
-        uint32_t instanceCount) override;
+        uint32_t instanceCount,
+        uint32_t firstInstance) override;
 
     HGIVULKAN_API
     void DrawIndirect(
@@ -104,7 +105,8 @@ public:
         uint32_t indexCount,
         uint32_t indexBufferByteOffset,
         uint32_t vertexOffset,
-        uint32_t instanceCount) override;
+        uint32_t instanceCount,
+        uint32_t firstInstance) override;
 
     HGIVULKAN_API
     void DrawIndexedIndirect(

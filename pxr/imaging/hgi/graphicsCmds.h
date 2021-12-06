@@ -115,11 +115,13 @@ public:
     /// `vertexCount`: The number of vertices to draw.
     /// `firstVertex`: The index of the first vertex to draw.
     /// `instanceCount`: Number of instances to draw.
+    /// `firstInstance`: The first instance to draw.
     HGI_API
     virtual void Draw(
         uint32_t vertexCount,
         uint32_t firstVertex,
-        uint32_t instanceCount) = 0;
+        uint32_t instanceCount,
+        uint32_t firstInstance) = 0;
 
     /// Records a multi-draw command that reads the draw parameters
     /// from a provided drawParameterBuffer.
@@ -152,13 +154,15 @@ public:
     /// `vertexOffset`: The value added to the vertex index before indexing
     ///                 into the vertex buffer (baseVertex).
     /// `instanceCount`: Number of instances to draw.
+    /// `firstInstance`: The first instance to draw.
     HGI_API
     virtual void DrawIndexed(
         HgiBufferHandle const& indexBuffer,
         uint32_t indexCount,
         uint32_t indexBufferByteOffset,
         uint32_t vertexOffset,
-        uint32_t instanceCount) = 0;
+        uint32_t instanceCount,
+        uint32_t firstIntance) = 0;
 
     /// Records a indexed multi-draw command that reads the draw parameters
     /// from a provided drawParameterBuffer, and indices from indexBuffer.

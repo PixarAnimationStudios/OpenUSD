@@ -241,7 +241,8 @@ void
 HgiVulkanGraphicsCmds::Draw(
     uint32_t vertexCount,
     uint32_t firstVertex,
-    uint32_t instanceCount)
+    uint32_t instanceCount,
+    uint32_t firstInstance)
 {
     // Make sure the render pass has begun and resource are bound
     _ApplyPendingUpdates();
@@ -251,7 +252,7 @@ HgiVulkanGraphicsCmds::Draw(
         vertexCount,
         instanceCount,
         firstVertex,
-        0); // firstInstance
+        firstInstance);
 }
 
 void
@@ -281,18 +282,13 @@ HgiVulkanGraphicsCmds::DrawIndexed(
     uint32_t indexCount,
     uint32_t indexBufferByteOffset,
     uint32_t vertexOffset,
-    uint32_t instanceCount)
+    uint32_t instanceCount,
+    uint32_t firstInstance)
 {
     // Make sure the render pass has begun and resource are bound
     _ApplyPendingUpdates();
 
-    TF_VERIFY(instanceCount>0);
-
     HgiVulkanBuffer* ibo = static_cast<HgiVulkanBuffer*>(indexBuffer.Get());
-    HgiBufferDesc const& indexDesc = ibo->GetDescriptor();
-
-    // We assume 32bit indices
-    TF_VERIFY(indexDesc.usage & HgiBufferUsageIndex32);
 
     vkCmdBindIndexBuffer(
         _commandBuffer->GetVulkanCommandBuffer(),
@@ -304,9 +300,9 @@ HgiVulkanGraphicsCmds::DrawIndexed(
         _commandBuffer->GetVulkanCommandBuffer(),
         indexCount,
         instanceCount,
-        0,  // firstIndex,
+        static_cast<uint32_t>(indexBufferByteOffset / sizeof(uint32_t)),
         vertexOffset,
-        0); // firstInstance
+        firstInstance);
 }
 
 void
@@ -321,10 +317,6 @@ HgiVulkanGraphicsCmds::DrawIndexedIndirect(
     _ApplyPendingUpdates();
 
     HgiVulkanBuffer* ibo = static_cast<HgiVulkanBuffer*>(indexBuffer.Get());
-    HgiBufferDesc const& indexDesc = ibo->GetDescriptor();
-
-    // We assume 32bit indices
-    TF_VERIFY(indexDesc.usage & HgiBufferUsageIndex32);
 
     vkCmdBindIndexBuffer(
         _commandBuffer->GetVulkanCommandBuffer(),

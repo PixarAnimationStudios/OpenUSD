@@ -1599,7 +1599,7 @@ HdSt_IndirectDrawBatch::_GPUFrustumNonInstanceCulling(
         psoHandle, HgiShaderStageVertex,
         bindLoc, sizeof(Uniforms), &cullParams);
 
-    cullGfxCmds->Draw(_dispatchBufferCullInput->GetCount(), 0, 1);
+    cullGfxCmds->Draw(_dispatchBufferCullInput->GetCount(), 0, 1, 0);
 
     // Make sure culling memory writes are visible to execute draw.
     cullGfxCmds->MemoryBarrier(HgiMemoryBarrierAll);

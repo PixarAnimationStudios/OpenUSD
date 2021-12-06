@@ -479,7 +479,7 @@ HdxColorCorrectionTask::_ApplyColorCorrection(
         sizeof(_screenSize),
         &_screenSize);
     gfxCmds->SetViewport(vp);
-    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1);
+    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1, 0);
     gfxCmds->PopDebugGroup();
 
     // Done recording commands, submit work.

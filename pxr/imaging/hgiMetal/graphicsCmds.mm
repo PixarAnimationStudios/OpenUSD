@@ -302,10 +302,9 @@ void
 HgiMetalGraphicsCmds::Draw(
     uint32_t vertexCount,
     uint32_t firstVertex,
-    uint32_t instanceCount)
+    uint32_t instanceCount,
+    uint32_t firstInstance)
 {
-    TF_VERIFY(instanceCount>0);
-
     _CreateEncoder();
     
     MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
@@ -318,7 +317,7 @@ HgiMetalGraphicsCmds::Draw(
                                    patchIndexBuffer:NULL
                                    patchIndexBufferOffset:0
                                    instanceCount:instanceCount
-                                   baseInstance:0];
+                                   baseInstance:firstInstance];
     } else {
         if (instanceCount == 1) {
             [_encoder drawPrimitives:type
@@ -328,7 +327,8 @@ HgiMetalGraphicsCmds::Draw(
             [_encoder drawPrimitives:type
                          vertexStart:firstVertex
                          vertexCount:vertexCount
-                       instanceCount:instanceCount];
+                       instanceCount:instanceCount
+                        baseInstance:firstInstance];
         }
     }
 
@@ -374,17 +374,12 @@ HgiMetalGraphicsCmds::DrawIndexed(
     uint32_t indexCount,
     uint32_t indexBufferByteOffset,
     uint32_t vertexOffset,
-    uint32_t instanceCount)
+    uint32_t instanceCount,
+    uint32_t firstInstance)
 {
-    TF_VERIFY(instanceCount>0);
-
     _CreateEncoder();
 
     HgiMetalBuffer* indexBuf = static_cast<HgiMetalBuffer*>(indexBuffer.Get());
-    HgiBufferDesc const& indexDesc = indexBuf->GetDescriptor();
-
-    // We assume 32bit indices: GL_UNSIGNED_INT
-    TF_VERIFY(indexDesc.usage & HgiBufferUsageIndex32);
 
     MTLPrimitiveType type=HgiMetalConversions::GetPrimitiveType(_primitiveType);
 
@@ -395,7 +390,7 @@ HgiMetalGraphicsCmds::DrawIndexed(
                   indexBufferOffset:indexBufferByteOffset
                       instanceCount:instanceCount
                          baseVertex:vertexOffset
-                       baseInstance:0];
+                       baseInstance:firstInstance];
 
     _hasWork = true;
 }
@@ -411,10 +406,6 @@ HgiMetalGraphicsCmds::DrawIndexedIndirect(
     _CreateEncoder();
     
     HgiMetalBuffer* indexBuf = static_cast<HgiMetalBuffer*>(indexBuffer.Get());
-    HgiBufferDesc const& indexDesc = indexBuf->GetDescriptor();
-
-    // We assume 32bit indices: GL_UNSIGNED_INT
-    TF_VERIFY(indexDesc.usage & HgiBufferUsageIndex32);
 
     HgiMetalBuffer* drawBuf =
         static_cast<HgiMetalBuffer*>(drawParameterBuffer.Get());

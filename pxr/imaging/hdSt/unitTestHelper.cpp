@@ -331,7 +331,7 @@ HdSt_TextureTestDriver::Draw(HgiTextureHandle const &colorDst,
     gfxCmds->SetViewport(viewport);
     gfxCmds->SetConstantValues(_pipeline, HgiShaderStageFragment, 0, 
         _constantsData.size(), _constantsData.data());
-    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1);
+    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1, 0);
     gfxCmds->PopDebugGroup();
 
     _hgi->SubmitCmds(gfxCmds.get());
