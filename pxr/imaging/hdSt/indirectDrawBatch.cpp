@@ -232,17 +232,12 @@ HdSt_IndirectDrawBatch::_CompileBatch(
 
     // drawcommand is configured as one of followings:
     //
-    // DrawArrays + non-instance culling  : 15 integers (+ numInstanceLevels)
+    // DrawArrays + non-instance culling  : 14 integers (+ numInstanceLevels)
     struct _DrawArraysCommand {
         uint32_t count;
         uint32_t instanceCount;
         uint32_t first;
         uint32_t baseInstance;
-
-        // XXX: This is just padding to avoid configuration changes during
-        // transform feedback, which are not accounted for during shader
-        // caching. We should find a better solution.
-        uint32_t __reserved_0;
 
         uint32_t modelDC;
         uint32_t constantDC;
@@ -504,7 +499,6 @@ HdSt_IndirectDrawBatch::_CompileBatch(
                 *cmdIt++ = instanceCount;
                 *cmdIt++ = vertexOffset;
                 *cmdIt++ = baseInstance;
-                cmdIt++; // __reserved_0
                 *cmdIt++ = modelDC;
                 *cmdIt++ = constantDC;
                 *cmdIt++ = elementDC;
@@ -697,7 +691,7 @@ HdSt_IndirectDrawBatch::_CompileBatch(
     if (_useGpuCulling) {
         // Make a duplicate of the draw dispatch buffer to use as an input
         // for GPU frustum culling (a single buffer cannot be bound for
-        // both reading and xform feedback). We use only the instanceCount
+        // both reading and writing). We use only the instanceCount
         // and drawingCoord parameters, but it is simplest to just make
         // a copy.
         _dispatchBufferCullInput =
