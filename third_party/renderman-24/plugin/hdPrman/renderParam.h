@@ -181,6 +181,9 @@ public:
     int GetLastSettingsVersion() const { return _lastSettingsVersion; }
     void SetLastSettingsVersion(int version);
 
+    // Invalidate texture at path.
+    void InvalidateTexture(const std::string &path);
+
     void UpdateIntegrator(HdRenderDelegate * renderDelegate);
 
     riley::IntegratorId GetIntegratorId() const { return _integratorId; }

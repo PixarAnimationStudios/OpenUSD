@@ -83,9 +83,6 @@ public:
     // Creates displays in riley based on aovBindings vector
     void CreateDisplays(const HdRenderPassAovBindingVector& aovBindings);
 
-    // Invalidate texture at path.
-    void InvalidateTexture(const std::string &path);
-
     // Request edit access (stopping the renderer and marking the contex to restart
     // the renderer when executing the render pass) to the Riley scene and return it.
     riley::Riley * AcquireRiley() override;

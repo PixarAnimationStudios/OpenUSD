@@ -612,15 +612,6 @@ HdPrman_InteractiveRenderParam::_GetDeprecatedOptionsPrunedList()
     return prunedOptions;
 }
 
-void
-HdPrman_InteractiveRenderParam::InvalidateTexture(const std::string &path)
-{
-    _ri->InvalidateTexture(RtUString(path.c_str()));
-
-    StopRender();
-    sceneVersion.fetch_add(1);
-}
-
 riley::Riley *
 HdPrman_InteractiveRenderParam::AcquireRiley()
 {

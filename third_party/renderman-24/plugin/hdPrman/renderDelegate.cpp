@@ -191,11 +191,10 @@ HdPrmanRenderDelegate::_Initialize()
 
         interactiveRenderParam->Begin(this);
 
-        _resourceRegistry = std::make_shared<HdPrman_ResourceRegistry>(
-            interactiveRenderParam);
-    } else { 
-        _resourceRegistry = std::make_shared<HdResourceRegistry>();
     }
+
+    _resourceRegistry = std::make_shared<HdPrman_ResourceRegistry>(
+        _renderParam);
 }
 
 HdPrmanRenderDelegate::~HdPrmanRenderDelegate()

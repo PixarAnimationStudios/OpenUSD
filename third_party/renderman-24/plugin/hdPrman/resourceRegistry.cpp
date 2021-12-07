@@ -22,13 +22,13 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "hdPrman/resourceRegistry.h"
-#include "hdPrman/interactiveRenderParam.h"
+#include "hdPrman/renderParam.h"
 #include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdPrman_ResourceRegistry::HdPrman_ResourceRegistry(
-    std::shared_ptr<HdPrman_InteractiveRenderParam> const& renderParam)
+    std::shared_ptr<HdPrman_RenderParam> const& renderParam)
     : _renderParam(renderParam)
 {
 }

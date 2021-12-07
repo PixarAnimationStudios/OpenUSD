@@ -38,7 +38,7 @@ class HdPrman_ResourceRegistry final : public HdResourceRegistry
 public:
     HDPRMAN_API
     HdPrman_ResourceRegistry(
-        std::shared_ptr<class HdPrman_InteractiveRenderParam> const& renderParam);
+        std::shared_ptr<class HdPrman_RenderParam> const& renderParam);
 
     HDPRMAN_API
     ~HdPrman_ResourceRegistry() override;
@@ -49,7 +49,7 @@ public:
         std::string const& path) override;
 
 private:
-    std::shared_ptr<class HdPrman_InteractiveRenderParam> _renderParam;
+    std::shared_ptr<class HdPrman_RenderParam> _renderParam;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

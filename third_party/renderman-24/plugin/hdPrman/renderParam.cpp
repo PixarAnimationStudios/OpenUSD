@@ -1560,6 +1560,14 @@ HdPrman_RenderParam::SetLastSettingsVersion(const int version)
     _lastSettingsVersion = version;
 }
 
+void
+HdPrman_RenderParam::InvalidateTexture(const std::string &path)
+{
+    AcquireRiley();
+
+    _ri->InvalidateTexture(RtUString(path.c_str()));
+}
+
 riley::ShadingNode
 HdPrman_RenderParam::_ComputeIntegratorNode(
     HdRenderDelegate * const renderDelegate)
