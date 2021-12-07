@@ -45,8 +45,9 @@
 #include "pxr/base/trace/reporter.h"
 #include "pxr/base/work/threadLimits.h"
 
-#include "hdPrman/renderParam.h"
 #include "hdPrman/renderDelegate.h"
+
+#include <Riley.h>
 
 #include <fstream>
 #include <memory>
@@ -166,9 +167,6 @@ PrintUsage(const char* cmd, const char *err=nullptr)
 
 int main(int argc, char *argv[])
 {
-    // Pixar studio config
-    TfRegistryManager::GetInstance().SubscribeTo<HdPrman_RenderParam>();
-
     //////////////////////////////////////////////////////////////////////// 
     //
     // Parse args
