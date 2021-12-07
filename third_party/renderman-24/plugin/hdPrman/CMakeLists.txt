@@ -90,9 +90,11 @@ pxr_plugin(${PXR_PACKAGE}
         renderBuffer
         renderPass
         resourceRegistry
+        hdMaterialNetwork2Interface
 
     PUBLIC_HEADERS
         api.h
+        materialNetworkInterface.h
 
     PRIVATE_HEADERS
         virtualStructConditionalGrammar.tab.h

@@ -26,6 +26,8 @@
 
 #include "pxr/pxr.h"
 #include "hdPrman/matfiltFilterChain.h"
+#include "hdPrman/materialNetworkInterface.h"
+
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -42,6 +44,14 @@ void MatfiltResolveVstructs(
         const std::map<TfToken, VtValue> & contextValues,
         const NdrTokenVec & shaderTypePriority,
         std::vector<std::string> * outputErrorMessages);
+
+
+/// Resolves vstructs against an abstract material interface.
+void MatfiltResolveVstructs(
+        HdPrmanMaterialNetworkInterface *networkInterface,
+        const NdrTokenVec & shaderTypePriority,
+        bool enableConditions);
+
 
 class MatfiltVstructConditionalEvaluatorImpl;
 
@@ -67,12 +77,12 @@ public:
     /// directly change.
     /// 
     void Evaluate(
-            const SdfPath & nodeId,
-            const TfToken & nodeInputId,
-            const SdfPath & upstreamNodeId,
-            const TfToken & upstreamNodeOutput,
+            const TfToken &nodeId,
+            const TfToken &nodeInputId,
+            const TfToken &upstreamNodeId,
+            const TfToken &upstreamNodeOutput,
             const NdrTokenVec & shaderTypePriority,
-            HdMaterialNetwork2 & network) const;
+            HdPrmanMaterialNetworkInterface *networkInterface) const;
 private:
     MatfiltVstructConditionalEvaluator() = default;
 

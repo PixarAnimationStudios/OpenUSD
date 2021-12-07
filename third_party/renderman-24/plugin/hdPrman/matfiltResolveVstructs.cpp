@@ -23,6 +23,7 @@
 //
 #include "hdPrman/matfiltResolveVstructs.h"
 #include "hdPrman/debugCodes.h"
+#include "hdPrman/hdMaterialNetwork2Interface.h"
 
 #include <memory>
 #include <mutex>
@@ -187,36 +188,33 @@ std::mutex _ShaderInfoEntry::_cachedEntryMutex;
 
 static void
 _ResolveVstructsForNode(
-    HdMaterialNetwork2 & network,
-    const SdfPath & nodeId,
-    HdMaterialNode2 & node,
-    std::set<SdfPath> resolvedNodeNames,
-    const NdrTokenVec & shaderTypePriority,
+    HdPrmanMaterialNetworkInterface *interface,
+    const TfToken &nodeId,
+    std::set<TfToken> &resolvedNodeNames,
+    const NdrTokenVec &shaderTypePriority,
     bool enableConditions)
 {
     if (resolvedNodeNames.find(nodeId) != resolvedNodeNames.end()) {
         TF_DEBUG(HDPRMAN_VSTRUCTS)
-            .Msg("No resovled node name for %s\n", nodeId.GetText());
+            .Msg("No resovled node name for %s\n", nodeId.data());
         return;
     }
     
     resolvedNodeNames.insert(nodeId);
     auto shaderInfo =
-        _ShaderInfoEntry::Get(node.nodeTypeId, shaderTypePriority);
+        _ShaderInfoEntry::Get(interface->GetNodeType(nodeId),
+            shaderTypePriority);
 
     // don't do anything if the node has no vstruct definitions
     if (shaderInfo->vstructs.empty()) {
         TF_DEBUG(HDPRMAN_VSTRUCTS)
-            .Msg("Node %s has no vstructs\n", node.nodeTypeId.GetText());
+            .Msg("Node %s has no vstructs\n",
+                interface->GetNodeType(nodeId).GetText());
         return;
     }
 
-    // copy inputConnections as we may be modifying them mid-loop
-    auto inputConnectionsCopy = node.inputConnections;
-
-    for (auto & connectionI : inputConnectionsCopy) {
-
-        const auto & inputName = connectionI.first;
+    for (const TfToken &inputName :
+            interface->GetNodeInputConnectionNames(nodeId)) {
 
         auto I = shaderInfo->vstructs.find(inputName);
         if (I == shaderInfo->vstructs.end()) {
@@ -226,7 +224,12 @@ _ResolveVstructsForNode(
             .Msg("Found input %s with a vstruct\n", inputName.GetText());
 
         const auto & vstructInfo = (*I).second;
-        const auto & upstreamConnections = connectionI.second;
+
+        HdPrmanMaterialNetworkInterface::InputConnectionVector
+            upstreamConnections =
+                interface->GetNodeInputConnection(nodeId, inputName);
+
+
 
         if (upstreamConnections.empty()) {
             TF_DEBUG(HDPRMAN_VSTRUCTS)
@@ -238,17 +241,17 @@ _ResolveVstructsForNode(
 
         const auto & upstreamConnection = upstreamConnections.front();
 
+        TfToken upstreamTypeId = interface->GetNodeType(
+            upstreamConnection.upstreamNodeName);
+
         // confirm connected node exists
-        auto upstreamNodeI =
-                network.nodes.find(upstreamConnection.upstreamNode);
-        if (upstreamNodeI == network.nodes.end()) {
+        if (upstreamTypeId.IsEmpty()) {
             continue;
         }
-        auto & upstreamNode = (*upstreamNodeI).second;
 
         // confirm connected upstream output is a vstruct
         auto upstreamShaderInfo = _ShaderInfoEntry::Get(
-                upstreamNode.nodeTypeId, shaderTypePriority);
+                upstreamTypeId, shaderTypePriority);
         auto upstreamVstructI = upstreamShaderInfo->vstructs.find(
                     upstreamConnection.upstreamOutputName);
         if (upstreamVstructI == upstreamShaderInfo->vstructs.end()) {
@@ -258,20 +261,21 @@ _ResolveVstructsForNode(
         auto upstreamVstruct = (*upstreamVstructI).second;
 
         // ensure that all connections/conditions are expanded upstream first
-        _ResolveVstructsForNode(network, upstreamConnection.upstreamNode,
-                                upstreamNode, resolvedNodeNames,
-                                shaderTypePriority, enableConditions);
+        _ResolveVstructsForNode(interface, upstreamConnection.upstreamNodeName,
+                resolvedNodeNames, shaderTypePriority, enableConditions);
 
         // delete the placeholder connection
-        node.inputConnections.erase(inputName);
+        //node.inputConnections.erase(inputName);
+        interface->DeleteNodeInputConnection(nodeId, inputName);
+
 
         for (auto & memberI : vstructInfo->members) {
             const TfToken & memberInputName = memberI.first;
 
             // If there's an existing connection to a member input, skip
             // expansion as a direct connection has a stronger opinion.
-            if (node.inputConnections.find(memberInputName)
-                    != node.inputConnections.end()) {
+            if (!interface->GetNodeInputConnection(
+                    nodeId, memberInputName).empty()) {
                 continue;
             }
 
@@ -296,20 +300,21 @@ _ResolveVstructsForNode(
                     evaluator->Evaluate(
                             nodeId,
                             memberInputName,
-                            upstreamConnection.upstreamNode,
+                            upstreamConnection.upstreamNodeName,
                             upstreamMemberOutputName,
                             shaderTypePriority,
-                            network);
+                            interface);
                 } else {
                     // no condition, just connect
-                    node.inputConnections[memberInputName] = {{
-                            upstreamConnection.upstreamNode,
-                            upstreamMemberOutputName}};
+                    interface->SetNodeInputConnection(nodeId, memberInputName,
+                        {{upstreamConnection.upstreamNodeName,
+                            upstreamMemberOutputName}});
+
                     TF_DEBUG(HDPRMAN_VSTRUCTS)
                         .Msg("Connected condition-less %s.%s to %s.%s\n",
                             nodeId.GetText(),
                             memberInputName.GetText(),
-                            upstreamConnection.upstreamNode.GetText(),
+                            upstreamConnection.upstreamNodeName.GetText(),
                             upstreamMemberOutputName.GetText());
                 }  
                 break;
@@ -321,14 +326,35 @@ _ResolveVstructsForNode(
 
 void
 MatfiltResolveVstructs(
+    HdPrmanMaterialNetworkInterface *interface,
+    const NdrTokenVec & shaderTypePriority,
+    bool enableConditions)
+{
+
+    if (!interface) {
+        return;
+    }
+
+    std::set<TfToken> resolvedNodeNames;
+
+    for (const TfToken &nodeName : interface->GetNodeNames()) {
+        _ResolveVstructsForNode(
+            interface,
+            nodeName,
+            resolvedNodeNames,
+            shaderTypePriority,
+            enableConditions);
+    }
+}
+
+void
+MatfiltResolveVstructs(
     const SdfPath & networkId,
     HdMaterialNetwork2 & network,
     const std::map<TfToken, VtValue> & contextValues,
     const NdrTokenVec & shaderTypePriority,
     std::vector<std::string> * outputErrorMessages)
 {
-    std::set<SdfPath> resolvedNodeNames;
-
     bool enableConditions = true;
 
     auto I = contextValues.find(_tokens->enableVstructConditions);
@@ -339,17 +365,8 @@ MatfiltResolveVstructs(
         }
     }
 
-    for (auto & I : network.nodes) {
-        const SdfPath & nodeId = I.first;
-        HdMaterialNode2 & node = I.second;
-        _ResolveVstructsForNode(
-                network,
-                nodeId,
-                node,
-                resolvedNodeNames,
-                shaderTypePriority,
-                enableConditions);
-    }
+    HdPrmanHdMaterialNetwork2Interface interface(&network);
+    MatfiltResolveVstructs(&interface, shaderTypePriority, enableConditions);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
