@@ -42,6 +42,7 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/pathUtils.h"  // Extract extension from tf token
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/imaging/hd/extComputationUtils.h"
@@ -1477,6 +1478,161 @@ HdPrman_RenderParam::_CreateRiley()
 
     _xpu = (!rileyvariant.empty() ||
             (rileyvariant.find("xpu") != std::string::npos));
+}
+
+
+static
+riley::RenderOutputType
+_ToRenderOutputType(const TfToken &t)
+{
+    if (t == TfToken("color3f")) {
+        return riley::RenderOutputType::k_Color;
+    } else if (t == TfToken("float")) {
+        return riley::RenderOutputType::k_Float;
+    } else if (t == TfToken("int")) {
+        return riley::RenderOutputType::k_Integer;
+    } else {
+        TF_RUNTIME_ERROR("Unimplemented renderVar dataType '%s'; "
+                         "skipping", t.GetText());
+        return riley::RenderOutputType::k_Integer;
+    }
+}
+
+// Helper to convert a dictionary of Hydra settings to Riley params.
+static
+RtParamList
+_ToRtParamList(VtDictionary const& dict)
+{
+    RtParamList params;
+
+    for (auto const& entry: dict) {
+        RtUString riName(entry.first.c_str());
+
+        if (entry.second.IsHolding<int>()) {
+            params.SetInteger(riName, entry.second.UncheckedGet<int>());
+        } else if (entry.second.IsHolding<float>()) {
+            params.SetFloat(riName, entry.second.UncheckedGet<float>());
+        } else if (entry.second.IsHolding<std::string>()) {
+            params.SetString(riName,
+                RtUString(entry.second.UncheckedGet<std::string>().c_str()));
+        } else if (entry.second.IsHolding<VtArray<int>>()) {
+            auto const& array = entry.second.UncheckedGet<VtArray<int>>();
+            params.SetIntegerArray(riName, &array[0], array.size());
+        } else if (entry.second.IsHolding<VtArray<float>>()) {
+            auto const& array = entry.second.UncheckedGet<VtArray<float>>();
+            params.SetFloatArray(riName, &array[0], array.size());
+        } else {
+            TF_CODING_ERROR("Unimplemented setting %s of type %s\n",
+                            entry.first.c_str(),
+                            entry.second.GetTypeName().c_str());
+        }
+    }
+
+    return params;
+}
+
+static
+HdPrmanRenderViewDesc
+_ComputeRenderViewDesc(
+    const VtDictionary &renderSpec,
+    const riley::CameraId cameraId,
+    const riley::IntegratorId integratorId,
+    const GfVec2i &resolution)
+{
+    HdPrmanRenderViewDesc renderViewDesc;
+
+    renderViewDesc.cameraId = cameraId;
+    renderViewDesc.integratorId = integratorId;
+    renderViewDesc.resolution = resolution;
+
+    const VtArray<VtDictionary> &renderVars =
+        VtDictionaryGet<VtArray<VtDictionary>>(
+            renderSpec,
+            HdPrmanExperimentalRenderSpecTokens->renderVars);
+    
+    for (const VtDictionary &renderVar : renderVars) {
+        const std::string &nameStr =
+            VtDictionaryGet<std::string>(
+                renderVar,
+                HdPrmanExperimentalRenderSpecTokens->name);
+        const RtUString name(nameStr.c_str());
+
+        HdPrmanRenderViewDesc::RenderOutputDesc renderOutputDesc;
+        renderOutputDesc.name = name;
+        renderOutputDesc.type = _ToRenderOutputType(
+            VtDictionaryGet<TfToken>(
+                renderVar,
+                HdPrmanExperimentalRenderSpecTokens->type));
+        renderOutputDesc.sourceName = name;
+        renderOutputDesc.filterName = RixStr.k_filter;
+        renderOutputDesc.params = _ToRtParamList(
+            VtDictionaryGet<VtDictionary>(
+                renderVar,
+                HdPrmanExperimentalRenderSpecTokens->params,
+                VtDefault = VtDictionary()));
+        renderViewDesc.renderOutputDescs.push_back(renderOutputDesc);
+    }
+    
+    const VtArray<VtDictionary> & renderProducts =
+        VtDictionaryGet<VtArray<VtDictionary>>(
+            renderSpec,
+            HdPrmanExperimentalRenderSpecTokens->renderProducts);
+
+    for (const VtDictionary &renderProduct : renderProducts) {
+        HdPrmanRenderViewDesc::DisplayDesc displayDesc;
+
+        const TfToken &name = 
+            VtDictionaryGet<TfToken>(
+                renderProduct,
+                HdPrmanExperimentalRenderSpecTokens->name);
+
+        displayDesc.name = RtUString(name.GetText());
+        
+        // get output display driver type
+        // TODO this is not a robust solution
+        static const std::map<std::string,TfToken> extToDisplayDriver{
+            { std::string("exr"),  TfToken("openexr") },
+            { std::string("tif"),  TfToken("tiff") },
+            { std::string("tiff"), TfToken("tiff") },
+            { std::string("png"),  TfToken("png") }
+        };
+        
+        const std::string outputExt = TfGetExtension(name.GetString());
+        const TfToken dspyFormat = extToDisplayDriver.at(outputExt);
+        displayDesc.driver = RtUString(dspyFormat.GetText());
+
+        displayDesc.params = _ToRtParamList(
+            VtDictionaryGet<VtDictionary>(
+                renderProduct,
+                HdPrmanExperimentalRenderSpecTokens->params,
+                VtDefault = VtDictionary()));
+
+        const VtIntArray &renderVarIndices =
+            VtDictionaryGet<VtIntArray>(
+                renderProduct,
+                HdPrmanExperimentalRenderSpecTokens->renderVarIndices);
+        for (const int renderVarIndex : renderVarIndices) {
+            displayDesc.renderOutputIndices.push_back(renderVarIndex);
+        }
+        renderViewDesc.displayDescs.push_back(displayDesc);
+    }
+
+    return renderViewDesc;
+}
+
+void
+HdPrman_RenderParam::CreateRenderViewFromSpec(
+    const VtDictionary &renderSpec)
+{
+    const HdPrmanRenderViewDesc renderViewDesc =
+        _ComputeRenderViewDesc(
+            renderSpec,
+            GetCameraContext().GetCameraId(),
+            GetActiveIntegratorId(),
+            GfVec2i(512, 512));
+
+    GetRenderViewContext().CreateRenderView(
+        renderViewDesc, AcquireRiley());
 }
 
 void

@@ -81,7 +81,8 @@ public:
     bool IsValid() const;
 
     // Creates displays in riley based on aovBindings vector
-    void CreateDisplays(const HdRenderPassAovBindingVector& aovBindings);
+    void CreateRenderViewFromAovs(
+        const HdRenderPassAovBindingVector& aovBindings);
 
     // Request edit access (stopping the renderer and marking the contex to restart
     // the renderer when executing the render pass) to the Riley scene and return it.

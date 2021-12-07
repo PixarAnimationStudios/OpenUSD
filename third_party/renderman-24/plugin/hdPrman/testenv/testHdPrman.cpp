@@ -45,7 +45,7 @@
 #include "pxr/base/trace/reporter.h"
 #include "pxr/base/work/threadLimits.h"
 
-#include "hdPrman/offlineRenderParam.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/renderDelegate.h"
 
 #include <fstream>

@@ -291,7 +291,7 @@ HdPrman_InteractiveRenderParam::IsRenderStopped()
 }
 
 void
-HdPrman_InteractiveRenderParam::CreateDisplays(
+HdPrman_InteractiveRenderParam::CreateRenderViewFromAovs(
     const HdRenderPassAovBindingVector& aovBindings)
 {
     // Proceed with creating displays if the number has changed

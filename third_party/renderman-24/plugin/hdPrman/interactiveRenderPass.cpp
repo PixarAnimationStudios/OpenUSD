@@ -152,11 +152,8 @@ HdPrman_InteractiveRenderPass::_Execute(
         return;
     }
 
-    // Creates displays if needed
     HdRenderPassAovBindingVector const &aovBindings =
         renderPassState->GetAovBindings();
-
-    _interactiveRenderParam->CreateDisplays(aovBindings);
 
     // Likewise the render settings.
     HdPrmanRenderDelegate * const renderDelegate =
@@ -167,15 +164,6 @@ HdPrman_InteractiveRenderPass::_Execute(
     
     int32_t renderBufferWidth = 0;
     int32_t renderBufferHeight = 0;
-
-    if (!_GetRenderBufferSize(aovBindings,
-                              GetRenderIndex(),
-                              &renderBufferWidth, &renderBufferHeight)) {
-        // For legacy clients not using AOVs, take size of viewport.
-        const GfVec4f vp = renderPassState->GetViewport();
-        renderBufferWidth  = vp[2];
-        renderBufferHeight = vp[3];
-    }
 
     const HdPrmanCamera * const hdCam =
         dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera());
@@ -188,6 +176,10 @@ HdPrman_InteractiveRenderPass::_Execute(
         cameraContext.SetFraming(renderPassState->GetFraming());
     } else {
         // For old clients using the viewport.
+        _GetRenderBufferSize(aovBindings,
+                             GetRenderIndex(),
+                             &renderBufferWidth, &renderBufferHeight);
+
         const GfVec4f vp = renderPassState->GetViewport();
         cameraContext.SetFraming(
             CameraUtilFraming(
@@ -200,10 +192,67 @@ HdPrman_InteractiveRenderPass::_Execute(
 
     cameraContext.SetWindowPolicy(renderPassState->GetWindowPolicy());
 
+    // A hack to make tests pass.
+    // testHdPrman was hard-coding a particular shutter curve for offline
+    // renders. Ideally, we would have a render setting or camera attribute
+    // to control the curve instead.
+    if (renderDelegate->IsInteractive()) {
+        static const float pts[8] = {
+            0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f
+        };
+        cameraContext.SetShutterCurve(0.0f, 1.0f, pts);
+    } else {
+        static const float pts[8] = {
+            0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.3f, 0.0f
+        };
+        cameraContext.SetShutterCurve(0.0f, 0.0f, pts);
+    }
+
     const bool camChanged = cameraContext.IsInvalid();
     cameraContext.MarkValid();
 
     const int lastVersion = _interactiveRenderParam->GetLastSettingsVersion();
+
+    if (aovBindings.empty()) {
+        // When there are no AOV-bindings, use render spec from
+        // render settings to create render view.
+        bool createRenderView = false;
+        if (!_interactiveRenderParam->framebuffer.aovs.empty()) {
+            // If we just switched from render pass state with AOV bindings
+            // to one without, we need to create a new render view from
+            // the render spec - and can free the intermediate framebuffer
+            // the AOV display driver writes into.
+            _interactiveRenderParam->framebuffer.aovs.clear();
+            createRenderView = true;
+        }
+        if (lastVersion != currentSettingsVersion) {
+            // Re-create new render view since render spec might have
+            // changed.
+            createRenderView = true;
+        }
+
+        if (createRenderView) {
+            const VtDictionary &renderSpec =
+                renderDelegate->GetRenderSetting<VtDictionary>(
+                    HdPrmanRenderSettingsTokens->experimentalRenderSpec,
+                    VtDictionary());
+            _interactiveRenderParam->CreateRenderViewFromSpec(renderSpec);
+        }
+
+        const GfVec2i resolution =
+            cameraContext.GetResolutionFromDisplayWindow();
+        renderBufferWidth = resolution[0];
+        renderBufferHeight = resolution[1];
+    } else {
+        // Use AOV-bindings to create render view with displays that
+        // have drivers writing into the intermediate framebuffer blitted
+        // to the AOVs.
+        _interactiveRenderParam->CreateRenderViewFromAovs(aovBindings);
+        
+        _GetRenderBufferSize(aovBindings,
+                             GetRenderIndex(),
+                             &renderBufferWidth, &renderBufferHeight);
+    }
 
     if (lastVersion != currentSettingsVersion || camChanged) {
 
@@ -282,9 +331,15 @@ HdPrman_InteractiveRenderPass::_Execute(
                 _interactiveRenderParam->_GetDeprecatedOptionsPrunedList());
         }
 
-        cameraContext.UpdateRileyCameraAndClipPlanesInteractive(
-            riley, 
-            GfVec2i(renderBufferWidth, renderBufferHeight));
+        if (aovBindings.empty()) {
+            cameraContext.UpdateRileyCameraAndClipPlanes(riley);
+        } else {
+            // When using AOV-bindings, we setup the camera slightly
+            // differently.
+            cameraContext.UpdateRileyCameraAndClipPlanesInteractive(
+                riley, 
+                GfVec2i(renderBufferWidth, renderBufferHeight));
+        }
 
         if (hdCam) {
             // Update the framebuffer Z scaling
@@ -297,6 +352,21 @@ HdPrman_InteractiveRenderPass::_Execute(
         }
     }    
     
+    if (renderDelegate->IsInteractive()) {
+        _RestartRenderIfNecessary(renderDelegate);
+    } else {
+        _RenderInMainThread();
+    }
+    
+    if (!aovBindings.empty()) {
+        _Blit(aovBindings);
+    }
+}
+   
+void
+HdPrman_InteractiveRenderPass::_RestartRenderIfNecessary(
+    HdRenderDelegate * const renderDelegate)
+{
     const bool needsRestart =
         _interactiveRenderParam->sceneVersion.load() != _lastRenderedVersion;
     
@@ -355,7 +425,12 @@ HdPrman_InteractiveRenderPass::_Execute(
         (_interactiveRenderParam->GetActiveIntegratorId() ==
          _interactiveRenderParam->GetIntegratorId())
         && !_interactiveRenderParam->renderThread.IsRendering();
+}
 
+void
+HdPrman_InteractiveRenderPass::_Blit(
+    HdRenderPassAovBindingVector const &aovBindings)
+{
     // Blit from the framebuffer to the currently selected AOVs.
     // Lock the framebuffer when reading so we don't overlap
     // with RenderMan's resize/writing.
@@ -383,5 +458,32 @@ HdPrman_InteractiveRenderPass::_Execute(
     }
     _interactiveRenderParam->framebuffer.mutex.unlock();
 }
+
+void
+HdPrman_InteractiveRenderPass::_RenderInMainThread()
+{
+    riley::Riley * const riley = _interactiveRenderParam->AcquireRiley();
+
+    _interactiveRenderParam->SetActiveIntegratorId(
+        _interactiveRenderParam->GetIntegratorId());
+    
+    HdPrmanRenderViewContext &ctx =
+        _interactiveRenderParam->GetRenderViewContext();
+    
+    const riley::RenderViewId renderViews[] = { ctx.GetRenderViewId() };
+    
+    RtParamList renderOptions;
+    static RtUString const US_RENDERMODE("renderMode");
+    static RtUString const US_BATCH("batch");   
+    renderOptions.SetString(US_RENDERMODE, US_BATCH);   
+    
+    riley->Render(
+        {static_cast<uint32_t>(TfArraySize(renderViews)), renderViews},
+        renderOptions);
+    
+    _converged = true;
+}
+
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

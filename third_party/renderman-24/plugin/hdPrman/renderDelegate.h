@@ -169,28 +169,15 @@ public:
     HDPRMAN_API 
     bool Restart() override;
 
+    HDPRMAN_API
+    bool IsInteractive() const;
+
 private:
     // This class does not support copying.
     HdPrmanRenderDelegate(const HdPrmanRenderDelegate &) = delete;
     HdPrmanRenderDelegate &operator =(const HdPrmanRenderDelegate &) = delete;
 
     void _Initialize();
-
-    enum RenderMode
-    {
-        Interactive = 0,
-        Offline
-    };
-    RenderMode _renderMode;
-
-    static
-    RenderMode _GetRenderMode(const HdRenderSettingsMap &settingsMap);
-    static
-    std::shared_ptr<HdPrman_RenderParam> _CreateRenderParam(RenderMode mode);
-
-    bool _IsInteractive() const { 
-        return (_renderMode == RenderMode::Interactive);
-    }
 
 protected:
     static const TfTokenVector SUPPORTED_RPRIM_TYPES;

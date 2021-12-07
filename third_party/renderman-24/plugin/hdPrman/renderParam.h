@@ -206,6 +206,9 @@ public:
         return _renderViewContext;
     }
 
+    void CreateRenderViewFromSpec(
+        const VtDictionary &renderSpec);
+
 protected:
     void _CreateRiley();
     void _CreateFallbackMaterials();

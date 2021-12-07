@@ -71,7 +71,6 @@ pxr_plugin(${PXR_PACKAGE}
         matfiltFilterChain
         matfiltResolveVstructs
         mesh
-        offlineRenderParam
         points
         paramsSetter
         renderDelegate
@@ -86,7 +85,6 @@ pxr_plugin(${PXR_PACKAGE}
         interactiveRenderParam
         interactiveRenderPass
         framebuffer
-        offlineRenderPass
         renderBuffer
         renderPass
         resourceRegistry

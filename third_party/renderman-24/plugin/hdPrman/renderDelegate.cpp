@@ -33,8 +33,6 @@
 #include "hdPrman/lightFilter.h"
 #include "hdPrman/material.h"
 #include "hdPrman/mesh.h"
-#include "hdPrman/offlineRenderParam.h"
-#include "hdPrman/offlineRenderPass.h"
 #include "hdPrman/paramsSetter.h"
 #include "hdPrman/points.h"
 #include "hdPrman/renderPass.h"
@@ -106,56 +104,19 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_BPRIM_TYPES =
     _tokens->field3dAsset,
 };
 
-static
-bool
-_IsInteractiveEnabled(HdRenderSettingsMap const &settingsMap)
-{
-    constexpr bool defaultVal = true;
-
-    const auto &it = 
-        settingsMap.find(HdRenderSettingsTokens->enableInteractive);
-    if (it == settingsMap.end()) {
-        return defaultVal;
-    }
-    
-    const VtValue &val = it->second;
-    if (!val.IsHolding<bool>()) {
-        return defaultVal;
-    }
-    return val.UncheckedGet<bool>();
-}
-
-HdPrmanRenderDelegate::RenderMode
-HdPrmanRenderDelegate::_GetRenderMode(HdRenderSettingsMap const &settingsMap)
-{
-    if (_IsInteractiveEnabled(settingsMap)) {
-        return Interactive;
-    } else {
-        return Offline;
-    }
-}
-
-std::shared_ptr<HdPrman_RenderParam>
-HdPrmanRenderDelegate::_CreateRenderParam(const RenderMode mode)
-{
-    switch(mode) {
-    case Interactive:
-        return std::make_unique<HdPrman_InteractiveRenderParam>();
-    case Offline:
-        return std::make_unique<HdPrman_OfflineRenderParam>();
-    }
-    
-    // Make compiler happy.
-    return std::make_unique<HdPrman_InteractiveRenderParam>();
-}
-
 HdPrmanRenderDelegate::HdPrmanRenderDelegate(
     HdRenderSettingsMap const& settingsMap)
   : HdRenderDelegate(settingsMap)
-  , _renderMode(_GetRenderMode(settingsMap))
-  , _renderParam(_CreateRenderParam(_renderMode))
+  , _renderParam(std::make_unique<HdPrman_InteractiveRenderParam>())
 {
     _Initialize();
+}
+
+bool
+HdPrmanRenderDelegate::IsInteractive() const
+{
+    return GetRenderSetting<bool>(
+        HdRenderSettingsTokens->enableInteractive, true);
 }
 
 void
@@ -276,15 +237,8 @@ HdRenderPassSharedPtr
 HdPrmanRenderDelegate::CreateRenderPass(HdRenderIndex *index,
                                         HdRprimCollection const& collection)
 {
-    if (_renderPass) {
-        return _renderPass;
-    }
-    
-    if (_renderMode == RenderMode::Interactive) {
+    if (!_renderPass) {
         _renderPass = std::make_shared<HdPrman_InteractiveRenderPass>(
-            index, collection, _renderParam);
-    } else if (_renderMode == RenderMode::Offline) {
-        _renderPass = std::make_shared<HdPrman_OfflineRenderPass>(
             index, collection, _renderParam);
     }
     return _renderPass;
@@ -450,7 +404,7 @@ HdAovDescriptor
 HdPrmanRenderDelegate::GetDefaultAovDescriptor(
     TfToken const& name) const
 {
-    if (_IsInteractive()) {
+    if (IsInteractive()) {
         if (name == HdAovTokens->color) {
             return HdAovDescriptor(
                 HdFormatFloat32Vec4, 
@@ -527,7 +481,7 @@ HdPrmanRenderDelegate::SetRenderSetting(TfToken const &key,
 bool
 HdPrmanRenderDelegate::IsStopSupported() const
 {
-    if (_IsInteractive()) {
+    if (IsInteractive()) {
         return true;
     }
     return false;
@@ -536,7 +490,7 @@ HdPrmanRenderDelegate::IsStopSupported() const
 bool
 HdPrmanRenderDelegate::IsStopped() const
 {
-    if (_IsInteractive()) {
+    if (IsInteractive()) {
         std::shared_ptr<HdPrman_InteractiveRenderParam> interactiveRenderParam =
             std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(_renderParam);
         return interactiveRenderParam->IsRenderStopped();
@@ -547,7 +501,7 @@ HdPrmanRenderDelegate::IsStopped() const
 bool
 HdPrmanRenderDelegate::Stop()
 {
-    if (_IsInteractive()) {
+    if (IsInteractive()) {
         std::shared_ptr<HdPrman_InteractiveRenderParam> interactiveRenderParam =
             std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(_renderParam);
         interactiveRenderParam->StopRender();
@@ -559,7 +513,7 @@ HdPrmanRenderDelegate::Stop()
 bool
 HdPrmanRenderDelegate::Restart()
 {
-    if (_IsInteractive()) {
+    if (IsInteractive()) {
         // Next call into HdPrman_RenderPass::_Execute will do a StartRender
         std::shared_ptr<HdPrman_InteractiveRenderParam> interactiveRenderParam =
             std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(_renderParam);

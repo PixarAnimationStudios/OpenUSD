@@ -52,6 +52,10 @@ protected:
                   TfTokenVector const &renderTags) override;
 
 private:
+    void _RenderInMainThread();
+    void _RestartRenderIfNecessary(HdRenderDelegate * renderDelegate);
+    void _Blit(HdRenderPassAovBindingVector const &aovBindings);
+
     std::shared_ptr<HdPrman_InteractiveRenderParam> _interactiveRenderParam;
     bool _converged;
     int _lastRenderedVersion;
