@@ -29,26 +29,75 @@
 
 #include "Riley.h"
 
+#include "pxr/base/gf/vec2i.h"
+
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Holds render view and related objects such as render target.
+/// Descriptor to create a render man render view together
+/// with associated render outputs and displays.
 ///
-/// For now it is just a holder, but eventually this class will
-/// manage and update these objects.
-///
-/// TODO: move code to create/modify/delete render views and
-/// related objects from interactive and offline render params
-/// here.
+struct HdPrmanRenderViewDesc
+{
+    riley::CameraId cameraId;
+    riley::IntegratorId integratorId;
+    GfVec2i resolution;
+    
+    struct RenderOutputDesc
+    {
+        RenderOutputDesc();
+
+        RtUString name;
+        riley::RenderOutputType type;
+        RtUString sourceName;
+        RtUString filterName;
+        RtParamList params;
+    };
+
+    std::vector<RenderOutputDesc> renderOutputDescs;
+
+    struct DisplayDesc
+    {
+        RtUString name;
+        RtUString driver;
+        RtParamList params;
+
+        std::vector<size_t> renderOutputIndices;
+    };
+    
+    std::vector<DisplayDesc> displayDescs;
+};
+
+/// Manages a render man render view together with associated
+/// render target, render ouputs and displays.
 ///
 class HdPrmanRenderViewContext final
 {
 public:
-    riley::RenderViewId renderViewId;
-    riley::DisplayId displayId;
-    riley::RenderTargetId renderTargetId;
-    std::vector<riley::RenderOutputId> renderOutputIds;
+    HdPrmanRenderViewContext();
+
+    void CreateRenderView(
+        const HdPrmanRenderViewDesc &desc,
+        riley::Riley * riley);
+    void SetIntegratorId(
+        riley::IntegratorId id,
+        riley::Riley * riley);
+    void SetResolution(
+        const GfVec2i &resolution,
+        riley::Riley * riley);
+
+    riley::RenderViewId GetRenderViewId() const { return _renderViewId; }
+
+private:
+    HdPrmanRenderViewContext(const HdPrmanRenderViewContext &) = delete;
+
+    void _DestroyRenderView(riley::Riley * riley);
+
+    std::vector<riley::RenderOutputId> _renderOutputIds;
+    std::vector<riley::DisplayId> _displayIds;
+    riley::RenderTargetId _renderTargetId;
+    riley::RenderViewId _renderViewId;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

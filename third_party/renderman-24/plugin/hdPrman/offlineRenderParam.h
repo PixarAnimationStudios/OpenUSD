@@ -61,12 +61,9 @@ public:
 
     riley::IntegratorId GetActiveIntegratorId() override;
 
+    void CreateRenderView(HdPrmanRenderDelegate * const renderDelegate);
+
 private:
-    void _AddRenderOutput(RtUString name, 
-        riley::RenderOutputType type,
-        RtParamList const& params);
-    void _SetRenderTargetAndDisplay(
-        riley::Extent format,TfToken outputFilename);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

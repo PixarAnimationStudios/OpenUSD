@@ -196,7 +196,9 @@ public:
     RtParamList &GetOptions() { return _options; }
     HdPrmanCameraContext &GetCameraContext() { return _cameraContext; }
 
-    void SetResolutionOfRenderTarget(const int32_t resolution[2]);
+    HdPrmanRenderViewContext &GetRenderViewContext() {
+        return _renderViewContext;
+    }
 
 protected:
     void _CreateRiley();
@@ -221,10 +223,6 @@ protected:
 
     // Riley instance.
     riley::Riley *_riley;
-
-    HdPrmanRenderViewContext &GetRenderViewContext() {
-        return _renderViewContext;
-    }
 
 private:
     riley::ShadingNode _ComputeIntegratorNode(

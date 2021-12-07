@@ -270,8 +270,9 @@ HdPrman_InteractiveRenderPass::_Execute(
                 RixStr.k_Ri_FormatResolution,
                 _interactiveRenderParam->resolution, 2);
             
-            _interactiveRenderParam->SetResolutionOfRenderTarget(
-                _interactiveRenderParam->resolution);
+            _interactiveRenderParam->GetRenderViewContext().SetResolution(
+                GfVec2i(renderBufferWidth, renderBufferHeight),
+                riley);
 
             cameraContext.SetRileyOptionsInteractive(
                 &(_interactiveRenderParam->GetOptions()),

@@ -102,6 +102,120 @@ _ToRtParamList(VtDictionary const& dict)
     return params;
 }
 
+static
+HdPrmanRenderViewDesc
+_ComputeRenderViewDesc(
+    const VtDictionary &renderSpec,
+    const riley::CameraId cameraId,
+    const riley::IntegratorId integratorId,
+    const GfVec2i &resolution)
+{
+    HdPrmanRenderViewDesc renderViewDesc;
+
+    renderViewDesc.cameraId = cameraId;
+    renderViewDesc.integratorId = integratorId;
+    renderViewDesc.resolution = resolution;
+
+    const VtArray<VtDictionary> &renderVars =
+        VtDictionaryGet<VtArray<VtDictionary>>(
+            renderSpec,
+            HdPrmanExperimentalRenderSpecTokens->renderVars);
+    
+    for (const VtDictionary &renderVar : renderVars) {
+        const std::string &nameStr =
+            VtDictionaryGet<std::string>(
+                renderVar,
+                HdPrmanExperimentalRenderSpecTokens->name);
+        const RtUString name(nameStr.c_str());
+
+        HdPrmanRenderViewDesc::RenderOutputDesc renderOutputDesc;
+        renderOutputDesc.name = name;
+        renderOutputDesc.type = _ToRenderOutputType(
+            VtDictionaryGet<TfToken>(
+                renderVar,
+                HdPrmanExperimentalRenderSpecTokens->type));
+        renderOutputDesc.sourceName = name;
+        renderOutputDesc.filterName = RixStr.k_filter;
+        renderOutputDesc.params = _ToRtParamList(
+            VtDictionaryGet<VtDictionary>(
+                renderVar,
+                HdPrmanExperimentalRenderSpecTokens->params,
+                VtDefault = VtDictionary()));
+        renderViewDesc.renderOutputDescs.push_back(renderOutputDesc);
+    }
+    
+    const VtArray<VtDictionary> & renderProducts =
+        VtDictionaryGet<VtArray<VtDictionary>>(
+            renderSpec,
+            HdPrmanExperimentalRenderSpecTokens->renderProducts);
+
+    for (const VtDictionary &renderProduct : renderProducts) {
+        HdPrmanRenderViewDesc::DisplayDesc displayDesc;
+
+        const TfToken &name = 
+            VtDictionaryGet<TfToken>(
+                renderProduct,
+                HdPrmanExperimentalRenderSpecTokens->name);
+
+        displayDesc.name = RtUString(name.GetText());
+        
+        // get output display driver type
+        // TODO this is not a robust solution
+        static const std::map<std::string,TfToken> extToDisplayDriver{
+            { std::string("exr"),  TfToken("openexr") },
+            { std::string("tif"),  TfToken("tiff") },
+            { std::string("tiff"), TfToken("tiff") },
+            { std::string("png"),  TfToken("png") }
+        };
+        
+        const std::string outputExt = TfGetExtension(name.GetString());
+        const TfToken dspyFormat = extToDisplayDriver.at(outputExt);
+        displayDesc.driver = RtUString(dspyFormat.GetText());
+
+        displayDesc.params = _ToRtParamList(
+            VtDictionaryGet<VtDictionary>(
+                renderProduct,
+                HdPrmanExperimentalRenderSpecTokens->params,
+                VtDefault = VtDictionary()));
+
+        const VtIntArray &renderVarIndices =
+            VtDictionaryGet<VtIntArray>(
+                renderProduct,
+                HdPrmanExperimentalRenderSpecTokens->renderVarIndices);
+        for (const int renderVarIndex : renderVarIndices) {
+            displayDesc.renderOutputIndices.push_back(renderVarIndex);
+        }
+        renderViewDesc.displayDescs.push_back(displayDesc);
+    }
+
+    return renderViewDesc;
+}
+
+HdPrman_OfflineRenderParam::~HdPrman_OfflineRenderParam()
+{
+    _DestroyRiley();
+}
+
+void
+HdPrman_OfflineRenderParam::CreateRenderView(
+    HdPrmanRenderDelegate * const renderDelegate)
+{
+    const VtDictionary &renderSpec =
+        renderDelegate->GetRenderSetting<VtDictionary>(
+            HdPrmanRenderSettingsTokens->experimentalRenderSpec,
+            VtDictionary());
+
+    const HdPrmanRenderViewDesc renderViewDesc =
+        _ComputeRenderViewDesc(
+            renderSpec,
+            GetCameraContext().GetCameraId(),
+            GetActiveIntegratorId(),
+            GfVec2i(512, 512));
+
+    GetRenderViewContext().CreateRenderView(
+        renderViewDesc, AcquireRiley());
+}
+
 void
 HdPrman_OfflineRenderParam::Begin(HdPrmanRenderDelegate * const renderDelegate)
 {
@@ -116,133 +230,13 @@ HdPrman_OfflineRenderParam::Begin(HdPrmanRenderDelegate * const renderDelegate)
 
     _CreateIntegrator(renderDelegate);
 
-    const VtDictionary &renderSpec =
-        renderDelegate->GetRenderSetting<VtDictionary>(
-            HdPrmanRenderSettingsTokens->experimentalRenderSpec,
-            VtDictionary());
-
-    const VtArray<VtDictionary> &renderVarDicts =
-        VtDictionaryGet<VtArray<VtDictionary>>(
-            renderSpec,
-            HdPrmanExperimentalRenderSpecTokens->renderVars);
-
-    for (const VtDictionary &renderVarDict : renderVarDicts) {
-        const std::string &nameStr = VtDictionaryGet<std::string>(
-            renderVarDict, HdPrmanExperimentalRenderSpecTokens->name);
-        const RtUString name(nameStr.c_str());
-
-        _AddRenderOutput(
-            name,
-            _ToRenderOutputType(
-                VtDictionaryGet<TfToken>(
-                    renderVarDict,
-                    HdPrmanExperimentalRenderSpecTokens->type)),
-            _ToRtParamList(
-                VtDictionaryGet<VtDictionary>(
-                    renderVarDict,
-                    HdPrmanExperimentalRenderSpecTokens->params)));
-    }
-
     _SetDefaultShutterCurve(GetCameraContext());
 
     GetCameraContext().Begin(AcquireRiley());
 
-    // Resolution will be updated by
-    // SetResolutionOfRenderTargets called by render pass.
-    const riley::Extent outputFormat = { 512, 512, 1 };
-
-    TfToken outputFilename;
-
-    const VtArray<VtDictionary> & renderProducts =
-        VtDictionaryGet<VtArray<VtDictionary>>(
-            renderSpec,
-            HdPrmanExperimentalRenderSpecTokens->renderProducts);
-
-    // TODO:
-    // Deal with more than one render product.
-    // Respect the renderVarIndices.
-    if (!renderProducts.empty()) {
-        outputFilename =
-            VtDictionaryGet<TfToken>(
-                renderProducts[0],
-                HdPrmanExperimentalRenderSpecTokens->name);
-    }
-
-    _SetRenderTargetAndDisplay(outputFormat, outputFilename);
+    CreateRenderView(renderDelegate);
 
     _CreateFallbackMaterials();
-}
-
-HdPrman_OfflineRenderParam::~HdPrman_OfflineRenderParam()
-{
-    _DestroyRiley();
-}
-
-void
-HdPrman_OfflineRenderParam::_AddRenderOutput(
-    RtUString name, 
-    riley::RenderOutputType type,
-    RtParamList const& params)
-{
-    HdPrmanRenderViewContext &ctx = GetRenderViewContext();
-
-    riley::FilterSize const filterwidth = { 1.0f, 1.0f };
-    ctx.renderOutputIds.push_back(
-        _riley->CreateRenderOutput(riley::UserId::DefaultId(),
-            name,
-            type,
-            name,
-            RixStr.k_filter, 
-            RixStr.k_box, 
-            filterwidth, 
-            1.0f, 
-            params));
-}
-
-void
-HdPrman_OfflineRenderParam::_SetRenderTargetAndDisplay(
-    riley::Extent format,
-    TfToken outputFilename)
-{
-    HdPrmanRenderViewContext &ctx = GetRenderViewContext();
-
-    ctx.renderTargetId = _riley->CreateRenderTarget(
-            riley::UserId::DefaultId(),
-            {(uint32_t) ctx.renderOutputIds.size(), ctx.renderOutputIds.data()},
-            format,
-            RtUString("weighted"),
-            1.0,
-            RtParamList());
-
-    // get output display driver type
-    // TODO this is not a robust solution
-    static const std::map<std::string,TfToken> extToDisplayDriver{
-        { std::string("exr"),  TfToken("openexr") },
-        { std::string("tif"),  TfToken("tiff") },
-        { std::string("tiff"), TfToken("tiff") },
-        { std::string("png"),  TfToken("png") }
-    };
-
-    std::string outputExt = TfGetExtension(outputFilename);
-    TfToken dspyFormat = extToDisplayDriver.at(outputExt);
-    _riley->CreateDisplay(
-        riley::UserId::DefaultId(),
-        ctx.renderTargetId,
-        RtUString(outputFilename.GetText()),
-        RtUString(dspyFormat.GetText()), 
-        {(uint32_t)ctx.renderOutputIds.size(), ctx.renderOutputIds.data()},
-        RtParamList());
-
-    ctx.renderViewId = _riley->CreateRenderView(
-        riley::UserId::DefaultId(), 
-        ctx.renderTargetId,
-        GetCameraContext().GetCameraId(),
-        GetActiveIntegratorId(),
-        {0, nullptr}, 
-        {0, nullptr}, 
-        RtParamList());
-    
-    _riley->SetDefaultDicingCamera(GetCameraContext().GetCameraId());
 }
 
 void
@@ -256,11 +250,11 @@ HdPrman_OfflineRenderParam::Render()
 
     HdPrmanRenderViewContext &ctx = GetRenderViewContext();
 
-    const std::vector<riley::RenderViewId> renderViews = { ctx.renderViewId };
+    const riley::RenderViewId renderViews[] = { ctx.GetRenderViewId() };
 
     _riley->Render(
-        {static_cast<uint32_t>(renderViews.size()), renderViews.data()},
-            renderOptions);
+        {static_cast<uint32_t>(TfArraySize(renderViews)), renderViews},
+        RtParamList());
 }
 
 bool 

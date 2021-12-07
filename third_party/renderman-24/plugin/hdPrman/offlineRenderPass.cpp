@@ -96,8 +96,9 @@ HdPrman_OfflineRenderPass::_Execute(
         cameraContext.MarkValid();
         _offlineRenderParam->SetLastSettingsVersion(currentSettingsVersion);
 
-        cameraContext.UpdateRileyCameraAndClipPlanes(
-            _offlineRenderParam->AcquireRiley());
+        riley::Riley * const riley = _offlineRenderParam->AcquireRiley();
+
+        cameraContext.UpdateRileyCameraAndClipPlanes(riley);
 
         RtParamList &options = _offlineRenderParam->GetOptions();
         cameraContext.SetRileyOptions(
@@ -111,7 +112,8 @@ HdPrman_OfflineRenderPass::_Execute(
         const GfVec2i resolution = 
             cameraContext.GetResolutionFromDisplayWindow();
 
-        _offlineRenderParam->SetResolutionOfRenderTarget(resolution.data());
+        _offlineRenderParam->GetRenderViewContext().SetResolution(
+            resolution, riley);
     }
 
     _offlineRenderParam->Render();

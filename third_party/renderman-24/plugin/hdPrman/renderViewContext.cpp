@@ -22,7 +22,146 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "hdPrman/renderViewContext.h"
+#include "hdPrman/renderDelegate.h"
+
+#include "hdPrman/rixStrings.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+HdPrmanRenderViewDesc::RenderOutputDesc::RenderOutputDesc()
+  : type(riley::RenderOutputType::k_Color)
+  , filterName(RixStr.k_filter)
+{ }
+
+HdPrmanRenderViewContext::HdPrmanRenderViewContext() = default;
+
+void
+HdPrmanRenderViewContext::CreateRenderView(
+    const HdPrmanRenderViewDesc &desc,
+    riley::Riley * const riley)
+{
+    _DestroyRenderView(riley);
+
+    using RenderOutputDesc = HdPrmanRenderViewDesc::RenderOutputDesc;
+
+    for (const RenderOutputDesc &outputDesc : desc.renderOutputDescs) {
+        const riley::FilterSize filterWidth = { 1.0f, 1.0f };
+        
+        _renderOutputIds.push_back(
+            riley->CreateRenderOutput(
+                riley::UserId::DefaultId(),
+                outputDesc.name,
+                outputDesc.type,
+                outputDesc.sourceName,
+                outputDesc.filterName,
+                RixStr.k_box,
+                filterWidth,
+                1.0f,
+                outputDesc.params));
+    }
+    
+    const riley::Extent rtResolution = {
+        static_cast<uint32_t>(desc.resolution[0]),
+        static_cast<uint32_t>(desc.resolution[1]),
+        1 };
+    
+    static const RtUString rtWeighted("weighted");
+
+    _renderTargetId =
+        riley->CreateRenderTarget(
+            riley::UserId::DefaultId(),
+            { static_cast<uint32_t>(_renderOutputIds.size()),
+              _renderOutputIds.data() },
+            rtResolution,
+            rtWeighted,
+            1.0f,
+            RtParamList());
+
+    using DisplayDesc = HdPrmanRenderViewDesc::DisplayDesc;
+    for (const DisplayDesc &displayDesc : desc.displayDescs) {
+        std::vector<riley::RenderOutputId> displayRenderOutputIds;
+        displayRenderOutputIds.reserve(displayDesc.renderOutputIndices.size());
+        for (const size_t renderOutputIndex : displayDesc.renderOutputIndices) {
+            displayRenderOutputIds.push_back(
+                _renderOutputIds[renderOutputIndex]);
+        }
+
+        _displayIds.push_back(
+            riley->CreateDisplay(
+                riley::UserId::DefaultId(),
+                _renderTargetId,
+                displayDesc.name,
+                displayDesc.driver,
+                { static_cast<uint32_t>(displayRenderOutputIds.size()),
+                  displayRenderOutputIds.data()},
+                displayDesc.params));
+    }
+    
+    _renderViewId =
+        riley->CreateRenderView(
+            riley::UserId::DefaultId(),
+            _renderTargetId,
+            desc.cameraId,
+            desc.integratorId,
+            {0, nullptr},
+            {0, nullptr},
+            RtParamList());
+}
+
+void
+HdPrmanRenderViewContext::_DestroyRenderView(
+    riley::Riley * const riley)
+{
+    if (_renderViewId != riley::RenderViewId::InvalidId()) {
+        riley->DeleteRenderView(_renderViewId);
+        _renderViewId = riley::RenderViewId::InvalidId();
+    }
+
+    for (const riley::DisplayId id : _displayIds) {
+        riley->DeleteDisplay(id);
+    }
+    _displayIds.clear();
+    
+    if (_renderTargetId != riley::RenderTargetId::InvalidId()) {
+        riley->DeleteRenderTarget(_renderTargetId);
+        _renderTargetId = riley::RenderTargetId::InvalidId();
+    }
+
+    for (const riley::RenderOutputId id : _renderOutputIds) {
+        riley->DeleteRenderOutput(id);
+    }
+    _renderOutputIds.clear();
+}
+
+void
+HdPrmanRenderViewContext::SetIntegratorId(
+    const riley::IntegratorId id,
+    riley::Riley * const riley)
+{
+    if (_renderViewId == riley::RenderViewId::InvalidId()) {
+        return;
+    }
+    
+    riley->ModifyRenderView(
+        _renderViewId, nullptr, nullptr, &id, nullptr, nullptr, nullptr);        
+}
+
+void
+HdPrmanRenderViewContext::SetResolution(
+    const GfVec2i &resolution,
+    riley::Riley * const riley)
+{
+    if (_renderTargetId == riley::RenderTargetId::InvalidId()) {
+        return;
+    }
+
+    const riley::Extent extent = {
+        static_cast<uint32_t>(resolution[0]),
+        static_cast<uint32_t>(resolution[1]),
+        1 };
+
+    riley->ModifyRenderTarget(
+        _renderTargetId, nullptr, &extent, nullptr, nullptr, nullptr);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

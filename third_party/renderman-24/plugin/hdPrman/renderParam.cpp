@@ -1614,24 +1614,4 @@ HdPrman_RenderParam::UpdateIntegrator(HdRenderDelegate * const renderDelegate)
 }
 
 
-void
-HdPrman_RenderParam::SetResolutionOfRenderTarget(
-    const int32_t resolution[2])
-{
-    HdPrmanRenderViewContext &ctx = GetRenderViewContext();
-
-    const riley::Extent extent = {
-        static_cast<uint32_t>(resolution[0]),
-        static_cast<uint32_t>(resolution[1]),
-        0};
-
-    AcquireRiley()->ModifyRenderTarget(
-        ctx.renderTargetId,
-        nullptr,
-        &extent,
-        nullptr,
-        nullptr,
-        nullptr);
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
