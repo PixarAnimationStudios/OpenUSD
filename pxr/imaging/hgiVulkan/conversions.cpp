@@ -320,9 +320,11 @@ _primitiveTypeTable[HgiPrimitiveTypeCount][2] =
     {HgiPrimitiveTypeLineList,     VK_PRIMITIVE_TOPOLOGY_LINE_LIST},
     {HgiPrimitiveTypeLineStrip,    VK_PRIMITIVE_TOPOLOGY_LINE_STRIP},
     {HgiPrimitiveTypeTriangleList, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST},
-    {HgiPrimitiveTypePatchList,    VK_PRIMITIVE_TOPOLOGY_PATCH_LIST}
+    {HgiPrimitiveTypePatchList,    VK_PRIMITIVE_TOPOLOGY_PATCH_LIST},
+    {HgiPrimitiveTypeLineListWithAdjacency,
+                            VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY}
 };
-static_assert(HgiPrimitiveTypeCount==5, "");
+static_assert(HgiPrimitiveTypeCount==6, "");
 
 static const std::string
 _imageLayoutFormatTable[HgiFormatCount][2] =

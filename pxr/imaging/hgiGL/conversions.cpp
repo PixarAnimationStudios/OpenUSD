@@ -223,7 +223,8 @@ _primitiveTypeTable[HgiPrimitiveTypeCount][2] =
     {HgiPrimitiveTypeLineList,     GL_LINES},
     {HgiPrimitiveTypeLineStrip,    GL_LINES_ADJACENCY},
     {HgiPrimitiveTypeTriangleList, GL_TRIANGLES},
-    {HgiPrimitiveTypePatchList,    GL_PATCHES}
+    {HgiPrimitiveTypePatchList,    GL_PATCHES},
+    {HgiPrimitiveTypeLineListWithAdjacency, GL_LINES_ADJACENCY}
 };
 
 static const std::string

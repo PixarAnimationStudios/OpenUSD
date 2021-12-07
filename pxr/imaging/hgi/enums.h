@@ -514,6 +514,9 @@ enum HgiComponentSwizzle
 /// <li>HgiPrimitiveTypePatchList:
 ///   A user-defined number of vertices, which is tessellated into
 ///   points, lines, or triangles.</li>
+/// <li>HgiPrimitiveTypeLineListWithAdjacency:
+///   A four-vertex encoding used to draw untriangulated quads.
+///   Rasterize two triangles for every separate set of four vertices.</li>
 /// </ul>
 ///
 enum HgiPrimitiveType
@@ -523,6 +526,7 @@ enum HgiPrimitiveType
     HgiPrimitiveTypeLineStrip,
     HgiPrimitiveTypeTriangleList,
     HgiPrimitiveTypePatchList,
+    HgiPrimitiveTypeLineListWithAdjacency,
 
     HgiPrimitiveTypeCount
 };
