@@ -139,7 +139,7 @@ HdPrman_InteractiveRenderParam::IsValid() const
 }
 
 void 
-HdPrman_InteractiveRenderParam::Begin(HdRenderDelegate *renderDelegate)
+HdPrman_InteractiveRenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
 {
     //////////////////////////////////////////////////////////////////////// 
     //

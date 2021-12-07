@@ -74,10 +74,7 @@ class HdPrmanRenderDelegate : public HdRenderDelegate
 {
 public:
     HDPRMAN_API 
-    HdPrmanRenderDelegate(std::shared_ptr<HdPrman_RenderParam> renderParam);
-    HDPRMAN_API 
-    HdPrmanRenderDelegate(std::shared_ptr<HdPrman_RenderParam> renderParam,
-        HdRenderSettingsMap const& settingsMap);
+    HdPrmanRenderDelegate(HdRenderSettingsMap const& settingsMap);
     HDPRMAN_API 
     ~HdPrmanRenderDelegate() override;
 
@@ -185,6 +182,11 @@ private:
         Offline
     };
     RenderMode _renderMode;
+
+    static
+    RenderMode _GetRenderMode(const HdRenderSettingsMap &settingsMap);
+    static
+    std::shared_ptr<HdPrman_RenderParam> _CreateRenderParam(RenderMode mode);
 
     bool _IsInteractive() const { 
         return (_renderMode == RenderMode::Interactive);

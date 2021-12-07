@@ -106,17 +106,54 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_BPRIM_TYPES =
     _tokens->field3dAsset,
 };
 
-HdPrmanRenderDelegate::HdPrmanRenderDelegate(
-    std::shared_ptr<HdPrman_RenderParam> renderParam)
-    : _renderParam(renderParam)
+static
+bool
+_IsInteractiveEnabled(HdRenderSettingsMap const &settingsMap)
 {
-    _Initialize();
+    constexpr bool defaultVal = true;
+
+    const auto &it = 
+        settingsMap.find(HdRenderSettingsTokens->enableInteractive);
+    if (it == settingsMap.end()) {
+        return defaultVal;
+    }
+    
+    const VtValue &val = it->second;
+    if (!val.IsHolding<bool>()) {
+        return defaultVal;
+    }
+    return val.UncheckedGet<bool>();
+}
+
+HdPrmanRenderDelegate::RenderMode
+HdPrmanRenderDelegate::_GetRenderMode(HdRenderSettingsMap const &settingsMap)
+{
+    if (_IsInteractiveEnabled(settingsMap)) {
+        return Interactive;
+    } else {
+        return Offline;
+    }
+}
+
+std::shared_ptr<HdPrman_RenderParam>
+HdPrmanRenderDelegate::_CreateRenderParam(const RenderMode mode)
+{
+    switch(mode) {
+    case Interactive:
+        return std::make_unique<HdPrman_InteractiveRenderParam>();
+    case Offline:
+        return std::make_unique<HdPrman_OfflineRenderParam>();
+    }
+    
+    // Make compiler happy.
+    return std::make_unique<HdPrman_InteractiveRenderParam>();
 }
 
 HdPrmanRenderDelegate::HdPrmanRenderDelegate(
-    std::shared_ptr<HdPrman_RenderParam> renderParam,
     HdRenderSettingsMap const& settingsMap)
-    : HdRenderDelegate(settingsMap), _renderParam(renderParam)
+  : HdRenderDelegate(settingsMap)
+  , _renderMode(_GetRenderMode(settingsMap))
+  , _renderParam(_CreateRenderParam(_renderMode))
 {
     _Initialize();
 }
@@ -124,14 +161,6 @@ HdPrmanRenderDelegate::HdPrmanRenderDelegate(
 void
 HdPrmanRenderDelegate::_Initialize()
 {
-    std::shared_ptr<HdPrman_InteractiveRenderParam> interactiveRenderParam =
-        std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(_renderParam);
-    if (interactiveRenderParam != nullptr) {
-        _renderMode = RenderMode::Interactive;
-    } else { 
-        _renderMode = RenderMode::Offline;
-    }
-
     std::string integrator = HdPrmanIntegratorTokens->PxrPathTracer;
     std::string integratorEnv = TfGetenv("HD_PRMAN_INTEGRATOR");
     if (!integratorEnv.empty()) {
@@ -184,14 +213,7 @@ HdPrmanRenderDelegate::_Initialize()
 
     _PopulateDefaultSettings(_settingDescriptors);
 
-    if (_IsInteractive()) {
-        // We do not expect a non-interactive context passed into an
-        // interactive session.
-        TF_VERIFY(interactiveRenderParam);
-
-        interactiveRenderParam->Begin(this);
-
-    }
+    _renderParam->Begin(this);
 
     _resourceRegistry = std::make_shared<HdPrman_ResourceRegistry>(
         _renderParam);

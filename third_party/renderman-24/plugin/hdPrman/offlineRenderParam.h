@@ -45,7 +45,7 @@ public:
 
     // Start connection to Renderman.
     HDPRMAN_API
-    void Begin(HdPrmanRenderDelegate *renderDelegate);
+    void Begin(HdPrmanRenderDelegate *renderDelegate) override;
 
     // Produces a render
     HDPRMAN_API

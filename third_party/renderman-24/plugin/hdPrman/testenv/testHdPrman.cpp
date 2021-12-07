@@ -471,18 +471,15 @@ int main(int argc, char *argv[])
             settingsMap[TfToken(key)] = item.second;
         }
 
+        settingsMap[HdRenderSettingsTokens->enableInteractive] = false;
+
         // Set up frontend -> index -> backend
         // TODO We should configure the render delegate to request
         // the appropriate materialBindingPurposes from the USD scene.
         // We should also configure the scene to filter for the
         // requested includedPurposes.
 
-        std::shared_ptr<HdPrman_OfflineRenderParam> renderParam =
-            std::make_shared<HdPrman_OfflineRenderParam>();
-
-        HdPrmanRenderDelegate hdPrmanBackend(renderParam, settingsMap);
-        
-        renderParam->Begin(&hdPrmanBackend);
+        HdPrmanRenderDelegate hdPrmanBackend(settingsMap);
         
         // Hydra setup
         //

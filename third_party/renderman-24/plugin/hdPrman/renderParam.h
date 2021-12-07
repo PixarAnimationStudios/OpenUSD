@@ -62,6 +62,9 @@ public:
     HDPRMAN_API
     ~HdPrman_RenderParam() override;
 
+    virtual
+    void Begin(HdPrmanRenderDelegate *renderDelegate) = 0; 
+
     // Convert any Hydra primvars that should be Riley instance attributes.
     HDPRMAN_API
     RtParamList

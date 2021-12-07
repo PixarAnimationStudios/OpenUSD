@@ -21,11 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdPrman/interactiveRenderParam.h"
-#include "hdPrman/offlineRenderParam.h"
 #include "hdPrman/renderDelegate.h"
 #include "pxr/imaging/plugin/hdPrmanLoader/rendererPlugin.h"
-#include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -33,34 +30,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 // a symbol here that can be picked up by HdPrmanLoader::Load.
 HDPRMAN_LOADER_CREATE_DELEGATE
 {
-    bool isInteractive = true;
-    const auto & itInteractive = 
-        settingsMap.find(HdRenderSettingsTokens->enableInteractive);
-    if (itInteractive != settingsMap.end()) {
-        VtValue res = itInteractive->second;
-        if (res.IsHolding<bool>()) {
-            isInteractive = res.UncheckedGet<bool>();
-        }
-    }
-
-    HdRenderDelegate* renderDelegate = nullptr;
-    if (isInteractive) {
-        // Prman only supports one delegate at a time
-        std::shared_ptr<HdPrman_InteractiveRenderParam> renderParam =
-            std::make_shared<HdPrman_InteractiveRenderParam>();
-        if (!renderParam->IsValid()) {
-            TF_WARN("Failed to create the HdPrman render delegate due to"
-                    " an invalid HdPrman_InteractiveRenderParam.");
-            return nullptr;
-        }
-
-        renderDelegate = new HdPrmanRenderDelegate(renderParam, settingsMap);
-    } else {
-        TF_WARN("Failed to create the non-interactive HdPrman render delegate,"
-                " this is not yet supported via plugin loading.");
-        return nullptr;
-    }
-    return renderDelegate;
+    return new HdPrmanRenderDelegate(settingsMap);
 }
 
 HDPRMAN_LOADER_DELETE_DELEGATE

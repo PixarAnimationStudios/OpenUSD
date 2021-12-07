@@ -66,7 +66,7 @@ public:
     ~HdPrman_InteractiveRenderParam() override;
 
     // Start connection to Renderman.
-    void Begin(HdRenderDelegate *renderDelegate);
+    void Begin(HdPrmanRenderDelegate *renderDelegate) override;
     // Starts riley and the thread if needed, and tells the thread render
     void StartRender();
 
