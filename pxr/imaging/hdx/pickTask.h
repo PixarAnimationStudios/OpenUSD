@@ -156,6 +156,7 @@ struct HdxPickTaskContextParams
         , clipPlanes()
         , depthMaskCallback(nullptr)
         , collection()
+        , alphaThreshold(0.f)
         , outHits(nullptr)
     {}
 
@@ -169,6 +170,7 @@ struct HdxPickTaskContextParams
     std::vector<GfVec4d> clipPlanes;
     DepthMaskCallback depthMaskCallback;
     HdRprimCollection collection;
+    float alphaThreshold;
     HdxPickHitVector *outHits;
 };
 
