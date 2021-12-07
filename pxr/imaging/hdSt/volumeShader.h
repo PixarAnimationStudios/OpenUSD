@@ -64,12 +64,10 @@ public:
     /// calls base class's method.
     ///
     void BindResources(int program,
-                       HdSt_ResourceBinder const &binder,
-                       HdRenderPassState const &state) override;
+                       HdSt_ResourceBinder const &binder) override;
 
     void UnbindResources(int program,
-                         HdSt_ResourceBinder const &binder,
-                         HdRenderPassState const &state) override;
+                         HdSt_ResourceBinder const &binder) override;
 
     /// Adds buffer sources to the shader bar (for volume bounding
     /// box) and points bar if requested (besides calling

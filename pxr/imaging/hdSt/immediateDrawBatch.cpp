@@ -194,14 +194,14 @@ HdSt_ImmediateDrawBatch::_ExecuteDraw(
     glUseProgram(programId);
 
     for (HdStShaderCodeSharedPtr const & shader : shaders) {
-        shader->BindResources(programId, binder, *renderPassState);
+        shader->BindResources(programId, binder);
     }
 
     // Set up geometric shader states
     // all batch item should have the same geometric shader.
     HdSt_GeometricShaderSharedPtr const &geometricShader =
                                                 program.GetGeometricShader();
-    geometricShader->BindResources(programId, binder, *renderPassState);
+    geometricShader->BindResources(programId, binder);
 
     renderPassState->ApplyStateFromGeometricShader(binder, geometricShader);
 
@@ -395,7 +395,7 @@ HdSt_ImmediateDrawBatch::_ExecuteDraw(
         //
         if (program.GetMaterialNetworkShader()) {
             program.GetMaterialNetworkShader()->BindResources(
-                programId, binder, *renderPassState);
+                programId, binder);
         }
 
         /*
@@ -511,7 +511,7 @@ HdSt_ImmediateDrawBatch::_ExecuteDraw(
 
         if (program.GetMaterialNetworkShader()) {
             program.GetMaterialNetworkShader()->UnbindResources(
-                programId, binder, *renderPassState);
+                programId, binder);
         }
 
         HD_PERF_COUNTER_INCR(HdPerfTokens->drawCalls);
@@ -520,9 +520,9 @@ HdSt_ImmediateDrawBatch::_ExecuteDraw(
     HD_PERF_COUNTER_ADD(HdTokens->itemsDrawn, numItemsDrawn);
 
     for (HdStShaderCodeSharedPtr const & shader : shaders) {
-        shader->UnbindResources(programId, binder, *renderPassState);
+        shader->UnbindResources(programId, binder);
     }
-    geometricShader->UnbindResources(programId, binder, *renderPassState);
+    geometricShader->UnbindResources(programId, binder);
 
     // unbind (make non resident all bindless buffers)
     if (constantBarCurrent)

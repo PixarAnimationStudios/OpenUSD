@@ -61,7 +61,6 @@ using HdStTextureHandleSharedPtr =
 using HdComputationSharedPtr =
     std::shared_ptr<class HdComputation>;
 
-class HdRenderPassState;
 class HdSt_ResourceBinder;
 class HdStResourceRegistry;
 
@@ -170,13 +169,11 @@ public:
     /// XXX: this interface is meant to be used for bridging
     /// the GlfSimpleLightingContext mechanism, and not for generic use-cases.
     virtual void BindResources(int program,
-                               HdSt_ResourceBinder const &binder,
-                               HdRenderPassState const &state) = 0;
+                               HdSt_ResourceBinder const &binder) = 0;
 
     /// Unbinds shader-specific resources.
     virtual void UnbindResources(int program,
-                                 HdSt_ResourceBinder const &binder,
-                                 HdRenderPassState const &state) = 0;
+                                 HdSt_ResourceBinder const &binder) = 0;
 
     /// Add custom bindings (used by codegen)
     virtual void AddBindings(HdBindingRequestVector* customBindings) = 0;

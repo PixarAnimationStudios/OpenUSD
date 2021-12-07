@@ -23,11 +23,9 @@
 //
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/renderBuffer.h"
@@ -37,8 +35,6 @@
 #include "pxr/imaging/hdSt/textureHandle.h"
 #include "pxr/imaging/hdSt/textureObject.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
-
-#include "pxr/imaging/hf/perfLog.h"
 
 #include "pxr/imaging/hio/glslfx.h"
 
@@ -184,8 +180,7 @@ HdStRenderPassShader::GetSource(TfToken const &shaderStageKey) const
 /*virtual*/
 void
 HdStRenderPassShader::BindResources(const int program,
-                                    HdSt_ResourceBinder const &binder,
-                                    HdRenderPassState const &state)
+                                    HdSt_ResourceBinder const &binder)
 {
     TF_FOR_ALL(it, _customBuffers) {
         binder.Bind(it->second);
@@ -197,8 +192,7 @@ HdStRenderPassShader::BindResources(const int program,
 /*virtual*/
 void
 HdStRenderPassShader::UnbindResources(const int program,
-                                      HdSt_ResourceBinder const &binder,
-                                      HdRenderPassState const &state)
+                                      HdSt_ResourceBinder const &binder)
 {
     TF_FOR_ALL(it, _customBuffers) {
         binder.Unbind(it->second);

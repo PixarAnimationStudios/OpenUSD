@@ -39,7 +39,6 @@
 
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -144,8 +143,7 @@ HdSt_MaterialNetworkShader::GetNamedTextureHandles() const
 /*virtual*/
 void
 HdSt_MaterialNetworkShader::BindResources(const int program,
-                                 HdSt_ResourceBinder const &binder,
-                                 HdRenderPassState const &state)
+                                 HdSt_ResourceBinder const &binder)
 {
     HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
 
@@ -154,8 +152,7 @@ HdSt_MaterialNetworkShader::BindResources(const int program,
 /*virtual*/
 void
 HdSt_MaterialNetworkShader::UnbindResources(const int program,
-                                   HdSt_ResourceBinder const &binder,
-                                   HdRenderPassState const &state)
+                                   HdSt_ResourceBinder const &binder)
 {
     binder.UnbindShaderResources(this);
 

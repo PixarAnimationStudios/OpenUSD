@@ -26,11 +26,8 @@
 
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/shaderKey.h"
-#include "pxr/imaging/hdSt/resourceBinder.h"
 
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hio/glslfx.h"
@@ -112,16 +109,14 @@ HdSt_GeometricShader::GetSource(TfToken const &shaderStageKey) const
 
 void
 HdSt_GeometricShader::BindResources(const int program,
-                                    HdSt_ResourceBinder const &binder,
-                                    HdRenderPassState const &state)
+                                    HdSt_ResourceBinder const &binder)
 {
     // no-op
 }
 
 void
 HdSt_GeometricShader::UnbindResources(const int program,
-                                      HdSt_ResourceBinder const &binder,
-                                      HdRenderPassState const &state)
+                                      HdSt_ResourceBinder const &binder)
 {
     // no-op
 }

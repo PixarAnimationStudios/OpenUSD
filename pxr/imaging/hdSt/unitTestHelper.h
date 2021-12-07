@@ -578,12 +578,10 @@ public:
     std::string GetSource(TfToken const &shaderStageKey) const override;
     HDST_API
     void BindResources(int program,
-                       HdSt_ResourceBinder const &binder,
-                       HdRenderPassState const &state) override;
+                       HdSt_ResourceBinder const &binder) override;
     HDST_API
     void UnbindResources(int program,
-                         HdSt_ResourceBinder const &binder,
-                         HdRenderPassState const &state) override;
+                         HdSt_ResourceBinder const &binder) override;
     void AddBindings(HdBindingRequestVector *customBindings) override;
 
     /// HdStLightingShader overrides

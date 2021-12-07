@@ -37,9 +37,6 @@
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hd/perfLog.h"
-
-#include "pxr/imaging/hf/perfLog.h"
 
 #include "pxr/imaging/hio/glslfx.h"
 
@@ -159,8 +156,7 @@ _HasDomeLight(GlfSimpleLightingContextRefPtr const &ctx)
 /* virtual */
 void
 HdStSimpleLightingShader::BindResources(const int program,
-                                        HdSt_ResourceBinder const &binder,
-                                        HdRenderPassState const &state)
+                                        HdSt_ResourceBinder const &binder)
 {
     // XXX: we'd like to use HdSt_ResourceBinder instead of GlfBindingMap.
     _bindingMap->ResetUniformBindings(
@@ -183,8 +179,7 @@ HdStSimpleLightingShader::BindResources(const int program,
 /* virtual */
 void
 HdStSimpleLightingShader::UnbindResources(const int program,
-                                          HdSt_ResourceBinder const &binder,
-                                          HdRenderPassState const &state)
+                                          HdSt_ResourceBinder const &binder)
 {
     // XXX: we'd like to use HdSt_ResourceBinder instead of GlfBindingMap.
     //

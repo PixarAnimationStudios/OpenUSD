@@ -80,10 +80,9 @@ HdSt_VolumeShader::AddBindings(HdBindingRequestVector * const customBindings)
 
 void 
 HdSt_VolumeShader::BindResources(const int program,
-                                 HdSt_ResourceBinder const &binder,
-                                 HdRenderPassState const &state)
+                                 HdSt_ResourceBinder const &binder)
 {
-    HdSt_MaterialNetworkShader::BindResources(program, binder, state);
+    HdSt_MaterialNetworkShader::BindResources(program, binder);
     
     const int currentRenderSettingsVersion =
         _renderDelegate->GetRenderSettingsVersion();
@@ -104,10 +103,9 @@ HdSt_VolumeShader::BindResources(const int program,
 
 void
 HdSt_VolumeShader::UnbindResources(const int program,
-                                   HdSt_ResourceBinder const &binder,
-                                   HdRenderPassState const &state)
+                                   HdSt_ResourceBinder const &binder)
 {
-    HdSt_MaterialNetworkShader::UnbindResources(program, binder, state);
+    HdSt_MaterialNetworkShader::UnbindResources(program, binder);
 }
 
 void
