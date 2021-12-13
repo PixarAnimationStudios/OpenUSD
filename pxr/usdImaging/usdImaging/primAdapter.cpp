@@ -983,6 +983,22 @@ UsdImagingPrimAdapter::_GetInheritedPrimvars(UsdPrim const& prim) const
     return _delegate->_inheritedPrimvarCache.GetValue(prim);
 }
 
+UsdGeomPrimvar
+UsdImagingPrimAdapter::_GetInheritedPrimvar(UsdPrim const& prim,
+                                            TfToken const& primvarName) const
+{
+    UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
+        _GetInheritedPrimvars(prim.GetParent());
+    if (inheritedPrimvarRecord) {
+        for (UsdGeomPrimvar const& pv : inheritedPrimvarRecord->primvars) {
+            if (pv.GetPrimvarName() == primvarName) {
+                return pv;
+            }
+        }
+    }
+    return UsdGeomPrimvar();
+}
+
 bool
 UsdImagingPrimAdapter::_DoesDelegateSupportCoordSys() const
 {
