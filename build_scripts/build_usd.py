@@ -1349,19 +1349,42 @@ DRACO = Dependency("Draco", InstallDraco, "include/draco/compression/decode.h")
 ############################################################
 # MaterialX
 
-MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.0.zip"
+MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.3.zip"
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
-        # USD requires MaterialX to be built as a shared library on Linux and MacOS
-        # Currently MaterialX does not support shared builds on Windows
-        cmakeOptions = []
-        if Linux() or MacOS():
-            cmakeOptions += ['-DMATERIALX_BUILD_SHARED_LIBS=ON']
+        cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON']
 
         cmakeOptions += buildArgs;
 
+        if "v1.38.3.zip" in MATERIALX_URL:
+            # This will be fixed in v1.38.4:
+            PatchFile(os.path.join('cmake', 'modules', 'MaterialXConfig.cmake.in'),
+                [('set_and_check(MATERIALX_PYTHON_DIR "@PACKAGE_CMAKE_INSTALL_PREFIX@/python")\n',
+                  'IF (@MATERIALX_BUILD_PYTHON@ AND @MATERIALX_INSTALL_PYTHON@)\n'
+                  '  set_and_check(MATERIALX_PYTHON_DIR "@PACKAGE_CMAKE_INSTALL_PREFIX@/python")\n'
+                  'ENDIF()\n')],
+                multiLineMatches=True)
+
         RunCMake(context, force, cmakeOptions)
+
+        if "v1.38.3.zip" in MATERIALX_URL:
+            # This will be fixed in v1.38.4:
+            # Post-build fix. Make sure MaterialX config is relocatable:
+            filename = os.path.join(context.instDir, 'lib', 'cmake', 'MaterialX', 'MaterialXTargets.cmake')
+            oldLines = open(filename, 'r').readlines()
+            newLines = []
+            for s in oldLines:
+                if s.startswith('set(_IMPORT_PREFIX '):
+                    pathBegin = s.find(' ') + 1
+                    pathEnd = s.rfind(')')
+                    s = s[:pathBegin] + '${PACKAGE_PREFIX_DIR}' + s[pathEnd:]
+                newLines.append(s)
+            if newLines != oldLines:
+                PrintInfo("Patching file {filename} (original in {oldFilename})..."
+                        .format(filename=filename, oldFilename=filename + ".old"))
+                shutil.copy(filename, filename + ".old")
+                open(filename, 'w').writelines(newLines)
 
 MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Library.h")
 

@@ -19,10 +19,8 @@ pxr_library(usdMtlx
         usdShade
         usdUI
         usdUtils
-        ${MATERIALX_LIBRARIES}
-
-    INCLUDE_DIRS
-        ${MATERIALX_INCLUDE_DIRS}
+        MaterialXCore
+        MaterialXFormat
 
     CPPFILES
         debugCodes.cpp

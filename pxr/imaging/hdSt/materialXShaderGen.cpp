@@ -273,8 +273,8 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
     mx::ShaderStage& mxStage) const
 {
     // Add global constants and type definitions
-    emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
-                + "/lib/mx_defines.glsl", mxContext, mxStage);
+    emitInclude("stdlib/" + mx::GlslShaderGenerator::TARGET
+                + "/lib/mx_math.glsl", mxContext, mxStage);
     emitLine("#if NUM_LIGHTS > 0", mxStage, false);
     emitLine("#define MAX_LIGHT_SOURCES NUM_LIGHTS", mxStage, false);
     emitLine("#else", mxStage, false);
@@ -386,11 +386,6 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
         _EmitMxInitFunction(vertexData, mxStage);
     }
 
-    // Emit common math functions
-    emitInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET 
-                + "/lib/mx_math.glsl", mxContext, mxStage);
-    emitLineBreak(mxStage);
-
     // Emit lighting and shadowing code
     if (lighting) {
         emitSpecularEnvironment(mxContext, mxStage);
@@ -427,6 +422,9 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
         emitInclude(ShaderGenerator::T_FILE_TRANSFORM_UV, mxContext, mxStage);
     }
 
+    // Add light sampling functions
+    emitLightFunctionDefinitions(mxGraph, mxContext, mxStage);
+
     // Add all functions for node implementations
     emitFunctionDefinitions(mxGraph, mxContext, mxStage);
 }
@@ -448,7 +446,8 @@ HdStMaterialXShaderGen::_EmitMxSurfaceShader(
     emitLine("mxInit(Peye, Neye)", mxStage);
 
     const mx::ShaderGraphOutputSocket* outputSocket = mxGraph.getOutputSocket();
-    if (mxGraph.hasClassification(mx::ShaderNode::Classification::CLOSURE)) {
+    if (mxGraph.hasClassification(mx::ShaderNode::Classification::CLOSURE) &&
+        !mxGraph.hasClassification(mx::ShaderNode::Classification::SHADER)) {
         // Handle the case where the mxGraph is a direct closure.
         // We don't support rendering closures without attaching 
         // to a surface shader, so just output black.

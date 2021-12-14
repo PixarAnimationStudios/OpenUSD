@@ -273,9 +273,9 @@ Linux and MacOS.
 
 The additional dependencies that must be supplied when invoking cmake are:
 
-| Dependency Name    | Description                              |
-| ------------------ |----------------------------------------  |
-| MATERIALX_ROOT     | The root path to a MaterialX SDK install.| 
+| Dependency Name    | Description                                                 |
+| ------------------ |-----------------------------------------------------------  |
+| MaterialX_DIR      | Path to the CMake package config of a MaterialX SDK install.|
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 

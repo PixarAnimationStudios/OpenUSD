@@ -15,11 +15,12 @@ pxr_library(usdBakeMtlx
         hd
         hdMtlx
         usdImaging
-        ${MATERIALX_LIBRARIES}
+        MaterialXCore
+        MaterialXFormat
+        MaterialXRenderGlsl
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
-        ${MATERIALX_INCLUDE_DIRS}
         ${PYTHON_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
