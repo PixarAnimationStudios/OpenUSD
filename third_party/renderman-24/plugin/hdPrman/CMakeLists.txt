@@ -22,8 +22,14 @@ endif()
 set(optionalIncludeDirs "")
 set(optionalPublicClasses "")
 if (${PXR_ENABLE_MATERIALX_SUPPORT})
-    list(APPEND optionalLibs ${MATERIALX_LIBRARIES} hdMtlx)
-    list(APPEND optionalIncludeDirs ${MATERIALX_INCLUDE_DIRS})
+    list(APPEND optionalLibs
+        MaterialXCore
+        MaterialXFormat
+        MaterialXGenShader
+        MaterialXGenOsl
+        MaterialXRender
+        hdMtlx
+    )
     list(APPEND optionalPublicClasses matfiltMaterialX)
 
     if (${PXR_ENABLE_OSL_SUPPORT})
