@@ -31,6 +31,7 @@
 #include "pxr/usd/sdr/api.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/sdr/declare.h"
+#include <limits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
