@@ -69,6 +69,7 @@ private:
   HdRenderIndex::HdDrawItemPtrVector _drawItems;
   size_t _drawItemCount;
   bool _drawItemsChanged;
+  
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
