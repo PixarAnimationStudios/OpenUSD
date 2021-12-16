@@ -220,4 +220,55 @@ HdPrmanHdMaterialNetwork2Interface::DeleteNodeInputConnection(
     }
 }
 
+TfTokenVector
+HdPrmanHdMaterialNetwork2Interface::GetTerminalNames() const
+{
+    TfTokenVector result;
+    if (_materialNetwork) {
+        result.reserve(_materialNetwork->terminals.size());
+        for (const auto nameConnectionPair : _materialNetwork->terminals) {
+            result.push_back(nameConnectionPair.first);
+        }
+    }
+
+    return result;
+}
+
+HdPrmanHdMaterialNetwork2Interface::InputConnectionResult
+HdPrmanHdMaterialNetwork2Interface::GetTerminalConnection(
+    const TfToken &terminalName) const
+{
+    if (_materialNetwork) {
+        const auto it = _materialNetwork->terminals.find(terminalName);
+        if (it != _materialNetwork->terminals.end()) {
+            const HdMaterialConnection2 &c = it->second;
+            return InputConnectionResult(true,
+                                        {c.upstreamNode.GetAsToken(),
+                                         c.upstreamOutputName});
+        }
+    }
+    return InputConnectionResult(false, InputConnection());
+}
+
+void
+HdPrmanHdMaterialNetwork2Interface::DeleteTerminal(
+    const TfToken &terminalName)
+{
+    if (_materialNetwork) {
+        _materialNetwork->terminals.erase(terminalName);
+    }
+}
+
+void
+HdPrmanHdMaterialNetwork2Interface::SetTerminalConnection(
+    const TfToken &terminalName,
+    const InputConnection &connection)
+{
+    if (_materialNetwork) {
+        _materialNetwork->terminals[terminalName] =
+            { SdfPath(connection.upstreamNodeName.GetString()),
+              connection.upstreamOutputName };
+    }
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

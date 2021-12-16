@@ -88,6 +88,21 @@ public:
     virtual void DeleteNodeInputConnection(
         const TfToken &nodeName,
         const TfToken &inputName) = 0;
+
+    /// ------------------------------------------------------------------------
+    /// Terminal query & mutation
+    virtual TfTokenVector GetTerminalNames() const = 0;
+
+    using InputConnectionResult = std::pair<bool, InputConnection>;
+    virtual InputConnectionResult GetTerminalConnection(
+        const TfToken &terminalName) const = 0;
+
+    virtual void DeleteTerminal(
+        const TfToken &terminalName) = 0;
+
+    virtual void SetTerminalConnection(
+        const TfToken &terminalName,
+        const InputConnection &connection) = 0;
 };
 
 

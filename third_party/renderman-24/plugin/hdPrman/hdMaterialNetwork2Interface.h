@@ -85,6 +85,17 @@ public:
         const TfToken &nodeName,
         const TfToken &inputName) override;
 
+    TfTokenVector GetTerminalNames() const override;
+
+    InputConnectionResult GetTerminalConnection(
+        const TfToken &terminalName) const override;
+
+    void DeleteTerminal(const TfToken &terminalName) override;
+
+    void SetTerminalConnection(
+        const TfToken &terminalName,
+        const InputConnection &connection) override;
+
 private:
     HdMaterialNetwork2 *_materialNetwork;
     mutable TfToken _lastAccessedNodeName;
