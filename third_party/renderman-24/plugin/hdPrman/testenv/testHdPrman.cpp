@@ -47,7 +47,7 @@
 
 #include "hdPrman/renderDelegate.h"
 
-#include <Riley.h>
+#include "Riley.h"
 
 #include <fstream>
 #include <memory>

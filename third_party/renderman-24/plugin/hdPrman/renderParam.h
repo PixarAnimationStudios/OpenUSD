@@ -31,6 +31,7 @@
 #include "hdPrman/renderViewContext.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderThread.h"
 #include "pxr/base/gf/matrix4d.h"
 
 #include "Riley.h"
@@ -42,7 +43,6 @@ class RixRiCtl;
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdPrmanCamera;
-class HdPrmanCameraContext;
 class HdPrmanRenderDelegate;
 
 // Compile-time limit on max time samples.
@@ -62,8 +62,8 @@ public:
     HDPRMAN_API
     ~HdPrman_RenderParam() override;
 
-    virtual
-    void Begin(HdPrmanRenderDelegate *renderDelegate) = 0; 
+    HDPRMAN_API
+    void Begin(HdPrmanRenderDelegate *renderDelegate); 
 
     // Convert any Hydra primvars that should be Riley instance attributes.
     HDPRMAN_API
@@ -167,11 +167,11 @@ public:
         RtParamList& params);
 
     // Request edit access to the Riley scene and return it.
-    virtual riley::Riley * AcquireRiley() = 0;
+    riley::Riley * AcquireRiley();
 
     // Provides external access to resources used to set parameters for
     // options and the active integrator.
-    virtual riley::IntegratorId GetActiveIntegratorId() = 0;
+    riley::IntegratorId GetActiveIntegratorId();
 
     const riley::MaterialId GetFallbackMaterialId() const {
         return _fallbackMaterialId;
@@ -209,6 +209,51 @@ public:
     void CreateRenderViewFromSpec(
         const VtDictionary &renderSpec);
 
+    // A framebuffer to hold PRMan results when using hydra render buffers.
+    // The d_hydra.so renderman display driver handles updates via IPC.
+    std::unique_ptr<class HdPrmanFramebuffer> framebuffer;
+
+    // Starts riley and the thread if needed, and tells the thread render
+    void StartRender();
+
+    // Request Riley (and the HdRenderThread) to stop.
+    void StopRender();
+
+    // Query whether or not the HdRenderThread is running.
+    bool IsRenderStopped();
+
+    // Checks whether render param was successfully initialized.
+    // ie. riley was created
+    bool IsValid() const;
+
+    // Creates displays in riley based on aovBindings vector
+    void CreateRenderViewFromAovs(
+        const HdRenderPassAovBindingVector& aovBindings);
+
+    // Render thread for background rendering.
+    HdRenderThread renderThread;
+
+    // Scene version counter.
+    std::atomic<int> sceneVersion;
+
+    // For now, the renderPass needs the render target for each view, for
+    // resolution edits, so we need to keep track of these too.
+    void SetActiveIntegratorId(riley::IntegratorId integratorId);
+
+    int32_t resolution[2];
+
+    // Some quantites previously given as options now need to be provided
+    // through different Riley APIs. However, it is still convenient for these
+    // values to be stored in _options (for now). This method returns a pruned
+    // copy of the options, to be provided to SetOptions().
+    RtParamList _GetDeprecatedOptionsPrunedList();
+
+    void UpdateQuickIntegrator(HdRenderDelegate * renderDelegate);
+
+    riley::IntegratorId GetQuickIntegratorId() const {
+        return _quickIntegratorId;
+    }
+
 protected:
     void _CreateRiley();
     void _CreateFallbackMaterials();
@@ -236,6 +281,13 @@ protected:
 private:
     riley::ShadingNode _ComputeIntegratorNode(
         HdRenderDelegate * renderDelegate);
+
+    riley::ShadingNode _ComputeQuickIntegratorNode(
+        HdRenderDelegate * renderDelegate);
+
+    void _CreateQuickIntegrator(HdRenderDelegate * renderDelegate);
+
+    void _RenderThreadCallback();
 
     int _sceneLightCount;
 
@@ -270,6 +322,13 @@ private:
     riley::IntegratorId _integratorId;
     RtParamList _integratorParams;
 
+    riley::IntegratorId _quickIntegratorId;
+    RtParamList _quickIntegratorParams;
+
+    // The integrator to use.
+    // Updated from render pass state.
+    riley::IntegratorId _activeIntegratorId;
+
     // Coordinate system conversion cache.
     _GeomToHdCoordSysMap _geomToHdCoordSysMap;
     _HdToRileyCoordSysMap _hdToRileyCoordSysMap;
@@ -284,6 +343,8 @@ private:
 
     // RIX or XPU
     bool _xpu;
+
+    bool _didBeginRiley;
 
     int _lastSettingsVersion;
 };

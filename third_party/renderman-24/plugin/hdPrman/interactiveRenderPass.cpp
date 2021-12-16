@@ -23,7 +23,8 @@
 //
 #include "hdPrman/interactiveRenderPass.h"
 #include "hdPrman/camera.h"
-#include "hdPrman/interactiveRenderParam.h"
+#include "hdPrman/framebuffer.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/renderBuffer.h"
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/rixStrings.h"
@@ -53,14 +54,12 @@ HdPrman_InteractiveRenderPass::HdPrman_InteractiveRenderPass(
     HdRprimCollection const &collection,
     std::shared_ptr<HdPrman_RenderParam> renderParam)
 : HdRenderPass(index, collection)
+, _renderParam(renderParam)
 , _converged(false)
 , _lastRenderedVersion(0)
 , _quickIntegrateTime(0.2f)
 {
-    _interactiveRenderParam =
-        std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(renderParam);
-
-    TF_VERIFY(_interactiveRenderParam);
+    TF_VERIFY(_renderParam);
 }
 
 HdPrman_InteractiveRenderPass::~HdPrman_InteractiveRenderPass() = default;
@@ -141,13 +140,13 @@ HdPrman_InteractiveRenderPass::_Execute(
     
     static const RtUString us_PathTracer("PathTracer");
 
-    if (!_interactiveRenderParam) {
+    if (!_renderParam) {
         // If this is not an interactive context, don't use Hydra to drive
         // rendering and presentation of the framebuffer.  Instead, assume
         // we are just using Hydra to sync the scene contents to Riley.
         return;
     }
-    if (_interactiveRenderParam->renderThread.IsPauseRequested()) {
+    if (_renderParam->renderThread.IsPauseRequested()) {
         // No more updates if pause is pending
         return;
     }
@@ -169,7 +168,7 @@ HdPrman_InteractiveRenderPass::_Execute(
         dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera());
 
     HdPrmanCameraContext &cameraContext =
-        _interactiveRenderParam->GetCameraContext();
+        _renderParam->GetCameraContext();
     cameraContext.SetCamera(hdCam);
     if (renderPassState->GetFraming().IsValid()) {
         // For new clients setting the camera framing.
@@ -211,18 +210,18 @@ HdPrman_InteractiveRenderPass::_Execute(
     const bool camChanged = cameraContext.IsInvalid();
     cameraContext.MarkValid();
 
-    const int lastVersion = _interactiveRenderParam->GetLastSettingsVersion();
+    const int lastVersion = _renderParam->GetLastSettingsVersion();
 
     if (aovBindings.empty()) {
         // When there are no AOV-bindings, use render spec from
         // render settings to create render view.
         bool createRenderView = false;
-        if (!_interactiveRenderParam->framebuffer.aovs.empty()) {
+        if (!_renderParam->framebuffer->aovs.empty()) {
             // If we just switched from render pass state with AOV bindings
             // to one without, we need to create a new render view from
             // the render spec - and can free the intermediate framebuffer
             // the AOV display driver writes into.
-            _interactiveRenderParam->framebuffer.aovs.clear();
+            _renderParam->framebuffer->aovs.clear();
             createRenderView = true;
         }
         if (lastVersion != currentSettingsVersion) {
@@ -236,7 +235,7 @@ HdPrman_InteractiveRenderPass::_Execute(
                 renderDelegate->GetRenderSetting<VtDictionary>(
                     HdPrmanRenderSettingsTokens->experimentalRenderSpec,
                     VtDictionary());
-            _interactiveRenderParam->CreateRenderViewFromSpec(renderSpec);
+            _renderParam->CreateRenderViewFromSpec(renderSpec);
         }
 
         const GfVec2i resolution =
@@ -247,7 +246,7 @@ HdPrman_InteractiveRenderPass::_Execute(
         // Use AOV-bindings to create render view with displays that
         // have drivers writing into the intermediate framebuffer blitted
         // to the AOVs.
-        _interactiveRenderParam->CreateRenderViewFromAovs(aovBindings);
+        _renderParam->CreateRenderViewFromAovs(aovBindings);
         
         _GetRenderBufferSize(aovBindings,
                              GetRenderIndex(),
@@ -258,10 +257,10 @@ HdPrman_InteractiveRenderPass::_Execute(
 
         // AcquireRiley will stop rendering and increase sceneVersion
         // so that the render will be re-started below.
-        riley::Riley * const riley = _interactiveRenderParam->AcquireRiley();
+        riley::Riley * const riley = _renderParam->AcquireRiley();
 
-        _interactiveRenderParam->UpdateIntegrator(renderDelegate);
-        _interactiveRenderParam->UpdateQuickIntegrator(renderDelegate);
+        _renderParam->UpdateIntegrator(renderDelegate);
+        _renderParam->UpdateQuickIntegrator(renderDelegate);
 
         if (_enableQuickIntegrate)
         {
@@ -275,25 +274,25 @@ HdPrman_InteractiveRenderPass::_Execute(
             HdRenderSettingsTokens->convergedSamplesPerPixel).Cast<int>();
         int maxSamples = TF_VERIFY(!vtMaxSamples.IsEmpty()) ?
             vtMaxSamples.UncheckedGet<int>() : 64; // RenderMan default
-        _interactiveRenderParam->GetOptions().SetInteger(RixStr.k_hider_maxsamples,
+        _renderParam->GetOptions().SetInteger(RixStr.k_hider_maxsamples,
                                                      maxSamples);
 
         VtValue vtPixelVariance = renderDelegate->GetRenderSetting(
             HdRenderSettingsTokens->convergedVariance).Cast<float>();
         float pixelVariance = TF_VERIFY(!vtPixelVariance.IsEmpty()) ?
             vtPixelVariance.UncheckedGet<float>() : 0.001f;
-        _interactiveRenderParam->GetOptions().SetFloat(RixStr.k_Ri_PixelVariance,
+        _renderParam->GetOptions().SetFloat(RixStr.k_Ri_PixelVariance,
                                                    pixelVariance);
 
         // Set Options from RenderSettings schema
-        _interactiveRenderParam->SetOptionsFromRenderSettings(
+        _renderParam->SetOptionsFromRenderSettings(
             renderDelegate,
-            _interactiveRenderParam->GetOptions());
+            _renderParam->GetOptions());
         
         riley->SetOptions(
-            _interactiveRenderParam->_GetDeprecatedOptionsPrunedList());
+            _renderParam->_GetDeprecatedOptionsPrunedList());
 
-        _interactiveRenderParam->SetLastSettingsVersion(currentSettingsVersion);
+        _renderParam->SetLastSettingsVersion(currentSettingsVersion);
     }
 
     // Check if any camera update needed
@@ -301,34 +300,34 @@ HdPrman_InteractiveRenderPass::_Execute(
     // need to sync anything here.  Note that we'll need to solve
     // thread coordination for sprim sync/finalize first.
     const bool resolutionChanged =
-        _interactiveRenderParam->resolution[0] != renderBufferWidth ||
-        _interactiveRenderParam->resolution[1] != renderBufferHeight;
+        _renderParam->resolution[0] != renderBufferWidth ||
+        _renderParam->resolution[1] != renderBufferHeight;
 
     if (camChanged ||
         resolutionChanged) {
 
         // AcquireRiley will stop rendering and increase sceneVersion
         // so that the render will be re-started below.
-        riley::Riley * const riley = _interactiveRenderParam->AcquireRiley();
+        riley::Riley * const riley = _renderParam->AcquireRiley();
 
         if (resolutionChanged) {
-            _interactiveRenderParam->resolution[0] = renderBufferWidth;
-            _interactiveRenderParam->resolution[1] = renderBufferHeight;
+            _renderParam->resolution[0] = renderBufferWidth;
+            _renderParam->resolution[1] = renderBufferHeight;
             
-            _interactiveRenderParam->GetOptions().SetIntegerArray(
+            _renderParam->GetOptions().SetIntegerArray(
                 RixStr.k_Ri_FormatResolution,
-                _interactiveRenderParam->resolution, 2);
+                _renderParam->resolution, 2);
             
-            _interactiveRenderParam->GetRenderViewContext().SetResolution(
+            _renderParam->GetRenderViewContext().SetResolution(
                 GfVec2i(renderBufferWidth, renderBufferHeight),
                 riley);
 
             cameraContext.SetRileyOptionsInteractive(
-                &(_interactiveRenderParam->GetOptions()),
+                &(_renderParam->GetOptions()),
                 GfVec2i(renderBufferWidth, renderBufferHeight));
             
             riley->SetOptions(
-                _interactiveRenderParam->_GetDeprecatedOptionsPrunedList());
+                _renderParam->_GetDeprecatedOptionsPrunedList());
         }
 
         if (aovBindings.empty()) {
@@ -343,7 +342,7 @@ HdPrman_InteractiveRenderPass::_Execute(
 
         if (hdCam) {
             // Update the framebuffer Z scaling
-            _interactiveRenderParam->framebuffer.proj =
+            _renderParam->framebuffer->proj =
 #if HD_API_VERSION >= 44
                 hdCam->ComputeProjectionMatrix();
 #else
@@ -368,7 +367,7 @@ HdPrman_InteractiveRenderPass::_RestartRenderIfNecessary(
     HdRenderDelegate * const renderDelegate)
 {
     const bool needsRestart =
-        _interactiveRenderParam->sceneVersion.load() != _lastRenderedVersion;
+        _renderParam->sceneVersion.load() != _lastRenderedVersion;
     
     if (needsRestart) {
         // NOTE:
@@ -391,26 +390,26 @@ HdPrman_InteractiveRenderPass::_RestartRenderIfNecessary(
             _UsesPrimaryIntegrator(renderDelegate);
         const riley::IntegratorId integratorId =
             useQuickIntegrator
-                ? _interactiveRenderParam->GetQuickIntegratorId()
-                : _interactiveRenderParam->GetIntegratorId();
-        if (integratorId != _interactiveRenderParam->GetActiveIntegratorId()) {
-            _interactiveRenderParam->SetActiveIntegratorId(integratorId);
+                ? _renderParam->GetQuickIntegratorId()
+                : _renderParam->GetIntegratorId();
+        if (integratorId != _renderParam->GetActiveIntegratorId()) {
+            _renderParam->SetActiveIntegratorId(integratorId);
         }
 
-        _interactiveRenderParam->StartRender();
+        _renderParam->StartRender();
         _frameStart = std::chrono::steady_clock::now();
     } else {
         // If we are using the quick integrator...
-        if (_interactiveRenderParam->GetActiveIntegratorId() !=
-                _interactiveRenderParam->GetIntegratorId()) {
+        if (_renderParam->GetActiveIntegratorId() !=
+                _renderParam->GetIntegratorId()) {
             // ... and the quick integrate time has passed, ...
             if (_DiffTimeToNow(_frameStart) > _quickIntegrateTime) {
                 // Set the active integrator.
                 // Note that SetActiveIntegrator is stopping the renderer
                 // (implicitly through AcquireRiley).
-                _interactiveRenderParam->SetActiveIntegratorId(
-                    _interactiveRenderParam->GetIntegratorId());
-                _interactiveRenderParam->StartRender();
+                _renderParam->SetActiveIntegratorId(
+                    _renderParam->GetIntegratorId());
+                _renderParam->StartRender();
             }
         }
     }
@@ -419,12 +418,12 @@ HdPrman_InteractiveRenderPass::_RestartRenderIfNecessary(
     // the above calls to AcquireRiley since AcquireRiley increases
     // the sceneVersion. Note that setting the call to SetActiveIntegratorId
     // is also implicitly calling AcquireRiley.
-    _lastRenderedVersion = _interactiveRenderParam->sceneVersion.load();
+    _lastRenderedVersion = _renderParam->sceneVersion.load();
 
     _converged =
-        (_interactiveRenderParam->GetActiveIntegratorId() ==
-         _interactiveRenderParam->GetIntegratorId())
-        && !_interactiveRenderParam->renderThread.IsRendering();
+        (_renderParam->GetActiveIntegratorId() ==
+         _renderParam->GetIntegratorId())
+        && !_renderParam->renderThread.IsRendering();
 }
 
 void
@@ -434,7 +433,7 @@ HdPrman_InteractiveRenderPass::_Blit(
     // Blit from the framebuffer to the currently selected AOVs.
     // Lock the framebuffer when reading so we don't overlap
     // with RenderMan's resize/writing.
-    _interactiveRenderParam->framebuffer.mutex.lock();
+    _renderParam->framebuffer->mutex.lock();
     for(size_t aov = 0; aov < aovBindings.size(); ++aov) {
         if(!TF_VERIFY(aovBindings[aov].renderBuffer)) {
             continue;
@@ -442,33 +441,33 @@ HdPrman_InteractiveRenderPass::_Blit(
         HdPrmanRenderBuffer *rb = static_cast<HdPrmanRenderBuffer*>(
             aovBindings[aov].renderBuffer);
 
-        if (_interactiveRenderParam->framebuffer.newData) {
-            rb->Blit(_interactiveRenderParam->framebuffer.aovs[aov].format,
-                     _interactiveRenderParam->framebuffer.w,
-                     _interactiveRenderParam->framebuffer.h,
+        if (_renderParam->framebuffer->newData) {
+            rb->Blit(_renderParam->framebuffer->aovs[aov].format,
+                     _renderParam->framebuffer->w,
+                     _renderParam->framebuffer->h,
                      reinterpret_cast<uint8_t*>(
-                         _interactiveRenderParam->
-                         framebuffer.aovs[aov].pixels.data()));
+                         _renderParam->
+                         framebuffer->aovs[aov].pixels.data()));
         }
         // Forward convergence state to the render buffers...
         rb->SetConverged(_converged);
     }
-    if (_interactiveRenderParam->framebuffer.newData) {
-        _interactiveRenderParam->framebuffer.newData = false;
+    if (_renderParam->framebuffer->newData) {
+        _renderParam->framebuffer->newData = false;
     }
-    _interactiveRenderParam->framebuffer.mutex.unlock();
+    _renderParam->framebuffer->mutex.unlock();
 }
 
 void
 HdPrman_InteractiveRenderPass::_RenderInMainThread()
 {
-    riley::Riley * const riley = _interactiveRenderParam->AcquireRiley();
+    riley::Riley * const riley = _renderParam->AcquireRiley();
 
-    _interactiveRenderParam->SetActiveIntegratorId(
-        _interactiveRenderParam->GetIntegratorId());
+    _renderParam->SetActiveIntegratorId(
+        _renderParam->GetIntegratorId());
     
     HdPrmanRenderViewContext &ctx =
-        _interactiveRenderParam->GetRenderViewContext();
+        _renderParam->GetRenderViewContext();
     
     const riley::RenderViewId renderViews[] = { ctx.GetRenderViewId() };
     

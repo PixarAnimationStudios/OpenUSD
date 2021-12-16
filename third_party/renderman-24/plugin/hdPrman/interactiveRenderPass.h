@@ -34,7 +34,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdPrman_RenderParam;
-class HdPrman_InteractiveRenderParam;
 
 class HdPrman_InteractiveRenderPass final : public HdRenderPass
 {
@@ -56,7 +55,7 @@ private:
     void _RestartRenderIfNecessary(HdRenderDelegate * renderDelegate);
     void _Blit(HdRenderPassAovBindingVector const &aovBindings);
 
-    std::shared_ptr<HdPrman_InteractiveRenderParam> _interactiveRenderParam;
+    std::shared_ptr<HdPrman_RenderParam> _renderParam;
     bool _converged;
     int _lastRenderedVersion;
 

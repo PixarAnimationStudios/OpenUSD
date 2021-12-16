@@ -82,7 +82,6 @@ pxr_plugin(${PXR_PACKAGE}
         ${optionalPublicClasses}
 
     PRIVATE_CLASSES
-        interactiveRenderParam
         interactiveRenderPass
         framebuffer
         renderBuffer

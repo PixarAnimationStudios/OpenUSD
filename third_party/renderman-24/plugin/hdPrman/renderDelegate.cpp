@@ -25,9 +25,10 @@
 #include "hdPrman/basisCurves.h"
 #include "hdPrman/camera.h"
 #include "hdPrman/renderParam.h"
+#include "hdPrman/renderBuffer.h"
 #include "hdPrman/coordSys.h"
 #include "hdPrman/instancer.h"
-#include "hdPrman/interactiveRenderParam.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/interactiveRenderPass.h"
 #include "hdPrman/light.h"
 #include "hdPrman/lightFilter.h"
@@ -107,7 +108,7 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_BPRIM_TYPES =
 HdPrmanRenderDelegate::HdPrmanRenderDelegate(
     HdRenderSettingsMap const& settingsMap)
   : HdRenderDelegate(settingsMap)
-  , _renderParam(std::make_unique<HdPrman_InteractiveRenderParam>())
+  , _renderParam(std::make_unique<HdPrman_RenderParam>())
 {
     _Initialize();
 }
@@ -491,9 +492,7 @@ bool
 HdPrmanRenderDelegate::IsStopped() const
 {
     if (IsInteractive()) {
-        std::shared_ptr<HdPrman_InteractiveRenderParam> interactiveRenderParam =
-            std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(_renderParam);
-        return interactiveRenderParam->IsRenderStopped();
+        return _renderParam->IsRenderStopped();
     }
     return false;
 }
@@ -502,9 +501,7 @@ bool
 HdPrmanRenderDelegate::Stop()
 {
     if (IsInteractive()) {
-        std::shared_ptr<HdPrman_InteractiveRenderParam> interactiveRenderParam =
-            std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(_renderParam);
-        interactiveRenderParam->StopRender();
+        _renderParam->StopRender();
         return true;
     }
     return false;
@@ -515,9 +512,7 @@ HdPrmanRenderDelegate::Restart()
 {
     if (IsInteractive()) {
         // Next call into HdPrman_RenderPass::_Execute will do a StartRender
-        std::shared_ptr<HdPrman_InteractiveRenderParam> interactiveRenderParam =
-            std::dynamic_pointer_cast<HdPrman_InteractiveRenderParam>(_renderParam);
-        interactiveRenderParam->sceneVersion++;
+        _renderParam->sceneVersion++;
         return true;
     }
     return false;
