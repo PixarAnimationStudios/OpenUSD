@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdPrman/interactiveRenderPass.h"
+#include "hdPrman/renderPass.h"
 #include "hdPrman/camera.h"
 #include "hdPrman/framebuffer.h"
 #include "hdPrman/renderParam.h"
@@ -49,7 +49,7 @@ TF_DEFINE_ENV_SETTING(HD_PRMAN_ENABLE_QUICKINTEGRATE, false,
 static bool _enableQuickIntegrate =
     TfGetEnvSetting(HD_PRMAN_ENABLE_QUICKINTEGRATE);
 
-HdPrman_InteractiveRenderPass::HdPrman_InteractiveRenderPass(
+HdPrman_RenderPass::HdPrman_RenderPass(
     HdRenderIndex *index,
     HdRprimCollection const &collection,
     std::shared_ptr<HdPrman_RenderParam> renderParam)
@@ -62,10 +62,10 @@ HdPrman_InteractiveRenderPass::HdPrman_InteractiveRenderPass(
     TF_VERIFY(_renderParam);
 }
 
-HdPrman_InteractiveRenderPass::~HdPrman_InteractiveRenderPass() = default;
+HdPrman_RenderPass::~HdPrman_RenderPass() = default;
 
 bool
-HdPrman_InteractiveRenderPass::IsConverged() const
+HdPrman_RenderPass::IsConverged() const
 {
     return _converged;
 }
@@ -132,7 +132,7 @@ _UsesPrimaryIntegrator(const HdRenderDelegate * const renderDelegate)
 }
 
 void
-HdPrman_InteractiveRenderPass::_Execute(
+HdPrman_RenderPass::_Execute(
     HdRenderPassStateSharedPtr const& renderPassState,
     TfTokenVector const & renderTags)
 {
@@ -363,7 +363,7 @@ HdPrman_InteractiveRenderPass::_Execute(
 }
    
 void
-HdPrman_InteractiveRenderPass::_RestartRenderIfNecessary(
+HdPrman_RenderPass::_RestartRenderIfNecessary(
     HdRenderDelegate * const renderDelegate)
 {
     const bool needsRestart =
@@ -427,7 +427,7 @@ HdPrman_InteractiveRenderPass::_RestartRenderIfNecessary(
 }
 
 void
-HdPrman_InteractiveRenderPass::_Blit(
+HdPrman_RenderPass::_Blit(
     HdRenderPassAovBindingVector const &aovBindings)
 {
     // Blit from the framebuffer to the currently selected AOVs.
@@ -459,7 +459,7 @@ HdPrman_InteractiveRenderPass::_Blit(
 }
 
 void
-HdPrman_InteractiveRenderPass::_RenderInMainThread()
+HdPrman_RenderPass::_RenderInMainThread()
 {
     riley::Riley * const riley = _renderParam->AcquireRiley();
 

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_INT_RENDER_PASS_H
-#define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_INT_RENDER_PASS_H
+#ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PASS_H
+#define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PASS_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderPass.h"
@@ -35,14 +35,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdPrman_RenderParam;
 
-class HdPrman_InteractiveRenderPass final : public HdRenderPass
+class HdPrman_RenderPass final : public HdRenderPass
 {
 public:
-    HdPrman_InteractiveRenderPass(
+    HdPrman_RenderPass(
         HdRenderIndex *index,
         HdRprimCollection const &collection,
         std::shared_ptr<HdPrman_RenderParam> renderParam);
-    ~HdPrman_InteractiveRenderPass() override;
+    ~HdPrman_RenderPass() override;
 
     bool IsConverged() const override;
 
@@ -54,7 +54,6 @@ private:
     void _RenderInMainThread();
     void _RestartRenderIfNecessary(HdRenderDelegate * renderDelegate);
     void _Blit(HdRenderPassAovBindingVector const &aovBindings);
-
     std::shared_ptr<HdPrman_RenderParam> _renderParam;
     bool _converged;
     int _lastRenderedVersion;
@@ -65,4 +64,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_INT_RENDER_PASS_H
+#endif // EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PASS_H

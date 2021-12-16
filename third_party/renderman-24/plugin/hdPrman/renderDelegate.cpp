@@ -29,7 +29,7 @@
 #include "hdPrman/coordSys.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/renderParam.h"
-#include "hdPrman/interactiveRenderPass.h"
+#include "hdPrman/renderPass.h"
 #include "hdPrman/light.h"
 #include "hdPrman/lightFilter.h"
 #include "hdPrman/material.h"
@@ -238,7 +238,7 @@ HdPrmanRenderDelegate::CreateRenderPass(HdRenderIndex *index,
                                         HdRprimCollection const& collection)
 {
     if (!_renderPass) {
-        _renderPass = std::make_shared<HdPrman_InteractiveRenderPass>(
+        _renderPass = std::make_shared<HdPrman_RenderPass>(
             index, collection, _renderParam);
     }
     return _renderPass;

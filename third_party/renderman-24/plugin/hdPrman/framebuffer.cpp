@@ -122,7 +122,7 @@ static PtDspyError HydraDspyImageData(
     const unsigned char *data)
 {
     // XXX: This assumes the AOV list matches what was declared to riley
-    // in hdPrman/interactiveRenderParam.cpp CreateDisplays
+    // in hdPrman/renderParam.cpp CreateDisplays
     int nComponents = entrysize / sizeof(float);
 
     HdPrmanFramebuffer* buf = reinterpret_cast<HdPrmanFramebuffer*>(handle);
