@@ -237,6 +237,8 @@ HgiGLOps::CopyBufferGpuToGpu(HgiBufferGpuToGpuOp const& copyOp)
                                  copyOp.sourceByteOffset,
                                  copyOp.destinationByteOffset,
                                  copyOp.byteSize);
+        
+        HGIGL_POST_PENDING_GL_ERRORS();
     };
 }
 
