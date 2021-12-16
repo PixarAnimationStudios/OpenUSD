@@ -116,10 +116,10 @@ private:
     {
     public:
         _CullingProgram()
-            : _useDrawArrays(false)
+            : _useDrawIndexed(true)
             , _useInstanceCulling(false)
             , _bufferArrayHash(0) { }
-        void Initialize(bool useDrawArrays, bool useInstanceCulling,
+        void Initialize(bool useDrawIndexed, bool useInstanceCulling,
                         size_t bufferArrayHash);
     protected:
         // _DrawingProgram overrides
@@ -127,7 +127,7 @@ private:
             HdBindingRequestVector *customBindings,
             bool *enableInstanceDraw) const override;
     private:
-        bool _useDrawArrays;
+        bool _useDrawIndexed;
         bool _useInstanceCulling;
         size_t _bufferArrayHash;
     };
@@ -136,6 +136,8 @@ private:
         HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     void _CompileBatch(HdStResourceRegistrySharedPtr const &resourceRegistry);
+
+    bool _HasNothingToDraw() const;
 
     void _GPUFrustumInstanceCulling(
         HdStDrawItem const *item,
@@ -174,10 +176,10 @@ private:
     bool _useTinyPrimCulling;
     bool _dirtyCullingProgram;
 
-    bool _useDrawArrays;
+    bool _useDrawIndexed;
     bool _useInstancing;
     bool _useGpuCulling;
-    bool _useGpuInstanceCulling;
+    bool _useInstanceCulling;
 
     int _instanceCountOffset;
     int _cullInstanceCountOffset;
