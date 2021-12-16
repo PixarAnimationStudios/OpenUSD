@@ -137,7 +137,7 @@ Sdf_ParserValueContext::Clear()
     // This allows us to skip over them here.
 
     tupleDepth = 0;
-    WorkSwapDestroyAsync(vars);
+    vars.clear();
     workingShape.clear();
 
     _isRecordingString = false;
