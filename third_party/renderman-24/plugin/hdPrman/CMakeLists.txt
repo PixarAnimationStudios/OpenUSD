@@ -85,7 +85,6 @@ pxr_plugin(${PXR_PACKAGE}
         interactiveRenderPass
         framebuffer
         renderBuffer
-        renderPass
         resourceRegistry
         hdMaterialNetwork2Interface
 

@@ -26,7 +26,6 @@
 #include "hdPrman/renderParam.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
-#include "hdPrman/renderPass.h"
 #include "hdPrman/rixStrings.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"

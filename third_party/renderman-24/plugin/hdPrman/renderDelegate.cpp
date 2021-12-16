@@ -36,7 +36,6 @@
 #include "hdPrman/mesh.h"
 #include "hdPrman/paramsSetter.h"
 #include "hdPrman/points.h"
-#include "hdPrman/renderPass.h"
 #include "hdPrman/resourceRegistry.h"
 #include "hdPrman/volume.h"
 
