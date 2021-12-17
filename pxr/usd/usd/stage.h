@@ -1813,7 +1813,6 @@ private:
         Usd_PrimDataPtr prim, Usd_PrimDataConstPtr parent,
         UsdStagePopulationMask const *mask,
         const SdfPath &primIndexPath = SdfPath());
-    void _ComposeSubtreeInParallel(Usd_PrimDataPtr prim);
     void _ComposeSubtreesInParallel(
         const std::vector<Usd_PrimDataPtr> &prims,
         const std::vector<SdfPath> *primIndexPaths = nullptr);
