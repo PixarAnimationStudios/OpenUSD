@@ -317,6 +317,8 @@ enum HdType
     /// Corresponds to GL_INT_2_10_10_10_REV.
     /// \see HdVec4f_2_10_10_10_REV
     HdTypeInt32_2_10_10_10_REV,
+
+    HdTypeCount
 };
 
 /// HdTupleType represents zero, one, or more values of the same HdType.

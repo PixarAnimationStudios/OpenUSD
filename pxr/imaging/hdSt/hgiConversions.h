@@ -44,6 +44,9 @@ public:
     static HgiFormat GetHgiFormat(HdFormat hdFormat);
 
     HDST_API
+    static HgiFormat GetHgiVertexFormat(HdType hdType);
+
+    HDST_API
     static HgiSamplerAddressMode GetHgiSamplerAddressMode(HdWrap hdWrap);
 
     HDST_API
