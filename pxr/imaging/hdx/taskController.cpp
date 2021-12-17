@@ -91,9 +91,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 // XXX: WBN to expose this to the application.
 static const uint32_t MSAA_SAMPLE_COUNT = 4;
 
-// Distant Light default values
+// Distant Light values
 static const float DISTANT_LIGHT_ANGLE = 0.53;
-static const float DISTANT_LIGHT_INTENSITY = 50000.0;
+static const float DISTANT_LIGHT_INTENSITY = 15000.0;
 
 // ---------------------------------------------------------------------------
 // Delegate implementation.
@@ -820,7 +820,7 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
         trans.SetTranslateOnly(GfVec3d(pos[0], pos[1], pos[2]));
         _delegate.SetParameter(pathName, HdTokens->transform, VtValue(trans));
 
-        // Initialize distant light specific parameters with default values 
+        // Initialize distant light specific parameters
         _delegate.SetParameter(pathName, HdLightTokens->angle, 
             VtValue(DISTANT_LIGHT_ANGLE));
         _delegate.SetParameter(pathName, HdLightTokens->intensity, 
@@ -863,7 +863,7 @@ HdxTaskController::_SetMaterialNetwork(SdfPath const& pathName,
         trans.SetTranslateOnly(GfVec3d(pos[0], pos[1], pos[2]));
         node.parameters[HdTokens->transform] = trans;
 
-        // Initialize distant light specific parameters with default values 
+        // Initialize distant light specific parameters
         node.parameters[HdLightTokens->angle] = DISTANT_LIGHT_ANGLE;
         node.parameters[HdLightTokens->intensity] = DISTANT_LIGHT_INTENSITY;
     }
