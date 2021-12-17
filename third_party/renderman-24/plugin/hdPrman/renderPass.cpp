@@ -80,6 +80,38 @@ _DiffTimeToNow(std::chrono::steady_clock::time_point const& then)
     return(diff.count());
 }
 
+static void
+_Blit(HdPrmanFramebuffer * const framebuffer,
+      HdRenderPassAovBindingVector const &aovBindings,
+      const bool converged)
+{
+    // Blit from the framebuffer to the currently selected AOVs.
+    // Lock the framebuffer when reading so we don't overlap
+    // with RenderMan's resize/writing.
+    framebuffer->mutex.lock();
+    for(size_t aov = 0; aov < aovBindings.size(); ++aov) {
+        if(!TF_VERIFY(aovBindings[aov].renderBuffer)) {
+            continue;
+        }
+        HdPrmanRenderBuffer *rb = static_cast<HdPrmanRenderBuffer*>(
+            aovBindings[aov].renderBuffer);
+
+        if (framebuffer->newData) {
+            rb->Blit(framebuffer->aovs[aov].format,
+                     framebuffer->w,
+                     framebuffer->h,
+                     reinterpret_cast<uint8_t*>(
+                         framebuffer->aovs[aov].pixels.data()));
+        }
+        // Forward convergence state to the render buffers...
+        rb->SetConverged(converged);
+    }
+    if (framebuffer->newData) {
+        framebuffer->newData = false;
+    }
+    framebuffer->mutex.unlock();
+}
+
 static
 const HdRenderBuffer *
 _GetRenderBuffer(const HdRenderPassAovBinding& aov,
@@ -215,15 +247,13 @@ HdPrman_RenderPass::_Execute(
     if (aovBindings.empty()) {
         // When there are no AOV-bindings, use render spec from
         // render settings to create render view.
-        bool createRenderView = false;
-        if (!_renderParam->framebuffer->aovs.empty()) {
-            // If we just switched from render pass state with AOV bindings
-            // to one without, we need to create a new render view from
-            // the render spec - and can free the intermediate framebuffer
-            // the AOV display driver writes into.
-            _renderParam->framebuffer->aovs.clear();
-            createRenderView = true;
-        }
+
+        // If we just switched from render pass state with AOV bindings
+        // to one without, we need to create a new render view from
+        // the render spec - and can free the intermediate framebuffer
+        // the AOV display driver writes into.
+        
+        bool createRenderView = _renderParam->DeleteFramebuffer();
         if (lastVersion != currentSettingsVersion) {
             // Re-create new render view since render spec might have
             // changed.
@@ -246,7 +276,7 @@ HdPrman_RenderPass::_Execute(
         // Use AOV-bindings to create render view with displays that
         // have drivers writing into the intermediate framebuffer blitted
         // to the AOVs.
-        _renderParam->CreateRenderViewFromAovs(aovBindings);
+        _renderParam->CreateFramebufferAndRenderViewFromAovs(aovBindings);
         
         _GetRenderBufferSize(aovBindings,
                              GetRenderIndex(),
@@ -339,29 +369,33 @@ HdPrman_RenderPass::_Execute(
                 riley, 
                 GfVec2i(renderBufferWidth, renderBufferHeight));
         }
+    }
 
+    if (HdPrmanFramebuffer * const framebuffer =
+            _renderParam->GetFramebuffer()) {
         if (hdCam) {
             // Update the framebuffer Z scaling
-            _renderParam->framebuffer->proj =
+            framebuffer->proj =
 #if HD_API_VERSION >= 44
                 hdCam->ComputeProjectionMatrix();
 #else
                 hdCam->GetProjectionMatrix();
 #endif
         }
-    }    
-    
+    }
+
     if (renderDelegate->IsInteractive()) {
         _RestartRenderIfNecessary(renderDelegate);
     } else {
         _RenderInMainThread();
     }
     
-    if (!aovBindings.empty()) {
-        _Blit(aovBindings);
+    if (HdPrmanFramebuffer * const framebuffer =
+            _renderParam->GetFramebuffer()) {
+        _Blit(framebuffer, aovBindings, _converged);
     }
 }
-   
+
 void
 HdPrman_RenderPass::_RestartRenderIfNecessary(
     HdRenderDelegate * const renderDelegate)
@@ -424,38 +458,6 @@ HdPrman_RenderPass::_RestartRenderIfNecessary(
         (_renderParam->GetActiveIntegratorId() ==
          _renderParam->GetIntegratorId())
         && !_renderParam->renderThread.IsRendering();
-}
-
-void
-HdPrman_RenderPass::_Blit(
-    HdRenderPassAovBindingVector const &aovBindings)
-{
-    // Blit from the framebuffer to the currently selected AOVs.
-    // Lock the framebuffer when reading so we don't overlap
-    // with RenderMan's resize/writing.
-    _renderParam->framebuffer->mutex.lock();
-    for(size_t aov = 0; aov < aovBindings.size(); ++aov) {
-        if(!TF_VERIFY(aovBindings[aov].renderBuffer)) {
-            continue;
-        }
-        HdPrmanRenderBuffer *rb = static_cast<HdPrmanRenderBuffer*>(
-            aovBindings[aov].renderBuffer);
-
-        if (_renderParam->framebuffer->newData) {
-            rb->Blit(_renderParam->framebuffer->aovs[aov].format,
-                     _renderParam->framebuffer->w,
-                     _renderParam->framebuffer->h,
-                     reinterpret_cast<uint8_t*>(
-                         _renderParam->
-                         framebuffer->aovs[aov].pixels.data()));
-        }
-        // Forward convergence state to the render buffers...
-        rb->SetConverged(_converged);
-    }
-    if (_renderParam->framebuffer->newData) {
-        _renderParam->framebuffer->newData = false;
-    }
-    _renderParam->framebuffer->mutex.unlock();
 }
 
 void

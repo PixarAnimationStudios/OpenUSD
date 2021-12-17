@@ -87,7 +87,6 @@ TF_MAKE_STATIC_DATA(std::vector<HdPrman_RenderParam::IntegratorCameraCallback>,
 }
 
 HdPrman_RenderParam::HdPrman_RenderParam() :
-    framebuffer(std::make_unique<HdPrmanFramebuffer>()),
     resolution{0, 0},
     _rix(nullptr),
     _ri(nullptr),
@@ -2015,13 +2014,17 @@ HdPrman_RenderParam::IsRenderStopped()
 }
 
 void
-HdPrman_RenderParam::CreateRenderViewFromAovs(
+HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
     const HdRenderPassAovBindingVector& aovBindings)
 {
+    if (!_framebuffer) {
+        _framebuffer = std::make_unique<HdPrmanFramebuffer>();
+    }
+
     // Proceed with creating displays if the number has changed
     // or the display names don't match what we have.
     bool needCreate = false;
-    if(framebuffer->aovs.size() != aovBindings.size())
+    if(_framebuffer->aovs.size() != aovBindings.size())
     {
         needCreate = true;
     }
@@ -2029,7 +2032,7 @@ HdPrman_RenderParam::CreateRenderViewFromAovs(
     {
         for( size_t aov = 0; aov < aovBindings.size(); ++aov )
         {
-            if(aovBindings[aov].aovName != framebuffer->aovs[aov].name)
+            if(aovBindings[aov].aovName != _framebuffer->aovs[aov].name)
             {
                 needCreate = true;
                 break;
@@ -2037,7 +2040,7 @@ HdPrman_RenderParam::CreateRenderViewFromAovs(
             else if((aovBindings[aov].aovName == HdAovTokens->color ||
                     aovBindings[aov].aovName == HdAovTokens->depth) &&
                     (aovBindings[aov].clearValue !=
-                     framebuffer->aovs[aov].clearValue))
+                     _framebuffer->aovs[aov].clearValue))
             {
                 // Request a framebuffer clear if the clear value in the aov
                 // has changed from the framebuffer clear value.
@@ -2048,8 +2051,8 @@ HdPrman_RenderParam::CreateRenderViewFromAovs(
                 // Stops render and increases sceneVersion to trigger restart.
                 AcquireRiley();
 
-                framebuffer->pendingClear = true;
-                framebuffer->aovs[aov].clearValue = aovBindings[aov].clearValue;
+                _framebuffer->pendingClear = true;
+                _framebuffer->aovs[aov].clearValue = aovBindings[aov].clearValue;
             }
         }
     }
@@ -2062,7 +2065,7 @@ HdPrman_RenderParam::CreateRenderViewFromAovs(
     // Stop render and crease sceneVersion to trigger restart.
     riley::Riley * riley = AcquireRiley();
 
-    std::lock_guard<std::mutex> lock(framebuffer->mutex);
+    std::lock_guard<std::mutex> lock(_framebuffer->mutex);
 
     static const RtUString us_bufferID("bufferID");
     static const RtUString us_hydra("hydra");
@@ -2070,11 +2073,11 @@ HdPrman_RenderParam::CreateRenderViewFromAovs(
     static const RtUString us_st("__st");
     static const RtUString us_primvars_st("primvars:st");
 
-    if(framebuffer->aovs.size())
+    if(_framebuffer->aovs.size())
     {
-        framebuffer->aovs.clear();
-        framebuffer->w = 0;
-        framebuffer->h = 0;
+        _framebuffer->aovs.clear();
+        _framebuffer->w = 0;
+        _framebuffer->h = 0;
     }
     // Displays & Display Channels
     HdPrmanRenderViewDesc renderViewDesc;
@@ -2238,7 +2241,7 @@ HdPrman_RenderParam::CreateRenderViewFromAovs(
                 std::move(renderOutputDesc));
         }
 
-        framebuffer->AddAov(aovBindings[aov].aovName,
+        _framebuffer->AddAov(aovBindings[aov].aovName,
                            aovFormat,
                            aovBindings[aov].clearValue);
 
@@ -2287,7 +2290,7 @@ HdPrman_RenderParam::CreateRenderViewFromAovs(
             driver);
         displayParams.SetInteger(
             us_bufferID,
-            framebuffer->id);
+            _framebuffer->id);
     }
 
     {
@@ -2307,6 +2310,16 @@ HdPrman_RenderParam::CreateRenderViewFromAovs(
 
     GetRenderViewContext().CreateRenderView(
         renderViewDesc, riley);
+}
+
+bool
+HdPrman_RenderParam::DeleteFramebuffer()
+{
+    if (_framebuffer) {
+        _framebuffer = nullptr;
+        return true;
+    }
+    return false;
 }
 
 riley::IntegratorId

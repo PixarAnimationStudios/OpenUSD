@@ -53,7 +53,6 @@ protected:
 private:
     void _RenderInMainThread();
     void _RestartRenderIfNecessary(HdRenderDelegate * renderDelegate);
-    void _Blit(HdRenderPassAovBindingVector const &aovBindings);
     std::shared_ptr<HdPrman_RenderParam> _renderParam;
     bool _converged;
     int _lastRenderedVersion;

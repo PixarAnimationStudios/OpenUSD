@@ -42,6 +42,7 @@ class RixRiCtl;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdPrmanFramebuffer;
 class HdPrmanCamera;
 class HdPrmanRenderDelegate;
 
@@ -209,10 +210,6 @@ public:
     void CreateRenderViewFromSpec(
         const VtDictionary &renderSpec);
 
-    // A framebuffer to hold PRMan results when using hydra render buffers.
-    // The d_hydra.so renderman display driver handles updates via IPC.
-    std::unique_ptr<class HdPrmanFramebuffer> framebuffer;
-
     // Starts riley and the thread if needed, and tells the thread render
     void StartRender();
 
@@ -226,9 +223,21 @@ public:
     // ie. riley was created
     bool IsValid() const;
 
-    // Creates displays in riley based on aovBindings vector
-    void CreateRenderViewFromAovs(
+    // Creates displays in riley based on aovBindings vector together
+    // with HdPrmanFramebuffer to transfer the result between the
+    // render thread and the hydra render buffers.
+    void CreateFramebufferAndRenderViewFromAovs(
         const HdRenderPassAovBindingVector& aovBindings);
+
+    // Deletes HdPrmanFramebuffer (created with
+    // CreateRenderViewFromAovs). Can be called if there is no frame
+    // buffer (returning false).
+    bool DeleteFramebuffer();
+
+    // Returns HdPrmanFramebuffer
+    HdPrmanFramebuffer * GetFramebuffer() const {
+        return _framebuffer.get();
+    }
 
     // Render thread for background rendering.
     HdRenderThread renderThread;
@@ -288,6 +297,10 @@ private:
     void _CreateQuickIntegrator(HdRenderDelegate * renderDelegate);
 
     void _RenderThreadCallback();
+
+    // A framebuffer to hold PRMan results when using hydra render buffers.
+    // The d_hydra.so renderman display driver handles updates via IPC.
+    std::unique_ptr<HdPrmanFramebuffer> _framebuffer;
 
     int _sceneLightCount;
 
