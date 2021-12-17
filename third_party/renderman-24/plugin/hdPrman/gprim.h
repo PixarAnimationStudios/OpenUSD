@@ -188,7 +188,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     if (HdPrman_RenderParam::RileyCoordSysIdVecRefPtr convertedCoordSys =
         param->ConvertAndRetainCoordSysBindings(sceneDelegate, id)) {
         coordSysList.count = convertedCoordSys->size();
-        coordSysList.ids = &(*convertedCoordSys)[0];
+        coordSysList.ids = convertedCoordSys->data();
     }
 
     // Hydra dirty bits corresponding to PRMan prototype primvars
@@ -253,8 +253,8 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                 std::vector<int32_t> int32Indices(subset.indices.begin(),
                                                   subset.indices.end());
                 primvars.SetIntegerArray(RixStr.k_shade_faceset,
-                                          &int32Indices[0],
-                                          int32Indices.size());
+                                         int32Indices.data(),
+                                         int32Indices.size());
                 // Look up material override for the subset (if any)
                 riley::MaterialId subsetMaterialId = materialId;
                 riley::DisplacementId subsetDispId = dispId;
