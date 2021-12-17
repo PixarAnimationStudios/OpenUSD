@@ -123,7 +123,7 @@ else()
 endif()
 
 # --USD tools
-if(PXR_BUILD_USD_TOOLS)
+if(PXR_BUILD_USD_TOOLS OR PXR_BUILD_TESTS)
     find_package(Boost
     COMPONENTS
         program_options
