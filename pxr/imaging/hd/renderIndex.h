@@ -370,6 +370,12 @@ public:
     HD_API
     HdResourceRegistrySharedPtr GetResourceRegistry() const;
 
+    /// Returns true if scene index features are available
+    /// This is true by default but can be controlled via an
+    /// HD_ENABLE_SCENE_INDEX_EMULATION environment variable.
+    HD_API
+    static bool IsSceneIndexEmulationEnabled();
+
 private:
     // The render index constructor is private so we can check
     // renderDelegate before construction: see HdRenderIndex::New(...).

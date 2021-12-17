@@ -74,6 +74,12 @@ _IsEnabledSceneIndexEmulation()
     return enabled;
 }
 
+bool
+HdRenderIndex::IsSceneIndexEmulationEnabled()
+{
+    return _IsEnabledSceneIndexEmulation();
+}
+
 HdRenderIndex::HdRenderIndex(
     HdRenderDelegate *renderDelegate,
     HdDriverVector const& drivers)
