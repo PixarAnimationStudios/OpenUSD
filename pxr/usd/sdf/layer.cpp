@@ -4533,9 +4533,11 @@ SdfLayer::_IsInert(const SdfPath &path, bool ignoreChildren,
         return false;
     }
 
-    // Prims and properties don't affect the scene if they only contain
-    // opinions about required fields.
+    // Prims, variants, and properties don't affect the scene if they only
+    // contain opinions about required fields.
     if (specType == SdfSpecTypePrim         ||
+        specType == SdfSpecTypeVariant      ||
+        specType == SdfSpecTypeVariantSet   ||
         specType == SdfSpecTypeAttribute    ||
         specType == SdfSpecTypeRelationship) {
 
@@ -4546,16 +4548,20 @@ SdfLayer::_IsInert(const SdfPath &path, bool ignoreChildren,
         }
 
         TF_FOR_ALL(field, fields) {
-            // If specified, skip over prim name children and properties.
-            // This is a special case to allow _IsInertSubtree to process
-            // these children separately.
-            if (specType == SdfSpecTypePrim && ignoreChildren) {
-                if (*field == SdfChildrenKeys->PrimChildren ||
-                    *field == SdfChildrenKeys->PropertyChildren) {
-                    continue;
-                }
+            // If specified, skip over children fields.  This is a special case
+            // to allow _IsInertSubtree to process these children separately.
+            if (ignoreChildren &&
+                ((specType == SdfSpecTypePrim &&
+                  (*field == SdfChildrenKeys->PrimChildren ||
+                   *field == SdfChildrenKeys->PropertyChildren ||
+                   *field == SdfChildrenKeys->VariantSetChildren))
+                 ||
+                 (specType == SdfSpecTypeVariantSet &&
+                  *field == SdfChildrenKeys->VariantChildren))) {
+                continue;
             }
 
+            // If the field is required, ignore it.
             if (specDefinition->IsRequiredField(*field)) {
                 continue;
             }
@@ -4579,12 +4585,38 @@ SdfLayer::_IsInertSubtree(
         return false;
     }
 
-    if (path.IsPrimPath()) {
-        std::vector<TfToken> prims;
-        if (HasField(path, SdfChildrenKeys->PrimChildren, &prims)) {
-            for (const TfToken& child : prims) {
-                if (!_IsInertSubtree(path.AppendChild(child), inertSpecs)) {
+    // Check for a variant set path first -- this is a variant selection path
+    // whose selection is the empty string.
+    if (path.IsPrimVariantSelectionPath() &&
+        path.GetVariantSelection().second.empty()) {
+
+        std::string vsetName = path.GetVariantSelection().first;
+        SdfPath parentPath = path.GetParentPath();
+
+        std::vector<TfToken> variants;
+        if (HasField(path, SdfChildrenKeys->VariantChildren, &variants)) {
+            for (const TfToken &variant: variants) {
+                if (!_IsInertSubtree(
+                        parentPath.AppendVariantSelection(
+                            vsetName, variant.GetString()),
+                        inertSpecs)) {
                     return false;
+                }
+            }
+        }
+    }
+    else if (path.IsPrimOrPrimVariantSelectionPath()) {
+
+        // Check for prim & variant set children.
+        for (auto const &childrenField: {
+                SdfChildrenKeys->PrimChildren,
+                SdfChildrenKeys->VariantSetChildren }) {
+            std::vector<TfToken> childNames;
+            if (HasField(path, childrenField, &childNames)) {
+                for (const TfToken& name : childNames) {
+                    if (!_IsInertSubtree(path.AppendChild(name), inertSpecs)) {
+                        return false;
+                    }
                 }
             }
         }
