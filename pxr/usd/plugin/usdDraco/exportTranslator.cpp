@@ -228,11 +228,9 @@ bool UsdDracoExportTranslator::_CheckData() const {
     }
     for (size_t i = 0; i < _genericAttributes.size(); i++) {
         if (!_CheckPrimvarData(*_genericAttributes[i])) {
-            std::string message("Primvar ");
-            message +=
-                _genericAttributes[i]->GetDescriptor().GetName().GetText();
-            message += " index is inconsistent.";
-            TF_RUNTIME_ERROR(message.c_str());
+            TF_RUNTIME_ERROR(
+                "Primvar %s index is inconsistent.",
+                _genericAttributes[i]->GetDescriptor().GetName().GetText());
             return false;
         }
     }

@@ -60,13 +60,13 @@ public:
     template <class ... Types>
     void Warn(Types&& ... args) {
         _Get().emplace_back(TF_DIAGNOSTIC_WARNING_TYPE,
-                            TfStringPrintf(std::forward<Types>(args)...));
+                            _FormatString(std::forward<Types>(args)...));
     }
 
     template <class ... Types>
     void CodingError(Types&& ... args) {
         _Get().emplace_back(TF_DIAGNOSTIC_CODING_ERROR_TYPE,
-                            TfStringPrintf(std::forward<Types>(args)...));
+                            _FormatString(std::forward<Types>(args)...));
     }
 
     ~_DeferredDiagnostics() {
@@ -84,6 +84,19 @@ public:
     }    
     
 private:
+    template <class ... Types>
+    static std::string _FormatString(Types&& ... args) {
+        return TfStringPrintf(std::forward<Types>(args)...);
+    }
+
+    // Single-argument overload to avoid calling TfStringPrintf with
+    // just a format string, which causes warnings at build time.
+    static std::string _FormatString(char const *str) {
+        // printf converts "%%" to "%" even when no arguments are supplied,
+        // so for consistency we do the same here.
+        return TfStringReplace(std::string(str), "%%", "%");
+    }
+
     std::vector<std::pair<TfDiagnosticType, std::string>> &_Get() {
         if (!_diagnostics) {
             _diagnostics = std::make_unique<
