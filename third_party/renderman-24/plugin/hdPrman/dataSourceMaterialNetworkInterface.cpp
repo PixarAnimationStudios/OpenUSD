@@ -131,7 +131,7 @@ HdPrmanDataSourceMaterialNetworkInterface::GetNodeNames() const
 
     TfTokenVector result = _nodesContainer->GetNames();
 
-    if (_deletedNodes.empty()) {
+    if (!_deletedNodes.empty()) {
         std::unordered_set<TfToken, TfHash> nameSet;
         nameSet.insert(result.begin(), result.end());
         for (const TfToken &deletedName : _deletedNodes) {
