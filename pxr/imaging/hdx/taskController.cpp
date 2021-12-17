@@ -84,8 +84,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // for the builtin light's HdMaterialNetworkMap 
     (materialNetworkMap)
-    (DistantLight)
-    (DomeLight)
+    (PxrDistantLight)
+    (PxrDomeLight)
 );
 
 // XXX: WBN to expose this to the application.
@@ -838,8 +838,10 @@ HdxTaskController::_SetMaterialNetwork(SdfPath const& pathName,
     HdMaterialNetwork lightNetwork;
     HdMaterialNode node;
     node.path = pathName;
+    // XXX Using these Pxr**Light tokens works for now since HdPrman is 
+    // currently the only renderer that supports material networks for lights. 
     node.identifier = light.IsDomeLight() 
-        ? _tokens->DomeLight : _tokens->DistantLight;
+        ? _tokens->PxrDomeLight : _tokens->PxrDistantLight;
 
     // Initialize parameters - same as above, but without Storm specific 
     // parameters (ShadowParams, ShadowCollection, params)
