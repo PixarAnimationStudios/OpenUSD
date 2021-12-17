@@ -33,7 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static const RtUString _us_main_cam_projection("main_cam_projection");
 
-HdPrmanCameraContext::HdPrmanCameraContext()
+HdPrman_CameraContext::HdPrman_CameraContext()
   : _camera(nullptr)
   , _policy(CameraUtilFit)
   , _shutterOpenTime(0.0f)
@@ -48,7 +48,7 @@ HdPrmanCameraContext::HdPrmanCameraContext()
 }
 
 void
-HdPrmanCameraContext::MarkCameraInvalid(const HdPrmanCamera * const camera)
+HdPrman_CameraContext::MarkCameraInvalid(const HdPrmanCamera * const camera)
 {
     // No need to invalidate if camera that is not the active camera
     // changed.
@@ -58,7 +58,7 @@ HdPrmanCameraContext::MarkCameraInvalid(const HdPrmanCamera * const camera)
 }
 
 void
-HdPrmanCameraContext::SetCamera(const HdPrmanCamera * const camera)
+HdPrman_CameraContext::SetCamera(const HdPrmanCamera * const camera)
 {
     if (camera) {
         if (_cameraPath != camera->GetId()) {
@@ -78,7 +78,7 @@ HdPrmanCameraContext::SetCamera(const HdPrmanCamera * const camera)
 }
 
 void
-HdPrmanCameraContext::SetFraming(const CameraUtilFraming &framing)
+HdPrman_CameraContext::SetFraming(const CameraUtilFraming &framing)
 {
     if (_framing != framing) {
         _framing = framing;
@@ -87,7 +87,7 @@ HdPrmanCameraContext::SetFraming(const CameraUtilFraming &framing)
 }
 
 void
-HdPrmanCameraContext::SetWindowPolicy(
+HdPrman_CameraContext::SetWindowPolicy(
     const CameraUtilConformWindowPolicy policy)
 {
     if (_policy != policy) {
@@ -97,7 +97,7 @@ HdPrmanCameraContext::SetWindowPolicy(
 }
 
 void
-HdPrmanCameraContext::SetShutterCurve(const float shutterOpenTime,
+HdPrman_CameraContext::SetShutterCurve(const float shutterOpenTime,
                                       const float shutterCloseTime,
                                       const float shutteropeningPoints[8])
 {
@@ -122,7 +122,7 @@ HdPrmanCameraContext::SetShutterCurve(const float shutterOpenTime,
 }
 
 bool
-HdPrmanCameraContext::IsInvalid() const
+HdPrman_CameraContext::IsInvalid() const
 {
     return _invalid;
 }
@@ -320,7 +320,7 @@ _ComputeNodeParams(const HdCamera * const camera)
 
 // Compute params given to Riley::ModifyCamera
 RtParamList
-HdPrmanCameraContext::_ComputeCameraParams(
+HdPrman_CameraContext::_ComputeCameraParams(
     const GfRange2d &screenWindow) const
 {
     RtParamList result;
@@ -406,7 +406,7 @@ _ToRtMatrices(
 }
 
 GfRange2d
-HdPrmanCameraContext::_ComputeConformedScreenWindow() const
+HdPrman_CameraContext::_ComputeConformedScreenWindow() const
 {
     return
         CameraUtilConformedWindow(
@@ -416,7 +416,7 @@ HdPrmanCameraContext::_ComputeConformedScreenWindow() const
 }
 
 void
-HdPrmanCameraContext::UpdateRileyCameraAndClipPlanes(
+HdPrman_CameraContext::UpdateRileyCameraAndClipPlanes(
     riley::Riley * const riley)
 {
     if (!_camera) {
@@ -435,7 +435,7 @@ HdPrmanCameraContext::UpdateRileyCameraAndClipPlanes(
 }
 
 void
-HdPrmanCameraContext::UpdateRileyCameraAndClipPlanesInteractive(
+HdPrman_CameraContext::UpdateRileyCameraAndClipPlanesInteractive(
     riley::Riley * const riley,
     const GfVec2i &renderBufferSize)
 {
@@ -463,7 +463,7 @@ HdPrmanCameraContext::UpdateRileyCameraAndClipPlanesInteractive(
 }
 
 void
-HdPrmanCameraContext::_UpdateRileyCamera(
+HdPrman_CameraContext::_UpdateRileyCamera(
     riley::Riley * const riley,
     const GfRange2d &screenWindow)
 {
@@ -550,7 +550,7 @@ _ToClipPlaneParams(const GfVec4d &plane, RtParamList * const params)
 }
 
 void
-HdPrmanCameraContext::_UpdateClipPlanes(riley::Riley * const riley)
+HdPrman_CameraContext::_UpdateClipPlanes(riley::Riley * const riley)
 {
     // Delete clipping planes
     for (riley::ClippingPlaneId const& id: _clipPlaneIds) {
@@ -644,7 +644,7 @@ _ComputeCropWindow(
 }
 
 GfVec2i
-HdPrmanCameraContext::GetResolutionFromDisplayWindow() const
+HdPrman_CameraContext::GetResolutionFromDisplayWindow() const
 {
     const GfVec2f size = _framing.displayWindow.GetSize();
 
@@ -652,7 +652,7 @@ HdPrmanCameraContext::GetResolutionFromDisplayWindow() const
 }
 
 void
-HdPrmanCameraContext::SetRileyOptions(
+HdPrman_CameraContext::SetRileyOptions(
     RtParamList * const options) const
 {
     const GfVec2i res = GetResolutionFromDisplayWindow();
@@ -678,7 +678,7 @@ HdPrmanCameraContext::SetRileyOptions(
 }    
 
 void
-HdPrmanCameraContext::SetRileyOptionsInteractive(
+HdPrman_CameraContext::SetRileyOptionsInteractive(
     RtParamList * const options,
     const GfVec2i &renderBufferSize) const
 {
@@ -701,13 +701,13 @@ HdPrmanCameraContext::SetRileyOptionsInteractive(
 }
 
 void
-HdPrmanCameraContext::MarkValid()
+HdPrman_CameraContext::MarkValid()
 {
     _invalid = false;
 }
 
 void
-HdPrmanCameraContext::Begin(riley::Riley * const riley)
+HdPrman_CameraContext::Begin(riley::Riley * const riley)
 {
     // Create camera
 

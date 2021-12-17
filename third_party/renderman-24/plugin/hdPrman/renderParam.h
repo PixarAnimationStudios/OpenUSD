@@ -31,7 +31,6 @@
 #include "hdPrman/renderViewContext.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/renderDelegate.h"
-#include "pxr/imaging/hd/renderThread.h"
 #include "pxr/base/gf/matrix4d.h"
 
 #include "Riley.h"
@@ -201,9 +200,9 @@ public:
     // Provides external access to resources used to set parameters for
     // options and the active integrator.
     RtParamList &GetOptions() { return _options; }
-    HdPrmanCameraContext &GetCameraContext() { return _cameraContext; }
+    HdPrman_CameraContext &GetCameraContext() { return _cameraContext; }
 
-    HdPrmanRenderViewContext &GetRenderViewContext() {
+    HdPrman_RenderViewContext &GetRenderViewContext() {
         return _renderViewContext;
     }
 
@@ -301,7 +300,7 @@ private:
 
     void _RenderThreadCallback();
 
-    std::unique_ptr<HdRenderThread> _renderThread;
+    std::unique_ptr<class HdRenderThread> _renderThread;
     std::unique_ptr<HdPrmanFramebuffer> _framebuffer;
 
     int _sceneLightCount;
@@ -350,8 +349,8 @@ private:
     std::mutex _coordSysMutex;
 
     RtParamList _options;
-    HdPrmanCameraContext _cameraContext;
-    HdPrmanRenderViewContext _renderViewContext;
+    HdPrman_CameraContext _cameraContext;
+    HdPrman_RenderViewContext _renderViewContext;
 
     // A quick way to disable motion blur, making shutter close same as open
     bool _instantaneousShutter;

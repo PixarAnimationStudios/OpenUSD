@@ -33,7 +33,6 @@
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/work/threadLimits.h"
-#include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
@@ -51,6 +50,7 @@
 #include "pxr/imaging/hd/extComputationUtils.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/renderBuffer.h"
+#include "pxr/imaging/hd/renderThread.h"
 
 #include "Riley.h"
 #include "RiTypesHelper.h"
@@ -1562,14 +1562,14 @@ _ToRtParamList(VtDictionary const& dict)
 }
 
 static
-HdPrmanRenderViewDesc
+HdPrman_RenderViewDesc
 _ComputeRenderViewDesc(
     const VtDictionary &renderSpec,
     const riley::CameraId cameraId,
     const riley::IntegratorId integratorId,
     const GfVec2i &resolution)
 {
-    HdPrmanRenderViewDesc renderViewDesc;
+    HdPrman_RenderViewDesc renderViewDesc;
 
     renderViewDesc.cameraId = cameraId;
     renderViewDesc.integratorId = integratorId;
@@ -1587,7 +1587,7 @@ _ComputeRenderViewDesc(
                 HdPrmanExperimentalRenderSpecTokens->name);
         const RtUString name(nameStr.c_str());
 
-        HdPrmanRenderViewDesc::RenderOutputDesc renderOutputDesc;
+        HdPrman_RenderViewDesc::RenderOutputDesc renderOutputDesc;
         renderOutputDesc.name = name;
         renderOutputDesc.type = _ToRenderOutputType(
             VtDictionaryGet<TfToken>(
@@ -1609,7 +1609,7 @@ _ComputeRenderViewDesc(
             HdPrmanExperimentalRenderSpecTokens->renderProducts);
 
     for (const VtDictionary &renderProduct : renderProducts) {
-        HdPrmanRenderViewDesc::DisplayDesc displayDesc;
+        HdPrman_RenderViewDesc::DisplayDesc displayDesc;
 
         const TfToken &name = 
             VtDictionaryGet<TfToken>(
@@ -1654,7 +1654,7 @@ void
 HdPrman_RenderParam::CreateRenderViewFromSpec(
     const VtDictionary &renderSpec)
 {
-    const HdPrmanRenderViewDesc renderViewDesc =
+    const HdPrman_RenderViewDesc renderViewDesc =
         _ComputeRenderViewDesc(
             renderSpec,
             GetCameraContext().GetCameraId(),
@@ -1837,7 +1837,7 @@ HdPrman_RenderParam::_RenderThreadCallback()
             break;
         }
 
-        HdPrmanRenderViewContext &ctx = GetRenderViewContext();
+        HdPrman_RenderViewContext &ctx = GetRenderViewContext();
 
         const riley::RenderViewId renderViewIds[] = { ctx.GetRenderViewId() };
 
@@ -2106,7 +2106,7 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
         _framebuffer->h = 0;
     }
     // Displays & Display Channels
-    HdPrmanRenderViewDesc renderViewDesc;
+    HdPrman_RenderViewDesc renderViewDesc;
 
     std::unordered_map<RtUString, RtUString> sourceNames;
     for( size_t aov = 0; aov < aovBindings.size(); ++aov )
@@ -2257,7 +2257,7 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
         }
 
         {
-            HdPrmanRenderViewDesc::RenderOutputDesc renderOutputDesc;
+            HdPrman_RenderViewDesc::RenderOutputDesc renderOutputDesc;
             renderOutputDesc.name = aovName;
             renderOutputDesc.type = rt;
             renderOutputDesc.sourceName = sourceName;
@@ -2275,7 +2275,7 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
         // This assumption is reflected in framebuffer.cpp HydraDspyData
         if(rt == riley::RenderOutputType::k_Color && componentCount == 4)
         {
-            HdPrmanRenderViewDesc::RenderOutputDesc renderOutputDesc;
+            HdPrman_RenderViewDesc::RenderOutputDesc renderOutputDesc;
             renderOutputDesc.name = RixStr.k_a;
             renderOutputDesc.type = riley::RenderOutputType::k_Float;
             renderOutputDesc.sourceName = RixStr.k_a;
@@ -2320,7 +2320,7 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
     }
 
     {
-        HdPrmanRenderViewDesc::DisplayDesc displayDesc;
+        HdPrman_RenderViewDesc::DisplayDesc displayDesc;
         displayDesc.name = RixStr.k_framebuffer;
         displayDesc.driver = driver;
         displayDesc.params = displayParams;

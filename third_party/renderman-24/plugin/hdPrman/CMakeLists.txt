@@ -58,7 +58,6 @@ pxr_plugin(${PXR_PACKAGE}
     PUBLIC_CLASSES
         basisCurves
         camera
-        cameraContext
         coordSys
         debugCodes
         gprim
@@ -75,8 +74,6 @@ pxr_plugin(${PXR_PACKAGE}
         paramsSetter
         points
         renderDelegate
-        renderParam
-        renderViewContext
         rixStrings
         virtualStructResolvingSceneIndex
         volume
@@ -84,11 +81,14 @@ pxr_plugin(${PXR_PACKAGE}
         ${optionalPublicClasses}
 
     PRIVATE_CLASSES
+        cameraContext
         renderPass
         dataSourceMaterialNetworkInterface
         framebuffer
         hdMaterialNetwork2Interface
         renderBuffer
+        renderParam
+        renderViewContext
         resourceRegistry
         
     PUBLIC_HEADERS

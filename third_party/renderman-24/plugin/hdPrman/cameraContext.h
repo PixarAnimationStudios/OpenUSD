@@ -38,15 +38,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdPrmanCamera;
 
-/// HdPrmanCameraContext holds all the data necessary to populate the
+/// HdPrman_CameraContext holds all the data necessary to populate the
 /// riley camera and other camera-related riley options. It also keeps
 /// track whether the camera or camera-related settings such as the
 /// framing have changed so that updating riley is necessary.
 ///
-class HdPrmanCameraContext final
+class HdPrman_CameraContext final
 {
 public:
-    HdPrmanCameraContext();
+    HdPrman_CameraContext();
 
     /// Call when hydra changed the transform or parameters of a camera.
     void MarkCameraInvalid(const HdPrmanCamera * camera);

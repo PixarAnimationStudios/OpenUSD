@@ -30,11 +30,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_RenderPass;
-class HdPrman_RenderParam;
-class HdPrman_InteractiveRenderParam;
-class RixParamList;
-
 #define HDPRMAN_RENDER_SETTINGS_TOKENS                                 \
     ((integrator,                     "integrator"))                   \
     ((integratorName,                 "ri:integrator:name"))           \
@@ -184,7 +179,7 @@ protected:
     static const TfTokenVector SUPPORTED_SPRIM_TYPES;
     static const TfTokenVector SUPPORTED_BPRIM_TYPES;
 
-    std::shared_ptr<HdPrman_RenderParam> _renderParam;
+    std::shared_ptr<class HdPrman_RenderParam> _renderParam;
     HdResourceRegistrySharedPtr _resourceRegistry;
     HdRenderPassSharedPtr _renderPass;
     HdRenderSettingDescriptorList _settingDescriptors;

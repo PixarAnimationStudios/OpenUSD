@@ -28,21 +28,21 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdPrmanRenderViewDesc::RenderOutputDesc::RenderOutputDesc()
+HdPrman_RenderViewDesc::RenderOutputDesc::RenderOutputDesc()
   : type(riley::RenderOutputType::k_Color)
   , filterName(RixStr.k_filter)
 { }
 
-HdPrmanRenderViewContext::HdPrmanRenderViewContext() = default;
+HdPrman_RenderViewContext::HdPrman_RenderViewContext() = default;
 
 void
-HdPrmanRenderViewContext::CreateRenderView(
-    const HdPrmanRenderViewDesc &desc,
+HdPrman_RenderViewContext::CreateRenderView(
+    const HdPrman_RenderViewDesc &desc,
     riley::Riley * const riley)
 {
     _DestroyRenderView(riley);
 
-    using RenderOutputDesc = HdPrmanRenderViewDesc::RenderOutputDesc;
+    using RenderOutputDesc = HdPrman_RenderViewDesc::RenderOutputDesc;
 
     for (const RenderOutputDesc &outputDesc : desc.renderOutputDescs) {
         const riley::FilterSize filterWidth = { 1.0f, 1.0f };
@@ -77,7 +77,7 @@ HdPrmanRenderViewContext::CreateRenderView(
             1.0f,
             RtParamList());
 
-    using DisplayDesc = HdPrmanRenderViewDesc::DisplayDesc;
+    using DisplayDesc = HdPrman_RenderViewDesc::DisplayDesc;
     for (const DisplayDesc &displayDesc : desc.displayDescs) {
         std::vector<riley::RenderOutputId> displayRenderOutputIds;
         displayRenderOutputIds.reserve(displayDesc.renderOutputIndices.size());
@@ -109,7 +109,7 @@ HdPrmanRenderViewContext::CreateRenderView(
 }
 
 void
-HdPrmanRenderViewContext::_DestroyRenderView(
+HdPrman_RenderViewContext::_DestroyRenderView(
     riley::Riley * const riley)
 {
     if (_renderViewId != riley::RenderViewId::InvalidId()) {
@@ -134,7 +134,7 @@ HdPrmanRenderViewContext::_DestroyRenderView(
 }
 
 void
-HdPrmanRenderViewContext::SetIntegratorId(
+HdPrman_RenderViewContext::SetIntegratorId(
     const riley::IntegratorId id,
     riley::Riley * const riley)
 {
@@ -147,7 +147,7 @@ HdPrmanRenderViewContext::SetIntegratorId(
 }
 
 void
-HdPrmanRenderViewContext::SetResolution(
+HdPrman_RenderViewContext::SetResolution(
     const GfVec2i &resolution,
     riley::Riley * const riley)
 {

@@ -202,7 +202,7 @@ HdPrman_RenderPass::_Execute(
     const HdPrmanCamera * const hdCam =
         dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera());
 
-    HdPrmanCameraContext &cameraContext =
+    HdPrman_CameraContext &cameraContext =
         _renderParam->GetCameraContext();
     cameraContext.SetCamera(hdCam);
     if (renderPassState->GetFraming().IsValid()) {
@@ -471,7 +471,7 @@ HdPrman_RenderPass::_RenderInMainThread()
     _renderParam->SetActiveIntegratorId(
         _renderParam->GetIntegratorId());
     
-    HdPrmanRenderViewContext &ctx =
+    HdPrman_RenderViewContext &ctx =
         _renderParam->GetRenderViewContext();
     
     const riley::RenderViewId renderViews[] = { ctx.GetRenderViewId() };

@@ -38,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Descriptor to create a render man render view together
 /// with associated render outputs and displays.
 ///
-struct HdPrmanRenderViewDesc
+struct HdPrman_RenderViewDesc
 {
     riley::CameraId cameraId;
     riley::IntegratorId integratorId;
@@ -72,13 +72,13 @@ struct HdPrmanRenderViewDesc
 /// Manages a render man render view together with associated
 /// render target, render ouputs and displays.
 ///
-class HdPrmanRenderViewContext final
+class HdPrman_RenderViewContext final
 {
 public:
-    HdPrmanRenderViewContext();
+    HdPrman_RenderViewContext();
 
     void CreateRenderView(
-        const HdPrmanRenderViewDesc &desc,
+        const HdPrman_RenderViewDesc &desc,
         riley::Riley * riley);
     void SetIntegratorId(
         riley::IntegratorId id,
@@ -90,7 +90,7 @@ public:
     riley::RenderViewId GetRenderViewId() const { return _renderViewId; }
 
 private:
-    HdPrmanRenderViewContext(const HdPrmanRenderViewContext &) = delete;
+    HdPrman_RenderViewContext(const HdPrman_RenderViewContext &) = delete;
 
     void _DestroyRenderView(riley::Riley * riley);
 
