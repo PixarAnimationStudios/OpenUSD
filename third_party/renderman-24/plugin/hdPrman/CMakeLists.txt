@@ -67,27 +67,30 @@ pxr_plugin(${PXR_PACKAGE}
         lightFilter
         lightFilterUtils
         material
+        materialFilteringSceneIndexBase
         matfiltConvertPreviewMaterial
         matfiltFilterChain
         matfiltResolveVstructs
         mesh
-        points
         paramsSetter
+        points
         renderDelegate
         renderParam
         renderViewContext
         rixStrings
+        virtualStructResolvingSceneIndex
         volume
         xcpt
         ${optionalPublicClasses}
 
     PRIVATE_CLASSES
         renderPass
+        dataSourceMaterialNetworkInterface
         framebuffer
+        hdMaterialNetwork2Interface
         renderBuffer
         resourceRegistry
-        hdMaterialNetwork2Interface
-
+        
     PUBLIC_HEADERS
         api.h
         materialNetworkInterface.h

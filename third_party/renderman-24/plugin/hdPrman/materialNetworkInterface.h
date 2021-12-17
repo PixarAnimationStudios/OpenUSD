@@ -36,6 +36,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// This is useful for implementing matfilt functions which can be reused
 /// by future scene index implementations.
+///
+/// NOTE: Subclasses make no guarantee of thread-safety even for the const
+///       accessors as they might make use of internal caching for optimization.
+///       Should you want to read from a material from multiple threads, create
+///       a thread-specific interface instance. The non-const methods should
+///       never be considered thread-safe from multiple interface instances
+///       backed from the same concrete data.
 class HdPrmanMaterialNetworkInterface
 {
 public:
