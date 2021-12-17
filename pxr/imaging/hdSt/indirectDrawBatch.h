@@ -41,7 +41,7 @@ using HdBindingRequestVector = std::vector<HdBindingRequest>;
 /// Drawing batch that is executed from an indirect dispatch buffer.
 ///
 /// An indirect drawing batch accepts draw items that have the same
-/// primitive mode and that share aggregated drawing resources,
+/// primitive type and that share aggregated drawing resources,
 /// e.g. uniform and non uniform primvar buffers.
 ///
 class HdSt_IndirectDrawBatch : public HdSt_DrawBatch
@@ -139,17 +139,10 @@ private:
 
     bool _HasNothingToDraw() const;
 
-    void _GPUFrustumInstanceCulling(
-        HdStDrawItem const *item,
-        GfMatrix4f const &cullMatrix,
-        GfVec2f const &drawRangeNdc,
-        HdStResourceRegistrySharedPtr const &resourceRegistry);
-
-    void _GPUFrustumNonInstanceCulling(
-        HdStDrawItem const *item,
-        GfMatrix4f const &cullMatrix,
-        GfVec2f const &drawRangeNdc,
-        HdStResourceRegistrySharedPtr const &resourceRegistry);
+    void _ExecuteFrustumCull(
+                bool updateDispatchBuffer,
+                HdStRenderPassStateSharedPtr const & renderPassState,
+                HdStResourceRegistrySharedPtr const & resourceRegistry);
 
     void _BeginGPUCountVisibleInstances(
         HdStResourceRegistrySharedPtr const &resourceRegistry);

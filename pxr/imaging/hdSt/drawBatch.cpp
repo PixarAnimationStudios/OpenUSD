@@ -301,6 +301,12 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
 }
 
 bool
+HdSt_DrawBatch::_DrawingProgram::IsValid() const
+{
+    return _glslProgram && _glslProgram->Validate();
+}
+
+bool
 HdSt_DrawBatch::_DrawingProgram::CompileShader(
         HdStDrawItem const *drawItem,
         bool indirect,

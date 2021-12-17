@@ -124,6 +124,9 @@ protected:
         _DrawingProgram() {}
 
         HDST_API
+        bool IsValid() const;
+
+        HDST_API
         bool CompileShader(
                 HdStDrawItem const *drawItem,
                 bool indirect,
