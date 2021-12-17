@@ -205,11 +205,15 @@ class TestTrace(unittest.TestCase):
         gc.enabled = True
         sleepTime = 1.0
         b = gc.BeginEvent("Test tuple")
+        b2 = time.time()
         time.sleep(sleepTime)
         e = gc.EndEvent("Test tuple")
+        e2 = time.time()
+
         elapsedSeconds = Trace.GetElapsedSeconds(b, e)
+        expectedElapsedSeconds = e2 - b2
         gr.Report()
-        self.assertTrue(abs(elapsedSeconds - sleepTime) < 0.05)
+        self.assertTrue(abs(elapsedSeconds - expectedElapsedSeconds) < 0.001)
 
         print("")
 
