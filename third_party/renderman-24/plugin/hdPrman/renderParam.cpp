@@ -1575,12 +1575,13 @@ _ComputeRenderViewDesc(
     renderViewDesc.integratorId = integratorId;
     renderViewDesc.resolution = resolution;
 
-    const VtArray<VtDictionary> &renderVars =
-        VtDictionaryGet<VtArray<VtDictionary>>(
+    const std::vector<VtValue> &renderVars =
+        VtDictionaryGet<std::vector<VtValue>>(
             renderSpec,
             HdPrmanExperimentalRenderSpecTokens->renderVars);
     
-    for (const VtDictionary &renderVar : renderVars) {
+    for (const VtValue &renderVarVal : renderVars) {
+        const VtDictionary renderVar = renderVarVal.Get<VtDictionary>();
         const std::string &nameStr =
             VtDictionaryGet<std::string>(
                 renderVar,
@@ -1590,9 +1591,10 @@ _ComputeRenderViewDesc(
         HdPrman_RenderViewDesc::RenderOutputDesc renderOutputDesc;
         renderOutputDesc.name = name;
         renderOutputDesc.type = _ToRenderOutputType(
-            VtDictionaryGet<TfToken>(
-                renderVar,
-                HdPrmanExperimentalRenderSpecTokens->type));
+            TfToken(
+                VtDictionaryGet<std::string>(
+                    renderVar,
+                    HdPrmanExperimentalRenderSpecTokens->type)));
         renderOutputDesc.sourceName = name;
         renderOutputDesc.filterName = RixStr.k_filter;
         renderOutputDesc.params = _ToRtParamList(
@@ -1603,18 +1605,21 @@ _ComputeRenderViewDesc(
         renderViewDesc.renderOutputDescs.push_back(renderOutputDesc);
     }
     
-    const VtArray<VtDictionary> & renderProducts =
-        VtDictionaryGet<VtArray<VtDictionary>>(
+    const std::vector<VtValue> & renderProducts =
+        VtDictionaryGet<std::vector<VtValue>>(
             renderSpec,
             HdPrmanExperimentalRenderSpecTokens->renderProducts);
 
-    for (const VtDictionary &renderProduct : renderProducts) {
+    for (const VtValue &renderProductVal : renderProducts) {
+
+        const VtDictionary &renderProduct = renderProductVal.Get<VtDictionary>();
+
         HdPrman_RenderViewDesc::DisplayDesc displayDesc;
 
-        const TfToken &name = 
-            VtDictionaryGet<TfToken>(
+        const TfToken name(
+            VtDictionaryGet<std::string>(
                 renderProduct,
-                HdPrmanExperimentalRenderSpecTokens->name);
+                HdPrmanExperimentalRenderSpecTokens->name));
 
         displayDesc.name = RtUString(name.GetText());
         

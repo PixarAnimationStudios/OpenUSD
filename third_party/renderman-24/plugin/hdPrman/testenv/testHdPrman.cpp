@@ -375,7 +375,7 @@ int main(int argc, char *argv[])
         VtDictionary renderSpecDict;
 
         {
-            VtArray<VtDictionary> renderVarDicts;
+            std::vector<VtValue> renderVarDicts;
 
             // Displays & Display Channels
             for (size_t index: product.renderVarIndices) {
@@ -391,11 +391,11 @@ int main(int argc, char *argv[])
                 renderVarDict[HdPrmanExperimentalRenderSpecTokens->name] =
                     name;
                 renderVarDict[HdPrmanExperimentalRenderSpecTokens->type] =
-                    renderVar.dataType;
+                    renderVar.dataType.GetString();
                 renderVarDict[HdPrmanExperimentalRenderSpecTokens->params] =
                     renderVar.extraSettings;
 
-                renderVarDicts.push_back(renderVarDict);
+                renderVarDicts.push_back(VtValue(renderVarDict));
             }
             
             renderSpecDict[HdPrmanExperimentalRenderSpecTokens->renderVars] =
@@ -403,12 +403,12 @@ int main(int argc, char *argv[])
         }
 
         {
-            VtArray<VtDictionary> renderProducts;
+            std::vector<VtValue> renderProducts;
 
             {
                 VtDictionary renderProduct;
                 renderProduct[HdPrmanExperimentalRenderSpecTokens->name] =
-                    product.name;
+                    product.name.GetString();
 
                 {
                     VtIntArray renderVarIndices;
@@ -422,7 +422,7 @@ int main(int argc, char *argv[])
                         renderVarIndices;
                 }
 
-                renderProducts.push_back(renderProduct);
+                renderProducts.push_back(VtValue(renderProduct));
             }
         
             renderSpecDict[HdPrmanExperimentalRenderSpecTokens->renderProducts]=
