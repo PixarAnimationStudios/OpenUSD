@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
+#include "pxr/imaging/hdSt/pipelineDrawBatch.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/materialParam.h"
@@ -60,16 +61,16 @@ HdStCommandBuffer::HdStCommandBuffer()
     /*NOTHING*/
 }
 
-HdStCommandBuffer::~HdStCommandBuffer()
-{
-}
+HdStCommandBuffer::~HdStCommandBuffer() = default;
 
 static
 HdSt_DrawBatchSharedPtr
 _NewDrawBatch(HdStDrawItemInstance * drawItemInstance, 
               bool multiDrawIndirectEnabled)
 {
-    if (multiDrawIndirectEnabled) {
+    if (HdSt_PipelineDrawBatch::IsEnabled()) {
+        return std::make_shared<HdSt_PipelineDrawBatch>(drawItemInstance);
+    } else if (multiDrawIndirectEnabled) {
         return std::make_shared<HdSt_IndirectDrawBatch>(drawItemInstance);
     } else {
         return std::make_shared<HdSt_ImmediateDrawBatch>(drawItemInstance);

@@ -228,6 +228,41 @@ HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
     return numPrimVerts;
 }
 
+HgiPrimitiveType
+HdSt_GeometricShader::GetHgiPrimitiveType() const
+{
+    HgiPrimitiveType primitiveType = HgiPrimitiveTypePointList;
+
+    switch (GetPrimitiveType())
+    {
+        case PrimitiveType::PRIM_POINTS:
+            primitiveType = HgiPrimitiveTypePointList;
+            break;
+        case PrimitiveType::PRIM_BASIS_CURVES_LINES:
+            primitiveType = HgiPrimitiveTypeLineList;
+            break;
+        case PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+        case PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+        case PrimitiveType::PRIM_MESH_COARSE_TRIQUADS:
+        case PrimitiveType::PRIM_MESH_REFINED_TRIQUADS:
+        case PrimitiveType::PRIM_VOLUME:
+            primitiveType = HgiPrimitiveTypeTriangleList;
+            break;
+        case PrimitiveType::PRIM_MESH_COARSE_QUADS:
+        case PrimitiveType::PRIM_MESH_REFINED_QUADS:
+            primitiveType = HgiPrimitiveTypeLineListWithAdjacency;
+            break;
+        case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
+        case PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES:
+        case PrimitiveType::PRIM_MESH_BSPLINE:
+        case PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
+            primitiveType = HgiPrimitiveTypePatchList;
+            break;
+    }
+
+    return primitiveType;
+}
+
 /*static*/
  HdSt_GeometricShaderSharedPtr
  HdSt_GeometricShader::Create(

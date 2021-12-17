@@ -138,6 +138,7 @@ pxr_library(hdSt
         materialParam
         meshShaderKey
         meshTopology 
+        pipelineDrawBatch
         pointsShaderKey
         quadrangulate
         resourceBinder

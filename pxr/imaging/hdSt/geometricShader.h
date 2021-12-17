@@ -26,9 +26,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hdSt/shaderCode.h"
+#include "pxr/imaging/hgi/enums.h"
 #include "pxr/usd/sdf/path.h"
 
 #include <memory>
@@ -233,7 +234,7 @@ public:
         return _fvarPatchType;
     }
 
-    // Returns the primitive index size based on the primitive mode
+    // Returns the primitive index size based on the primitive type
     // 3 for triangles, 4 for quads, 16 for regular b-spline patches etc.
     HDST_API
     int GetPrimitiveIndexSize() const;
@@ -247,6 +248,10 @@ public:
     // 1 for points, 2 for lines, 3 for triangles, 4 for lines_adjacency    
     HDST_API
     int GetNumPrimitiveVertsForGeometryShader() const;
+
+    // Returns the HgiPrimitiveType for the primitive type.
+    HDST_API
+    HgiPrimitiveType GetHgiPrimitiveType() const;
 
     // Factory for convenience.
     static HdSt_GeometricShaderSharedPtr Create(
