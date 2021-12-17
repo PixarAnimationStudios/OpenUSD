@@ -428,6 +428,12 @@ UsdGeomXformOp
 UsdGeomXformable::MakeMatrixXform() const
 {
     ClearXformOpOrder();
+    bool unused = false;
+    if (!GetOrderedXformOps(&unused).empty()) {
+        TF_WARN("Could not clear xformOpOrder for <%s>",
+            GetPrim().GetPath().GetText());
+        return UsdGeomXformOp();
+    }
     return AddTransformOp();
 }
 
