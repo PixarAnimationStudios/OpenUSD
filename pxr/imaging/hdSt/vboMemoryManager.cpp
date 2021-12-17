@@ -347,8 +347,9 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
         // Skip buffers of zero size
         if (bufferSize > 0) {
             HgiBufferDesc bufDesc;
-            bufDesc.usage = HgiBufferUsageUniform;
+            bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageVertex;
             bufDesc.byteSize = bufferSize;
+            bufDesc.vertexStride = bytesPerElement;
             newBuf = hgi->CreateBuffer(bufDesc);
         }
 

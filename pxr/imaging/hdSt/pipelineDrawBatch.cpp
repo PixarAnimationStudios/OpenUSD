@@ -30,6 +30,7 @@
 #include "pxr/imaging/hdSt/drawItemInstance.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
+#include "pxr/imaging/hdSt/hgiConversions.h"
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
@@ -889,9 +890,6 @@ _BindingState::BindResourcesForViewTransformation() const
         }
         binder.BindBufferArray(instanceIndexBar);
     }
-
-    // Bind the dispatch buffer drawing coordinate resource views.
-    binder.BindBufferArray(dispatchBuffer->GetBufferArrayRange());
 }
 
 void
@@ -905,8 +903,6 @@ _BindingState::UnbindResourcesForViewTransformation() const
         }
         binder.UnbindBufferArray(instanceIndexBar);
     }
-
-    binder.UnbindBufferArray(dispatchBuffer->GetBufferArrayRange());
 }
 
 void
@@ -919,7 +915,6 @@ _BindingState::BindResourcesForDrawing(
     binder.BindBufferArray(indexBar);
     binder.BindBufferArray(elementBar);
     binder.BindBufferArray(fvarBar);
-    binder.BindBufferArray(vertexBar);
     binder.BindBufferArray(varyingBar);
 
     for (HdStShaderCodeSharedPtr const & shader : shaders) {
@@ -948,7 +943,6 @@ _BindingState::UnbindResourcesForDrawing(
     binder.UnbindBufferArray(indexBar);
     binder.UnbindBufferArray(elementBar);
     binder.UnbindBufferArray(fvarBar);
-    binder.UnbindBufferArray(vertexBar);
     binder.UnbindBufferArray(varyingBar);
 
     for (HdStShaderCodeSharedPtr const & shader : shaders) {
@@ -965,6 +959,132 @@ _BindingState::UnbindResourcesForDrawing(
     renderPassState->Unbind();
 }
 
+HgiVertexBufferDescVector
+_GetVertexBuffersForViewTransformation(_BindingState const & state)
+{
+    // Bind the dispatchBuffer drawing coordinate resource views
+    HdStBufferArrayRangeSharedPtr const dispatchBar =
+                state.dispatchBuffer->GetBufferArrayRange();
+    size_t const dispatchBufferStride =
+                state.dispatchBuffer->GetCommandNumUints()*sizeof(uint32_t);
+
+    HgiVertexAttributeDescVector attrDescVector;
+
+    for (auto const & namedResource : dispatchBar->GetResources()) {
+        HdBinding const binding = state.binder.GetBinding(namedResource.first);
+        HdStBufferResourceSharedPtr const & resource = namedResource.second;
+        HdTupleType const tupleType = resource->GetTupleType();
+
+        if (binding.GetType() == HdBinding::DRAW_INDEX_INSTANCE) {
+            HgiVertexAttributeDesc attrDesc;
+            attrDesc.format =
+                HdStHgiConversions::GetHgiVertexFormat(tupleType.type);
+            attrDesc.offset = resource->GetOffset(),
+            attrDesc.shaderBindLocation = binding.GetLocation();
+            attrDescVector.push_back(attrDesc);
+        } else if (binding.GetType() == HdBinding::DRAW_INDEX_INSTANCE_ARRAY) {
+            for (size_t i = 0; i < tupleType.count; ++i) {
+                HgiVertexAttributeDesc attrDesc;
+                attrDesc.format =
+                    HdStHgiConversions::GetHgiVertexFormat(tupleType.type);
+                attrDesc.offset = resource->GetOffset() + i*sizeof(uint32_t);
+                attrDesc.shaderBindLocation = binding.GetLocation() + i;
+                attrDescVector.push_back(attrDesc);
+            }
+        }
+    }
+
+    // All drawing coordinate resources are sourced from the same buffer.
+    HgiVertexBufferDesc bufferDesc;
+    bufferDesc.bindingIndex = 0;
+    bufferDesc.vertexAttributes = attrDescVector;
+    bufferDesc.vertexStepFunction = HgiVertexBufferStepFunctionPerDrawCommand;
+    bufferDesc.vertexStride = dispatchBufferStride;
+
+    return HgiVertexBufferDescVector{bufferDesc};
+}
+
+HgiVertexBufferDescVector
+_GetVertexBuffersForDrawing(_BindingState const & state)
+{
+    // Bind the vertexBar resources
+    HgiVertexBufferDescVector vertexBufferDescVector =
+        _GetVertexBuffersForViewTransformation(state);
+
+    for (auto const & namedResource : state.vertexBar->GetResources()) {
+        HdBinding const binding = state.binder.GetBinding(namedResource.first);
+        HdStBufferResourceSharedPtr const & resource = namedResource.second;
+        HdTupleType const tupleType = resource->GetTupleType();
+
+        if (binding.GetType() == HdBinding::VERTEX_ATTR) {
+            HgiVertexAttributeDesc attrDesc;
+            attrDesc.format =
+                HdStHgiConversions::GetHgiVertexFormat(tupleType.type);
+            attrDesc.offset = resource->GetOffset(),
+            attrDesc.shaderBindLocation = binding.GetLocation();
+
+            // Each vertexBar resource is sourced from a distinct buffer.
+            HgiVertexBufferDesc bufferDesc;
+            bufferDesc.bindingIndex = vertexBufferDescVector.size();
+            bufferDesc.vertexAttributes = {attrDesc};
+            bufferDesc.vertexStepFunction =
+                HgiVertexBufferStepFunctionPerVertex;
+            bufferDesc.vertexStride = HdDataSizeOfTupleType(tupleType);
+            vertexBufferDescVector.push_back(bufferDesc);
+        }
+    }
+
+    return vertexBufferDescVector;
+}
+
+uint32_t
+_BindVertexBuffersForViewTransformation(
+    HgiGraphicsCmds * gfxCmds,
+    _BindingState const & state)
+{
+    uint32_t const nextBinding = 0; // start binding from zero
+
+    // Bind the dispatchBuffer drawing coordinate resource views
+    HdStBufferResourceSharedPtr resource =
+                state.dispatchBuffer->GetEntireResource();
+
+    HgiBufferHandleVector buffers{resource->GetHandle()};
+    std::vector<uint32_t> byteOffsets{
+        static_cast<uint32_t>(resource->GetOffset())};
+
+    gfxCmds->BindVertexBuffers(nextBinding, buffers, byteOffsets);
+
+    return static_cast<uint32_t>(nextBinding + buffers.size());
+}
+
+uint32_t
+_BindVertexBuffersForDrawing(
+    HgiGraphicsCmds * gfxCmds,
+    _BindingState const & state)
+{
+    uint32_t const nextBinding = // continue binding subsequent locations
+        _BindVertexBuffersForViewTransformation(gfxCmds, state);
+
+    // Bind the vertexBar resources
+    HgiBufferHandleVector buffers;
+    std::vector<uint32_t> byteOffsets;
+
+    for (auto const & namedResource : state.vertexBar->GetResources()) {
+        HdBinding const binding = state.binder.GetBinding(namedResource.first);
+        HdStBufferResourceSharedPtr const & resource = namedResource.second;
+
+        if (binding.GetType() == HdBinding::VERTEX_ATTR) {
+            buffers.push_back(resource->GetHandle());
+            byteOffsets.push_back(
+                static_cast<uint32_t>(resource->GetOffset()));
+        }
+    }
+
+    gfxCmds->BindVertexBuffers(nextBinding, buffers, byteOffsets);
+
+    return static_cast<uint32_t>(nextBinding + buffers.size());
+}
+
 } // annonymous namespace
 
 ////////////////////////////////////////////////////////////
@@ -975,12 +1095,11 @@ static
 HgiGraphicsPipelineSharedPtr
 _GetDrawPipeline(
     HdStResourceRegistrySharedPtr const & resourceRegistry,
-    HdStGLSLProgramSharedPtr const & shaderProgram,
-    HgiPrimitiveType primitiveType,
-    int const primitiveIndexSize)
+    _BindingState const & state)
 {
     // Drawing pipeline is compatible as long as the shader is the same.
-    HgiShaderProgramHandle const & programHandle = shaderProgram->GetProgram();
+    HgiShaderProgramHandle const & programHandle =
+                                        state.glslProgram->GetProgram();
     uint64_t const hash = reinterpret_cast<uint64_t>(programHandle.Get());
 
     HdInstance<HgiGraphicsPipelineSharedPtr> pipelineInstance =
@@ -988,12 +1107,15 @@ _GetDrawPipeline(
 
     if (pipelineInstance.IsFirstInstance()) {
         HgiGraphicsPipelineDesc pipeDesc;
-        pipeDesc.primitiveType = primitiveType;
-        pipeDesc.shaderProgram = shaderProgram->GetProgram();
+        pipeDesc.primitiveType = state.geometricShader->GetHgiPrimitiveType();
+        pipeDesc.shaderProgram = state.glslProgram->GetProgram();
 
-        if (primitiveType == HgiPrimitiveTypePatchList) {
-            pipeDesc.tessellationState.primitiveIndexSize = primitiveIndexSize;
+        if (pipeDesc.primitiveType == HgiPrimitiveTypePatchList) {
+            pipeDesc.tessellationState.primitiveIndexSize =
+                        state.geometricShader->GetPrimitiveIndexSize();
         }
+
+        pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
 
         Hgi* hgi = resourceRegistry->GetHgi();
         HgiGraphicsPipelineHandle pso = hgi->CreateGraphicsPipeline(pipeDesc);
@@ -1039,11 +1161,11 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
     HgiGraphicsPipelineSharedPtr pso =
         _GetDrawPipeline(
             resourceRegistry,
-            state.glslProgram,
-            state.geometricShader->GetHgiPrimitiveType(),
-            state.geometricShader->GetPrimitiveIndexSize());
+            state);
     HgiGraphicsPipelineHandle psoHandle = *pso.get();
     gfxCmds->BindPipeline(psoHandle);
+
+    _BindVertexBuffersForDrawing(gfxCmds, state);
 
     state.BindResourcesForDrawing(renderPassState);
 
@@ -1143,11 +1265,12 @@ static
 HgiGraphicsPipelineSharedPtr
 _GetCullPipeline(
     HdStResourceRegistrySharedPtr const & resourceRegistry,
-    HdStGLSLProgramSharedPtr const & shaderProgram,
+    _BindingState const & state,
     size_t byteSizeUniforms)
 {
     // Culling pipeline is compatible as long as the shader is the same.
-    HgiShaderProgramHandle const & programHandle = shaderProgram->GetProgram();
+    HgiShaderProgramHandle const & programHandle =
+                                        state.glslProgram->GetProgram();
     uint64_t const hash = reinterpret_cast<uint64_t>(programHandle.Get());
 
     HdInstance<HgiGraphicsPipelineSharedPtr> pipelineInstance =
@@ -1162,8 +1285,10 @@ _GetCullPipeline(
         pipeDesc.depthState.depthTestEnabled = false;
         pipeDesc.depthState.depthWriteEnabled = false;
         pipeDesc.primitiveType = HgiPrimitiveTypePointList;
-        pipeDesc.shaderProgram = shaderProgram->GetProgram();
+        pipeDesc.shaderProgram = state.glslProgram->GetProgram();
         pipeDesc.rasterizationState.rasterizerEnabled = false;
+
+        pipeDesc.vertexBuffers = _GetVertexBuffersForViewTransformation(state);
 
         Hgi* hgi = resourceRegistry->GetHgi();
         HgiGraphicsPipelineHandle pso = hgi->CreateGraphicsPipeline(pipeDesc);
@@ -1232,7 +1357,7 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
 
     HgiGraphicsPipelineSharedPtr const & pso =
         _GetCullPipeline(resourceRegistry,
-                         state.glslProgram,
+                         state,
                          _useInstanceCulling
                              ? sizeof(UniformsInstanced)
                              : sizeof(Uniforms));
@@ -1247,6 +1372,8 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
         cullGfxCmds->PushDebugGroup("GPU frustum culling (non-instanced)");
     }
     cullGfxCmds->BindPipeline(psoHandle);
+
+    _BindVertexBuffersForViewTransformation(cullGfxCmds.get(), state);
 
     state.BindResourcesForViewTransformation();
 

@@ -292,7 +292,8 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
         if(bufferSize > 0) {
             HgiBufferDesc bufDesc;
             bufDesc.byteSize = bufferSize;
-            bufDesc.usage = HgiBufferUsageUniform;
+            bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageVertex;
+            bufDesc.vertexStride = bytesPerElement;
             newBuf = hgi->CreateBuffer(bufDesc);
         }
 
