@@ -239,7 +239,7 @@ public:
     // --------------------------------------------------------------------- //
     // GUIDERADIUS 
     // --------------------------------------------------------------------- //
-    /// The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.1 (i.e. cm).
+    /// The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.01 (i.e., 1 world unit is 1 cm).
     ///
     /// | ||
     /// | -- | -- |
