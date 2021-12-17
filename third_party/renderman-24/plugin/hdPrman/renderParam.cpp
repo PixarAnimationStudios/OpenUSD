@@ -94,13 +94,9 @@ HdPrman_RenderParam::HdPrman_RenderParam() :
     _riley(nullptr),
     _sceneLightCount(0),
     _instantaneousShutter(false),
-    _didBeginRiley(false),
     _lastSettingsVersion(0)
 {
     TfRegistryManager::GetInstance().SubscribeTo<HdPrman_RenderParam>();
-    renderThread.SetRenderCallback(
-        std::bind(
-            &HdPrman_RenderParam::_RenderThreadCallback, this));
     _CreateRiley();
     
     // Register RenderMan display driver
@@ -1831,13 +1827,13 @@ HdPrman_RenderParam::_RenderThreadCallback()
 
     bool renderComplete = false;
     while (!renderComplete) {
-        while (renderThread.IsPauseRequested()) {
-            if (renderThread.IsStopRequested()) {
+        while (_renderThread->IsPauseRequested()) {
+            if (_renderThread->IsStopRequested()) {
                 break;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
-        if (renderThread.IsStopRequested()) {
+        if (_renderThread->IsStopRequested()) {
             break;
         }
 
@@ -1851,7 +1847,7 @@ HdPrman_RenderParam::_RenderThreadCallback()
             renderOptions);
 
         // If a pause was requested, we may have stopped early
-        renderComplete = !renderThread.IsPauseDirty();
+        renderComplete = !_renderThread->IsPauseDirty();
     }
 }
 
@@ -1982,35 +1978,65 @@ HdPrman_RenderParam::StartRender()
 
     // Prepare Riley state for rendering.
     // Pass a valid riley callback pointer during IPR
-    if (!_didBeginRiley) {
-        renderThread.StartThread();
-        _didBeginRiley = true;
-    }
 
-    renderThread.StartRender();
+    if (!_renderThread) {
+        _renderThread = std::make_unique<HdRenderThread>();
+        _renderThread->SetRenderCallback(
+            std::bind(
+                &HdPrman_RenderParam::_RenderThreadCallback, this));
+        _renderThread->StartThread();
+    }
+    
+    _renderThread->StartRender();
 }
 
 void
 HdPrman_RenderParam::StopRender()
 {
-    if (renderThread.IsRendering()) {
-        // It is necessary to call riley->Stop() until it succeeds
-        // because it's possible for it to be skipped if called too early,
-        // before the render has gotten underway.
-        // Also keep checking if render thread is still active,
-        // in case it has somehow managed to stop already.
-        while((_riley->Stop() == riley::StopResult::k_NotRendering) &&
-              renderThread.IsRendering())
-        {
-        }
-        renderThread.StopRender();
+    if (!_renderThread) {
+        return;
     }
+    if (!_renderThread->IsRendering()) {
+        return;
+    }
+
+    // It is necessary to call riley->Stop() until it succeeds
+    // because it's possible for it to be skipped if called too early,
+    // before the render has gotten underway.
+    // Also keep checking if render thread is still active,
+    // in case it has somehow managed to stop already.
+    while((_riley->Stop() == riley::StopResult::k_NotRendering) &&
+          _renderThread->IsRendering())
+    {
+    }
+    _renderThread->StopRender();
 }
 
 bool
 HdPrman_RenderParam::IsRenderStopped()
 {
-    return !renderThread.IsThreadRunning();
+    return _renderThread && _renderThread->IsThreadRunning();
+}
+
+bool
+HdPrman_RenderParam::IsRendering()
+{
+    return _renderThread && _renderThread->IsRendering();
+}
+
+bool
+HdPrman_RenderParam::IsPauseRequested()
+{
+    return _renderThread && _renderThread->IsPauseRequested();
+}
+
+void
+HdPrman_RenderParam::DeleteRenderThread()
+{
+    if (_renderThread) {
+        StopRender();
+        _renderThread.reset();
+    }
 }
 
 void
@@ -2316,7 +2342,7 @@ bool
 HdPrman_RenderParam::DeleteFramebuffer()
 {
     if (_framebuffer) {
-        _framebuffer = nullptr;
+        _framebuffer.reset();
         return true;
     }
     return false;

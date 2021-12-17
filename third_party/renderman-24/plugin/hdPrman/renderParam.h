@@ -219,6 +219,13 @@ public:
     // Query whether or not the HdRenderThread is running.
     bool IsRenderStopped();
 
+    bool IsRendering();
+
+    bool IsPauseRequested();
+
+    // Deletes the render thread if there is one.
+    void DeleteRenderThread();
+
     // Checks whether render param was successfully initialized.
     // ie. riley was created
     bool IsValid() const;
@@ -238,9 +245,6 @@ public:
     HdPrmanFramebuffer * GetFramebuffer() const {
         return _framebuffer.get();
     }
-
-    // Render thread for background rendering.
-    HdRenderThread renderThread;
 
     // Scene version counter.
     std::atomic<int> sceneVersion;
@@ -263,7 +267,7 @@ public:
         return _quickIntegratorId;
     }
 
-protected:
+private:
     void _CreateRiley();
     void _CreateFallbackMaterials();
     void _CreateFallbackLight();
@@ -287,7 +291,6 @@ protected:
     // Riley instance.
     riley::Riley *_riley;
 
-private:
     riley::ShadingNode _ComputeIntegratorNode(
         HdRenderDelegate * renderDelegate);
 
@@ -298,8 +301,7 @@ private:
 
     void _RenderThreadCallback();
 
-    // A framebuffer to hold PRMan results when using hydra render buffers.
-    // The d_hydra.so renderman display driver handles updates via IPC.
+    std::unique_ptr<HdRenderThread> _renderThread;
     std::unique_ptr<HdPrmanFramebuffer> _framebuffer;
 
     int _sceneLightCount;
@@ -356,8 +358,6 @@ private:
 
     // RIX or XPU
     bool _xpu;
-
-    bool _didBeginRiley;
 
     int _lastSettingsVersion;
 };

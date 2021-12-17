@@ -170,26 +170,29 @@ HdPrman_RenderPass::_Execute(
 {
     HD_TRACE_FUNCTION();
     
-    static const RtUString us_PathTracer("PathTracer");
-
-    if (!_renderParam) {
-        // If this is not an interactive context, don't use Hydra to drive
-        // rendering and presentation of the framebuffer.  Instead, assume
-        // we are just using Hydra to sync the scene contents to Riley.
+    if (!TF_VERIFY(_renderParam)) {
         return;
     }
-    if (_renderParam->renderThread.IsPauseRequested()) {
-        // No more updates if pause is pending
-        return;
-    }
-
-    HdRenderPassAovBindingVector const &aovBindings =
-        renderPassState->GetAovBindings();
 
     // Likewise the render settings.
     HdPrmanRenderDelegate * const renderDelegate =
         static_cast<HdPrmanRenderDelegate*>(
             GetRenderIndex()->GetRenderDelegate());
+
+    if (renderDelegate->IsInteractive()) {
+        if (_renderParam->IsPauseRequested()) {
+            // No more updates if pause is pending
+            return;
+        }
+    } else {
+        // Delete the render thread if there is one
+        // (if switching from interactive to offline rendering).
+        _renderParam->DeleteRenderThread();
+    }
+
+    HdRenderPassAovBindingVector const &aovBindings =
+        renderPassState->GetAovBindings();
+
     const int currentSettingsVersion =
         renderDelegate->GetRenderSettingsVersion();
     
@@ -457,7 +460,7 @@ HdPrman_RenderPass::_RestartRenderIfNecessary(
     _converged =
         (_renderParam->GetActiveIntegratorId() ==
          _renderParam->GetIntegratorId())
-        && !_renderParam->renderThread.IsRendering();
+        && !_renderParam->IsRendering();
 }
 
 void
