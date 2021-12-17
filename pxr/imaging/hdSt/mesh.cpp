@@ -1349,6 +1349,9 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         }
     }
 
+    // Track primvars that are skipped because they have zero elements
+    HdPrimvarDescriptorVector zeroElementPrimvars;
+
     // Track index to identify varying primvars.
     int i = 0;
     for (HdPrimvarDescriptor const& primvar: primvars) {
@@ -1367,6 +1370,14 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         if (!value.IsEmpty()) {
             HdBufferSourceSharedPtr source =
                 std::make_shared<HdVtBufferSource>(primvar.name, value);
+
+            if (source->GetNumElements() == 0 &&
+                source->GetName() != HdTokens->points) {
+                // zero elements for primvars other than points will be treated
+                // as if the primvar doesn't exist, so no warning is necessary
+                zeroElementPrimvars.push_back(primvar);
+                continue;
+            }
 
             // verify primvar length -- it is alright to have more data than we
             // index into; the inverse is when we issue a warning and skip
@@ -1438,6 +1449,14 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                     HdSt_MeshTopology::INTERPOLATE_VERTEX);
 
             sources.push_back(source);
+        }
+    }
+
+    // remove the primvars with zero elements from further processing
+    for (HdPrimvarDescriptor const& primvar: zeroElementPrimvars) {
+        auto pos = std::find(primvars.begin(), primvars.end(), primvar);
+        if (pos != primvars.end()) {
+            primvars.erase(pos);
         }
     }
 
@@ -1759,6 +1778,9 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
        _UseQuadIndices(sceneDelegate->GetRenderIndex(), _topology) ||
        (refineLevel > 0 && !_topology->RefinesToTriangles());
 
+    // Track primvars that are skipped because they have zero elements
+    HdPrimvarDescriptorVector zeroElementPrimvars;
+
     for (HdPrimvarDescriptor const& primvar: primvars) {
         if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name)) {
             continue;
@@ -1777,6 +1799,13 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
         if (!value.IsEmpty()) {
             HdBufferSourceSharedPtr source =
                 std::make_shared<HdVtBufferSource>(primvar.name, value);
+
+            if (!useUnflattendPrimvar && source->GetNumElements() == 0) {
+                // zero elements for primvars will be treated as if the primvar
+                // doesn't exist, so no warning is necessary
+                zeroElementPrimvars.push_back(primvar);
+                continue;
+            }
 
             // verify primvar length
             if ((int)source->GetNumElements() != numFaceVaryings && 
@@ -1807,6 +1836,14 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
                 resourceRegistry, &computations, channel);
             
             sources.push_back(source);
+        }
+    }
+
+    // remove the primvars with zero elements from further processing
+    for (HdPrimvarDescriptor const& primvar: zeroElementPrimvars) {
+        auto pos = std::find(primvars.begin(), primvars.end(), primvar);
+        if (pos != primvars.end()) {
+            primvars.erase(pos);
         }
     }
 
@@ -1893,6 +1930,9 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
 
     int numFaces = _topology ? _topology->GetNumFaces() : 0;
 
+    // Track primvars that are skipped because they have zero elements
+    HdPrimvarDescriptorVector zeroElementPrimvars;
+
     for (HdPrimvarDescriptor const& primvar: primvars) {
         if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name))
             continue;
@@ -1901,6 +1941,13 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         if (!value.IsEmpty()) {
             HdBufferSourceSharedPtr source =
                 std::make_shared<HdVtBufferSource>(primvar.name, value);
+
+            if (source->GetNumElements() == 0) {
+                // zero elements for primvars other will be treated as if the
+                // primvar doesn't exist, so no warning is necessary
+                zeroElementPrimvars.push_back(primvar);
+                continue;
+            }
 
             // verify primvar length
             if ((int)source->GetNumElements() != numFaces) {
@@ -1918,6 +1965,14 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
                 _displayOpacity = true;
             }
             sources.push_back(source);
+        }
+    }
+
+    // remove the primvars with zero elements from further processing
+    for (HdPrimvarDescriptor const& primvar: zeroElementPrimvars) {
+        auto pos = std::find(primvars.begin(), primvars.end(), primvar);
+        if (pos != primvars.end()) {
+            primvars.erase(pos);
         }
     }
 
@@ -2247,9 +2302,14 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         _PopulateAdjacency(resourceRegistry);
     }
 
-    // Reset value of _displayOpacity
-    if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
+    // Reset value of _displayOpacity and _sceneNormals if dirty
+    if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id,
+        HdTokens->displayOpacity)) {
         _displayOpacity = false;
+    }
+    if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id,
+        HdTokens->normals)) {
+        _sceneNormals = false;
     }
 
     /* INSTANCE PRIMVARS */
