@@ -299,7 +299,17 @@ class PropInfo(object):
             Print.Err("Token '%s' is not valid." % self.apiGet)
         self.rawName    = sdfProp.name
         self.doc        = _SanitizeDoc(sdfProp.documentation, '\n    /// ')
-        self.custom     = sdfProp.custom
+        # Keep around the property spec so that we can pull any other data we
+        # may need from it.
+        self._sdfPropSpec = sdfProp
+        # Also keep a reference to the layer so that it doesn't close while 
+        # we're still holding on to one of its property specs.
+        self._layer = sdfProp.layer
+
+    # Anything that isn't explicitly set as an attribute in the PropInfo, we can
+    # fall back to grabbing directly from the SdfProperty spec if requested.
+    def __getattr__(self, attr):
+        return getattr(self._sdfPropSpec, attr)
 
 class RelInfo(PropInfo):
     def __init__(self, sdfProp):
