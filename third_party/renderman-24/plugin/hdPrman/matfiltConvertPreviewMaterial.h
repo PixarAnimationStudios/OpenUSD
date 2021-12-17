@@ -45,7 +45,7 @@ MatfiltConvertPreviewMaterial(
 void
 MatfiltConvertPreviewMaterial(
     const SdfPath & networkId,
-    HdMaterialNetworkInterface *interface,
+    HdMaterialNetworkInterface *networkInterface,
     const std::map<TfToken, VtValue> & contextValues,
     const NdrTokenVec & shaderTypePriority,
     std::vector<std::string> * outputErrorMessages);

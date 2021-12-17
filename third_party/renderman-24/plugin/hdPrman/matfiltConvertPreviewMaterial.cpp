@@ -125,8 +125,8 @@ MatfiltConvertPreviewMaterial(
     const NdrTokenVec & shaderTypePriority,
     std::vector<std::string> * outputErrorMessages)
 {
-    HdMaterialNetwork2Interface interface(&network);
-    MatfiltConvertPreviewMaterial(networkId, &interface, contextValues,
+    HdMaterialNetwork2Interface netInterface(&network);
+    MatfiltConvertPreviewMaterial(networkId, &netInterface, contextValues,
                                   shaderTypePriority, outputErrorMessages);
 }
 
@@ -143,7 +143,7 @@ _GetSiblingNodeName(std::string const &nodeName, std::string const &suffix)
 
 static bool
 _GetParameter(
-    HdMaterialNetworkInterface *interface,
+    HdMaterialNetworkInterface *netInterface,
     TfToken const &nodeName,
     TfToken const &paramName,
     VtValue *v)
@@ -151,13 +151,13 @@ _GetParameter(
     if (!TF_VERIFY(v)) {
         return false;
     }
-    *v = std::move(interface->GetNodeParameterValue(nodeName, paramName));
+    *v = std::move(netInterface->GetNodeParameterValue(nodeName, paramName));
     return !v->IsEmpty();
 }
 
 static bool
 _GetInputConnection(
-    HdMaterialNetworkInterface *interface,
+    HdMaterialNetworkInterface *netInterface,
     TfToken const &nodeName,
     TfToken const &inputName,
     HdMaterialNetworkInterface::InputConnectionVector *v)
@@ -165,7 +165,7 @@ _GetInputConnection(
     if (!TF_VERIFY(v)) {
         return false;
     }
-    *v = std::move(interface->GetNodeInputConnection(nodeName, inputName));
+    *v = std::move(netInterface->GetNodeInputConnection(nodeName, inputName));
     // Just check the length of the InputConnectionVector returned.
     // This skips validation of the upstreamNodeName in each connection.
     return !v->empty();
@@ -174,7 +174,7 @@ _GetInputConnection(
 
 void
 _ProcessPreviewSurfaceNode(
-    HdMaterialNetworkInterface *interface,
+    HdMaterialNetworkInterface *netInterface,
     const TfToken &nodeName,
     std::vector<std::string> * outputErrorMessages)
 {
@@ -182,35 +182,35 @@ _ProcessPreviewSurfaceNode(
 
     // Modify the node to a UsdPreviewSurfaceParameters node, which
     // translates the params to outputs that feed a PxrSurface node.
-    interface->SetNodeType(nodeName, _tokens->UsdPreviewSurfaceParameters);
+    netInterface->SetNodeType(nodeName, _tokens->UsdPreviewSurfaceParameters);
     
     // Because UsdPreviewSurfaceParameters uses "normalIn" instead of
     // UsdPreviewSurface's "normal", adjust that here.
     {
         VtValue vtNormal;
-        if (_GetParameter(interface, nodeName, _tokens->normal, &vtNormal)) {
-            interface->SetNodeParameterValue(
+        if (_GetParameter(netInterface, nodeName, _tokens->normal, &vtNormal)) {
+            netInterface->SetNodeParameterValue(
                 nodeName, _tokens->normalIn, vtNormal);
-            interface->DeleteNodeParameter(nodeName, _tokens->normal);
+            netInterface->DeleteNodeParameter(nodeName, _tokens->normal);
         }
 
         HdMaterialNetworkInterface::InputConnectionVector cvNormal;
         if (_GetInputConnection(
-                interface, nodeName, _tokens->normal, &cvNormal)) {
-            interface->SetNodeInputConnection(
+                netInterface, nodeName, _tokens->normal, &cvNormal)) {
+            netInterface->SetNodeInputConnection(
                 nodeName, _tokens->normalIn, cvNormal);
-            interface->DeleteNodeInputConnection(nodeName, _tokens->normal);
+            netInterface->DeleteNodeInputConnection(nodeName, _tokens->normal);
         }
     }
 
     // Insert a PxrSurface and connect it to the above node.
     TfToken pxrSurfaceNodeName =
         _GetSiblingNodeName(nodeName.GetString(), "_PxrSurface");
-    interface->SetNodeType(pxrSurfaceNodeName, _tokens->PxrSurface);
+    netInterface->SetNodeType(pxrSurfaceNodeName, _tokens->PxrSurface);
     // parameters:
     {
         // UsdPreviewSurface uses GGX, not Beckmann
-        interface->SetNodeParameterValue(
+        netInterface->SetNodeParameterValue(
             pxrSurfaceNodeName, _tokens->specularModelType, VtValue(int(1)));
     }
     // connections:
@@ -234,7 +234,7 @@ _ProcessPreviewSurfaceNode(
         };
 
         for (const auto &inOutPair : mapping) {
-            interface->SetNodeInputConnection(
+            netInterface->SetNodeInputConnection(
                 pxrSurfaceNodeName, inOutPair.first,
                 {{nodeName, inOutPair.second}});
         }
@@ -242,10 +242,11 @@ _ProcessPreviewSurfaceNode(
         // If opacityThreshold is > 0, do *not* use refraction.
         VtValue vtOpThres;
         if (_GetParameter(
-                interface, nodeName, _tokens->opacityThreshold, &vtOpThres)) {
+                netInterface, nodeName, _tokens->opacityThreshold,
+                &vtOpThres)) {
 
             if (vtOpThres.Get<float>() <= 0.0f) {
-                interface->SetNodeInputConnection(
+                netInterface->SetNodeInputConnection(
                     pxrSurfaceNodeName, _tokens->refractionGain,
                     {{nodeName, _tokens->refractionGainOut}});
             }
@@ -258,13 +259,13 @@ _ProcessPreviewSurfaceNode(
     {
         VtValue vtDisp;
         if (_GetParameter(
-                interface, nodeName, _tokens->displacement, &vtDisp)) {
+                netInterface, nodeName, _tokens->displacement, &vtDisp)) {
             if (vtDisp.Get<float>() != 0.0f) {
                 displacement = true;
             }
         }
         if (!displacement) {
-            const auto connections = interface->GetNodeInputConnection(
+            const auto connections = netInterface->GetNodeInputConnection(
                                         nodeName, _tokens->displacement);
             // Note that we don't validate the connection entries themselves.
             displacement = !connections.empty();
@@ -274,12 +275,12 @@ _ProcessPreviewSurfaceNode(
     if (displacement) {
         pxrDispNodeName =
             _GetSiblingNodeName(nodeName.GetString(), "_PxrDisplace");
-        interface->SetNodeType(pxrDispNodeName, _tokens->PxrDisplace);
+        netInterface->SetNodeType(pxrDispNodeName, _tokens->PxrDisplace);
         // No parameters, only connections
-        interface->SetNodeInputConnection(
+        netInterface->SetNodeInputConnection(
             pxrDispNodeName, _tokens->dispAmount,
             {{nodeName, _tokens->dispAmountOut}});
-        interface->SetNodeInputConnection(
+        netInterface->SetNodeInputConnection(
             pxrDispNodeName, _tokens->dispScalar,
             {{nodeName, _tokens->dispScalarOut}});
     }
@@ -288,7 +289,7 @@ _ProcessPreviewSurfaceNode(
     // material to be passed to the gprim.
     TfToken primvarPassNodeName =
         _GetSiblingNodeName(nodeName.GetString(), "_PrimvarPass");
-    interface->SetNodeType(primvarPassNodeName, _tokens->PrimvarPass);
+    netInterface->SetNodeType(primvarPassNodeName, _tokens->PrimvarPass);
     // Parameters (no connections):
     // We wish to always set this primvar on meshes using 
     // UsdPreviewSurface, regardless of the material's displacement value.
@@ -296,18 +297,19 @@ _ProcessPreviewSurfaceNode(
     // material, and we currently do not have the capabilities to efficiently
     // resync the mesh if the value of its UsdPreviewSurface's 
     // displacement input changes.
-    interface->SetNodeParameterValue(
+    netInterface->SetNodeParameterValue(
         primvarPassNodeName, _tokens->displacementBoundSphere, VtValue(1.f));
     
     // Update network terminals to point to the PxrSurface and PxrDisplacement
     // nodes that were added.
-    interface->SetTerminalConnection(HdMaterialTerminalTokens->surface,
+    netInterface->SetTerminalConnection(HdMaterialTerminalTokens->surface,
         {pxrSurfaceNodeName, TfToken()});
     if (displacement) {
-        interface->SetTerminalConnection(HdMaterialTerminalTokens->displacement,
+        netInterface->SetTerminalConnection(
+            HdMaterialTerminalTokens->displacement,
             {pxrDispNodeName, TfToken()});
     } else {
-        interface->DeleteTerminal(HdMaterialTerminalTokens->displacement);
+        netInterface->DeleteTerminal(HdMaterialTerminalTokens->displacement);
     }
 }
 
@@ -315,7 +317,7 @@ _ProcessPreviewSurfaceNode(
 // to read them via a Renderman texture plugin.
 void
 _ProcessUVTextureNode(
-    HdMaterialNetworkInterface *interface,
+    HdMaterialNetworkInterface *netInterface,
     const TfToken &nodeName,
     std::vector<std::string> * outputErrorMessages)
 {
@@ -323,7 +325,7 @@ _ProcessUVTextureNode(
 
     bool needInvertT = false;
     VtValue vtFile;
-    if (_GetParameter(interface, nodeName, _tokens->file, &vtFile) &&
+    if (_GetParameter(netInterface, nodeName, _tokens->file, &vtFile) &&
          vtFile.IsHolding<SdfAssetPath>()) {
 
         std::string path = vtFile.Get<SdfAssetPath>().GetResolvedPath();
@@ -337,16 +339,16 @@ _ProcessUVTextureNode(
             // must pass this from the shading node into the
             // texture plugin parameters.
             VtValue wrapSVal =
-                interface->GetNodeParameterValue(nodeName, _tokens->wrapS);
+                netInterface->GetNodeParameterValue(nodeName, _tokens->wrapS);
             VtValue wrapTVal =
-                interface->GetNodeParameterValue(nodeName, _tokens->wrapT);
+                netInterface->GetNodeParameterValue(nodeName, _tokens->wrapT);
             TfToken wrapS =
                         wrapSVal.GetWithDefault(_tokens->useMetadata);
             TfToken wrapT =
                 wrapSVal.GetWithDefault(_tokens->useMetadata);  
 
             // Check for source colorspace.
-            VtValue sourceColorSpaceVal = interface->GetNodeParameterValue(
+            VtValue sourceColorSpaceVal = netInterface->GetNodeParameterValue(
                 nodeName, _tokens->sourceColorSpace);
             // XXX: This is a workaround for Presto. If there's no
             // colorspace token, check if there's a colorspace
@@ -367,7 +369,7 @@ _ProcessUVTextureNode(
                                 wrapS.GetText(), wrapT.GetText(),
                                 sourceColorSpace.GetText());
             
-            interface->SetNodeParameterValue(
+            netInterface->SetNodeParameterValue(
                 nodeName, _tokens->file, VtValue(path));
 
         } else if (ext == "tex") {
@@ -384,29 +386,29 @@ _ProcessUVTextureNode(
 
     HdMaterialNetworkInterface::InputConnectionVector cvSt;
     if (needInvertT &&
-        _GetInputConnection(interface, nodeName, _tokens->st, &cvSt)) {
+        _GetInputConnection(netInterface, nodeName, _tokens->st, &cvSt)) {
 
         // Invert the T axis by splicing in a UsdTransform2d node.
         TfToken transform2dNodeName =
             _GetSiblingNodeName(nodeName.GetString(), "_InvertT");
         
         // Add new node.
-        interface->SetNodeType(
+        netInterface->SetNodeType(
             transform2dNodeName, _tokens->UsdTransform2d);
 
         // parameters:
-        interface->SetNodeParameterValue(transform2dNodeName,
+        netInterface->SetNodeParameterValue(transform2dNodeName,
             _tokens->scale, VtValue(GfVec2f(1.0f, -1.0f)));
-        interface->SetNodeParameterValue(transform2dNodeName,
+        netInterface->SetNodeParameterValue(transform2dNodeName,
             _tokens->translation, VtValue(GfVec2f(0.0f, 1.0f)));
 
         // connections:
-        interface->SetNodeInputConnection(
+        netInterface->SetNodeInputConnection(
             transform2dNodeName, _tokens->in, cvSt);
         
         // Splice it into UsdUvTexture, replacing the existing
         // connection.
-        interface->SetNodeInputConnection(nodeName, _tokens->st,
+        netInterface->SetNodeInputConnection(nodeName, _tokens->st,
             {{ transform2dNodeName, _tokens->result }});
     }
 }
@@ -414,7 +416,7 @@ _ProcessUVTextureNode(
 void
 MatfiltConvertPreviewMaterial(
     const SdfPath & networkId,
-    HdMaterialNetworkInterface *interface,
+    HdMaterialNetworkInterface *netInterface,
     const std::map<TfToken, VtValue> & contextValues,
     const NdrTokenVec & shaderTypePriority,
     std::vector<std::string> * outputErrorMessages)
@@ -422,15 +424,15 @@ MatfiltConvertPreviewMaterial(
     TF_UNUSED(contextValues);
     TF_UNUSED(shaderTypePriority);
 
-    if (!interface) {
+    if (!netInterface) {
         return;
     }
 
-    const TfTokenVector nodeNames = interface->GetNodeNames();
+    const TfTokenVector nodeNames = netInterface->GetNodeNames();
     bool foundPreviewSurface = false;
 
     for (TfToken const &nodeName : nodeNames) {
-        const TfToken nodeType = interface->GetNodeType(nodeName);
+        const TfToken nodeType = netInterface->GetNodeType(nodeName);
     
         if (nodeType == _tokens->UsdPreviewSurface) {
             if (foundPreviewSurface) {
@@ -441,10 +443,10 @@ MatfiltConvertPreviewMaterial(
             }
             foundPreviewSurface = true;
             _ProcessPreviewSurfaceNode(
-                interface, nodeName, outputErrorMessages);
+                netInterface, nodeName, outputErrorMessages);
 
         } else if (nodeType == _tokens->UsdUVTexture) {
-            _ProcessUVTextureNode(interface, nodeName, outputErrorMessages);
+            _ProcessUVTextureNode(netInterface, nodeName, outputErrorMessages);
         }
     }
 }
