@@ -81,10 +81,11 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
     boost::hash_combine(_hash, _glslfx->GetHash());
     boost::hash_combine(_hash, cullingPass);
     boost::hash_combine(_hash, primType);
+    boost::hash_combine(_hash, cullStyle);
     boost::hash_combine(_hash, fvarPatchType);
     //
-    // note: Don't include cullStyle and polygonMode into the hash.
-    //      They are independent from the GLSL program.
+    // note: Don't include polygonMode into the hash.
+    //       It is independent from the GLSL program.
     //
 }
 

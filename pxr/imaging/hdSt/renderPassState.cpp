@@ -449,11 +449,6 @@ _SetGLCullState(
     } else {
         // Use fragment shader culling via discard.
         glDisable(GL_CULL_FACE);
-
-        if (gsCullStyle != HdCullStyleDontCare) {
-            unsigned int value = gsCullStyle;
-            binder.BindUniformui(HdShaderTokens->cullStyle, 1, &value);
-        }
     }
 }
 

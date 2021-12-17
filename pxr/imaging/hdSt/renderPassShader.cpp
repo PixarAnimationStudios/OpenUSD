@@ -259,12 +259,6 @@ HdStRenderPassShader::AddBindings(HdBindingRequestVector *customBindings)
     TF_FOR_ALL(it, _customBuffers) {
         customBindings->push_back(it->second);
     }
-
-    // typed binding to emit declaration and accessor.
-    customBindings->push_back(
-        HdBindingRequest(HdBinding::UNIFORM,
-                         HdShaderTokens->cullStyle,
-                         HdTypeUInt32));
 }
 
 HdSt_MaterialParamVector const &

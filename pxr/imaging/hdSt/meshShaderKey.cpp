@@ -48,9 +48,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((normalsDoubleSidedFS,    "MeshNormal.Fragment.DoubleSided"))
     ((normalsSingleSidedFS,    "MeshNormal.Fragment.SingleSided"))
 
-    ((faceCullHardwareFS,      "MeshFaceCull.Fragment.None"))
-    ((faceCullSingleSidedFS,   "MeshFaceCull.Fragment.SingleSided"))
-    ((faceCullDoubleSidedFS,   "MeshFaceCull.Fragment.DoubleSided"))
+    ((faceCullNoneFS,          "MeshFaceCull.Fragment.None"))
+    ((faceCullFrontFacingFS,   "MeshFaceCull.Fragment.FrontFacing"))
+    ((faceCullBackFacingFS,    "MeshFaceCull.Fragment.BackFacing"))
 
     // wireframe mixins
     ((edgeNoneFS,              "MeshWire.Fragment.NoEdge"))
@@ -340,9 +340,20 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     FS[fsIndex++] = doubleSided ?
         _tokens->normalsDoubleSidedFS : _tokens->normalsSingleSidedFS;
 
-    FS[fsIndex++] = useHardwareFaceCulling ? _tokens->faceCullHardwareFS :
-                    (doubleSided ? _tokens->faceCullDoubleSidedFS :
-                                   _tokens->faceCullSingleSidedFS);
+    bool const faceCullFrontFacing =
+        !useHardwareFaceCulling &&
+            (cullStyle == HdCullStyleFront ||
+             (cullStyle == HdCullStyleFrontUnlessDoubleSided && !doubleSided));
+    bool const faceCullBackFacing =
+        !useHardwareFaceCulling &&
+            (cullStyle == HdCullStyleBack ||
+             (cullStyle == HdCullStyleBackUnlessDoubleSided && !doubleSided));
+    FS[fsIndex++] =
+        faceCullFrontFacing
+            ? _tokens->faceCullFrontFacingFS
+            : faceCullBackFacing
+                ? _tokens->faceCullBackFacingFS
+                : _tokens->faceCullNoneFS; // DontCare, Nothing, HW
 
     // Wire (edge) related mixins
     if (renderWireframe || renderEdges) {
