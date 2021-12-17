@@ -48,10 +48,11 @@ R"(
 static const std::string MxHdLightString = 
 R"(#if NUM_LIGHTS > 0
     for (int i = 0; i < NUM_LIGHTS; ++i) {
+        LightSource light = GetLightSource(i);
 
         // Save the indirect light transformation
-        if (lightSource[i].isIndirectLight) {
-            hdTransformationMatrix = lightSource[i].worldToLightTransform;
+        if (light.isIndirectLight) {
+            hdTransformationMatrix = light.worldToLightTransform;
         }
         // Save the direct light data
         else {
@@ -60,22 +61,22 @@ R"(#if NUM_LIGHTS > 0
 
             // Position (Hydra position in ViewSpace)
             $lightData[u_numActiveLightSources].position = 
-                (HdGet_worldToViewInverseMatrix() * lightSource[i].position).xyz;
+                (HdGet_worldToViewInverseMatrix() * light.position).xyz;
 
             // Color and Intensity 
             // Note: in Storm, diffuse = lightColor * intensity;
-            float intensity = max( max(lightSource[i].diffuse.r, lightSource[i].diffuse.g), 
-                                   lightSource[i].diffuse.b);
-            $lightData[u_numActiveLightSources].color = lightSource[i].diffuse.rgb/intensity;
+            float intensity = max( max(light.diffuse.r, light.diffuse.g), 
+                                   light.diffuse.b);
+            $lightData[u_numActiveLightSources].color = light.diffuse.rgb/intensity;
             $lightData[u_numActiveLightSources].intensity = intensity;
             
             // Attenuation 
             // Hydra: vec3(const, linear, quadratic)
             // MaterialX: const = 0.0, linear = 1.0, quadratic = 2.0
-            if (lightSource[i].attenuation.z > 0) {
+            if (light.attenuation.z > 0) {
                 $lightData[u_numActiveLightSources].decay_rate = 2.0;
             }
-            else if (lightSource[i].attenuation.y > 0) {
+            else if (light.attenuation.y > 0) {
                 $lightData[u_numActiveLightSources].decay_rate = 1.0;
             }
             else {
