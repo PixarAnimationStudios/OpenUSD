@@ -51,6 +51,7 @@ bool operator!=(
 
 HgiVertexBufferDesc::HgiVertexBufferDesc()
     : bindingIndex(0)
+    , vertexStepFunction(HgiVertexBufferStepFunctionPerVertex)
     , vertexStride(0)
 {
 }
@@ -61,6 +62,7 @@ bool operator==(
 {
     return lhs.bindingIndex == rhs.bindingIndex &&
            lhs.vertexAttributes == rhs.vertexAttributes &&
+           lhs.vertexStepFunction == rhs.vertexStepFunction &&
            lhs.vertexStride == rhs.vertexStride;
 }
 

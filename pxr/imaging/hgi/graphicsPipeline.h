@@ -83,6 +83,8 @@ inline bool operator!=(
 ///    Binding location for this vertex buffer.</li>
 /// <li>vertexAttributes:
 ///   List of vertex attributes (in vertex buffer).</li>
+/// <li>vertexStepFunction:
+///   The rate at which data is pulled for this vertex buffer.</li>
 /// <li>vertexStride:
 ///   The byte size of a vertex (distance between two vertices).</li>
 /// </ul>
@@ -94,6 +96,7 @@ struct HgiVertexBufferDesc
 
     uint32_t bindingIndex;
     HgiVertexAttributeDescVector vertexAttributes;
+    HgiVertexBufferStepFunction vertexStepFunction;
     uint32_t vertexStride;
 };
 using HgiVertexBufferDescVector = std::vector<HgiVertexBufferDesc>;

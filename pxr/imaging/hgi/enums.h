@@ -531,6 +531,31 @@ enum HgiPrimitiveType
     HgiPrimitiveTypeCount
 };
 
+/// \enum HgiVertexBufferStepFunction
+///
+/// Describes the rate at which vertex attributes are pulled from buffers.
+///
+/// <ul>
+/// <li>HgiVertexBufferStepFunctionConstant:
+///   The same attribute data is used for every vertex.</li>
+/// <li>HgiVertexBufferStepFunctionPerVertex:
+///   New attribute data is fetched for each vertex.</li>
+/// <li>HgiVertexBufferStepFunctionPerInstance:
+///   New attribute data is fetched for each instance.</li>
+/// <li>HgiVertexBufferStepFunctionPerDrawCommand:
+///   New attribute data is fetched for each draw in a multi-draw command.</li>
+/// </ul>
+///
+enum HgiVertexBufferStepFunction
+{
+    HgiVertexBufferStepFunctionConstant = 0,
+    HgiVertexBufferStepFunctionPerVertex,
+    HgiVertexBufferStepFunctionPerInstance,
+    HgiVertexBufferStepFunctionPerDrawCommand,
+
+    HgiVertexBufferStepFunctionCount
+};
+
 /// \enum HgiSubmitWaitType
 ///
 /// Describes command submission wait behavior.

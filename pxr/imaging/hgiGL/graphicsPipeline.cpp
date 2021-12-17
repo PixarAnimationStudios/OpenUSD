@@ -57,13 +57,34 @@ HgiGLGraphicsPipeline::HgiGLGraphicsPipeline(
                 uint32_t idx = va.shaderBindLocation;
                 glEnableVertexArrayAttrib(_vao, idx);
                 glVertexArrayAttribBinding(_vao, idx, vbo.bindingIndex);
-                glVertexArrayAttribFormat(
-                    _vao,
-                    idx,
-                    HgiGetComponentCount(va.format),
-                    HgiGLConversions::GetFormatType(va.format),
-                    GL_FALSE,
-                    va.offset);
+
+                if (HgiGLConversions::IsVertexAttribIntegerFormat(va.format)) {
+                    glVertexArrayAttribIFormat(
+                        _vao,
+                        idx,
+                        HgiGetComponentCount(va.format),
+                        HgiGLConversions::GetFormatType(va.format),
+                        va.offset);
+                } else {
+                    glVertexArrayAttribFormat(
+                        _vao,
+                        idx,
+                        HgiGetComponentCount(va.format),
+                        HgiGLConversions::GetFormatType(va.format),
+                        GL_FALSE,
+                        va.offset);
+                }
+
+                if (vbo.vertexStepFunction ==
+                                HgiVertexBufferStepFunctionPerDrawCommand) {
+                    // Set the divisor such that the attribute index will
+                    // advance only according to the base instance at the
+                    // start of each draw in a multi-draw command.
+                    glVertexArrayBindingDivisor(
+                        _vao,
+                        vbo.bindingIndex,
+                        std::numeric_limits<GLint>::max());
+                }
             }
         }
     }
