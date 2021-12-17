@@ -504,7 +504,7 @@ template <class T>
 static void
 _CopySpec(const T &srcSpec, const T &dstSpec)
 {
-    for (const TfToken& key : srcSpec->ListInfoKeys()) {
+    for (const TfToken& key : srcSpec->ListFields()) {
         if (!UsdSchemaRegistry::IsDisallowedField(key)) {
             dstSpec->SetInfo(key, srcSpec->GetInfo(key));
         }
