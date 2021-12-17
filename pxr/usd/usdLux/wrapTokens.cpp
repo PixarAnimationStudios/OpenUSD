@@ -80,6 +80,7 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "filterLink", UsdLuxTokens->filterLink);
     _AddToken(cls, "geometry", UsdLuxTokens->geometry);
     _AddToken(cls, "geometryLight", UsdLuxTokens->geometryLight);
+    _AddToken(cls, "guideRadius", UsdLuxTokens->guideRadius);
     _AddToken(cls, "ignore", UsdLuxTokens->ignore);
     _AddToken(cls, "independent", UsdLuxTokens->independent);
     _AddToken(cls, "inputsAngle", UsdLuxTokens->inputsAngle);

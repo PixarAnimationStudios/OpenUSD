@@ -860,6 +860,9 @@ class DomeLight "DomeLight" (
     rel portals (
         doc = """Optional portals to guide light sampling."""
     )
+    float guideRadius = 1.0e5 (
+        doc = """The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.1 (i.e. cm)."""
+    )
 }
 
 class PortalLight "PortalLight" (
