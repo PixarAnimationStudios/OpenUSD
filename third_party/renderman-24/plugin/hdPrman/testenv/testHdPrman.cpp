@@ -344,9 +344,6 @@ int main(int argc, char *argv[])
         
         HdRenderSettingsMap settingsMap;
 
-        settingsMap[HdPrmanRenderSettingsTokens->shutterOpen] = 0.0f;
-        settingsMap[HdPrmanRenderSettingsTokens->shutterClose] = 0.5f;
-        
         // Shutter settings from studio production.
         //
         // XXX Up to RenderMan 22, there is a global Ri:Shutter interval
@@ -358,19 +355,20 @@ int main(int argc, char *argv[])
         // future the shutterInterval will be moved to new attributes on
         // the cameras, and shutterCurve will exist an a UsdRi schema.
         //
+        double shutterOpen = 0.0;
+        double shutterClose = 0.5;
+
         if (usdCam) {
-            float shutterOpen;
-            float shutterClose;
-            if (usdCam.GetShutterOpenAttr().Get(&shutterOpen, frameNum) ||
-                usdCam.GetShutterCloseAttr().Get(&shutterClose, frameNum)) {
-                // XXX Scene-wide shutter will change to be per-camera;
-                // see RMAN-14078
-                settingsMap[HdPrmanRenderSettingsTokens->shutterOpen] =
-                    shutterOpen;
-                settingsMap[HdPrmanRenderSettingsTokens->shutterClose] =
-                    shutterClose;
-            }
+            usdCam.GetShutterOpenAttr().Get(&shutterOpen, frameNum);
+            usdCam.GetShutterCloseAttr().Get(&shutterClose, frameNum);
         }
+
+        // XXX Scene-wide shutter will change to be per-camera;
+        // see RMAN-14078
+        settingsMap[HdPrmanRenderSettingsTokens->shutterOpen] =
+            shutterOpen;
+        settingsMap[HdPrmanRenderSettingsTokens->shutterClose] =
+            shutterClose;
 
         VtDictionary renderSpecDict;
 
