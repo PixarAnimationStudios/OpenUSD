@@ -252,7 +252,7 @@ public:
     // resolution edits, so we need to keep track of these too.
     void SetActiveIntegratorId(riley::IntegratorId integratorId);
 
-    int32_t resolution[2];
+    GfVec2i resolution;
 
     // Some quantites previously given as options now need to be provided
     // through different Riley APIs. However, it is still convenient for these

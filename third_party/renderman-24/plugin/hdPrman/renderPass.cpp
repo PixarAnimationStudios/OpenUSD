@@ -132,14 +132,13 @@ static
 bool
 _GetRenderBufferSize(const HdRenderPassAovBindingVector &aovBindings,
                      const HdRenderIndex * const renderIndex,
-                     int32_t * const width,
-                     int32_t * const height)
+                     GfVec2i * const resolution)
 {
     for (const HdRenderPassAovBinding &aovBinding : aovBindings) {
         if (const HdRenderBuffer * const renderBuffer =
                         _GetRenderBuffer(aovBinding, renderIndex)) {
-            *width  = renderBuffer->GetWidth();
-            *height = renderBuffer->GetHeight();
+            (*resolution)[0] = renderBuffer->GetWidth();
+            (*resolution)[1] = renderBuffer->GetHeight();
             return true;
         } else {
             TF_CODING_ERROR("No render buffer available for AOV "
@@ -196,8 +195,7 @@ HdPrman_RenderPass::_Execute(
     const int currentSettingsVersion =
         renderDelegate->GetRenderSettingsVersion();
     
-    int32_t renderBufferWidth = 0;
-    int32_t renderBufferHeight = 0;
+    GfVec2i resolution;
 
     const HdPrmanCamera * const hdCam =
         dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera());
@@ -212,7 +210,7 @@ HdPrman_RenderPass::_Execute(
         // For old clients using the viewport.
         _GetRenderBufferSize(aovBindings,
                              GetRenderIndex(),
-                             &renderBufferWidth, &renderBufferHeight);
+                             &resolution);
 
         const GfVec4f vp = renderPassState->GetViewport();
         cameraContext.SetFraming(
@@ -220,7 +218,7 @@ HdPrman_RenderPass::_Execute(
                 GfRect2i(
                     // Note that the OpenGL-style viewport is y-Up
                     // but the camera framing is y-Down, so converting here.
-                    GfVec2i(vp[0], renderBufferHeight - (vp[1] + vp[3])),
+                    GfVec2i(vp[0], resolution[1] - (vp[1] + vp[3])),
                     vp[2], vp[3])));
     }
 
@@ -271,10 +269,7 @@ HdPrman_RenderPass::_Execute(
             _renderParam->CreateRenderViewFromSpec(renderSpec);
         }
 
-        const GfVec2i resolution =
-            cameraContext.GetResolutionFromDisplayWindow();
-        renderBufferWidth = resolution[0];
-        renderBufferHeight = resolution[1];
+        resolution = cameraContext.GetResolutionFromDisplayWindow();
     } else {
         // Use AOV-bindings to create render view with displays that
         // have drivers writing into the intermediate framebuffer blitted
@@ -283,7 +278,7 @@ HdPrman_RenderPass::_Execute(
         
         _GetRenderBufferSize(aovBindings,
                              GetRenderIndex(),
-                             &renderBufferWidth, &renderBufferHeight);
+                             &resolution);
     }
 
     if (lastVersion != currentSettingsVersion || camChanged) {
@@ -333,8 +328,7 @@ HdPrman_RenderPass::_Execute(
     // need to sync anything here.  Note that we'll need to solve
     // thread coordination for sprim sync/finalize first.
     const bool resolutionChanged =
-        _renderParam->resolution[0] != renderBufferWidth ||
-        _renderParam->resolution[1] != renderBufferHeight;
+        _renderParam->resolution != resolution;
 
     if (camChanged ||
         resolutionChanged) {
@@ -344,20 +338,19 @@ HdPrman_RenderPass::_Execute(
         riley::Riley * const riley = _renderParam->AcquireRiley();
 
         if (resolutionChanged) {
-            _renderParam->resolution[0] = renderBufferWidth;
-            _renderParam->resolution[1] = renderBufferHeight;
+            _renderParam->resolution = resolution;
             
             _renderParam->GetOptions().SetIntegerArray(
                 RixStr.k_Ri_FormatResolution,
-                _renderParam->resolution, 2);
+                resolution.data(), 2);
             
             _renderParam->GetRenderViewContext().SetResolution(
-                GfVec2i(renderBufferWidth, renderBufferHeight),
+                resolution,
                 riley);
 
             cameraContext.SetRileyOptionsInteractive(
                 &(_renderParam->GetOptions()),
-                GfVec2i(renderBufferWidth, renderBufferHeight));
+                resolution);
             
             riley->SetOptions(
                 _renderParam->_GetDeprecatedOptionsPrunedList());
@@ -370,7 +363,7 @@ HdPrman_RenderPass::_Execute(
             // differently.
             cameraContext.UpdateRileyCameraAndClipPlanesInteractive(
                 riley, 
-                GfVec2i(renderBufferWidth, renderBufferHeight));
+                resolution);
         }
     }
 

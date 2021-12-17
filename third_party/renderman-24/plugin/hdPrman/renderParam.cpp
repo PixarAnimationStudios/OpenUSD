@@ -87,7 +87,7 @@ TF_MAKE_STATIC_DATA(std::vector<HdPrman_RenderParam::IntegratorCameraCallback>,
 }
 
 HdPrman_RenderParam::HdPrman_RenderParam() :
-    resolution{0, 0},
+    resolution(0),
     _rix(nullptr),
     _ri(nullptr),
     _mgr(nullptr),
@@ -386,7 +386,7 @@ _SetParamValue(RtUString const& name,
         for (std::string const& s: v) {
             us.push_back(RtUString(s.c_str()));
         }
-        params.SetStringArray(name, &us[0], us.size());
+        params.SetStringArray(name, us.data(), us.size());
     } else if (val.IsHolding<VtArray<TfToken>>()) {
         // Convert to RtUString.
         const VtArray<TfToken>& v =
@@ -396,7 +396,7 @@ _SetParamValue(RtUString const& name,
         for (TfToken const& s: v) {
             us.push_back(RtUString(s.GetText()));
         }
-        params.SetStringArray(name, &us[0], us.size());
+        params.SetStringArray(name, us.data(), us.size());
     } else {
         // Unhandled type
         return false;
@@ -624,9 +624,9 @@ _SetPrimVarValue(RtUString const& name,
             us.push_back(RtUString(s.c_str()));
         }
         if (detail == RtDetailType::k_constant) {
-            params.SetStringArray(name, &us[0], us.size());
+            params.SetStringArray(name, us.data(), us.size());
         } else {
-            params.SetStringDetail(name, &us[0], detail);
+            params.SetStringDetail(name, us.data(), detail);
         }
     } else if (val.IsHolding<VtArray<TfToken>>()) {
         // Convert to RtUString.
@@ -638,9 +638,9 @@ _SetPrimVarValue(RtUString const& name,
             us.push_back(RtUString(s.GetText()));
         }
         if (detail == RtDetailType::k_constant) {
-            params.SetStringArray(name, &us[0], us.size());
+            params.SetStringArray(name, us.data(), us.size());
         } else {
-            params.SetStringDetail(name, &us[0], detail);
+            params.SetStringDetail(name, us.data(), detail);
         }
     } else {
         // Unhandled type
@@ -1273,9 +1273,9 @@ HdPrman_RenderParam::SetOptionsFromRenderSettings(
                                  val.UncheckedGet<float>());
 
             } else if (token == HdPrmanRenderSettingsTokens->resolution ) {
-                auto const& res = val.UncheckedGet<GfVec2i>();
+                const GfVec2i& res = val.UncheckedGet<GfVec2i>();
                 options.SetIntegerArray(RixStr.k_Ri_FormatResolution, 
-                                        &res[0], 2);
+                                        res.data(), 2);
 
             } else if (token == 
                        HdPrmanRenderSettingsTokens->instantaneousShutter ) {
@@ -1547,10 +1547,10 @@ _ToRtParamList(VtDictionary const& dict)
                 RtUString(entry.second.UncheckedGet<std::string>().c_str()));
         } else if (entry.second.IsHolding<VtArray<int>>()) {
             auto const& array = entry.second.UncheckedGet<VtArray<int>>();
-            params.SetIntegerArray(riName, &array[0], array.size());
+            params.SetIntegerArray(riName, array.data(), array.size());
         } else if (entry.second.IsHolding<VtArray<float>>()) {
             auto const& array = entry.second.UncheckedGet<VtArray<float>>();
-            params.SetFloatArray(riName, &array[0], array.size());
+            params.SetFloatArray(riName, array.data(), array.size());
         } else {
             TF_CODING_ERROR("Unimplemented setting %s of type %s\n",
                             entry.first.c_str(),
@@ -1899,11 +1899,9 @@ HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
             HdPrmanRenderSettingsTokens->resolution);
 
         if (resolutionVal.IsHolding<GfVec2i>()) {
-            auto const& res = resolutionVal.UncheckedGet<GfVec2i>();
-            resolution[0] = res[0];
-            resolution[1] = res[1];
+            resolution = resolutionVal.UncheckedGet<GfVec2i>();
             options.SetIntegerArray(RixStr.k_Ri_FormatResolution,
-                                    resolution, 2);
+                                    resolution.data(), 2);
         }
 
         // Read the maxSamples out of settings (if it exists).
@@ -2286,7 +2284,7 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
         }
     }
 
-    renderViewDesc.resolution = GfVec2i(resolution[0], resolution[1]);
+    renderViewDesc.resolution = resolution;
 
     RtUString driver(us_hydra);
     RtParamList displayParams;
