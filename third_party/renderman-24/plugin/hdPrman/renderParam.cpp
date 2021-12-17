@@ -1428,7 +1428,7 @@ HdPrman_UpdateSearchPathsFromEnvironment(RtParamList& options)
 void
 HdPrman_RenderParam::SetIntegratorParamsFromCamera(
     HdPrmanRenderDelegate *renderDelegate,
-    HdPrmanCamera *camera,
+    const HdPrmanCamera *camera,
     std::string const& integratorName,
     RtParamList &integratorParams)
 {
@@ -1775,16 +1775,10 @@ HdPrman_RenderParam::_ComputeIntegratorNode(
         integratorName,
         _integratorParams);
 
-    // XXX: Need to cast away constness because
-    // SetIntegratorParamsFromCamera has wrong signature.
-    
-    HdPrmanCamera * const nonConstCam =
-        const_cast<HdPrmanCamera *>(GetCameraContext().GetCamera());
-
-    if (nonConstCam) {
+    if (const HdPrmanCamera * const cam = GetCameraContext().GetCamera()) {
         SetIntegratorParamsFromCamera(
             static_cast<HdPrmanRenderDelegate*>(renderDelegate),
-            nonConstCam,
+            cam,
             integratorName,
             _integratorParams);
     }
@@ -2436,16 +2430,10 @@ HdPrman_RenderParam::_ComputeQuickIntegratorNode(
         integratorName,
         _quickIntegratorParams);
 
-    // XXX: Need to cast away constness because
-    // SetIntegratorParamsFromCamera has wrong signature.
-    
-    HdPrmanCamera * const nonConstCam =
-        const_cast<HdPrmanCamera *>(GetCameraContext().GetCamera());
-
-    if (nonConstCam) {
+    if (const HdPrmanCamera * const cam = GetCameraContext().GetCamera()) {
         SetIntegratorParamsFromCamera(
             static_cast<HdPrmanRenderDelegate*>(renderDelegate),
-            nonConstCam,
+            cam,
             integratorName,
             _quickIntegratorParams);
     }

@@ -132,7 +132,7 @@ public:
     HDPRMAN_API
     void SetIntegratorParamsFromCamera(
                         HdPrmanRenderDelegate *renderDelegate,
-                        HdPrmanCamera *camera,
+                        const HdPrmanCamera *camera,
                         std::string const& integratorName,
                         RtParamList& params);
 
@@ -140,7 +140,7 @@ public:
     // parameters on the integrator.
     using IntegratorCameraCallback = void (*)
         (HdPrmanRenderDelegate *renderDelegate,
-         HdPrmanCamera *camera,
+         const HdPrmanCamera *camera,
          std::string const& integratorName,
          RtParamList &integratorParams);
 
