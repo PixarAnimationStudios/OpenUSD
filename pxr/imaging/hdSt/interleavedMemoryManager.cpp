@@ -288,6 +288,8 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::_StripedInterleavedBuff
     // our struct.
     _stride += _ComputePadding(structAlignment, _stride);
 
+    _elementStride = _stride;
+
     // and also aligned if bufferOffsetAlignment exists (for UBO binding)
     if (_bufferOffsetAlignment > 0) {
         _stride += _ComputePadding(_bufferOffsetAlignment, _stride);
@@ -434,7 +436,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     HgiBufferHandle newBuf;
 
     Hgi* hgi = _resourceRegistry->GetHgi();
-    
+
     // Skip buffers of zero size.
     if (totalSize > 0) {
         HgiBufferDesc bufDesc;
@@ -464,7 +466,10 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
                 // copy old data
                 ptrdiff_t readOffset = oldIndex * _stride;
                 ptrdiff_t writeOffset = index * _stride;
-                ptrdiff_t copySize = _stride * range->GetNumElements();
+
+                int const oldSize = range->GetCapacity();
+                int const newSize = range->GetNumElements();
+                ptrdiff_t copySize = _stride * std::min(oldSize, newSize);
 
                 relocator.AddRange(readOffset, writeOffset, copySize);
             }
@@ -501,6 +506,19 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     // update allocation to all buffer resources
     TF_FOR_ALL(it, GetResources()) {
         it->second->SetAllocation(newBuf, totalSize);
+    }
+
+    // update ranges
+    for (size_t idx = 0; idx < ranges.size(); ++idx) {
+        _StripedInterleavedBufferRangeSharedPtr range =
+            std::static_pointer_cast<_StripedInterleavedBufferRange>(
+                ranges[idx]);
+        if (!range) {
+            TF_CODING_ERROR(
+                "_StripedInterleavedBufferRange expired unexpectedly.");
+            continue;
+        }
+        range->SetCapacity(range->GetNumElements());
     }
 
     blitCmds->PopDebugGroup();
@@ -627,15 +645,31 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::Resize(int numElem
 
     if (!TF_VERIFY(_stripedBuffer)) return false;
 
-    // interleaved BAR never needs to be resized, since numElements in buffer
-    // resources is always 1. Note that the arg numElements of this function
-    // could be more than 1 for static array.
-    // ignore Resize request.
+    // XXX Some tests rely on an interleaved buffer being valid, even if given
+    // no data.
+    if (numElements == 0) {
+        numElements = 1;
+    }
 
-    // XXX: this could be a problem if a client allows to change the array size
-    //      dynamically -- e.g. instancer nesting level changes.
-    //
-    return false;
+    bool needsReallocation = false;
+
+    if (_capacity != numElements) {
+        const size_t numMaxElements = GetMaxNumElements();
+
+        if (static_cast<size_t>(numElements) > numMaxElements) {
+            TF_WARN("Attempting to resize the BAR with 0x%x elements when the "
+                    "max number of elements in the buffer array is 0x%lx. "
+                    "Clamping BAR size to the latter.",
+                     numElements, numMaxElements);
+
+            numElements = numMaxElements;
+        }
+        _stripedBuffer->SetNeedsReallocation();
+        needsReallocation = true;
+    }
+
+    _numElements = numElements;
+    return needsReallocation;
 }
 
 void
@@ -677,6 +711,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     int vboStride = VBO->GetStride();
     size_t vboOffset = VBO->GetOffset() + vboStride * _index;
     int dataSize = HdDataSizeOfTupleType(VBO->GetTupleType());
+    size_t const elementStride = _stripedBuffer->GetElementStride();
 
     const unsigned char *data =
         (const unsigned char*)bufferSource->GetData();
@@ -695,7 +730,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
 
         stagingBuffer->StageCopy(blitOp);
         
-        vboOffset += vboStride;
+        vboOffset += elementStride;
         data += dataSize;
     }
 
@@ -725,6 +760,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::ReadData(
                             VBO->GetOffset() + VBO->GetStride() * _index,
                             VBO->GetStride(),
                             _numElements,
+                            _stripedBuffer->GetElementStride(),
                             GetResourceRegistry());
 
     return result;

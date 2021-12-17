@@ -25,8 +25,7 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/glos/shaders/simpleLighting.glslfx
---- #import /user/anim/global/shaders/simpleLighting.glslfx
+--- #import $TOOLS/glf/shaders/simpleLighting.glslfx
 
 -- glsl SimpleLighting.GeometryInjection
 #ifndef NUM_SHADOWS
@@ -46,12 +45,18 @@ struct ShadowMatrix {
     float padding1;
 };
 
-layout(std140) uniform Shadow {
-    ShadowMatrix shadow[NUM_SHADOWS];
-};
+MAT4 GetWorldToViewMatrix();
+MAT4 GetWorldToViewInverseMatrix();
 
 ShadowMatrix GetShadow(int shadowIndex) {
-    return shadow[shadowIndex];
+    ShadowMatrix shadowMat;
+    shadowMat.eyeToShadowMatrix = HdGet_shadow_worldToShadowMatrix(shadowIndex) 
+        * GetWorldToViewInverseMatrix();
+    shadowMat.shadowToEyeMatrix = GetWorldToViewMatrix() * 
+        HdGet_shadow_shadowToWorldMatrix(shadowIndex);
+    shadowMat.blur = HdGet_shadow_blur(shadowIndex);
+    shadowMat.bias = HdGet_shadow_bias(shadowIndex);
+    return shadowMat;
 }
 
 out vec2 FshadowFilterWidth[NUM_SHADOWS];
@@ -149,28 +154,42 @@ struct LightingInterfaceProperties {
 };
 
 // ---------------------------------------------------------------------------
-// uniform blocks
+// data accessors
 // ---------------------------------------------------------------------------
 #if NUM_LIGHTS == 0
 
 #else // NUM_LIGHTS == 0
 
-layout(std140) uniform Lighting {
-    bool useLighting;
-    bool useColorMaterialDiffuse;
-    LightSource lightSource[NUM_LIGHTS];
-};
-
 bool GetUseLighting() {
-    return useLighting;
+    return HdGet_useLighting();
 }
 
 bool GetUseColorMaterialDiffuse() {
-    return useColorMaterialDiffuse;
+    return HdGet_useColorMaterialDiffuse();
 }
 
+MAT4 GetWorldToViewMatrix();
+MAT4 GetWorldToViewInverseMatrix();
+
 LightSource GetLightSource(int lightIndex) {
-    return lightSource[lightIndex];
+    LightSource light;
+    light.position = GetWorldToViewMatrix() * 
+        HdGet_lightSource_position(lightIndex);
+    light.ambient = HdGet_lightSource_ambient(lightIndex);
+    light.diffuse = HdGet_lightSource_diffuse(lightIndex);
+    light.specular = HdGet_lightSource_specular(lightIndex);
+    light.spotDirection = GetWorldToViewMatrix() * 
+        vec4(HdGet_lightSource_spotDirection(lightIndex), 0);
+    light.spotCutoffAndFalloff = vec4(HdGet_lightSource_spotCutoff(lightIndex),
+        HdGet_lightSource_spotFalloff(lightIndex), 0, 0);
+    light.attenuation = vec4(HdGet_lightSource_attenuation(lightIndex), 0);
+    light.worldToLightTransform = 
+        HdGet_lightSource_worldToLightTransform(lightIndex);
+    light.shadowIndexStart = HdGet_lightSource_shadowIndexStart(lightIndex);
+    light.shadowIndexEnd = HdGet_lightSource_shadowIndexEnd(lightIndex);
+    light.hasShadow = HdGet_lightSource_hasShadow(lightIndex);
+    light.isIndirectLight = HdGet_lightSource_isIndirectLight(lightIndex);
+    return light;
 }
 #endif // NUM_LIGHTS == 0
 
@@ -178,12 +197,15 @@ LightSource GetLightSource(int lightIndex) {
 
 #else // NUM_SHADOWS == 0
 
-layout(std140) uniform Shadow {
-    ShadowMatrix shadow[NUM_SHADOWS];
-};
-
 ShadowMatrix GetShadow(int shadowIndex) {
-    return shadow[shadowIndex];
+    ShadowMatrix shadowMat;
+    shadowMat.eyeToShadowMatrix = HdGet_shadow_worldToShadowMatrix(shadowIndex) 
+        * GetWorldToViewInverseMatrix();
+    shadowMat.shadowToEyeMatrix = GetWorldToViewMatrix() * 
+        HdGet_shadow_shadowToWorldMatrix(shadowIndex);
+    shadowMat.blur = HdGet_shadow_blur(shadowIndex);
+    shadowMat.bias = HdGet_shadow_bias(shadowIndex);
+    return shadowMat;
 }
 
 float
@@ -339,8 +361,6 @@ schlickFresnel(float EdotH)
     return pow(max(0.0, 1.0 - EdotH), 5.0);
 }
 
-MAT4 GetWorldToViewInverseMatrix();
-
 LightingContribution
 evaluateIndirectLight(vec3 Neye, vec3 Reye, float NdotE, float EdotH, 
     LightingInterfaceProperties props, int i)
@@ -404,7 +424,7 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
     vec3 e = normalize(-Peye.xyz);
 
     float shininess = props.shininess;
-    
+
     for (int i = 0; i < NUM_LIGHTS; ++i) {
         LightSource light = GetLightSource(i);
 
@@ -425,12 +445,10 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
                 Neye, Reye, NdotE, EdotH, props, i);
 
             result.ambient += light.ambient.rgb;
-            result.diffuse += indirectLight.diffuse * 
-                light.diffuse.rgb;
-            result.specular += indirectLight.specular * 
-                light.specular.rgb;
+            result.diffuse += indirectLight.diffuse * light.diffuse.rgb;
+            result.specular += indirectLight.specular * light.specular.rgb;
         } else {
-            //cosine of incident angle of lightn
+            //cosine of incident angle of light
             float NdotL = max(0.0, dot(n, l));
             
             //cosine of incident angle from halfway vector between the eye and the light
@@ -476,30 +494,8 @@ integrateLightsConstant(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 -- glsl SimpleLighting.SimpleLighting
 
 // ---------------------------------------------------------------------------
-// struct definitions
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// uniform blocks
-// ---------------------------------------------------------------------------
-
-layout(std140) uniform Material {
-    vec4 ambient;
-    vec4 diffuse;
-    vec4 specular;
-    vec4 emission;
-    vec4 sceneColor;
-    float shininess;
-} material;
-
-// ---------------------------------------------------------------------------
-// textures
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
 // lighting functions
 // ---------------------------------------------------------------------------
-
 
 LightingContribution
 integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props);

@@ -51,7 +51,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 template <typename T>
 VtValue
-_CreateVtArray(int numElements, int arraySize, int stride,
+_CreateVtArray(int numElements, int arraySize, int stride, int elementStride,
                std::vector<unsigned char> const &data)
 {
     VtArray<T> array(numElements*arraySize);
@@ -70,7 +70,7 @@ _CreateVtArray(int numElements, int arraySize, int stride,
         for (int i = 0; i < numElements; ++i) {
             memcpy(dst, src, arraySize*sizeof(T));
             dst += arraySize*sizeof(T);
-            src += stride;
+            src += elementStride != 0 ? elementStride : stride;
         }
     }
     return VtValue(array);
@@ -78,45 +78,63 @@ _CreateVtArray(int numElements, int arraySize, int stride,
 
 VtValue
 _CreateVtValue(HdType type, int numElements, int arraySize, int stride,
-               std::vector<unsigned char> const &data) {
+               int elementStride, std::vector<unsigned char> const &data) {
     // Convert data to Vt
     switch (type) {
     case HdTypeInt8:
-        return _CreateVtArray<char>(numElements, arraySize, stride, data);
+        return _CreateVtArray<char>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeInt16:
-        return _CreateVtArray<int16_t>(numElements, arraySize, stride, data);
+        return _CreateVtArray<int16_t>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeUInt16:
-        return _CreateVtArray<uint16_t>(numElements, arraySize, stride, data);
+        return _CreateVtArray<uint16_t>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeUInt32:
-        return _CreateVtArray<uint32_t>(numElements, arraySize, stride, data);
+        return _CreateVtArray<uint32_t>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeInt32:
-        return _CreateVtArray<int32_t>(numElements, arraySize, stride, data);
+        return _CreateVtArray<int32_t>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeInt32Vec2:
-        return _CreateVtArray<GfVec2i>(numElements, arraySize, stride, data);
+        return _CreateVtArray<GfVec2i>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeInt32Vec3:
-        return _CreateVtArray<GfVec3i>(numElements, arraySize, stride, data);
+        return _CreateVtArray<GfVec3i>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeInt32Vec4:
-        return _CreateVtArray<GfVec4i>(numElements, arraySize, stride, data);
+        return _CreateVtArray<GfVec4i>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeFloat:
-        return _CreateVtArray<float>(numElements, arraySize, stride, data);
+        return _CreateVtArray<float>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeFloatVec2:
-        return _CreateVtArray<GfVec2f>(numElements, arraySize, stride, data);
+        return _CreateVtArray<GfVec2f>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeFloatVec3:
-        return _CreateVtArray<GfVec3f>(numElements, arraySize, stride, data);
+        return _CreateVtArray<GfVec3f>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeFloatVec4:
-        return _CreateVtArray<GfVec4f>(numElements, arraySize, stride, data);
+        return _CreateVtArray<GfVec4f>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeFloatMat4:
-        return _CreateVtArray<GfMatrix4f>(numElements, arraySize, stride, data);
+        return _CreateVtArray<GfMatrix4f>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeDouble:
-        return _CreateVtArray<double>(numElements, arraySize, stride, data);
+        return _CreateVtArray<double>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeDoubleVec2:
-        return _CreateVtArray<GfVec2d>(numElements, arraySize, stride, data);
+        return _CreateVtArray<GfVec2d>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeDoubleVec3:
-        return _CreateVtArray<GfVec3d>(numElements, arraySize, stride, data);
+        return _CreateVtArray<GfVec3d>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeDoubleVec4:
-        return _CreateVtArray<GfVec4d>(numElements, arraySize, stride, data);
+        return _CreateVtArray<GfVec4d>(numElements, arraySize, stride, 
+            elementStride, data);
     case HdTypeDoubleMat4:
-        return _CreateVtArray<GfMatrix4d>(numElements, arraySize, stride, data);
+        return _CreateVtArray<GfMatrix4d>(numElements, arraySize, stride, 
+            elementStride, data);
     default:
         TF_CODING_ERROR("Unhandled data type %i", type);
     }
@@ -129,6 +147,7 @@ HdStReadBuffer(HgiBufferHandle const& buffer,
                int offset,
                int stride,
                int numElements,
+               int elementStride,
                HdStResourceRegistry *resourceRegistry)
 {
     const int bytesPerElement = HdDataSizeOfTupleType(tupleType);
@@ -159,7 +178,7 @@ HdStReadBuffer(HgiBufferHandle const& buffer,
     if (!buffer) {
         TF_WARN("Cannot read from invalid buffer handle");
         return _CreateVtValue(
-            tupleType.type, numElements, arraySize, stride, tmp);
+            tupleType.type, numElements, arraySize, stride, elementStride, tmp);
     }
 
     // Submit and wait for all the work recorded up to this point.
@@ -170,7 +189,7 @@ HdStReadBuffer(HgiBufferHandle const& buffer,
     // Submit GPU buffer read back
     HgiBufferGpuToCpuOp copyOp;
     copyOp.byteSize = dataSize;
-    copyOp.cpuDestinationBuffer = &tmp[0];
+    copyOp.cpuDestinationBuffer = tmp.data();
     copyOp.destinationByteOffset = 0;
     copyOp.gpuSourceBuffer = buffer;
     copyOp.sourceByteOffset = offset;
@@ -180,7 +199,7 @@ HdStReadBuffer(HgiBufferHandle const& buffer,
     resourceRegistry->SubmitBlitWork(HgiSubmitWaitTypeWaitUntilCompleted);
     
     return _CreateVtValue(tupleType.type,
-        numElements, arraySize, stride, tmp);
+        numElements, arraySize, stride, elementStride, tmp);
 }
 
 // ---------------------------------------------------------------------------

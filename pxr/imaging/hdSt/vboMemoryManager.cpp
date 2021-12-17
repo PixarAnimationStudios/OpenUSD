@@ -720,6 +720,7 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::ReadData(
                             vboOffset,
                             /*stride=*/0, // not interleaved.
                             _numElements,
+                            /*elementStride=*/0,
                             GetResourceRegistry());
 
     return result;

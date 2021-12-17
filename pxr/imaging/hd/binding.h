@@ -136,6 +136,8 @@ public:
         , _bar(nullptr)
         , _isInterleaved(false)
         , _isWritable(false)
+        , _arraySize(0)
+        , _concatenateNames(false)
     {}
 
     /// A data binding, not backed by neither BufferArrayRange nor
@@ -149,6 +151,8 @@ public:
         , _bar(nullptr)
         , _isInterleaved(false)
         , _isWritable(false)
+        , _arraySize(0)
+        , _concatenateNames(false)
     {}
 
     /// A buffer resource binding. Binds a given buffer resource to a specified
@@ -162,6 +166,8 @@ public:
         , _bar(nullptr)
         , _isInterleaved(false)
         , _isWritable(false)
+        , _arraySize(0)
+        , _concatenateNames(false)
     {}
 
     /// A named struct binding. From an interleaved BufferArray, an array of
@@ -170,8 +176,9 @@ public:
     /// identifier, hence must be interleaved and bindable as a single resource.
     /// Data types can be derived from each HdBufferResource of bar.
     HdBindingRequest(HdBinding::Type type, TfToken const& name,
-                    HdBufferArrayRangeSharedPtr bar,
-                    bool interleave, bool writable = false)
+                     HdBufferArrayRangeSharedPtr bar,
+                     bool interleave, bool writable = false,
+                     size_t arraySize = 0, bool concatenateNames = false)
         : _bindingType(type)
         , _dataType(HdTypeInvalid)
         , _name(name)
@@ -179,6 +186,8 @@ public:
         , _bar(bar)
         , _isInterleaved(interleave)
         , _isWritable(writable)
+        , _arraySize(arraySize)
+        , _concatenateNames(concatenateNames)
     {}
 
     // ---------------------------------------------------------------------- //
@@ -257,6 +266,17 @@ public:
         return _dataType;
     }
 
+    /// Array size if request is for an array of structs. 
+    size_t GetArraySize() const {
+        return _arraySize;
+    }
+
+    /// Returns whether the struct binding point and struct member names 
+    /// should be concatenated when codegen'ing the accessor.
+    bool ConcatenateNames() const {
+        return _concatenateNames;
+    }
+
     // ---------------------------------------------------------------------- //
     /// \name Comparison
     // ---------------------------------------------------------------------- //
@@ -304,7 +324,12 @@ private:
     // Struct binding request
     HdBufferArrayRangeSharedPtr _bar;
     bool _isInterleaved;
+
     bool _isWritable;
+
+    size_t _arraySize;
+
+    bool _concatenateNames;
 };
 
 

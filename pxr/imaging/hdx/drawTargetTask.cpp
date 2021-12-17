@@ -469,11 +469,24 @@ HdxDrawTargetTask::Sync(HdSceneDelegate* delegate,
 
     ///----------------------
 
-    // lighting context
+    // lighting context and lighting shader
     GlfSimpleLightingContextRefPtr srcLightingContext;
     _GetTaskContextData(ctx, HdxTokens->lightingContext, &srcLightingContext);
 
+    HdStSimpleLightingShaderSharedPtr srcSimpleLightingShader;
+    VtValue lightingShader = (*ctx)[HdxTokens->lightingShader];
+    if (lightingShader.IsHolding<HdStLightingShaderSharedPtr>()) {
+        if (HdStSimpleLightingShaderSharedPtr simpleLightingShader =
+            std::dynamic_pointer_cast<HdStSimpleLightingShader>(
+                lightingShader.UncheckedGet<HdStLightingShaderSharedPtr>())) {
+            srcSimpleLightingShader = simpleLightingShader;
+        }
+    }
+
     for (_RenderPassInfo &renderPassInfo : _renderPassesInfo) {
+        if (srcSimpleLightingShader) {
+            renderPassInfo.simpleLightingShader = srcSimpleLightingShader;
+        }
 
         const _CameraInfo cameraInfo = _ComputeCameraInfo(
             renderIndex,

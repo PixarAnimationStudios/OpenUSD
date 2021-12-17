@@ -21,8 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/hdx/simpleLightTask.h"
 
 #include "pxr/imaging/hdx/shadowMatrixComputation.h"
@@ -37,9 +35,12 @@
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
+
+#include "pxr/base/gf/matrix4f.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -62,6 +63,10 @@ HdxSimpleLightTask::HdxSimpleLightTask(
   , _material()
   , _sceneAmbient()
   , _glfSimpleLights()
+  , _lightingBar(nullptr)
+  , _lightSourcesBar(nullptr)
+  , _shadowsBar(nullptr)
+  , _materialBar(nullptr)
 {
 }
 
@@ -102,7 +107,6 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     (*ctx)[HdxTokens->lightingShader] =
         std::dynamic_pointer_cast<HdStLightingShader>(_lightingShader);
 
-
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
 
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
@@ -137,7 +141,7 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     if (!TF_VERIFY(lightingContext)) {
         return;
     }
-    GlfSimpleShadowArrayRefPtr const& shadows =lightingContext->GetShadows();
+    GlfSimpleShadowArrayRefPtr const& shadows = lightingContext->GetShadows();
     if (!TF_VERIFY(shadows)) {
         return;
     }
@@ -321,6 +325,344 @@ void
 HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
                             HdRenderIndex* renderIndex)
 {
+    GlfSimpleLightingContextRefPtr const& lightingContext = 
+        _lightingShader->GetLightingContext(); 
+    if (!TF_VERIFY(lightingContext)) {
+        return;
+    }
+
+    HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
+        std::dynamic_pointer_cast<HdStResourceRegistry>(
+            renderIndex->GetResourceRegistry());
+
+    if (!hdStResourceRegistry) {
+        return;
+    }
+
+    // Allocate lighting BAR
+    if (!_lightingBar)
+    {
+        HdBufferSpecVector bufferSpecs;
+
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->useLighting,
+            HdTupleType{HdTypeBool, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->useColorMaterialDiffuse,
+            HdTupleType{HdTypeBool, 1});
+
+        _lightingBar = hdStResourceRegistry->AllocateUniformBufferArrayRange(
+            HdxSimpleLightTaskTokens->lighting, 
+            bufferSpecs, 
+            HdBufferArrayUsageHint());
+
+        _lightingShader->AddBufferBinding(
+            HdBindingRequest(HdBinding::UBO, 
+                             HdxSimpleLightTaskTokens->lightingContext,
+                             _lightingBar, /*interleaved=*/true));
+    }
+  
+    // Add lighting buffer sources
+    {
+        HdBufferSourceSharedPtrVector sources = {
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->useLighting,
+                VtValue(lightingContext->GetUseLighting())),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->useColorMaterialDiffuse,
+                VtValue(lightingContext->GetUseColorMaterialDiffuse()))
+        };
+        
+        hdStResourceRegistry->AddSources(_lightingBar, std::move(sources));
+    }
+    
+    size_t const numLights = static_cast<size_t>(
+        lightingContext->GetNumLightsUsed());
+    size_t const numShadows = static_cast<size_t>(
+        lightingContext->ComputeNumShadowsUsed());
+
+    // Allocate light sources BAR
+    if (!_lightSourcesBar) 
+    {
+        HdBufferSpecVector bufferSpecs;
+
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->position,
+            HdTupleType{HdTypeFloatVec4, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->ambient,
+            HdTupleType{HdTypeFloatVec4, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->diffuse,
+            HdTupleType{HdTypeFloatVec4, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->specular,
+            HdTupleType{HdTypeFloatVec4, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->spotDirection,
+            HdTupleType{HdTypeFloatVec3, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->spotCutoff,
+            HdTupleType{HdTypeFloat, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->spotFalloff,
+            HdTupleType{HdTypeFloat, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->attenuation,
+            HdTupleType{HdTypeFloatVec3, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->worldToLightTransform,
+            HdTupleType{HdTypeFloatMat4, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->shadowIndexStart,
+            HdTupleType{HdTypeInt32, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->shadowIndexEnd,
+            HdTupleType{HdTypeInt32, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->hasShadow,
+            HdTupleType{HdTypeBool, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->isIndirectLight,
+            HdTupleType{HdTypeBool, 1});
+
+        _lightSourcesBar = hdStResourceRegistry->AllocateUniformBufferArrayRange(
+            HdxSimpleLightTaskTokens->lighting,
+            bufferSpecs,
+            HdBufferArrayUsageHint());
+    }
+
+    _lightingShader->RemoveBufferBinding(HdxSimpleLightTaskTokens->lightSource);
+
+    if (numLights != 0) {
+        _lightingShader->AddBufferBinding(
+            HdBindingRequest(HdBinding::UBO, 
+                             HdxSimpleLightTaskTokens->lightSource,
+                            _lightSourcesBar, /*interleaved=*/true, 
+                            /*writable*/false, numLights,
+                            /*concatenateNames*/true));
+    }
+
+    // Allocate shadows BAR if needed
+    bool const useShadows = lightingContext->GetUseShadows();
+    if (!_shadowsBar && useShadows) {
+        HdBufferSpecVector bufferSpecs;
+
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->worldToShadowMatrix,
+            HdTupleType{HdTypeFloatMat4, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->shadowToWorldMatrix,
+            HdTupleType{HdTypeFloatMat4, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->blur,
+            HdTupleType{HdTypeFloat, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->bias,
+            HdTupleType{HdTypeFloat, 1});
+
+        _shadowsBar = 
+            hdStResourceRegistry->AllocateUniformBufferArrayRange(
+                HdxSimpleLightTaskTokens->lighting, bufferSpecs, 
+                HdBufferArrayUsageHint());
+    }
+    
+    _lightingShader->RemoveBufferBinding(HdxSimpleLightTaskTokens->shadow);
+    
+    if (numShadows != 0) {
+        _lightingShader->AddBufferBinding(
+            HdBindingRequest(HdBinding::UBO, HdxSimpleLightTaskTokens->shadow,
+                            _shadowsBar, /*interleaved=*/true, 
+                            /*writable*/false, numShadows, 
+                            /*concatenateNames*/true));
+    }
+
+    // Add light and shadow buffer sources
+    {
+        // Light sources
+        VtVec4fArray position(numLights);
+        VtVec4fArray ambient(numLights);
+        VtVec4fArray diffuse(numLights);
+        VtVec4fArray specular(numLights);
+        VtVec3fArray spotDirection(numLights);
+        VtFloatArray spotCutoff(numLights);
+        VtFloatArray spotFalloff(numLights);
+        VtVec3fArray attenuation(numLights);
+        VtMatrix4fArray worldToLightTransform(numLights);
+        VtIntArray shadowIndexStart(numLights);
+        VtIntArray shadowIndexEnd(numLights);
+        VtBoolArray hasShadow(numLights);
+        VtBoolArray isIndirectLight(numLights);
+
+        // Shadows
+        VtMatrix4fArray worldToShadowMatrix(numShadows);
+        VtMatrix4fArray shadowToWorldMatrix(numShadows);
+        VtFloatArray blur(numShadows);
+        VtFloatArray bias(numShadows);
+        
+        GlfSimpleLightVector const & lights = lightingContext->GetLights();
+        GlfSimpleShadowArrayRefPtr const & shadows = 
+            lightingContext->GetShadows();
+
+        for (size_t i = 0; i < numLights; ++i) {
+            position[i] = lights[i].GetPosition();
+            ambient[i] = lights[i].GetAmbient();
+            diffuse[i] = lights[i].GetDiffuse();
+            specular[i] = lights[i].GetSpecular();
+            spotDirection[i] = lights[i].GetSpotDirection();
+            spotCutoff[i] = lights[i].GetSpotCutoff();
+            spotFalloff[i] = lights[i].GetSpotFalloff();
+            attenuation[i] = lights[i].GetAttenuation();
+            worldToLightTransform[i] = 
+                GfMatrix4f(lights[i].GetTransform().GetInverse());
+            shadowIndexStart[i] = lights[i].GetShadowIndexStart();
+            shadowIndexEnd[i] = lights[i].GetShadowIndexEnd();
+            hasShadow[i] = lights[i].HasShadow();
+            isIndirectLight[i] = lights[i].IsDomeLight();
+            // Shadows
+            if (hasShadow[i]) {
+                for (int j = shadowIndexStart[i]; j <= shadowIndexEnd[i]; ++j) {
+                    worldToShadowMatrix[j] = GfMatrix4f(
+                        shadows->GetWorldToShadowMatrix(j));
+                    shadowToWorldMatrix[j] = GfMatrix4f(
+                        worldToShadowMatrix[j].GetInverse());
+                    blur[j] = lights[i].GetShadowBlur();
+                    bias[j] = lights[i].GetShadowBias();
+                }
+            }
+        }
+        
+        HdBufferSourceSharedPtrVector sources = {
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->position,
+                VtValue(position)),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->ambient,
+                VtValue(ambient)),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->diffuse,
+                VtValue(diffuse)),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->specular,
+                VtValue(specular)),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->spotDirection,
+                VtValue(spotDirection)),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->spotCutoff,
+                VtValue(spotCutoff)),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->spotFalloff,
+                VtValue(spotFalloff)),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->attenuation,
+                VtValue(attenuation)),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->worldToLightTransform,
+                VtValue(worldToLightTransform)),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->shadowIndexStart,
+                VtValue(shadowIndexStart)),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->shadowIndexEnd,
+                VtValue(shadowIndexEnd)),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->hasShadow,
+                VtValue(hasShadow)),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->isIndirectLight,
+                VtValue(isIndirectLight)),
+        };
+
+        hdStResourceRegistry->AddSources(_lightSourcesBar, 
+            std::move(sources));
+
+        if (useShadows) {
+            HdBufferSourceSharedPtrVector shadowSources = {
+                std::make_shared<HdVtBufferSource>(
+                    HdxSimpleLightTaskTokens->worldToShadowMatrix,
+                    VtValue(worldToShadowMatrix)),
+                std::make_shared<HdVtBufferSource>(
+                    HdxSimpleLightTaskTokens->shadowToWorldMatrix,
+                    VtValue(shadowToWorldMatrix)),
+                std::make_shared<HdVtBufferSource>(
+                    HdxSimpleLightTaskTokens->blur,
+                    VtValue(blur)),
+                std::make_shared<HdVtBufferSource>(
+                    HdxSimpleLightTaskTokens->bias,
+                    VtValue(bias)),
+            };
+            
+            hdStResourceRegistry->AddSources(_shadowsBar, 
+                std::move(shadowSources));
+        }
+    }
+
+    // Allocate material BAR
+    if (!_materialBar) 
+    {
+        HdBufferSpecVector bufferSpecs;
+
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->ambient,
+            HdTupleType{HdTypeFloatVec4, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->diffuse,
+            HdTupleType{HdTypeFloatVec4, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->specular,
+            HdTupleType{HdTypeFloatVec4, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->emission,
+            HdTupleType{HdTypeFloatVec4, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->sceneColor,
+            HdTupleType{HdTypeFloatVec4, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->shininess,
+            HdTupleType{HdTypeFloat, 1});
+
+        // Allocate interleaved buffer
+        _materialBar = hdStResourceRegistry->AllocateUniformBufferArrayRange(
+            HdxSimpleLightTaskTokens->lighting, 
+            bufferSpecs, 
+            HdBufferArrayUsageHint());
+
+        // Add buffer binding request
+        _lightingShader->AddBufferBinding(
+            HdBindingRequest(HdBinding::UBO, TfToken("material"),
+                             _materialBar, /*interleaved=*/true, 
+                             /*writable*/false, /*arraySize*/0, 
+                             /*concatenateNames*/true));
+    }
+    
+    // Add material buffer sources
+    {
+        GlfSimpleMaterial const & material = lightingContext->GetMaterial();
+
+        HdBufferSourceSharedPtrVector sources = {
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->ambient,
+                VtValue(material.GetAmbient())),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->diffuse,
+                VtValue(material.GetDiffuse())),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->specular,
+                VtValue(material.GetSpecular())),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->emission,
+                VtValue(material.GetEmission())),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->sceneColor,
+                VtValue(lightingContext->GetSceneAmbient())),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->shininess,
+                VtValue(static_cast<float>(material.GetShininess())))
+        };
+
+        hdStResourceRegistry->AddSources(_materialBar, std::move(sources));
+    }
 }
 
 void

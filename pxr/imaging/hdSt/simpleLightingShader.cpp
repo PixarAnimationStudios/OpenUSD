@@ -158,13 +158,11 @@ void
 HdStSimpleLightingShader::BindResources(const int program,
                                         HdSt_ResourceBinder const &binder)
 {
+    for (auto const& buffer : _customBuffers) {
+        binder.Bind(buffer.second);
+    }
+    
     // XXX: we'd like to use HdSt_ResourceBinder instead of GlfBindingMap.
-    _bindingMap->ResetUniformBindings(
-                binder.GetNumReservedUniformBlockLocations());
-    _lightingContext->InitUniformBlockBindings(_bindingMap);
-    _bindingMap->AssignUniformBindingsToProgram(program);
-    _lightingContext->BindUniformBlocks(_bindingMap);
-
     _bindingMap->ResetSamplerBindings(
                 binder.GetNumReservedTextureUnits());
     _lightingContext->InitSamplerUnitBindings(_bindingMap);
@@ -181,17 +179,48 @@ void
 HdStSimpleLightingShader::UnbindResources(const int program,
                                           HdSt_ResourceBinder const &binder)
 {
+    for (auto const& buffer : _customBuffers) {
+        binder.Unbind(buffer.second);
+    }
+
     // XXX: we'd like to use HdSt_ResourceBinder instead of GlfBindingMap.
-    //
     _lightingContext->UnbindSamplers(_bindingMap);
 
     HdSt_TextureBinder::UnbindResources(binder, _namedTextureHandles);
+}
+
+void
+HdStSimpleLightingShader::AddBufferBinding(HdBindingRequest const& req)
+{
+    auto it = _customBuffers.insert({req.GetName(), req});
+    // Entry already existed and was equal to what we want to set it.
+    if (!it.second && it.first->second == req) {
+        return;
+    }
+    it.first->second = req;
+}
+
+void
+HdStSimpleLightingShader::RemoveBufferBinding(TfToken const &name)
+{
+    _customBuffers.erase(name);
+}
+
+void
+HdStSimpleLightingShader::ClearBufferBindings()
+{
+    _customBuffers.clear();
 }
 
 /*virtual*/
 void
 HdStSimpleLightingShader::AddBindings(HdBindingRequestVector *customBindings)
 {
+    customBindings->reserve(customBindings->size() + _customBuffers.size() + 1);
+    TF_FOR_ALL(it, _customBuffers) {
+        customBindings->push_back(it->second);
+    }
+
     // For now we assume that the only simple light with a texture is
     // a domeLight (ignoring RectLights, and multiple domeLights)
 

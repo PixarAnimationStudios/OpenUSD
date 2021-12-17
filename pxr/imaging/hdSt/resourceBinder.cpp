@@ -838,6 +838,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             // Interleaved resource, only need a single binding point
             HdBinding binding = locator.GetBinding(it->GetBindingType(),
                                                    it->GetName());
+            bool const concatenateNames = it->ConcatenateNames();
+
             MetaData::StructBlock sblock(it->GetName());
 
             HdBufferArrayRangeSharedPtr bar_ = it->GetBar();
@@ -851,8 +853,10 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 sblock.entries.emplace_back(nameRes.first,
                                             glType,
                                              nameRes.second->GetOffset(),
-                                            valueType.count);
+                                            valueType.count,
+                                            concatenateNames);
             }
+            sblock.arraySize = it->GetArraySize();
             metaDataOut->customInterleavedBindings.insert(
                 std::make_pair(binding, sblock));
             _bindingMap[it->GetName()] = binding;
@@ -954,7 +958,8 @@ void
 HdSt_ResourceBinder::BindBuffer(TfToken const &name,
                               HdStBufferResourceSharedPtr const &buffer,
                               int offset,
-                              int level) const
+                              int level,
+                              int numElements) const
 {
     HD_TRACE_FUNCTION();
 
@@ -1068,7 +1073,7 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
         glBindBufferRange(GL_UNIFORM_BUFFER, loc,
                           buffer->GetHandle()->GetRawResource(),
                           offset,
-                          buffer->GetStride());
+                          buffer->GetStride() * numElements);
         break;
     case HdBinding::TEXTURE_2D:
     case HdBinding::TEXTURE_FIELD:
@@ -1252,7 +1257,8 @@ HdSt_ResourceBinder::Bind(HdBindingRequest const& req) const
         HdBufferArrayRangeSharedPtr bar_ = req.GetBar();
         HdStBufferArrayRangeSharedPtr bar =
             std::static_pointer_cast<HdStBufferArrayRange> (bar_);
-        BindBuffer(req.GetName(), bar->GetResource(), req.GetByteOffset());
+        BindBuffer(req.GetName(), bar->GetResource(), req.GetByteOffset(), 
+            /*level*/-1, bar->GetNumElements());
     } else if (req.IsBufferArray()) {
         HdBufferArrayRangeSharedPtr bar_ = req.GetBar();
         HdStBufferArrayRangeSharedPtr bar =

@@ -43,6 +43,7 @@ VtValue HdStReadBuffer(HgiBufferHandle const& buffer,
                        int offset,
                        int stride,
                        int numElements,
+                       int elementStride,
                        HdStResourceRegistry *resourceRegistry);
 
 /// \class HdStBufferRelocator

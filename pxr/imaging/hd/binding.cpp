@@ -35,7 +35,9 @@ HdBindingRequest::operator==(HdBindingRequest const &other) const
         _resource == other._resource &&
         _bar == other._bar &&
         _isInterleaved == other._isInterleaved &&
-        _isWritable == other._isWritable;
+        _isWritable == other._isWritable &&
+        _arraySize == other._arraySize &&
+        _concatenateNames == other._concatenateNames;
 }
 
 bool

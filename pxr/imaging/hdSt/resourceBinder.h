@@ -164,27 +164,31 @@ public:
         struct StructEntry {
             StructEntry(TfToken const &name,
                         TfToken const &dataType,
-                        int offset, int arraySize)
+                        int offset, int arraySize,
+                        bool concatenateNames=false)
                 : name(name)
                 , dataType(dataType)
                 , offset(offset)
                 , arraySize(arraySize)
+                , concatenateNames(concatenateNames)
             {}
 
             TfToken name;
             TfToken dataType;
             int offset;
             int arraySize;
+            bool concatenateNames;
 
             bool operator < (StructEntry const &other) const {
                 return offset < other.offset;
             }
         };
         struct StructBlock {
-            StructBlock(TfToken const &name)
+            StructBlock(TfToken const &name, int arraySize = 1)
                 : blockName(name) {}
             TfToken blockName;
             std::vector<StructEntry> entries;
+            int arraySize;
         };
         typedef std::map<HdBinding, StructBlock> StructBlockBinding;
 
@@ -374,7 +378,7 @@ public:
     HDST_API
     void BindBuffer(TfToken const &name,
                     HdStBufferResourceSharedPtr const &resource,
-                    int offset, int level=-1) const;
+                    int offset, int level=-1, int numElements=1) const;
     HDST_API
     void UnbindBuffer(TfToken const &name,
                       HdStBufferResourceSharedPtr const &resource,

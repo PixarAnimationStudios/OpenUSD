@@ -157,7 +157,8 @@ static void _EmitStructAccessor(std::stringstream &str,
                                 TfToken const &name,
                                 TfToken const &type,
                                 int arraySize,
-                                const char *index);
+                                const char *index = NULL,
+                                bool concatenateNames = false);
 
 static void _EmitComputeAccessor(std::stringstream &str,
                                  TfToken const &name,
@@ -625,13 +626,19 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             }
             declarations <<  ";\n";
 
-            _EmitStructAccessor(accessors, varName, 
-                                dbIt->name, dbIt->dataType, dbIt->arraySize,
-                                NULL);
+            if (it->second.arraySize > 0) {
+                _EmitStructAccessor(accessors, varName, 
+                                    dbIt->name, dbIt->dataType, dbIt->arraySize,
+                                    "localIndex", dbIt->concatenateNames);
+            } else {
+                _EmitStructAccessor(accessors, varName, 
+                                    dbIt->name, dbIt->dataType, dbIt->arraySize,
+                                    NULL,  dbIt->concatenateNames);
+            }
         }
 
         declarations << "};\n";
-        _EmitDeclaration(declarations, varName, typeName, binding);
+        _EmitDeclaration(declarations, varName, typeName, binding, it->second.arraySize);
     }
     _genCommon << declarations.str()
                << accessors.str();
@@ -1225,13 +1232,16 @@ static void _EmitStructAccessor(std::stringstream &str,
                                 TfToken const &name,
                                 TfToken const &type,
                                 int arraySize,
-                                const char *index = NULL)
+                                const char *index,
+                                bool concatenateNames)
 {
     // index != NULL  if the struct is an array
     // arraySize > 1  if the struct entry is an array.
+    TfToken accessorName = concatenateNames ? 
+        TfToken(structName.GetString() + "_" + name.GetString()) : name;
     if (index) {
         if (arraySize > 1) {
-            str << _GetUnpackedType(type, false) << " HdGet_" << name
+            str << _GetUnpackedType(type, false) << " HdGet_" << accessorName
                 << "(int arrayIndex, int localIndex) {\n"
                 // storing to a local variable to avoid the nvidia-driver
                 // bug #1561110 (fixed in 346.59)
@@ -1240,7 +1250,7 @@ static void _EmitStructAccessor(std::stringstream &str,
                 << _GetPackedTypeAccessor(type, false) << "("
                 << structName << "[index]." << name << "[arrayIndex]);\n}\n";
         } else {
-            str << _GetUnpackedType(type, false) << " HdGet_" << name
+            str << _GetUnpackedType(type, false) << " HdGet_" << accessorName
                 << "(int localIndex) {\n"
                 << "  int index = " << index << ";\n"
                 << "  return "
@@ -1249,12 +1259,12 @@ static void _EmitStructAccessor(std::stringstream &str,
         }
     } else {
         if (arraySize > 1) {
-            str << _GetUnpackedType(type, false) << " HdGet_" << name
+            str << _GetUnpackedType(type, false) << " HdGet_" << accessorName
                 << "(int arrayIndex, int localIndex) { return "
                 << _GetPackedTypeAccessor(type, false) << "("
                 << structName << "." << name << "[arrayIndex]);}\n";
         } else {
-            str << _GetUnpackedType(type, false) << " HdGet_" << name
+            str << _GetUnpackedType(type, false) << " HdGet_" << accessorName
                 << "(int localIndex) { return "
                 << _GetPackedTypeAccessor(type, false) << "("
                 << structName << "." << name << ");}\n";
@@ -1263,12 +1273,12 @@ static void _EmitStructAccessor(std::stringstream &str,
     // GLSL spec doesn't allow default parameter. use function overload instead.
     // default to localIndex=0
     if (arraySize > 1) {
-        str << _GetUnpackedType(type, false) << " HdGet_" << name
+        str << _GetUnpackedType(type, false) << " HdGet_" << accessorName
             << "(int arrayIndex)"
-            << " { return HdGet_" << name << "(arrayIndex, 0); }\n";
+            << " { return HdGet_" << accessorName << "(arrayIndex, 0); }\n";
     } else {
-        str << _GetUnpackedType(type, false) << " HdGet_" << name << "()"
-            << " { return HdGet_" << name << "(0); }\n";
+        str << _GetUnpackedType(type, false) << " HdGet_" << accessorName << "()"
+            << " { return HdGet_" << accessorName << "(0); }\n";
     }
 }
 

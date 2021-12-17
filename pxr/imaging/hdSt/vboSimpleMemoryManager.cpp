@@ -497,6 +497,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(
                           /*offset=*/0,
                           /*stride=*/0,  // not interleaved.
                           _numElements,
+                          /*elementStride=*/0,
                           GetResourceRegistry());
 }
 

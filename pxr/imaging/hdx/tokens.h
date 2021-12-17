@@ -138,6 +138,39 @@ TF_DECLARE_PUBLIC_TOKENS(HdxColorChannelTokens, HDX_API,
 TF_DECLARE_PUBLIC_TOKENS(HdxAovTokens, HDX_API, 
                          HDX_AOV_TOKENS);
 
+// Simple lighting
+#define HDX_SIMPLELIGHTTASK_TOKENS \
+    (lighting)                     \
+    (lightingContext)              \
+    (useLighting)                  \
+    (useColorMaterialDiffuse)      \
+    (lightSource)                  \
+    (position)                     \
+    (ambient)                      \
+    (diffuse)                      \
+    (specular)                     \
+    (spotDirection)                \
+    (spotCutoff)                   \
+    (spotFalloff)                  \
+    (attenuation)                  \
+    (worldToLightTransform)        \
+    (shadowIndexStart)             \
+    (shadowIndexEnd)               \
+    (hasShadow)                    \
+    (isIndirectLight)              \
+    (shadow)                       \
+    (worldToShadowMatrix)          \
+    (shadowToWorldMatrix)          \
+    (blur)                         \
+    (bias)                         \
+    (material)                     \
+    (emission)                     \
+    (sceneColor)                   \
+    (shininess)     
+
+TF_DECLARE_PUBLIC_TOKENS(HdxSimpleLightTaskTokens, HDX_API, 
+                         HDX_SIMPLELIGHTTASK_TOKENS);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //PXR_IMAGING_HDX_TOKENS_H
