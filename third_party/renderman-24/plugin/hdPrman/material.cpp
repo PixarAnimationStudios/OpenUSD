@@ -34,6 +34,7 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/imaging/hd/light.h"
@@ -48,6 +49,10 @@
 #include "pxr/usd/sdr/registry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+TF_DEFINE_ENV_SETTING(HD_PRMAN_USE_SCENE_INDEX_FOR_MATFILT, false,
+                      "Use scene indices rather than matfilt callbacks.");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -80,6 +85,15 @@ TF_MAKE_STATIC_DATA(MatfiltFilterChain, _filterChain) {
         MatfiltMaterialX
 #endif
     };
+}
+
+bool
+HdPrmanMaterial::GetUseSceneIndexForMatfilt()
+{
+    static const bool state =
+        TfGetEnvSetting(HD_PRMAN_USE_SCENE_INDEX_FOR_MATFILT);
+
+    return state && HdRenderIndex::IsSceneIndexEmulationEnabled();
 }
 
 MatfiltFilterChain

@@ -71,6 +71,10 @@ public:
     /// Set material filtering chain.
     static void SetFilterChain(MatfiltFilterChain const& chain);
 
+    /// Returns whether it's possible and preferred to use scene indices
+    /// in place of matfilt callbacks
+    static bool GetUseSceneIndexForMatfilt();
+
     /// Return the material network after filtering.
     HdMaterialNetwork2 const& GetMaterialNetwork() const;
 
