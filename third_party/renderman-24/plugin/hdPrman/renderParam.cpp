@@ -2012,7 +2012,7 @@ HdPrman_RenderParam::StopRender()
 bool
 HdPrman_RenderParam::IsRenderStopped()
 {
-    return _renderThread && _renderThread->IsThreadRunning();
+    return !(_renderThread && _renderThread->IsThreadRunning());
 }
 
 bool
