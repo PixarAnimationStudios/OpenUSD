@@ -21,77 +21,95 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_HD_MATERIAL_NETWORK_2_INTERFACE_H
-#define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_HD_MATERIAL_NETWORK_2_INTERFACE_H
+#ifndef HD_MATERIAL_NETWORK_2_INTERFACE_H
+#define HD_MATERIAL_NETWORK_2_INTERFACE_H
 
+#include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/materialNetworkInterface.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class HdPrmanHdMaterialNetwork2Interface
+/// \class HdMaterialNetwork2Interface
 ///
 /// Implements HdMaterialNetworkInterface interface backed by an
-/// HdMaterialNetwork2 -- which is useful for implementing matfilt functions
-/// without being tied to the legacy data model
-class HdPrmanHdMaterialNetwork2Interface
+/// HdMaterialNetwork2 -- which is useful for implementing material
+/// filtering functions without being tied to the legacy data model
+class HdMaterialNetwork2Interface
     : public HdMaterialNetworkInterface
 {
 public:
 
-    HdPrmanHdMaterialNetwork2Interface(HdMaterialNetwork2 *materialNetwork)
+    HdMaterialNetwork2Interface(HdMaterialNetwork2 *materialNetwork)
     : _materialNetwork(materialNetwork)
     , _lastAccessedNode(nullptr)
     {}
-
+    HD_API
     TfTokenVector GetNodeNames() const override;
+
+    HD_API
     TfToken GetNodeType(const TfToken &nodeName) const override;
 
+    HD_API
     TfTokenVector GetAuthoredNodeParameterNames(
         const TfToken &nodeName) const override;
     
+    HD_API
     VtValue GetNodeParameterValue(
         const TfToken &nodeName,
         const TfToken &paramName) const override;
 
+    HD_API
     TfTokenVector GetNodeInputConnectionNames(
         const TfToken &nodeName) const override;
 
+    HD_API
     InputConnectionVector GetNodeInputConnection(
         const TfToken &nodeName,
         const TfToken &inputName) const override;
 
+    HD_API
     void DeleteNode(const TfToken &nodeName) override;
 
+    HD_API
     void SetNodeType(
         const TfToken &nodeName,
         const TfToken &nodeType) override;
 
+    HD_API
     void SetNodeParameterValue(
         const TfToken &nodeName,
         const TfToken &paramName,
         const VtValue &value) override;
 
+    HD_API
     void DeleteNodeParameter(
         const TfToken &nodeName,
         const TfToken &paramName) override;
 
+    HD_API
     void SetNodeInputConnection(
         const TfToken &nodeName,
         const TfToken &inputName,
         const InputConnectionVector &connections) override;
 
+    HD_API
     void DeleteNodeInputConnection(
         const TfToken &nodeName,
         const TfToken &inputName) override;
 
+    HD_API
     TfTokenVector GetTerminalNames() const override;
 
+    HD_API
     InputConnectionResult GetTerminalConnection(
         const TfToken &terminalName) const override;
 
+    HD_API
     void DeleteTerminal(const TfToken &terminalName) override;
 
+    HD_API
     void SetTerminalConnection(
         const TfToken &terminalName,
         const InputConnection &connection) override;
@@ -110,4 +128,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_HD_MATERIAL_NETWORK_2_INTERFACE_H
+#endif //HD_MATERIAL_NETWORK_2_INTERFACE_H

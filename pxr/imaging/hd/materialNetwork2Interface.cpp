@@ -21,12 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdPrman/hdMaterialNetwork2Interface.h"
+#include "pxr/imaging/hd/materialNetwork2Interface.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdMaterialNode2 *
-HdPrmanHdMaterialNetwork2Interface::_GetNode(const TfToken &nodeName) const
+HdMaterialNetwork2Interface::_GetNode(const TfToken &nodeName) const
 {
     if (!_materialNetwork) {
         return nullptr;
@@ -52,7 +52,7 @@ HdPrmanHdMaterialNetwork2Interface::_GetNode(const TfToken &nodeName) const
 }
 
 HdMaterialNode2 *
-HdPrmanHdMaterialNetwork2Interface::_GetOrCreateNode(const TfToken &nodeName)
+HdMaterialNetwork2Interface::_GetOrCreateNode(const TfToken &nodeName)
     const
 {
     HdMaterialNode2 *result = _GetNode(nodeName);
@@ -69,7 +69,7 @@ HdPrmanHdMaterialNetwork2Interface::_GetOrCreateNode(const TfToken &nodeName)
 }
 
 TfTokenVector
-HdPrmanHdMaterialNetwork2Interface::GetNodeNames() const
+HdMaterialNetwork2Interface::GetNodeNames() const
 {
     TfTokenVector result;
     if (_materialNetwork) {
@@ -83,7 +83,7 @@ HdPrmanHdMaterialNetwork2Interface::GetNodeNames() const
 }
 
 TfToken
-HdPrmanHdMaterialNetwork2Interface::GetNodeType(const TfToken &nodeName) const
+HdMaterialNetwork2Interface::GetNodeType(const TfToken &nodeName) const
 {
     if (HdMaterialNode2 *node = _GetNode(nodeName)) {
         return node->nodeTypeId;
@@ -93,7 +93,7 @@ HdPrmanHdMaterialNetwork2Interface::GetNodeType(const TfToken &nodeName) const
 }
 
 TfTokenVector
-HdPrmanHdMaterialNetwork2Interface::GetAuthoredNodeParameterNames(
+HdMaterialNetwork2Interface::GetAuthoredNodeParameterNames(
     const TfToken &nodeName) const
 {
     TfTokenVector result;
@@ -107,7 +107,7 @@ HdPrmanHdMaterialNetwork2Interface::GetAuthoredNodeParameterNames(
 }
 
 VtValue
-HdPrmanHdMaterialNetwork2Interface::GetNodeParameterValue(
+HdMaterialNetwork2Interface::GetNodeParameterValue(
     const TfToken &nodeName,
     const TfToken &paramName) const
 {
@@ -122,7 +122,7 @@ HdPrmanHdMaterialNetwork2Interface::GetNodeParameterValue(
 }
 
 TfTokenVector
-HdPrmanHdMaterialNetwork2Interface::GetNodeInputConnectionNames(
+HdMaterialNetwork2Interface::GetNodeInputConnectionNames(
     const TfToken &nodeName) const
 {
     TfTokenVector result;
@@ -136,7 +136,7 @@ HdPrmanHdMaterialNetwork2Interface::GetNodeInputConnectionNames(
 }
 
 HdMaterialNetworkInterface::InputConnectionVector
-HdPrmanHdMaterialNetwork2Interface::GetNodeInputConnection(
+HdMaterialNetwork2Interface::GetNodeInputConnection(
     const TfToken &nodeName,
     const TfToken &inputName) const
 {
@@ -155,7 +155,7 @@ HdPrmanHdMaterialNetwork2Interface::GetNodeInputConnection(
 }
 
 void
-HdPrmanHdMaterialNetwork2Interface::DeleteNode(const TfToken &nodeName)
+HdMaterialNetwork2Interface::DeleteNode(const TfToken &nodeName)
 {
     if (_materialNetwork) {
         _materialNetwork->nodes.erase(SdfPath(nodeName.data()));
@@ -163,7 +163,7 @@ HdPrmanHdMaterialNetwork2Interface::DeleteNode(const TfToken &nodeName)
 }
 
 void
-HdPrmanHdMaterialNetwork2Interface::SetNodeType(
+HdMaterialNetwork2Interface::SetNodeType(
     const TfToken &nodeName,
     const TfToken &nodeType)
 {
@@ -173,7 +173,7 @@ HdPrmanHdMaterialNetwork2Interface::SetNodeType(
 }
 
 void
-HdPrmanHdMaterialNetwork2Interface::SetNodeParameterValue(
+HdMaterialNetwork2Interface::SetNodeParameterValue(
     const TfToken &nodeName,
     const TfToken &paramName,
     const VtValue &value)
@@ -184,7 +184,7 @@ HdPrmanHdMaterialNetwork2Interface::SetNodeParameterValue(
 }
 
 void
-HdPrmanHdMaterialNetwork2Interface::DeleteNodeParameter(
+HdMaterialNetwork2Interface::DeleteNodeParameter(
     const TfToken &nodeName,
     const TfToken &paramName)
 {
@@ -194,7 +194,7 @@ HdPrmanHdMaterialNetwork2Interface::DeleteNodeParameter(
 }
 
 void
-HdPrmanHdMaterialNetwork2Interface::SetNodeInputConnection(
+HdMaterialNetwork2Interface::SetNodeInputConnection(
     const TfToken &nodeName,
     const TfToken &inputName,
     const InputConnectionVector &connections)
@@ -211,7 +211,7 @@ HdPrmanHdMaterialNetwork2Interface::SetNodeInputConnection(
 }
 
 void
-HdPrmanHdMaterialNetwork2Interface::DeleteNodeInputConnection(
+HdMaterialNetwork2Interface::DeleteNodeInputConnection(
     const TfToken &nodeName,
     const TfToken &inputName)
 {
@@ -221,7 +221,7 @@ HdPrmanHdMaterialNetwork2Interface::DeleteNodeInputConnection(
 }
 
 TfTokenVector
-HdPrmanHdMaterialNetwork2Interface::GetTerminalNames() const
+HdMaterialNetwork2Interface::GetTerminalNames() const
 {
     TfTokenVector result;
     if (_materialNetwork) {
@@ -234,8 +234,8 @@ HdPrmanHdMaterialNetwork2Interface::GetTerminalNames() const
     return result;
 }
 
-HdPrmanHdMaterialNetwork2Interface::InputConnectionResult
-HdPrmanHdMaterialNetwork2Interface::GetTerminalConnection(
+HdMaterialNetwork2Interface::InputConnectionResult
+HdMaterialNetwork2Interface::GetTerminalConnection(
     const TfToken &terminalName) const
 {
     if (_materialNetwork) {
@@ -251,7 +251,7 @@ HdPrmanHdMaterialNetwork2Interface::GetTerminalConnection(
 }
 
 void
-HdPrmanHdMaterialNetwork2Interface::DeleteTerminal(
+HdMaterialNetwork2Interface::DeleteTerminal(
     const TfToken &terminalName)
 {
     if (_materialNetwork) {
@@ -260,7 +260,7 @@ HdPrmanHdMaterialNetwork2Interface::DeleteTerminal(
 }
 
 void
-HdPrmanHdMaterialNetwork2Interface::SetTerminalConnection(
+HdMaterialNetwork2Interface::SetTerminalConnection(
     const TfToken &terminalName,
     const InputConnection &connection)
 {

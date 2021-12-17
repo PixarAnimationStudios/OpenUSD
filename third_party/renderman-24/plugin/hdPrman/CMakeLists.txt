@@ -66,7 +66,6 @@ pxr_plugin(${PXR_PACKAGE}
         lightFilter
         lightFilterUtils
         material
-        materialFilteringSceneIndexBase
         matfiltConvertPreviewMaterial
         matfiltFilterChain
         matfiltResolveVstructs
@@ -83,9 +82,7 @@ pxr_plugin(${PXR_PACKAGE}
     PRIVATE_CLASSES
         cameraContext
         renderPass
-        dataSourceMaterialNetworkInterface
         framebuffer
-        hdMaterialNetwork2Interface
         renderBuffer
         renderParam
         renderViewContext

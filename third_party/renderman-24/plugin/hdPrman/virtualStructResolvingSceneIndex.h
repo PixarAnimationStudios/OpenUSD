@@ -24,14 +24,14 @@
 #ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_VIRTUAL_STRUCT_RESOLVING_SCENE_INDEX_H
 #define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_VIRTUAL_STRUCT_RESOLVING_SCENE_INDEX_H
 
-#include "hdPrman/materialFilteringSceneIndexBase.h"
+#include "pxr/imaging/hd/materialFilteringSceneIndexBase.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(HdPrmanVirtualStructResolvingSceneIndex);
 
 class HdPrmanVirtualStructResolvingSceneIndex :
-    public HdPrmanMaterialFilteringSceneIndexBase
+    public HdMaterialFilteringSceneIndexBase
 {
 public:
 

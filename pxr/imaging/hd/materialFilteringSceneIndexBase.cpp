@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdPrman/materialFilteringSceneIndexBase.h"
-#include "hdPrman/dataSourceMaterialNetworkInterface.h"
+#include "pxr/imaging/hd/materialFilteringSceneIndexBase.h"
+#include "pxr/imaging/hd/dataSourceMaterialNetworkInterface.h"
 
 #include "pxr/imaging/hd/materialSchema.h"
 
@@ -37,7 +37,7 @@ public:
     HD_DECLARE_DATASOURCE(_MaterialDataSource);
 
     _MaterialDataSource(const HdContainerDataSourceHandle &input,
-        const HdPrmanMaterialFilteringSceneIndexBase::FilteringFnc &fnc)
+        const HdMaterialFilteringSceneIndexBase::FilteringFnc &fnc)
     : _input(input)
     , _fnc(fnc)
     {}
@@ -68,7 +68,7 @@ public:
             if (HdContainerDataSourceHandle networkContainer =
                     HdContainerDataSource::Cast(result)) {
 
-                HdPrmanDataSourceMaterialNetworkInterface networkInterface(
+                HdDataSourceMaterialNetworkInterface networkInterface(
                     networkContainer);
                 _fnc(&networkInterface);
                 return networkInterface.Finish();
@@ -81,7 +81,7 @@ public:
 
 private:
     HdContainerDataSourceHandle _input;
-    HdPrmanMaterialFilteringSceneIndexBase::FilteringFnc _fnc;
+    HdMaterialFilteringSceneIndexBase::FilteringFnc _fnc;
 };
 
 
@@ -91,7 +91,7 @@ public:
     HD_DECLARE_DATASOURCE(_PrimDataSource);
 
     _PrimDataSource(const HdContainerDataSourceHandle &input,
-        const HdPrmanMaterialFilteringSceneIndexBase::FilteringFnc &fnc)
+        const HdMaterialFilteringSceneIndexBase::FilteringFnc &fnc)
     : _input(input)
     , _fnc(fnc)
     {}
@@ -134,21 +134,21 @@ public:
 
 private:
     HdContainerDataSourceHandle _input;
-    HdPrmanMaterialFilteringSceneIndexBase::FilteringFnc _fnc;
+    HdMaterialFilteringSceneIndexBase::FilteringFnc _fnc;
 };
 
 
 
 } // namespace anonymous
 
-HdPrmanMaterialFilteringSceneIndexBase::HdPrmanMaterialFilteringSceneIndexBase(
+HdMaterialFilteringSceneIndexBase::HdMaterialFilteringSceneIndexBase(
     const HdSceneIndexBaseRefPtr &inputSceneIndex)
 : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
 {
 }
 
 HdSceneIndexPrim
-HdPrmanMaterialFilteringSceneIndexBase::GetPrim(const SdfPath &primPath) const
+HdMaterialFilteringSceneIndexBase::GetPrim(const SdfPath &primPath) const
 {
     if (auto input = _GetInputSceneIndex()) {
         HdSceneIndexPrim prim = input->GetPrim(primPath);
@@ -164,7 +164,7 @@ HdPrmanMaterialFilteringSceneIndexBase::GetPrim(const SdfPath &primPath) const
 }
 
 SdfPathVector
-HdPrmanMaterialFilteringSceneIndexBase::GetChildPrimPaths(
+HdMaterialFilteringSceneIndexBase::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
     if (auto input = _GetInputSceneIndex()) {
@@ -175,7 +175,7 @@ HdPrmanMaterialFilteringSceneIndexBase::GetChildPrimPaths(
 }
 
 void
-HdPrmanMaterialFilteringSceneIndexBase::_PrimsAdded(
+HdMaterialFilteringSceneIndexBase::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
@@ -183,7 +183,7 @@ HdPrmanMaterialFilteringSceneIndexBase::_PrimsAdded(
 }
 
 void
-HdPrmanMaterialFilteringSceneIndexBase::_PrimsRemoved(
+HdMaterialFilteringSceneIndexBase::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
@@ -191,7 +191,7 @@ HdPrmanMaterialFilteringSceneIndexBase::_PrimsRemoved(
 }
 
 void
-HdPrmanMaterialFilteringSceneIndexBase::_PrimsDirtied(
+HdMaterialFilteringSceneIndexBase::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {

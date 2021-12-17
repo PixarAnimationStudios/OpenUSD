@@ -46,6 +46,7 @@ pxr_library(hd
         dataSource
         dataSourceLegacyPrim
         dataSourceLocator
+        dataSourceMaterialNetworkInterface
         debugCodes
         dependenciesSchema
         dependencySchema
@@ -87,7 +88,9 @@ pxr_library(hd
         material
         materialBindingSchema
         materialConnectionSchema
+        materialFilteringSceneIndexBase
         materialNetworkSchema
+        materialNetwork2Interface
         materialNodeSchema
         materialSchema
         mesh

@@ -22,11 +22,11 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
-#include "hdPrman/hdMaterialNetwork2Interface.h"
 #include "hdPrman/debugCodes.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/arch/library.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/imaging/hd/materialNetwork2Interface.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 
 #include "pxr/usd/ar/resolver.h"
@@ -125,7 +125,7 @@ MatfiltConvertPreviewMaterial(
     const NdrTokenVec & shaderTypePriority,
     std::vector<std::string> * outputErrorMessages)
 {
-    HdPrmanHdMaterialNetwork2Interface interface(&network);
+    HdMaterialNetwork2Interface interface(&network);
     MatfiltConvertPreviewMaterial(networkId, &interface, contextValues,
                                   shaderTypePriority, outputErrorMessages);
 }

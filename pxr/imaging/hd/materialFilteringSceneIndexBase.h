@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_FILTERING_SCENE_INDEX_H
-#define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_FILTERING_SCENE_INDEX_H
+#ifndef HD_MATERIAL_FILTERING_SCENE_INDEX_H
+#define HD_MATERIAL_FILTERING_SCENE_INDEX_H
 
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
@@ -32,20 +32,22 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_WEAK_AND_REF_PTRS(HdPrmanMaterialFilteringSceneIndexBase);
+TF_DECLARE_WEAK_AND_REF_PTRS(HdMaterialFilteringSceneIndexBase);
 
-/// \class HdPrmanMaterialFilteringSceneIndexBase
+/// \class HdMaterialFilteringSceneIndexBase
 ///
 /// Base class for implementing scene indices which read from and write to
 /// only material network data sources. Subclasses implement only 
 /// _GetFilteringFunction to provide a callback to run when a material network
 /// is first queried.
-class HdPrmanMaterialFilteringSceneIndexBase :
+class HdMaterialFilteringSceneIndexBase :
     public HdSingleInputFilteringSceneIndexBase
 {
 public:
+    HD_API
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override final;
 
+    HD_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override final;
 
     using FilteringFnc =
@@ -54,23 +56,27 @@ public:
 protected:
     virtual FilteringFnc _GetFilteringFunction() const = 0;
 
+    HD_API
     void _PrimsAdded(
         const HdSceneIndexBase &sender,
         const HdSceneIndexObserver::AddedPrimEntries &entries) override final;
 
+    HD_API
     void _PrimsRemoved(
         const HdSceneIndexBase &sender,
         const HdSceneIndexObserver::RemovedPrimEntries &entries) override final;
 
+    HD_API
     void _PrimsDirtied(
         const HdSceneIndexBase &sender,
         const HdSceneIndexObserver::DirtiedPrimEntries &entries) override final;
 
-    HdPrmanMaterialFilteringSceneIndexBase(
+    HD_API
+    HdMaterialFilteringSceneIndexBase(
         const HdSceneIndexBaseRefPtr &inputSceneIndex);
 
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_FILTERING_SCENE_INDEX_H
+#endif //HD_MATERIAL_FILTERING_SCENE_INDEX_H

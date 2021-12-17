@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdPrman/dataSourceMaterialNetworkInterface.h"
+#include "pxr/imaging/hd/dataSourceMaterialNetworkInterface.h"
 #include "pxr/imaging/hd/materialConnectionSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
@@ -30,7 +30,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdContainerDataSourceHandle
-HdPrmanDataSourceMaterialNetworkInterface::_GetNode(
+HdDataSourceMaterialNetworkInterface::_GetNode(
     const TfToken &nodeName) const
 {
     if (_deletedNodes.find(nodeName) != _deletedNodes.end()) {
@@ -61,7 +61,7 @@ HdPrmanDataSourceMaterialNetworkInterface::_GetNode(
 }
 
 HdContainerDataSourceHandle
-HdPrmanDataSourceMaterialNetworkInterface::_GetNodeParameters(
+HdDataSourceMaterialNetworkInterface::_GetNodeParameters(
     const TfToken &nodeName) const
 {
     if (HdContainerDataSourceHandle node = _GetNode(nodeName)) {
@@ -79,7 +79,7 @@ HdPrmanDataSourceMaterialNetworkInterface::_GetNodeParameters(
 }
 
 HdContainerDataSourceHandle
-HdPrmanDataSourceMaterialNetworkInterface::_GetNodeConnections(
+HdDataSourceMaterialNetworkInterface::_GetNodeConnections(
     const TfToken &nodeName) const
 {
     if (HdContainerDataSourceHandle node = _GetNode(nodeName)) {
@@ -97,7 +97,7 @@ HdPrmanDataSourceMaterialNetworkInterface::_GetNodeConnections(
 }
 
 void
-HdPrmanDataSourceMaterialNetworkInterface::_SetOverride(
+HdDataSourceMaterialNetworkInterface::_SetOverride(
     const HdDataSourceLocator &loc,
     const HdDataSourceBaseHandle &ds)
 {
@@ -119,7 +119,7 @@ HdPrmanDataSourceMaterialNetworkInterface::_SetOverride(
 }
 
 TfTokenVector
-HdPrmanDataSourceMaterialNetworkInterface::GetNodeNames() const
+HdDataSourceMaterialNetworkInterface::GetNodeNames() const
 {
     if (!_nodesContainer) {
         _nodesContainer = HdMaterialNetworkSchema(_networkContainer).GetNodes();
@@ -146,7 +146,7 @@ HdPrmanDataSourceMaterialNetworkInterface::GetNodeNames() const
 }
 
 TfToken
-HdPrmanDataSourceMaterialNetworkInterface::GetNodeType(
+HdDataSourceMaterialNetworkInterface::GetNodeType(
     const TfToken &nodeName) const
 {
     HdDataSourceLocator locator(
@@ -176,7 +176,7 @@ HdPrmanDataSourceMaterialNetworkInterface::GetNodeType(
 }
 
 TfTokenVector
-HdPrmanDataSourceMaterialNetworkInterface::GetAuthoredNodeParameterNames(
+HdDataSourceMaterialNetworkInterface::GetAuthoredNodeParameterNames(
     const TfToken &nodeName) const
 {
     TfTokenVector result;
@@ -211,7 +211,7 @@ HdPrmanDataSourceMaterialNetworkInterface::GetAuthoredNodeParameterNames(
 }
 
 VtValue
-HdPrmanDataSourceMaterialNetworkInterface::GetNodeParameterValue(
+HdDataSourceMaterialNetworkInterface::GetNodeParameterValue(
     const TfToken &nodeName,
     const TfToken &paramName) const
 {
@@ -244,7 +244,7 @@ HdPrmanDataSourceMaterialNetworkInterface::GetNodeParameterValue(
 }
 
 TfTokenVector
-HdPrmanDataSourceMaterialNetworkInterface::GetNodeInputConnectionNames(
+HdDataSourceMaterialNetworkInterface::GetNodeInputConnectionNames(
     const TfToken &nodeName) const
 {
     TfTokenVector result;
@@ -280,7 +280,7 @@ HdPrmanDataSourceMaterialNetworkInterface::GetNodeInputConnectionNames(
 }
 
 HdMaterialNetworkInterface::InputConnectionVector
-HdPrmanDataSourceMaterialNetworkInterface::GetNodeInputConnection(
+HdDataSourceMaterialNetworkInterface::GetNodeInputConnection(
     const TfToken &nodeName,
     const TfToken &inputName) const
 {
@@ -335,7 +335,7 @@ HdPrmanDataSourceMaterialNetworkInterface::GetNodeInputConnection(
 }
 
 void
-HdPrmanDataSourceMaterialNetworkInterface::DeleteNode(const TfToken &nodeName)
+HdDataSourceMaterialNetworkInterface::DeleteNode(const TfToken &nodeName)
 {
     HdDataSourceLocator locator(
         HdMaterialNetworkSchemaTokens->nodes,
@@ -346,7 +346,7 @@ HdPrmanDataSourceMaterialNetworkInterface::DeleteNode(const TfToken &nodeName)
 }
 
 void
-HdPrmanDataSourceMaterialNetworkInterface::SetNodeType(
+HdDataSourceMaterialNetworkInterface::SetNodeType(
     const TfToken &nodeName,
     const TfToken &nodeType)
 {
@@ -362,7 +362,7 @@ HdPrmanDataSourceMaterialNetworkInterface::SetNodeType(
 }
 
 void
-HdPrmanDataSourceMaterialNetworkInterface::SetNodeParameterValue(
+HdDataSourceMaterialNetworkInterface::SetNodeParameterValue(
     const TfToken &nodeName,
     const TfToken &paramName,
     const VtValue &value)
@@ -378,7 +378,7 @@ HdPrmanDataSourceMaterialNetworkInterface::SetNodeParameterValue(
 }
 
 void
-HdPrmanDataSourceMaterialNetworkInterface::DeleteNodeParameter(
+HdDataSourceMaterialNetworkInterface::DeleteNodeParameter(
     const TfToken &nodeName,
     const TfToken &paramName)
 {
@@ -392,7 +392,7 @@ HdPrmanDataSourceMaterialNetworkInterface::DeleteNodeParameter(
 }
 
 void
-HdPrmanDataSourceMaterialNetworkInterface::SetNodeInputConnection(
+HdDataSourceMaterialNetworkInterface::SetNodeInputConnection(
     const TfToken &nodeName,
     const TfToken &inputName,
     const InputConnectionVector &connections)
@@ -421,7 +421,7 @@ HdPrmanDataSourceMaterialNetworkInterface::SetNodeInputConnection(
 }
 
 void
-HdPrmanDataSourceMaterialNetworkInterface::DeleteNodeInputConnection(
+HdDataSourceMaterialNetworkInterface::DeleteNodeInputConnection(
     const TfToken &nodeName,
     const TfToken &inputName)
 {
@@ -435,7 +435,7 @@ HdPrmanDataSourceMaterialNetworkInterface::DeleteNodeInputConnection(
 }
 
 TfTokenVector
-HdPrmanDataSourceMaterialNetworkInterface::GetTerminalNames() const
+HdDataSourceMaterialNetworkInterface::GetTerminalNames() const
 {
     TfTokenVector result;
 
@@ -471,7 +471,7 @@ HdPrmanDataSourceMaterialNetworkInterface::GetTerminalNames() const
 }
 
 HdMaterialNetworkInterface::InputConnectionResult
-HdPrmanDataSourceMaterialNetworkInterface::GetTerminalConnection(
+HdDataSourceMaterialNetworkInterface::GetTerminalConnection(
     const TfToken &terminalName) const
 {
     HdDataSourceLocator locator(
@@ -523,7 +523,7 @@ HdPrmanDataSourceMaterialNetworkInterface::GetTerminalConnection(
 }
 
 void
-HdPrmanDataSourceMaterialNetworkInterface::DeleteTerminal(
+HdDataSourceMaterialNetworkInterface::DeleteTerminal(
     const TfToken &terminalName)
 {
     HdDataSourceLocator locator(
@@ -534,7 +534,7 @@ HdPrmanDataSourceMaterialNetworkInterface::DeleteTerminal(
 }
 
 void
-HdPrmanDataSourceMaterialNetworkInterface::SetTerminalConnection(
+HdDataSourceMaterialNetworkInterface::SetTerminalConnection(
     const TfToken &terminalName,
     const InputConnection &connection)
 {
@@ -556,7 +556,7 @@ HdPrmanDataSourceMaterialNetworkInterface::SetTerminalConnection(
 }
 
 HdContainerDataSourceHandle
-HdPrmanDataSourceMaterialNetworkInterface::Finish()
+HdDataSourceMaterialNetworkInterface::Finish()
 {
     if (_existingOverrides.empty()) {
         return _networkContainer;

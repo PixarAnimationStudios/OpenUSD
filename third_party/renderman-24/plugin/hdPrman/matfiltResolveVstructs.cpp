@@ -23,7 +23,6 @@
 //
 #include "hdPrman/matfiltResolveVstructs.h"
 #include "hdPrman/debugCodes.h"
-#include "hdPrman/hdMaterialNetwork2Interface.h"
 
 #include <memory>
 #include <mutex>
@@ -34,6 +33,7 @@
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
+#include "pxr/imaging/hd/materialNetwork2Interface.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -365,7 +365,7 @@ MatfiltResolveVstructs(
         }
     }
 
-    HdPrmanHdMaterialNetwork2Interface interface(&network);
+    HdMaterialNetwork2Interface interface(&network);
     MatfiltResolveVstructs(&interface, shaderTypePriority, enableConditions);
 }
 
