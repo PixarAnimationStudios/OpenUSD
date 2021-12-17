@@ -38,6 +38,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _rprimPrimvarNameTokens,
+    (pointSizeScale)
+    (screenSpaceWidths)
+    (minScreenSpaceWidths)
+);
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -411,6 +417,22 @@ UsdImagingBasisCurvesAdapter::Get(UsdPrim const& prim,
     }
 
     return BaseAdapter::Get(prim, cachePath, key, time, outIndices);
+}
+
+/*override*/
+TfTokenVector const&
+UsdImagingBasisCurvesAdapter::_GetRprimPrimvarNames() const
+{
+    // This result should match the GetBuiltinPrimvarNames result from
+    // HdStBasisCurves, which we're not allowed to call here. Points, normals
+    // and widths are already handled explicitly in GprimAdapter, so there's no
+    // need to except them from filtering by claiming them here.
+    static TfTokenVector primvarNames{
+        _rprimPrimvarNameTokens->pointSizeScale,
+        _rprimPrimvarNameTokens->screenSpaceWidths,
+        _rprimPrimvarNameTokens->minScreenSpaceWidths
+    };
+    return primvarNames;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

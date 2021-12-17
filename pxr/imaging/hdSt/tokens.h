@@ -71,7 +71,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (coarseFaceIndex)                           \
     (processedFaceCounts)                       \
     (processedFaceIndices)                      \
-    (geomSubsetFaceIndices)
+    (geomSubsetFaceIndices)                     \
+    (pointSizeScale)                            \
+    (screenSpaceWidths)                         \
+    (minScreenSpaceWidths) 
 
 #define HDST_TEXTURE_TOKENS                     \
     (wrapS)                                     \

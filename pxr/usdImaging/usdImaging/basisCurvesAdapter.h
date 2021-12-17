@@ -110,6 +110,10 @@ public:
 protected:
     USDIMAGING_API
     bool _IsBuiltinPrimvar(TfToken const& primvarName) const override;
+
+    USDIMAGING_API
+    TfTokenVector const& _GetRprimPrimvarNames() const override;
+
 };
 
 

@@ -82,7 +82,12 @@ void main(void)
     ApplyClipPlanes(outData.Peye);
 
     int pointId = GetPointId();
-    gl_PointSize = GetPointRasterSize(pointId);
+#if defined(HD_HAS_pointSizeScale)
+    float scale = HdGet_pointSizeScale();
+#else
+    float scale = 1;
+#endif
+    gl_PointSize = GetPointRasterSize(pointId) * scale;
     ProcessPointId(pointId);
 }
 
@@ -130,7 +135,12 @@ void main(void)
     ApplyClipPlanes(outData.Peye);
 
     int pointId = GetPointId();
-    gl_PointSize = GetPointRasterSize(pointId);
+#if defined(HD_HAS_pointSizeScale)
+    float scale = HdGet_pointSizeScale();
+#else
+    float scale = 1;
+#endif
+    gl_PointSize = GetPointRasterSize(pointId) * scale;
     ProcessPointId(pointId);}
 
 --- --------------------------------------------------------------------------
@@ -501,21 +511,67 @@ void main()
 
     vec4 position;
     vec4 tangent;
-    float width;
+    float rawWidth;
     vec3 normal;
 
-    evaluate(u, v, position, tangent, width, normal);
+    evaluate(u, v, position, tangent, rawWidth, normal);
     vec3 direction = orient(v, position, tangent, normal);
     MAT4 transform = ApplyInstanceTransform(HdGet_transform());
-    vec4 scaledDirection = GetWorldToViewMatrix() * transform 
-                  * vec4(direction, 0);
-    vec3 offset = direction * length(scaledDirection.xyz) * width * 0.5;
+
+    float worldSpaceWidth = rawWidth * length(
+        GetWorldToViewMatrix() * transform * vec4(direction, 0));
+
+    MAT4 projMat = GetProjectionMatrix();
+
+#if defined(HD_HAS_screenSpaceWidths) || defined(HD_HAS_minScreenSpaceWidths)
+
+    // If any screen space width operations are required, compute the 
+    // conversion factor from world units to screen pixels at this curve tess
+    // position. Critically, this procedure does not rely on the thickening
+    // 'direction' vector, which may point out of the image plane and have 
+    // zero apparent screen-space length in some circumstances.
+    //
+    // This procedure is correct for both perspective and ortho cameras. It is a
+    // boiled-down x-only expression of the projected pixel length of a
+    // hypothetical unit X vector in eye space, and can be derived by writing a
+    // projection matrix transforming (1,0,0,1) and performing the usual 
+    // division by w. Since the viewport is 2 NDC units across, we take half the
+    // viewportSizeX. The division is by -position.z for perspective projections
+    // and by 1 for ortho projections, using entries 2,3 and 3,3 to select
+    // which. See articles on the forms of these projection matrices for more
+    // info.
+    float x = projMat[0][0];
+    float w = position.z * projMat[2][3] + projMat[3][3];
+    float viewportSizeX = GetViewport().z;
+    float worldToPixelWidth = (viewportSizeX * 0.5) * (x / w);
+
+#ifdef HD_HAS_screenSpaceWidths
+    if (HdGet_screenSpaceWidths()) {
+        // Compute a world space width that yields the given width interpreted
+        // in screen space pixels.
+        worldSpaceWidth = rawWidth / worldToPixelWidth;
+    }
+#endif
+
+#ifdef HD_HAS_minScreenSpaceWidths
+    // Compute a world space width that yields, at minimum, the given 
+    // minScreenSpaceWidth interpreted in screen space pixels.
+    float minScreenSpaceWidth = HdGet_minScreenSpaceWidths();
+    float screenSpaceWidth = worldSpaceWidth * worldToPixelWidth;
+    if (screenSpaceWidth < minScreenSpaceWidth) {
+        worldSpaceWidth *= minScreenSpaceWidth / screenSpaceWidth;
+    }
+#endif 
+
+#endif // end screen space operations
+
+    vec3 offset = direction * worldSpaceWidth * 0.5;
     position.xyz = position.xyz + offset;
     position.w = 1;
 
     outData.Peye = position;
 
-    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    gl_Position = vec4(projMat * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
     ProcessPrimvars(basis, 0, 1, 2, 3, vec2(u, v)); // interpolate varying primvars

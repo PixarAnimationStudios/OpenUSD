@@ -95,6 +95,9 @@ public:
     HDST_API
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
+    HDST_API
+    TfTokenVector const & GetBuiltinPrimvarNames() const override;
+
 protected:
     HDST_API
     void _InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits) override;
