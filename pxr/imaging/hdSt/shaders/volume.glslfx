@@ -275,8 +275,9 @@ lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
 {
     vec3 result = vec3(0.0);
     for (int i = 0; i < NUM_LIGHTS; ++i) {
+        LightSource light = GetLightSource(i);
 
-        const vec4 Plight = lightSource[i].position;
+        const vec4 Plight = light.position;
 
         const vec3 lightDirectionEye = normalize(
             (Plight.w == 0.0) ? Plight.xyz : Plight.xyz - rayPointEye);
@@ -287,7 +288,7 @@ lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
 
 // For now, not using shadows for volumes.
 #if USE_SHADOWS && 0
-        const float shadow = (lightSource[i].hasShadow) ?
+        const float shadow = light.hasShadow ?
             shadowing(/*lightIndex=*/i, rayPointEye) : 1.0;
 #else
         const float shadow = 1.0;
@@ -302,7 +303,7 @@ lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
                 // beyond light source).
                 accumulatedTransmittance(rayPointEye, lightDirectionEye) *
                 phaseFunction(-rayDirectionEye, lightDirectionEye) *
-                lightSource[i].diffuse.rgb;
+                light.diffuse.rgb;
         }
     }
 

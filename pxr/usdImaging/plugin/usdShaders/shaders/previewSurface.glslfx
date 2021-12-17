@@ -388,11 +388,12 @@ evaluateLights(
 
 #if NUM_LIGHTS > 0
     for (int i = 0; i < NUM_LIGHTS; ++i) {
+        LightSource light = GetLightSource(i);
 
         // Calculate necessary vector information for lighting
-        vec4 Plight = (lightSource[i].isIndirectLight)
+        vec4 Plight = light.isIndirectLight
                         ? vec4(0,0,0,1)
-                        : lightSource[i].position;
+                        : light.position;
         vec3 l = (Plight.w == 0.0)
                     ? normalize(Plight.xyz)
                     : normalize(Plight - Peye).xyz;
@@ -408,14 +409,14 @@ evaluateLights(
         // Calculate the shadow factor
         float shadow = 1.0;
     #if USE_SHADOWS
-        shadow = (lightSource[i].hasShadow) ?
+        shadow = light.hasShadow ?
             shadowing(/*lightIndex=*/i, Peye) : 1.0;
     #endif
 
         float intensity = atten * spot * shadow;
 
-        vec3 lightDiffuseIrradiance = intensity * lightSource[i].diffuse.rgb;
-        vec3 lightSpecularIrradiance = intensity * lightSource[i].specular.rgb;
+        vec3 lightDiffuseIrradiance = intensity * light.diffuse.rgb;
+        vec3 lightSpecularIrradiance = intensity * light.specular.rgb;
 
         LightingContributions lightingContrib = evaluateLight(
             diffuseColor,
@@ -437,7 +438,7 @@ evaluateLights(
             lightSpecularIrradiance);
 
         // calculate the indirect light (DomeLight)
-        if (lightSource[i].isIndirectLight) {
+        if (light.isIndirectLight) {
 
             indirectLight = evaluateIndirectLighting(diffuseColor,
                                     specularColor, Neye, Reye, NdotE,
@@ -445,7 +446,7 @@ evaluateLights(
                                     specularRoughness, useSpecularWorkflow,
                                     clearcoatAmount, clearcoatColor, 
                                     clearcoatRoughness, 
-                                    lightSource[i].worldToLightTransform);
+                                    light.worldToLightTransform);
         }
         // all other light sources contribute to the direct lighting
         else {

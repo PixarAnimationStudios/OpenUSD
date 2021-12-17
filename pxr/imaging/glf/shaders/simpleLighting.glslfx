@@ -50,6 +50,10 @@ layout(std140) uniform Shadow {
     ShadowMatrix shadow[NUM_SHADOWS];
 };
 
+ShadowMatrix GetShadow(int shadowIndex) {
+    return shadow[shadowIndex];
+}
+
 out vec2 FshadowFilterWidth[NUM_SHADOWS];
 
 // Transforms a unit tangent vector parallel to a coordinate axis in
@@ -79,10 +83,11 @@ computeShadowFilterWidth(vec4 Peye)
 {
     // interpolate filter width
     for (int i = 0; i < NUM_SHADOWS; ++i) {
+        ShadowMatrix shadowMat = GetShadow(i);
         FShadowFilterWidth[i] =
-            vec2(shadow[i].blur) /
-            vec2(shadowTangentLength(shadow[i].shadowToEyeMatrix[0], Peye),
-                 shadowTangentLength(shadow[i].shadowToEyeMatrix[1], Peye));
+            vec2(shadowMat.blur) /
+            vec2(shadowTangentLength(shadowMat.shadowToEyeMatrix[0], Peye),
+                 shadowTangentLength(shadowMat.shadowToEyeMatrix[1], Peye));
     }
 }
 
@@ -156,6 +161,17 @@ layout(std140) uniform Lighting {
     LightSource lightSource[NUM_LIGHTS];
 };
 
+bool GetUseLighting() {
+    return useLighting;
+}
+
+bool GetUseColorMaterialDiffuse() {
+    return useColorMaterialDiffuse;
+}
+
+LightSource GetLightSource(int lightIndex) {
+    return lightSource[lightIndex];
+}
 #endif // NUM_LIGHTS == 0
 
 #if NUM_SHADOWS == 0
@@ -165,6 +181,10 @@ layout(std140) uniform Lighting {
 layout(std140) uniform Shadow {
     ShadowMatrix shadow[NUM_SHADOWS];
 };
+
+ShadowMatrix GetShadow(int shadowIndex) {
+    return shadow[shadowIndex];
+}
 
 float
 shadowTangentLength(vec4 dir, vec4 Peye)
@@ -176,10 +196,11 @@ shadowTangentLength(vec4 dir, vec4 Peye)
 vec2
 computeShadowFilterWidth(int index, vec4 Peye)
 {
+    ShadowMatrix shadowMat = GetShadow(index);
     return
-        vec2(shadow[index].blur) /
-        vec2(shadowTangentLength(shadow[index].shadowToEyeMatrix[0], Peye),
-             shadowTangentLength(shadow[index].shadowToEyeMatrix[1], Peye));
+        vec2(shadowMat.blur) /
+        vec2(shadowTangentLength(shadowMat.shadowToEyeMatrix[0], Peye),
+             shadowTangentLength(shadowMat.shadowToEyeMatrix[1], Peye));
 }
 
 #endif  // NUM_SHADOWS == 0
@@ -231,7 +252,7 @@ float
 shadowCompare(int shadowIndex, vec4 coord)
 {
     coord /= coord.w;
-    coord.z = min(1, coord.z + shadow[shadowIndex].bias);
+    coord.z = min(1, coord.z + GetShadow(shadowIndex).bias);
 
     // Cascade selection (in shadowing()) ensures Pshadow.xy is in [0,1],
     // but shadowFilter() can throw that off so we need to clamp.
@@ -254,11 +275,11 @@ float
 shadowing(int lightIndex, vec4 Peye)
 {
 #if NUM_SHADOWS > 0
-    for (int shadowIndex = lightSource[lightIndex].shadowIndexStart;
-         shadowIndex <= lightSource[lightIndex].shadowIndexEnd;
+    for (int shadowIndex = GetLightSource(lightIndex).shadowIndexStart;
+         shadowIndex <= GetLightSource(lightIndex).shadowIndexEnd;
          ++shadowIndex) {
 
-        vec4 coord = shadow[shadowIndex].eyeToShadowMatrix * Peye;
+        vec4 coord = GetShadow(shadowIndex).eyeToShadowMatrix * Peye;
 
         // If the point-to-be-lit isn't covered by this cascade, skip to
         // the next one...
@@ -278,11 +299,12 @@ float
 lightDistanceAttenuation(vec4 Peye, int index)
 {
     float distAtten = 1.0;
-    if (lightSource[index].position.w != 0.0) {
-        float d = distance(lightSource[index].position, Peye);
-        distAtten = 1.0 / (lightSource[index].attenuation[0] +
-                           lightSource[index].attenuation[1] * d +
-                           lightSource[index].attenuation[2] * d*d);
+    LightSource light = GetLightSource(index);
+    if (light.position.w != 0.0) {
+        float d = distance(light.position, Peye);
+        distAtten = 1.0 / (light.attenuation[0] +
+                           light.attenuation[1] * d +
+                           light.attenuation[2] * d*d);
     }
     return distAtten;
 }
@@ -291,10 +313,11 @@ float
 lightSpotAttenuation(vec3 l, int index)
 {
     float spotAtten = 1.0;
-    if (lightSource[index].spotCutoffAndFalloff.x < 180.0) {
-        float cosLight = dot(-l, lightSource[index].spotDirection.xyz);
-        spotAtten = (cosLight < cos(radians(lightSource[index].spotCutoffAndFalloff.x)))
-                ? 0.0 : pow(cosLight, lightSource[index].spotCutoffAndFalloff.y);
+    LightSource light = GetLightSource(index);
+    if (light.spotCutoffAndFalloff.x < 180.0) {
+        float cosLight = dot(-l, light.spotDirection.xyz);
+        spotAtten = (cosLight < cos(radians(light.spotCutoffAndFalloff.x)))
+                ? 0.0 : pow(cosLight, light.spotCutoffAndFalloff.y);
     }
     return spotAtten;
 }
@@ -336,7 +359,7 @@ evaluateIndirectLight(vec3 Neye, vec3 Reye, float NdotE, float EdotH,
     const vec3 F = mix(F0, F90, fresnel);
 
     mat4 transformationMatrix = 
-        lightSource[i].worldToLightTransform * GetWorldToViewInverseMatrix();
+        GetLightSource(i).worldToLightTransform * GetWorldToViewInverseMatrix();
 
     // Diffuse Component
     vec3 dir = normalize((transformationMatrix * vec4(Neye,0.0)).xyz);
@@ -383,16 +406,17 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
     float shininess = props.shininess;
     
     for (int i = 0; i < NUM_LIGHTS; ++i) {
+        LightSource light = GetLightSource(i);
 
-        vec4 Plight = (lightSource[i].isIndirectLight)
+        vec4 Plight = (light.isIndirectLight)
                         ? vec4(0,0,0,1)
-                        : lightSource[i].position;
+                        : light.position;
         vec3 l = (Plight.w == 0.0)
                         ? normalize(Plight.xyz)
                         : normalize(Plight - Peye).xyz;
         vec3 h = normalize(l + vec3(0,0,1));    // directional viewer
 
-        if (lightSource[i].isIndirectLight) {
+        if (light.isIndirectLight) {
             float NdotE = max(0.0, dot(n, e));
             float EdotH = max(0.0, dot(e, h));
             vec3 Reye = reflect(-e, n);
@@ -400,11 +424,11 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
             LightingContribution indirectLight = evaluateIndirectLight(
                 Neye, Reye, NdotE, EdotH, props, i);
 
-            result.ambient += lightSource[i].ambient.rgb;
+            result.ambient += light.ambient.rgb;
             result.diffuse += indirectLight.diffuse * 
-                lightSource[i].diffuse.rgb;
+                light.diffuse.rgb;
             result.specular += indirectLight.specular * 
-                lightSource[i].specular.rgb;
+                light.specular.rgb;
         } else {
             //cosine of incident angle of lightn
             float NdotL = max(0.0, dot(n, l));
@@ -422,14 +446,14 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
             atten *= lightSpotAttenuation(l, i);
 
 #if USE_SHADOWS
-            float shadow = (lightSource[i].hasShadow) ?
+            float shadow = light.hasShadow ?
                 shadowing(/*lightIndex=*/i, Peye) : 1.0;
 #else
             float shadow = 1.0;
 #endif
-            result.ambient += atten * lightSource[i].ambient.rgb;
-            result.diffuse += atten * shadow * d * lightSource[i].diffuse.rgb;
-            result.specular += atten * shadow * s * lightSource[i].specular.rgb;
+            result.ambient += atten * light.ambient.rgb;
+            result.diffuse += atten * shadow * d * light.diffuse.rgb;
+            result.specular += atten * shadow * s * light.specular.rgb;
         }
     }
 
@@ -531,7 +555,7 @@ simpleLightingMaterial(vec4 color, vec4 Peye, vec3 Neye, vec4 Ctint)
     vec4 specular = material.specular;
     float shininess = material.shininess;
 
-    color = material.emission + (material.sceneColor * material.ambient);
+    color = material.emission + (material.sceneColor * ambient);
 
     return simpleLighting(color, Peye, Neye, Ctint,
                           diffuse, ambient, specular, shininess);
