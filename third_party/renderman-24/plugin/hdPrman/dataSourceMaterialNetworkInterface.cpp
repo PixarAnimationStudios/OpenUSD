@@ -279,7 +279,7 @@ HdPrmanDataSourceMaterialNetworkInterface::GetNodeInputConnectionNames(
     return result;
 }
 
-HdPrmanMaterialNetworkInterface::InputConnectionVector
+HdMaterialNetworkInterface::InputConnectionVector
 HdPrmanDataSourceMaterialNetworkInterface::GetNodeInputConnection(
     const TfToken &nodeName,
     const TfToken &inputName) const
@@ -470,7 +470,7 @@ HdPrmanDataSourceMaterialNetworkInterface::GetTerminalNames() const
     return result;
 }
 
-HdPrmanMaterialNetworkInterface::InputConnectionResult
+HdMaterialNetworkInterface::InputConnectionResult
 HdPrmanDataSourceMaterialNetworkInterface::GetTerminalConnection(
     const TfToken &terminalName) const
 {

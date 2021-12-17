@@ -93,7 +93,6 @@ pxr_plugin(${PXR_PACKAGE}
         
     PUBLIC_HEADERS
         api.h
-        materialNetworkInterface.h
 
     PRIVATE_HEADERS
         virtualStructConditionalGrammar.tab.h

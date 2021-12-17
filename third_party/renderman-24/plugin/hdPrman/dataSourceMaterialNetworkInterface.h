@@ -25,8 +25,8 @@
 #ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_DATA_SOURCE_MATERIAL_NETWORK_INTERFACE_H
 #define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_DATA_SOURCE_MATERIAL_NETWORK_INTERFACE_H
 
-#include "hdPrman/materialNetworkInterface.h"
 #include "pxr/imaging/hd/containerDataSourceEditor.h"
+#include "pxr/imaging/hd/materialNetworkInterface.h"
 #include <unordered_map>
 #include <unordered_set>
 
@@ -34,13 +34,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdPrmanDataSourceMaterialNetworkInterface
 ///
-/// Implements HdPrmanMaterialNetworkInterface for reading from and overriding
+/// Implements HdMaterialNetworkInterface for reading from and overriding
 /// values within data sources. Overrides are managed internally via an
 /// HdContainerDataSourceEditor. Calling Finish returns the resulting 
 /// container data resource representing an individual material network. If
 /// nothing is overriden, the input data source is returned.
 class HdPrmanDataSourceMaterialNetworkInterface
-    : public HdPrmanMaterialNetworkInterface
+    : public HdMaterialNetworkInterface
 {
 public:
 

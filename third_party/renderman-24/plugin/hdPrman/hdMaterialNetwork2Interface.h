@@ -24,18 +24,18 @@
 #ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_HD_MATERIAL_NETWORK_2_INTERFACE_H
 #define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_HD_MATERIAL_NETWORK_2_INTERFACE_H
 
-#include "hdPrman/materialNetworkInterface.h"
 #include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hd/materialNetworkInterface.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdPrmanHdMaterialNetwork2Interface
 ///
-/// Implements HdPrmanMaterialNetworkInterface interface backed by an
+/// Implements HdMaterialNetworkInterface interface backed by an
 /// HdMaterialNetwork2 -- which is useful for implementing matfilt functions
 /// without being tied to the legacy data model
 class HdPrmanHdMaterialNetwork2Interface
-    : public HdPrmanMaterialNetworkInterface
+    : public HdMaterialNetworkInterface
 {
 public:
 

@@ -57,7 +57,7 @@ struct _VSCGConditionalBase
     typedef std::shared_ptr<_VSCGConditionalBase> Ptr;
 
     virtual bool Eval(
-        const HdPrmanMaterialNetworkInterface *interface,
+        const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
         const NdrTokenVec & shaderTypePriority) = 0;
 };
@@ -82,7 +82,7 @@ struct ConditionalParamIsConnected : public ConditionalParamBase
     : ConditionalParamBase(name) {}
 
     bool Eval(
-        const HdPrmanMaterialNetworkInterface *interface,
+        const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
         const NdrTokenVec & shaderTypePriority) override
     {
@@ -96,7 +96,7 @@ struct ConditionalParamIsNotConnected : public ConditionalParamBase
     : ConditionalParamBase(name) {}
 
     bool Eval(
-        const HdPrmanMaterialNetworkInterface *interface,
+        const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
         const NdrTokenVec & shaderTypePriority) override
     {
@@ -110,7 +110,7 @@ struct ConditionalParamIsSet : public ConditionalParamBase
     : ConditionalParamBase(name) {}
 
     bool Eval(
-        const HdPrmanMaterialNetworkInterface *interface,
+        const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
         const NdrTokenVec & shaderTypePriority) override
     {
@@ -124,7 +124,7 @@ struct ConditionalParamIsNotSet : public ConditionalParamBase
     : ConditionalParamBase(name) {}
 
     bool Eval(
-        const HdPrmanMaterialNetworkInterface *interface,
+        const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
         const NdrTokenVec & shaderTypePriority) override
     {
@@ -166,7 +166,7 @@ struct ConditionalParamCmpBase : public ConditionalParamBase
     }
 
     static bool GetParameterValue(
-        const HdPrmanMaterialNetworkInterface *interface,
+        const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
         const TfToken & paramName,
         const NdrTokenVec & shaderTypePriority,
@@ -198,7 +198,7 @@ struct ConditionalParamCmpBase : public ConditionalParamBase
             const std::string & v1, const std::string & v2) = 0;
 
     bool Eval(
-        const HdPrmanMaterialNetworkInterface *interface,
+        const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
         const NdrTokenVec & shaderTypePriority) override
     {
@@ -332,7 +332,7 @@ struct ConditionalAnd : _VSCGConditionalBase
     : _VSCGConditionalBase(), left(left), right(right) {}
 
     bool Eval(
-        const HdPrmanMaterialNetworkInterface *interface,
+        const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
         const NdrTokenVec & shaderTypePriority) override
     {
@@ -360,7 +360,7 @@ struct ConditionalOr : _VSCGConditionalBase
         delete right;
     }
     bool Eval(
-        const HdPrmanMaterialNetworkInterface *interface,
+        const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
         const NdrTokenVec & shaderTypePriority) override
     {
@@ -1371,7 +1371,7 @@ void MatfiltVstructConditionalEvaluator::Evaluate(
     const TfToken & upstreamNodeId,
     const TfToken & upstreamNodeOutput,
     const NdrTokenVec & shaderTypePriority,
-    HdPrmanMaterialNetworkInterface *interface) const
+    HdMaterialNetworkInterface *interface) const
 {
     if (!_impl) {
         TF_CODING_ERROR("MatfiltVstructConditionalEvaluator: No impl");

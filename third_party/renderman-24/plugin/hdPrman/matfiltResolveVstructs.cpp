@@ -188,7 +188,7 @@ std::mutex _ShaderInfoEntry::_cachedEntryMutex;
 
 static void
 _ResolveVstructsForNode(
-    HdPrmanMaterialNetworkInterface *interface,
+    HdMaterialNetworkInterface *interface,
     const TfToken &nodeId,
     std::set<TfToken> &resolvedNodeNames,
     const NdrTokenVec &shaderTypePriority,
@@ -225,7 +225,7 @@ _ResolveVstructsForNode(
 
         const auto & vstructInfo = (*I).second;
 
-        HdPrmanMaterialNetworkInterface::InputConnectionVector
+        HdMaterialNetworkInterface::InputConnectionVector
             upstreamConnections =
                 interface->GetNodeInputConnection(nodeId, inputName);
 
@@ -326,7 +326,7 @@ _ResolveVstructsForNode(
 
 void
 MatfiltResolveVstructs(
-    HdPrmanMaterialNetworkInterface *interface,
+    HdMaterialNetworkInterface *interface,
     const NdrTokenVec & shaderTypePriority,
     bool enableConditions)
 {

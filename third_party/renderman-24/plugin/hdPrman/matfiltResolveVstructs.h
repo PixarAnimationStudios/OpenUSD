@@ -25,8 +25,8 @@
 #define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATFILT_RESOLVE_VSTRUCTS_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/materialNetworkInterface.h"
 #include "hdPrman/matfiltFilterChain.h"
-#include "hdPrman/materialNetworkInterface.h"
 
 #include <memory>
 
@@ -48,7 +48,7 @@ void MatfiltResolveVstructs(
 
 /// Resolves vstructs against an abstract material interface.
 void MatfiltResolveVstructs(
-        HdPrmanMaterialNetworkInterface *networkInterface,
+        HdMaterialNetworkInterface *networkInterface,
         const NdrTokenVec & shaderTypePriority,
         bool enableConditions);
 
@@ -82,7 +82,7 @@ public:
             const TfToken &upstreamNodeId,
             const TfToken &upstreamNodeOutput,
             const NdrTokenVec & shaderTypePriority,
-            HdPrmanMaterialNetworkInterface *networkInterface) const;
+            HdMaterialNetworkInterface *networkInterface) const;
 private:
     MatfiltVstructConditionalEvaluator() = default;
 

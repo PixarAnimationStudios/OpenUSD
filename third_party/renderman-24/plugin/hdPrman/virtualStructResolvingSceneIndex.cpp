@@ -29,7 +29,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static void
 _ResolveVirtualStructs(
-    HdPrmanMaterialNetworkInterface *interface, bool enableConditions)
+    HdMaterialNetworkInterface *interface, bool enableConditions)
 {
     static const NdrTokenVec shaderTypePriority = {
         TfToken("OSL"),
@@ -41,14 +41,14 @@ _ResolveVirtualStructs(
 
 static void
 _ResolveVirtualStructsWithConditionals(
-    HdPrmanMaterialNetworkInterface *networkInterface)
+    HdMaterialNetworkInterface *networkInterface)
 {
     _ResolveVirtualStructs(networkInterface, true);
 }
 
 static void
 _ResolveVirtualStructsWithoutConditionals(
-    HdPrmanMaterialNetworkInterface *networkInterface)
+    HdMaterialNetworkInterface *networkInterface)
 {
     _ResolveVirtualStructs(networkInterface, false);
 }

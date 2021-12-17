@@ -13,7 +13,7 @@
 //
 // You may obtain a copy of the Apache License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICEN SE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the Apache License with the above modification is
@@ -26,7 +26,7 @@
 
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
-#include "hdPrman/materialNetworkInterface.h"
+#include "pxr/imaging/hd/materialNetworkInterface.h"
 
 #include <functional>
 
@@ -49,7 +49,7 @@ public:
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override final;
 
     using FilteringFnc =
-        std::function<void(HdPrmanMaterialNetworkInterface *)>;
+        std::function<void(HdMaterialNetworkInterface *)>;
 
 protected:
     virtual FilteringFnc _GetFilteringFunction() const = 0;

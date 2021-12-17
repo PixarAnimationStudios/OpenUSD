@@ -135,7 +135,7 @@ HdPrmanHdMaterialNetwork2Interface::GetNodeInputConnectionNames(
     return result;
 }
 
-HdPrmanMaterialNetworkInterface::InputConnectionVector
+HdMaterialNetworkInterface::InputConnectionVector
 HdPrmanHdMaterialNetwork2Interface::GetNodeInputConnection(
     const TfToken &nodeName,
     const TfToken &inputName) const

@@ -21,16 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_NETWORK_INTERFACE_H
-#define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_NETWORK_INTERFACE_H
+#ifndef PXR_IMAGING_HD_MATERIAL_NETWORK_INTERFACE_H
+#define PXR_IMAGING_HD_MATERIAL_NETWORK_INTERFACE_H
 
+#include "pxr/pxr.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/tf/smallVector.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class HdPrmanMaterialNetworkInterface
+/// \class HdMaterialNetworkInterface
 ///
 /// Abstract interface for querying and mutating a material network.
 ///
@@ -43,10 +44,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///       a thread-specific interface instance. The non-const methods should
 ///       never be considered thread-safe from multiple interface instances
 ///       backed from the same concrete data.
-class HdPrmanMaterialNetworkInterface
+class HdMaterialNetworkInterface
 {
 public:
-    virtual ~HdPrmanMaterialNetworkInterface() = default;
+    virtual ~HdMaterialNetworkInterface() = default;
 
     virtual TfTokenVector GetNodeNames() const  = 0;
     virtual TfToken GetNodeType(const TfToken &nodeName) const = 0;
@@ -115,4 +116,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_NETWORK_INTERFACE_H
+#endif // PXR_IMAGING_HD_MATERIAL_NETWORK_INTERFACE_H
