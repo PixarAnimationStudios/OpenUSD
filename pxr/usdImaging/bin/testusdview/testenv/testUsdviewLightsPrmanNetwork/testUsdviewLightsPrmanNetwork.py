@@ -1,6 +1,6 @@
 #!/pxrpythonsubst
 #
-# Copyright 2017 Pixar
+# Copyright 2021 Pixar
 #
 # Licensed under the Apache License, Version 2.0 (the "Apache License")
 # with the following modification; you may not use this file except in
@@ -38,30 +38,12 @@ def _setLights(appController, ambientChecked, domeChecked):
 
     appController._stageView.updateGL()
 
-# Test with only the camera light.
-def _testCameraLight(appController):
-    _setLights(appController, True, False)
-    appController._takeShot("camera.png")
-
-# Test with all lights off.
-def _testNoLights(appController):
-    _setLights(appController, False, False)
-    appController._takeShot("noLights.png")
-
-# Test with only the dome light.
-def _testDomeLight(appController):
-    _setLights(appController, False, True)
-    appController._takeShot("dome.png")
-
 # Test with both the dome and camera lights.
 def _testBothLights(appController):
     _setLights(appController, True, True)
-    appController._takeShot("bothLights.png")
+    appController._takeShot("bothLightsPrmanNetwork.png", waitForConvergence=True)
 
 # Test that lights work properly in usdview.
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
-    _testCameraLight(appController)
-    _testNoLights(appController)
-    _testDomeLight(appController)
     _testBothLights(appController)
