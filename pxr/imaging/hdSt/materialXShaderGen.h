@@ -97,6 +97,7 @@ private:
     MaterialX::StringMap _mxHdPrimvarMap;
     std::string _defaultTexcoordName;
     std::string _materialTag;
+    bool _bindlessTexturesEnabled;
 };
 
 

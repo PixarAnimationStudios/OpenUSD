@@ -567,7 +567,8 @@ HdSt_ApplyMaterialXFilter(
     SdfPath const& materialPath,
     HdMaterialNode2 const& terminalNode,
     SdfPath const& terminalNodePath,
-    HdSt_MaterialParamVector* materialParams)
+    HdSt_MaterialParamVector* materialParams,
+    bool const bindlessTexturesEnabled)
 {
     // Check if the Terminal is a MaterialX Node
     SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
@@ -605,6 +606,7 @@ HdSt_ApplyMaterialXFilter(
                             hdPrimvarNodes, &mxHdInfo.primvarMap);
 
         mxHdInfo.materialTag = _GetMaterialTag(terminalNode);
+        mxHdInfo.bindlessTexturesEnabled = bindlessTexturesEnabled;
 
         // Load MaterialX Document and generate the glslfxShader
         mx::ShaderPtr glslfxShader = HdSt_GenMaterialXShader(mtlxDoc,

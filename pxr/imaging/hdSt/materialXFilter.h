@@ -41,11 +41,13 @@ struct MxHdInfo {
         : textureMap(MaterialX::StringMap()), 
           primvarMap(MaterialX::StringMap()), 
           defaultTexcoordName("st"),
-          materialTag(HdStMaterialTagTokens->defaultMaterialTag.GetString()) {}
+          materialTag(HdStMaterialTagTokens->defaultMaterialTag.GetString()),
+          bindlessTexturesEnabled(false) {}
     MaterialX::StringMap textureMap;
     MaterialX::StringMap primvarMap;
     std::string defaultTexcoordName;
     std::string materialTag;
+    bool bindlessTexturesEnabled;
 };
 
 /// MaterialX Filter
@@ -55,7 +57,8 @@ void HdSt_ApplyMaterialXFilter(
     SdfPath const& materialPath,
     HdMaterialNode2 const& terminalNode,
     SdfPath const& terminalNodePath,
-    HdSt_MaterialParamVector* materialParams);
+    HdSt_MaterialParamVector* materialParams,
+    bool const bindlessTexturesEnabled);
 
 // Generates the glsfx shader for the given MaterialX Document
 MaterialX::ShaderPtr HdSt_GenMaterialXShader(

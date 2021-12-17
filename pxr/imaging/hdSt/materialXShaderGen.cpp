@@ -93,7 +93,8 @@ HdStMaterialXShaderGen::HdStMaterialXShaderGen(
     : GlslShaderGenerator(), 
       _mxHdTextureMap(mxHdInfo.textureMap),
       _mxHdPrimvarMap(mxHdInfo.primvarMap),
-      _materialTag(mxHdInfo.materialTag)
+      _materialTag(mxHdInfo.materialTag),
+      _bindlessTexturesEnabled(mxHdInfo.bindlessTexturesEnabled)
 {
     _defaultTexcoordName = (mxHdInfo.defaultTexcoordName == mx::EMPTY_STRING) ?
                             "st" : mxHdInfo.defaultTexcoordName;
@@ -259,6 +260,34 @@ HdStMaterialXShaderGen::_EmitMxFunctions(
             emitComment("Uniform block: " + uniforms.getName(), mxStage);
             emitVariableDeclarations(uniforms, mx::EMPTY_STRING, 
                                      mx::Syntax::SEMICOLON, mxContext, mxStage);
+            emitLineBreak(mxStage);
+        }
+    }
+
+    // If bindlessTextures are not enabled, the above for loop skips 
+    // initializing textures. Initialize them here by defining mappings 
+    // to the appropriate HdGetSampler function. 
+    if (!_bindlessTexturesEnabled) {
+
+        // Define mappings for the DomeLight Textures
+        emitLine("#ifdef HD_HAS_domeLightIrradiance", mxStage, false);
+        emitLine("#define u_envRadiance HdGetSampler_domeLightPrefilter() ", mxStage, false);
+        emitLine("#define u_envIrradiance HdGetSampler_domeLightIrradiance() ", mxStage, false);
+        emitLine("#else", mxStage, false);
+        emitLine("uniform sampler2D u_envRadiance;", mxStage, false);
+        emitLine("uniform sampler2D u_envIrradiance;", mxStage, false);
+        emitLine("#endif", mxStage, false);
+        emitLineBreak(mxStage);
+
+        // Define mappings for the MaterialX Textures
+        if (!_mxHdTextureMap.empty()) {
+            emitComment("Define MaterialX to Hydra Sampler mappings", mxStage);
+            for (auto texturePair : _mxHdTextureMap) {
+                emitLine(TfStringPrintf("#define %s_file HdGetSampler_%s()",
+                                        texturePair.first.c_str(),
+                                        texturePair.second.c_str()),
+                        mxStage, false);
+            }
             emitLineBreak(mxStage);
         }
     }
@@ -496,15 +525,20 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
     emitLineBreak(mxStage);
 
     // Initialize the Indirect Light Textures
+    // Note: only need to initialize textures when bindlessTextures are enabled,
+    // when bindlessTextures are not enabled, mappings are defined in 
+    // HdStMaterialXShaderGen::_EmitMxFunctions
     emitLine("#ifdef HD_HAS_domeLightIrradiance", mxStage, false);
-    emitLine("u_envIrradiance = HdGetSampler_domeLightIrradiance()", mxStage);
-    emitLine("u_envRadiance = HdGetSampler_domeLightPrefilter()", mxStage);
+    if (_bindlessTexturesEnabled) {
+        emitLine("u_envIrradiance = HdGetSampler_domeLightIrradiance()", mxStage);
+        emitLine("u_envRadiance = HdGetSampler_domeLightPrefilter()", mxStage);
+    }
     emitLine("u_envRadianceMips = textureQueryLevels(u_envRadiance)", mxStage);
     emitLine("#endif", mxStage, false);
     emitLineBreak(mxStage);
 
     // Initialize MaterialX Texture samplers with HdGetSampler equivalents
-    if (!_mxHdTextureMap.empty()) {
+    if (_bindlessTexturesEnabled && !_mxHdTextureMap.empty()) {
         emitComment("Initialize Material Textures", mxStage);
         for (auto texturePair : _mxHdTextureMap) {
             emitLine(texturePair.first + "_file = "
@@ -648,6 +682,12 @@ HdStMaterialXShaderGen::emitVariableDeclarations(
         emitLineBegin(stage);
         const auto variable = block[i];
         const auto varType = variable->getType();
+
+        // If bindlessTextures are not enabled the Mx Smpler names are mapped 
+        // to the Hydra equivalents in HdStMaterialXShaderGen::_EmitMxFunctions
+        if (!_bindlessTexturesEnabled && varType == mx::Type::FILENAME) {
+            continue;
+        }
 
         // Only declare the variables that we need to initialize with Hd Data
         if ( (isPublicUniform && !_IsHardcodedPublicUniform(*varType))

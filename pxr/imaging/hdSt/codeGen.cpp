@@ -538,10 +538,6 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     if (bindlessTextureEnabled) {
         _genHeader << "#extension GL_ARB_bindless_texture : require\n";
     }
-    if (!bindlessTextureEnabled) {
-        // XXX: Needed by MaterialX GLSL shader gen
-        _genHeader << "#extension GL_ARB_bindless_texture : require\n";
-    }
     if (glslVersion < 460 && shaderDrawParametersEnabled) {
         _genHeader << "#extension GL_ARB_shader_draw_parameters : require\n";
     }
