@@ -1174,20 +1174,17 @@ HdSceneIndexAdapterSceneDelegate::GetPrimvarDescriptors(
         }
     }
 
-    if (it->second.primvarDescriptorsState.load() ==
-            _PrimCacheEntry::ReadStateUnread) {
-        it->second.primvarDescriptorsState.store(
-            _PrimCacheEntry::ReadStateReading);
+    _PrimCacheEntry::ReadState current = _PrimCacheEntry::ReadStateUnread;
+    if (it->second.primvarDescriptorsState.compare_exchange_strong(
+            current, _PrimCacheEntry::ReadStateReading)) {
         it->second.primvarDescriptors = std::move(descriptors);
         it->second.primvarDescriptorsState.store(
             _PrimCacheEntry::ReadStateRead);
-    } else {
-        // if someone is in the process of filling the entry, just
-        // return our value instead of trying to assign
-        return descriptors[interpolation];
+
+        return it->second.primvarDescriptors[interpolation];
     }
-    
-    return it->second.primvarDescriptors[interpolation];
+
+    return descriptors[interpolation];
 }
 
 HdExtComputationPrimvarDescriptorVector
