@@ -85,6 +85,8 @@ public:
     
 protected:
     HdStResourceRegistry* GetResourceRegistry();
+
+    HdStResourceRegistry* GetResourceRegistry() const;
     
 private:
     HdStResourceRegistry* _resourceRegistry;

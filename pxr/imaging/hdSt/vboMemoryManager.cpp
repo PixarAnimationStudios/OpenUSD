@@ -24,7 +24,7 @@
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
 
 #include "pxr/imaging/hdSt/bufferResource.h"
-#include "pxr/imaging/hdSt/glUtils.h"
+#include "pxr/imaging/hdSt/bufferUtils.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -697,7 +697,8 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::GetByteOffset(
 }
 
 VtValue
-HdStVBOMemoryManager::_StripedBufferArrayRange::ReadData(TfToken const &name) const
+HdStVBOMemoryManager::_StripedBufferArrayRange::ReadData(
+    TfToken const &name) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -714,13 +715,12 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::ReadData(TfToken const &name) co
 
     size_t vboOffset = _GetByteOffset(VBO);
 
-    uint64_t vbo = VBO->GetHandle() ? VBO->GetHandle()->GetRawResource() : 0;
-
-    result = HdStGLUtils::ReadBuffer(vbo,
-                                   VBO->GetTupleType(),
-                                   vboOffset,
-                                   /*stride=*/0, // not interleaved.
-                                   _numElements);
+    result = HdStReadBuffer(VBO->GetHandle(),
+                            VBO->GetTupleType(),
+                            vboOffset,
+                            /*stride=*/0, // not interleaved.
+                            _numElements,
+                            GetResourceRegistry());
 
     return result;
 }

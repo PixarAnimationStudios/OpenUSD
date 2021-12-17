@@ -23,7 +23,7 @@
 //
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
-#include "pxr/imaging/hdSt/glUtils.h"
+#include "pxr/imaging/hdSt/bufferUtils.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/stagingBuffer.h"
 #include "pxr/imaging/hdSt/tokens.h"
@@ -720,11 +720,12 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::ReadData(
         return result;
     }
 
-    result = HdStGLUtils::ReadBuffer(VBO->GetHandle()->GetRawResource(),
-                                   VBO->GetTupleType(),
-                                   VBO->GetOffset() + VBO->GetStride() * _index,
-                                   VBO->GetStride(),
-                                   _numElements);
+    result = HdStReadBuffer(VBO->GetHandle(),
+                            VBO->GetTupleType(),
+                            VBO->GetOffset() + VBO->GetStride() * _index,
+                            VBO->GetStride(),
+                            _numElements,
+                            GetResourceRegistry());
 
     return result;
 }

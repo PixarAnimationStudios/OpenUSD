@@ -71,7 +71,7 @@ pxr_library(hdSt
         glConversions
         glslfxShader
         glslProgram
-        glUtils
+        bufferUtils
         hgiConversions
         hioConversions
         imageShaderRenderPass

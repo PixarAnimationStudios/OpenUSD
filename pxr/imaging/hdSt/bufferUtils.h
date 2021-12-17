@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HD_ST_GL_UTILS_H
-#define PXR_IMAGING_HD_ST_GL_UTILS_H
+#ifndef PXR_IMAGING_HD_ST_BUFFER_UTILS_H
+#define PXR_IMAGING_HD_ST_BUFFER_UTILS_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
@@ -33,18 +33,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdStGLUtils {
-public:
+class HdStResourceRegistry;
 
-    /// Reads the content of VBO back to VtArray.
-    /// The \p vboOffset is expressed in bytes.
-    HDST_API
-    static VtValue ReadBuffer(uint64_t vbo,
-                              HdTupleType tupleType,
-                              int vboOffset,
-                              int stride,
-                              int numElements);
-};
+/// Reads the content of buffer back to VtArray.
+/// The \p offset is expressed in bytes.
+HDST_API
+VtValue HdStReadBuffer(HgiBufferHandle const& buffer,
+                       HdTupleType tupleType,
+                       int offset,
+                       int stride,
+                       int numElements,
+                       HdStResourceRegistry *resourceRegistry);
 
 /// \class HdStBufferRelocator
 ///

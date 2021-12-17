@@ -26,7 +26,7 @@
 #include "pxr/base/tf/iterator.h"
 
 #include "pxr/imaging/hdSt/bufferResource.h"
-#include "pxr/imaging/hdSt/glUtils.h"
+#include "pxr/imaging/hdSt/bufferUtils.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
 
@@ -477,7 +477,8 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
 }
 
 VtValue
-HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(TfToken const &name) const
+HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(
+    TfToken const &name) const
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -491,11 +492,12 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::ReadData(TfToken const &nam
         return VtValue();
     }
 
-    return HdStGLUtils::ReadBuffer(VBO->GetHandle()->GetRawResource(),
-                                   VBO->GetTupleType(),
-                                 /*offset=*/0,
-                                 /*stride=*/0,  // not interleaved.
-                                 _numElements);
+    return HdStReadBuffer(VBO->GetHandle(),
+                          VBO->GetTupleType(),
+                          /*offset=*/0,
+                          /*stride=*/0,  // not interleaved.
+                          _numElements,
+                          GetResourceRegistry());
 }
 
 size_t
