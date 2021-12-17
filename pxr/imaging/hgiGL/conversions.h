@@ -53,6 +53,9 @@ public:
     static GLenum GetFormatType(HgiFormat inFormat);
 
     HGIGL_API
+    static bool IsVertexAttribIntegerFormat(HgiFormat inFormat);
+
+    HGIGL_API
     static std::vector<GLenum> GetShaderStages(HgiShaderStage ss);
 
     HGIGL_API

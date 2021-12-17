@@ -94,6 +94,9 @@ static const _FormatDesc FORMAT_DESC[] =
 
     {GL_DEPTH_STENCIL, GL_FLOAT, GL_DEPTH32F_STENCIL8}, // Float32UInt8
 
+    {GL_INT_2_10_10_10_REV, GL_INT_2_10_10_10_REV, GL_RGBA },
+                                                // PackedInt10Int10Int10Int2
+
 };
 
 // A few random format validations to make sure out GL table stays aligned
@@ -305,6 +308,18 @@ HgiGLConversions::GetFormatType(HgiFormat inFormat)
 {
     const _FormatDesc &desc = FORMAT_DESC[inFormat];
     return desc.type;
+}
+
+bool
+HgiGLConversions::IsVertexAttribIntegerFormat(HgiFormat inFormat)
+{
+    const _FormatDesc &desc = FORMAT_DESC[inFormat];
+    return desc.type == GL_BYTE ||
+           desc.type == GL_UNSIGNED_BYTE ||
+           desc.type == GL_SHORT ||
+           desc.type == GL_UNSIGNED_SHORT ||
+           desc.type == GL_INT ||
+           desc.type == GL_UNSIGNED_INT;
 }
 
 std::vector<GLenum>

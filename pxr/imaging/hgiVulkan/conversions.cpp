@@ -88,13 +88,14 @@ _FormatTable[HgiFormatCount][2] =
     {HgiFormatBC7UNorm8Vec4srgb, VK_FORMAT_BC7_SRGB_BLOCK},
     {HgiFormatBC1UNorm8Vec4,  VK_FORMAT_BC1_RGBA_UNORM_BLOCK},
     {HgiFormatBC3UNorm8Vec4,  VK_FORMAT_BC3_UNORM_BLOCK},
-    {HgiFormatFloat32UInt8,   VK_FORMAT_D32_SFLOAT_S8_UINT}
+    {HgiFormatFloat32UInt8,   VK_FORMAT_D32_SFLOAT_S8_UINT},
+    {HgiFormatPackedInt1010102, VK_FORMAT_A2B10G10R10_SNORM_PACK32},
 };
 
 // A few random format validations to make sure the table above stays in sync
 // with the HgiFormat table.
 constexpr bool _CompileTimeValidateHgiFormatTable() {
-    return (HgiFormatCount==34 &&
+    return (HgiFormatCount==35 &&
             HgiFormatUNorm8 == 0 &&
             HgiFormatFloat16Vec4 == 9 &&
             HgiFormatFloat32Vec4 == 13 &&
@@ -363,6 +364,7 @@ _imageLayoutFormatTable[HgiFormatCount][2] =
     {"HgiFormatBC1UNorm8Vec4",     ""},
     {"HgiFormatBC3UNorm8Vec4",     ""},
     {"HgiFormatFloat32UInt8",      ""},
+    {"HgiFormatPackedInt1010102",  ""},
 };
 
 VkFormat

@@ -123,6 +123,10 @@ enum HgiFormat : int
     // Depth stencil format (Float32 can be used for just depth)
     HgiFormatFloat32UInt8,
 
+    // Packed 32-bit value with four normalized signed two's complement
+    // integer values arranged as 10 bits, 10 bits, 10 bits, and 2 bits.
+    HgiFormatPackedInt1010102,
+
     HgiFormatCount
 };
 

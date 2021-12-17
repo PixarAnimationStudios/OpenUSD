@@ -72,6 +72,7 @@ HgiGetComponentCount(const HgiFormat f)
     case HgiFormatUNorm8Vec4srgb:
     case HgiFormatBC1UNorm8Vec4:
     case HgiFormatBC3UNorm8Vec4:
+    case HgiFormatPackedInt1010102:
         return 4;
     case HgiFormatCount:
     case HgiFormatInvalid:
@@ -127,6 +128,8 @@ HgiGetDataSizeOfFormat(
         return 8;
     case HgiFormatFloat32:
     case HgiFormatInt32:
+        return 4;
+    case HgiFormatPackedInt1010102:
         return 4;
     case HgiFormatFloat32Vec2:
     case HgiFormatInt32Vec2:
@@ -240,6 +243,8 @@ HgiGetComponentBaseFormat(
         return HgiFormatBC6FloatVec3;
     case HgiFormatBC6UFloatVec3:
         return HgiFormatBC6UFloatVec3;
+    case HgiFormatPackedInt1010102:
+        return  HgiFormatPackedInt1010102;
     case HgiFormatCount:
     case HgiFormatInvalid:
         TF_CODING_ERROR("Invalid Format");

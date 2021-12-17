@@ -80,6 +80,8 @@ static const MTLPixelFormat _PIXEL_FORMAT_DESC[] =
     MTLPixelFormatBC3_RGBA,           // HgiFormatBC3UNorm8Vec4
 
     MTLPixelFormatDepth32Float_Stencil8, // HgiFormatFloat32UInt8
+
+    MTLPixelFormatInvalid,      // Unsupported by Metal
     
     // Note: Update _VERTEX_FORMAT_DESC as well.
 };
@@ -151,6 +153,8 @@ static const MTLVertexFormat _VERTEX_FORMAT_DESC[] =
     MTLVertexFormatInvalid,             // HgiFormatBC3UNorm8Vec4
 
     MTLVertexFormatInvalid,             // HgiFormatFloat32UInt8
+
+    MTLVertexFormatInt1010102Normalized,// HgiFormatPackedInt1010102
 };
 
 constexpr bool _CompileTimeValidateHgiVertexFormatTable() {
