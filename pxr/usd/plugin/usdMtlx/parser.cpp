@@ -341,87 +341,16 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
     }
 
     // Properties
-    for (const auto& mtlxInput: nodeDef->getInputs()) {
+    for (const auto& mtlxInput: nodeDef->getActiveInputs()) {
         builder->AddProperty(mtlxInput, false, &primvars);
     }
-    for (const auto& mtlxOutput: nodeDef->getOutputs()) {
+
+    for (const auto& mtlxOutput: nodeDef->getActiveOutputs()) {
         builder->AddProperty(mtlxOutput, true, nullptr);
     }
 
     builder->metadata[SdrNodeMetadata->Primvars] =
         TfStringJoin(primvars.begin(), primvars.end(), "|");
-}
-
-static
-void
-ParseElement(
-    ShaderBuilder* builder,
-    const mx::ConstNodeGraphPtr& nodeGraph,
-    const NdrNodeDiscoveryResult& discoveryResult)
-{
-    ParseElement(builder, nodeGraph->getNodeDef());
-    if (*builder) {
-        // XXX -- Node graphs not supported yet.
-    }
-}
-
-static
-void
-ParseElement(
-    ShaderBuilder* builder,
-    const mx::ConstImplementationPtr& impl,
-    const NdrNodeDiscoveryResult& discoveryResult)
-{
-    // Name remapping.
-    for (const auto& mtlxInput: impl->getInputs()) {
-        builder->AddPropertyNameRemapping(
-            mtlxInput->getName(),
-            mtlxInput->getAttribute("implname"));
-    }
-
-    ParseElement(builder, impl->getNodeDef());
-    if (!*builder) {
-        return;
-    }
-
-    // Get the implementation file.  Note we're not doing proper Ar asset
-    // localization here yet.
-    auto filename = impl->getFile();
-    if (filename.empty()) {
-        builder->SetInvalid();
-        return;
-    }
-
-    if (TfIsRelativePath(filename)) {
-        // The path is relative to some library path but we don't know which.
-        // We'll just check them all until we find an existing file.
-        // XXX -- Since we're likely to do this with every implementation
-        //        element we should consider some kind of cache so we don't
-        //        keep hitting the filesystem.
-        // XXX -- A future version of the asset resolver that has protocols
-        //        would make it easy for clients to resolve a relative path.
-        //        We should switch to that when available.
-        for (const auto& dir: UsdMtlxStandardLibraryPaths()) {
-            const auto path = TfStringCatPaths(dir, filename);
-            if (TfIsFile(path, true)) {
-                filename = path;
-                break;
-            }
-        }
-        if (TfIsRelativePath(filename)) {
-            TF_DEBUG(NDR_PARSING).Msg("MaterialX implementation %s could "
-                "not be found", filename.c_str());
-            builder->SetInvalid();
-            return;
-        }
-    }
-    builder->implementationURI = filename;
-
-    // Function
-    const auto& function = impl->getFunction();
-    if (!function.empty()) {
-        builder->metadata[SdrNodeMetadata->ImplementationName] = function;
-    }
 }
 
 } // anonymous namespace
@@ -465,32 +394,15 @@ UsdMtlxParserPlugin::Parse(
         return GetInvalidNode(discoveryResult);
     }
 
-    // Get the element.
-    if (discoveryResult.blindData.empty()) {
-        TF_WARN("Invalid MaterialX blindData; should have node name");
+    auto nodeDef = document->getNodeDef(discoveryResult.identifier.GetString());
+    if (!nodeDef) {
+        TF_WARN("Invalid MaterialX NodeDef; unknown node name ' %s '",
+            discoveryResult.identifier.GetText());
         return GetInvalidNode(discoveryResult);
     }
 
-    auto element = document->getChild(discoveryResult.blindData);
-    if (!element) {
-        TF_WARN("Invalid MaterialX blindData; unknown node name ' %s '",
-            discoveryResult.blindData.c_str());
-        return GetInvalidNode(discoveryResult);
-    }
-
-    // Handle nodegraphs and implementations differently.
     ShaderBuilder builder(discoveryResult);
-    if (auto nodeGraph = element->asA<mx::NodeGraph>()) {
-        ParseElement(&builder, nodeGraph, discoveryResult);
-    }
-    else if (auto impl = element->asA<mx::Implementation>()) {
-        ParseElement(&builder, impl, discoveryResult);
-    }
-    else {
-        TF_VERIFY(false,
-                  "MaterialX node '%s' isn't a nodegraph or implementation",
-                  element->getNamePath().c_str());
-    }
+    ParseElement(&builder, nodeDef);
 
     return builder.Build();
 }
