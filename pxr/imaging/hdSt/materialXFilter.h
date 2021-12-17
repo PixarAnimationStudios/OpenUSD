@@ -26,10 +26,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hdSt/materialNetwork.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/usd/sdf/path.h"
 #include <MaterialXCore/Document.h>
 #include <MaterialXFormat/Util.h>
+#include <MaterialXGenShader/Shader.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -52,10 +54,11 @@ void HdSt_ApplyMaterialXFilter(
     HdMaterialNetwork2* hdNetwork,
     SdfPath const& materialPath,
     HdMaterialNode2 const& terminalNode,
-    SdfPath const& terminalNodePath);
+    SdfPath const& terminalNodePath,
+    HdSt_MaterialParamVector* materialParams);
 
-// Generates the glsfx source code for the given MaterialX Document
-std::string HdSt_GenMaterialXShaderCode(
+// Generates the glsfx shader for the given MaterialX Document
+MaterialX::ShaderPtr HdSt_GenMaterialXShader(
     MaterialX::DocumentPtr const& mxDoc,
     MaterialX::FileSearchPath const& searchPath,
     MxHdInfo const& mxHdInfo=MxHdInfo());

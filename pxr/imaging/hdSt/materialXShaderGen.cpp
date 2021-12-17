@@ -201,6 +201,24 @@ HdStMaterialXShaderGen::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
     emitLineBreak(mxStage);
 }
 
+static bool 
+_IsHardcodedPublicUniform(const mx::TypeDesc& varType)
+{
+    // Most major types of public uniforms are set through 
+    // HdSt_MaterialParamVector in HdStMaterialXFilter's
+    // _AddMaterialXParams function, the rest are hardcoded 
+    // in the shader
+    if (varType.getBaseType() != mx::TypeDesc::BASETYPE_FLOAT &&
+        varType.getBaseType() != mx::TypeDesc::BASETYPE_INTEGER) {
+        return true;
+    }
+    if (varType.getSize() < 1 || varType.getSize() > 4) {
+        return true;
+    }
+
+    return false;
+}
+
 // Similar to GlslShaderGenerator::emitPixelStage() with alterations and 
 // additions to match Pxr's codeGen
 void
@@ -463,6 +481,20 @@ HdStMaterialXShaderGen::_EmitMxInitFunction(
                                   mx::Syntax::COMMA, mxStage);
     emitLineBreak(mxStage);
 
+    // Initialize MaterialX parameters with HdGet_ equivalents
+    emitComment("Initialize Material Parameters", mxStage);
+    const mx::VariableBlock& paramsBlock =
+        mxStage.getUniformBlock(mx::HW::PUBLIC_UNIFORMS);
+    for (size_t i = 0; i < paramsBlock.size(); ++i) {
+        const auto variable = paramsBlock[i];
+        const auto variableType = variable->getType();
+        if (!_IsHardcodedPublicUniform(*variableType)) {
+            emitLine(variable->getVariable() + " = HdGet_" +
+                variable->getVariable() + "()", mxStage);
+        }
+    }
+    emitLineBreak(mxStage);
+
     // Initialize the Indirect Light Textures
     emitLine("#ifdef HD_HAS_domeLightIrradiance", mxStage, false);
     emitLine("u_envIrradiance = HdGetSampler_domeLightIrradiance()", mxStage);
@@ -608,18 +640,24 @@ HdStMaterialXShaderGen::emitVariableDeclarations(
         mx::HW::T_ALBEDO_TABLE      // BRDF texture
     };
 
+    // Most public uniforms are set from outside the shader
+    const bool isPublicUniform = block.getName() == mx::HW::PUBLIC_UNIFORMS;
+
     for (size_t i = 0; i < block.size(); ++i)
     {
         emitLineBegin(stage);
+        const auto variable = block[i];
+        const auto varType = variable->getType();
 
         // Only declare the variables that we need to initialize with Hd Data
-        if (MxHdVariables.count(block[i]->getName())) {
-            emitVariableDeclaration(block[i], mx::EMPTY_STRING,
+        if ( (isPublicUniform && !_IsHardcodedPublicUniform(*varType))
+            || MxHdVariables.count(variable->getName()) ) {
+            emitVariableDeclaration(variable, mx::EMPTY_STRING,
                                     context, stage, false);
         }
         // Otherwise assign the value from MaterialX
         else {
-            emitVariableDeclaration(block[i], qualifier, 
+            emitVariableDeclaration(variable, qualifier,
                                     context, stage, assignValue);
         }
         emitString(separator, stage);
