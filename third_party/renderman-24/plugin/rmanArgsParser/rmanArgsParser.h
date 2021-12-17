@@ -131,20 +131,6 @@ public:
 
     RMAN_ARGS_PARSER_API
     const TfToken& GetSourceType() const override;
-
-    /// Parses mappings shader indentifiers to aliases for that shader an Args
-    /// file indicated by the discovery result. This used by the 
-    /// RmanDiscoveryPlugin to gather aliases for shaders from a special alias
-    /// Args file.
-    /// 
-    /// The alias Args file is expected to contain one or more elements of the
-    /// form
-    /// * <shaderAlias name="_ShaderName_" alias="_ShaderAlias_" />
-    /// 
-    RMAN_ARGS_PARSER_API
-    static void ParseShaderAliases(
-        const NdrNodeDiscoveryResult& aliasesDiscoveryRes,
-        std::map<NdrIdentifier, NdrTokenVec> *aliasMap);
 };
 
 

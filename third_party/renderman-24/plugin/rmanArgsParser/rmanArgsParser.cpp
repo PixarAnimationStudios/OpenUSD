@@ -63,7 +63,6 @@ NDR_REGISTER_PARSER_PLUGIN(RmanArgsParserPlugin)
 
 namespace {
     // Pre-constructed xml char strings to make things easier to read
-    const char* aliasStr = "alias";
     const char* nameStr = "name";
     const char* paramStr = "param";
     const char* outputStr = "output";
@@ -78,7 +77,6 @@ namespace {
     const char* primvarsStr = "primvars";
     const char* departmentsStr = "departments";
     const char* shaderTypeStr = "shaderType";
-    const char* shaderAliasStr = "shaderAlias";
     const char* typeTagStr = "typeTag";
     const char* usdSchemaDefStr = "usdSchemaDef";
     const char* apiSchemaAutoApplyToStr = "apiSchemaAutoApplyTo";
@@ -361,43 +359,6 @@ RmanArgsParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             metadata,
             discoveryResult.sourceCode)
     );
-}
-
-/*static*/
-void 
-RmanArgsParserPlugin::ParseShaderAliases(
-    const NdrNodeDiscoveryResult& aliasesDiscoveryRes,
-    std::map<NdrIdentifier, NdrTokenVec> *aliasMap)
-{
-    xml_document doc;
-
-    if (!_LoadXmlDoc(aliasesDiscoveryRes, &doc)) {
-        return;
-    }
-
-    xml_node rootElem = doc.first_child();
-
-    xml_node childElement = rootElem.first_child();
-
-    // Iterate over all children elements
-    // -------------------------------------------------------------------------
-    while (childElement) {
-
-        // Shader Alias
-        // <shaderAlias name="..." alias="..."
-        // ---------------------------------------------------------------------
-        if (EQUALS(shaderAliasStr, childElement.name())) {
-            xml_attribute nameAttr = childElement.attribute(nameStr);
-            xml_attribute aliasAttr = childElement.attribute(aliasStr);
-
-            if (nameAttr && aliasAttr) {
-                (*aliasMap)[TfToken(nameAttr.value())].push_back(
-                    TfToken(aliasAttr.value()));
-            }
-        }
-
-        childElement = childElement.next_sibling();
-    }
 }
 
 static std::string

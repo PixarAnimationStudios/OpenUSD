@@ -623,26 +623,16 @@ NdrRegistry::GetNodeByIdentifier(
     // If the type priority specifier is empty, pick the first node that matches
     // the identifier regardless of source type.
     if (sourceTypePriority.empty()) {
-        // We check for any node that matches the identifier first. If no 
-        // matching node is found we'll try to find a node with an alias 
-        // matching the identifier.
         for (const NdrNodeDiscoveryResult& dr : _discoveryResults) {
             if (NdrNodeConstPtr node = 
                     _ParseNodeMatchingIdentifier(dr, identifier)) {
                 return node;
             }
         }
-
-        for (const NdrNodeDiscoveryResult& dr : _discoveryResults) {
-            if (NdrNodeConstPtr node = 
-                    _ParseNodeMatchingAlias(dr, identifier)) {
-                return node;
-            }
-        }
     }
 
-    // Otherwise we attempt to get a node for matching the identifier (possibly
-    // through an alias) for each source type in priority order.
+    // Otherwise we attempt to get a node for matching the identifier for each 
+    // source type in priority order.
     for (const TfToken& sourceType : sourceTypePriority) {
         if (NdrNodeConstPtr node = 
                 _GetNodeByIdentifierAndTypeImpl(identifier, sourceType)) {
@@ -677,18 +667,10 @@ NdrRegistry::_GetNodeByIdentifierAndTypeImpl(
 
     const std::vector<size_t> &indices = it->second;
 
-    // We check for any node that matches the identifier first. If no 
-    // matching node is found we'll try to find a node with an alias 
-    // matching the identifier.
+    // We check for any node that matches the identifier within the source type.
     for (size_t index : indices) {
         const NdrNodeDiscoveryResult &dr = _discoveryResults[index];
         if (NdrNodeConstPtr node = _ParseNodeMatchingIdentifier(dr, identifier)) {
-            return node;
-        }
-    }
-    for (size_t index : indices) {
-        const NdrNodeDiscoveryResult &dr = _discoveryResults[index];
-        if (NdrNodeConstPtr node = _ParseNodeMatchingAlias(dr, identifier)) {
             return node;
         }
     }
@@ -775,18 +757,6 @@ NdrRegistry::GetNodesByIdentifier(const NdrIdentifier& identifier)
         if (NdrNodeConstPtr node = 
                 _ParseNodeMatchingIdentifier(dr, identifier)) {
             parsedNodes.push_back(node);
-        }
-    }
-
-    for (const NdrNodeDiscoveryResult& dr : _discoveryResults) {
-        if (NdrNodeConstPtr node = _ParseNodeMatchingAlias(dr, identifier)) {
-            // In the extremely unlikely case that a node is supplied with an
-            // alias that is the same as its identifier, we just make sure it
-            // doesn't show up in the list twice as it will have already been
-            // added by the above loop.
-            if (ARCH_LIKELY(dr.identifier != identifier)) {
-                parsedNodes.push_back(node);
-            }
         }
     }
 
@@ -886,18 +856,6 @@ NdrRegistry::_ParseNodeMatchingIdentifier(
 {
     if (dr.identifier == identifier) {
         return _InsertNodeIntoCache(dr);
-    }
-    return nullptr;
-}
-
-NdrNodeConstPtr 
-NdrRegistry::_ParseNodeMatchingAlias(
-    const NdrNodeDiscoveryResult& dr, const NdrIdentifier& identifier)
-{
-    for (const TfToken &alias : dr.aliases) {
-        if (alias == identifier) {
-            return _InsertNodeIntoCache(dr);
-        }
     }
     return nullptr;
 }

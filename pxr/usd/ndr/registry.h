@@ -178,14 +178,11 @@ public:
     ///
     /// If no sourceTypePriority is specified, the first encountered node with 
     /// the specified identifier will be returned (first is arbitrary) if found.
-    /// If no matching node is found then the first node found with an alias
-    /// matching the identifier will be returned if one exists.
     /// 
     /// If a sourceTypePriority list is specified, then this will iterate 
-    /// through each source type and try to find a node matching by identifier
-    /// or alias. This is equivalent to calling 
-    /// NdrRegistry::GetNodeByIdentifierAndType for each source type until a 
-    /// node is found.
+    /// through each source type and try to find a node matching by identifier.
+    /// This is equivalent to calling NdrRegistry::GetNodeByIdentifierAndType 
+    /// for each source type until a node is found.
     /// 
     /// Nodes of the same identifier but different source type can exist
     /// in the registry. If a node 'Foo' with source types 'abc' and 'xyz'
@@ -195,19 +192,12 @@ public:
     /// the registry, then the 'xyz' version would be returned.
     ///
     /// Returns `nullptr` if a node matching the arguments can't be found.
-    ///
-    /// \sa NdrNodeDiscoveryResult::aliases
     NDR_API
     NdrNodeConstPtr GetNodeByIdentifier(const NdrIdentifier& identifier,
                         const NdrTokenVec& sourceTypePriority = NdrTokenVec());
 
-    /// Get the node with the specified \p identifier and \p sourceType. If,
-    /// for the given sourceType, there is no node with the given identifier,
-    /// this will instead search for a node which has an alias that matches the 
-    /// identifier and return it if it exists. Otherwise there is no matching 
-    /// node for the sourceType and nullptr is returned.
-    ///
-    /// \sa NdrNodeDiscoveryResult::aliases
+    /// Get the node with the specified \p identifier and \p sourceType. 
+    /// If there is no matching node for the sourceType, nullptr is returned.
     NDR_API
     NdrNodeConstPtr GetNodeByIdentifierAndType(const NdrIdentifier& identifier,
                                                const TfToken& sourceType);
@@ -241,11 +231,8 @@ public:
                                              NdrVersionFilterDefaultOnly);
 
     /// Get all nodes matching the specified identifier (multiple nodes of
-    /// the same identifier, but different source types, may exist) as well as 
-    /// any nodes which have an alias that matches the identifier. If no nodes
+    /// the same identifier, but different source types, may exist). If no nodes
     /// match the identifier, an empty vector is returned.
-    ///
-    /// \sa NdrNodeDiscoveryResult::aliases
     NDR_API
     NdrNodeConstPtrVec GetNodesByIdentifier(const NdrIdentifier& identifier);
 
@@ -336,11 +323,6 @@ private:
     NdrNodeConstPtr _ParseNodeMatchingIdentifier(
         const NdrNodeDiscoveryResult& dr, const NdrIdentifier& identifier);
 
-    // Returns the cached or newly parsed node for the discovery result if it
-    // has an alias that matches the given identifier.
-    NdrNodeConstPtr _ParseNodeMatchingAlias(
-        const NdrNodeDiscoveryResult& dr, const NdrIdentifier& identifier);
-
     // Returns the cached or newly parsed node for the discovery result if its
     // name and version match the given name and version filter.
     NdrNodeConstPtr _ParseNodeMatchingNameAndFilter(
@@ -348,8 +330,7 @@ private:
         NdrVersionFilter filter);
 
     // Implementation helper for getting the first node of the given sourceType 
-    // that matches the given indentifier. This includes node that match the 
-    // identifier through an alias.
+    // that matches the given indentifier.
     NdrNodeConstPtr _GetNodeByIdentifierAndTypeImpl(
         const NdrIdentifier& identifier, const TfToken& sourceType);
 
