@@ -235,7 +235,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `point3f physics:centerOfMass = (0, 0, 0)` |
+    /// | Declaration | `point3f physics:centerOfMass = (-inf, -inf, -inf)` |
     /// | C++ Type | GfVec3f |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Point3f |
     USDPHYSICS_API
@@ -282,7 +282,7 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `quatf physics:principalAxes = (1, 0, 0, 0)` |
+    /// | Declaration | `quatf physics:principalAxes = (0, 0, 0, 0)` |
     /// | C++ Type | GfQuatf |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Quatf |
     USDPHYSICS_API
@@ -307,6 +307,7 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

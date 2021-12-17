@@ -118,6 +118,9 @@ class "PhysicsRigidBodyAPI"
 (
     customData = {
         string className = "RigidBodyAPI"
+        string extraIncludes = """
+#include "pxr/base/gf/matrix3f.h"
+#include "pxr/base/gf/quatf.h" """
     }
     doc = """Applies physics body attributes to any UsdGeomXformable prim and
     marks that prim to be driven by a simulation. If a simulation is running
@@ -125,7 +128,9 @@ class "PhysicsRigidBodyAPI"
     prim should move accordingly."""
 
     inherits = </APISchemaBase>
+    
 )
+
 {
 
     bool physics:rigidBodyEnabled = true (
@@ -234,7 +239,7 @@ class "PhysicsMassAPI"
         0.0 it is ignored. Units: mass/distance/distance/distance."""
     )
 
-	point3f physics:centerOfMass = (0.0, 0.0, 0.0) (
+	point3f physics:centerOfMass = (-inf, -inf, -inf) (
         customData = {
             string apiName = "centerOfMass"
         }
@@ -252,7 +257,7 @@ class "PhysicsMassAPI"
         ignored. Units: mass*distance*distance."""
     )
 
-	quatf physics:principalAxes = (1, 0, 0, 0) (
+	quatf physics:principalAxes = (0, 0, 0, 0) (
         customData = {
             string apiName = "principalAxes"
         }

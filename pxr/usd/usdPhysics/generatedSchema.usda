@@ -69,7 +69,7 @@ class "PhysicsMassAPI" (
     a PhysicsRigidBodyAPI."""
 )
 {
-    point3f physics:centerOfMass = (0, 0, 0) (
+    point3f physics:centerOfMass = (-inf, -inf, -inf) (
         displayName = "Center of Mass"
         doc = "Center of mass in the prim's local space. Units: distance."
     )
@@ -106,7 +106,7 @@ class "PhysicsMassAPI" (
         other child. Note if mass is 0.0 it is ignored. Units: mass.
         """
     )
-    quatf physics:principalAxes = (1, 0, 0, 0) (
+    quatf physics:principalAxes = (0, 0, 0, 0) (
         displayName = "Principal Axes"
         doc = """Orientation of the inertia tensor's principal axes in the 
         prim's local space."""
