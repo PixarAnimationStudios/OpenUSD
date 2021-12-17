@@ -143,17 +143,17 @@ struct _LocalFileHeader
     static const uint32_t Signature = 0x04034b50;
 
     struct Fixed {
-        uint32_t signature;
-        uint16_t versionForExtract;
-        uint16_t bits;
-        uint16_t compressionMethod;
-        uint16_t lastModTime;
-        uint16_t lastModDate;
-        uint32_t crc32;
-        uint32_t compressedSize;
-        uint32_t uncompressedSize;
-        uint16_t filenameLength;
-        uint16_t extraFieldLength;
+        uint32_t signature = 0;
+        uint16_t versionForExtract = 0;
+        uint16_t bits = 0;
+        uint16_t compressionMethod = 0;
+        uint16_t lastModTime = 0;
+        uint16_t lastModDate = 0;
+        uint32_t crc32 = 0;
+        uint32_t compressedSize = 0;
+        uint32_t uncompressedSize = 0;
+        uint16_t filenameLength = 0;
+        uint16_t extraFieldLength = 0;
     };
     
     static const size_t FixedSize = 
@@ -161,18 +161,18 @@ struct _LocalFileHeader
     static_assert(sizeof(Fixed) >= FixedSize, "");
 
     // Fixed-length header
-    Fixed f;
+    Fixed f; 
 
     // NOTE: 
     // const char* values below do not point to null-terminated strings.
     // Use indicated memory ranges.
 
     // Filename in [filenameStart, filenameStart + f.filenameLength)
-    const char* filenameStart;
+    const char* filenameStart = nullptr;
     // Extra data in [extraFieldStart, extraFieldStart + f.extraFieldLength)
-    const char* extraFieldStart;
+    const char* extraFieldStart = nullptr;
     // File data in [dataStart, dataStart + f.compressedSize)
-    const char* dataStart;
+    const char* dataStart = nullptr;
 
     // Return true if the required signature is stored in this header.
     bool IsValid() const
@@ -269,23 +269,23 @@ struct _CentralDirectoryHeader
     static const uint32_t Signature = 0x02014b50;
 
     struct Fixed {
-        uint32_t signature;
-        uint16_t versionMadeBy;
-        uint16_t versionForExtract;
-        uint16_t bits;
-        uint16_t compressionMethod;
-        uint16_t lastModTime;
-        uint16_t lastModDate;
-        uint32_t crc32;
-        uint32_t compressedSize;
-        uint32_t uncompressedSize;
-        uint16_t filenameLength;
-        uint16_t extraFieldLength;
-        uint16_t commentLength;
-        uint16_t diskNumberStart;
-        uint16_t internalAttrs;
-        uint32_t externalAttrs;
-        uint32_t localHeaderOffset;
+        uint32_t signature = 0;
+        uint16_t versionMadeBy = 0;
+        uint16_t versionForExtract = 0;
+        uint16_t bits = 0;
+        uint16_t compressionMethod = 0;
+        uint16_t lastModTime = 0;
+        uint16_t lastModDate = 0;
+        uint32_t crc32 = 0;
+        uint32_t compressedSize = 0;
+        uint32_t uncompressedSize = 0;
+        uint16_t filenameLength = 0;
+        uint16_t extraFieldLength = 0;
+        uint16_t commentLength = 0;
+        uint16_t diskNumberStart = 0;
+        uint16_t internalAttrs = 0;
+        uint32_t externalAttrs = 0;
+        uint32_t localHeaderOffset = 0;
     };
 
     static const size_t FixedSize = 
@@ -300,11 +300,11 @@ struct _CentralDirectoryHeader
     // Use indicated memory ranges.
 
     // Filename in [filenameStart, filenameStart + f.filenameLength)
-    const char* filenameStart;
+    const char* filenameStart = nullptr;
     // Extra data in [extraFieldStart, extraFieldStart + f.extraFieldLength)
-    const char* extraFieldStart;
+    const char* extraFieldStart = nullptr;
     // Comment in [commentStart, commentStart + f.commentLength)
-    const char* commentStart;
+    const char* commentStart = nullptr;
 
     // Return true if the required signature is stored in this header.
     bool IsValid() const
@@ -349,14 +349,14 @@ struct _EndOfCentralDirectoryRecord
     static const uint32_t Signature = 0x06054b50;
 
     struct Fixed {
-        uint32_t signature;
-        uint16_t diskNumber;
-        uint16_t diskNumberForCentralDir;
-        uint16_t numCentralDirEntriesOnDisk;
-        uint16_t numCentralDirEntries;
-        uint32_t centralDirLength;
-        uint32_t centralDirOffset;
-        uint16_t commentLength;
+        uint32_t signature = 0;
+        uint16_t diskNumber = 0;
+        uint16_t diskNumberForCentralDir = 0;
+        uint16_t numCentralDirEntriesOnDisk = 0;
+        uint16_t numCentralDirEntries = 0;
+        uint32_t centralDirLength = 0;
+        uint32_t centralDirOffset = 0;
+        uint16_t commentLength = 0;
     };
 
     static const size_t FixedSize = 
@@ -371,7 +371,7 @@ struct _EndOfCentralDirectoryRecord
     // Use indicated memory ranges.
 
     // Comment in [commentStart, commentStart + f.commentLength)
-    const char* commentStart;
+    const char* commentStart = nullptr;
 
     // Return true if the required signature is stored in this header.
     bool IsValid() const
@@ -406,8 +406,8 @@ _WriteEndOfCentralDirectoryRecord(
 
 struct _ExtraFieldHeader
 {
-    uint16_t headerId;
-    uint16_t dataSize;
+    uint16_t headerId = 0;
+    uint16_t dataSize = 0;
 };
 
 constexpr size_t _HeaderSize = sizeof(uint16_t) * 2;
