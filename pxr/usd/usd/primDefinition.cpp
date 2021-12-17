@@ -88,14 +88,14 @@ UsdPrimDefinition::_ListMetadataFields(const TfToken &propName) const
 
 void 
 UsdPrimDefinition::_ComposePropertiesFromPrimSpec(
-    const SdfPrimSpecHandle &weakerPrimSpec, const std::string &propPrefix)
+    const SdfPrimSpecHandle &weakerPrimSpec, const std::string &instanceName)
 {
     const SdfPropertySpecView specProperties = weakerPrimSpec->GetProperties();
     _properties.reserve(_properties.size() + specProperties.size());
 
     // Map each spec property name to the property spec path and add it to the
     // list of properties if it hasn't already been added.
-    if (propPrefix.empty()) {
+    if (instanceName.empty()) {
         for (const SdfPropertySpecHandle &prop : specProperties) {
             if (_propPathMap.emplace(
                     prop->GetNameToken(), prop->GetPath()).second) {
@@ -105,11 +105,11 @@ UsdPrimDefinition::_ComposePropertiesFromPrimSpec(
     } else {
         for (const SdfPropertySpecHandle &prop : specProperties) {
             // Apply the prefix to each property name before adding it.
-            const TfToken prefixedPropName(
-                SdfPath::JoinIdentifier(propPrefix, prop->GetNameToken()));
-            if (_propPathMap.emplace(
-                    prefixedPropName, prop->GetPath()).second) {
-                _properties.push_back(prefixedPropName);
+            const TfToken instancedPropName = 
+                UsdSchemaRegistry::MakeMultipleApplyNameInstance(
+                    prop->GetNameToken(), instanceName);
+            if (_propPathMap.emplace(instancedPropName, prop->GetPath()).second) {
+                _properties.push_back(instancedPropName);
             }
         }
     }
@@ -117,13 +117,13 @@ UsdPrimDefinition::_ComposePropertiesFromPrimSpec(
 
 void 
 UsdPrimDefinition::_ComposePropertiesFromPrimDef(
-    const UsdPrimDefinition &weakerPrimDef, const std::string &propPrefix)
+    const UsdPrimDefinition &weakerPrimDef, const std::string &instanceName)
 {
     _properties.reserve(_properties.size() + weakerPrimDef._properties.size());
 
     // Copy over property to path mappings from the weaker prim definition that 
     // aren't already in this prim definition.
-    if (propPrefix.empty()) {
+    if (instanceName.empty()) {
         for (const auto &it : weakerPrimDef._propPathMap) {
             // Note that the prop name may be empty as we use the empty path to
             // map to the spec containing the prim level metadata. We need to 
@@ -136,10 +136,11 @@ UsdPrimDefinition::_ComposePropertiesFromPrimDef(
     } else {
         for (const auto &it : weakerPrimDef._propPathMap) {
             // Apply the prefix to each property name before adding it.
-            const TfToken prefixedPropName(
-                SdfPath::JoinIdentifier(propPrefix, it.first.GetString()));
-            if (_propPathMap.emplace(prefixedPropName, it.second).second) {
-                _properties.push_back(prefixedPropName);
+            const TfToken instancedPropName = 
+                UsdSchemaRegistry::MakeMultipleApplyNameInstance(
+                    it.first, instanceName);
+            if (_propPathMap.emplace(instancedPropName, it.second).second) {
+                _properties.push_back(instancedPropName);
             }
         }
     }

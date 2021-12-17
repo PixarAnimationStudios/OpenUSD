@@ -165,10 +165,12 @@ void wrapUsdContrivedTokens()
     _AddToken(cls, "stringArray", UsdContrivedTokens->stringArray);
     _AddToken(cls, "temp", UsdContrivedTokens->temp);
     _AddToken(cls, "test", UsdContrivedTokens->test);
-    _AddToken(cls, "testAttrOne", UsdContrivedTokens->testAttrOne);
-    _AddToken(cls, "testAttrTwo", UsdContrivedTokens->testAttrTwo);
+    _AddToken(cls, "test_MultipleApplyTemplate_TestAttrOne", UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrOne);
+    _AddToken(cls, "test_MultipleApplyTemplate_TestAttrTwo", UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrTwo);
     _AddToken(cls, "testingAsset", UsdContrivedTokens->testingAsset);
     _AddToken(cls, "testo", UsdContrivedTokens->testo);
+    _AddToken(cls, "testo_MultipleApplyTemplate_TestAttrOne", UsdContrivedTokens->testo_MultipleApplyTemplate_TestAttrOne);
+    _AddToken(cls, "testo_MultipleApplyTemplate_TestAttrTwo", UsdContrivedTokens->testo_MultipleApplyTemplate_TestAttrTwo);
     _AddToken(cls, "token", UsdContrivedTokens->token);
     _AddToken(cls, "tokenArray", UsdContrivedTokens->tokenArray);
     _AddToken(cls, "transform", UsdContrivedTokens->transform);

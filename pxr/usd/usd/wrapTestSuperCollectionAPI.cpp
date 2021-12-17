@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdPhysics/driveAPI.h"
+#include "pxr/usd/usd/testSuperCollectionAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -51,89 +51,54 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
-_CreateTypeAttr(UsdPhysicsDriveAPI &self,
+_CreateIncludeRootAttr(UsdTestSuperCollectionAPI &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateTypeAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateMaxForceAttr(UsdPhysicsDriveAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateMaxForceAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateTargetPositionAttr(UsdPhysicsDriveAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateTargetPositionAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateTargetVelocityAttr(UsdPhysicsDriveAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateTargetVelocityAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateDampingAttr(UsdPhysicsDriveAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateDampingAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateStiffnessAttr(UsdPhysicsDriveAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateStiffnessAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+    return self.CreateIncludeRootAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
 
-static bool _WrapIsPhysicsDriveAPIPath(const SdfPath &path) {
+static bool _WrapIsTestSuperCollectionAPIPath(const SdfPath &path) {
     TfToken collectionName;
-    return UsdPhysicsDriveAPI::IsPhysicsDriveAPIPath(
+    return UsdTestSuperCollectionAPI::IsTestSuperCollectionAPIPath(
         path, &collectionName);
 }
 
 static std::string
-_Repr(const UsdPhysicsDriveAPI &self)
+_Repr(const UsdTestSuperCollectionAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     std::string instanceName = self.GetName();
     return TfStringPrintf(
-        "UsdPhysics.DriveAPI(%s, '%s')",
+        "Usd.TestSuperCollectionAPI(%s, '%s')",
         primRepr.c_str(), instanceName.c_str());
 }
 
-struct UsdPhysicsDriveAPI_CanApplyResult : 
+struct UsdTestSuperCollectionAPI_CanApplyResult : 
     public TfPyAnnotatedBoolResult<std::string>
 {
-    UsdPhysicsDriveAPI_CanApplyResult(bool val, std::string const &msg) :
+    UsdTestSuperCollectionAPI_CanApplyResult(bool val, std::string const &msg) :
         TfPyAnnotatedBoolResult<std::string>(val, msg) {}
 };
 
-static UsdPhysicsDriveAPI_CanApplyResult
+static UsdTestSuperCollectionAPI_CanApplyResult
 _WrapCanApply(const UsdPrim& prim, const TfToken& name)
 {
     std::string whyNot;
-    bool result = UsdPhysicsDriveAPI::CanApply(prim, name, &whyNot);
-    return UsdPhysicsDriveAPI_CanApplyResult(result, whyNot);
+    bool result = UsdTestSuperCollectionAPI::CanApply(prim, name, &whyNot);
+    return UsdTestSuperCollectionAPI_CanApplyResult(result, whyNot);
 }
 
 } // anonymous namespace
 
-void wrapUsdPhysicsDriveAPI()
+void wrapUsdTestSuperCollectionAPI()
 {
-    typedef UsdPhysicsDriveAPI This;
+    typedef UsdTestSuperCollectionAPI This;
 
-    UsdPhysicsDriveAPI_CanApplyResult::Wrap<UsdPhysicsDriveAPI_CanApplyResult>(
+    UsdTestSuperCollectionAPI_CanApplyResult::Wrap<UsdTestSuperCollectionAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
-        cls("DriveAPI");
+        cls("TestSuperCollectionAPI");
 
     cls
         .def(init<UsdPrim, TfToken>())
@@ -141,12 +106,12 @@ void wrapUsdPhysicsDriveAPI()
         .def(TfTypePythonClass())
 
         .def("Get",
-            (UsdPhysicsDriveAPI(*)(const UsdStagePtr &stage, 
+            (UsdTestSuperCollectionAPI(*)(const UsdStagePtr &stage, 
                                        const SdfPath &path))
                &This::Get,
             (arg("stage"), arg("path")))
         .def("Get",
-            (UsdPhysicsDriveAPI(*)(const UsdPrim &prim,
+            (UsdTestSuperCollectionAPI(*)(const UsdPrim &prim,
                                        const TfToken &name))
                &This::Get,
             (arg("prim"), arg("name")))
@@ -177,50 +142,15 @@ void wrapUsdPhysicsDriveAPI()
         .def(!self)
 
         
-        .def("GetTypeAttr",
-             &This::GetTypeAttr)
-        .def("CreateTypeAttr",
-             &_CreateTypeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetMaxForceAttr",
-             &This::GetMaxForceAttr)
-        .def("CreateMaxForceAttr",
-             &_CreateMaxForceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetTargetPositionAttr",
-             &This::GetTargetPositionAttr)
-        .def("CreateTargetPositionAttr",
-             &_CreateTargetPositionAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetTargetVelocityAttr",
-             &This::GetTargetVelocityAttr)
-        .def("CreateTargetVelocityAttr",
-             &_CreateTargetVelocityAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetDampingAttr",
-             &This::GetDampingAttr)
-        .def("CreateDampingAttr",
-             &_CreateDampingAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetStiffnessAttr",
-             &This::GetStiffnessAttr)
-        .def("CreateStiffnessAttr",
-             &_CreateStiffnessAttr,
+        .def("GetIncludeRootAttr",
+             &This::GetIncludeRootAttr)
+        .def("CreateIncludeRootAttr",
+             &_CreateIncludeRootAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
-        .def("IsPhysicsDriveAPIPath", _WrapIsPhysicsDriveAPIPath)
-            .staticmethod("IsPhysicsDriveAPIPath")
+        .def("IsTestSuperCollectionAPIPath", _WrapIsTestSuperCollectionAPIPath)
+            .staticmethod("IsTestSuperCollectionAPIPath")
         .def("__repr__", ::_Repr)
     ;
 

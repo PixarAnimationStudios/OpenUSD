@@ -413,6 +413,93 @@ UsdSchemaRegistry::IsAppliedAPISchema(const TfToken& apiSchemaType)
     return _IsAppliedAPISchemaKind(GetSchemaKind(apiSchemaType));
 }
 
+static const std::string &_GetInstanceNamePlaceholder()
+{
+    static std::string instanceNamePlaceHolder("__INSTANCE_NAME__");
+    return instanceNamePlaceHolder;
+}
+
+// Finds the first occurrence of the instance name placeholder that is fully
+// contained as a single substring between name space delimiters (including the 
+// beginning and ends of the name template).
+static std::string::size_type _FindInstanceNamePlaceholder(
+    const std::string &nameTemplate)
+{
+    static const std::string::size_type placeholderSize =
+        _GetInstanceNamePlaceholder().size();
+    std::string::size_type substrStart = 0;
+    while (substrStart < nameTemplate.size()) {
+        // The substring ends at the next delimeter (or the end of the name
+        // template if no next delimiter is found).
+        std::string::size_type substrEnd = nameTemplate.find(':', substrStart);
+        if (substrEnd == std::string::npos) {
+            substrEnd = nameTemplate.size();
+        }
+        // If the substring is an exact full word match with the instance name 
+        // placeholder, return the beginning of this substring.
+        if (substrEnd - substrStart == placeholderSize &&
+            nameTemplate.compare(substrStart, placeholderSize, 
+                                 _GetInstanceNamePlaceholder()) == 0) {
+            return substrStart;
+        }
+        // Otherwise move to the next substring which starts after the namespace
+        // delimiter.
+        substrStart = substrEnd + 1;
+    }
+    return std::string::npos;
+}
+
+/*static*/
+TfToken
+UsdSchemaRegistry::MakeMultipleApplyNameTemplate(
+    const std::string &namespacePrefix, 
+    const std::string &baseName)
+{
+    return TfToken(SdfPath::JoinIdentifier(SdfPath::JoinIdentifier(
+        namespacePrefix, _GetInstanceNamePlaceholder()), baseName));
+}
+
+/*static*/
+TfToken 
+UsdSchemaRegistry::MakeMultipleApplyNameInstance(
+    const std::string &nameTemplate,
+    const std::string &instanceName)
+{
+    // Find the first occurence of the instance name placeholder and replace
+    // it with the instance name if found.
+    const std::string::size_type pos = 
+        _FindInstanceNamePlaceholder(nameTemplate);
+    if (pos == std::string::npos) {
+        return TfToken(nameTemplate);
+    }
+    std::string result = nameTemplate;
+    result.replace(pos, _GetInstanceNamePlaceholder().size(), instanceName);
+    return TfToken(result); 
+}
+
+/*static*/
+TfToken 
+UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
+    const std::string &nameTemplate)
+{
+    // Find the first occurence of the instance name placeholder.
+    const std::string::size_type pos = 
+        _FindInstanceNamePlaceholder(nameTemplate);
+    if (pos == std::string::npos) {
+        return TfToken(nameTemplate);
+    }
+
+    // The base name is the rest of the name after the instance name 
+    // placeholder. If the instance name placeholder is the end of the name, the
+    // base name is the empty string.
+    const std::string::size_type baseNamePos = 
+        pos + _GetInstanceNamePlaceholder().size() + 1;
+    if (baseNamePos >= nameTemplate.size()) {
+        return TfToken();
+    }
+    return TfToken(nameTemplate.substr(baseNamePos)); 
+}
+
 template <class T>
 static void
 _CopySpec(const T &srcSpec, const T &dstSpec)
@@ -687,9 +774,6 @@ private:
 
     void _InitializePrimDefsAndSchematicsForPluginSchemas();
 
-    bool _CollectMultipleApplyAPISchemaNamespaces(
-        const VtDictionary &customDataDict);
-
     void _PrependAPISchemasFromSchemaPrim(
         const SdfPath &schematicsPrimPath,
         TfTokenVector *appliedAPISchemas);
@@ -704,55 +788,6 @@ private:
 
     UsdSchemaRegistry *_registry;
 };
-
-bool
-UsdSchemaRegistry::_SchemaDefInitHelper::
-_CollectMultipleApplyAPISchemaNamespaces(
-    const VtDictionary &customDataDict)
-{
-    // Names of multiple apply API schemas are stored in their schemas
-    // in a dictionary mapping them to their property namespace prefixes. 
-    // These will be useful in mapping schema instance property names 
-    // to the schema property specs.
-
-    auto it = customDataDict.find(_tokens->multipleApplyAPISchemas);
-    if (it == customDataDict.end()) {
-        return true;
-    }
-
-    if (!it->second.IsHolding<VtDictionary>()) {
-        TF_CODING_ERROR("Found an unexpected value type for layer "
-            "customData key '%s'; expected a dictionary. Multiple apply API "
-            "schemas may be incorrect.",
-            _tokens->multipleApplyAPISchemas.GetText());
-        return false;
-    }
-
-    bool success = true;
-    const VtDictionary &multipleApplyAPISchemas = 
-        it->second.UncheckedGet<VtDictionary>();
-    for (const auto &it : multipleApplyAPISchemas) {
-        const TfToken apiSchemaName(it.first);
-
-        if (!it.second.IsHolding<std::string>()) {
-            TF_CODING_ERROR("Found an unexpected value type for key '%s' in "
-                "the dictionary for layer customData field '%s'; expected a "
-                "string. Multiple apply API schema of type '%s' will not be "
-                "correctly registered.",
-                apiSchemaName.GetText(),
-                _tokens->multipleApplyAPISchemas.GetText(),
-                apiSchemaName.GetText());
-            success = false;
-            continue;
-        }
-
-        // The property namespace is stored along side where the prim definition
-        // defining the schema's properties will be.
-        _registry->_multiApplyAPIPrimDefinitions[apiSchemaName]
-            .propertyNamespace = TfToken(it.second.UncheckedGet<std::string>());
-    }
-    return success;
-}
 
 void
 UsdSchemaRegistry::_SchemaDefInitHelper::
@@ -825,11 +860,8 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
             UsdPrimDefinition *newPrimDef = new UsdPrimDefinition(
                 schematicsPrimPath, /* isAPISchema = */ true);
             if (_IsMultipleApplySchemaKind(schemaKind)) {
-                // The multiple apply schema map stores both the prim definition
-                // and the property prefix for the schema, but we won't know
-                // the prefix until we read the generated schemas.
-                _registry->_multiApplyAPIPrimDefinitions[typeName].primDef = 
-                    newPrimDef;
+                _registry->_multiApplyAPIPrimDefinitions.emplace(
+                    typeName, newPrimDef);
             } else {
                 _registry->_singleApplyAPIPrimDefinitions.emplace(
                     typeName, newPrimDef);
@@ -877,15 +909,6 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
             VtDictionary customDataDict = generatedSchema->GetCustomLayerData();
 
             bool hasErrors = false;
-
-            // This collects all the multiple apply API schema namespaces 
-            // prefixes that are defined in the generated schema and stores
-            // them in the prim definition map entry that will contain the 
-            // prim definition for the corresponding multiple apply API schema
-            // name.
-            if (!_CollectMultipleApplyAPISchemaNamespaces(customDataDict)) {
-                hasErrors = true;
-            }
 
             _AddSchema(generatedSchema, _registry->_schematics);
 
@@ -982,10 +1005,10 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_GatherAllAPISchemaPrimSpecsToCompose(
 
         // Find the registered prim definition (and property prefix if it's a
         // multiple apply instance). Skip this API if we can't find a def.
-        std::string propPrefix;
+        std::string instanceName;
         const UsdPrimDefinition *apiSchemaTypeDef = 
             _registry->_FindAPIPrimDefinitionByFullName(
-                apiSchemaName, &propPrefix);
+                apiSchemaName, &instanceName);
         if (!apiSchemaTypeDef) {
             continue;
         }
@@ -1002,7 +1025,7 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_GatherAllAPISchemaPrimSpecsToCompose(
 
         // Add this API schema and its prim spec to the composition 
         defCompInfo->schemaPrimSpecsToCompose.emplace_back(
-            primSpec, propPrefix);
+            primSpec, instanceName);
         defCompInfo->allAPISchemaNames.push_back(apiSchemaName);
 
         // At this point in initialization, all API schemas prim defs will 
@@ -1025,7 +1048,7 @@ _PopulateMultipleApplyAPIPrimDefinitions()
     // include other API schemas so they're populated directly from the 
     // their prim spec in the schematics.
     for (auto &nameAndDefPtr : _registry->_multiApplyAPIPrimDefinitions) {
-        UsdPrimDefinition *&primDef = nameAndDefPtr.second.primDef;
+        UsdPrimDefinition *&primDef = nameAndDefPtr.second;
         if (!TF_VERIFY(primDef)) {
             continue;
         }
@@ -1348,8 +1371,20 @@ UsdSchemaRegistry::IsAllowedAPISchemaInstanceName(
     }
 
     const TfToken &baseName = tokens.back();
-    if (apiSchemaDef->_propPathMap.count(baseName)) {
-        return false;
+    // Since the property names for multiple apply schemas will have an 
+    // instanceable template prefix we need to check against the computed base 
+    // name for each of the schema's properties.
+    // Note that we have to check against the base name of each property (as 
+    // opposed to prepending the template prefix to the name and searching for
+    // that in the properties map) because we can't guarantee that all 
+    // properties will have the same prefix if they come from another built-in
+    // multiple apply API schema.
+    for (const TfToken &propName : apiSchemaDef->GetPropertyNames()) {
+        const TfToken propBaseName = 
+            GetMultipleApplyNameTemplateBaseName(propName);
+        if (baseName == propBaseName) {
+            return false;
+        }
     }
 
     return true;
@@ -1383,17 +1418,6 @@ UsdSchemaRegistry::GetAPISchemaCanOnlyApplyToTypeNames(
 
     static const TfTokenVector empty;
     return empty;
-}
-
-TfToken 
-UsdSchemaRegistry::GetPropertyNamespacePrefix(
-    const TfToken &multiApplyAPISchemaName) const
-{
-    if (const _MultipleApplyAPIDefinition *def = TfMapLookupPtr(
-            _multiApplyAPIPrimDefinitions, multiApplyAPISchemaName)) {
-        return def->propertyNamespace;
-    }
-    return TfToken();
 }
 
 std::unique_ptr<UsdPrimDefinition>
@@ -1444,30 +1468,25 @@ UsdSchemaRegistry::BuildComposedPrimDefinition(
 const UsdPrimDefinition *
 UsdSchemaRegistry::_FindAPIPrimDefinitionByFullName(
     const TfToken &apiSchemaName, 
-    std::string *propertyPrefix) const
+    std::string *instanceName) const
 {
     // Applied schemas may be single or multiple apply so we have to parse
     // the full schema name into a type and possibly an instance name.
     auto typeNameAndInstance = GetTypeNameAndInstance(apiSchemaName);
     const TfToken &typeName = typeNameAndInstance.first;
-    const TfToken &instanceName = typeNameAndInstance.second;
+    *instanceName = typeNameAndInstance.second;
 
     // If the instance name is empty we expect a single apply API schema 
     // otherwise it should be a multiple apply API.
-    if (instanceName.IsEmpty()) {
+    if (instanceName->empty()) {
         if (const UsdPrimDefinition * const *apiSchemaTypeDef = 
                 TfMapLookupPtr(_singleApplyAPIPrimDefinitions, typeName)) {
             return *apiSchemaTypeDef;
         }
     } else {
-        const _MultipleApplyAPIDefinition *multiApplyDef =
-            TfMapLookupPtr(_multiApplyAPIPrimDefinitions, typeName);
-        if (multiApplyDef) {
-            // We also provide the full property namespace prefix for this 
-            // particular instance of the multiple apply API.
-            *propertyPrefix = SdfPath::JoinIdentifier(
-                multiApplyDef->propertyNamespace, instanceName);
-            return multiApplyDef->primDef;
+        if (const UsdPrimDefinition * const *multiApplyDef = 
+                TfMapLookupPtr(_multiApplyAPIPrimDefinitions, typeName)) {
+            return *multiApplyDef;
         }
     }
 
@@ -1482,14 +1501,14 @@ void UsdSchemaRegistry::_ComposeAPISchemasIntoPrimDefinition(
     // schema's properties.
     for (const TfToken &apiSchemaName : appliedAPISchemas) {
 
-        std::string propPrefix;
+        std::string instanceName;
         const UsdPrimDefinition *apiSchemaTypeDef = 
-            _FindAPIPrimDefinitionByFullName(apiSchemaName, &propPrefix);
+            _FindAPIPrimDefinitionByFullName(apiSchemaName, &instanceName);
 
         if (apiSchemaTypeDef) {
             // Compose in the properties from the API schema def.
             primDef->_ComposePropertiesFromPrimDef(
-                *apiSchemaTypeDef, propPrefix);
+                *apiSchemaTypeDef, instanceName);
 
             // Append all the API schemas included in the schema def to the 
             // prim def's API schemas list.

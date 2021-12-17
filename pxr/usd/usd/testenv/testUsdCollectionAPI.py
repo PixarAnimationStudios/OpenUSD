@@ -606,11 +606,9 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
     def test_SchemaPropertyBaseNames(self):
         self.assertTrue(Usd.CollectionAPI.IsSchemaPropertyBaseName(
-                Usd.Tokens.includeRoot))
+                "includeRoot"))
         self.assertTrue(Usd.CollectionAPI.IsSchemaPropertyBaseName(
-                Usd.Tokens.expansionRule))
-        # XXX:"includes" and "excludes" are not public tokens, but they probably 
-        # should be, since API for them will be auto-generated in the future.
+                "expansionRule"))
         self.assertTrue(Usd.CollectionAPI.IsSchemaPropertyBaseName(
                 "includes"))
         self.assertTrue(Usd.CollectionAPI.IsSchemaPropertyBaseName(
@@ -618,6 +616,29 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # "collection" is the prefix, not the base name.
         self.assertFalse(Usd.CollectionAPI.IsSchemaPropertyBaseName(
                 Usd.Tokens.collection))
+
+    def test_GetSchemaAttributeNames(self):
+        # Note that since CollectionAPI doesn't inherit from any API schemas,
+        # passing True vs False for includeInherited doesn't make a difference.
+        self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(),
+                         ['collection:__INSTANCE_NAME__:expansionRule', 
+                          'collection:__INSTANCE_NAME__:includeRoot'])
+
+        self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(False, ""),
+                         ['collection:__INSTANCE_NAME__:expansionRule', 
+                          'collection:__INSTANCE_NAME__:includeRoot'])
+
+        self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(True, ""),
+                         ['collection:__INSTANCE_NAME__:expansionRule', 
+                          'collection:__INSTANCE_NAME__:includeRoot'])
+
+        self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(False, "foo"),
+                         ['collection:foo:expansionRule', 
+                          'collection:foo:includeRoot'])
+
+        self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(True, "bar"),
+                         ['collection:bar:expansionRule', 
+                          'collection:bar:includeRoot'])
 
     def test_RelativePathIsPathIncluded(self):
         # ----------------------------------------------------------

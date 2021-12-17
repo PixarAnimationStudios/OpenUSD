@@ -13,13 +13,13 @@ class "TestMultiApplyAPI" (
     doc = "Test multi-apply API schema"
 )
 {
-    uniform bool bool_attr = 1 (
+    uniform bool multi:__INSTANCE_NAME__:bool_attr = 1 (
         doc = "Boolean attribute"
     )
-    rel relationship (
+    rel multi:__INSTANCE_NAME__:relationship (
         doc = "Relationship"
     )
-    uniform token token_attr = "foo" (
+    uniform token multi:__INSTANCE_NAME__:token_attr = "foo" (
         allowedTokens = ["foo", "bar", "baz"]
         doc = "Token attribute"
     )
@@ -61,13 +61,13 @@ class "TestMultiCanApplyAPI" (
     doc = "Test multi-apply API schema with instance name and canOnlyApplyTo restrictions"
 )
 {
-    uniform bool bool_attr = 1 (
+    uniform bool multi:__INSTANCE_NAME__:bool_attr = 1 (
         doc = "Boolean attribute"
     )
-    rel relationship (
+    rel multi:__INSTANCE_NAME__:relationship (
         doc = "Relationship"
     )
-    uniform token token_attr = "foo" (
+    uniform token multi:__INSTANCE_NAME__:token_attr = "foo" (
         allowedTokens = ["foo", "bar", "baz"]
         doc = "Token attribute"
     )

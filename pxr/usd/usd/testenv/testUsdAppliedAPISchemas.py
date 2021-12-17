@@ -109,7 +109,9 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertTrue(multiApplyAPIDef)
         self.assertEqual(multiApplyAPIDef.GetAppliedAPISchemas(), [])
         self.assertEqual(multiApplyAPIDef.GetPropertyNames(), [
-            "bool_attr", "token_attr", "relationship"])
+            "multi:__INSTANCE_NAME__:bool_attr", 
+            "multi:__INSTANCE_NAME__:token_attr", 
+            "multi:__INSTANCE_NAME__:relationship"])
         self.assertEqual(multiApplyAPIDef.GetDocumentation(),
             "Test multi-apply API schema")
 
@@ -175,7 +177,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         multiTokenAttr = primDef.GetSchemaAttributeSpec(
             "multi:builtin:token_attr")
         self.assertEqual(multiTokenAttr, 
-            multiApplyAPIDef.GetSchemaAttributeSpec("token_attr"))
+            multiApplyAPIDef.GetSchemaAttributeSpec(
+                "multi:__INSTANCE_NAME__:token_attr"))
         self.assertEqual(multiTokenAttr.default, "foo")
         self.assertEqual(multiTokenAttr.typeName.cppTypeName, "TfToken")
 
@@ -183,7 +186,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "multi:builtin:relationship")
         self.assertTrue(multiRelationship)
         self.assertEqual(multiRelationship, 
-            multiApplyAPIDef.GetSchemaRelationshipSpec("relationship"))
+            multiApplyAPIDef.GetSchemaRelationshipSpec(
+                "multi:__INSTANCE_NAME__:relationship"))
 
         # Verify the case where the concrete type overrides a property from 
         # one of its applied API schemas. In this case the property spec from
@@ -191,7 +195,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         # API schema.
         multiBoolAttr = primDef.GetSchemaAttributeSpec(
             "multi:builtin:bool_attr")
-        apiBoolAttr = multiApplyAPIDef.GetSchemaAttributeSpec("bool_attr")
+        apiBoolAttr = multiApplyAPIDef.GetSchemaAttributeSpec(
+            "multi:__INSTANCE_NAME__:bool_attr")
         self.assertNotEqual(multiBoolAttr, apiBoolAttr)
         self.assertEqual(multiBoolAttr.default, False)
         self.assertEqual(apiBoolAttr.default, True)

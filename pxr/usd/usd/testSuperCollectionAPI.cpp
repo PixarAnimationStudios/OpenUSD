@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usd/usdContrived/multipleApplyAPI.h"
+#include "pxr/usd/usd/testSuperCollectionAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/tokens.h"
@@ -29,59 +29,57 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
 
-namespace foo { namespace bar { namespace baz {
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdContrivedMultipleApplyAPI,
+    TfType::Define<UsdTestSuperCollectionAPI,
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
 
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
-    (MultipleApplyAPI)
-    (test)
+    (TestSuperCollectionAPI)
+    (super)
 );
 
 /* virtual */
-UsdContrivedMultipleApplyAPI::~UsdContrivedMultipleApplyAPI()
+UsdTestSuperCollectionAPI::~UsdTestSuperCollectionAPI()
 {
 }
 
 /* static */
-UsdContrivedMultipleApplyAPI
-UsdContrivedMultipleApplyAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdTestSuperCollectionAPI
+UsdTestSuperCollectionAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdContrivedMultipleApplyAPI();
+        return UsdTestSuperCollectionAPI();
     }
     TfToken name;
-    if (!IsMultipleApplyAPIPath(path, &name)) {
-        TF_CODING_ERROR("Invalid test path <%s>.", path.GetText());
-        return UsdContrivedMultipleApplyAPI();
+    if (!IsTestSuperCollectionAPIPath(path, &name)) {
+        TF_CODING_ERROR("Invalid super path <%s>.", path.GetText());
+        return UsdTestSuperCollectionAPI();
     }
-    return UsdContrivedMultipleApplyAPI(stage->GetPrimAtPath(path.GetPrimPath()), name);
+    return UsdTestSuperCollectionAPI(stage->GetPrimAtPath(path.GetPrimPath()), name);
 }
 
-UsdContrivedMultipleApplyAPI
-UsdContrivedMultipleApplyAPI::Get(const UsdPrim &prim, const TfToken &name)
+UsdTestSuperCollectionAPI
+UsdTestSuperCollectionAPI::Get(const UsdPrim &prim, const TfToken &name)
 {
-    return UsdContrivedMultipleApplyAPI(prim, name);
+    return UsdTestSuperCollectionAPI(prim, name);
 }
 
 
 /* static */
 bool 
-UsdContrivedMultipleApplyAPI::IsSchemaPropertyBaseName(const TfToken &baseName)
+UsdTestSuperCollectionAPI::IsSchemaPropertyBaseName(const TfToken &baseName)
 {
     static TfTokenVector attrsAndRels = {
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
-            UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrOne),
-        UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
-            UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrTwo),
+            UsdTokens->super_IncludeRoot),
     };
 
     return find(attrsAndRels.begin(), attrsAndRels.end(), baseName)
@@ -90,7 +88,7 @@ UsdContrivedMultipleApplyAPI::IsSchemaPropertyBaseName(const TfToken &baseName)
 
 /* static */
 bool
-UsdContrivedMultipleApplyAPI::IsMultipleApplyAPIPath(
+UsdTestSuperCollectionAPI::IsTestSuperCollectionAPIPath(
     const SdfPath &path, TfToken *name)
 {
     if (!path.IsPropertyPath()) {
@@ -109,9 +107,9 @@ UsdContrivedMultipleApplyAPI::IsMultipleApplyAPIPath(
     }
 
     if (tokens.size() >= 2
-        && tokens[0] == _schemaTokens->test) {
+        && tokens[0] == _schemaTokens->super) {
         *name = TfToken(propertyName.substr(
-            _schemaTokens->test.GetString().size() + 1));
+            _schemaTokens->super.GetString().size() + 1));
         return true;
     }
 
@@ -119,40 +117,40 @@ UsdContrivedMultipleApplyAPI::IsMultipleApplyAPIPath(
 }
 
 /* virtual */
-UsdSchemaKind UsdContrivedMultipleApplyAPI::_GetSchemaKind() const
+UsdSchemaKind UsdTestSuperCollectionAPI::_GetSchemaKind() const
 {
-    return UsdContrivedMultipleApplyAPI::schemaKind;
+    return UsdTestSuperCollectionAPI::schemaKind;
 }
 
 /* static */
 bool
-UsdContrivedMultipleApplyAPI::CanApply(
+UsdTestSuperCollectionAPI::CanApply(
     const UsdPrim &prim, const TfToken &name, std::string *whyNot)
 {
-    return prim.CanApplyAPI<UsdContrivedMultipleApplyAPI>(name, whyNot);
+    return prim.CanApplyAPI<UsdTestSuperCollectionAPI>(name, whyNot);
 }
 
 /* static */
-UsdContrivedMultipleApplyAPI
-UsdContrivedMultipleApplyAPI::Apply(const UsdPrim &prim, const TfToken &name)
+UsdTestSuperCollectionAPI
+UsdTestSuperCollectionAPI::Apply(const UsdPrim &prim, const TfToken &name)
 {
-    if (prim.ApplyAPI<UsdContrivedMultipleApplyAPI>(name)) {
-        return UsdContrivedMultipleApplyAPI(prim, name);
+    if (prim.ApplyAPI<UsdTestSuperCollectionAPI>(name)) {
+        return UsdTestSuperCollectionAPI(prim, name);
     }
-    return UsdContrivedMultipleApplyAPI();
+    return UsdTestSuperCollectionAPI();
 }
 
 /* static */
 const TfType &
-UsdContrivedMultipleApplyAPI::_GetStaticTfType()
+UsdTestSuperCollectionAPI::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdContrivedMultipleApplyAPI>();
+    static TfType tfType = TfType::Find<UsdTestSuperCollectionAPI>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdContrivedMultipleApplyAPI::_IsTypedSchema()
+UsdTestSuperCollectionAPI::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -160,7 +158,7 @@ UsdContrivedMultipleApplyAPI::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdContrivedMultipleApplyAPI::_GetTfType() const
+UsdTestSuperCollectionAPI::_GetTfType() const
 {
     return _GetStaticTfType();
 }
@@ -176,47 +174,24 @@ _GetNamespacedPropertyName(const TfToken instanceName, const TfToken propName)
 }
 
 UsdAttribute
-UsdContrivedMultipleApplyAPI::GetTestAttrOneAttr() const
+UsdTestSuperCollectionAPI::GetIncludeRootAttr() const
 {
     return GetPrim().GetAttribute(
         _GetNamespacedPropertyName(
             GetName(),
-            UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrOne));
+            UsdTokens->super_IncludeRoot));
 }
 
 UsdAttribute
-UsdContrivedMultipleApplyAPI::CreateTestAttrOneAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdTestSuperCollectionAPI::CreateIncludeRootAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
                        _GetNamespacedPropertyName(
                             GetName(),
-                           UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrOne),
-                       SdfValueTypeNames->Int,
+                           UsdTokens->super_IncludeRoot),
+                       SdfValueTypeNames->Bool,
                        /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
-UsdAttribute
-UsdContrivedMultipleApplyAPI::GetTestAttrTwoAttr() const
-{
-    return GetPrim().GetAttribute(
-        _GetNamespacedPropertyName(
-            GetName(),
-            UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrTwo));
-}
-
-UsdAttribute
-UsdContrivedMultipleApplyAPI::CreateTestAttrTwoAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(
-                       _GetNamespacedPropertyName(
-                            GetName(),
-                           UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrTwo),
-                       SdfValueTypeNames->Double,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
+                       SdfVariabilityUniform,
                        defaultValue,
                        writeSparsely);
 }
@@ -235,11 +210,10 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 
 /*static*/
 const TfTokenVector&
-UsdContrivedMultipleApplyAPI::GetSchemaAttributeNames(bool includeInherited)
+UsdTestSuperCollectionAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrOne,
-        UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrTwo,
+        UsdTokens->super_IncludeRoot,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -254,7 +228,7 @@ UsdContrivedMultipleApplyAPI::GetSchemaAttributeNames(bool includeInherited)
 
 /*static*/
 TfTokenVector
-UsdContrivedMultipleApplyAPI::GetSchemaAttributeNames(
+UsdTestSuperCollectionAPI::GetSchemaAttributeNames(
     bool includeInherited, const TfToken &instanceName)
 {
     const TfTokenVector &attrNames = GetSchemaAttributeNames(includeInherited);
@@ -270,13 +244,13 @@ UsdContrivedMultipleApplyAPI::GetSchemaAttributeNames(
     return result;
 }
 
-}}}
+PXR_NAMESPACE_CLOSE_SCOPE
 
 // ===================================================================== //
 // Feel free to add custom code below this line. It will be preserved by
 // the code generator.
 //
 // Just remember to wrap code in the appropriate delimiters:
-// 'namespace foo { namespace bar { namespace baz {', '}}}'.
+// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
