@@ -46,7 +46,7 @@ def _testNoLights(appController):
 # Test with only the camera light.
 def _testCameraLight(appController):
     _setLights(appController, True, False)
-    appController._takeShot("cameraPrman.png") #, waitForConvergence=True)
+    appController._takeShot("cameraPrman.png", waitForConvergence=True)
 
 # Test with only the dome light.
 def _testDomeLight(appController):
@@ -61,7 +61,7 @@ def _testBothLights(appController):
 # Test that lights work properly in usdview.
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
-    _testCameraLight(appController)
     _testNoLights(appController)
+    _testCameraLight(appController)
     _testDomeLight(appController)
     _testBothLights(appController)
