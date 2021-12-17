@@ -90,8 +90,7 @@ HdPrmanParamsSetter::Sync(HdSceneDelegate *sceneDelegate,
                     TfToken(), param->GetIntegratorParams());
             }
 
-            param->UpdateIntegrator(
-                sceneDelegate->GetRenderIndex().GetRenderDelegate());
+            param->UpdateIntegrator(&sceneDelegate->GetRenderIndex());
         }
     }
 

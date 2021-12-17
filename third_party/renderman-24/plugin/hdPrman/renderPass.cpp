@@ -196,14 +196,32 @@ HdPrman_RenderPass::_Execute(
     const int currentSettingsVersion =
         renderDelegate->GetRenderSettingsVersion();
     
-    GfVec2i resolution;
-
-    const HdPrmanCamera * const hdCam =
-        dynamic_cast<HdPrmanCamera const *>(renderPassState->GetCamera());
-
     HdPrman_CameraContext &cameraContext =
         _renderParam->GetCameraContext();
-    cameraContext.SetCamera(hdCam);
+    // Camera path can come from render pass state or
+    // from render settings. The camera from the render pass state
+    // wins.
+    if (const HdPrmanCamera * const cam =
+            static_cast<const HdPrmanCamera *>(
+                renderPassState->GetCamera())) {
+        cameraContext.SetCameraPath(cam->GetId());
+    } else {
+        const VtDictionary &renderSpec =
+            renderDelegate->GetRenderSetting<VtDictionary>(
+                HdPrmanRenderSettingsTokens->experimentalRenderSpec,
+                VtDictionary());
+        const SdfPath &cameraPath =
+            VtDictionaryGet<SdfPath>(
+                renderSpec,
+                HdPrmanExperimentalRenderSpecTokens->camera,
+                VtDefault = SdfPath());
+        if (!cameraPath.IsEmpty()) {
+            cameraContext.SetCameraPath(cameraPath);
+        }
+    }
+
+    GfVec2i resolution;
+
     if (renderPassState->GetFraming().IsValid()) {
         // For new clients setting the camera framing.
         cameraContext.SetFraming(renderPassState->GetFraming());
@@ -288,8 +306,8 @@ HdPrman_RenderPass::_Execute(
         // so that the render will be re-started below.
         riley::Riley * const riley = _renderParam->AcquireRiley();
 
-        _renderParam->UpdateIntegrator(renderDelegate);
-        _renderParam->UpdateQuickIntegrator(renderDelegate);
+        _renderParam->UpdateIntegrator(GetRenderIndex());
+        _renderParam->UpdateQuickIntegrator(GetRenderIndex());
 
         if (_enableQuickIntegrate)
         {
@@ -358,25 +376,29 @@ HdPrman_RenderPass::_Execute(
         }
 
         if (aovBindings.empty()) {
-            cameraContext.UpdateRileyCameraAndClipPlanes(riley);
+            cameraContext.UpdateRileyCameraAndClipPlanes(
+                riley,
+                GetRenderIndex());
         } else {
             // When using AOV-bindings, we setup the camera slightly
             // differently.
             cameraContext.UpdateRileyCameraAndClipPlanesInteractive(
                 riley, 
+                GetRenderIndex(),
                 resolution);
         }
     }
 
     if (HdPrmanFramebuffer * const framebuffer =
             _renderParam->GetFramebuffer()) {
-        if (hdCam) {
+        if (const HdCamera * const cam =
+                cameraContext.GetCamera(GetRenderIndex())) {
             // Update the framebuffer Z scaling
             framebuffer->proj =
 #if HD_API_VERSION >= 44
-                hdCam->ComputeProjectionMatrix();
+                cam->ComputeProjectionMatrix();
 #else
-                hdCam->GetProjectionMatrix();
+                cam->GetProjectionMatrix();
 #endif
         }
     }

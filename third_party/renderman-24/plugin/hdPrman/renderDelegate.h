@@ -52,7 +52,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanRenderSettingsTokens, HDPRMAN_API,
     (renderVarIndices)             \
     (name)                         \
     (type)                         \
-    (params)
+    (params)                       \
+    (camera)
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanExperimentalRenderSpecTokens, HDPRMAN_API,
     HDPRMAN_EXPERIMENTAL_RENDER_SPEC_TOKENS);

@@ -48,20 +48,35 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
         return;
     }
 
+    HdPrman_RenderParam * const param =
+        static_cast<HdPrman_RenderParam*>(renderParam);
+
     SdfPath const &id = GetId();
-    HdDirtyBits& bits = *dirtyBits;
+    // Save state of dirtyBits before HdCamera::Sync clears them.
+    const HdDirtyBits bits = *dirtyBits;
 
     if (bits & DirtyTransform) {
         sceneDelegate->SampleTransform(id, &_sampleXforms);
     }
 
     if (bits & AllDirty) {
-        HdPrman_RenderParam * const param =
-            static_cast<HdPrman_RenderParam*>(renderParam);
-        param->GetCameraContext().MarkCameraInvalid(this);
+        param->GetCameraContext().MarkCameraInvalid(id);
     }
 
     HdCamera::Sync(sceneDelegate, renderParam, dirtyBits);
+
+    if (bits & DirtyParams) {
+        if (id == param->GetCameraContext().GetCameraPath()) {
+            // Motion blur in Riley only works correctly if the
+            // shutter interval is set before any rprims are synced
+            // (and the transform of the riley camera is updated).
+            //
+            // Thus, we immediately call UpdateRileyShutterInterval
+            // here.
+            param->UpdateRileyShutterInterval(
+                &sceneDelegate->GetRenderIndex());
+        }
+    }
 
     // XXX: Should we flip the proj matrix (RHS vs LHS) as well here?
 

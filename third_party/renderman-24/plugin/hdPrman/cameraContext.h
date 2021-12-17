@@ -36,6 +36,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdRenderIndex;
+class HdCamera;
 class HdPrmanCamera;
 
 /// HdPrman_CameraContext holds all the data necessary to populate the
@@ -49,11 +51,11 @@ public:
     HdPrman_CameraContext();
 
     /// Call when hydra changed the transform or parameters of a camera.
-    void MarkCameraInvalid(const HdPrmanCamera * camera);
+    void MarkCameraInvalid(const SdfPath &path);
 
     /// Set the active camera. If camera is the same as it used to be,
     /// context is not marked invalid.
-    void SetCamera(const HdPrmanCamera * camera);
+    void SetCameraPath(const SdfPath &path);
 
     /// Set the camera framing. Context is only marked invalid if framing
     /// is different from what it used to be.
@@ -90,12 +92,14 @@ public:
     /// Update riley camera and clipping planes for offline rendering
     /// to an image file.
     void UpdateRileyCameraAndClipPlanes(
-        riley::Riley * riley);
+        riley::Riley * riley,
+        const HdRenderIndex * renderIndex);
 
     /// Update riley camera and clipping planes for rendering to AOVs
     /// baked by render buffers of the given size.
     void UpdateRileyCameraAndClipPlanesInteractive(
         riley::Riley * riley,
+        const HdRenderIndex * renderIndex,
         const GfVec2i &renderBufferSize);
     
     /// Mark that riley camera and options are up to date.
@@ -133,24 +137,31 @@ public:
                          const float shutterCloseTime,
                          const float shutteropeningPoints[8]);
 
-    const HdPrmanCamera *GetCamera() const { return _camera; }
+    /// Path of current camera in render index.
+    const SdfPath &GetCameraPath() const { return _cameraPath; }
+
+    /// For convenience, get camera at camera path from render index.
+    const HdPrmanCamera * GetCamera(const HdRenderIndex *renderIndex) const;
 
 private:
     /// Computes the screen window for the camera and conforms
     /// it to have the display window's aspect ratio using the
     /// current conform policy.
-    GfRange2d _ComputeConformedScreenWindow() const;
+    GfRange2d _ComputeConformedScreenWindow(const HdCamera * camera) const;
 
     // Compute parameters for Riley::ModifyCamera
     RtParamList _ComputeCameraParams(
-        const GfRange2d &screenWindow) const;
+        const GfRange2d &screenWindow,
+        const HdCamera * camera) const;
 
     void _UpdateRileyCamera(
         riley::Riley * const riley,
-        const GfRange2d &screenWindow);
-    void _UpdateClipPlanes(riley::Riley * riley);
+        const GfRange2d &screenWindow,
+        const HdPrmanCamera * camera);
+    void _UpdateClipPlanes(
+        riley::Riley * riley,
+        const HdPrmanCamera * camera);
 
-    const HdPrmanCamera * _camera;
     SdfPath _cameraPath;
     CameraUtilFraming _framing;
     CameraUtilConformWindowPolicy _policy;

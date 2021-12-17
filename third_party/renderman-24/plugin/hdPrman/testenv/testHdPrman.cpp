@@ -330,18 +330,6 @@ int main(int argc, char *argv[])
     for (auto product: renderSpec.products) {
         printf("Rendering %s...\n", product.name.GetText());
 
-        // Find USD camera prim.
-        UsdGeomCamera usdCam;
-        if (!product.cameraPath.IsEmpty()) {
-            UsdPrim prim = stage->GetPrimAtPath(product.cameraPath);
-            if (prim && prim.IsA<UsdGeomCamera>()) {
-                usdCam = UsdGeomCamera(prim);
-            } else {
-                TF_WARN("Invalid scene camera at %s. Falling back to the "
-                        "free cam.\n", product.cameraPath.GetText());
-            }
-        }
-        
         HdRenderSettingsMap settingsMap;
 
         // Shutter settings from studio production.
@@ -355,22 +343,11 @@ int main(int argc, char *argv[])
         // future the shutterInterval will be moved to new attributes on
         // the cameras, and shutterCurve will exist an a UsdRi schema.
         //
-        double shutterOpen = 0.0;
-        double shutterClose = 0.5;
-
-        if (usdCam) {
-            usdCam.GetShutterOpenAttr().Get(&shutterOpen, frameNum);
-            usdCam.GetShutterCloseAttr().Get(&shutterClose, frameNum);
-        }
-
-        // XXX Scene-wide shutter will change to be per-camera;
-        // see RMAN-14078
-        settingsMap[HdPrmanRenderSettingsTokens->shutterOpen] =
-            shutterOpen;
-        settingsMap[HdPrmanRenderSettingsTokens->shutterClose] =
-            shutterClose;
 
         VtDictionary renderSpecDict;
+
+        renderSpecDict[HdPrmanExperimentalRenderSpecTokens->camera] =
+            product.cameraPath;
 
         {
             std::vector<VtValue> renderVarDicts;

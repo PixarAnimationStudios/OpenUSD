@@ -34,8 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 static const RtUString _us_main_cam_projection("main_cam_projection");
 
 HdPrman_CameraContext::HdPrman_CameraContext()
-  : _camera(nullptr)
-  , _policy(CameraUtilFit)
+  : _policy(CameraUtilFit)
   , _shutterOpenTime(0.0f)
   , _shutterCloseTime(1.0f)
   , _shutteropeningPoints{ // matches RenderMan default
@@ -48,33 +47,22 @@ HdPrman_CameraContext::HdPrman_CameraContext()
 }
 
 void
-HdPrman_CameraContext::MarkCameraInvalid(const HdPrmanCamera * const camera)
+HdPrman_CameraContext::MarkCameraInvalid(const SdfPath &path)
 {
     // No need to invalidate if camera that is not the active camera
     // changed.
-    if (camera && camera->GetId() == _cameraPath) {
+    if (path == _cameraPath) {
         _invalid = true;
     }
 }
 
 void
-HdPrman_CameraContext::SetCamera(const HdPrmanCamera * const camera)
+HdPrman_CameraContext::SetCameraPath(const SdfPath &path)
 {
-    if (camera) {
-        if (_cameraPath != camera->GetId()) {
-            _invalid = true;
-            _cameraPath = camera->GetId();
-        }
-    } else {
-        if (_camera) {
-            // If we had a camera and now have it no more, we need to
-            // invalidate since we need to return to the default
-            // camera.
-            _invalid = true;
-        }
+    if (_cameraPath != path) {
+        _invalid = true;
+        _cameraPath = path;
     }
-
-    _camera = camera;
 }
 
 void
@@ -98,8 +86,8 @@ HdPrman_CameraContext::SetWindowPolicy(
 
 void
 HdPrman_CameraContext::SetShutterCurve(const float shutterOpenTime,
-                                      const float shutterCloseTime,
-                                      const float shutteropeningPoints[8])
+                                       const float shutterCloseTime,
+                                       const float shutteropeningPoints[8])
 {
     if (_shutterOpenTime != shutterOpenTime) {
         _shutterOpenTime = shutterOpenTime;
@@ -321,7 +309,8 @@ _ComputeNodeParams(const HdCamera * const camera)
 // Compute params given to Riley::ModifyCamera
 RtParamList
 HdPrman_CameraContext::_ComputeCameraParams(
-    const GfRange2d &screenWindow) const
+    const GfRange2d &screenWindow,
+    const HdCamera * const camera) const
 {
     RtParamList result;
 
@@ -347,7 +336,7 @@ HdPrman_CameraContext::_ComputeCameraParams(
     // Note that we do a sanity check slightly stronger than
     // GfRange1f::IsEmpty() in that we do not allow the range to contain
     // only exactly one point.
-    const GfRange1f &clippingRange = _camera->GetClippingRange();
+    const GfRange1f &clippingRange = camera->GetClippingRange();
     if (clippingRange.GetMin() < clippingRange.GetMax()) {
         result.SetFloat(RixStr.k_nearClip, clippingRange.GetMin());
         result.SetFloat(RixStr.k_farClip, clippingRange.GetMax());
@@ -406,40 +395,49 @@ _ToRtMatrices(
 }
 
 GfRange2d
-HdPrman_CameraContext::_ComputeConformedScreenWindow() const
+HdPrman_CameraContext::_ComputeConformedScreenWindow(
+    const HdCamera * const camera) const
 {
     return
         CameraUtilConformedWindow(
-            _GetScreenWindow(_camera),
+            _GetScreenWindow(camera),
             _policy,
             _GetDisplayWindowAspect(_framing));
 }
 
 void
 HdPrman_CameraContext::UpdateRileyCameraAndClipPlanes(
-    riley::Riley * const riley)
+    riley::Riley * const riley,
+    const HdRenderIndex * const renderIndex)
 {
-    if (!_camera) {
+    const HdPrmanCamera * const camera =
+        GetCamera(renderIndex);
+    if (!camera) {
         // Bail if no camera.
         return;
     }
 
     const GfRange2d conformedScreenWindow =
-        _ComputeConformedScreenWindow();
+        _ComputeConformedScreenWindow(camera);
 
     _UpdateRileyCamera(
         riley,
-        conformedScreenWindow);
+        conformedScreenWindow,
+        camera);
     _UpdateClipPlanes(
-        riley);
+        riley,
+        camera);
 }
 
 void
 HdPrman_CameraContext::UpdateRileyCameraAndClipPlanesInteractive(
     riley::Riley * const riley,
+    const HdRenderIndex * const renderIndex,
     const GfVec2i &renderBufferSize)
 {
-    if (!_camera) {
+    const HdPrmanCamera * const camera =
+        GetCamera(renderIndex);
+    if (!camera) {
         // Bail if no camera.
         return;
     }
@@ -447,7 +445,7 @@ HdPrman_CameraContext::UpdateRileyCameraAndClipPlanesInteractive(
     // The screen window we would need to use if we were targeting
     // the display window.
     const GfRange2d conformedScreenWindow =
-        _ComputeConformedScreenWindow();
+        _ComputeConformedScreenWindow(camera);
 
     // But instead, we target the rect of pixels in the render
     // buffer baking the AOVs, so we need to convert the
@@ -457,24 +455,27 @@ HdPrman_CameraContext::UpdateRileyCameraAndClipPlanesInteractive(
         _ConvertScreenWindowForDisplayWindowToRenderBuffer(
             conformedScreenWindow,
             _framing.displayWindow,
-            renderBufferSize));
+            renderBufferSize),
+        camera);
     _UpdateClipPlanes(
-        riley);
+        riley,
+        camera);
 }
 
 void
 HdPrman_CameraContext::_UpdateRileyCamera(
     riley::Riley * const riley,
-    const GfRange2d &screenWindow)
+    const GfRange2d &screenWindow,
+    const HdPrmanCamera * const camera)
 {
     const riley::ShadingNode node = riley::ShadingNode {
         riley::ShadingNode::Type::k_Projection,
-        _ComputeProjectionShader(_camera->GetProjection()),
+        _ComputeProjectionShader(camera->GetProjection()),
         _us_main_cam_projection,
-        _ComputeNodeParams(_camera)
+        _ComputeNodeParams(camera)
     };
 
-    const RtParamList params = _ComputeCameraParams(screenWindow);
+    const RtParamList params = _ComputeCameraParams(screenWindow, camera);
 
     // Coordinate system notes.
     //
@@ -495,7 +496,7 @@ HdPrman_CameraContext::_UpdateRileyCamera(
         TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>;    
 
     // Use time sampled transforms authored on the scene camera.
-    const _HdTimeSamples &sampleXforms = _camera->GetTimeSampleXforms();
+    const _HdTimeSamples &sampleXforms = camera->GetTimeSampleXforms();
 
     // Riley camera xform is "move the camera", aka viewToWorld.
     // Convert right-handed Y-up camera space (USD, Hydra) to
@@ -550,7 +551,9 @@ _ToClipPlaneParams(const GfVec4d &plane, RtParamList * const params)
 }
 
 void
-HdPrman_CameraContext::_UpdateClipPlanes(riley::Riley * const riley)
+HdPrman_CameraContext::_UpdateClipPlanes(
+    riley::Riley * const riley,
+    const HdPrmanCamera * const camera)
 {
     // Delete clipping planes
     for (riley::ClippingPlaneId const& id: _clipPlaneIds) {
@@ -559,7 +562,7 @@ HdPrman_CameraContext::_UpdateClipPlanes(riley::Riley * const riley)
     _clipPlaneIds.clear();
 
     // Create clipping planes
-    const std::vector<GfVec4d> &clipPlanes = _camera->GetClipPlanes();
+    const std::vector<GfVec4d> &clipPlanes = camera->GetClipPlanes();
     if (clipPlanes.empty()) {
         return;
     }
@@ -570,7 +573,7 @@ HdPrman_CameraContext::_UpdateClipPlanes(riley::Riley * const riley)
         TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>;    
 
     // Use time sampled transforms authored on the scene camera.
-    const _HdTimeSamples &sampleXforms = _camera->GetTimeSampleXforms();
+    const _HdTimeSamples &sampleXforms = camera->GetTimeSampleXforms();
     const _RtMatrices rtMatrices = _ToRtMatrices(sampleXforms);
 
     const riley::Transform transform {
@@ -745,6 +748,17 @@ HdPrman_CameraContext::Begin(riley::Riley * const riley)
 
     // Dicing Camera
     riley->SetDefaultDicingCamera(_cameraId);
+}
+
+const HdPrmanCamera *
+HdPrman_CameraContext::GetCamera(
+    const HdRenderIndex * const renderIndex) const
+{
+    return
+        static_cast<const HdPrmanCamera*>(
+            renderIndex->GetSprim(
+                HdPrimTypeTokens->camera,
+                _cameraPath));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -150,12 +150,6 @@ public:
     RegisterIntegratorCallbackForCamera(
         IntegratorCameraCallback const& callback);
 
-    HDPRMAN_API
-    bool IsShutterInstantaneous() const;
-
-    HDPRMAN_API
-    void SetInstantaneousShutter(bool instantaneousShutter);
-
     // Get RIX vs XPU
     bool IsXpu() const { return _xpu; }
 
@@ -187,7 +181,7 @@ public:
     // Invalidate texture at path.
     void InvalidateTexture(const std::string &path);
 
-    void UpdateIntegrator(HdRenderDelegate * renderDelegate);
+    void UpdateIntegrator(const HdRenderIndex * renderIndex);
 
     riley::IntegratorId GetIntegratorId() const { return _integratorId; }
 
@@ -260,11 +254,15 @@ public:
     // copy of the options, to be provided to SetOptions().
     RtParamList _GetDeprecatedOptionsPrunedList();
 
-    void UpdateQuickIntegrator(HdRenderDelegate * renderDelegate);
+    void UpdateQuickIntegrator(const HdRenderIndex * renderIndex);
 
     riley::IntegratorId GetQuickIntegratorId() const {
         return _quickIntegratorId;
     }
+
+    // Compute shutter interval from render settings and camera and
+    // immediately set it as riley option.
+    void UpdateRileyShutterInterval(const HdRenderIndex * renderIndex);
 
 private:
     void _CreateRiley();
@@ -297,10 +295,12 @@ private:
     riley::Riley *_riley;
 
     riley::ShadingNode _ComputeIntegratorNode(
-        HdRenderDelegate * renderDelegate);
+        HdRenderDelegate * renderDelegate,
+        const HdPrmanCamera * cam);
 
     riley::ShadingNode _ComputeQuickIntegratorNode(
-        HdRenderDelegate * renderDelegate);
+        HdRenderDelegate * renderDelegate,
+        const HdPrmanCamera * cam);
 
     void _CreateQuickIntegrator(HdRenderDelegate * renderDelegate);
 
@@ -357,9 +357,6 @@ private:
     RtParamList _options;
     HdPrman_CameraContext _cameraContext;
     HdPrman_RenderViewContext _renderViewContext;
-
-    // A quick way to disable motion blur, making shutter close same as open
-    bool _instantaneousShutter;
 
     // RIX or XPU
     bool _xpu;

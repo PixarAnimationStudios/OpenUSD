@@ -28,6 +28,7 @@
 #include "hdPrman/material.h"
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/rixStrings.h"
+#include "hdPrman/camera.h"
 #include "hdPrman/cameraContext.h"
 #include "hdPrman/framebuffer.h"
 
@@ -93,7 +94,6 @@ HdPrman_RenderParam::HdPrman_RenderParam() :
     _mgr(nullptr),
     _riley(nullptr),
     _sceneLightCount(0),
-    _instantaneousShutter(false),
     _lastSettingsVersion(0)
 {
     TfRegistryManager::GetInstance().SubscribeTo<HdPrman_RenderParam>();
@@ -131,18 +131,6 @@ HdPrman_RenderParam::IsLightLinkUsed(TfToken const& name)
 {
     std::lock_guard<std::mutex> lock(_lightLinkMutex);
     return _lightLinkRefs.find(name) != _lightLinkRefs.end();
-}
-
-bool 
-HdPrman_RenderParam::IsShutterInstantaneous() const
-{
-    return _instantaneousShutter;
-}
-
-void
-HdPrman_RenderParam::SetInstantaneousShutter(bool instantaneousShutter)
-{
-    _instantaneousShutter = instantaneousShutter;
 }
 
 void
@@ -1204,39 +1192,6 @@ HdPrman_RenderParam::ReleaseCoordSysBindings(SdfPath const& id)
     _geomToHdCoordSysMap.erase(geomIt);
 }
 
-static void
-_GetShutterInterval(
-    HdRenderSettingsMap& renderSettings,
-    float* shutterOpen,
-    float* shutterClose)
-{
-    auto const& shutterOpenEntry = 
-        renderSettings.find(HdPrmanRenderSettingsTokens->shutterOpen);
-    auto const& shutterCloseEntry = 
-        renderSettings.find(HdPrmanRenderSettingsTokens->shutterClose);
-
-    if (shutterOpenEntry != renderSettings.end() &&
-        shutterCloseEntry != renderSettings.end())
-    {
-        VtValue shutterOpenVal = shutterOpenEntry->second; 
-        VtValue shutterCloseVal = shutterCloseEntry->second; 
-
-        if (shutterOpenVal.IsHolding<float>()) {
-            *shutterOpen = shutterOpenVal.UncheckedGet<float>();
-        } else if (shutterOpenVal.IsHolding<double>()) {
-            double v = shutterOpenVal.UncheckedGet<double>();
-            *shutterOpen = static_cast<float>(v);
-        }
-
-        if (shutterCloseVal.IsHolding<float>()) {
-            *shutterClose = shutterCloseVal.UncheckedGet<float>();
-        } else if (shutterCloseVal.IsHolding<double>()) {
-            double v = shutterCloseVal.UncheckedGet<double>();
-            *shutterClose = static_cast<float>(v);
-        }
-    }
-}
-
 void
 HdPrman_RenderParam::SetOptionsFromRenderSettings(
     HdPrmanRenderDelegate *renderDelegate, 
@@ -1277,9 +1232,6 @@ HdPrman_RenderParam::SetOptionsFromRenderSettings(
                 options.SetIntegerArray(RixStr.k_Ri_FormatResolution, 
                                         res.data(), 2);
 
-            } else if (token == 
-                       HdPrmanRenderSettingsTokens->instantaneousShutter ) {
-                _instantaneousShutter = val.UncheckedGet<bool>();
             }            
 
             // TODO: Unhandled settings from schema
@@ -1291,16 +1243,6 @@ HdPrman_RenderParam::SetOptionsFromRenderSettings(
 
         }
     }
-
-    float shutterOpen = 0.0f;
-    float shutterClose = 0.0f;
-    _GetShutterInterval(renderSettings, &shutterOpen, &shutterClose);
-
-    const float shutterInterval[2] = {
-        shutterOpen,
-        _instantaneousShutter ? shutterOpen : shutterClose };
-
-    options.SetFloatArray(RixStr.k_Ri_Shutter, shutterInterval, 2); 
 }
 
 void
@@ -1761,7 +1703,8 @@ HdPrman_RenderParam::InvalidateTexture(const std::string &path)
 
 riley::ShadingNode
 HdPrman_RenderParam::_ComputeIntegratorNode(
-    HdRenderDelegate * const renderDelegate)
+    HdRenderDelegate * const renderDelegate,
+    const HdPrmanCamera * const cam)
 {
     const std::string &integratorName =
         renderDelegate->GetRenderSetting<std::string>(
@@ -1775,7 +1718,7 @@ HdPrman_RenderParam::_ComputeIntegratorNode(
         integratorName,
         _integratorParams);
 
-    if (const HdPrmanCamera * const cam = GetCameraContext().GetCamera()) {
+    if (cam) {
         SetIntegratorParamsFromCamera(
             static_cast<HdPrmanRenderDelegate*>(renderDelegate),
             cam,
@@ -1793,14 +1736,23 @@ HdPrman_RenderParam::_ComputeIntegratorNode(
 void
 HdPrman_RenderParam::_CreateIntegrator(HdRenderDelegate * const renderDelegate)
 {
+    // Called when there isn't even a render index yet, so we ignore
+    // integrator opinions coming from the camera here. They will be
+    // consumed in UpdateIntegrator.
+    static const HdPrmanCamera * const camera = nullptr;
+
     _integratorId = _riley->CreateIntegrator(
-        riley::UserId::DefaultId(), _ComputeIntegratorNode(renderDelegate));
+        riley::UserId::DefaultId(),
+        _ComputeIntegratorNode(renderDelegate, camera));
 }
 
 void
-HdPrman_RenderParam::UpdateIntegrator(HdRenderDelegate * const renderDelegate)
+HdPrman_RenderParam::UpdateIntegrator(
+    const HdRenderIndex * const renderIndex)
 {
-    const riley::ShadingNode node = _ComputeIntegratorNode(renderDelegate);
+    const riley::ShadingNode node = _ComputeIntegratorNode(
+        renderIndex->GetRenderDelegate(),
+        _cameraContext.GetCamera(renderIndex));
 
     AcquireRiley()->ModifyIntegrator(
         _integratorId, &node);
@@ -1954,6 +1906,22 @@ HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
     _activeIntegratorId = GetIntegratorId();
 
     _CreateFallbackMaterials();
+
+    // Set the camera path before the first sync so that
+    // HdPrmanCamera::Sync can detect whether it is syncing the
+    // current camera and needs to set the riley shutter interval
+    // which needs to be set before any time-sampled primvars are
+    // synced.
+    const VtDictionary &renderSpec =
+        renderDelegate->GetRenderSetting<VtDictionary>(
+            HdPrmanRenderSettingsTokens->experimentalRenderSpec,
+            VtDictionary());
+    const SdfPath &cameraPath =
+        VtDictionaryGet<SdfPath>(
+            renderSpec,
+            HdPrmanExperimentalRenderSpecTokens->camera,
+            VtDefault = SdfPath());
+    GetCameraContext().SetCameraPath(cameraPath);
 }
 
 void 
@@ -2416,7 +2384,8 @@ HdPrman_RenderParam::AcquireRiley()
 
 riley::ShadingNode
 HdPrman_RenderParam::_ComputeQuickIntegratorNode(
-    HdRenderDelegate * const renderDelegate)
+    HdRenderDelegate * const renderDelegate,
+    const HdPrmanCamera * const cam)
 {
     const std::string &integratorName =
         renderDelegate->GetRenderSetting<std::string>(
@@ -2430,7 +2399,7 @@ HdPrman_RenderParam::_ComputeQuickIntegratorNode(
         integratorName,
         _quickIntegratorParams);
 
-    if (const HdPrmanCamera * const cam = GetCameraContext().GetCamera()) {
+    if (cam) {
         SetIntegratorParamsFromCamera(
             static_cast<HdPrmanRenderDelegate*>(renderDelegate),
             cam,
@@ -2455,25 +2424,72 @@ void
 HdPrman_RenderParam::_CreateQuickIntegrator(
     HdRenderDelegate * const renderDelegate)
 {
+    // See comment in _CreateIntegrator.
+    static const HdPrmanCamera * const camera = nullptr;
+
     if (_enableQuickIntegrate) {
         _quickIntegratorId = _riley->CreateIntegrator(
             riley::UserId::DefaultId(),
-            _ComputeQuickIntegratorNode(renderDelegate));
+            _ComputeQuickIntegratorNode(renderDelegate, camera));
     }
 }
 
 void
 HdPrman_RenderParam::UpdateQuickIntegrator(
-    HdRenderDelegate * const renderDelegate)
+    const HdRenderIndex * const renderIndex)
 {
     if (_enableQuickIntegrate) {
         const riley::ShadingNode node =
-            _ComputeQuickIntegratorNode(renderDelegate);
+            _ComputeQuickIntegratorNode(
+                renderIndex->GetRenderDelegate(),
+                _cameraContext.GetCamera(renderIndex));
         
         AcquireRiley()->ModifyIntegrator(
             _quickIntegratorId,
             &node);
     }
+}
+
+// Note that we only support motion blur with the correct shutter
+// interval if the the camera path and instantaneous shutter value
+// have been set to the desired values before any syncing or rendering
+// has happened. We don't update the riley shutter interval in
+// response to setting these render settings. The only callee of
+// UpdateRileyShutterInterval is HdPrmanCamera::Sync.
+//
+// This limitation is due to Riley's limitation: the shutter interval
+// option has to be set before any sampled prim vars or transforms are
+// given to Riley. It might be possible to circumvent this limitation
+// by forcing a sync of all rprim's and the camera transform (through
+// the render index'es change tracker) when the shutter interval changes.
+//
+void
+HdPrman_RenderParam::UpdateRileyShutterInterval(
+    const HdRenderIndex * const renderIndex)
+{
+    // Fallback shutter interval.
+    float shutterInterval[2] = { 0.0f, 0.5f };
+    
+    // Try to get shutter interval from camera.
+    if (const HdCamera * const camera =
+            _cameraContext.GetCamera(renderIndex)) {
+        shutterInterval[0] = camera->GetShutterOpen();
+        shutterInterval[1] = camera->GetShutterClose();
+    }
+
+    const bool instantaneousShutter =
+        renderIndex->GetRenderDelegate()->GetRenderSetting<bool>(
+            HdPrmanRenderSettingsTokens->instantaneousShutter, false);
+    if (instantaneousShutter) {
+        // Disable motion blur by making the interval a single point.
+        shutterInterval[1] = shutterInterval[0];
+    }
+    
+    RtParamList &options = GetOptions();
+    options.SetFloatArray(RixStr.k_Ri_Shutter, shutterInterval, 2); 
+    
+    riley::Riley * riley = AcquireRiley();
+    riley->SetOptions(_GetDeprecatedOptionsPrunedList());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
