@@ -62,7 +62,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((colorMapSaturation,           "inputs:ri:light:colorMapSaturation"))
 );
 
-TF_DEFINE_ENV_SETTING(HD_PRMAN_ENABLE_LIGHT_MATERIAL_NETWORKS, false,
+TF_DEFINE_ENV_SETTING(HD_PRMAN_ENABLE_LIGHT_MATERIAL_NETWORKS, true,
                       "bool env setting to enable material networks for lights "
                       "and light filters");
 
