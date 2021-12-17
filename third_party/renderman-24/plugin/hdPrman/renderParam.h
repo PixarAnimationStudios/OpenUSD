@@ -274,6 +274,12 @@ private:
 
     void _DestroyRiley();
 
+    // Updates clear colors of AOV descriptors of framebuffer.
+    // If this is not possible because the set of AOVs changed,
+    // returns false.
+    bool _UpdateFramebufferClearValues(
+        const HdRenderPassAovBindingVector& aovBindings);
+
     // Top-level entrypoint to PRMan.
     // Singleton used to access RixInterfaces.
     RixContext *_rix;

@@ -2042,93 +2042,76 @@ HdPrman_RenderParam::DeleteRenderThread()
     }
 }
 
-void
-HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
+bool
+HdPrman_RenderParam::_UpdateFramebufferClearValues(
     const HdRenderPassAovBindingVector& aovBindings)
 {
-    if (!_framebuffer) {
-        _framebuffer = std::make_unique<HdPrmanFramebuffer>();
+    if(_framebuffer->aovBuffers.size() != aovBindings.size()) {
+        // Number of AOVs changed, can't update framebuffer clear values.
+        return false;
     }
 
-    // Proceed with creating displays if the number has changed
-    // or the display names don't match what we have.
-    bool needCreate = false;
-    if(_framebuffer->aovs.size() != aovBindings.size())
-    {
-        needCreate = true;
-    }
-    else
-    {
-        for( size_t aov = 0; aov < aovBindings.size(); ++aov )
-        {
-            if(aovBindings[aov].aovName != _framebuffer->aovs[aov].name)
-            {
-                needCreate = true;
-                break;
-            }
-            else if((aovBindings[aov].aovName == HdAovTokens->color ||
-                    aovBindings[aov].aovName == HdAovTokens->depth) &&
-                    (aovBindings[aov].clearValue !=
-                     _framebuffer->aovs[aov].clearValue))
-            {
+    for(size_t aov = 0; aov < aovBindings.size(); ++aov) {
+        const HdRenderPassAovBinding &aovBinding =
+            aovBindings[aov];
+        HdPrmanFramebuffer::AovDesc &aovDesc =
+            _framebuffer->aovBuffers[aov].desc;
+        if (aovBinding.aovName != aovDesc.name) {
+            // Different AOV, can't update framebuffer clear value.
+            return false;
+        }
+        
+        if(aovBinding.aovName == HdAovTokens->color ||
+           aovBinding.aovName == HdAovTokens->depth) {
+            if (aovDesc.clearValue != aovBinding.clearValue) {
                 // Request a framebuffer clear if the clear value in the aov
                 // has changed from the framebuffer clear value.
                 // We do this before StartRender() to avoid race conditions
                 // where some buckets may get discarded or cleared with
                 // the wrong value.
-
+                
                 // Stops render and increases sceneVersion to trigger restart.
                 AcquireRiley();
-
+                
                 _framebuffer->pendingClear = true;
-                _framebuffer->aovs[aov].clearValue = aovBindings[aov].clearValue;
+                aovDesc.clearValue = aovBinding.clearValue;
             }
         }
     }
 
-    if(!needCreate)
-    {
-        return;
-    }
+    return true;
+}    
 
-    // Stop render and crease sceneVersion to trigger restart.
-    riley::Riley * riley = AcquireRiley();
-
-    std::lock_guard<std::mutex> lock(_framebuffer->mutex);
-
-    static const RtUString us_bufferID("bufferID");
-    static const RtUString us_hydra("hydra");
+static
+void
+_ComputeRenderOutputAndAovDescs(
+    const HdRenderPassAovBindingVector& aovBindings,
+    bool isXpu,
+    std::vector<HdPrman_RenderViewDesc::RenderOutputDesc> * renderOutputDescs,
+    HdPrmanFramebuffer::AovDescVector * aovDescs)
+{
     static const RtUString us_ci("ci");
     static const RtUString us_st("__st");
     static const RtUString us_primvars_st("primvars:st");
 
-    if(_framebuffer->aovs.size())
-    {
-        _framebuffer->aovs.clear();
-        _framebuffer->w = 0;
-        _framebuffer->h = 0;
-    }
-    // Displays & Display Channels
-    HdPrman_RenderViewDesc renderViewDesc;
+    std::unordered_map<TfToken, RtUString, TfToken::HashFunctor> sourceNames;
 
-    std::unordered_map<RtUString, RtUString> sourceNames;
-    for( size_t aov = 0; aov < aovBindings.size(); ++aov )
-    {
+    for (const HdRenderPassAovBinding &aovBinding : aovBindings) {
         std::string dataType;
         std::string sourceType;
-        RtUString aovName(aovBindings[aov].aovName.GetText());
+        RtUString aovName(aovBinding.aovName.GetText());
         RtUString sourceName;
         riley::RenderOutputType rt = riley::RenderOutputType::k_Float;
         RtUString filterName = RixStr.k_filter;
 
-        HdFormat aovFormat = aovBindings[aov].renderBuffer->GetFormat();
+        HdFormat aovFormat = aovBinding.renderBuffer->GetFormat();
 
         // Prman always renders colors as float, so for types with 3 or 4
         // components, always set the format in our framebuffer to float.
         // Conversion will take place in the Blit method of renderBuffer.cpp
         // when it notices that the aovBinding's buffer format doesn't match
         // our framebuffer's format.
-        int componentCount = HdGetComponentCount(aovFormat);
+        const int componentCount = HdGetComponentCount(aovFormat);
         if(componentCount == 3)
         {
             aovFormat = HdFormatFloat32Vec3;
@@ -2153,26 +2136,37 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
             rt = riley::RenderOutputType::k_Integer;
         }
 
-        // Look at the aovSettings to see if there is
-        // information about the source.  In prman
-        // an aov can have an arbitrary name, while its source
-        // might be an lpe or a standard aov name.
-        // When no source is specified, we'll assume the aov name
-        // is standard and also use that as the source.
-        for(auto it = aovBindings[aov].aovSettings.begin();
-            it != aovBindings[aov].aovSettings.end(); it++)
         {
-            if(it->first == _tokens->sourceName)
-            {
-                VtValue val = it->second;
-                sourceName =
-                    RtUString(
-                            val.UncheckedGet<TfToken>().GetString().c_str());
+            // Look at the aovSettings to see if there is
+            // information about the source.  In prman
+            // an aov can have an arbitrary name, while its source
+            // might be an lpe or a standard aov name.
+            // When no source is specified, we'll assume the aov name
+            // is standard and also use that as the source.
+            auto it = aovBinding.aovSettings.find(_tokens->sourceName);
+            if (it != aovBinding.aovSettings.end()) {
+                const VtValue &val = it->second;
+                if (val.IsHolding<TfToken>()) {
+                    sourceName =
+                        RtUString(
+                            val.UncheckedGet<TfToken>().GetText());
+                }
             }
-            else if(it->first == _tokens->sourceType)
-            {
-                VtValue val = it->second;
-                sourceType = val.UncheckedGet<TfToken>().GetString();
+        }
+
+        {
+            // Look at the aovSettings to see if there is
+            // information about the source.  In prman
+            // an aov can have an arbitrary name, while its source
+            // might be an lpe or a standard aov name.
+            // When no source is specified, we'll assume the aov name
+            // is standard and also use that as the source.
+            auto it = aovBinding.aovSettings.find(_tokens->sourceType);
+            if (it != aovBinding.aovSettings.end()) {
+                const VtValue &val = it->second;
+                if (val.IsHolding<TfToken>()) {
+                    sourceType = val.UncheckedGet<TfToken>().GetString();
+                }
             }
         }
 
@@ -2187,31 +2181,31 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
         }
 
         // Map some standard hydra aov names to their equivalent prman names
-        if(aovBindings[aov].aovName == HdAovTokens->color ||
-           aovBindings[aov].aovName.GetString() == us_ci.CStr())
+        if(aovBinding.aovName == HdAovTokens->color ||
+           aovBinding.aovName.GetString() == us_ci.CStr())
         {
             aovName = RixStr.k_Ci;
             sourceName = RixStr.k_Ci;
         }
-        else if(aovBindings[aov].aovName == HdAovTokens->depth)
+        else if(aovBinding.aovName == HdAovTokens->depth)
         {
             sourceName = RixStr.k_z;
         }
-        else if(aovBindings[aov].aovName == HdAovTokens->normal)
+        else if(aovBinding.aovName == HdAovTokens->normal)
         {
             sourceName= RixStr.k_Nn;
         }
-        else if(aovBindings[aov].aovName == HdAovTokens->primId)
+        else if(aovBinding.aovName == HdAovTokens->primId)
         {
             aovName = RixStr.k_id;
             sourceName = RixStr.k_id;
         }
-        else if(aovBindings[aov].aovName == HdAovTokens->instanceId)
+        else if(aovBinding.aovName == HdAovTokens->instanceId)
         {
             aovName = RixStr.k_id2;
             sourceName = RixStr.k_id2;
         }
-        else if(aovBindings[aov].aovName == HdAovTokens->elementId)
+        else if(aovBinding.aovName == HdAovTokens->elementId)
         {
             aovName = RixStr.k_faceindex;
             sourceName = RixStr.k_faceindex;
@@ -2228,7 +2222,7 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
         }
 
         // XPU is picky about AOV names, it wants only standard names
-        if(IsXpu())
+        if(isXpu)
         {
             aovName = sourceName;
         }
@@ -2246,13 +2240,9 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
             // where the second entry lacks a sourceName.
             // Can't just skip it because the caller expects
             // a result in the buffer
-            sourceNames[RtUString(aovBindings[aov].aovName.GetText())] =
-                sourceName;
-        }
-        else
-        {
-            auto it =
-                sourceNames.find(RtUString(aovBindings[aov].aovName.GetText()));
+            sourceNames[aovBinding.aovName] = sourceName;
+        } else {
+            auto it = sourceNames.find(aovBinding.aovName);
             if(it != sourceNames.end())
             {
                 sourceName = it->second;
@@ -2266,13 +2256,9 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
             renderOutputDesc.sourceName = sourceName;
             renderOutputDesc.filterName = filterName;
             
-            renderViewDesc.renderOutputDescs.push_back(
+            renderOutputDescs->push_back(
                 std::move(renderOutputDesc));
         }
-
-        _framebuffer->AddAov(aovBindings[aov].aovName,
-                           aovFormat,
-                           aovBindings[aov].clearValue);
 
         // When a float4 color is requested, assume we require alpha as well.
         // This assumption is reflected in framebuffer.cpp HydraDspyData
@@ -2284,12 +2270,59 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
             renderOutputDesc.sourceName = RixStr.k_a;
             renderOutputDesc.filterName = RixStr.k_filter;
 
-            renderViewDesc.renderOutputDescs.push_back(
+            renderOutputDescs->push_back(
                 std::move(renderOutputDesc));
         }
+        
+        {
+            HdPrmanFramebuffer::AovDesc aovDesc;
+            aovDesc.name = aovBinding.aovName;
+            aovDesc.format = aovFormat;
+            aovDesc.clearValue = aovBinding.clearValue;
+            
+            aovDescs->push_back(std::move(aovDesc));
+        }
+    }
+}
+
+void
+HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
+    const HdRenderPassAovBindingVector& aovBindings)
+{
+    if (!_framebuffer) {
+        _framebuffer = std::make_unique<HdPrmanFramebuffer>();
     }
 
+    if(_UpdateFramebufferClearValues(aovBindings)) {
+        // AOVs are the same and updating the clear values succeeded,
+        // nothing more to do.
+        return;
+    }
+
+    // Proceed with creating displays if the number has changed
+    // or the display names don't match what we have.
+
+    // Stop render and crease sceneVersion to trigger restart.
+    riley::Riley * riley = AcquireRiley();
+
+    std::lock_guard<std::mutex> lock(_framebuffer->mutex);
+
+    // Displays & Display Channels
+    HdPrman_RenderViewDesc renderViewDesc;
+    HdPrmanFramebuffer::AovDescVector aovDescs;
+
+    _ComputeRenderOutputAndAovDescs(
+        aovBindings,
+        IsXpu(),
+        &renderViewDesc.renderOutputDescs,
+        &aovDescs);
+
+    _framebuffer->CreateAovBuffers(aovDescs);
+
     renderViewDesc.resolution = resolution;
+
+    static const RtUString us_bufferID("bufferID");
+    static const RtUString us_hydra("hydra");
 
     RtUString driver(us_hydra);
     RtParamList displayParams;
@@ -2297,12 +2330,12 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
     if(IsXpu())
     {
         // XPU loads hdPrman as the display plug-in
-        PlugPluginPtr plugin =
+        PlugPluginPtr const plugin =
             PlugRegistry::GetInstance().GetPluginWithName("hdPrman");
         assert(plugin);
-        std::string hdPrmanPath("");
+        std::string hdPrmanPath;
         if (plugin) {
-            std::string path = TfGetPathName(plugin->GetPath());
+            const std::string path = TfGetPathName(plugin->GetPath());
             if (!path.empty()) {
                 hdPrmanPath =
                     TfStringCatPaths(path, "hdPrman");

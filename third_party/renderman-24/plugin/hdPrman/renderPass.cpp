@@ -88,20 +88,22 @@ _Blit(HdPrmanFramebuffer * const framebuffer,
     // Blit from the framebuffer to the currently selected AOVs.
     // Lock the framebuffer when reading so we don't overlap
     // with RenderMan's resize/writing.
-    framebuffer->mutex.lock();
+    std::lock_guard<std::mutex> lock(framebuffer->mutex);
     for(size_t aov = 0; aov < aovBindings.size(); ++aov) {
-        if(!TF_VERIFY(aovBindings[aov].renderBuffer)) {
+        HdPrmanRenderBuffer *const rb =
+            static_cast<HdPrmanRenderBuffer*>(
+                aovBindings[aov].renderBuffer);
+
+        if(!TF_VERIFY(rb)) {
             continue;
         }
-        HdPrmanRenderBuffer *rb = static_cast<HdPrmanRenderBuffer*>(
-            aovBindings[aov].renderBuffer);
 
         if (framebuffer->newData) {
-            rb->Blit(framebuffer->aovs[aov].format,
+            rb->Blit(framebuffer->aovBuffers[aov].desc.format,
                      framebuffer->w,
                      framebuffer->h,
                      reinterpret_cast<uint8_t*>(
-                         framebuffer->aovs[aov].pixels.data()));
+                         framebuffer->aovBuffers[aov].pixels.data()));
         }
         // Forward convergence state to the render buffers...
         rb->SetConverged(converged);
@@ -109,7 +111,6 @@ _Blit(HdPrmanFramebuffer * const framebuffer,
     if (framebuffer->newData) {
         framebuffer->newData = false;
     }
-    framebuffer->mutex.unlock();
 }
 
 static
