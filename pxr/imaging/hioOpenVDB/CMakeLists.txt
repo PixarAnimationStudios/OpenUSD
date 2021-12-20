@@ -14,6 +14,7 @@ pxr_library(hioOpenVDB
         hio
         tf
         usd
+        ${OPENEXR_Half_LIBRARY}
         ${OPENVDB_LIBRARY}
 
     INCLUDE_DIRS
