@@ -1068,7 +1068,7 @@ BLOSC = Dependency("Blosc", InstallBLOSC, "include/blosc.h")
 # not require additional dependencies such as GLFW. Note that version
 # 6.1.0 does require CMake 3.3 though.
 
-OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/v6.1.0.zip"
+OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/v8.1.0.zip"
 
 def InstallOpenVDB(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OPENVDB_URL, context, force)):
@@ -1087,9 +1087,10 @@ def InstallOpenVDB(context, force, buildArgs):
                          .format(instDir=context.instDir))
         extraArgs.append('-DTBB_ROOT="{instDir}"'
                          .format(instDir=context.instDir))
-        # OpenVDB needs Half type from IlmBase
-        extraArgs.append('-DILMBASE_ROOT="{instDir}"'
-                         .format(instDir=context.instDir))
+        # Use built-in libHalf instead of depending on IlmBase via OpenEXR
+        # https://github.com/PixarAnimationStudios/USD/pull/1727#issuecomment-998263059
+        # https://github.com/AcademySoftwareFoundation/openvdb/pull/927
+        extraArgs.append('-DUSE_IMATH_HALF=OFF')
 
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
@@ -2036,7 +2037,7 @@ if context.buildImaging:
     requiredDependencies += [OPENSUBDIV]
 
     if context.enableOpenVDB:
-        requiredDependencies += [BLOSC, BOOST, OPENEXR, OPENVDB, TBB]
+        requiredDependencies += [BLOSC, BOOST, OPENVDB, TBB]
     
     if context.buildOIIO:
         requiredDependencies += [BOOST, JPEG, TIFF, PNG, OPENEXR, OPENIMAGEIO]
