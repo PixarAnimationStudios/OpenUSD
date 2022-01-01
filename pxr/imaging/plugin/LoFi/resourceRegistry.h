@@ -17,13 +17,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class LoFiMesh;
 
-typedef boost::shared_ptr<class LoFiGLSLShader>
+typedef std::shared_ptr<class LoFiGLSLShader>
     LoFiGLSLShaderSharedPtr;
-typedef boost::shared_ptr<class LoFiGLSLProgram>
+typedef std::shared_ptr<class LoFiGLSLProgram>
     LoFiGLSLProgramSharedPtr;
-typedef boost::shared_ptr<class LoFiVertexArray>
+typedef std::shared_ptr<class LoFiVertexArray>
     LoFiVertexArraySharedPtr;
-typedef boost::shared_ptr<class LoFiResourceRegistry>
+typedef std::shared_ptr<class LoFiResourceRegistry>
     LoFiResourceRegistrySharedPtr;
 
 /// \class LoFiResourceRegistry
