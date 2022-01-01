@@ -45,6 +45,7 @@
 
 #include <atomic>
 #include <memory>
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -351,7 +352,8 @@ public:
 template <class T>
 class HgiFactory : public HgiFactoryBase {
 public:
-    Hgi* New() const {
+    Hgi* New() const override {
+        std::cout << "FUCKIN FACTOR HGI!" << std::endl;
         return new T;
     }
 };
