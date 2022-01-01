@@ -132,6 +132,10 @@ public:
 
     virtual ~UsdAnimXData();
 
+    static bool Write(const SdfAbstractDataConstPtr& data,
+                      const std::string& filePath,
+                      const std::string& comment);
+
     /// SdfAbstractData overrides
     bool StreamsData() const override;
 
@@ -184,18 +188,48 @@ public:
 
     void EraseTimeSample(const SdfPath& path, double time) override;
 
-    void Initialize();
+    void Initialize(const std::string& filename);
 
 protected:
     // SdfAbstractData overrides
     void _VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const override;
 
 private:
+    const VtValue* _GetSpecTypeAndFieldValue(const SdfPath& path,
+                                             const TfToken& field,
+                                             SdfSpecType* specType) const;
+
+    const VtValue* _GetFieldValue(const SdfPath& path,
+                                  const TfToken& field) const;
+
+    VtValue* _GetMutableFieldValue(const SdfPath& path,
+                                   const TfToken& field);
+
+    VtValue* _GetOrCreateFieldValue(const SdfPath& path,
+                                    const TfToken& field);
+
     // Private constructor for factory New
     UsdAnimXData(const UsdAnimXDataParams &params);
 
     // Pointer to the actual implementation
     std::unique_ptr<UsdAnimXDataImpl> _impl;
+    std::string                       _filename;
+
+    // Backing storage for a single "spec" -- prim, property, etc.
+    typedef std::pair<TfToken, VtValue> _FieldValuePair;
+    struct _SpecData {
+        _SpecData() : specType(SdfSpecTypeUnknown) {}
+        
+        SdfSpecType specType;
+        std::vector<_FieldValuePair> fields;
+    };
+
+    // Hashtable storing _SpecData.
+    typedef SdfPath _Key;
+    typedef SdfPath::Hash _KeyHash;
+    typedef TfHashMap<_Key, _SpecData, _KeyHash> _HashTable;
+
+    _HashTable _data;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

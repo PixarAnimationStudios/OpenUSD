@@ -24,10 +24,22 @@
 #include "pxr/pxr.h"
 #include "data.h"
 #include "fileFormat.h"
-
+#include "pxr/usd/sdf/fileIO.h"
+#include "pxr/usd/sdf/fileIO_Common.h"
+#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/pcp/dynamicFileFormatContext.h"
-#include "pxr/usd/usd/usdaFileFormat.h"
+#include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/resolver.h"
+#include "pxr/base/trace/trace.h"
+#include "pxr/base/tf/atomicOfstreamWrapper.h"
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/arch/fileSystem.h"
+
+#include <boost/assign.hpp>
+#include <ostream>
 
 #include <fstream>
 #include <string>
@@ -45,22 +57,15 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 UsdAnimXFileFormat::UsdAnimXFileFormat()
-    : SdfFileFormat(
+    : SdfTextFileFormat(
         UsdAnimXFileFormatTokens->Id,
         UsdAnimXFileFormatTokens->Version,
-        UsdAnimXFileFormatTokens->Target,
-        UsdAnimXFileFormatTokens->Extension)
+        UsdAnimXFileFormatTokens->Target)
 {
 }
 
 UsdAnimXFileFormat::~UsdAnimXFileFormat()
 {
-}
-
-bool
-UsdAnimXFileFormat::CanRead(const std::string& filePath) const
-{
-    return true;
 }
 
 SdfAbstractDataRefPtr
@@ -69,77 +74,6 @@ UsdAnimXFileFormat::InitData(
 {
     std::cout << "USD ANIM X INIT DATA !!!" << std::endl;
     return UsdAnimXData::New(UsdAnimXDataParams::FromArgs(args));
-}
-
-bool
-UsdAnimXFileFormat::Read(
-    SdfLayer *layer,
-    const std::string &resolvedPath,
-    bool metadataOnly) const
-{
-    if (!TF_VERIFY(layer)) {
-        return false;
-    }
-
-    // Enforce that the layer is read only.
-    layer->SetPermissionToSave(true);
-    layer->SetPermissionToEdit(true);
-
-    std::cout << "ANIM X READ FILE : " << resolvedPath << std::endl;
-
-    SdfAbstractDataRefPtr data = InitData(layer->GetFileFormatArguments());
-    UsdAnimXDataRefPtr animXData = TfStatic_cast<UsdAnimXDataRefPtr>(data);
-    animXData->Initialize();
-    /*
-
-    UsdAnimXDataRefPtr animXData = TfStatic_cast<UsdAnimXDataRefPtr>(data);
-    if (!animXData->Open(resolvedPath)) {
-        return false;
-    }
-    */
-    _SetLayerData(layer, data);
-
-    //_InitFromFile(const std::string& filename)
-    
-    std::shared_ptr <ArAsset> asset = ArGetResolver().OpenAsset(resolvedPath);
-    if (!asset) {
-        TF_RUNTIME_ERROR("Failed to open file \"%s\"", resolvedPath.c_str());
-        return false;
-    }
-
-    std::string error;
-    /*
-    if (!_ReadFromChars(layer, asset->GetBuffer().get(), asset->GetSize(),
-                        metadataOnly, &error)) {
-        TF_RUNTIME_ERROR("Failed to read from Draco file \"%s\": %s",
-            resolvedPath.c_str(), error.c_str());
-        return false;
-    }
-    return true;
-    */
-    return true;
-}
-
-bool 
-UsdAnimXFileFormat::WriteToString(
-    const SdfLayer &layer,
-    std::string *str,
-    const std::string &comment) const
-{
-    // Write the generated contents in usda text format.
-    return SdfFileFormat::FindById(
-        UsdUsdaFileFormatTokens->Id)->WriteToString(layer, str, comment);
-}
-
-bool
-UsdAnimXFileFormat::WriteToStream(
-    const SdfSpecHandle &spec,
-    std::ostream &out,
-    size_t indent) const
-{
-    // Write the generated contents in usda text format.
-    return SdfFileFormat::FindById(
-        UsdUsdaFileFormatTokens->Id)->WriteToStream(spec, out, indent);
 }
 
 void 

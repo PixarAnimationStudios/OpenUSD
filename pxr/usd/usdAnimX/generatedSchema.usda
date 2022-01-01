@@ -1,0 +1,38 @@
+#usda 1.0
+(
+    "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+)
+
+class FCurveOp "FCurveOp" (
+    doc = "Container for attribute fcurves."
+)
+{
+    token attributeName = "" (
+        doc = "the animated attribute name."
+    )
+    token dataType = "float" (
+        allowedTokens = ["bool", "int", "float", "double"]
+        doc = "the animated attribute data type."
+    )
+    int elementCount = 1 (
+        doc = "the animated attribute element count."
+    )
+}
+
+class FCurve "FCurve" (
+    doc = "The building block for storing animx f-curve data."
+)
+{
+    double[] keyframes = [] (
+        doc = "Defines the keyframes of the fcurve."
+    )
+    token postInfinityType = "constant" (
+        allowedTokens = ["constant", "linear", "cycle", "cycleRelative", "oscillate"]
+        doc = "how the fcurve behave after the last authored keyframe."
+    )
+    token preInfinityType = "constant" (
+        allowedTokens = ["constant", "linear", "cycle", "cycleRelative", "oscillate"]
+        doc = "how the fcurve behave before the first authored keyframe."
+    )
+}
+
