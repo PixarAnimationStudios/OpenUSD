@@ -27,7 +27,7 @@
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/trace/trace.h"
-
+#include <iostream>
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HGI_ENABLE_VULKAN, 0,
@@ -103,7 +103,9 @@ _MakeNewPlatformDefaultHgi()
         return nullptr;
     }
 
+    std::cout << "HGI FACTORY : " << factory << std::endl;
     Hgi* instance = factory->New();
+    std::cout << "HGI INSTANCE : " << instance << std::endl;
     if (!instance) {
         TF_CODING_ERROR("[PluginLoad] Cannot construct instance of type '%s'\n",
                 plugType.GetTypeName().c_str());
