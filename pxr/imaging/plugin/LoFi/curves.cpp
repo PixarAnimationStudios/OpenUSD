@@ -11,6 +11,8 @@
 #include "pxr/imaging/plugin/LoFi/renderPass.h"
 #include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
 #include "pxr/imaging/plugin/LoFi/shaderCode.h"
+
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -19,11 +21,11 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/stringUtils.h"
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 LoFiCurves::LoFiCurves(SdfPath const& id, SdfPath const& instancerId)
-    : HdBasisCurves(id, instancerId)
+  : HdBasisCurves(id, instancerId)
+  , _vertexArray(nullptr)
 {
 }
 
@@ -73,8 +75,10 @@ LoFiCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
                | HdChangeTracker::DirtyNormals);
 
     // add draw items
-    LoFiDrawItem *surfaceItem = new LoFiDrawItem(&_sharedData);
-    repr->AddDrawItem(surfaceItem); 
+    HdRepr::DrawItemUniquePtr drawItem =
+                    std::make_unique<LoFiDrawItem>(&_sharedData);
+
+    repr->AddDrawItem(std::move(drawItem));
   }
 }
 

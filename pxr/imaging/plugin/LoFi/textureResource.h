@@ -2,14 +2,15 @@
 // Copyright 2020 benmalartre
 //
 // Unlicensed
-// 
+//
 #ifndef PXR_IMAGING_PLUGIN_LOFI_TEXTURE_RESOURCE_H
 #define PXR_IMAGING_PLUGIN_LOFI_TEXTURE_RESOURCE_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/textureResource.h"
 #include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/LoFi/api.h"
+#include "pxr/imaging/hd/types.h"
+#include "pxr/imaging/plugin/LoFi/api.h"
 
 #include "pxr/imaging/glf/texture.h"
 #include "pxr/imaging/glf/textureHandle.h"

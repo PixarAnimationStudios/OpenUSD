@@ -4,12 +4,15 @@
 // Unlicensed
 //
 #include "pxr/imaging/glf/glew.h"
+
 #include "pxr/imaging/plugin/LoFi/points.h"
 #include "pxr/imaging/plugin/LoFi/utils.h"
 #include "pxr/imaging/plugin/LoFi/drawItem.h"
 #include "pxr/imaging/plugin/LoFi/renderPass.h"
 #include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
 #include "pxr/imaging/plugin/LoFi/shaderCode.h"
+
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include <iostream>
@@ -22,7 +25,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 LoFiPoints::LoFiPoints(SdfPath const& id, SdfPath const& instancerId)
-    : HdPoints(id, instancerId)
+  : HdPoints(id, instancerId)
+  , _vertexArray(nullptr)
 {
   std::cout << "CREATE LOFI POINT PRIMITIVE :D" << std::endl;
   _topology.type = LoFiTopology::Type::POINTS;
@@ -83,8 +87,10 @@ LoFiPoints::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
                | HdChangeTracker::DirtyNormals);
 
     // add draw item
-    LoFiDrawItem *drawItem = new LoFiDrawItem(&_sharedData);
-    repr->AddDrawItem(drawItem);
+    HdRepr::DrawItemUniquePtr drawItem =
+                    std::make_unique<LoFiDrawItem>(&_sharedData);
+
+    repr->AddDrawItem(std::move(drawItem));
   }
 }
 
@@ -135,7 +141,6 @@ LoFiPoints::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
     default:
       return LoFiVertexBufferState::INVALID;
   }
-
 
   if(valid)
   {

@@ -11,6 +11,8 @@
 #include "pxr/imaging/plugin/LoFi/renderPass.h"
 #include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
 #include "pxr/imaging/plugin/LoFi/shaderCode.h"
+
+#include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -24,9 +26,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 LoFiMesh::LoFiMesh(SdfPath const& id, SdfPath const& instancerId)
-    : HdMesh(id, instancerId)
+  : HdMesh(id, instancerId)
+  , _vertexArray(nullptr)
 {
-  //_dualMesh = new LoFiDualMesh();
 }
 
 HdDirtyBits
@@ -74,8 +76,9 @@ LoFiMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
     *dirtyBits |= (HdChangeTracker::NewRepr);
 
     // add draw items
-    LoFiDrawItem* surfaceItem = new LoFiDrawItem(&_sharedData);
-    repr->AddDrawItem(surfaceItem); 
+    HdRepr::DrawItemUniquePtr drawItem = std::make_unique<LoFiDrawItem>(&_sharedData);
+    repr->AddDrawItem(std::move(drawItem));
+
   }
 }
 
@@ -286,14 +289,18 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
           }
           else 
           {
-            _displayColor = value.UncheckedGet<VtArray<GfVec3f>>()[0];
+            if(value.IsHolding<VtArray<GfVec3f>>())
+              _displayColor = value.UncheckedGet<VtArray<GfVec3f>>()[0];
+            else if(value.IsHolding<GfVec3f>())
+              _displayColor = value.UncheckedGet<GfVec3f>();
+            else 
+              _displayColor = GfVec3f(1.f,0.75f,0.25f);
             _varyingColor = false;
           }
         }
       }
     }
   }
-
   // if no authored normals compute smooth vertex normals
   if(!haveAuthoredNormals && (needReallocate || pointPositionsUpdated))
   {
@@ -406,7 +413,6 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
   if(IsVisible())
   {
     _PopulateMesh(sceneDelegate, dirtyBits, reprToken, resourceRegistry);
-    
     // instances
     if (! GetInstancerId().IsEmpty())
     {

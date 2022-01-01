@@ -73,7 +73,7 @@ pxr_plugin(LoFi
         shaders/visibility.glslfx
 )
 
-if (X11_FOUND OR APPLE)
+#if (X11_FOUND OR APPLE)
 pxr_build_test(testLoFi
     LIBRARIES
         LoFi
@@ -82,4 +82,4 @@ pxr_build_test(testLoFi
     CPPFILES
         testenv/testLoFi.cpp
 )
-endif()
+#endif()
