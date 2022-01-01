@@ -52,7 +52,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((Float,      float,      float_,        )) \
     ((Double,     double,     double_,       )) \
     ((TimeCode,   timecode,   timecode_,     )) \
-    ((Token,      token,      token_,        )) 
+    ((Token,      token,      token_,        ))
 
 #define _ANIMX_DIMENSIONED_VALUE_TYPES          \
     ((Matrix2d,   matrix2d,   matrix2d_,     )) \
@@ -85,7 +85,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     const TfToken ANIMX_VALUE_TYPE_TOKEN(elem);
 
 #define ANIMX_VALUE_TYPE_ARRAY_TOKEN_DECL(r, unused, elem) \
-    const TfToken ANIMX_VALUE_TYPE_TOKEN(elem)Array;
+    const TfToken BOOST_PP_CAT(ANIMX_VALUE_TYPE_TOKEN(elem), Array);
 
 // Public value types tokens declaration
 struct UsdAnimXValueTypeTokensType {
@@ -95,8 +95,8 @@ struct UsdAnimXValueTypeTokensType {
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };
-#undef ANIMX_VALUE_TYPE_TOKEN_DECLARE
-#undef ANIMX_VALUE_TYPE_ARRAY_TOKEN_DECLARE
+#undef ANIMX_VALUE_TYPE_TOKEN_DECL
+#undef ANIMX_VALUE_TYPE_ARRAY_TOKEN_DECL
 
 /// \var UsdAnimXValueTypeTokens
 extern ANIMX_API TfStaticData<UsdAnimXValueTypeTokensType> UsdAnimXValueTypeTokens;

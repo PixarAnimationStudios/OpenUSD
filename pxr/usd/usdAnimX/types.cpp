@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     TfToken::Immortal),
 
 #define ANIMX_VALUE_TYPE_ARRAY_TOKEN_INIT(r, unused, elem)\
-  ANIMX_VALUE_TYPE_TOKEN(elem)Array                       \
+  BOOST_PP_CAT(ANIMX_VALUE_TYPE_TOKEN(elem), Array)       \
         (BOOST_PP_STRINGIZE(                              \
           ANIMX_VALUE_SERIALIZATION_TYPE(elem)[]),        \
     TfToken::Immortal),
@@ -44,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ANIMX_VALUE_TYPE_TOKEN(elem),
 
 #define ANIMX_VALUE_TYPE_ARRAY_TOKEN_VECTORIZE(r, unused, elem) \
-    ANIMX_VALUE_TYPE_TOKEN(elem)Array,
+    BOOST_PP_CAT(ANIMX_VALUE_TYPE_TOKEN(elem), Array),
 
 UsdAnimXValueTypeTokensType::UsdAnimXValueTypeTokensType() : 
     BOOST_PP_SEQ_FOR_EACH(ANIMX_VALUE_TYPE_TOKEN_INIT, ~, ANIMX_VALUE_TYPES)
@@ -63,13 +63,15 @@ TfStaticData<UsdAnimXValueTypeTokensType> UsdAnimXValueTypeTokens;
 #undef ANIMX_VALUE_TYPE_TOKEN_VECTORIZE
 #undef ANIMX_VALUE_TYPE_ARRAY_TOKEN_VECTORIZE
 
-#define ANIMX_SDF_VALUE_TYPE_FROM_TOKEN(r, unused, elem)                    \
+#define ANIMX_SDF_VALUE_TYPE_FROM_TOKEN(r, unused, elem)                   \
     if(token == UsdAnimXValueTypeTokens->ANIMX_VALUE_TYPE_TOKEN(elem))     \
         return SdfValueTypeNames->ANIMX_VALUE_SDF_TYPE(elem);
 
-#define ANIMX_SDF_VALUE_TYPE_ARRAY_FROM_TOKEN(r, unused, elem)              \
-    if(token == UsdAnimXValueTypeTokens->ANIMX_VALUE_TYPE_TOKEN(elem)Array)\
-        return SdfValueTypeNames->ANIMX_VALUE_SDF_TYPE(elem)Array;
+#define ANIMX_SDF_VALUE_TYPE_ARRAY_FROM_TOKEN(r, unused, elem)             \
+    if(token == UsdAnimXValueTypeTokens->BOOST_PP_CAT(                     \
+      ANIMX_VALUE_TYPE_TOKEN(elem), Array))                                \
+        return SdfValueTypeNames->BOOST_PP_CAT(                            \
+          ANIMX_VALUE_SDF_TYPE(elem), Array);
 
 const SdfValueTypeName& AnimXGetSdfValueTypeNameFromToken(const TfToken& token)
 {
@@ -86,8 +88,10 @@ const SdfValueTypeName& AnimXGetSdfValueTypeNameFromToken(const TfToken& token)
         return UsdAnimXValueTypeTokens->ANIMX_VALUE_TYPE_TOKEN(elem);
 
 #define ANIMX_TOKEN_FROM_SDF_VALUE_TYPE_ARRAY(r, unused, elem)                \
-    if(type == SdfValueTypeNames->ANIMX_VALUE_SDF_TYPE(elem)Array.GetType()) \
-        return UsdAnimXValueTypeTokens->ANIMX_VALUE_TYPE_TOKEN(elem)Array;
+    if(type == SdfValueTypeNames->BOOST_PP_CAT(                               \
+      ANIMX_VALUE_SDF_TYPE(elem), Array).GetType())                           \
+        return UsdAnimXValueTypeTokens->BOOST_PP_CAT(                         \
+          ANIMX_VALUE_TYPE_TOKEN(elem), Array);
 
 const TfToken& AnimXGetTokenFromSdfValueTypeName(const TfType& type)
 {
@@ -101,44 +105,46 @@ const TfToken& AnimXGetTokenFromSdfValueTypeName(const TfType& type)
 
 #define ANIMX_SERIALIZATION_TYPE_FROM_TOKEN(r, unused, elem)                \
     if(token == UsdAnimXValueTypeTokens->ANIMX_VALUE_TYPE_TOKEN(elem))      \
-        return TfToken                                                      \
+        resultToken = TfToken                                               \
             (BOOST_PP_STRINGIZE(                                            \
                 ANIMX_VALUE_SERIALIZATION_TYPE(elem)));
 
 #define ANIMX_SERIALIZATION_TYPE_ARRAY_FROM_TOKEN(r, unused, elem)          \
-    if(token == UsdAnimXValueTypeTokens->ANIMX_VALUE_TYPE_TOKEN(elem)Array) \
-        return TfToken                                                      \
+    if(token == UsdAnimXValueTypeTokens->BOOST_PP_CAT(                      \
+      ANIMX_VALUE_TYPE_TOKEN(elem), Array))                                 \
+        resultToken = TfToken                                               \
             (BOOST_PP_STRINGIZE(                                            \
                 ANIMX_VALUE_SERIALIZATION_TYPE(elem)[]));
 
 const TfToken& AnimXGetSerializationTypeNameFromToken(const TfToken& token)
 {
-    static TfToken emptyToken;
+    static TfToken resultToken;
     BOOST_PP_SEQ_FOR_EACH(ANIMX_SERIALIZATION_TYPE_FROM_TOKEN, ~, ANIMX_VALUE_TYPES)
     BOOST_PP_SEQ_FOR_EACH(ANIMX_SERIALIZATION_TYPE_ARRAY_FROM_TOKEN, ~, ANIMX_VALUE_TYPES)
-    return emptyToken;
+    return resultToken;
 }
 #undef ANIMX_SERIALIZATION_TYPE_FROM_TOKEN
 #undef ANIMX_SERIALIZATION_TYPE_ARRAY_FROM_TOKEN
 
 #define ANIMX_SERIALIZATION_TYPE_FROM_SDF_VALUE_TYPE(r, unused, elem)       \
     if(type == SdfValueTypeNames->ANIMX_VALUE_SDF_TYPE(elem).GetType())     \
-        return TfToken                                                      \
+        resultToken = TfToken                                               \
             (BOOST_PP_STRINGIZE(                                            \
                 ANIMX_VALUE_SERIALIZATION_TYPE(elem)));
 
 #define ANIMX_SERIALIZATION_TYPE_ARRAY_FROM_SDF_VALUE_TYPE(r, unused, elem) \
-    if(type == SdfValueTypeNames->ANIMX_VALUE_SDF_TYPE(elem)Array.GetType())\
-        return TfToken                                                      \
+    if(type == SdfValueTypeNames->BOOST_PP_CAT(                             \
+      ANIMX_VALUE_SDF_TYPE(elem), Array).GetType())                         \
+        resultToken = TfToken                                               \
             (BOOST_PP_STRINGIZE(                                            \
                 ANIMX_VALUE_SERIALIZATION_TYPE(elem)[]));
 
 const TfToken& AnimXGetSerializationTypeNameFromSdfValueTypeName(const TfType& type)
 {
-    static TfToken emptyToken;
+    static TfToken resultToken;
     BOOST_PP_SEQ_FOR_EACH(ANIMX_SERIALIZATION_TYPE_FROM_SDF_VALUE_TYPE, ~, ANIMX_VALUE_TYPES)
     BOOST_PP_SEQ_FOR_EACH(ANIMX_SERIALIZATION_TYPE_ARRAY_FROM_SDF_VALUE_TYPE, ~, ANIMX_VALUE_TYPES)
-    return emptyToken;
+    return resultToken;
 }
 #undef ANIMX_SERIALIZATION_TYPE_FROM_SDF_VALUE_TYPE
 #undef ANIMX_SERIALIZATION_TYPE_ARRAY_FROM_SDF_VALUE_TYPE
