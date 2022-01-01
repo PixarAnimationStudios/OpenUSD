@@ -31,7 +31,6 @@ pxr_plugin(LoFi
         renderer
         sceneDelegate
         renderDelegate
-        renderPassState
         renderPass
         rendererPlugin
         

@@ -113,6 +113,9 @@ private:
     // Handle for the top-level LoFi renderer
     LoFiRenderer* _renderer;
 
+    // Handle to the renderPassState
+    HdRenderPassStateSharedPtr _renderPassState;
+
     // A version counter for edits to _scene.
     std::atomic<int> _sceneVersion;
 

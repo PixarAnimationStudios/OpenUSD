@@ -5,7 +5,9 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/plugin/LoFi/renderer.h"
+#include "pxr/imaging/plugin/LoFi/scene.h"
 #include "pxr/imaging/plugin/LoFi/mesh.h"
 
 #include "pxr/imaging/hd/perfLog.h"
@@ -20,31 +22,40 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static const char* VERTEX_SHADER = 
-"#version 330\n" \
-"uniform mat4 model;\n" \
-"uniform mat4 view;\n" \
-"uniform mat4 projection;\n" \
-"\n" \
-"in vec3 position;\n" \
-"void main(){\n" \
-"    vec3 p = vec3(view * model * vec4(position,1.0));\n" \
-"    gl_Position = projection * vec4(p,1.0);\n" \
-"}";
 
-static const char* FRAGMENT_SHADER = 
-"#version 330\n" \
-"uniform vec3 color;\n" \
-"out vec4 outColor;\n" \
-"void main()\n" \
-"{\n" \
-"	outColor = vec4(1.0,1.0,1.0,1.0);\n" \
-"}";
+const char *VERTEX_SHADER_330[1] = {
+  "#version 330                                             \n" 
+  "uniform mat4 model;                                      \n"
+  "uniform mat4 view;                                       \n"
+  "uniform mat4 projection;                                 \n"
+  "                                                         \n"
+  "in vec3 position;                                        \n"
+  "void main(){                                             \n"
+  "    vec3 p = vec3(view * model * vec4(position,1.0));    \n"
+  "    gl_Position = projection * vec4(p,1.0);              \n"
+  "}"
+};
 
-static float TRIANGLE_POINTS[9] = {
-  -1.f, -1.f, 0.f,
-   0.f,  1.f, 0.f,
-   1.f, -1.f, 0.f
+const char *FRAGMENT_SHADER_330[1] = {
+  "#version 330                                             \n"
+  "uniform vec3 color;                                      \n"
+  "out vec4 outColor;                                       \n"
+  "void main()                                              \n"
+  "{                                                        \n"
+  "	outColor = vec4(1.0,1.0,1.0,1.0);                       \n"
+  "}"
+};
+
+static float POINTS[12] = {
+  -100.f, -100.f, 0.f,
+  -100.f,  100.f, 0.f,
+   100.f,  100.f, 0.f,
+   100.f, -100.f, 0.f,
+};
+
+static int INDICES[6] = {
+  0, 1, 2,
+  2, 3, 0
 };
 
 LoFiRenderer::LoFiRenderer()
@@ -57,41 +68,78 @@ LoFiRenderer::LoFiRenderer()
     , _scene(nullptr)
     , _enableSceneColors(false)
 {
+
+  GlfContextCaps const& caps = GlfContextCaps::GetInstance();
+  if(caps.glslVersion >= 330)
+  {
+    // load shader from files
+    GLSLShader vertexShader;
+    vertexShader.Load(
+      "/Users/benmalartre/Documents/RnD/USD/pxr/imaging/plugin/LoFi/simple_vertex.glsl", 
+      GL_VERTEX_SHADER
+    );
+
+    GLSLShader fragmentShader;
+    fragmentShader.Load(
+      "/Users/benmalartre/Documents/RnD/USD/pxr/imaging/plugin/LoFi/simple_fragment.glsl",
+      GL_FRAGMENT_SHADER
+    );
+    _program.Build("Simple", &vertexShader, &fragmentShader);
+  }
+  else
+  {
+    // load shader from files
+    GLSLShader vertexShader;
+    vertexShader.Load(
+      "/Users/benmalartre/Documents/RnD/USD/pxr/imaging/plugin/LoFi/simple120_vertex.glsl", 
+      GL_VERTEX_SHADER
+    );
+
+    GLSLShader fragmentShader;
+    fragmentShader.Load(
+      "/Users/benmalartre/Documents/RnD/USD/pxr/imaging/plugin/LoFi/simple120_fragment.glsl",
+      GL_FRAGMENT_SHADER
+    );
+    _program.Build("Simple", &vertexShader, &fragmentShader);
   
-  /*
-  _vertex.Load("/Users/benmalartre/Documents/RnD/USD/pxr/imaging/plugin/LoFi/simple_vertex.glsl", SHADER_VERTEX);
-  GLCheckError("Load Vertex Shader");
-  _fragment.Load("/Users/benmalartre/Documents/RnD/USD/pxr/imaging/plugin/LoFi/simple_fragment.glsl", SHADER_FRAGMENT);
-  GLCheckError("Load Fragment Shader");
-  _program.Build("Simple", &_vertex, &_fragment);
-  GLCheckError("LBuild Program");
-  */
-  _program.Build("Polymesh", VERTEX_SHADER, FRAGMENT_SHADER);
+  }
+  
+  // build shader from string
+  //_program.Build("Simple", VERTEX_SHADER_330, FRAGMENT_SHADER_330);
 
+  size_t szp = 12 * sizeof(float);
+  size_t szi = 6 * sizeof(int);
 
-  size_t sz = 9 * sizeof(float);
-  glGenVertexArrays(1, &_vao);
-  glBindVertexArray(_vao);
+  glGenVertexArraysAPPLE(1, &_vao);
+  glBindVertexArrayAPPLE(_vao);
 
   // generate vertex buffer object
   glGenBuffers(1, &_vbo);
   glBindBuffer(GL_ARRAY_BUFFER, _vbo);
 
   // push buffer to GPU
-  glBufferData(GL_ARRAY_BUFFER, sz, NULL,GL_STATIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sz, &TRIANGLE_POINTS[0]);
+  glBufferData(GL_ARRAY_BUFFER, szp, NULL,GL_STATIC_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, szp, &POINTS[0]);
+
+  // generate element buffer object
+  glGenBuffers(1, &_ebo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo);
+  
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, szi, NULL,GL_STATIC_DRAW);
+  glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, szi, &INDICES[0]);
 
   // attibute position
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (const void*)0);
 
   // bind shader program
+  glUseProgram(_program.Get());
   glBindAttribLocation(_program.Get(), 0, "position");
   glLinkProgram(_program.Get());
 
   // unbind vertex array object
-  glBindVertexArray(0);
-
+  glBindVertexArrayAPPLE(0);
+  glUseProgram(0);
 }
 
 LoFiRenderer::~LoFiRenderer()
@@ -130,16 +178,72 @@ LoFiRenderer::SetCamera(const GfMatrix4d& viewMatrix,
 void
 LoFiRenderer::Render(void)
 {
+  int totalNumPoints = 0;
+  int totalNumTriangles = 0;
+  for(auto& item: _scene->GetMeshes()) 
+  {
+    LoFiMeshDesc* mesh = &item.second;
+    mesh->_basePointIndex = totalNumPoints;
+    mesh->_baseTriangleIndex = totalNumTriangles;
+    
+    totalNumPoints += mesh->_numPoints;
+    totalNumTriangles += mesh->_numTriangles;
+  }
+  
+  
+  // repopulate buffer
+  glBindVertexArrayAPPLE(_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo);
 
-  _clearColor = GfVec4f(
-    (float)rand()/(float)RAND_MAX,
-    (float)rand()/(float)RAND_MAX,
-    (float)rand()/(float)RAND_MAX,
-    1.f
+  glBufferData(
+    GL_ARRAY_BUFFER, 
+    totalNumPoints * 3 * sizeof(float), 
+    NULL, 
+    GL_DYNAMIC_DRAW
   );
 
+  glBufferData(
+    GL_ELEMENT_ARRAY_BUFFER, 
+    totalNumTriangles * 3 * sizeof(int), 
+    NULL, 
+    GL_DYNAMIC_DRAW
+  );
+
+  for(auto& item: _scene->GetMeshes()) 
+  {
+    LoFiMeshDesc* mesh = &item.second;
+    
+    glBufferSubData(
+      GL_ARRAY_BUFFER, 
+      mesh->_basePointIndex * 3 * sizeof(float), 
+      mesh->_numPoints * 3 * sizeof(float), 
+      &mesh->_positions[0][0]
+    );
+    
+    // offset triangles indices;
+    VtArray<int> offsetIndices(mesh->_numTriangles * 3);
+    int offset = mesh->_baseTriangleIndex * 3;
+    int j = 0;
+    for(int i=0;i<mesh->_numTriangles;++i)
+    {
+      offsetIndices[i*3  ] = mesh->_indices[i][0] + offset;
+      offsetIndices[i*3+1] = mesh->_indices[i][1] + offset;
+      offsetIndices[i*3+2] = mesh->_indices[i][2] + offset;
+    }
+
+    glBufferSubData(
+      GL_ELEMENT_ARRAY_BUFFER, 
+      mesh->_baseTriangleIndex * 3 * sizeof(int), 
+      mesh->_numTriangles * 3 * sizeof(int), 
+      &offsetIndices[0]
+    );
+  }
+
+  _clearColor = GfVec4f(0.f,0.f,0.f,1.f);
+
   glClearColor(_clearColor[0],_clearColor[1],_clearColor[2],_clearColor[3]);
-  glClear(GL_COLOR_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
   glUseProgram(_program.Get());
       
@@ -167,11 +271,39 @@ LoFiRenderer::Render(void)
     GL_FALSE,
     &GfMatrix4f(_projMatrix)[0][0]
   );
-        
-  glBindVertexArray(_vao);
-  glDrawArrays(GL_TRIANGLES, 0, 3);
-  glBindVertexArray(0);
+
+  
+  static GfVec3f red(1.f, 0.f, 0.f);
+  static GfVec3f green(0.f, 1.f, 0.f);
+
+  // draw red points
+  glEnable(GL_POINT_SMOOTH);
+  glPointSize(2);
+  glBindVertexArrayAPPLE(_vao);
+  
+  glUniform3fv(
+    glGetUniformLocation(_program.Get(),"color"),
+    1,
+    &green[0]
+  );
+
+  glDrawElements(
+    GL_TRIANGLES, 
+    totalNumTriangles * 3, 
+    GL_UNSIGNED_INT, 
+    (const void*)0
+  );
+
+  glUniform3fv(
+    glGetUniformLocation(_program.Get(),"color"),
+    1,
+    &red[0]
+  );
+  glDrawArrays(GL_POINTS, 0, totalNumPoints);
+
+  glBindVertexArrayAPPLE(0);
   glUseProgram(0);
+  glDisable(GL_POINT_SMOOTH);
 
 }
 

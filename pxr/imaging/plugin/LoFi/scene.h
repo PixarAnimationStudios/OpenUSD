@@ -26,11 +26,14 @@ struct LoFiMeshDesc
 {
   uint32_t            _numPoints;
   uint32_t            _numTriangles;
-  uint32_t            _baseIndex;
+  uint32_t            _basePointIndex;
+  uint32_t            _baseTriangleIndex;
   const GfVec3f*      _positions;
   const GfVec3f*      _colors;
   const GfVec3i*      _indices;
 };
+
+typedef std::unordered_map<int, LoFiMeshDesc> LoFiMeshDescMap;
 
 /// \class LoFiScene
 ///
@@ -50,6 +53,12 @@ public:
     /// Remove a mesh
     void RemoveMesh(LoFiMesh* mesh);
 
+    /// Num meshes in scene
+    int NumMeshes();
+
+    /// Get meshes descriptions map
+    LoFiMeshDescMap& GetMeshes();
+
     /// Populate a mesh description
     void _PopulateMeshDesc(LoFiMesh* mesh, LoFiMeshDesc* desc);
 
@@ -59,8 +68,7 @@ public:
 
 private:
   std::vector<GLuint>                       _vaos;
-  std::unordered_map<int, LoFiMeshDesc>     _meshes;
-  //std::vector<GLSLProgram*>               _programs;
+  LoFiMeshDescMap                           _meshes;
   std::mutex                                _lock;
   std::atomic_int                           _gId;
 

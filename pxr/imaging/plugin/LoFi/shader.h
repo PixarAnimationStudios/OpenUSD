@@ -81,15 +81,14 @@ public:
     if(_id)glDeleteShader(_id);
   }
   void Load(const char* filename, GLenum t);
-  void Compile(const char* c, GLenum t);
-  void Compile(GLenum t);
+  void Compile();
   void OutputInfoLog();
   GLuint Get(){return _id;};
-  void Set(const char* code);
+  void Set(const char* code, GLenum type);
 private:
-  std::string _code;
-  GLenum _type;
-  GLuint _id;
+  std::string         _code;
+  GLenum              _type;
+  GLuint              _id;
 };
     
 class GLSLProgram
@@ -105,18 +104,18 @@ public:
     if(_pgm)glDeleteProgram(_pgm);
   }
   void _Build();
-  void Build(const char* name, const char* s_vert, const char* s_frag);
-  void Build(const char* name, const char* s_vert, const char* s_geom, const char* s_frag);
+  void Build(const char* name, const char** s_vert, const char** s_frag);
+  void Build(const char* name, const char** s_vert, const char** s_geom, const char** s_frag);
   void Build(const char* name, GLSLShader* vertex, GLSLShader* fragment);
   void Build(const char* name, GLSLShader* vertex, GLSLShader* geom, GLSLShader* fragment);
   void OutputInfoLog();
   GLuint Get(){return _pgm;};
 private:
-  GLSLShader* _vert;
-  GLSLShader* _geom;
-  GLSLShader* _frag;
-  GLuint _pgm;
-  std::string _name; 
+  GLSLShader*         _vert;
+  GLSLShader*         _geom;
+  GLSLShader*         _frag;
+  GLuint              _pgm;
+  std::string         _name; 
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -35,6 +35,7 @@ const TfTokenVector LoFiRenderDelegate::SUPPORTED_RPRIM_TYPES =
 
 const TfTokenVector LoFiRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
+  HdPrimTypeTokens->camera
 };
 
 const TfTokenVector LoFiRenderDelegate::SUPPORTED_BPRIM_TYPES =
@@ -71,6 +72,8 @@ LoFiRenderDelegate::_Initialize()
   // passed to prims during Sync(). Also pass a handle to the render thread.
   _renderParam = std::make_shared<LoFiRenderParam>(_scene);
 
+  _renderPassState = CreateRenderPassState();
+
   // Initialize one resource registry for all embree plugins
   std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
 
@@ -78,7 +81,6 @@ LoFiRenderDelegate::_Initialize()
       _resourceRegistry.reset( new HdResourceRegistry() );
   }
 
-    std::cout << "### Creating LoFi RenderDelegate" << std::endl;
     _resourceRegistry.reset(new HdResourceRegistry());
 }
 
@@ -94,7 +96,7 @@ LoFiRenderDelegate::~LoFiRenderDelegate()
 
   _renderThread.StopThread();
 
-  // Destroy embree library and scene state.
+  // Destroy lofi scene and renderer
   _renderParam.reset();
   delete _scene;
   delete _renderer;
@@ -109,6 +111,7 @@ LoFiRenderDelegate::GetRenderSettingDescriptors() const
 void 
 LoFiRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
+  //_renderPassState->SetCamera(_sceneDelegate)
 }
 
 TfTokenVector const&
@@ -177,17 +180,30 @@ HdSprim *
 LoFiRenderDelegate::CreateSprim(TfToken const& typeId,
                                     SdfPath const& sprimId)
 {
-    TF_CODING_ERROR("Unknown Sprim type=%s id=%s", 
-        typeId.GetText(), 
-        sprimId.GetText());
+    if (typeId == HdPrimTypeTokens->camera) 
+    {
+        return new HdCamera(sprimId);
+    } 
+    else 
+    {
+        TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
+    }
+
     return nullptr;
 }
 
 HdSprim *
 LoFiRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 {
-    TF_CODING_ERROR("Creating unknown fallback sprim type=%s", 
-        typeId.GetText()); 
+    // For fallback sprims, create objects with an empty scene path.
+    // They'll use default values and won't be updated by a scene delegate.
+    if (typeId == HdPrimTypeTokens->camera) {
+        return new HdCamera(SdfPath::EmptyPath());
+    }
+    else {
+        TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
+    }
+
     return nullptr;
 }
 

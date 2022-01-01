@@ -83,11 +83,11 @@ private:
 
     // Our simple glsl program;
     GLSLProgram         _program;
-    GLSLShader          _vertex;
-    GLSLShader          _fragment;
 
+    // Test buffers
     GLuint               _vao;
     GLuint               _vbo;
+    GLuint               _ebo;
   
     // Should we enable scene colors?
     bool _enableSceneColors;
