@@ -24,7 +24,7 @@ extern uint32_t LOFI_GL_VERSION;
 
 class LoFiVertexBuffer;
 
-typedef boost::shared_ptr<class LoFiVertexArray> LoFiVertexArraySharedPtr;
+typedef std::shared_ptr<class LoFiVertexArray> LoFiVertexArraySharedPtr;
 
 /// \class LoFiVertexArray
 ///

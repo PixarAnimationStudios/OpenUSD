@@ -16,6 +16,8 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include <iostream>
+#include <memory>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -68,7 +70,7 @@ LoFiMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
   if(it == _reprs.end())
   {
     // add new repr
-    _reprs.emplace_back(reprToken, boost::make_shared<HdRepr>());
+    _reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
     HdReprSharedPtr &repr = _reprs.back().second;
 
     // set dirty bit to say we need to sync a new repr
@@ -89,7 +91,7 @@ HdStMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
     bool isNew = it == _reprs.end();
     if (isNew) {
         // add new repr
-        _reprs.emplace_back(reprToken, boost::make_shared<HdRepr>());
+        _reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
         HdReprSharedPtr &repr = _reprs.back().second;
 
         // set dirty bit to say we need to sync a new repr (buffer array
@@ -524,7 +526,7 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
 
   // get resource registry
   LoFiResourceRegistrySharedPtr resourceRegistry =
-    boost::static_pointer_cast<LoFiResourceRegistry>(
+    std::static_pointer_cast<LoFiResourceRegistry>(
       renderIndex.GetResourceRegistry());
 
   uint64_t meshId = (uint64_t)this;

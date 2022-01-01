@@ -37,7 +37,7 @@ enum LoFiVertexBufferState : short {
 };
 
 
-typedef boost::shared_ptr<class LoFiVertexBuffer> LoFiVertexBufferSharedPtr;
+typedef std::shared_ptr<class LoFiVertexBuffer> LoFiVertexBufferSharedPtr;
 typedef std::vector<LoFiVertexBufferSharedPtr> LoFiVertexBufferSharedPtrList;
 typedef std::map<LoFiVertexBufferChannel, LoFiVertexBufferSharedPtr> 
   LoFiVertexBufferSharedPtrMap;

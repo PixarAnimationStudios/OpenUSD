@@ -34,7 +34,7 @@ LoFiRenderPass::_SetupSimpleGLSLProgram()
 
   // get resource registry
   LoFiResourceRegistrySharedPtr const& resourceRegistry = 
-    boost::dynamic_pointer_cast<LoFiResourceRegistry>(
+    std::dynamic_pointer_cast<LoFiResourceRegistry>(
       GetRenderIndex()->GetResourceRegistry()
     );
   TF_VERIFY(resourceRegistry);

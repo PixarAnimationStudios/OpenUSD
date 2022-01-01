@@ -36,7 +36,7 @@ enum LoFiVertexRangeState : short {
 };
 
 
-typedef boost::shared_ptr<class LoFiVertexRange> LoFiVertexRangeSharedPtr;
+typedef std::shared_ptr<class LoFiVertexRange> LoFiVertexRangeSharedPtr;
 typedef std::vector<LoFiVertexRangeSharedPtr> LoFiVertexRangeSharedPtrList;
 typedef std::map<LoFiVertexRangeChannel, LoFiVertexRangeSharedPtr> 
   LoFiVertexRangeSharedPtrMap;
