@@ -1477,6 +1477,7 @@ def InstallUSD(context, force, buildArgs):
             
         if context.buildImaging:
             extraArgs.append('-DPXR_BUILD_IMAGING=ON')
+            extraArgs.append('-DPXR_ENABLE_METAL_SUPPORT=OFF')
             if context.enablePtex:
                 extraArgs.append('-DPXR_ENABLE_PTEX_SUPPORT=ON')
             else:
