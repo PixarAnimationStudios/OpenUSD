@@ -105,6 +105,14 @@ protected:
     LoFiMesh &operator =(const LoFiMesh&) = delete;
 
 private:
+    enum DirtyBits : HdDirtyBits {
+        DirtySmoothNormals  = HdChangeTracker::CustomBitsBegin,
+        DirtyFlatNormals    = (DirtySmoothNormals << 1),
+        DirtyIndices        = (DirtyFlatNormals   << 1),
+        DirtyHullIndices    = (DirtyIndices       << 1),
+        DirtyPointsIndices  = (DirtyHullIndices   << 1)
+    };
+    
     uint64_t                        _instanceId;
     GfMatrix4f                      _transform;
     VtArray<GfVec3f>                _positions;

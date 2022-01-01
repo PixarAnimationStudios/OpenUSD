@@ -37,6 +37,16 @@ LoFiRenderPass::_SetupSimpleGLSLProgram()
     );
   TF_VERIFY(resourceRegistry);
 
+/*
+  LoFiGeometricProgramType pgmType(LOFI_PROGRAM_MESH);
+  LoFiVertexBufferChannelList channelsList;
+  channelsList.push_back(CHANNEL_POSITION);
+  channelsList.push_back(CHANNEL_COLOR);
+  channelsList.push_back(CHANNEL_NORMAL);
+
+  LoFiCodeGen codeGen(pgmType, channelsList);
+  codeGen.GenerateMeshCode();
+*/
   if(LOFI_GL_VERSION >= 330)
   {
     program->Build("Simple330", VERTEX_SHADER_330, FRAGMENT_SHADER_330);
@@ -234,6 +244,8 @@ LoFiRenderPass::_Execute( HdRenderPassStateSharedPtr const& renderPassState,
   uint32_t numDrawItems = 0;
   for(auto drawItem: drawItems)
   {
+    if(!drawItem->GetVisible())continue;
+
     const LoFiDrawItem* lofiDrawItem = 
       reinterpret_cast<const LoFiDrawItem*>(drawItem);
 

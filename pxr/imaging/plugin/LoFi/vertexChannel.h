@@ -25,7 +25,7 @@ enum LoFiVertexChannelChannel : short {
   CHANNEL_POSITION,
   CHANNEL_NORMAL,
   CHANNEL_COLOR,
-  CHANNEL_UVS
+  CHANNEL_UV
 };
 
 enum LoFiVertexChannelState : short {

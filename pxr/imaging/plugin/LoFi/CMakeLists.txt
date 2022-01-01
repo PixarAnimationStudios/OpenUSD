@@ -27,6 +27,8 @@ pxr_plugin(LoFi
     PUBLIC_CLASSES
         debugCodes
         tokens
+        binding
+        codeGen
         shader
         vertexBuffer
         vertexArray
@@ -42,6 +44,7 @@ pxr_plugin(LoFi
     PUBLIC_HEADERS
         api.h
         timer.h
+        codeGen.h
         shader.h
         renderParam.h
 

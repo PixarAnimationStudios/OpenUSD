@@ -34,13 +34,14 @@ LoFiMesh::GetInitialDirtyBitsMask() const
   // that _PopulateLoFi requests.
   int mask = HdChangeTracker::Clean
             | HdChangeTracker::InitRepr
+            | HdChangeTracker::DirtyExtent
+            | HdChangeTracker::DirtyNormals
             | HdChangeTracker::DirtyPoints
+            | HdChangeTracker::DirtyPrimvar
+            | HdChangeTracker::DirtyRepr
             | HdChangeTracker::DirtyTopology
             | HdChangeTracker::DirtyTransform
             | HdChangeTracker::DirtyVisibility
-            | HdChangeTracker::DirtyPrimvar
-            | HdChangeTracker::DirtyNormals
-            | HdChangeTracker::DirtyInstancer
             ;
 
   return (HdDirtyBits)mask;
@@ -52,6 +53,7 @@ LoFiMesh::_PropagateDirtyBits(HdDirtyBits bits) const
     return bits;
 }
 
+//PxOsdOpenSubdivTokens->none
 void 
 LoFiMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
 {
@@ -74,7 +76,8 @@ LoFiMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
     HdReprSharedPtr &repr = _reprs.back().second;
 
     // set dirty bit to say we need to sync a new repr
-    *dirtyBits |= HdChangeTracker::NewRepr;
+    *dirtyBits |= (HdChangeTracker::NewRepr
+               | HdChangeTracker::DirtyNormals);
 
     // add draw item
     LoFiDrawItem *drawItem = new LoFiDrawItem(&_sharedData);
@@ -291,8 +294,8 @@ void LoFiMesh:: InfosLog()
     std::cout << "Num Colors: " << _colors.size() << std::endl;
   std::cout << "--------------------------------------------" << std::endl;
   std::cout << "Have UVs: " << 
-    _vertexArray->HaveChannel(CHANNEL_UVS) << std::endl;
-  if(_vertexArray->HaveChannel(CHANNEL_UVS))
+    _vertexArray->HaveChannel(CHANNEL_UV) << std::endl;
+  if(_vertexArray->HaveChannel(CHANNEL_UV))
     std::cout << "Num UVs: " << _uvs.size() << std::endl;
   std::cout << "============================================" << std::endl;
 }
@@ -329,7 +332,7 @@ LoFiMesh::_PopulatePrimvar( HdSceneDelegate* sceneDelegate,
       if(!numInputElements) valid = false;
       else datasPtr = (const char*)_colors.cdata();
       break;
-    case CHANNEL_UVS:
+    case CHANNEL_UV:
       _uvs = value.Get<VtArray<GfVec2f>>();
       numInputElements = _uvs.size();
       if(!numInputElements) valid = false;
@@ -384,6 +387,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
   const SdfPath& id = GetId();
 
   HdMeshTopology topology = HdMeshTopology(GetMeshTopology(sceneDelegate), 0);
+  std::cout << "TOPOLOGY SCHEME : " << topology.GetScheme().GetText() << std::endl;
 
   // get triangulated topology
   if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) 
@@ -415,69 +419,76 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
   bool pointPositionsUpdated = false;
   bool haveAuthoredNormals = false;
   bool haveAuthoredDisplayColor = false;
-  // get primvars
-  HdPrimvarDescriptorVector primvars;
-  for (size_t i=0; i < HdInterpolationCount; ++i) 
-  {
-    HdInterpolation interp = static_cast<HdInterpolation>(i);
-    primvars = GetPrimvarDescriptors(sceneDelegate, interp);
-    for (HdPrimvarDescriptor const& pv: primvars) 
-    {
-      if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) 
-      {
-        VtValue value = GetPrimvar(sceneDelegate, pv.name);
 
-        if(pv.name == HdTokens->points)
+  if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals) ||
+        HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->widths) ||
+        HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) 
+  {
+    // get primvars
+    HdPrimvarDescriptorVector primvars;
+    for (size_t i=0; i < HdInterpolationCount; ++i) 
+    {
+      HdInterpolation interp = static_cast<HdInterpolation>(i);
+      primvars = GetPrimvarDescriptors(sceneDelegate, interp);
+      for (HdPrimvarDescriptor const& pv: primvars) 
+      {
+        std::cout << "CHECK PRIMVAR : " << pv.name.GetText() << std::endl;
+        if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) 
         {
-          LoFiVertexBufferState state =
-            _PopulatePrimvar( sceneDelegate,
-                              interp,
-                              CHANNEL_POSITION,
-                              value,
-                              needReallocate );
-          if(state != LoFiVertexBufferState::TO_RECYCLE && 
-            state != LoFiVertexBufferState::INVALID)
-              pointPositionsUpdated = true;
-        }
-        
-        else if(pv.name == HdTokens->normals)
-        {
-          LoFiVertexBufferState state =
-            _PopulatePrimvar(sceneDelegate,
-                            interp,
-                            CHANNEL_NORMAL,
-                            value,
-                            needReallocate);
-          if(state != LoFiVertexBufferState::INVALID)
-              haveAuthoredNormals = true;
-        }
+          VtValue value = GetPrimvar(sceneDelegate, pv.name);
+
+          if(pv.name == HdTokens->points)
+          {
+            LoFiVertexBufferState state =
+              _PopulatePrimvar( sceneDelegate,
+                                interp,
+                                CHANNEL_POSITION,
+                                value,
+                                needReallocate );
+            if(state != LoFiVertexBufferState::TO_RECYCLE && 
+              state != LoFiVertexBufferState::INVALID)
+                pointPositionsUpdated = true;
+          }
           
-        else if(pv.name == TfToken("uv") || pv.name == TfToken("st"))
-        {
-          _PopulatePrimvar(sceneDelegate,
-                          interp,
-                          CHANNEL_UVS,
-                          value,
-                          needReallocate);
-        }
-        
-        else if(pv.name == TfToken("displayColor") || 
-          pv.name == TfToken("primvars:displayColor"))
-        {
-          LoFiVertexBufferState state =
+          else if(pv.name == HdTokens->normals)
+          {
+            std::cout << "FOUND NORMAL PRIMVAR :D" << std::endl;
+            LoFiVertexBufferState state =
+              _PopulatePrimvar(sceneDelegate,
+                              interp,
+                              CHANNEL_NORMAL,
+                              value,
+                              needReallocate);
+            if(state != LoFiVertexBufferState::INVALID)
+                haveAuthoredNormals = true;
+          }
+            
+          else if(pv.name == TfToken("uv") || pv.name == TfToken("st"))
+          {
             _PopulatePrimvar(sceneDelegate,
                             interp,
-                            CHANNEL_COLOR,
+                            CHANNEL_UV,
                             value,
                             needReallocate);
-          if(state != LoFiVertexBufferState::INVALID)
-              haveAuthoredDisplayColor = true;
+          }
+          
+          else if(pv.name == TfToken("displayColor") || 
+            pv.name == TfToken("primvars:displayColor"))
+          {
+            LoFiVertexBufferState state =
+              _PopulatePrimvar(sceneDelegate,
+                              interp,
+                              CHANNEL_COLOR,
+                              value,
+                              needReallocate);
+            if(state != LoFiVertexBufferState::INVALID)
+                haveAuthoredDisplayColor = true;
+          }
         }
       }
     }
   }
-  
-  
+
   // if no authored normals compute smooth vertex normals
   if(!haveAuthoredNormals && (needReallocate || pointPositionsUpdated))
   {
@@ -509,7 +520,7 @@ void LoFiMesh::_PopulateMesh( HdSceneDelegate*              sceneDelegate,
     _vertexArray->SetHaveChannel(CHANNEL_NORMAL);
   }
 
-  // if no authored normals compute smooth vertex normals
+  // if no authored colors compute random vertex colors
   if(!haveAuthoredDisplayColor && needReallocate)
   {
     if(!_vertexArray->HaveBuffer(CHANNEL_COLOR) || needReallocate)
@@ -587,6 +598,7 @@ LoFiMesh::Sync( HdSceneDelegate *sceneDelegate,
     drawItem->SetBufferArrayHash(_instanceId);
     drawItem->SetVertexArray(_vertexArray.get());
   }
+  _UpdateVisibility(sceneDelegate, dirtyBits);
 
   _PopulateMesh(sceneDelegate, dirtyBits, reprToken, resourceRegistry);
   
