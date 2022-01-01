@@ -151,7 +151,6 @@ public:
 protected:
     virtual void _Commit() override;
     virtual void _GarbageCollect() override;
-    virtual void _GarbageCollectBprims() override;
 
 private:
     // Not copyable

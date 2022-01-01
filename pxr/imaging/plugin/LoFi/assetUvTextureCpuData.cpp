@@ -67,12 +67,9 @@ LoFiAssetUvTextureCpuData::LoFiAssetUvTextureCpuData(
 
     // Determine the corresponding GPU format (e.g., float/byte,
     // RED/RGBA) and give function to convert data if necessary.
-    LoFiTextureUtils::ConversionFunction conversionFunction = nullptr;
     _textureDesc.format = LoFiTextureUtils::GetHgiFormat(
         hioFormat,
-        premultiplyAlpha,
-        /* avoidThreeComponentFormats = */ false,
-        &conversionFunction);
+        premultiplyAlpha);
 
     if (_textureDesc.format == HgiFormatInvalid) {
         TF_WARN("Unsupported texture format for UV texture");
@@ -124,7 +121,8 @@ LoFiAssetUvTextureCpuData::LoFiAssetUvTextureCpuData(
     // Compute how much memory we need to allocate to upload the
     // desirable mips.
     const HgiMipInfo &lastMipInfo = mipInfos[numUsableMips - 1];
-    const size_t memSize = lastMipInfo.byteOffset + lastMipInfo.byteSize;
+    const size_t memSize =
+        lastMipInfo.byteOffset + lastMipInfo.byteSizePerLayer;
     {
         TRACE_FUNCTION_SCOPE("allocating memory");
         _rawBuffer =
@@ -132,26 +130,20 @@ LoFiAssetUvTextureCpuData::LoFiAssetUvTextureCpuData(
     }
 
     {
-        // Read the actual mips from each image and store them in a big buffer of
+       // Read the actual mips from each image and store them in a big buffer of
         // contiguous memory.
         TRACE_FUNCTION_SCOPE("filling in image data");
 
         for (size_t i = 0; i < numUsableMips; ++i) {
-            HioImage::StorageSpec storage;
-            storage.width = mipInfos[i].dimensions[0];
-            storage.height = mipInfos[i].dimensions[1];
-            storage.format = hioFormat;
-            storage.flipped = (originLocation == HioImage::OriginLowerLeft);
-            storage.data = _rawBuffer.get() + mipInfos[i].byteOffset;
-            if (!mips[firstMip + i]->Read(storage)) {
+            if (!LoFiTextureUtils::ReadAndConvertImage(
+                    mips[firstMip + i],
+                    /* flipped = */ originLocation == HioImage::OriginLowerLeft,
+                    premultiplyAlpha,
+                    mipInfos[i],
+                    /* layer = */ 0,
+                    _rawBuffer.get())) {
                 TF_WARN("Unable to read Texture '%s'.", filePath.c_str());
                 return;
-            }
-
-            if (conversionFunction) {
-                conversionFunction(storage.data,
-                                   _ComputeSize(mipInfos[i].dimensions),
-                                   storage.data);
             }
         }
     }

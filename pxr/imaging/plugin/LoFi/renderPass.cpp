@@ -163,6 +163,7 @@ LoFiRenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
 
   if (collectionChanged || renderTagsChanged) {
     HD_PERF_COUNTER_INCR(HdPerfTokens->collectionsRefreshed);
+    /*
     TF_DEBUG(HD_COLLECTION_CHANGED).Msg("CollectionChanged: %s "
                                         "(repr = %s)"
                                         "version: %d -> %d\n",
@@ -170,7 +171,7 @@ LoFiRenderPass::_PrepareDrawItems(TfTokenVector const& renderTags)
                                           collection.GetReprSelector().GetText(),
                                           _collectionVersion,
                                           collectionVersion);
-
+    */
     _drawItems = GetRenderIndex()->GetDrawItems(collection, renderTags);
     _drawItemCount = _drawItems.size();
     _drawItemsChanged = true;

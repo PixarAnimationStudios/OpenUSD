@@ -14,7 +14,7 @@
 #   define LOFI_API_TEMPLATE_STRUCT(...)
 #   define HD_LOCAL
 #else
-#   if defined(HD_EXPORTS)
+#   if defined(LOFI_EXPORTS)
 #       define LOFI_API ARCH_EXPORT
 #       define LOFI_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
 #       define LOFI_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)

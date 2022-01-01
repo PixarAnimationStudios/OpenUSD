@@ -2704,7 +2704,7 @@ class AppController(QtCore.QObject):
         try:
             self._dataModel.stage.Reload()
             # Seems like a good time to clear the texture registry
-            Glf.TextureRegistry.Reset()
+            # Glf.TextureRegistry.Reset()
             # reset timeline, and playback settings from stage metadata
             self._reloadFixedUI(resetStageDataOnly=True)
         except Exception as err:

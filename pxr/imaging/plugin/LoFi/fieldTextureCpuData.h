@@ -1,45 +1,44 @@
 //
-// Copyright 2020 benmalartre
+// Copyright 2021 benmalartre
 //
 // Unlicensed
 //
-#ifndef PXR_IMAGING_LOFI_GLF_TEXTURE_CPU_DATA_H
-#define PXR_IMAGING_LOFI_GLF_TEXTURE_CPU_DATA_H
+#ifndef PXR_IMAGING_LOFI_FIELD_TEXTURE_CPU_DATA_H
+#define PXR_IMAGING_LOFI_FIELD_TEXTURE_CPU_DATA_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/plugin/LoFi/api.h"
 
 #include "pxr/imaging/plugin/LoFi/textureCpuData.h"
 #include "pxr/imaging/hgi/texture.h"
-#include "pxr/imaging/hio/image.h"
+
 #include "pxr/base/tf/declarePtrs.h"
 
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_REF_PTRS(GlfBaseTextureData);
+using HioFieldTextureDataSharedPtr = std::shared_ptr<class HioFieldTextureData>;
 
-/// \class LoFiTextureCpuData
+/// \class HdStTextureCpuData
 ///
-/// An implmentation of LoFiTextureCpuData that can be initialized
-/// from GlfBaseTextureData.
+/// An implmentation of HdStTextureCpuData that can be initialized
+/// from HioFieldTextureData.
 ///
-class LoFiGlfTextureCpuData : public LoFiTextureCpuData
+class LoFiFieldTextureCpuData : public LoFiTextureCpuData
 {
 public:
     /// It is assumed that Read(...) has already been called
     /// on textureData.
 
     LOFI_API
-    LoFiGlfTextureCpuData(
-        GlfBaseTextureDataConstRefPtr const &textureData,
+    LoFiFieldTextureCpuData(
+        HioFieldTextureDataSharedPtr const &textureData,
         const std::string &debugName,
-        bool useOrGenerateMips = false,
         bool premultiplyAlpha = true);
 
     LOFI_API
-    ~LoFiGlfTextureCpuData() override;
+    ~LoFiFieldTextureCpuData() override;
     
     LOFI_API
     const HgiTextureDesc &GetTextureDesc() const override;
@@ -61,7 +60,7 @@ private:
 
     // To avoid a copy, hold on to original data if we
     // can use them.
-    GlfBaseTextureDataConstRefPtr _textureData;
+    HioFieldTextureDataSharedPtr _textureData;
 
     // Buffer if we had to convert the data.
     std::unique_ptr<const unsigned char[]> _convertedData;
