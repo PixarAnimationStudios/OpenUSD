@@ -954,4 +954,3 @@ template bool Usd_Clip::QueryTimeSample(
     VtValue*) const;
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
