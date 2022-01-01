@@ -18,12 +18,23 @@ LoFiScene::~LoFiScene()
 {
 }
 
-void LoFiScene::_PopulateMeshDesc(LoFiMesh* mesh, LoFiMeshDesc* desc)
+void 
+LoFiScene::_PopulateMeshDesc(LoFiMesh* mesh, LoFiMeshDesc* desc)
 {
   desc->_numPoints = mesh->GetNumPoints();
   desc->_numTriangles = mesh->GetNumTriangles();
   desc->_positions = mesh->GetPositionsPtr();
   desc->_indices = mesh->GetIndicesPtr();
+}
+
+LoFiMeshDescMap& LoFiScene::GetMeshes()
+{
+  return _meshes;
+}
+
+int LoFiScene::NumMeshes()
+{
+  return _meshes.size();
 }
 
 int LoFiScene::SetMesh(LoFiMesh* mesh)
@@ -32,6 +43,7 @@ int LoFiScene::SetMesh(LoFiMesh* mesh)
   // check if mesh is in the scene
   if(loFiId > -1)
   {
+    bool found = false;
     _lock.lock();
     // search for it
     auto search = _meshes.find(loFiId);
@@ -39,9 +51,9 @@ int LoFiScene::SetMesh(LoFiMesh* mesh)
     {
       LoFiMeshDesc* desc = &search->second;
       _PopulateMeshDesc(mesh, desc);
+      found = true;
     }
     _lock.unlock();
-    std::cout << "MESH UPDATED :D " << std::endl;
     return loFiId;
   }
   // it was not there, we add it
@@ -51,13 +63,11 @@ int LoFiScene::SetMesh(LoFiMesh* mesh)
     _PopulateMeshDesc(mesh, &desc);
     _lock.lock();
     mesh->SetLoFiId(_gId);
-    _meshes.emplace(std::pair<int, LoFiMeshDesc>(_gId, desc));
+    _meshes.insert(std::pair<int, LoFiMeshDesc>(_gId, desc));
     _gId++;
     _lock.unlock();
-    std::cout << "MESH ADDED :D " << std::endl;
     return mesh->GetLoFiId();
   }
-  
 
 }
 

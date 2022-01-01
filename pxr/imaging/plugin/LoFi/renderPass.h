@@ -6,10 +6,11 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderPass.h"
+#include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/drawTarget.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class LoFiScene;
 class LoFiRenderer;
 /// \class LoFiRenderPass
 ///
@@ -21,13 +22,17 @@ public:
     ///   \param collection The initial rprim collection for this renderpass.
     LoFiRenderPass( HdRenderIndex *index,
                     HdRprimCollection const &collection,
-                    LoFiScene* scene,
                     LoFiRenderer* renderer);
 
     /// Renderpass destructor.
     virtual ~LoFiRenderPass();
 
 protected:
+
+    /// Setup the framebuffer with color and depth attachments
+    ///   \param width The width of the framebuffer
+    ///   \param height The height of the framebuffer
+    void _SetupDrawTarget(int width, int height);
 
     /// Draw the scene with the bound renderpass state.
     ///   \param renderPassState Input parameters (including viewer parameters)
@@ -37,8 +42,8 @@ protected:
                   TfTokenVector const &renderTags) override;
 
 private:
-  LoFiScene*    _scene;
-  LoFiRenderer* _renderer;
+  LoFiRenderer*             _renderer;
+  GlfDrawTargetRefPtr       _drawTarget;
 
 };
 

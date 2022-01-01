@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include "pxr/imaging/plugin/LoFi/shader.h"
 
 
@@ -14,8 +15,7 @@ void GLSLShader::OutputInfoLog()
 
 void GLSLShader::Load(const char* filename, GLenum type)
 {
-  _type = type;
-  std::fstream file;
+  std::ifstream file;
   file.open(filename, std::ios::in);
   if(file.is_open())
   {
@@ -29,52 +29,39 @@ void GLSLShader::Load(const char* filename, GLenum type)
       {
         _code.assign((std::istreambuf_iterator<char>(file)),
                       std::istreambuf_iterator<char>());
+        _code += '\0';
       }
       else std::cout << "[LoFi] File is empty : " << filename << std::endl;
     }
     else std::cout << "[LoFi] File is invalid : " << filename << std::endl;
-    file.close();   
+    
   }
   else std::cout << "[LoFi] Fail open file : " << filename << std::endl;
-  Compile(_code.c_str(), _type);
+
+  _type = type;
 }
 
-void GLSLShader::Set(const char* code)
+void GLSLShader::Set(const char* code, GLenum type)
 {
   _code = code;
+  _type = type;
 }
 
-void GLSLShader::Compile(const char* code, GLenum type)
+void GLSLShader::Compile()
 {
-  _id = glCreateShader(type);
-  const char* source[1];
-  source[0] = code;
-  glShaderSource(_id, 1, source, NULL);
-  glCompileShader(_id);
-  
-  GLint status;
-  glGetShaderiv(_id,GL_COMPILE_STATUS,&status);
-  if(status)
-    std::cout << "[GLSLCreateShader] Success Compiling Shader !"<<std::endl;
-  else
-  {
-    std::cout << "[GLSLCreateShader] Fail Compiling Shader !" <<std::endl;
-    // Output Info Log
-    OutputInfoLog();
-  }
-}
+  std::cout << "COMPILE SHADER CODE FROM FILE " << std::endl;
+  std::cout << _code << std::endl;
+  std::cout << "-------------------------------" << std::endl;
+  std::cout << std::flush;
 
-void GLSLShader::Compile(GLenum type)
-{
-  _id = glCreateShader(type);
-  const char* code[1];
-  code[0] = _code.c_str();
+  _id = glCreateShader(_type);
+  const char* code[1] = { _code.c_str() };
   glShaderSource(_id, 1, code, NULL);
   glCompileShader(_id);
   
   GLint status;
   glGetShaderiv(_id,GL_COMPILE_STATUS,&status);
-  if(status)
+  if(status == GL_TRUE)
     std::cout << "[GLSLCreateShader] Success Compiling Shader !"<<std::endl;
   else
   {
@@ -90,16 +77,19 @@ void GLSLProgram::_Build()
   
   if(_vert)
   {
+    _vert->Compile();
     glAttachShader(_pgm,_vert->Get());
   }
 
   if(_geom && _geom->Get())
   {
+    _geom->Compile();
     glAttachShader(_pgm,_geom->Get());
   }
   
   if(_frag)
   {
+    _frag->Compile();
     glAttachShader(_pgm,_frag->Get());
   }
   
@@ -107,54 +97,47 @@ void GLSLProgram::_Build()
   glLinkProgram(_pgm);  
   glUseProgram(_pgm);
   
-  // Note the different functions here: glGetProgram* instead of glGetShader*.
   GLint status = 0;
   glGetProgramiv(_pgm, GL_LINK_STATUS, (int *)&status);
-  if(status)
+  if(status == GL_TRUE) {
     std::cout << "[GLSLCreateShader] Success Build Program !"<<std::endl;
-  else
-  {
+  } else {
     glDeleteProgram(_pgm);
     std::cout << "[GLSLCreateShader] Fail Build Program !" <<std::endl;
     OutputInfoLog();
   }
+  glUseProgram(0);
 }
 
-void GLSLProgram::Build(const char* name, const char* vertex, const char* fragment)
+void GLSLProgram::Build(const char* name, const char** vertex, const char** fragment)
 {
-  std::cout << vertex << std::endl;
-  std::cout << fragment << std::endl;
-
   _name = name;
   GLSLShader vertShader;
-  vertShader.Set(vertex);
-  vertShader.Compile(GL_VERTEX_SHADER);
+  vertShader.Set(vertex[0], GL_VERTEX_SHADER);
   _vert = &vertShader;
 
+  _geom = NULL;
+
   GLSLShader fragShader;
-  fragShader.Set(fragment);
-  fragShader.Compile(fragment, GL_FRAGMENT_SHADER);
+  fragShader.Set(fragment[0], GL_FRAGMENT_SHADER);
   _frag = &fragShader;
 
   _Build();
 }
 
-void GLSLProgram::Build(const char* name, const char* vertex, const char* geom, const char* fragment)
+void GLSLProgram::Build(const char* name, const char** vertex, const char** geom, const char** fragment)
 {
   _name = name;
   GLSLShader vertShader;
-  vertShader.Set(vertex);
-  vertShader.Compile(GL_VERTEX_SHADER);
+  vertShader.Set(vertex[0], GL_VERTEX_SHADER);
   _vert = &vertShader;
 
   GLSLShader geomShader;
-  geomShader.Set(geom);
-  geomShader.Compile(GL_GEOMETRY_SHADER);
+  geomShader.Set(geom[0], GL_GEOMETRY_SHADER);
   _geom = &geomShader;
 
   GLSLShader fragShader;
-  fragShader.Set(fragment);
-  fragShader.Compile(GL_FRAGMENT_SHADER);
+  fragShader.Set(fragment[0], GL_FRAGMENT_SHADER);
   _frag = &fragShader;
 
   _Build();

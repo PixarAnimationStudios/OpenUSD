@@ -77,77 +77,35 @@ protected:
     const inline int GetNumPoints() const{return _points.size();};
 
     // Get num triangles
-    const inline int GetNumTriangles() const{return _triangulatedIndices.size();};
+    const inline int GetNumTriangles() const{return _triangles.size();};
 
     // Get positions ptr
     const inline GfVec3f* GetPositionsPtr() const{return _points.cdata();};
 
-     // Get indices ptr
-    const inline GfVec3i* GetIndicesPtr() const{return _triangulatedIndices.cdata();};
+    // Get normals ptr
+    const inline GfVec3i* GetNormalsPtr() const{return _normals.cdata();};
 
-    // lofi Id
-    inline void SetLoFiId(int id) { _loFiId = id; };
-    inline int GetLoFiId() { return _loFiId; };
+     // Get indices ptr
+    const inline GfVec3i* GetIndicesPtr() const{return _triangles.cdata();};
+
+    // Get colors ptr
+    const inline GfVec3i* GetIndicesPtr() const{return _colors.cdata();};
 
     // This class does not support copying.
     LoFiMesh(const LoFiMesh&) = delete;
     LoFiMesh &operator =(const LoFiMesh&) = delete;
 
 private:
-    // Each instance of the mesh in the top-level scene is stored here
-    std::vector<unsigned> _instancedIds;
-
-    // the id in the LoFi scene
-    int _loFiId;
 
     // Cached scene data. VtArrays are reference counted, so as long as we
     // only call const accessors keeping them around doesn't incur a buffer
     // copy.
-    HdMeshTopology _topology;
-    GfMatrix4f _transform;
-    VtVec3fArray _points;
-
-    // Derived scene data:
-    // - _triangulatedIndices holds a triangulation of the source topology,
-    //   which can have faces of arbitrary arity.
-    // - _trianglePrimitiveParams holds a mapping from triangle index (in
-    //   the triangulated topology) to authored face index.
-    // - _computedNormals holds per-vertex normals computed as an average of
-    //   adjacent face normals.
-    VtVec3iArray _triangulatedIndices;
-    VtIntArray _trianglePrimitiveParams;
-    VtVec3fArray _computedNormals;
-
-    // Derived scene data. Hd_VertexAdjacency is an acceleration datastructure
-    // for computing per-vertex smooth normals. _adjacencyValid indicates
-    // whether the datastructure has been rebuilt with the latest topology,
-    // and _normalsValid indicates whether _computedNormals has been
-    // recomputed with the latest points data.
-    Hd_VertexAdjacency _adjacency;
-    bool _adjacencyValid;
-    bool _normalsValid;
-
-    // Draw styles.
-    bool _smoothNormals;
-    bool _doubleSided;
-    HdCullStyle _cullStyle;
-
-    // A local cache of primvar scene data. "data" is a copy-on-write handle to
-    // the actual primvar buffer, and "interpolation" is the interpolation mode
-    // to be used. This cache is used in _PopulateRtMesh to populate the
-    // primvar sampler map in the prototype context, which is used for shading.
-    struct PrimvarSource {
-        VtValue data;
-        HdInterpolation interpolation;
-    };
-    TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> _primvarSourceMap;
-
-    
-    // An object that old the opengl data
-    //LoFiVertexArrayObject _lofiBufferAllocator;
-
-    friend class LoFiScene;
-
+    HdMeshTopology                  _topology;
+    GfMatrix4f                      _transform;
+    VtArray<GfVec3f>                _points;
+    VtArray<GfVec3f>                _normals;
+    VtArray<GfVec3f>                _colors;
+    VtVec3iArray                    _triangles;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
