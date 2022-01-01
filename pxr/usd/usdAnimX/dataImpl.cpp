@@ -569,10 +569,10 @@ UsdAnimXDataImpl::InitFromFile(const std::string& filename)
   translateData.curves.push_back(x);
 
   UsdAnimXCurve y;
-  y.addKeyframe(1,0.0);
+  y.addKeyframe(1,-10.0);
   y.addKeyframe(10,10.0);
   y.addKeyframe(20,-10.0);
-  y.addKeyframe(30,0.0);
+  y.addKeyframe(30,10.0);
   translateData.curves.push_back(y);
 
   UsdAnimXCurve z;
@@ -582,6 +582,7 @@ UsdAnimXDataImpl::InitFromFile(const std::string& filename)
   z.addKeyframe(30,0.0);
   translateData.curves.push_back(z);
   primData.properties.push_back(translateData);
+
 
   for(int ts=1;ts<31;++ts)
     _animTimeSampleTimes.insert((double)ts);

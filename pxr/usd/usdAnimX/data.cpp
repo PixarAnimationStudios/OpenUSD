@@ -128,7 +128,14 @@ UsdAnimXDataParams::ToArgs() const
 UsdAnimXDataRefPtr 
 UsdAnimXData::New(const UsdAnimXDataParams &params)
 {
-    return TfCreateRefPtr(new UsdAnimXData(params));
+    
+    UsdAnimXData* data = new UsdAnimXData(params);
+
+    // The pseudo-root spec must always exist in a layer's SdfData, so
+    // add it here.
+    data->CreateSpec(SdfPath::AbsoluteRootPath(), SdfSpecTypePseudoRoot);
+
+    return TfCreateRefPtr(data);
 }
 
 UsdAnimXData::UsdAnimXData(
@@ -144,9 +151,7 @@ UsdAnimXData::~UsdAnimXData()
 bool
 UsdAnimXData::StreamsData() const
 {
-    // We say this data object streams data because the implementation generates
-    // most of its queries on demand.
-    return true;
+    return false;
 }
 
 bool 
@@ -158,86 +163,154 @@ UsdAnimXData::IsEmpty() const
 bool
 UsdAnimXData::HasSpec(const SdfPath& path) const
 {
-    return GetSpecType(path) != SdfSpecTypeUnknown;
+    return _data.find(path) != _data.end();
 }
 
 void
 UsdAnimXData::EraseSpec(const SdfPath& path)
 {
-    TF_RUNTIME_ERROR("UsdAnimX file EraseSpec() not supported");
+    _HashTable::iterator i = _data.find(path);
+    if (!TF_VERIFY(i != _data.end(),
+                   "No spec to erase at <%s>", path.GetText())) {
+        return;
+    }
+    _data.erase(i);
 }
 
 void
 UsdAnimXData::MoveSpec(const SdfPath& oldPath, 
                                       const SdfPath& newPath)
 {
-    TF_RUNTIME_ERROR("UsdAnimX file MoveSpec() not supported");
+    _HashTable::iterator old = _data.find(oldPath);
+    if (!TF_VERIFY(old != _data.end(),
+            "No spec to move at <%s>", oldPath.GetString().c_str())) {
+        return;
+    }
+    bool inserted = _data.insert(std::make_pair(newPath, old->second)).second;
+    if (!TF_VERIFY(inserted)) {
+        return;
+    }
+    _data.erase(old);
 }
 
 SdfSpecType
 UsdAnimXData::GetSpecType(const SdfPath& path) const
 {
-    return _impl->GetSpecType(path);
+    _HashTable::const_iterator i = _data.find(path);
+    if (i == _data.end()) {
+        return SdfSpecTypeUnknown;
+    }
+    return i->second.specType;
 }
 
 void
 UsdAnimXData::CreateSpec(const SdfPath& path,
                                         SdfSpecType specType)
 {
-    TF_RUNTIME_ERROR("UsdAnimX file CreateSpec() not supported");
+    if (!TF_VERIFY(specType != SdfSpecTypeUnknown)) {
+        return;
+    }
+    _data[path].specType = specType;
 }
 
 void
 UsdAnimXData::_VisitSpecs(SdfAbstractDataSpecVisitor* visitor) const
 {
-    _impl->VisitSpecs(*this, visitor);
+    TF_FOR_ALL(it, _data) {
+        if (!visitor->VisitSpec(*this, it->first)) {
+            break;
+        }
+    }
 }
 
 void 
-UsdAnimXData::Initialize()
+UsdAnimXData::Initialize(const std::string& filename)
 {
-  _impl->InitFromFile("fuck");
+  _impl->InitFromFile(filename);
 }
 
 bool 
 UsdAnimXData::Has(const SdfPath& path, 
-                                 const TfToken &field,
-                                 SdfAbstractDataValue* value) const
+                  const TfToken &field,
+                  SdfAbstractDataValue* value) const
 {
-    if (value) {
-        VtValue val;
-        if (_impl->Has(path, field, &val)) {
-            return value->StoreValue(val);
+    if (const VtValue* fieldValue = _GetFieldValue(path, field)) {
+        if (value) {
+            return value->StoreValue(*fieldValue);
         }
-        return false;
-    } else {
-        return _impl->Has(path, field, nullptr);
+        return true;
     }
     return false;
 }
 
 bool 
 UsdAnimXData::Has(const SdfPath& path, 
-                                 const TfToken & field, 
-                                 VtValue *value) const
+                  const TfToken & field, 
+                  VtValue *value) const
 {
-    return _impl->Has(path, field, value);
+    if (const VtValue* fieldValue = _GetFieldValue(path, field)) {
+        if (value) {
+            *value = *fieldValue;
+        }
+        return true;
+    }
+    return false;
 }
+
+/*
+bool
+UsdAnimXData::HasSpecAndField(
+    const SdfPath &path, const TfToken &fieldName,
+    SdfAbstractDataValue *value, SdfSpecType *specType) const
+{
+    if (VtValue const *v =
+        _GetSpecTypeAndFieldValue(path, fieldName, specType)) {
+        return !value || value->StoreValue(*v);
+    }
+    return false;
+}
+
+bool
+UsdAnimXData::HasSpecAndField(
+    const SdfPath &path, const TfToken &fieldName,
+    VtValue *value, SdfSpecType *specType) const
+{
+    if (VtValue const *v =
+        _GetSpecTypeAndFieldValue(path, fieldName, specType)) {
+        if (value) {
+            *value = *v;
+        }
+        return true;
+    }
+    return false;
+}
+*/
  
 VtValue
 UsdAnimXData::Get(const SdfPath& path, 
                                  const TfToken & field) const
 {
-    VtValue value;
-    _impl->Has(path, field, &value);
-    return value;
+    if (const VtValue *value = _GetFieldValue(path, field)) {
+        return *value;
+    }
+    return VtValue();
 }
 
 void 
 UsdAnimXData::Set(const SdfPath& path, 
                                  const TfToken & field, const VtValue& value)
 {
-    TF_RUNTIME_ERROR("UsdAnimX file Set() not supported");
+    TfAutoMallocTag2 tag("Sdf", "SdfData::Set");
+
+    if (value.IsEmpty()) {
+        Erase(path, field);
+        return;
+    }
+
+    VtValue* newValue = _GetOrCreateFieldValue(path, field);
+    if (newValue) {
+        *newValue = value;
+    }
 }
 
 void 
@@ -245,20 +318,48 @@ UsdAnimXData::Set(const SdfPath& path,
                                  const TfToken & field, 
                                  const SdfAbstractDataConstValue& value)
 {
-    TF_RUNTIME_ERROR("UsdAnimX file Set() not supported");
+    TfAutoMallocTag2 tag("Sdf", "SdfData::Set");
+
+    VtValue* newValue = _GetOrCreateFieldValue(path, field);
+    if (newValue) {
+        value.GetValue(newValue);
+    }
 }
 
 void 
 UsdAnimXData::Erase(const SdfPath& path, 
                                    const TfToken & field)
 {
-    TF_RUNTIME_ERROR("UsdAnimX file Erase() not supported");
+    _HashTable::iterator i = _data.find(path);
+    if (i == _data.end()) {
+        return;
+    }
+    
+    _SpecData &spec = i->second;
+    for (size_t j=0, jEnd = spec.fields.size(); j != jEnd; ++j) {
+        if (spec.fields[j].first == field) {
+            spec.fields.erase(spec.fields.begin()+j);
+            return;
+        }
+    }
 }
 
 std::vector<TfToken>
 UsdAnimXData::List(const SdfPath& path) const
 {
-    return _impl->List(path);
+    _HashTable::const_iterator i = _data.find(path);
+    if (i != _data.end()) {
+        const _SpecData & spec = i->second;
+
+        std::vector<TfToken> names;
+        names.reserve(spec.fields.size());
+        for (size_t j=0, jEnd = spec.fields.size(); j != jEnd; ++j) {
+            names.push_back(spec.fields[j].first);
+        }
+        return names;
+    }
+
+    return std::vector<TfToken>();
 }
 
 std::set<double>
@@ -322,13 +423,126 @@ void
 UsdAnimXData::SetTimeSample(const SdfPath& path, 
                                            double time, const VtValue& value)
 {
-    TF_RUNTIME_ERROR("UsdAnimX file SetTimeSample() not supported");
+    if (value.IsEmpty()) {
+        EraseTimeSample(path, time);
+        return;
+    }
+
+    SdfTimeSampleMap newSamples;
+
+    // Attempt to get a pointer to an existing timeSamples field.
+    VtValue *fieldValue =
+        _GetMutableFieldValue(path, SdfDataTokens->TimeSamples);
+
+    // If we have one, swap it out so we can modify it.
+    if (fieldValue && fieldValue->IsHolding<SdfTimeSampleMap>()) {
+        fieldValue->UncheckedSwap(newSamples);
+    }
+    
+    // Insert or overwrite into newSamples.
+    newSamples[time] = value;
+
+    // Set back into the field.
+    if (fieldValue) {
+        fieldValue->Swap(newSamples);
+    } else {
+        Set(path, SdfDataTokens->TimeSamples, VtValue::Take(newSamples));
+    }
+    //TF_RUNTIME_ERROR("UsdAnimX file SetTimeSample() not supported");
 }
 
 void
 UsdAnimXData::EraseTimeSample(const SdfPath& path, double time)
 {
     TF_RUNTIME_ERROR("UsdAnimX file EraseTimeSample() not supported");
+}
+
+bool
+UsdAnimXData::Write(
+    const SdfAbstractDataConstPtr& data,
+    const std::string& filePath,
+    const std::string& comment)
+{
+  
+   return true;
+}
+
+const VtValue*
+UsdAnimXData::_GetSpecTypeAndFieldValue(const SdfPath& path,
+                                   const TfToken& field,
+                                   SdfSpecType* specType) const
+{
+    _HashTable::const_iterator i = _data.find(path);
+    if (i == _data.end()) {
+        *specType = SdfSpecTypeUnknown;
+    }
+    else {
+        const _SpecData &spec = i->second;
+        *specType = spec.specType;
+        for (auto const &f: spec.fields) {
+            if (f.first == field) {
+                return &f.second;
+            }
+        }
+    }
+    return nullptr;
+}
+
+const VtValue* 
+UsdAnimXData::_GetFieldValue(const SdfPath &path,
+                        const TfToken &field) const
+{
+    _HashTable::const_iterator i = _data.find(path);
+    if (i != _data.end()) {
+        const _SpecData & spec = i->second;
+        for (auto const &f: spec.fields) {
+            if (f.first == field) {
+                return &f.second;
+            }
+        }
+    }
+    return nullptr;
+}
+
+VtValue*
+UsdAnimXData::_GetMutableFieldValue(const SdfPath &path,
+                               const TfToken &field)
+{
+    _HashTable::iterator i = _data.find(path);
+    if (i != _data.end()) {
+        _SpecData &spec = i->second;
+        for (size_t j=0, jEnd = spec.fields.size(); j != jEnd; ++j) {
+            if (spec.fields[j].first == field) {
+                return &spec.fields[j].second;
+            }
+        }
+    }
+    return NULL;
+}
+
+VtValue* 
+UsdAnimXData::_GetOrCreateFieldValue(const SdfPath &path,
+                                const TfToken &field)
+{
+    _HashTable::iterator i = _data.find(path);
+    if (!TF_VERIFY(i != _data.end(),
+                   "No spec at <%s> when trying to set field '%s'",
+                   path.GetText(), field.GetText())) {
+        return nullptr;
+    }
+
+    _SpecData &spec = i->second;
+    for (auto &f: spec.fields) {
+        if (f.first == field) {
+            return &f.second;
+        }
+    }
+
+    spec.fields.emplace_back(std::piecewise_construct,
+                             std::forward_as_tuple(field),
+                             std::forward_as_tuple());
+
+    return &spec.fields.back().second;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

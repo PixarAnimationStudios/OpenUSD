@@ -25,17 +25,17 @@
 #define PXR_USD_PLUGIN_ANIMX_FILE_FORMAT_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/sdf/fileFormat.h"
+#include "pxr/usd/sdf/textFileFormat.h"
 #include "pxr/usd/pcp/dynamicFileFormatInterface.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define USD_ANIMX_FILE_FORMAT_TOKENS       \
+#define USD_ANIMX_FILE_FORMAT_TOKENS    \
     ((Id, "UsdAnimX"))                  \
     ((Version, "1.0"))                  \
-    ((Target, "usd"))                  \
-    ((Extension, "UsdAnimX")) \
+    ((Target, "usd"))                   \
+    ((Extension, "animx"))              \
     ((Params, "Usd_AnimX_Params")) 
 
 TF_DECLARE_PUBLIC_TOKENS(UsdAnimXFileFormatTokens, 
@@ -66,39 +66,15 @@ TF_DECLARE_WEAK_AND_REF_PTRS(UsdAnimXFileFormat);
 /// hold a dictionary value which can provide overrides to the individual param 
 /// value arguments defined in UsdAnimXData.
 ///
-class UsdAnimXFileFormat : public SdfFileFormat,
+class UsdAnimXFileFormat : public SdfTextFileFormat,
     public PcpDynamicFileFormatInterface
 {
 public:
+
     /// Override this function from SdfFileFormat to provide our own procedural
     /// SdfAbstractData class.
     SdfAbstractDataRefPtr InitData(
         const FileFormatArguments &args) const override;
-
-    /// Must implement SdfFileFormat's CanRead function. Returns true for all 
-    /// files as the contents of the file aren't used.
-    bool CanRead(const std::string &filePath) const override;
-
-    /// Must implement SdfFileFormat's Read function, though this implemenation
-    /// doesn't do anything. There is nothing from the file that needs to be
-    /// read as data will have already been initialized from file format 
-    /// arguments.
-    bool Read(SdfLayer *layer,
-              const std::string &resolvedPath,
-              bool metadataOnly) const override;
-
-    /// We override WriteToString and WriteToStream methods so 
-    /// SdfLayer::ExportToString() etc, work. Writing this layer will write out
-    /// the generated layer contents.
-    /// We do NOT implement WriteToFile as it doesn't make sense to write to
-    /// files of this format when the contents are completely generated from the
-    /// file format arguments.
-    bool WriteToString(const SdfLayer & layer,
-                       std::string *str,
-                       const std::string &comment=std::string()) const override;
-    bool WriteToStream(const SdfSpecHandle &spec,
-                       std::ostream& out,
-                       size_t indent) const override;
 
     /// A required PcpDynamicFileFormatInterface override for generating 
     /// the file format arguments in context.

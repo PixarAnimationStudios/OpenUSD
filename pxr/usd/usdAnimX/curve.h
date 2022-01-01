@@ -25,7 +25,8 @@
 #define PXR_USD_PLUGIN_USD_ANIMX_CURVE_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/plugin/usdAnimX/animx.h"
+#include "animx.h"
+#include "keyframe.h"
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE

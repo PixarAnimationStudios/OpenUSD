@@ -1,4 +1,4 @@
-#include "pxr/usd/plugin/usdAnimX/curve.h"
+#include "curve.h"
 #include <iostream>
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -175,6 +175,7 @@ void UsdAnimXCurve::addKeyframe(const adsk::Keyframe& key)
 
 void UsdAnimXCurve::addKeyframe(double time, double value)
 {
+  
   adsk::Tangent tanIn = { adsk::TangentType::Auto, (adsk::seconds)0, (adsk::seconds)0};
   adsk::Tangent tanOut = { adsk::TangentType::Auto, (adsk::seconds)0, (adsk::seconds)0};
 
@@ -186,6 +187,7 @@ void UsdAnimXCurve::addKeyframe(double time, double value)
   key.tanOut = tanOut;                    //!< Out-tangent
   key.quaternionW = 1.0;                  //!< W component of a quaternion if rotation curve
   key.linearInterpolation = false;        //!< Should curve be linearly interpolated? True if tangents of this key and the neighboring one are both linear.
+  
 
   _keyframes.push_back(key);
 }

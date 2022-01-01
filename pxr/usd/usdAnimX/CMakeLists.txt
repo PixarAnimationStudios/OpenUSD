@@ -1,30 +1,57 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdAnimX)
 
-pxr_plugin(${PXR_PACKAGE}
+pxr_library(${PXR_PACKAGE}
     LIBRARIES
+        arch
         tf
         gf
+        trace
         vt
+        work
         pcp
         sdf
         usd
+        ${Boost_PYTHON_LIBRARY}
+        ${TBB_tbb_LIBRARY}
 
     PUBLIC_CLASSES
         fileFormat
+        fCurve
+        fCurveOp
+        
+    PUBLIC_HEADERS
+        api.h
+        tokens.h
+        animx.h
+        keyframe.h
 
     PRIVATE_CLASSES
+        tokens
         animx
+        keyframe
         curve
         data
         dataImpl
 
+    PYTHON_CPPFILES
+        moduleDeps.cpp
+
+    PYMODULE_CPPFILES
+        module.cpp
+        wrapFCurve.cpp
+        wrapFCurveOp.cpp
+        wrapTokens.cpp
+
+    PYMODULE_FILES
+        __init__.py
+
     RESOURCE_FILES
         plugInfo.json
+        generatedSchema.usda
+        schema.usda:usdAnimX/schema.usda
         animX.usda:usdAnimX/animX.usda
         empty.animx:usdAnimX/empty.animx
-
-    DISABLE_PRECOMPILED_HEADERS
 )
 
 pxr_test_scripts(
