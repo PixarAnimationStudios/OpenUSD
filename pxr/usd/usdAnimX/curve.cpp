@@ -1,6 +1,7 @@
 #include "pxr/usd/usdAnimX/curve.h"
 #include "pxr/usd/usdAnimX/tokens.h"
 #include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdAnimXCurve::UsdAnimXCurve() 

@@ -1,4 +1,10 @@
 .p4*
 .DS_Store
 .AppleDouble
+<<<<<<< HEAD
 /build
+=======
+.vs*
+.github*
+/build
+>>>>>>> ec705bfe6 ([USD] updated gitignore for visual studio)
