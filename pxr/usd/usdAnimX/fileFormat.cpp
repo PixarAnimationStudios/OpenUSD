@@ -25,6 +25,7 @@
 #include "pxr/usd/usdAnimX/fileFormat.h"
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/resolvedPath.h"
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/errorMark.h"
@@ -36,14 +37,14 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
 
-#include <iostream>
-#include <fstream>
-
 #include "pxr/usd/usdAnimX/animx.h"
 #include "pxr/usd/usdAnimX/fileFormat.h"
 #include "pxr/usd/usdAnimX/data.h"
 #include "pxr/usd/usdAnimX/reader.h"
 #include "pxr/usd/usdAnimX/writer.h"
+
+#include <iostream>
+#include <fstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -107,7 +108,8 @@ UsdAnimXFileFormat::Read(SdfLayer* layer, const std::string& resolvedPath,
 {
     TRACE_FUNCTION();
 
-    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(resolvedPath);
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
+        ArResolvedPath(resolvedPath));
     if (!asset) {
         return false;
     }
@@ -142,7 +144,8 @@ UsdAnimXFileFormat::CanRead(const std::string& filePath) const
 {
     TRACE_FUNCTION();
 
-    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(filePath);
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
+        ArResolvedPath(filePath));
     return asset && _CanRead(asset, GetFileCookie());
 }
 

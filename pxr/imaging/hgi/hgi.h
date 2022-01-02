@@ -332,8 +332,7 @@ public:
 template <class T>
 class HgiFactory : public HgiFactoryBase {
 public:
-    Hgi* New() const override {
-        std::cout << "FUCKIN FACTOR HGI!" << std::endl;
+    Hgi* New() const {
         return new T;
     }
 };
