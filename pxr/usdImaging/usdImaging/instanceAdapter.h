@@ -314,6 +314,9 @@ public:
         int instanceIndex,
         HdInstancerContext *instancerContext) const override;
 
+    virtual SdfPath GetDataSharingId(
+        SdfPath const& cachePath) const override;
+
     virtual bool PopulateSelection( 
         HdSelection::HighlightMode const& highlightMode,
         SdfPath const &cachePath,

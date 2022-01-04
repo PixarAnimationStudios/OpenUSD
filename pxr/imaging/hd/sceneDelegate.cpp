@@ -305,6 +305,12 @@ HdSceneDelegate::GetScenePrimPath(SdfPath const& rprimId,
 }
 
 
+/*virtual*/
+SdfPath
+HdSceneDelegate::GetDataSharingId(SdfPath const& primId)
+{
+    return SdfPath();
+}
 
 // -----------------------------------------------------------------------//
 /// \name Material Aspects

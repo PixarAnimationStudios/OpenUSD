@@ -623,6 +623,19 @@ public:
                                      int instanceIndex,
                                      HdInstancerContext *instancerContext = nullptr);
 
+    /// Returns an identifier that can be used to share data between HdPrims
+    /// during a Sync operation. Any number of HdPrims of the same type may
+    /// return the same identifier. In this situation, the render delegate
+    /// can choose to share information between HdPrims rather than fetching
+    /// data for each HdPrim. For the UsdImagingSceneDelegate, this identifier
+    /// will be the path of the GetPrototype prim for the UsdPrim correspnding
+    /// to this HdPrim. Returns an empty SdfPath if this feature is no
+    /// supported or the UsdPrim has no prototype. Render delegates are free
+    /// to ignore this method completely if they aren't interested in the
+    /// additional level of data sharing enabled by this information.
+    HD_API
+    virtual SdfPath GetDataSharingId(SdfPath const& primId);
+
     // -----------------------------------------------------------------------//
     /// \name Material Aspects
     // -----------------------------------------------------------------------//

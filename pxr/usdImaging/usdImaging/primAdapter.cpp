@@ -479,6 +479,13 @@ UsdImagingPrimAdapter::GetScenePrimPath(
 }
 
 /*virtual*/
+SdfPath
+UsdImagingPrimAdapter::GetDataSharingId(SdfPath const& cachePath) const
+{
+    return SdfPath();
+}
+
+/*virtual*/
 bool
 UsdImagingPrimAdapter::PopulateSelection(
     HdSelection::HighlightMode const& mode,

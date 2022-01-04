@@ -2254,6 +2254,20 @@ UsdImagingDelegate::GetScenePrimPath(SdfPath const& rprimId,
     return protoPath;
 }
 
+SdfPath
+UsdImagingDelegate::GetDataSharingId(SdfPath const& primId)
+{
+    SdfPath cachePath = ConvertIndexPathToCachePath(primId);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+    if (!primInfo || !primInfo->adapter) {
+        TF_WARN("GetDataSharingId: Couldn't find prim <%s>",
+                primId.GetText());
+        return cachePath;
+    }
+
+    return primInfo->adapter->GetDataSharingId(cachePath);
+}
+
 bool
 UsdImagingDelegate::PopulateSelection(
               HdSelection::HighlightMode const& highlightMode,
