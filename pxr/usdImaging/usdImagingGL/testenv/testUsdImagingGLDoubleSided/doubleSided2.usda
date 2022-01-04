@@ -3,6 +3,7 @@
     doc = "Test DoubleSided Imaging"
     endFrame = 40
     startFrame = 1
+    upAxis = "Z"
 )
 
 def Xform "Meshes"

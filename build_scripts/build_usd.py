@@ -1109,7 +1109,12 @@ OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/Release-2.1.16.0.zip"
 
 def InstallOpenImageIO(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
-        extraArgs = ['-DOIIO_BUILD_TOOLS=OFF',
+        # The only time that we want to build tools with OIIO is for testing
+        # purposes. Libraries such as usdImagingGL might need to use tools like
+        # idiff to compare the output images from their tests
+        buildOIIOTools = 'ON' if (context.buildUsdImaging
+                                  and context.buildTests) else 'OFF'
+        extraArgs = ['-DOIIO_BUILD_TOOLS={}'.format(buildOIIOTools),
                      '-DOIIO_BUILD_TESTS=OFF',
                      '-DUSE_PYTHON=OFF',
                      '-DSTOP_ON_WARNING=OFF']
@@ -1969,7 +1974,8 @@ class InstallContext:
         self.buildPrman = self.buildImaging and args.build_prman
         self.prmanLocation = (os.path.abspath(args.prman_location)
                                if args.prman_location else None)                               
-        self.buildOIIO = args.build_oiio
+        self.buildOIIO = args.build_oiio or (self.buildUsdImaging
+                                             and self.buildTests)
         self.buildOCIO = args.build_ocio
 
         # - Alembic Plugin
