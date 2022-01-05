@@ -150,8 +150,8 @@ all these be applied when the top level API schema is applied.
 \subsection Usd_SchemaDefinedBuiltinAPIs Schema defined built-in APIs
 
 The first and most straightforward way an IsA or single-apply API schema author
-can specify which applied API schemas it wants built-in is by adding them 
-through the \em apiSchemas field in their schema definition like so:
+can specify which applied API schemas it wants built-in is by prepending them 
+to the \em apiSchemas field in their schema definition like so:
 
 \code
 # Example of a concrete, typed (IsA) schema with built-in applied API schemas
@@ -159,7 +159,7 @@ class MyCustomPrim "MyCustomPrim" (
     inherits = </Typed>
 
     # These listed applied API schemas will be built-in to this schema type.
-    apiSchemas = ["ExampleSingleApplyAPI", "ExampleMultiApplyAPI:foo"]
+    prepend apiSchemas = ["ExampleSingleApplyAPI", "ExampleMultiApplyAPI:foo"]
 )  {
     # Example of a default value override for a theoretical property defined in 
     # the API schema instance "ExampleMultiApplyAPI:foo"
@@ -172,7 +172,7 @@ class "MyCustomAPI" (
 
     # These listed applied API schemas will be built-in to this schema type and
     # will always be applied when this schema is applied.
-    apiSchemas = ["ExampleSingleApplyAPI", "ExampleMultiApplyAPI:foo"]
+    prepend apiSchemas = ["ExampleSingleApplyAPI", "ExampleMultiApplyAPI:foo"]
 )  {
     # Example of a default value override for a theoretical property defined in 
     # the API schema instance "ExampleMultiApplyAPI:foo". This schema will be
@@ -183,12 +183,15 @@ class "MyCustomAPI" (
 \endcode
 
 The listed API schemas will be built-in to the declared schema type. For IsA
-schemas, derived types of the IsA schema will inherit its built-in API schemas
-(applied API schemas cannot inherit from each other.) Any schema can specify 
-overrides to properties that would come from one of its built-in API schemas by 
-declaring the property itself. This should be done carefully to avoid breaking 
-conformance with the built-in schema itself (like changing the property's type) 
-and is typically used for changing the default value for the property.
+schemas, derived types of the schema will inherit its built-in API schemas
+(applied API schemas cannot inherit from each other). The \em apiSchemas field 
+must always be specified with \em prepend as we only allow a schema to add new 
+built-in API schemas that are stronger than any that may be inherited from its 
+parent schema. Any schema can specify overrides to properties that would come 
+from one of its built-in API schemas by declaring the property itself. This 
+should be done carefully to avoid breaking conformance with the built-in schema
+itself (like changing the property's type) and is typically used for changing
+the default value for the property.
 \sa \ref Usd_APISchemaStrengthOrdering
 
 \subsection Usd_AutoAppliedAPISchemas Auto applied API schemas

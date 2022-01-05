@@ -492,6 +492,27 @@ class ClassInfo(object):
         self.typeName = sdfPrim.typeName
         self.extraIncludes = self.customData.get('extraIncludes', None)
 
+        # Built-in API schemas metadata.
+        #
+        # We get metadata which is the token list op directly authored for the 
+        # schema class (does not include inherited API schemas from parent 
+        # classes)
+        self.apiSchemasMetadata = sdfPrim.GetInfo('apiSchemas')
+
+        # If a type specifies applied API schemas as built-in it must specify
+        # them as a prepend. I.e. schema types can only add additional applied
+        # API schemas that will be stronger then any inherited built-in API
+        # schemas from parent classes.
+        if self.apiSchemasMetadata != Sdf.TokenListOp():
+            if (self.apiSchemasMetadata.isExplicit or
+                    self.apiSchemasMetadata.addedItems or
+                    self.apiSchemasMetadata.deletedItems or
+                    self.apiSchemasMetadata.explicitItems or
+                    self.apiSchemasMetadata.orderedItems) :
+                raise _GetSchemaDefException(
+                    "The 'apiSchemas' metadata list operation is only allowed "
+                    "to prepend API schemas.", sdfPrim.path)
+
         # Do not to inherit the type name of parent classes.
         if inherits:
             for path in inherits.GetAddedOrExplicitItems():
@@ -1316,9 +1337,13 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
         Print.Err("ERROR: Could not remove GLOBAL prim.")
     allFallbackSchemaPrimTypes = {}
     for p in flatStage.GetPseudoRoot().GetAllChildren():
+        if p.GetName() not in primsToKeep:
+            pathsToDelete.append(p.GetPath())
+            continue
+
         # If this is an API schema, check if it's applied and record necessary
         # information.
-        if p.GetName() in primsToKeep and p.GetName().endswith('API'):
+        if p.GetName().endswith('API'):
             apiSchemaType = p.GetCustomDataByKey(API_SCHEMA_TYPE) or SINGLE_APPLY
             if apiSchemaType == MULTIPLE_APPLY:
                 _RenamePropertiesWithInstanceablePrefix(p)
@@ -1354,8 +1379,7 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
         p.ClearCustomData()
         for myproperty in p.GetAuthoredProperties():
             myproperty.ClearCustomData()
-        if p.GetName() not in primsToKeep:
-            pathsToDelete.append(p.GetPath())
+
     for p in pathsToDelete:
         flatStage.RemovePrim(p)
         

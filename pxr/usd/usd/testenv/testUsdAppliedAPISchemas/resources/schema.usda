@@ -152,7 +152,7 @@ class TestTypedSchema "TestTypedSchema" (
 class TestWithBuiltinAppliedSchema "TestWithBuiltinAppliedSchema" (
     inherits = </Typed>
     doc = """Test with built-in API schemas"""
-    apiSchemas = ["TestSingleApplyAPI", "TestMultiApplyAPI:builtin"]
+    prepend apiSchemas = ["TestSingleApplyAPI", "TestMultiApplyAPI:builtin"]
     hidden = false
 )
 {
@@ -174,7 +174,7 @@ class TestTypedSchemaForAutoApply "TestTypedSchemaForAutoApply" (
     inherits = </Typed>
     doc = "Testing typed schema"
     hidden = true
-    apiSchemas = ["TestMultiApplyAPI:builtin"]
+    prepend apiSchemas = ["TestMultiApplyAPI:builtin"]
 )
 {
     string testAttr = "foo" (
@@ -241,8 +241,8 @@ class TestDerivedTypedSchemaForAutoApplyAbstractBase "TestDerivedTypedSchemaForA
 class "TestNestedInnerSingleApplyAPI"
 (
     inherits = </APISchemaBase>
-    apiSchemas = ["TestSingleApplyAPI",
-                  "TestMultiApplyAPI:bar"]
+    prepend apiSchemas = ["TestSingleApplyAPI",
+                          "TestMultiApplyAPI:bar"]
     customData = {
         string className = "NestedInnerSingleApplyAPI"
     }
@@ -266,8 +266,8 @@ class "TestNestedInnerSingleApplyAPI"
 class "TestNestedOuterSingleApplyAPI"
 (
     inherits = </APISchemaBase>
-    apiSchemas = ["TestMultiApplyAPI:foo", 
-                  "TestNestedInnerSingleApplyAPI"]
+    prepend apiSchemas = ["TestMultiApplyAPI:foo", 
+                          "TestNestedInnerSingleApplyAPI"]
     customData = {
         string className = "NestedOuterSingleApplyAPI"
     }
@@ -292,7 +292,7 @@ class "TestNestedOuterSingleApplyAPI"
 class "TestNestedCycle1API"
 (
     inherits = </APISchemaBase>
-    apiSchemas = ["TestNestedCycle2API"]
+    prepend apiSchemas = ["TestNestedCycle2API"]
     customData = {
         string className = "NestedCycle1API"
     }
@@ -310,7 +310,7 @@ class "TestNestedCycle1API"
 class "TestNestedCycle2API"
 (
     inherits = </APISchemaBase>
-    apiSchemas = ["TestNestedCycle3API"]
+    prepend apiSchemas = ["TestNestedCycle3API"]
     customData = {
         string className = "NestedCycle2API"
     }
@@ -328,7 +328,7 @@ class "TestNestedCycle2API"
 class "TestNestedCycle3API"
 (
     inherits = </APISchemaBase>
-    apiSchemas = ["TestNestedCycle1API"]
+    prepend apiSchemas = ["TestNestedCycle1API"]
     customData = {
         string className = "NestedCycle3API"
     }
@@ -346,7 +346,7 @@ class "TestNestedCycle3API"
 class TestWithBuiltinNestedAppliedSchema "TestWithBuiltinNestedAppliedSchema" (
     inherits = </Typed>
     doc = """Test with built-in nested API schemas"""
-    apiSchemas = ["TestNestedOuterSingleApplyAPI", "TestNestedCycle1API"]
+    prepend apiSchemas = ["TestNestedOuterSingleApplyAPI", "TestNestedCycle1API"]
     hidden = false
 )
 {
@@ -364,7 +364,7 @@ class TestWithBuiltinNestedAppliedSchema "TestWithBuiltinNestedAppliedSchema" (
 class "TestAutoAppliedToAPI" (
     inherits = </APISchemaBase>
     doc = "API that has other API schemas that auto apply to it"
-    apiSchemas = ["TestMultiApplyAPI:builtin"]
+    prepend apiSchemas = ["TestMultiApplyAPI:builtin"]
     customData = {
         token[] apiSchemaAutoApplyTo = ["TestNestedAutoAppliedToAPI"] 
     }
@@ -386,7 +386,7 @@ class "TestNestedAutoAppliedToAPI" (
     doc = """
 API that TestAutoAppliedToAPI auto applies to for testing that API schemas can 
 be nested through auto apply"""
-    apiSchemas = ["TestMultiApplyAPI:foo"]
+    prepend apiSchemas = ["TestMultiApplyAPI:foo"]
     customData = {
         token[] apiSchemaAutoApplyTo = ["TestNestedAutoAppliedToAPIAppliedToPrim"] 
     }
