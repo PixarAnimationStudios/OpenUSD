@@ -545,7 +545,7 @@ public:
         int primIdIdx = -1;
         for(size_t hydraAovIdx = 0;
             hydraAovIdx < m_buf->aovBuffers.size();
-            hydraAovIdx++) {
+            hydraAovIdx++, offsetIdx++) {
 
             HdPrmanFramebuffer::AovBuffer &aovBuffer =
                 m_buf->aovBuffers[hydraAovIdx];
