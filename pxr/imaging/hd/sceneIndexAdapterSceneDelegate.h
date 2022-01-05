@@ -47,8 +47,7 @@ public:
     HdSceneIndexAdapterSceneDelegate(
             HdSceneIndexBaseRefPtr inputSceneIndex,
             HdRenderIndex *parentIndex,
-            SdfPath const &delegateID,
-            SdfPath ownerPath);
+            SdfPath const &delegateID);
 
     ~HdSceneIndexAdapterSceneDelegate() override;
 

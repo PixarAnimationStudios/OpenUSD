@@ -35,6 +35,7 @@
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/points.h"
+#include "pxr/imaging/hd/prefixingSceneIndex.h"
 #include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/repr.h"
@@ -112,8 +113,11 @@ HdRenderIndex::HdRenderIndex(
     // data structures now.
     if (_IsEnabledSceneIndexEmulation()) {
         _emulationSceneIndex = HdLegacyPrimSceneIndex::New();
+        _mergingSceneIndex = HdMergingSceneIndex::New();
+        _mergingSceneIndex->AddInputScene(
+            _emulationSceneIndex, SdfPath::AbsoluteRootPath());
 
-        HdSceneIndexBaseRefPtr terminalSceneIndex = _emulationSceneIndex;
+        HdSceneIndexBaseRefPtr terminalSceneIndex = _mergingSceneIndex;
 
         terminalSceneIndex =
             HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
@@ -132,7 +136,6 @@ HdRenderIndex::HdRenderIndex(
         _siSd = std::make_unique<HdSceneIndexAdapterSceneDelegate>(
             terminalSceneIndex, 
             this, 
-            SdfPath::AbsoluteRootPath(), 
             SdfPath::AbsoluteRootPath());
 
         _tracker._SetTargetSceneIndex(get_pointer(_emulationSceneIndex));
@@ -167,6 +170,36 @@ HdRenderIndex::New(
         return nullptr;
     }
     return new HdRenderIndex(renderDelegate, drivers);
+}
+
+void
+HdRenderIndex::InsertSceneIndex(
+        HdSceneIndexBaseRefPtr inputSceneIndex,
+        SdfPath const& scenePathPrefix)
+{
+    if (!_IsEnabledSceneIndexEmulation()) {
+        TF_WARN("Unable to add scene index at prefix %s because emulation is off.",
+                scenePathPrefix.GetText());
+        return;
+    }
+
+    if (scenePathPrefix != SdfPath::AbsoluteRootPath()) {
+        inputSceneIndex = HdPrefixingSceneIndex::New(
+                inputSceneIndex, scenePathPrefix);
+    }
+    _mergingSceneIndex->AddInputScene(
+            inputSceneIndex, scenePathPrefix);
+}
+
+void
+HdRenderIndex::RemoveSceneIndex(
+        HdSceneIndexBaseRefPtr inputSceneIndex)
+{
+    if (!_IsEnabledSceneIndexEmulation()) {
+        return;
+    }
+
+    _mergingSceneIndex->RemoveInputScene(inputSceneIndex);
 }
 
 void

@@ -109,7 +109,6 @@ HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
     // disabling flattening as it's not yet needed for pure emulation
     //result = HdFlatteningSceneIndex::New(result);
 
-
     return result;
 }
 
@@ -118,8 +117,7 @@ HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
 HdSceneIndexAdapterSceneDelegate::HdSceneIndexAdapterSceneDelegate(
     HdSceneIndexBaseRefPtr inputSceneIndex,
     HdRenderIndex *parentIndex,
-    SdfPath const &delegateID,
-    SdfPath ownerPath)
+    SdfPath const &delegateID)
 : HdSceneDelegate(parentIndex, delegateID)
 , _inputSceneIndex(inputSceneIndex)
 , _sceneDelegatesBuilt(false)

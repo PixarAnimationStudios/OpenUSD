@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/mergingSceneIndex.h"
 #include "pxr/imaging/hd/legacyPrimSceneIndex.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -352,6 +353,18 @@ public:
     HdBprim *GetFallbackBprim(TfToken const& typeId) const;
 
     // ---------------------------------------------------------------------- //
+    /// \name Scene indices
+    // ---------------------------------------------------------------------- //
+    HD_API
+    void InsertSceneIndex(
+            HdSceneIndexBaseRefPtr inputSceneIndex,
+            SdfPath const& scenePathPrefix);
+
+    HD_API
+    void RemoveSceneIndex(
+            HdSceneIndexBaseRefPtr inputSceneIndex);
+
+    // ---------------------------------------------------------------------- //
     /// \name Render Delegate
     // ---------------------------------------------------------------------- //
     /// Currently, a render index only supports connection to one type of
@@ -462,6 +475,8 @@ private:
 
     HdLegacyPrimSceneIndexRefPtr _emulationSceneIndex;
     std::unique_ptr<class HdSceneIndexAdapterSceneDelegate> _siSd;
+
+    HdMergingSceneIndexRefPtr _mergingSceneIndex;
 
     struct _TaskInfo {
         HdSceneDelegate *sceneDelegate;
