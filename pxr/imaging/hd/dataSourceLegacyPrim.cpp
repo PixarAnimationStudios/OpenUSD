@@ -1105,6 +1105,109 @@ private:
 
 // ----------------------------------------------------------------------------
 
+template <typename T>
+class Hd_TypedDataSourceLegacyCameraParamValue : public HdTypedSampledDataSource<T>
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_TypedDataSourceLegacyCameraParamValue<T>);
+
+    Hd_TypedDataSourceLegacyCameraParamValue(
+        const SdfPath &id,
+        const TfToken &key,
+        HdSceneDelegate *sceneDelegate)
+    : _id(id)
+    , _key(key)
+    , _sceneDelegate(sceneDelegate)
+    {
+        TF_VERIFY(_sceneDelegate);
+    }
+
+    bool GetContributingSampleTimesForInterval( 
+        HdSampledDataSource::Time startTime, 
+        HdSampledDataSource::Time endTime,
+        std::vector<HdSampledDataSource::Time> * outSampleTimes)  override
+    {
+        return Hd_DataSourceLegacyPrimvarValue::New(
+            _key, _id, _sceneDelegate)->GetContributingSampleTimesForInterval(
+                startTime, endTime, outSampleTimes);
+    }
+
+    T GetTypedValue(HdSampledDataSource::Time shutterOffset) override
+    {
+        VtValue v;
+        if (shutterOffset == 0.0f) {
+            v = _sceneDelegate->GetCameraParamValue(_id, _key);
+        } else {
+            v = Hd_DataSourceLegacyPrimvarValue::New(
+                _key, _id, _sceneDelegate)->GetValue(shutterOffset);
+        }
+
+        if (v.IsHolding<T>()) {
+            return v.UncheckedGet<T>();
+        }
+
+        return T();
+    }
+
+    VtValue GetValue(HdSampledDataSource::Time shutterOffset) override
+    {
+        if (shutterOffset == 0.0f) {
+            return _sceneDelegate->GetCameraParamValue(_id, _key);
+        }
+
+        return VtValue(GetTypedValue(shutterOffset));
+    }
+
+private:
+    SdfPath _id;
+    TfToken _key;
+    HdSceneDelegate *_sceneDelegate;
+};
+
+
+class Hd_DataSourceLegacyCameraParamValue : public HdSampledDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_DataSourceLegacyCameraParamValue);
+
+    Hd_DataSourceLegacyCameraParamValue(
+        const SdfPath &id,
+        const TfToken &key,
+        HdSceneDelegate *sceneDelegate)
+    : _id(id)
+    , _key(key)
+    , _sceneDelegate(sceneDelegate)
+    {
+        TF_VERIFY(_sceneDelegate);
+    }
+
+    bool GetContributingSampleTimesForInterval( 
+        HdSampledDataSource::Time startTime, 
+        HdSampledDataSource::Time endTime,
+        std::vector<HdSampledDataSource::Time> * outSampleTimes)  override
+    {
+        return Hd_DataSourceLegacyPrimvarValue::New(
+            _key, _id, _sceneDelegate)->GetContributingSampleTimesForInterval(
+                startTime, endTime, outSampleTimes);
+    }
+
+    VtValue GetValue(HdSampledDataSource::Time shutterOffset) override
+    {
+        if (shutterOffset == 0.0f) {
+            return _sceneDelegate->GetCameraParamValue(_id, _key);
+        }
+
+        return Hd_DataSourceLegacyPrimvarValue::New(
+                _key, _id, _sceneDelegate)->GetValue(shutterOffset);
+    }
+
+private:
+    SdfPath _id;
+    TfToken _key;
+    HdSceneDelegate *_sceneDelegate;
+};
+
+
 class Hd_DataSourceCamera : public HdContainerDataSource
 {
 public:
@@ -1180,8 +1283,16 @@ public:
             }
             return HdRetainedTypedSampledDataSource<std::vector<GfVec4d>>::New(
                         cp);
+        } else if (std::find(HdCameraTokens->allTokens.begin(),
+                HdCameraTokens->allTokens.end(), name)
+                    != HdCameraTokens->allTokens.end()) {
+            // all remaining HdCameraSchema members are floats and should
+            // be returned as a typed data source for schema conformance.
+            return Hd_TypedDataSourceLegacyCameraParamValue<float>::New(
+                _id, name, _sceneDelegate);
         } else {
-            return HdCreateTypedRetainedDataSource(v);
+            return Hd_DataSourceLegacyCameraParamValue::New(
+                _id, name, _sceneDelegate);
         }
     }
 
