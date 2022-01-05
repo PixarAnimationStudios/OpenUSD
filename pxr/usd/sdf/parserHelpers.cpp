@@ -551,27 +551,42 @@ Sdf_EvalQuotedString(const char* x, size_t n, size_t trimBothSides,
     // Use local buf, or malloc one if not enough space.
     // (this is a little too much if there are escape chars in the string,
     // but we can live with it to avoid traversing the string twice)
-    static const size_t LocalSize = 128;
+    static const size_t LocalSize = 2048;
     char localBuf[LocalSize];
     char *buf = n <= LocalSize ? localBuf : (char *)malloc(n);
 
     char *s = buf;
-    for (const char *p = x + trimBothSides,
-             *end = x + trimBothSides + n; p != end; ++p) {
-        if (*p != '\\') {
-            *s++ = *p;
-        } else {
+
+    const char *p = x + trimBothSides;
+    const char * const end = x + trimBothSides + n;
+
+    while (p != end) {
+        const char *escOrEnd =
+            static_cast<const char *>(memchr(p, '\\', std::distance(p, end)));
+        if (!escOrEnd) {
+            escOrEnd = end;
+        }
+               
+        const size_t nchars = std::distance(p, escOrEnd);
+        memcpy(s, p, nchars);
+        s += nchars;
+        p += nchars;
+
+        if (escOrEnd != end) {
             TfEscapeStringReplaceChar(&p, &s);
+            ++p;
         }
     }
 
     // Trim to final length.
     std::string(buf, s-buf).swap(ret);
-    if (buf != localBuf)
+    if (buf != localBuf) {
         free(buf);
+    }
 
-    if (numLines)
+    if (numLines) {
         *numLines = std::count(ret.begin(), ret.end(), '\n');
+    }
     
     return ret;
 }
