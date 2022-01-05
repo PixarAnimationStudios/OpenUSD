@@ -591,6 +591,7 @@ HdSt_ApplyMaterialXFilter(
         mx::DocumentPtr mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
                                         *hdNetwork,
                                         terminalNode,   // MaterialX HdNode
+                                        terminalNodePath,
                                         materialPath,
                                         stdLibraries,
                                         &hdTextureNodes,

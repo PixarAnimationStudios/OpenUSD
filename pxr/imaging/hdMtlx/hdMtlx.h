@@ -25,6 +25,7 @@
 #define PXR_IMAGING_HD_MTLX_HDMTLX_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/imaging/hdMtlx/api.h"
 #include <memory>
 #include <set>
@@ -42,6 +43,7 @@ class SdfPath;
 class VtValue;
 struct HdMaterialNetwork2;
 struct HdMaterialNode2;
+class HdMaterialNetworkInterface;
 
 /// Return the MaterialX search paths. In order, this includes:
 /// - Paths set in the environment variable 'PXR_MTLX_PLUGIN_SEARCH_PATHS'
@@ -64,6 +66,20 @@ MaterialX::DocumentPtr
 HdMtlxCreateMtlxDocumentFromHdNetwork(
     HdMaterialNetwork2 const& hdNetwork,
     HdMaterialNode2 const& hdMaterialXNode,
+    SdfPath const& hdMaterialXNodePath,
+    SdfPath const& materialPath,
+    MaterialX::DocumentPtr const& libraries,
+    std::set<SdfPath> * hdTextureNodes = nullptr,
+    MaterialX::StringMap * mxHdTextureMap = nullptr,
+    std::set<SdfPath> * hdPrimvarNodes = nullptr);
+
+/// Implementation that uses the material network interface.
+HDMTLX_API
+MaterialX::DocumentPtr
+HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
+    HdMaterialNetworkInterface *netInterface,
+    TfToken const& terminalNodeName,
+    TfTokenVector const& terminalNodeConnectionNames,
     SdfPath const& materialPath,
     MaterialX::DocumentPtr const& libraries,
     std::set<SdfPath> * hdTextureNodes = nullptr,

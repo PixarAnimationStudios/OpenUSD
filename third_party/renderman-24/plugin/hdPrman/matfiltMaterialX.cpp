@@ -23,21 +23,22 @@
 //
 #include "hdPrman/matfiltMaterialX.h"
 #include "hdPrman/debugCodes.h"
-#include "pxr/imaging/hdMtlx/hdMtlx.h"
 
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/arch/library.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/matrix3d.h"
+#include "pxr/base/gf/matrix4d.h"
+
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 #include "pxr/usd/sdr/registry.h"
-#include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/matrix3d.h"
-#include "pxr/base/gf/matrix4d.h"
+#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hdMtlx/hdMtlx.h"
 
 #include <MaterialXCore/Node.h>
 #include <MaterialXCore/Document.h>
@@ -641,10 +642,11 @@ MatfiltMaterialX(
             // Create the MaterialX Document from the HdMaterialNetwork 
             std::set<SdfPath> hdTextureNodes;
             mx::StringMap mxHdTextureMap; // Store Mx-Hd texture counterparts 
-            mx::DocumentPtr mxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
-                                        hdNetwork, *terminalNode, 
-                                        materialPath, stdLibraries, 
-                                        &hdTextureNodes, &mxHdTextureMap);
+            mx::DocumentPtr mxDoc =
+                HdMtlxCreateMtlxDocumentFromHdNetwork(
+                    hdNetwork, *terminalNode, terminalNodePath,
+                    materialPath, stdLibraries, 
+                    &hdTextureNodes, &mxHdTextureMap);
 
             _UpdateTextureNodes(hdNetwork, hdTextureNodes, mxDoc);
 
