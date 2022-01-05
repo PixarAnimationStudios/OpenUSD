@@ -1009,29 +1009,42 @@ _SetGenericMetadataListOpItems(const TfType& fieldType,
 }
 
 template <class ListOpType>
-static bool
-_IsListOpType(const TfType& type, TfType* itemArrayType = nullptr)
-{
-    if (type.IsA<ListOpType>()) {
-        if (itemArrayType) {
-            typedef VtArray<typename ListOpType::value_type> ArrayType;
-            *itemArrayType = TfType::Find<ArrayType>();
-        }
-        return true;
-    }
-    return false;
+static std::pair<TfType, TfType>
+_GetListOpAndArrayTfTypes() {
+    return {
+        TfType::Find<ListOpType>(),
+        TfType::Find<VtArray<typename ListOpType::value_type>>()
+    };
 }
 
 static bool
 _IsGenericMetadataListOpType(const TfType& type,
                              TfType* itemArrayType = nullptr)
 {
-    return _IsListOpType<SdfIntListOp>(type, itemArrayType)    ||
-           _IsListOpType<SdfInt64ListOp>(type, itemArrayType)  || 
-           _IsListOpType<SdfUIntListOp>(type, itemArrayType)   ||
-           _IsListOpType<SdfUInt64ListOp>(type, itemArrayType) ||
-           _IsListOpType<SdfStringListOp>(type, itemArrayType) ||
-           _IsListOpType<SdfTokenListOp>(type, itemArrayType);
+    static std::pair<TfType, TfType> listOpAndArrayTypes[] = {
+        _GetListOpAndArrayTfTypes<SdfIntListOp>(),
+        _GetListOpAndArrayTfTypes<SdfInt64ListOp>(),
+        _GetListOpAndArrayTfTypes<SdfUIntListOp>(),
+        _GetListOpAndArrayTfTypes<SdfUInt64ListOp>(),
+        _GetListOpAndArrayTfTypes<SdfStringListOp>(),
+        _GetListOpAndArrayTfTypes<SdfTokenListOp>(),
+    };
+
+    auto iter = std::find_if(std::begin(listOpAndArrayTypes),
+                             std::end(listOpAndArrayTypes),
+                             [&type](auto const &p) {
+                                 return p.first == type;
+                             });
+
+    if (iter == std::end(listOpAndArrayTypes)) {
+        return false;
+    }
+
+    if (itemArrayType) {
+        *itemArrayType = iter->second;
+    }
+    
+    return true;
 }
 
 static void
