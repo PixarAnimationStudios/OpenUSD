@@ -467,6 +467,8 @@ HdPrmanFramebuffer::Register(RixContext* ctx)
 
 constexpr size_t k_invalidOffset = size_t(-1);
 
+namespace {
+
 class DisplayHydra final : public display::Display
 {
 public:
@@ -483,16 +485,14 @@ public:
         m_buf = HdPrmanFramebuffer::GetByID(bufferID);
     }
 
-    ~DisplayHydra()
-    {
-    }
+    ~DisplayHydra() override = default;
 
     // Display interface
     bool Rebind(const uint32_t width, const uint32_t height,
                 const char* /*srfaddrhandle*/, const void* srfaddr,
                 const size_t /*srfsizebytes*/, const size_t weightsoffset,
                 const size_t* offsets, const display::RenderOutput* outputs,
-                const size_t noutputs)
+                const size_t noutputs) override
     {
         m_surface = static_cast<const uint8_t*>(srfaddr);
         m_width = width;
@@ -514,14 +514,14 @@ public:
         return true;
     }
 
-    void Close()
+    void Close() override
     {
     }
 
     void Notify(const uint32_t /*iteration*/,
                 const uint32_t /*totaliterations*/,
                 const Display::NotifyFlags flags,
-                const pxrcore::ParamList& /*metadata*/)
+                const pxrcore::ParamList& /*metadata*/) override
     {
         // We're only interested in displaying iterations.
         // renderComplete indicates the last valid set of
@@ -845,6 +845,8 @@ private:
 
     HdPrmanFramebuffer* m_buf;
 };
+
+}
 
 extern "C" DISPLAYEXPORT
 display::Display* CreateDisplay(const pxrcore::UString& name,
