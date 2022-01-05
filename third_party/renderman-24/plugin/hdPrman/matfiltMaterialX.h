@@ -29,6 +29,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdMaterialNetworkInterface;
+
 /// MatfiltFilterChain::FilterFnc implementation which supports
 /// MaterialX shading node graphs.
 /// 
@@ -41,6 +43,15 @@ void MatfiltMaterialX(const SdfPath & networkId,
                       const std::map<TfToken, VtValue> & contextValues,
                       const NdrTokenVec & shaderTypePriority,
                       std::vector<std::string> * outputErrorMessages);
+
+/// Implementation that uses the abstract material interface instead.
+void
+MatfiltMaterialX(
+    const SdfPath & networkId,
+    HdMaterialNetworkInterface *netInterface,
+    const std::map<TfToken, VtValue> & contextValues,
+    const NdrTokenVec & shaderTypePriority,
+    std::vector<std::string> * outputErrorMessages);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
