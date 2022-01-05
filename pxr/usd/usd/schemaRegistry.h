@@ -323,6 +323,18 @@ public:
     static TfToken GetMultipleApplyNameTemplateBaseName(
         const std::string &nameTemplate);
 
+    /// Returns true if \p nameTemplate is a multiple apply schema name 
+    /// template.
+    ///
+    /// The given \p nameTemplate is a name template if and only if it 
+    /// contains the instance name place holder "__INSTANCE_NAME__" as an exact
+    /// match as one of the tokenized components of the name tokenized by
+    /// the namespace delimiter.
+    ///
+    USD_API
+    static bool IsMultipleApplyNameTemplate(
+        const std::string &nameTemplate);
+
     /// Finds the prim definition for the given \p typeName token if 
     /// \p typeName is a registered concrete typed schema type. Returns null if
     /// it is not.

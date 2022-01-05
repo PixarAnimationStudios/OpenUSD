@@ -500,6 +500,14 @@ UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
     return TfToken(nameTemplate.substr(baseNamePos)); 
 }
 
+/*static*/
+bool 
+UsdSchemaRegistry::IsMultipleApplyNameTemplate(
+    const std::string &nameTemplate)
+{
+    return _FindInstanceNamePlaceholder(nameTemplate) != std::string::npos;
+}
+
 template <class T>
 static void
 _CopySpec(const T &srcSpec, const T &dstSpec)

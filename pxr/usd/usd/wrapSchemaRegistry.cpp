@@ -163,6 +163,11 @@ void wrapUsdSchemaRegistry()
              arg("nameTemplate"))
         .staticmethod("GetMultipleApplyNameTemplateBaseName")
 
+        .def("IsMultipleApplyNameTemplate", 
+             &This::IsMultipleApplyNameTemplate,
+             arg("nameTemplate"))
+        .staticmethod("IsMultipleApplyNameTemplate")
+
         .def("FindConcretePrimDefinition", 
              &This::FindConcretePrimDefinition,
              (arg("typeName")),

@@ -591,9 +591,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertTrue(layer.GetPrimAtPath("/PrimDefs/APISchema"))
         self.assertTrue(layer.GetPrimAtPath("/PrimDefs/FlattenToNewPrim"))
 
-    def test_InstanceablePropertyNames(self):
-        # Test making instanceable property names with any combination of
-        # prefix and base name.
+    def test_MultipleApplyNameTemplates(self):
+        # Test making template names with any combination of prefix and base 
+        # name.
         self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
             "foo", "bar"), "foo:__INSTANCE_NAME__:bar")
         self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
@@ -603,7 +603,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
             "", ""), "__INSTANCE_NAME__")
 
-        # Test making instance versions of the instanceable property names.
+        # Test making instance versions of the template names.
         self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
             "foo:__INSTANCE_NAME__:bar", "inst1"), "foo:inst1:bar")
         self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
@@ -621,8 +621,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
             "__INSTANCE_NAME__", "inst2"), "inst2")
 
-        # Test getting the property base name from an instanceable property 
-        # name.
+        # Test getting the base name from a name template.
         self.assertEqual(Usd.SchemaRegistry.GetMultipleApplyNameTemplateBaseName(
             "foo:__INSTANCE_NAME__:bar"), "bar")
         self.assertEqual(Usd.SchemaRegistry.GetMultipleApplyNameTemplateBaseName(
@@ -633,6 +632,28 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "__INSTANCE_NAME__:bar"), "bar")
         self.assertEqual(Usd.SchemaRegistry.GetMultipleApplyNameTemplateBaseName(
             "__INSTANCE_NAME__"), "")
+
+        # Test IsMultipleApplyNameTemplate
+        # These are all name template names.
+        self.assertTrue(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "foo:__INSTANCE_NAME__:bar"))
+        self.assertTrue(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "foo:__INSTANCE_NAME__:bar:baz"))
+        self.assertTrue(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "foo:__INSTANCE_NAME__"))
+        self.assertTrue(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "__INSTANCE_NAME__:bar"))
+        self.assertTrue(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "__INSTANCE_NAME__"))
+        # The following are not template names
+        self.assertFalse(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "foo"))
+        self.assertFalse(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "foo:__INSTANCE_NAME__bar"))
+        self.assertFalse(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            "foo:__INSTANCE_NAME__bar:baz"))
+        self.assertFalse(Usd.SchemaRegistry.IsMultipleApplyNameTemplate(
+            ""))
 
         # Test edge cases for making instanced property names and getting the 
         # property base name. We don't check validity of instanceable names or 
