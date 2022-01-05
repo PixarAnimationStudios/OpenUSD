@@ -542,6 +542,12 @@ UsdGeomXformable::XformQuery::GetLocalTransformation(
     return UsdGeomXformable::GetLocalTransformation(transform, _xformOps, time);
 }
 
+bool
+UsdGeomXformable::XformQuery::HasNonEmptyXformOpOrder() const
+{
+    return !_xformOps.empty();
+}
+
 static
 bool 
 _TransformMightBeTimeVarying(vector<UsdGeomXformOp> const &xformOps)
