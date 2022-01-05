@@ -146,6 +146,16 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._renderMode = self.stateProperty("renderMode", default=RenderModes.SMOOTH_SHADED)
         self._freeCameraFOV = self.stateProperty("freeCameraFOV", default=60.0)
         self._freeCameraAspect = self.stateProperty("freeCameraAspect", default=1.0)
+        # For freeCameraOverrideNear/Far, Use -inf as a sentinel value to mean
+        # None. (We cannot use None directly because that would cause a type-
+        # checking error in Settings.)
+        self._clippingPlaneNoneValue = float('-inf')
+        self._freeCameraOverrideNear = self.stateProperty("freeCameraOverrideNear", default=self._clippingPlaneNoneValue)
+        self._freeCameraOverrideFar = self.stateProperty("freeCameraOverrideFar", default=self._clippingPlaneNoneValue)
+        if self._freeCameraOverrideNear == self._clippingPlaneNoneValue:
+            self._freeCameraOverrideNear = None
+        if self._freeCameraOverrideFar == self._clippingPlaneNoneValue:
+            self._freeCameraOverrideFar = None
         self._lockFreeCameraAspect = self.stateProperty("lockFreeCameraAspect", default=False)
         self._colorCorrectionMode = self.stateProperty("colorCorrectionMode", default=ColorCorrectionModes.SRGB)
         self._ocioSettings = OCIOSettings()
@@ -215,6 +225,14 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         state["redrawOnScrub"] = self._redrawOnScrub
         state["renderMode"] = self._renderMode
         state["freeCameraFOV"] = self._freeCameraFOV
+        freeCameraOverrideNear = self._freeCameraOverrideNear
+        if freeCameraOverrideNear is None:
+            freeCameraOverrideNear = self._clippingPlaneNoneValue
+        state["freeCameraOverrideNear"] = freeCameraOverrideNear
+        freeCameraOverrideFar = self._freeCameraOverrideFar
+        if freeCameraOverrideFar is None:
+            freeCameraOverrideFar = self._clippingPlaneNoneValue
+        state["freeCameraOverrideFar"] = freeCameraOverrideFar
         state["freeCameraAspect"] = self._freeCameraAspect
         state["lockFreeCameraAspect"] = self._lockFreeCameraAspect
         state["colorCorrectionMode"] = self._colorCorrectionMode
@@ -339,6 +357,38 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
             self._freeCameraFOV = value
 
     @property
+    def freeCameraOverrideNear(self):
+        """Returns the free camera's near clipping plane value, if it has been
+        overridden by the user. Returns None if there is no user-defined near
+        clipping plane."""
+        return self._freeCameraOverrideNear
+
+    @freeCameraOverrideNear.setter
+    @freeCameraViewSetting
+    def freeCameraOverrideNear(self, value):
+        """Sets the near clipping plane to the given value. Passing in None will
+        clear the current override."""
+        self._freeCameraOverrideNear = value
+        if self._freeCamera:
+            self._freeCamera.overrideNear = value
+
+    @property
+    def freeCameraOverrideFar(self):
+        """Returns the free camera's far clipping plane value, if it has been
+        overridden by the user. Returns None if there is no user-defined far
+        clipping plane."""
+        return self._freeCameraOverrideFar
+
+    @freeCameraOverrideFar.setter
+    @freeCameraViewSetting
+    def freeCameraOverrideFar(self, value):
+        """Sets the far clipping plane to the given value. Passing in None will
+        clear the current override."""
+        self._freeCameraOverrideFar = value
+        if self._freeCamera:
+            self._freeCamera.overrideFar = value
+
+    @property
     def freeCameraAspect(self):
         return self._freeCameraAspect
     
@@ -353,8 +403,15 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
 
     @freeCameraViewSetting
     def _frustumChanged(self):
+        self._updateFreeCameraData()
+
+    def _updateFreeCameraData(self):
+        '''Updates member variables with the current free camera view settings.
+        '''
         if self._freeCamera:
             self._freeCameraFOV = self.freeCamera.fov
+            self._freeCameraOverrideNear = self.freeCamera.overrideNear
+            self._freeCameraOverrideFar = self.freeCamera.overrideFar
             if self._lockFreeCameraAspect:
                 self._freeCameraAspect = self.freeCamera.aspectRatio
 
@@ -741,7 +798,8 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     def freeCamera(self, value):
         # ViewSettingsDataModel does not guarantee it will hold a valid
         # FreeCamera, but if one is set, we will keep the dataModel's stateful
-        # FOV ('freeCameraFOV') in sync with the FreeCamera
+        # free camera settings (fov, clipping planes, aspect ratio) in sync with
+        # the FreeCamera
 
         if not isinstance(value, FreeCamera) and value != None:
             raise TypeError("Free camera must be a FreeCamera object.")
@@ -751,7 +809,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._freeCamera = value
         if self._freeCamera:
             self._freeCamera.signalFrustumChanged.connect(self._frustumChanged)
-            self._freeCameraFOV = self._freeCamera.fov
+            self._updateFreeCameraData()
 
     @property
     def cameraPath(self):

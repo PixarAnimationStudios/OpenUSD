@@ -50,15 +50,16 @@ class FreeCamera(QtCore.QObject):
     # is close to camera, when rendering for picking
     maxGoodZResolution = 5e4
 
-    def __init__(self, isZUp, fov=60.0):
+    def __init__(self, isZUp, fov=60.0, aspectRatio=1.0, overrideNear=None,
+                 overrideFar=None):
         """FreeCamera can be either a Z up or Y up camera, based on 'zUp'"""
         super(FreeCamera, self).__init__()
 
         self._camera = Gf.Camera()
         self._camera.SetPerspectiveFromAspectRatioAndFieldOfView(
-            1.0, fov, Gf.Camera.FOVVertical)
-        self._overrideNear = None
-        self._overrideFar = None
+            aspectRatio, fov, Gf.Camera.FOVVertical)
+        self._overrideNear = overrideNear
+        self._overrideFar = overrideFar
         self.resetClippingPlanes()
 
         self._isZUp = isZUp

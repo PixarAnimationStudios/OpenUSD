@@ -33,8 +33,8 @@ def _modifySettings(appController):
 
 # Set the clipping plane overrides and update the view.
 def _setClippingPlaneOverrides(appController, near=None, far=None):
-    appController._stageView.overrideNear = near
-    appController._stageView.overrideFar = far
+    appController._dataModel.viewSettings.freeCameraOverrideNear = near
+    appController._dataModel.viewSettings.freeCameraOverrideFar = far
     appController._stageView.updateGL()
 
 # Test with no overrides (calculated clipping planes are used).

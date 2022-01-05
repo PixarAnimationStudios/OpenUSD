@@ -1962,7 +1962,7 @@ class AppController(QtCore.QObject):
         if self._stageView:
             if (checked):
                 self._adjustFreeCameraDlg = adjustFreeCamera.AdjustFreeCamera(
-                    self._mainWindow, self._dataModel, self._stageView,
+                    self._mainWindow, self._dataModel,
                     self._stageView.signalFrustumChanged)
                 self._adjustFreeCameraDlg.finished.connect(
                     lambda status :

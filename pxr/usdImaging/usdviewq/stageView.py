@@ -800,32 +800,6 @@ class StageView(QtOpenGL.QGLWidget):
         self._HUDStatKeys = keys
 
     @property
-    def overrideNear(self):
-        return self._overrideNear
-
-    @overrideNear.setter
-    def overrideNear(self, value):
-        """To remove the override, set to None.  Causes FreeCamera to become
-        active."""
-        self._overrideNear = value
-        self.switchToFreeCamera()
-        self._dataModel.viewSettings.freeCamera.overrideNear = value
-        self.updateGL()
-
-    @property
-    def overrideFar(self):
-        return self._overrideFar
-
-    @overrideFar.setter
-    def overrideFar(self, value):
-        """To remove the override, set to None.  Causes FreeCamera to become
-        active."""
-        self._overrideFar = value
-        self.switchToFreeCamera()
-        self._dataModel.viewSettings.freeCamera.overrideFar = value
-        self.updateGL()
-
-    @property
     def allSceneCameras(self):
         return self._allSceneCameras
 
@@ -885,8 +859,8 @@ class StageView(QtOpenGL.QGLWidget):
         self._dataModel.selection.signalPrimSelectionChanged.connect(
             self._primSelectionChanged)
 
-        self._dataModel.viewSettings.freeCamera = FreeCamera(True,
-                                    self._dataModel.viewSettings.freeCameraFOV)
+        self._dataModel.viewSettings.freeCamera = self._createNewFreeCamera(
+            self._dataModel.viewSettings, True)
         self._lastComputedGfCamera = None
         self._lastAspectRatio = 1.0
 
@@ -942,9 +916,6 @@ class StageView(QtOpenGL.QGLWidget):
         self._selectionBrange = Gf.Range3d()
         self._selectionOrientedRange = Gf.Range3d()
         self._bbcenterForBoxDraw = (0, 0, 0)
-
-        self._overrideNear = None
-        self._overrideFar = None
 
         self._forceRefresh = False
         self._renderTime = 0
@@ -1118,9 +1089,20 @@ class StageView(QtOpenGL.QGLWidget):
         if self._dataModel.stage:
             self._stageIsZup = (
                 UsdGeom.GetStageUpAxis(self._dataModel.stage) == UsdGeom.Tokens.z)
-            self._dataModel.viewSettings.freeCamera = \
-                    FreeCamera(self._stageIsZup,
-                               self._dataModel.viewSettings.freeCameraFOV)
+            self._dataModel.viewSettings.freeCamera = self._createNewFreeCamera(
+                self._dataModel.viewSettings, self._stageIsZup)
+
+    def _createNewFreeCamera(self, viewSettings, isZUp):
+        '''Creates a new free camera, persisting the previous camera settings
+        (fov, aspect, clipping planes).'''
+        aspectRatio = (viewSettings.freeCameraAspect
+            if viewSettings.lockFreeCameraAspect else 1.0)
+        return FreeCamera(
+            isZUp,
+            viewSettings.freeCameraFOV,
+            aspectRatio,
+            viewSettings.freeCameraOverrideNear,
+            viewSettings.freeCameraOverrideFar)
 
     # simple GLSL program for axis/bbox drawings
     def GetSimpleGLSLProgram(self):
@@ -1617,8 +1599,6 @@ class StageView(QtOpenGL.QGLWidget):
         viewState = {}
         viewState["_cameraPrim"] = self._dataModel.viewSettings.cameraPrim
         viewState["_stageIsZup"] = self._stageIsZup
-        viewState["_overrideNear"] = self._overrideNear
-        viewState["_overrideFar"] = self._overrideFar
         # Since FreeCamera is a compound/class object, we must copy
         # it more deeply
         viewState["_freeCamera"] = self._dataModel.viewSettings.freeCamera.clone() if self._dataModel.viewSettings.freeCamera else None
@@ -1628,8 +1608,6 @@ class StageView(QtOpenGL.QGLWidget):
         """Restore view parameters from 'viewState', and redraw"""
         self._dataModel.viewSettings.cameraPrim = viewState["_cameraPrim"]
         self._stageIsZup = viewState["_stageIsZup"]
-        self._overrideNear = viewState["_overrideNear"]
-        self._overrideFar = viewState["_overrideFar"]
 
         restoredCamera = viewState["_freeCamera"]
         # Detach our freeCamera from the given viewState, to
@@ -2059,7 +2037,8 @@ class StageView(QtOpenGL.QGLWidget):
         If our current camera corresponds to a prim, create a FreeCamera
         that has the same view and use it.
         """
-        if self._dataModel.viewSettings.cameraPrim != None:
+        viewSettings = self._dataModel.viewSettings
+        if viewSettings.cameraPrim != None:
             freeCamera = None
             # cameraPrim may no longer be valid, so use the last-computed
             # gf camera
@@ -2067,11 +2046,10 @@ class StageView(QtOpenGL.QGLWidget):
                 freeCamera = FreeCamera.FromGfCamera(
                     self._lastComputedGfCamera, self._stageIsZup)
             else:
-                freeCamera = FreeCamera(
-                    self._stageIsZup,
-                    self._dataModel.viewSettings.freeCameraFOV)
+                freeCamera = self._createNewFreeCamera(
+                    viewSettings, self._stageIsZup)
 
-            if self._dataModel.viewSettings.lockFreeCameraAspect:
+            if viewSettings.lockFreeCameraAspect:
                 # Update free camera aspect ratio to match the current camera.
                 if self._lastAspectRatio < freeCamera.aspectRatio:
                     freeCamera.horizontalAperture = \
@@ -2080,14 +2058,8 @@ class StageView(QtOpenGL.QGLWidget):
                     freeCamera.verticalAperture = \
                         freeCamera.horizontalAperture / self._lastAspectRatio
 
-            # override clipping plane state is managed by StageView,
-            # so that it can be persistent.  Therefore we must restore it
-            # now
-            freeCamera.overrideNear = self._overrideNear
-            freeCamera.overrideFar = self._overrideFar
-
-            self._dataModel.viewSettings.cameraPrim = None
-            self._dataModel.viewSettings.freeCamera = freeCamera
+            viewSettings.cameraPrim = None
+            viewSettings.freeCamera = freeCamera
 
             if computeAndSetClosestDistance:
                 self.computeAndSetClosestDistance()
