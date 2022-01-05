@@ -87,11 +87,17 @@ public:
     virtual ~HdMeshUtil() {}
 
     // --------------------------------------------------------------------
-    // Triangulation
-
-    // In order to access per-face signals (face color, face selection etc)
-    // we need a mapping from primitiveID to authored face index domain.
-    // This is stored in primitiveParams, and computed along with indices.
+    /// \name Triangulation
+    ///
+    /// Produces a mesh where each non-triangle face in the base mesh topology
+    /// is fan-triangulated such that the resulting mesh consists entirely
+    /// of triangles.
+    ///
+    /// In order to access per-face signals (face color, face selection etc)
+    /// we need a mapping from primitiveID to authored face index domain.
+    /// This is encoded in primitiveParams, and computed along with indices.
+    /// See \ref PrimitiveParamEncoding.
+    /// @{
     /*
                  +--------+-------+
                 /| \      |\      |\
@@ -122,12 +128,24 @@ public:
                                                HdType dataType,
                                                VtValue *triangulated) const;
 
-    // --------------------------------------------------------------------
-    // Quadrangulation
+    /// @}
 
-    // In order to access per-face signals (face color, face selection etc)
-    // we need a mapping from primitiveID to authored face index domain.
-    // This is stored in primitiveParams, and computed along with indices.
+    // --------------------------------------------------------------------
+    /// \name Quadrangulation
+    ///
+    /// Produces a mesh where each non-quad face in the base mesh topology
+    /// is quadrangulated such that the resulting mesh consists entirely
+    /// of quads. Additionally, supports splitting each resulting quad
+    /// face into a pair of triangles. This is different than simply
+    /// triangulating the base mesh topology and can be useful for
+    /// maintaining consistency with quad-based subdivision schemes.
+    ///
+    /// In order to access per-face signals (face color, face selection etc)
+    /// we need a mapping from primitiveID to authored face index domain.
+    /// This is encoded in primitiveParams, and computed along with indices.
+    /// See \ref PrimitiveParamEncoding.
+    /// @{
+
     /*
                +--------+-------+
               /|        |    |   \
@@ -181,6 +199,8 @@ public:
                                                  HdType dataType,
                                                  VtValue *quadrangulated) const;
 
+    /// @}
+
     /// Return a buffer filled with face vertex index pairs corresponding
     /// to the sequence in which edges are visited when iterating through
     /// the mesh topology. The edges of degenerate and hole faces are
@@ -192,7 +212,25 @@ public:
     void EnumerateEdges(std::vector<GfVec2i> * edgeVerticesOut) const;
 
     // --------------------------------------------------------------------
-    // Primitive param bit encoding
+    /// \anchor PrimitiveParamEncoding
+    /// \name Primitive Param bit encoding
+    ///
+    /// This encoding provides information about each sub-face resulting
+    /// from the triangulation or quadrangulation of a base topology face.
+    ///
+    /// The encoded faceIndex is the index of the base topology face
+    /// corresponding to a triangulated or quadrangulated sub-face.
+    ///
+    /// The encoded edge flag identifies where a sub-face occurs in the
+    /// sequence of sub-faces produced for each base topology face.
+    /// This edge flag can be used to determine which edges of a sub-face
+    /// correspond to edges of a base topology face and which are internal
+    /// edges that were introduced by triangulation or quadrangulation:
+    /// - 0 unaffected triangle or quad base topology face
+    /// - 1 first sub-face produced by triangulation or quadrangulation
+    /// - 2 last sub-face produced by triangulation or quadrangulation
+    /// - 3 intermediate sub-face produced by triangulation or quadrangulation
+    /// @{
 
     // Per-primitive coarse-face-param encoding/decoding functions
     static int EncodeCoarseFaceParam(int faceIndex, int edgeFlag) {
@@ -204,6 +242,8 @@ public:
     static int DecodeEdgeFlagFromCoarseFaceParam(int coarseFaceParam) {
         return (coarseFaceParam & 3);
     }
+
+    /// }@
 
 private:
     /// Return the number of quadrangulated quads.
@@ -223,7 +263,7 @@ private:
     SdfPath const _id;
 };
 
-/// \class Edge Indices
+/// \class HdMeshEdgeIndexTable
 ///
 /// Mesh edges are described as a pair of adjacent vertices encoded
 /// as GfVec2i.
