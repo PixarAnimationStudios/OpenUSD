@@ -87,7 +87,7 @@ TF_MAKE_STATIC_DATA(std::vector<HdPrman_RenderParam::IntegratorCameraCallback>,
     _integratorCameraCallbacks->clear();
 }
 
-HdPrman_RenderParam::HdPrman_RenderParam() :
+HdPrman_RenderParam::HdPrman_RenderParam(const std::string &rileyVariant) :
     resolution(0),
     _rix(nullptr),
     _ri(nullptr),
@@ -97,7 +97,7 @@ HdPrman_RenderParam::HdPrman_RenderParam() :
     _lastSettingsVersion(0)
 {
     TfRegistryManager::GetInstance().SubscribeTo<HdPrman_RenderParam>();
-    _CreateRiley();
+    _CreateRiley(rileyVariant);
     
     // Register RenderMan display driver
     HdPrmanFramebuffer::Register(_rix);
@@ -105,7 +105,7 @@ HdPrman_RenderParam::HdPrman_RenderParam() :
 
 HdPrman_RenderParam::~HdPrman_RenderParam()
 {
-    StopRender();
+    DeleteRenderThread();
 
     _DestroyRiley();
 }
@@ -1397,7 +1397,7 @@ HdPrman_RenderParam::SetParamFromVtValue(
 }
 
 void
-HdPrman_RenderParam::_CreateRiley()
+HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant)
 {
     _rix = RixGetContext();
     if (!_rix) {
@@ -1435,21 +1435,16 @@ HdPrman_RenderParam::_CreateRiley()
               "Renderman API tokens do not match expected values.  "
               "There may be a compile/link version mismatch.");
 
-    std::string rileyvariant = TfGetenv("RILEY_VARIANT");
-    for(auto& c : rileyvariant) {
-        c = tolower(c);
-    }
-
     // Acquire Riley instance.
     _mgr = (RixRileyManager*)_rix->GetRixInterface(k_RixRileyManager);
-    _riley = _mgr->CreateRiley(RtUString(rileyvariant.c_str()), RtParamList());
+    _riley = _mgr->CreateRiley(RtUString(rileyVariant.c_str()), RtParamList());
     if(!_riley) {
         TF_RUNTIME_ERROR("Could not initialize riley API.");
         return;
     }
 
-    _xpu = (!rileyvariant.empty() ||
-            (rileyvariant.find("xpu") != std::string::npos));
+    _xpu = (!rileyVariant.empty() ||
+            (rileyVariant.find("xpu") != std::string::npos));
 }
 
 

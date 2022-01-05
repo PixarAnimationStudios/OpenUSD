@@ -104,10 +104,26 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_BPRIM_TYPES =
     _tokens->field3dAsset,
 };
 
+static
+std::string
+_ToLower(const std::string &s)
+{
+    std::string result = s;
+    for(auto &c : result) {
+        c = tolower(c);
+    }
+    return result;
+}
+
 HdPrmanRenderDelegate::HdPrmanRenderDelegate(
     HdRenderSettingsMap const& settingsMap)
   : HdRenderDelegate(settingsMap)
-  , _renderParam(std::make_unique<HdPrman_RenderParam>())
+  , _renderParam(
+      std::make_unique<HdPrman_RenderParam>(
+          _ToLower(
+              GetRenderSetting<std::string>(
+                  HdPrmanRenderSettingsTokens->rileyVariant,
+                  TfGetenv("RILEY_VARIANT")))))
 {
     _Initialize();
 }
@@ -170,6 +186,12 @@ HdPrmanRenderDelegate::_Initialize()
         std::string("Variance Threshold"),
         HdRenderSettingsTokens->convergedVariance,
         VtValue(pixelVariance)
+    });
+
+    _settingDescriptors.push_back({
+        std::string("Riley variant"),
+        HdPrmanRenderSettingsTokens->rileyVariant,
+        VtValue(TfGetenv("RILEY_VARIANT"))
     });
 
     _PopulateDefaultSettings(_settingDescriptors);

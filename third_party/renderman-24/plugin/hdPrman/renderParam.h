@@ -57,7 +57,7 @@ class HdPrman_RenderParam : public HdRenderParam
 {
 public:
     HDPRMAN_API
-    HdPrman_RenderParam();
+    HdPrman_RenderParam(const std::string &rileyVariant);
 
     HDPRMAN_API
     ~HdPrman_RenderParam() override;
@@ -265,7 +265,7 @@ public:
     void UpdateRileyShutterInterval(const HdRenderIndex * renderIndex);
 
 private:
-    void _CreateRiley();
+    void _CreateRiley(const std::string &rileyVariant);
     void _CreateFallbackMaterials();
     void _CreateFallbackLight();
     void _CreateIntegrator(HdRenderDelegate * renderDelegate);
