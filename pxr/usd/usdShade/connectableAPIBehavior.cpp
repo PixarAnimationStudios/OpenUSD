@@ -627,14 +627,11 @@ private:
             // prim. If found cache this overriding behavior against the primTypeId.
             if (behavior) {
                 for (auto& appliedSchema : primTypeId.appliedAPISchemas) {
-                    const TfType &appliedSchemaType = 
-                        UsdSchemaRegistry::GetAPITypeFromSchemaTypeName(
-                                appliedSchema);
                     // Override the prim type registered behavior if any of the 
                     // authored apiSchemas (in strength order) provides a 
                     // UsdShadeConnectableAPIBehavior
                     SharedConnectableAPIBehaviorPtr apiBehavior;
-                    if (_FindBehaviorForApiSchema(appliedSchemaType, apiBehavior)) {
+                    if (_FindBehaviorForApiSchema(appliedSchema, apiBehavior)) {
                         behavior = apiBehavior;
                         RegisterBehaviorForPrimTypeId(primTypeId, behavior);
                         break;
@@ -659,10 +656,7 @@ private:
         // registered/cached with the appliedSchemaType and the primTypeId.
         if (prim) {
             for (auto& appliedSchema : prim.GetAppliedSchemas()) {
-                const TfType &appliedSchemaType = 
-                    UsdSchemaRegistry::GetAPITypeFromSchemaTypeName(
-                            appliedSchema);
-                if (_FindBehaviorForApiSchema(appliedSchemaType, behavior)) {
+                if (_FindBehaviorForApiSchema(appliedSchema, behavior)) {
                     RegisterBehaviorForPrimTypeId(primTypeId, behavior);
                     return behavior.get();
                 }
@@ -753,9 +747,19 @@ private:
         return _FindBehaviorForPrimTypeId(_PrimTypeId(type), behavior);
     }
 
-    bool _FindBehaviorForApiSchema(const TfType &appliedSchemaType,
+    bool _FindBehaviorForApiSchema(const TfToken &appliedSchema,
             SharedConnectableAPIBehaviorPtr &apiBehavior) 
     {
+        const TfType &appliedSchemaType =
+            UsdSchemaRegistry::GetAPITypeFromSchemaTypeName(appliedSchema);
+        UsdSchemaKind sk = UsdSchemaRegistry::GetSchemaKind(appliedSchemaType);
+
+        // Of all the schema types enumerated in UsdSchemaKind, the *only*
+        // kind we can (and/or expect to) process is singleApply
+        if (sk != UsdSchemaKind::SingleApplyAPI) {
+            return false;
+        }
+            
         if (_LoadPluginDefiningBehaviorForType(appliedSchemaType)) {
             if (!_FindBehaviorForType(appliedSchemaType, &apiBehavior)) {
                 // If a behavior is not found/registered (but an
