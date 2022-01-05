@@ -38,20 +38,16 @@ class TermColors:
 
 @contextmanager
 def _Stream(path, *args, **kwargs):
-    if path == '-':
+    if path == 'stdout' or path == '-':
         yield sys.stdout
+    elif path == 'stderr':
+        yield sys.stderr
     else:
         with open(path, *args, **kwargs) as fp:
             yield fp
 
 def _Print(stream, msg):
     print(msg, file=stream)
-
-def _Err(msg):
-    sys.stderr.write(TermColors.FAIL + msg + TermColors.END + '\n')
-
-def _Warn(msg):
-    sys.stderr.write(TermColors.WARN + msg + TermColors.END + '\n')
 
 def main():
     parser = argparse.ArgumentParser(description="""Utility for checking the 
@@ -74,9 +70,10 @@ def main():
                         'package. Nested packages, dependencies and their '
                         'contents are not validated.')
     parser.add_argument('-o', '--out', dest='outFile', type=str, nargs='?',
-                        default='-', help='The file to which all the failed '
-                        'checks are output. If unspecified, the failed checks '
-                        'are output to stdout.')
+                        default='stdout', help='The file to which all the failed'
+                        ' checks are output. If unspecified, the failed checks '
+                        'are output to stdout; if "stderr", terminal coloring '
+                        'will be surpressed.')
     parser.add_argument('--noAssetChecks', dest='noAssetChecks', 
                         action='store_true', help='If specified, do NOT perform '
                         'extra checks to help ensure the stage or '
@@ -93,6 +90,9 @@ def main():
                         'rules being checked for the given set of options.')
     parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
                         help='Enable verbose output mode.')
+    parser.add_argument('-t', '--strict', dest='strict', action='store_true',
+                        help='Return failure code even if only warnings are '
+                        'issued, for stricter compliance.')
 
     args = parser.parse_args()
     inputFile = args.inputFile
@@ -122,19 +122,20 @@ def main():
     failedChecks = checker.GetFailedChecks()
     
     with _Stream(outFile, 'w') as ofp:
-        if len(warnings) > 0:
-            for msg in warnings:
-                # Add color if we're outputting to a terminal.
-                if outFile == '-':
-                    msg = TermColors.WARN + msg  + TermColors.END
-                _Print(ofp, msg)
         
-        if len(errors)> 0 or len(failedChecks) > 0:
-            for msg in errors + failedChecks:
-                # Add color if we're outputting to a terminal.
-                if outFile == '-':
-                    msg = TermColors.FAIL + msg  + TermColors.END
-                _Print(ofp, msg)
+        for msg in warnings:
+            # Add color if we're outputting normally to a terminal.
+            if ofp == sys.stdout:
+                msg = TermColors.WARN + msg  + TermColors.END
+            _Print(ofp, msg)
+        
+        for msg in errors + failedChecks:
+            # Add color if we're outputting normally to a terminal.
+            if ofp == sys.stdout:
+                msg = TermColors.FAIL + msg  + TermColors.END
+            _Print(ofp, msg)
+
+        if (args.strict and len(warnings)) or len(errors) or len(failedChecks):
             print("Failed!")
             return 1
 
