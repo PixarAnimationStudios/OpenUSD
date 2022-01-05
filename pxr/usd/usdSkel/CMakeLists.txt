@@ -89,6 +89,7 @@ pxr_library(usdSkel
         doxygen/objectModel.dox
         doxygen/schemaOverview.dox
         doxygen/schemas.dox
+        doxygen/skinnedArm.usda
         images/blendshapes.svg
         images/blendshapesWithInbetweens.svg
         images/influencesPrimvarLayout.svg

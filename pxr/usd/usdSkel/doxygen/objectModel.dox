@@ -11,16 +11,25 @@ bindings.
 For example:
 
 \code
-def Skeleton "Skel" {
+def Skeleton "Skel" (
+    prepend apiSchemas = ["SkelBindingAPI"]
+)
+{
     rel skel:animationSource = </Anim>
 
     def SkelAnimation "Anim" {}
 }
 
-def SkelRoot "Character" {
+def SkelRoot "Character" (
+    prepend apiSchemas = ["SkelBindingAPI"]
+)
+{
     rel skel:skeleton = </Skel>
 
-    def Mesh "Mesh" {
+    def Mesh "Mesh" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
+{
         int[] primvars:skel:jointIndices = ...
         float[] primvars:skel:jointWeights = ...
 }
