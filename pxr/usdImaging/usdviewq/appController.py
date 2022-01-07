@@ -2402,21 +2402,32 @@ class AppController(QtCore.QObject):
             self._viewerModeEscapeSizes = None
 
     def _toggleViewerMode(self):
+        self.setViewerMode(not self.isViewerMode())
+
+    def isViewerMode(self):
+        """Returns True if the extra UI around the stage view is collapsed."""
         topHeight, bottomHeight = self._ui.topBottomSplitter.sizes()
         primViewWidth, stageViewWidth = self._ui.primStageSplitter.sizes()
-        if bottomHeight > 0 or primViewWidth > 0:
+        return bottomHeight <= 0 and primViewWidth <= 0        
+
+    def setViewerMode(self, viewerMode):
+        """Sets whether the UI should be displayed in viewer mode, where the
+        extra UI around the stage view is collapsed."""
+        topHeight, bottomHeight = self._ui.topBottomSplitter.sizes()
+        primViewWidth, stageViewWidth = self._ui.primStageSplitter.sizes()
+        if viewerMode:
             topHeight += bottomHeight
             bottomHeight = 0
             stageViewWidth += primViewWidth
             primViewWidth = 0
+        elif self._viewerModeEscapeSizes is not None:
+            topHeight, bottomHeight, primViewWidth, stageViewWidth = \
+                self._viewerModeEscapeSizes
         else:
-            if self._viewerModeEscapeSizes is not None:
-                topHeight, bottomHeight, primViewWidth, stageViewWidth = self._viewerModeEscapeSizes
-            else:
-                bottomHeight = UIDefaults.BOTTOM_HEIGHT
-                topHeight = UIDefaults.TOP_HEIGHT
-                primViewWidth = UIDefaults.PRIM_VIEW_WIDTH
-                stageViewWidth = UIDefaults.STAGE_VIEW_WIDTH
+            bottomHeight = UIDefaults.BOTTOM_HEIGHT
+            topHeight = UIDefaults.TOP_HEIGHT
+            primViewWidth = UIDefaults.PRIM_VIEW_WIDTH
+            stageViewWidth = UIDefaults.STAGE_VIEW_WIDTH
         self._ui.topBottomSplitter.setSizes([topHeight, bottomHeight])
         self._ui.primStageSplitter.setSizes([primViewWidth, stageViewWidth])
 
