@@ -1767,6 +1767,11 @@ private:
     SdfFileFormatConstPtr _fileFormat;
     FileFormatArguments _fileFormatArgs;
 
+    // Cached reference to the _fileFormat's schema -- we need access to this to
+    // be as fast as possible since we look at it on every SetField(), for
+    // example.
+    const SdfSchemaBase &_schema;
+
     // Registry of Sdf Identities
     mutable Sdf_IdentityRegistry _idRegistry;
 

@@ -134,6 +134,7 @@ SdfLayer::SdfLayer(
     : _self(this)
     , _fileFormat(fileFormat)
     , _fileFormatArgs(args)
+    , _schema(fileFormat->GetSchema())
     , _idRegistry(SdfLayerHandle(this))
     , _data(fileFormat->InitData(args))
     , _stateDelegate(SdfSimpleLayerStateDelegate::New())
@@ -923,7 +924,7 @@ SdfLayer::OpenAsAnonymous(
                 layerInfo.fileFormat, Sdf_GetAnonLayerIdentifierTemplate(tag),
                 string());
         // From this point, we must call _FinishInitialization() on
-        // either success or failure in order to unblock other
+        // either success or failure in order to unblock others
         // threads waiting for initialization to finish.
     }
 
@@ -942,7 +943,7 @@ SdfLayer::OpenAsAnonymous(
 const SdfSchemaBase& 
 SdfLayer::GetSchema() const
 {
-    return GetFileFormat()->GetSchema();
+    return _schema;
 }
 
 SdfLayer::_ReloadResult
@@ -1535,7 +1536,7 @@ SdfLayer::_GetValue(const TfToken& key) const
 {
     VtValue value;
     if (!HasField(SdfPath::AbsoluteRootPath(), key, &value)) {
-        return GetSchema().GetFallback(key).Get<T>();
+        return _schema.GetFallback(key).Get<T>();
     }
     
     return value.Get<T>();
@@ -3361,7 +3362,7 @@ SdfLayer::GetSpecType(const SdfPath& path) const
 vector<TfToken>
 SdfLayer::ListFields(const SdfPath& path) const
 {
-    return _ListFields(GetSchema(), *get_pointer(_data), path);
+    return _ListFields(_schema, *get_pointer(_data), path);
 }
 
 vector<TfToken>
@@ -3413,7 +3414,7 @@ SdfLayer::_GetRequiredFieldDef(const SdfPath &path,
                                const TfToken &fieldName,
                                SdfSpecType specType) const
 {
-    SdfSchemaBase const &schema = GetSchema();
+    SdfSchemaBase const &schema = _schema;
     if (ARCH_UNLIKELY(schema.IsRequiredFieldName(fieldName))) {
         // Get the spec definition.
         if (specType == SdfSpecTypeUnknown) {
