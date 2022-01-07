@@ -568,7 +568,7 @@ class HdSt_TestLightingShader : public HdStLightingShader
 {
 public:
     HDST_API
-    HdSt_TestLightingShader();
+    HdSt_TestLightingShader(HdRenderIndex * renderIndex);
     HDST_API
     ~HdSt_TestLightingShader() override;
 
@@ -591,6 +591,9 @@ public:
     void SetSceneAmbient(GfVec3f const &color);
     void SetLight(int light, GfVec3f const &dir, GfVec3f const &color);
 
+    /// Prepare lighting resource buffers
+    void Prepare();
+
 private:
     struct Light {
         GfVec3f dir;
@@ -600,6 +603,9 @@ private:
     Light _lights[2];
     GfVec3f _sceneAmbient;
     std::unique_ptr<HioGlslfx> _glslfx;
+
+    HdRenderIndex * _renderIndex;
+    HdBufferArrayRangeSharedPtr _lightingBar;
 };
 
 // --------------------------------------------------------------------------

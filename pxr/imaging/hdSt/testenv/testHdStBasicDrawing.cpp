@@ -88,7 +88,9 @@ My_TestGLDrawing::InitTest()
     SetCameraTranslate(GetCameraTranslate() - center);
 
     if (_testLighting) {
-        _lightingShader.reset(new HdSt_TestLightingShader());
+        _lightingShader.reset(
+                new HdSt_TestLightingShader(&delegate.GetRenderIndex()));
+        _lightingShader->Prepare();
         _driver->GetRenderPassState()->SetLightingShader(
             _lightingShader);
     }

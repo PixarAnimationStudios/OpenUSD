@@ -23,7 +23,9 @@
 //
 #include "pxr/imaging/hdSt/unitTestHelper.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/textureUtils.h"
+#include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/base/tf/staticTokens.h"
 
@@ -36,6 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (lighting)
     (l0dir)
     (l0color)
     (l1dir)
@@ -168,7 +171,8 @@ HdSt_TestDriver::Draw(HdRenderPassSharedPtr const &renderPass, bool withGuides)
 
 // --------------------------------------------------------------------------
 
-HdSt_TestLightingShader::HdSt_TestLightingShader()
+HdSt_TestLightingShader::HdSt_TestLightingShader(HdRenderIndex * renderIndex)
+    : _renderIndex(renderIndex)
 {
     const char *lightingShader =
         "-- glslfx version 0.1                                              \n"
@@ -179,9 +183,11 @@ HdSt_TestLightingShader::HdSt_TestLightingShader()
         "-- glsl TestLighting.Lighting                                      \n"
         "vec3 FallbackLighting(vec3 Peye, vec3 Neye, vec3 color) {          \n"
         "    vec3 n = normalize(Neye);                                      \n"
-        "    return HdGet_sceneAmbient()                                    \n"
-        "      + color * HdGet_l0color() * max(0.0, dot(n, HdGet_l0dir()))  \n"
-        "      + color * HdGet_l1color() * max(0.0, dot(n, HdGet_l1dir())); \n"
+        "    return HdGet_lighting_sceneAmbient()                           \n"
+        "      + color * HdGet_lighting_l0color()                           \n"
+        "              * max(0.0, dot(n, HdGet_lighting_l0dir()))           \n"
+        "      + color * HdGet_lighting_l1color()                           \n"
+        "              * max(0.0, dot(n, HdGet_lighting_l1dir()));          \n"
         "}                                                                  \n";
 
     _lights[0].dir   = GfVec3f(0, 0, 1);
@@ -224,10 +230,72 @@ void
 HdSt_TestLightingShader::SetCamera(GfMatrix4d const &worldToViewMatrix,
                                  GfMatrix4d const &projectionMatrix)
 {
+    // Update the lighting resource buffers only when necessary
+    bool lightsChanged = false;
+
     for (int i = 0; i < 2; ++i) {
-        _lights[i].eyeDir
-            = worldToViewMatrix.TransformDir(_lights[i].dir).GetNormalized();
+        GfVec3f eyeDir =
+            worldToViewMatrix.TransformDir(_lights[i].dir).GetNormalized();
+
+        if (_lights[i].eyeDir != eyeDir) {
+            lightsChanged = true;
+            _lights[i].eyeDir = eyeDir;
+        }
     }
+
+    if (lightsChanged) {
+        Prepare();
+    }
+}
+
+void
+HdSt_TestLightingShader::Prepare()
+{
+    HdStResourceRegistrySharedPtr const & hdStResourceRegistry =
+        std::dynamic_pointer_cast<HdStResourceRegistry>(
+            _renderIndex->GetResourceRegistry());
+
+    HdBufferSpecVector const bufferSpecs = {
+        HdBufferSpec(_tokens->l0dir, HdTupleType{HdTypeFloatVec3, 1}),
+        HdBufferSpec(_tokens->l0color, HdTupleType{HdTypeFloatVec3, 1}),
+        HdBufferSpec(_tokens->l1dir, HdTupleType{HdTypeFloatVec3, 1}),
+        HdBufferSpec(_tokens->l1color, HdTupleType{HdTypeFloatVec3, 1}),
+        HdBufferSpec(_tokens->sceneAmbient, HdTupleType{HdTypeFloatVec3, 1}),
+    };
+
+    _lightingBar =
+        hdStResourceRegistry->AllocateUniformBufferArrayRange(
+            _tokens->lighting,
+            bufferSpecs,
+            HdBufferArrayUsageHint());
+
+    HdBufferSourceSharedPtrVector sources = {
+        std::make_shared<HdVtBufferSource>(
+            _tokens->l0dir, VtValue(VtVec3fArray(1, _lights[0].eyeDir))),
+        std::make_shared<HdVtBufferSource>(
+            _tokens->l0color, VtValue(VtVec3fArray(1, _lights[0].color))),
+        std::make_shared<HdVtBufferSource>(
+            _tokens->l1dir, VtValue(VtVec3fArray(1, _lights[1].eyeDir))),
+        std::make_shared<HdVtBufferSource>(
+            _tokens->l1color, VtValue(VtVec3fArray(1, _lights[1].color))),
+        std::make_shared<HdVtBufferSource>(
+            _tokens->sceneAmbient, VtValue(VtVec3fArray(1, _sceneAmbient))),
+    };
+
+    hdStResourceRegistry->AddSources(_lightingBar, std::move(sources));
+}
+
+static
+HdBindingRequest
+_GetBindingRequest(HdBufferArrayRangeSharedPtr lightingBar)
+{
+    return HdBindingRequest(HdBinding::UBO,
+                            _tokens->lighting,
+                            lightingBar,
+                            /*interleaved=*/true,
+                            /*writable=*/false,
+                            /*arraySize=*/1,
+                            /*concatenateNames=*/true);
 }
 
 /* virtual */
@@ -235,11 +303,7 @@ void
 HdSt_TestLightingShader::BindResources(const int program,
                                        HdSt_ResourceBinder const &binder)
 {
-    binder.BindUniformf(_tokens->l0dir,   3, _lights[0].eyeDir.GetArray());
-    binder.BindUniformf(_tokens->l0color, 3, _lights[0].color.GetArray());
-    binder.BindUniformf(_tokens->l1dir,   3, _lights[1].eyeDir.GetArray());
-    binder.BindUniformf(_tokens->l1color, 3, _lights[1].color.GetArray());
-    binder.BindUniformf(_tokens->sceneAmbient, 3, _sceneAmbient.GetArray());
+    binder.Bind(_GetBindingRequest(_lightingBar));
 }
 
 /* virtual */
@@ -247,22 +311,14 @@ void
 HdSt_TestLightingShader::UnbindResources(const int program,
                                          HdSt_ResourceBinder const &binder)
 {
+    binder.Unbind(_GetBindingRequest(_lightingBar));
 }
 
 /*virtual*/
 void
 HdSt_TestLightingShader::AddBindings(HdBindingRequestVector *customBindings)
 {
-    customBindings->emplace_back(
-        HdBinding::UNIFORM, _tokens->l0dir, HdTypeFloatVec3);
-    customBindings->emplace_back(
-        HdBinding::UNIFORM, _tokens->l0color, HdTypeFloatVec3);
-    customBindings->emplace_back(
-        HdBinding::UNIFORM, _tokens->l1dir, HdTypeFloatVec3);
-    customBindings->emplace_back(
-        HdBinding::UNIFORM, _tokens->l1color, HdTypeFloatVec3);
-    customBindings->emplace_back(
-        HdBinding::UNIFORM, _tokens->sceneAmbient, HdTypeFloatVec3);
+    customBindings->push_back(_GetBindingRequest(_lightingBar));
 }
 
 void
