@@ -26,6 +26,8 @@
 #include "pxr/usd/sdf/identity.h"
 #include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
 
+#include <tbb/spin_mutex.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 //
@@ -35,7 +37,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Sdf_IdRegistryImpl
 {
 public:
-    explicit Sdf_IdRegistryImpl(SdfLayerHandle const &layer) : _layer(layer) {}
+    explicit Sdf_IdRegistryImpl(SdfLayerHandle const &layer)
+        : _layer(layer)
+        , _deadCount(0) {}
     
     ~Sdf_IdRegistryImpl() {
         tbb::spin_mutex::scoped_lock lock(_idsMutex);
@@ -53,10 +57,13 @@ public:
     Identify(const SdfPath &path) {
         
         tbb::spin_mutex::scoped_lock lock(_idsMutex);
-        
-        _IdMap::iterator i = _ids.find(path);
-        if (i != _ids.end()) {
-            Sdf_Identity *rawId = i->second;
+
+        _IdMap::iterator iter;
+        bool inserted;
+        std::tie(iter, inserted) = _ids.emplace(path, nullptr);
+
+        if (!inserted) {
+            Sdf_Identity *rawId = iter->second;
             ++rawId->_refCount;
             Sdf_IdentityRefPtr ret(rawId, /* add_ref = */ false);
             return ret;
@@ -64,12 +71,7 @@ public:
 
         TfAutoMallocTag2 tag("Sdf", "Sdf_IdentityRegistry::Identify");
         Sdf_Identity *id = new Sdf_Identity(this, path);
-        
-        // Note, this potentially overwrites an existing identity for this
-        // path.  Per the code above, this only happens when the existing
-        // identity is in the process of being destroyed.
-        _ids[path] = id;
-
+        iter.value() = id;
         return id;
     }
 

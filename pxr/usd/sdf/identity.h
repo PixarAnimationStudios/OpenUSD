@@ -29,9 +29,6 @@
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/path.h"
 
-#include <boost/intrusive_ptr.hpp>
-#include <tbb/spin_mutex.h>
-
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -113,8 +110,9 @@ private:
 
     friend class Sdf_IdRegistryImpl;
 
-    // Remove the identity mapping for \a path to \a id from the registry.
-    // This is only called by Sdf_Identity's destructor.
+    // Remove the identity mapping for \a path to \a id from the registry.  This
+    // is invoked when an identity's refcount hits zero.
+    SDF_API
     void _UnregisterOrDelete();
 
     /// The layer that owns this registry, and on behalf of which
