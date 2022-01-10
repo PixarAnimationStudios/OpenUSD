@@ -711,7 +711,11 @@ def InstallBoost_Helper(context, force, buildArgs):
     # To avoid this, we skip extracting all documentation.
     #
     # For some examples, see: https://svn.boost.org/trac10/ticket/11677
-    dontExtract = ["*/doc/*", "*/libs/*/doc/*"]
+    dontExtract = [
+        "*/doc/*",
+        "*/libs/*/doc/*",
+        "*/libs/wave/test/testwave/testfiles/utf8-test-*"
+    ]
 
     with CurrentWorkingDirectory(DownloadURL(BOOST_URL, context, force, 
                                              dontExtract=dontExtract)):
