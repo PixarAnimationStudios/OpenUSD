@@ -215,6 +215,66 @@ class "TestNestedOuterSingleApplyAPI" (
     )
 }
 
+class "TestNestedInnerMultiApplyBaseAPI" (
+    doc = "Test nested multi apply API schema: inner schema base class"
+)
+{
+    uniform int innerMulti:__INSTANCE_NAME__:int_attr = 3 (
+        doc = "Int attribute"
+    )
+    rel innerMulti:__INSTANCE_NAME__:relationship (
+        doc = "Relationship"
+    )
+    uniform token innerMulti:__INSTANCE_NAME__:token_attr = "inner_base" (
+        doc = "Token attribute"
+    )
+}
+
+class "TestNestedInnerMultiApplyDerivedAPI" (
+    apiSchemas = ["TestNestedInnerMultiApplyBaseAPI:__INSTANCE_NAME__"]
+    doc = "Test nested multi apply API schema: inner schema derived"
+)
+{
+    uniform int innerMulti:__INSTANCE_NAME__:derived:int_attr = 4 (
+        doc = "Int attribute"
+    )
+    uniform token innerMulti:__INSTANCE_NAME__:token_attr = "inner_derived" (
+        doc = "Override of TestNestedInnerMultiApplyBaseAPI token_attr"
+    )
+}
+
+class "TestNestedOuterMultiApplyAPI" (
+    apiSchemas = ["TestNestedInnerMultiApplyDerivedAPI:__INSTANCE_NAME__:builtin", "TestNestedInnerMultiApplyDerivedAPI:__INSTANCE_NAME__:outerMulti", "TestNestedInnerMultiApplyBaseAPI:__INSTANCE_NAME__"]
+    doc = "Test nested multi apply API schema: outer schema"
+)
+{
+    uniform int outerMulti:__INSTANCE_NAME__:int_attr = 5 (
+        doc = "Int attribute"
+    )
+    rel outerMulti:__INSTANCE_NAME__:relationship (
+        doc = "Relationship"
+    )
+    uniform token outerMulti:__INSTANCE_NAME__:token_attr = "outer" (
+        doc = "Token attribute"
+    )
+}
+
+class "TestNestedMultiApplyInSingleApplyAPI" (
+    apiSchemas = ["TestNestedOuterMultiApplyAPI:foo", "TestNestedInnerMultiApplyDerivedAPI:bar"]
+    doc = "Test single apply API with builtin nested multi apply API schema instances"
+)
+{
+    uniform int innerMulti:bar:int_attr = 30 (
+        doc = "Override of int attribute"
+    )
+    uniform int innerMulti:foo:builtin:derived:int_attr = 20 (
+        doc = "Override of int attribute"
+    )
+    uniform int int_attr = 10 (
+        doc = "Int attribute"
+    )
+}
+
 class "TestNestedCycle1API" (
     apiSchemas = ["TestNestedCycle2API"]
     doc = "Test nested single apply API schema with a cycle #1"
@@ -301,5 +361,35 @@ API schemas with auto applied API schemas can be correctly auto applied to prim
 type schemas"""
 )
 {
+}
+
+class "TestNestedMultiApplyCycle1API" (
+    apiSchemas = ["TestNestedMultiApplyCycle2API:__INSTANCE_NAME__:cycle1", "TestNestedMultiApplyCycle3API:__INSTANCE_NAME__"]
+    doc = "Test nested multi apply API schema cycle"
+)
+{
+    uniform token cycle1:__INSTANCE_NAME__:token_attr = "cycle1" (
+        doc = "Token attribute"
+    )
+}
+
+class "TestNestedMultiApplyCycle2API" (
+    apiSchemas = ["TestNestedMultiApplyCycle3API:__INSTANCE_NAME__:cycle2", "TestNestedMultiApplyCycle1API:__INSTANCE_NAME__"]
+    doc = "Test nested multi apply API schema cycle"
+)
+{
+    uniform token cycle2:__INSTANCE_NAME__:token_attr = "cycle2" (
+        doc = "Token attribute"
+    )
+}
+
+class "TestNestedMultiApplyCycle3API" (
+    apiSchemas = ["TestNestedMultiApplyCycle1API:__INSTANCE_NAME__:cycle3", "TestNestedMultiApplyCycle2API:__INSTANCE_NAME__"]
+    doc = "Test nested multi apply API schema cycle"
+)
+{
+    uniform token cycle3:__INSTANCE_NAME__:token_attr = "cycle3" (
+        doc = "Token attribute"
+    )
 }
 

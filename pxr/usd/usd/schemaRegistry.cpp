@@ -729,15 +729,12 @@ public:
         // subclasses of UsdSchemaBase.
         _InitializePrimDefsAndSchematicsForPluginSchemas();
 
-        // Populate multiple apply API schema definitions first. These can't 
-        // include other API schemas so they're populated directly from the 
-        // their prim spec in the schematics.
-        _PopulateMultipleApplyAPIPrimDefinitions();
-
-        // Populate single apply API schema definitions second. These can 
-        // include other API schemas including instances of multiple apply
-        // API schemas.
-        _PopulateSingleApplyAPIPrimDefinitions();
+        // Populate all applied API schema definitions second. These can 
+        // include other API schemas with single apply API schemas including 
+        // other single apply or instances of multiple apply API schemas, or
+        // additionally, multiple apply schemas including other multiple apply
+        // schemas.
+        _PopulateAppliedAPIPrimDefinitions();
 
         // Populate all concrete API schema definitions after all API schemas
         // they may depend on have been populated.
@@ -758,6 +755,35 @@ private:
         TfTokenVector allAPISchemaNames;
     };
 
+    // Built-in API schemas are expanded recursively. This is the information
+    // about the built-in API schema that is is passed to each step.
+    struct _BuiltinAPISchemaInfo {
+        // The prim definition for the built-in API schema's type.
+        const UsdPrimDefinition *apiSchemaDef;
+
+        // The instance name of the built-in API schema (for multiple apply API
+        // schemas only).
+        TfToken instanceName;
+
+        // Pointer to the built-in schema info that caused this API schema to 
+        // be included. Used for cycle detection.
+        const _BuiltinAPISchemaInfo *includedBy;
+
+        // Checks if this info's apiSchemaDef would cause a cycle by checking
+        // if it matches any of the recursively expanded API definitions that 
+        // caused it to be included.
+        bool CheckForCycle() const {
+            const _BuiltinAPISchemaInfo *info = includedBy;
+            while (info) {
+                if (apiSchemaDef == info->apiSchemaDef) {
+                    return true;
+                }
+                info = info->includedBy;
+            }
+            return false;
+        }
+    };
+
     void _InitializePrimDefsAndSchematicsForPluginSchemas();
 
     void _PrependAPISchemasFromSchemaPrim(
@@ -765,11 +791,10 @@ private:
         TfTokenVector *appliedAPISchemas);
 
     void _ExpandBuiltinAPISchemasRecursive(
-        const TfTokenVector &appliedAPISchemas,
+        const _BuiltinAPISchemaInfo &builtinAPISchema,
         _BuiltinAPISchemaExpansionInfo *expansionInfo) const;
 
-    void _PopulateMultipleApplyAPIPrimDefinitions();
-    void _PopulateSingleApplyAPIPrimDefinitions();
+    void _PopulateAppliedAPIPrimDefinitions();
     void _PopulateConcretePrimDefinitions();
 
     UsdSchemaRegistry *_registry;
@@ -846,17 +871,35 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
             UsdPrimDefinition *newPrimDef = new UsdPrimDefinition(
                 schematicsPrimPath, /* isAPISchema = */ true);
             if (_IsMultipleApplySchemaKind(schemaKind)) {
+                // Multiple apply schemas are actually templates for creating
+                // an instance of the schema. We store the prim definition
+                // in the applied API definitions map using its template name
+                // which is "SchemaName:__INSTANCE_NAME__"
+                const TfToken typeNameTemplate = 
+                    MakeMultipleApplyNameTemplate(typeName, "");
+                _registry->_appliedAPIPrimDefinitions.emplace(
+                    typeNameTemplate, newPrimDef);
+
+                // We also store a separate mapping of the multiple apply schema
+                // name to the same template prim definition for easy lookup by 
+                // type name. Note that we can store these by raw pointer here
+                // because the prim definition will be populated in place.
                 _registry->_multiApplyAPIPrimDefinitions.emplace(
                     typeName, newPrimDef);
+
+                // Note that all typed and applied API schemas can include 
+                // built-in API schemas, but, unlike with single apply and typed
+                // schemas, schemas cannot be auto-applied to multiple apply API
+                // schemas.
             } else {
-                _registry->_singleApplyAPIPrimDefinitions.emplace(
+                _registry->_appliedAPIPrimDefinitions.emplace(
                     typeName, newPrimDef);
 
                 // Check if there are any API schemas that have been setup to 
                 // auto apply to this API schema type. We'll set these in the 
                 // prim definition's applied API schemas list so they can be 
                 // processed when building out this prim definition in 
-                // _PopulateSingleApplyAPIPrimDefinitions.
+                // _PopulateAppliedAPIPrimDefinitions.
                 if (TfTokenVector *autoAppliedAPIs = 
                         TfMapLookupPtr(typeToAutoAppliedAPISchemaNames, type)) {
                     TF_DEBUG(USD_AUTO_APPLY_API_SCHEMAS).Msg(
@@ -970,12 +1013,56 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_PrependAPISchemasFromSchemaPrim(
 // definitions have been updated with their fully expanded API schemas list.
 void 
 UsdSchemaRegistry::_SchemaDefInitHelper::_ExpandBuiltinAPISchemasRecursive(
-    const TfTokenVector &appliedAPISchemas,
+    const _BuiltinAPISchemaInfo &includedSchemaInfo,
     _BuiltinAPISchemaExpansionInfo *expansionInfo) const
 {
-    for (const TfToken &builtinApiSchemaName : appliedAPISchemas) {
-        // This is mainly to avoid API schema inclusion cycles but also has the
-        // added benefit of avoiding duplicates if included API schemas 
+    // There must always be at least one applied API schema in the list as an 
+    // API schema definition will always include itself.
+    const TfTokenVector &appliedAPISchemas = 
+        includedSchemaInfo.apiSchemaDef->GetAppliedAPISchemas();
+    if (!TF_VERIFY(!appliedAPISchemas.empty())) {
+        return;
+    }
+
+    // Get the name of the API schema for the schema we're including, 
+    // applying the instance name if provided.
+    const TfToken &includedAPISchemaName = 
+        includedSchemaInfo.instanceName.IsEmpty() ? 
+        appliedAPISchemas.front() :
+        MakeMultipleApplyNameInstance(
+            appliedAPISchemas.front(), includedSchemaInfo.instanceName);
+
+    // Compose the included schema's properties from its schematic's prim
+    // spec into the prim definition we're expanding.
+    expansionInfo->primDef->_ComposePropertiesFromPrimSpec(
+        _registry->_schematics, 
+        includedSchemaInfo.apiSchemaDef->_schematicsPrimPath,
+        includedSchemaInfo.instanceName);
+
+    // Add the included API schema to the expanded list.
+    expansionInfo->allAPISchemaNames.push_back(includedAPISchemaName);
+
+    // Recursively gather the built-in API schemas which are listed after the
+    // included API schema in its applied API schemas list.
+    // 
+    // At this point in initialization, all API schema prim definitions will 
+    // have their directly included API schemas set in the definition, but 
+    // will not have had them expanded to include APIs included from other
+    // APIs. Thus, we can do a depth first recursion on the current applied
+    // API schemas of the API prim definition to continue expanding the 
+    // full list of API schemas and prim specs to compose in strength order.
+    for (auto it = appliedAPISchemas.begin() + 1; 
+         it != appliedAPISchemas.end(); ++it) {
+
+        // If we have an instance name, we need to apply it to the built-in 
+        // API schema's name as well.
+        const TfToken &builtinApiSchemaName = 
+            includedSchemaInfo.instanceName.IsEmpty() ? 
+            *it : 
+            MakeMultipleApplyNameInstance(*it, includedSchemaInfo.instanceName);
+
+        // This is mainly to avoid API most schema inclusion cycles but also has 
+        // the added benefit of avoiding duplicates if included API schemas 
         // themselves include the same other API schema.
         // 
         // Note that we linear search the vector of API schema names. This 
@@ -997,65 +1084,83 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_ExpandBuiltinAPISchemasRecursive(
             _registry->_FindAPIPrimDefinitionByFullName(
                 builtinApiSchemaName, &builtinInstanceName);
         if (!builtinApiSchemaDef) {
+            TF_WARN("Could not find API schema definition for '%s' included by "
+                    "API schema '%s'",
+                    builtinApiSchemaName.GetText(), 
+                    includedAPISchemaName.GetText());
             continue;
         }
 
-        // Add this API schema and its property paths to the composition 
-        expansionInfo->primDef->_ComposePropertiesFromPrimSpec(
-            _registry->_schematics, 
-            builtinApiSchemaDef->_schematicsPrimPath,
-            builtinInstanceName);
-        expansionInfo->allAPISchemaNames.push_back(builtinApiSchemaName);
+        // There is an additional cycle condition that is not covered by the
+        // check above for whether the exact API schema name has already been
+        // included. This additional possible cycle may occur only when 
+        // expanding a multiple apply API schema template.
+        // 
+        // A multiple apply schema is allowed to include encapsulated instances
+        // of other multiple apply schemas by including them using a 
+        // sub-instance name. For instance the multiple apply schema template
+        // "MultiApplyAPI:__INSTANCE_NAME__" may include another built-in 
+        // API schema "OtherMultiApplyAPI:__INSTANCE_NAME__:builtin". Thus, when
+        // MultiApplyAPI is applied with the instance name "foo", it applies the
+        // "MultiApplyAPI:foo" instance of MultiApplyAPI and the built-in 
+        // "OtherMultiApplyAPI:foo:builtin" instance of OtherMultiApplyAPI.
+        //
+        // But now say that "OtherMultiApplyAPI:__INSTANCE_NAME__" is set up
+        // to have "MultiApplyAPI:__INSTANCE_NAME__:other" included as a 
+        // built-in. Unchecked, this would cause an infinite cycle as applying
+        // MultiApplyAPI with the "foo" instance would apply "MultiApplyAPI:foo"
+        // which includes "OtherMultiApplyAPI:foo:builtin" which then would
+        // include "MultiApplyAPI:foo:builtin:other" which in turn includes 
+        // "OtherMultiApplyAPI:foo:builtin:other:builtin" and so on infinitely
+        // expanding the instance name. The check above doesn't catch this 
+        // because each included schema is a different uniquely named instance 
+        // of the multiple apply schema and will not have already been included
+        // in the list.
+        //
+        // Thus, we have to do an additional check here to make sure we never
+        // include an API schema using the same schema definition as any of the 
+        // API schemas in the recursive stack that caused this schema to be 
+        // included. We only check the "included by" stack because its perfectly
+        // valid for the same multiple apply schema template to be used for 
+        // sibling built-in schemas (e.g. if "MultiApplyAPI:__INSTANCE_NAME__"
+        // included both "OtherMultiApplyAPI:__INSTANCE_NAME__:foo" and 
+        // "OtherMultiApplyAPI:__INSTANCE_NAME__:bar").
+        _BuiltinAPISchemaInfo builtinApiSchemaInfo = 
+            {builtinApiSchemaDef, builtinInstanceName, &includedSchemaInfo};
+        if (builtinApiSchemaInfo.CheckForCycle()) {
+            TF_WARN("Found unrecoverable API schema cycle while expanding "
+                    "built-in API schema chain '%s'. An API schema of the same "
+                    "type as '%s' has caused it to be included again with a "
+                    "different instance name. Including it would cause an "
+                    "infinite recursion cycle so it must be skipped",
+                    includedAPISchemaName.GetText(),
+                    builtinApiSchemaName.GetText());
+            continue;
+        }
 
-        // At this point in initialization, all API schemas prim defs will 
-        // have their directly included API schemas set in the definition, but 
-        // will not have had them expanded to include APIs included from other
-        // APIs. Thus, we can do a depth first recursion on the current applied
-        // API schemas of the API prim definition to continue expanding the 
-        // full list of API schemas and prim specs to compose in strength order.
-        _ExpandBuiltinAPISchemasRecursive(
-            builtinApiSchemaDef->GetAppliedAPISchemas(),
-            expansionInfo);
+        // Gather the built-in schemas prim specs and built-in API schemas.
+        _ExpandBuiltinAPISchemasRecursive(builtinApiSchemaInfo, expansionInfo);
     }
 }
 
 void
 UsdSchemaRegistry::_SchemaDefInitHelper::
-_PopulateMultipleApplyAPIPrimDefinitions()
+_PopulateAppliedAPIPrimDefinitions()
 {
-    // Populate all multiple apply API schema definitions. These can't 
-    // include other API schemas so they're populated directly from the 
-    // their prim spec in the schematics.
-    for (auto &nameAndDefPtr : _registry->_multiApplyAPIPrimDefinitions) {
-        UsdPrimDefinition *&primDef = nameAndDefPtr.second;
-        if (!TF_VERIFY(primDef)) {
-            continue;
-        }
-
-        // Compose the properties from the prim spec to the prim definition.
-        primDef->_ComposePropertiesFromPrimSpec(
-            _registry->_schematics, primDef->_schematicsPrimPath);
-    }
-}
-
-void
-UsdSchemaRegistry::_SchemaDefInitHelper::
-_PopulateSingleApplyAPIPrimDefinitions()
-{
-    // Single apply schemas are more complicated. These may contain other 
-    // applied API schemas which may also include other API schemas. To populate
-    // their properties correctly, we must do this in multiple passes.
+    // All applied API schemas may contain other applied API schemas which may 
+    // also include other API schemas. To populate their properties correctly,
+    // we must do this in multiple passes.
     std::vector<_BuiltinAPISchemaExpansionInfo> defsToExpand;
 
-    // Step 1. For each single apply API schema, we determine what (if any) 
+    // Step 1. For each applied API schema, we determine what (if any) built-in
     // applied API schemas it has. If it has none, we can just populate its 
     // prim definition from the schematics prim spec and be done. Otherwise we
     // need to store the directly included built-in API schemas now and process
-    // them in the next pass once we know ALL the API schemas that every single
-    // apply API includes.
-    for (auto &nameAndDefPtr : _registry->_singleApplyAPIPrimDefinitions) {
+    // them in the next pass once we know ALL the API schemas that every other
+    // API schema includes.
+    for (auto &nameAndDefPtr : _registry->_appliedAPIPrimDefinitions) {
         const TfToken &usdTypeNameToken = nameAndDefPtr.first;
-        UsdPrimDefinition *&primDef = nameAndDefPtr.second;
+        UsdPrimDefinition *primDef = nameAndDefPtr.second.get();
         if (!TF_VERIFY(primDef)) {
             continue;
         }
@@ -1071,22 +1176,83 @@ _PopulateSingleApplyAPIPrimDefinitions()
             primDef->_schematicsPrimPath,
             &primDef->_appliedAPISchemas);
 
-        // Always apply the prim spec's properties.
-        primDef->_ComposePropertiesFromPrimSpec(
-            _registry->_schematics, primDef->_schematicsPrimPath);
+        // We always include the API schema itself as the first applied API 
+        // schema in its prim definition.
+        primDef->_appliedAPISchemas.insert(
+            primDef->_appliedAPISchemas.begin(), usdTypeNameToken);
 
-        // If there are no API schemas to apply to this schema, we're done.
-        if (primDef->_appliedAPISchemas.empty()) {
-            // We always include the API schema itself as an applied API schema
-            // in its prim definition. Note that we don't do this for multiple
-            // apply schema definitions which cannot be applied without an
-            // instance name.
-            primDef->_appliedAPISchemas = {usdTypeNameToken};
-        } else {
-            defsToExpand.push_back({primDef});
-            // The schema's own name will always be the first entry in its own
-            // list of applied API schemas.
-            defsToExpand.back().allAPISchemaNames = {usdTypeNameToken};
+        // If this API schema has no built-in API schemas (its only applied 
+        // schema is itself), we can just add the prim spec's properties and be
+        // done. 
+        if (primDef->_appliedAPISchemas.size() == 1) {
+            primDef->_ComposePropertiesFromPrimSpec(
+                _registry->_schematics, primDef->_schematicsPrimPath);
+            continue;
+        }
+
+        // Otherwise schema def has additional applied built-in API schemas 
+        // that need to be expanded and composed in the next step.
+        defsToExpand.push_back({primDef});
+
+        // This next piece is validity checking of the directly included 
+        // built-in API schemas, particularly related to restrictions on how
+        // multiple apply and single apply schemas are allowed to include each
+        // other. 
+        // 
+        // The prim definition of a multiple apply schema is actually a template
+        // for applying any number of named instances of the schema to a prim 
+        // definition. Thus we store the multiple apply schema definition using
+        // a template name such as "MultiApplyAPI:__INSTANCE_NAME__" where 
+        // "__INSTANCE_NAME__" is the placeholder that is replaced with the 
+        // instance name when the schema is applied. Because of the template
+        // nature of these schemas, we only allow multiple apply API schemas to
+        // have built-in schemas that are also multiple apply schema templates. 
+        // 
+        // So "MultiApplyAPI:__INSTANCE_NAME__" may have in its 
+        // appliedAPISchemas list entries like 
+        // "OtherMultiApplyAPI:__INSTANCE_NAME__" (which behaves like it 
+        // "inherits" OtherMultiApply) or 
+        // "OtherMultiApplyAPI:__INSTANCE_NAME__:foo" (where each instance of 
+        // MultiApplyAPI will contain an encapsulated instance of 
+        // OtherMultiApplyAPI using the instance name template 
+        // "__INSTANCE_NAME__:foo"). But they are not allowed to contain names 
+        // of single apply schemas or named instances of multiple apply schemas
+        // (e.g. "SingleApplyAPI" or "OtherMultiApplyAPI:bar"). 
+        // 
+        // On the flip side, single apply schemas can have built-in named
+        // instances of multiple apply schemas (like "MultiApplyAPI:foo") but
+        // cannot include the multiple apply schema templates themselves (like 
+        // "MultiApplyAPI:__INSTANCE_NAME__" or
+        // "MultiApplyAPI:__INSTANCE_NAME__:foo"). So before expanding our 
+        // built-in API schemas we make sure that if this API schema is a 
+        // multiple apply template, then each built-in schema must also be a 
+        // template. Otherwise if this API schema is not a tempate, then each
+        // built-in must also not be a template.
+        //
+        // Note that usdGenSchema will always generate schemas that conform to
+        // this, but it's worthwhile to detect and report this invalid 
+        // condition if it does occur.
+        const bool isMultipleApplyTemplateSchema = 
+            IsMultipleApplyNameTemplate(usdTypeNameToken);
+        const auto it = std::remove_if(
+            primDef->_appliedAPISchemas.begin(),
+            primDef->_appliedAPISchemas.end(),
+            [isMultipleApplyTemplateSchema](const TfToken &apiSchemaName)
+                { return IsMultipleApplyNameTemplate(apiSchemaName) !=
+                    isMultipleApplyTemplateSchema; });
+
+        if (it != primDef->_appliedAPISchemas.end()) {
+            TF_WARN("Invalid inclusion of API schemas (%s) by API schema "
+                    "'%s'. Multiple apply API schema templates can only "
+                    "include or be included by other multiple apply API "
+                    "schema templates. These schemas will not be included as "
+                    "built-in schemas of '%s'",
+                    TfStringJoin(
+                        it, primDef->_appliedAPISchemas.end(), ", ").c_str(),
+                    usdTypeNameToken.GetText(),
+                    usdTypeNameToken.GetText());
+            primDef->_appliedAPISchemas.erase(
+                it, primDef->_appliedAPISchemas.end());
         }
     }
 
@@ -1104,7 +1270,7 @@ _PopulateSingleApplyAPIPrimDefinitions()
     // list in the definition itself. 
     for (_BuiltinAPISchemaExpansionInfo &expansionInfo : defsToExpand) {
         _ExpandBuiltinAPISchemasRecursive(
-            expansionInfo.primDef->_appliedAPISchemas, &expansionInfo);
+            {expansionInfo.primDef, TfToken(), nullptr}, &expansionInfo);
     }
 
     // Step 3. For each API schema definition from step 2, we can now set the 
@@ -1122,7 +1288,7 @@ _PopulateConcretePrimDefinitions()
     // Populate all concrete API schema definitions; it is expected that all 
     // API schemas, which these may depend on, have already been populated.
     for (auto &nameAndDefPtr : _registry->_concreteTypedPrimDefinitions) {
-        UsdPrimDefinition *&primDef = nameAndDefPtr.second;
+        UsdPrimDefinition *primDef = nameAndDefPtr.second.get();
         if (!TF_VERIFY(primDef)) {
             continue;
         }
@@ -1419,9 +1585,9 @@ UsdSchemaRegistry::_FindAPIPrimDefinitionByFullName(
     // If the instance name is empty we expect a single apply API schema 
     // otherwise it should be a multiple apply API.
     if (instanceName->IsEmpty()) {
-        if (const UsdPrimDefinition * const *apiSchemaTypeDef = 
-                TfMapLookupPtr(_singleApplyAPIPrimDefinitions, typeName)) {
-            return *apiSchemaTypeDef;
+        if (std::unique_ptr<UsdPrimDefinition> const *apiSchemaTypeDef = 
+                TfMapLookupPtr(_appliedAPIPrimDefinitions, typeName)) {
+            return apiSchemaTypeDef->get();
         }
     } else {
         if (const UsdPrimDefinition * const *multiApplyDef = 
@@ -1451,21 +1617,25 @@ void UsdSchemaRegistry::_ComposeAPISchemasIntoPrimDefinition(
                 *apiSchemaTypeDef, instanceName);
 
             // Append all the API schemas included in the schema def to the 
-            // prim def's API schemas list.
+            // prim def's API schemas list. This list will always include the 
+            // schema itself followed by all other API schemas that were 
+            // composed into its definition.
             const TfTokenVector &apiSchemasToAppend = 
                 apiSchemaTypeDef->GetAppliedAPISchemas();
 
-            if (apiSchemasToAppend.empty()) {
-                // The API def's applied API schemas list will be empty if it's 
-                // multiple apply API so in that case we append the schema name.
-                primDef->_appliedAPISchemas.push_back(apiSchemaName);
-            } else {
-                // Otherwise, it's a single apply API and its definition's API 
-                // schemas list will hold itself followed by all other API 
-                // schemas that were composed into its definition.
+            if (instanceName.IsEmpty()) {
                 primDef->_appliedAPISchemas.insert(
                     primDef->_appliedAPISchemas.end(),
                     apiSchemasToAppend.begin(), apiSchemasToAppend.end());
+            } else {
+                // An instance name indicates a multiple apply schema so we
+                // have to apply the instance name to all the included API
+                // schemas being added.
+                for (const TfToken &apiSchema : apiSchemasToAppend) {
+                    primDef->_appliedAPISchemas.push_back(
+                        MakeMultipleApplyNameInstance(
+                            apiSchema, instanceName));
+                }
             }
         }
     }

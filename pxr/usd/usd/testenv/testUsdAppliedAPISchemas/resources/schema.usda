@@ -289,6 +289,95 @@ class "TestNestedOuterSingleApplyAPI"
 
 }
 
+class "TestNestedInnerMultiApplyBaseAPI"
+(
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "innerMulti"
+        string className = "NestedInnerMultiApplyBaseAPI"
+    }
+    doc = """Test nested multi apply API schema: inner schema base class"""
+)
+{
+    uniform token token_attr = "inner_base" (
+        doc = """Token attribute"""
+    )
+    uniform int int_attr = 3 (
+        doc = """Int attribute"""
+    )
+    rel relationship (
+        doc = """Relationship"""
+    )
+}
+
+class "TestNestedInnerMultiApplyDerivedAPI"
+(
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestNestedInnerMultiApplyBaseAPI"]
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "innerMulti"
+        string className = "NestedInnerMultiApplyDerivedAPI"
+    }
+    doc = """Test nested multi apply API schema: inner schema derived"""
+)
+{
+    uniform token token_attr = "inner_derived" (
+        doc = """Override of TestNestedInnerMultiApplyBaseAPI token_attr"""
+    )
+    uniform int derived:int_attr = 4 (
+        doc = """Int attribute"""
+    )
+}
+
+class "TestNestedOuterMultiApplyAPI"
+(
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestNestedInnerMultiApplyDerivedAPI:builtin", 
+                  "TestNestedInnerMultiApplyDerivedAPI:outerMulti",
+                  "TestNestedInnerMultiApplyBaseAPI"]
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "outerMulti"
+        string className = "NestedOuterMultiApplyAPI"
+    }
+    doc = """Test nested multi apply API schema: outer schema"""
+)
+{
+    uniform token token_attr = "outer" (
+        doc = """Token attribute"""
+    )
+    uniform int int_attr = 5 (
+        doc = """Int attribute"""
+    )
+    rel relationship (
+        doc = """Relationship"""
+    )
+}
+
+class "TestNestedMultiApplyInSingleApplyAPI"
+(
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestNestedOuterMultiApplyAPI:foo", 
+                  "TestNestedInnerMultiApplyDerivedAPI:bar"]
+    customData = {
+        string className = "NestedMultiApplyInSingleApplyAPI"
+    }
+    doc = """Test single apply API with builtin nested multi apply API schema instances"""
+)
+{
+    uniform int int_attr = 10 (
+        doc = """Int attribute"""
+    )
+    uniform int innerMulti:foo:builtin:derived:int_attr = 20 (
+        doc = """Override of int attribute"""
+    )
+    uniform int innerMulti:bar:int_attr = 30 (
+        doc = """Override of int attribute"""
+    )
+}
+
 class "TestNestedCycle1API"
 (
     inherits = </APISchemaBase>
@@ -404,4 +493,57 @@ type schemas"""
 {
 }
 
+class "TestNestedMultiApplyCycle1API"
+(
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestNestedMultiApplyCycle2API:cycle1",
+                          "TestNestedMultiApplyCycle3API"]
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "cycle1"
+        string className = "NestedMultiApplyCycle1API"
+    }
+    doc = """Test nested multi apply API schema cycle"""
+)
+{
+    uniform token token_attr = "cycle1" (
+        doc = """Token attribute"""
+    )
+}
+
+class "TestNestedMultiApplyCycle2API"
+(
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestNestedMultiApplyCycle3API:cycle2",
+                          "TestNestedMultiApplyCycle1API"]
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "cycle2"
+        string className = "NestedMultiApplyCycle2API"
+    }
+    doc = """Test nested multi apply API schema cycle"""
+)
+{
+    uniform token token_attr = "cycle2" (
+        doc = """Token attribute"""
+    )
+}
+
+class "TestNestedMultiApplyCycle3API"
+(
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestNestedMultiApplyCycle1API:cycle3",
+                          "TestNestedMultiApplyCycle2API"]
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "cycle3"
+        string className = "NestedMultiApplyCycle3API"
+    }
+    doc = """Test nested multi apply API schema cycle"""
+)
+{
+    uniform token token_attr = "cycle3" (
+        doc = """Token attribute"""
+    )
+}
 

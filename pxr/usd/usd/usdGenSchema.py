@@ -499,6 +499,12 @@ class ClassInfo(object):
         # classes)
         self.apiSchemasMetadata = sdfPrim.GetInfo('apiSchemas')
 
+        # We also get the full list of authored applied API schemas directly
+        # from the USD prim. This will contain the API schemas authored in the
+        # parent classes.
+        self.allAppliedAPISchemas = \
+            usdPrim.GetPrimTypeInfo().GetAppliedAPISchemas()
+
         # If a type specifies applied API schemas as built-in it must specify
         # them as a prepend. I.e. schema types can only add additional applied
         # API schemas that will be stronger then any inherited built-in API
@@ -680,6 +686,33 @@ def GetClassInfo(classes, cppClassName):
             return c
     return None
 
+def _MakeMultipleApplySchemaNameTemplate(apiSchemaName):
+    # Multiple apply API schemas are allowed to specify other built-in 
+    # mulitple apply API schemas with or without a sub-instance name.
+    # For example a multiple apply API schema named "MultiApplyAPI" can include
+    # the metadata:
+    #
+    #     prepend apiSchemas = ["OtherMultiApplyAPI", "AnotherMultiApplyAPI:foo"]
+    #
+    # Since a multiple apply API schema is always applied with an instance name,
+    # its built-in API schemas will also need to be applied using the same 
+    # instance name. Thus, we convert the authored built-in API schema names 
+    # into template names in the generatedSchema just like we do for property
+    # names.
+    #
+    # This function would convert the example built-in API schema names above to
+    #   "OtherMultiApplyAPI:__INSTANCE_NAME__" and 
+    #   "AnotherMultiApplyAPI:__INSTANCE_NAME__:foo"
+    # 
+    # This templating allows the schema registry to determine that when 
+    # MultiApplyAPI is applied with an instance name like "bar", that 
+    # OtherMultiApplyAPI also needs to be applied with instance name "bar" and 
+    # AnotherMultiApplyAPI needs to be applied with the instance name "bar:foo".
+    typeName, instanceName = \
+        Usd.SchemaRegistry.GetTypeNameAndInstance(apiSchemaName)
+    return Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
+        typeName, instanceName) 
+
 def ParseUsd(usdFilePath):
     sdfLayer = Sdf.Layer.FindOrOpen(usdFilePath)
     stage = Usd.Stage.Open(sdfLayer)
@@ -713,6 +746,16 @@ def ParseUsd(usdFilePath):
                         "Multiple-apply schemas that do not"
                         "have a propertyNamespacePrefix metadata field must "
                         "have zero properties", sdfPrim.path)
+
+            # Templatize all the included API schema names for this multiple
+            # apply API (see _MakeMultipleApplySchemaNameTemplate for the
+            # explanation as to why).
+            classInfo.allAppliedAPISchemas = [
+                _MakeMultipleApplySchemaNameTemplate(s) 
+                for s in classInfo.allAppliedAPISchemas]
+            classInfo.apiSchemasMetadata.prependedItems = [
+                _MakeMultipleApplySchemaNameTemplate(s) 
+                for s in classInfo.apiSchemasMetadata.prependedItems]
 
         classes.append(classInfo)
         #
@@ -1332,7 +1375,7 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     # so because it is more convenient for these kinds of operations.
     flatStage = Usd.Stage.Open(flatLayer)
     pathsToDelete = []
-    primsToKeep = set(cls.usdPrimTypeName for cls in classes)
+    primsToKeep = {cls.usdPrimTypeName : cls for cls in classes}
     if not flatStage.RemovePrim('/GLOBAL'):
         Print.Err("ERROR: Could not remove GLOBAL prim.")
     allFallbackSchemaPrimTypes = {}
@@ -1358,7 +1401,7 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
                 'specifier', 'customData', 'documentation']
             # Single apply API schemas are also allowed to specify 'apiSchemas'
             # metadata to include other API schemas.
-            if apiSchemaType == SINGLE_APPLY:
+            if apiSchemaType == SINGLE_APPLY or apiSchemaType == MULTIPLE_APPLY:
                 allowedAPIMetadata.append('apiSchemas')
             invalidMetadata = [key for key in p.GetAllAuthoredMetadata().keys()
                                if key not in allowedAPIMetadata]
@@ -1375,6 +1418,15 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
             if fallbackTypes:
                 allFallbackSchemaPrimTypes[p.GetName()] = \
                     Vt.TokenArray(fallbackTypes)
+
+        # Set the full list of the class's applied API apiSchemas as an explicit
+        # list op in the apiSchemas metadata. Note that this API schemas list
+        # will have been converted to template names if the class is a multiple
+        # apply API schema.
+        appliedAPISchemas = primsToKeep[p.GetName()].allAppliedAPISchemas
+        if appliedAPISchemas:
+            p.SetMetadata('apiSchemas',
+                          Sdf.TokenListOp.CreateExplicit(appliedAPISchemas))
 
         p.ClearCustomData()
         for myproperty in p.GetAuthoredProperties():

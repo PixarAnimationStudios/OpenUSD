@@ -289,6 +289,20 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertFalse(primDef.GetSchemaRelationshipSpec(
             'collection:__INSTANCE_NAME__:expansionRule'))
 
+        # We can also get the CollectionAPI prim definition using its template
+        # name instead.
+        templatePrimDef = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
+            'CollectionAPI:__INSTANCE_NAME__')
+        # Note that we can't test for equality of the prim defs directly, even
+        # though they're the same, since the python objects are different. So we
+        # verify that the main aspects of the definitions are same instead.
+        self.assertEqual(templatePrimDef.GetPropertyNames(),
+                         primDef.GetPropertyNames())
+        self.assertEqual(templatePrimDef.ListMetadataFields(),
+                         primDef.ListMetadataFields())
+        self.assertEqual(templatePrimDef.GetAppliedAPISchemas(),
+                         primDef.GetAppliedAPISchemas())
+
         # API schema but not an applied schema. No prim definition
         self.assertFalse(Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
             'ModelAPI'))
@@ -454,7 +468,8 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         # for the CollectionAPI itself, not an applied instance of the API 
         # schema.
         apiPrimDefPrimFields = {
-            "apiSchemas" : Sdf.TokenListOp.CreateExplicit([]),
+            "apiSchemas" : Sdf.TokenListOp.CreateExplicit(
+                ["CollectionAPI:__INSTANCE_NAME__"]),
             "documentation" : apiPrimDef.GetDocumentation(),
             "specifier" : Sdf.SpecifierOver
         }

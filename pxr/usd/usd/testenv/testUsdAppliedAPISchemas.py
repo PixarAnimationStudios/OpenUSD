@@ -46,12 +46,26 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestNestedInnerSingleApplyAPI")
         cls.NestedOuterSingleApplyAPIType = \
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestNestedOuterSingleApplyAPI")
+        cls.NestedInnerMultiApplyBaseAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestNestedInnerMultiApplyBaseAPI")
+        cls.NestedInnerMultiApplyDerivedAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestNestedInnerMultiApplyDerivedAPI")
+        cls.NestedOuterMultiApplyAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestNestedOuterMultiApplyAPI")
+        cls.NestedMultiApplyInSingleApplyAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestNestedMultiApplyInSingleApplyAPI")
         cls.NestedCycle1APIType = \
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestNestedCycle1API")
         cls.NestedCycle2APIType = \
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestNestedCycle2API")
         cls.NestedCycle3APIType = \
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestNestedCycle3API")
+        cls.NestedMultiApplyCycle1APIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestNestedMultiApplyCycle1API")
+        cls.NestedMultiApplyCycle2APIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestNestedMultiApplyCycle2API")
+        cls.NestedMultiApplyCycle3APIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestNestedMultiApplyCycle3API")
         cls.AutoAppliedToAPIType = \
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestAutoAppliedToAPI")
         cls.NestedAutoAppliedToAPIType = \
@@ -107,7 +121,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         multiApplyAPIDef = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
             "TestMultiApplyAPI")
         self.assertTrue(multiApplyAPIDef)
-        self.assertEqual(multiApplyAPIDef.GetAppliedAPISchemas(), [])
+        self.assertEqual(multiApplyAPIDef.GetAppliedAPISchemas(), 
+            ["TestMultiApplyAPI:__INSTANCE_NAME__"])
         self.assertEqual(multiApplyAPIDef.GetPropertyNames(), [
             "multi:__INSTANCE_NAME__:bool_attr", 
             "multi:__INSTANCE_NAME__:token_attr", 
@@ -1212,10 +1227,10 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
                          "'bool_attr' is not an allowed instance name for "
                          "multiple apply API schema 'TestMultiApplyAPI'.")
 
-    def test_NestedAPISchemas(self):
+    def test_NestedSingleApplyAPISchemas(self):
         """
-        Tests the application of API schemas that have nested built-in API 
-        schemas
+        Tests the application of single apply API schemas that have nested 
+        built-in API schemas
         """
         stage = Usd.Stage.CreateInMemory()
 
@@ -1446,6 +1461,363 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         expectedAttrValues["single:token_attr"] = "bar"
         _VerifyAttrValues(outerSinglePrim, expectedAttrValues)
 
+    def test_NestedMultiApplyAPISchemas(self):
+        """
+        Tests the application of multiple apply API schemas that have nested 
+        built-in API schemas
+        """
+        stage = Usd.Stage.CreateInMemory()
+
+        # Simple helper for testing that a prim has expected attributes that 
+        # resolve to expected values.
+        def _VerifyAttrValues(prim, expectedAttrValues):
+            values = {name : prim.GetAttribute(name).Get() 
+                         for name in expectedAttrValues.keys()}
+            self.assertEqual(values, expectedAttrValues)
+
+        # Add a prim with no type and apply the 
+        # TestNestedInnerMultiApplyDerivedAPI using the instance "foo".
+        innerMultiPrim = stage.DefinePrim("/InnerMulti")
+        innerMultiPrim.ApplyAPI(self.NestedInnerMultiApplyDerivedAPIType, "foo")
+
+        # The authored applied API schemas for the prim is only the "foo" 
+        # instance of the applied TestNestedInnerMultiApplyDerivedAPI.
+        self.assertEqual(innerMultiPrim.GetPrimTypeInfo().GetTypeName(), '')
+        self.assertEqual(innerMultiPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+                         ["TestNestedInnerMultiApplyDerivedAPI:foo"])
+
+        # The composed applied API schemas however also contain the 
+        # the "foo" instance of TestNestedInnerMultiApplyBaseAPI as it is a
+        # built-in API of TestNestedInnerMultiApplyDerivedAPI 
+        expectedAPISchemas = [
+            "TestNestedInnerMultiApplyDerivedAPI:foo",
+            "TestNestedInnerMultiApplyBaseAPI:foo"]
+        self.assertEqual(innerMultiPrim.GetAppliedSchemas(), 
+                         expectedAPISchemas)
+        # The prim "has" all these built-in APIs as well.
+        self.assertTrue(innerMultiPrim.HasAPI(self.NestedInnerMultiApplyDerivedAPIType))
+        self.assertTrue(innerMultiPrim.HasAPI(self.NestedInnerMultiApplyBaseAPIType))
+        self.assertTrue(innerMultiPrim.HasAPI(self.NestedInnerMultiApplyDerivedAPIType, "foo"))
+        self.assertTrue(innerMultiPrim.HasAPI(self.NestedInnerMultiApplyBaseAPIType, "foo"))
+
+        # Properties come from all composed built-in APIs
+        expectedPropNames = [
+            # Properties from TestNestedInnerMultiApplyDerivedAPI:foo
+            "innerMulti:foo:derived:int_attr",
+            # Properties from TestNestedInnerMultiApplyBaseAPI:foo
+            "innerMulti:foo:int_attr",
+            "innerMulti:foo:relationship",
+            "innerMulti:foo:token_attr"]
+        self.assertEqual(innerMultiPrim.GetPropertyNames(), expectedPropNames)
+
+        # Verify that the attribute fallback values come from the API schemas
+        # that define them. The attribute "innerMulti:foo:token_attr" is defined
+        # in TestNestedInnerMultiApplyDerivedAPI and overrides the attr fallback
+        # value defined in TestNestedInnerMultiApplyBaseAPI
+        expectedAttrValues = {
+            "innerMulti:foo:derived:int_attr" : 4,
+            "innerMulti:foo:int_attr" : 3,
+            "innerMulti:foo:token_attr" : "inner_derived"}
+        _VerifyAttrValues(innerMultiPrim, expectedAttrValues)
+
+        # Apply the TestNestedInnerMultiApplyDerivedAPI to the same prim again,
+        # now with the instance "bar"
+        innerMultiPrim.ApplyAPI(self.NestedInnerMultiApplyDerivedAPIType, "bar")
+        self.assertEqual(innerMultiPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+                         ["TestNestedInnerMultiApplyDerivedAPI:foo",
+                          "TestNestedInnerMultiApplyDerivedAPI:bar"])
+
+        # Now the same API schemas included "foo" are also included for "bar"
+        expectedAPISchemas = [
+            "TestNestedInnerMultiApplyDerivedAPI:foo",
+            "TestNestedInnerMultiApplyBaseAPI:foo",
+            "TestNestedInnerMultiApplyDerivedAPI:bar",
+            "TestNestedInnerMultiApplyBaseAPI:bar"]
+        self.assertEqual(innerMultiPrim.GetAppliedSchemas(), 
+                         expectedAPISchemas)
+
+        # There are now also "bar" instances of all the same properties.
+        expectedPropNames = [
+            "innerMulti:bar:derived:int_attr",
+            "innerMulti:bar:int_attr",
+            "innerMulti:bar:relationship",
+            "innerMulti:bar:token_attr",
+            "innerMulti:foo:derived:int_attr",
+            "innerMulti:foo:int_attr",
+            "innerMulti:foo:relationship",
+            "innerMulti:foo:token_attr"]
+        self.assertEqual(innerMultiPrim.GetPropertyNames(), expectedPropNames)
+
+        # And the "bar" instances of the attributes have the same fallback 
+        # values.
+        expectedAttrValues = {
+            "innerMulti:foo:derived:int_attr" : 4,
+            "innerMulti:foo:int_attr" : 3,
+            "innerMulti:foo:token_attr" : "inner_derived",
+            "innerMulti:bar:derived:int_attr" : 4,
+            "innerMulti:bar:int_attr" : 3,
+            "innerMulti:bar:token_attr" : "inner_derived"}
+        _VerifyAttrValues(innerMultiPrim, expectedAttrValues)
+
+        # Get the prim definition for the API schema and verify its applied
+        # API schemas and properties are template versions of the proeperties.
+        innerMultiApplyAPIDef = \
+            Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
+                "TestNestedInnerMultiApplyDerivedAPI")
+        self.assertTrue(innerMultiApplyAPIDef)
+
+        expectedAPISchemas = [
+            "TestNestedInnerMultiApplyDerivedAPI:__INSTANCE_NAME__",
+            "TestNestedInnerMultiApplyBaseAPI:__INSTANCE_NAME__"]
+        self.assertEqual(innerMultiApplyAPIDef.GetAppliedAPISchemas(),
+                         expectedAPISchemas)
+
+        expectedPropNames = [
+            "innerMulti:__INSTANCE_NAME__:derived:int_attr",
+            "innerMulti:__INSTANCE_NAME__:int_attr",
+            "innerMulti:__INSTANCE_NAME__:relationship",
+            "innerMulti:__INSTANCE_NAME__:token_attr"]
+        self.assertEqual(sorted(innerMultiApplyAPIDef.GetPropertyNames()),
+                         expectedPropNames)
+        self.assertEqual(innerMultiApplyAPIDef.GetDocumentation(),
+            "Test nested multi apply API schema: inner schema derived")
+
+        # Add a prim with no type and apply the TestNestedOuterMultiApplyAPI 
+        # with the instance "foo".
+        outerMultiPrim = stage.DefinePrim("/OuterMulti")
+        outerMultiPrim.ApplyAPI(self.NestedOuterMultiApplyAPIType, "foo")
+
+        # The authored applied API schemas for the prim is only the applied
+        # TestNestedOuterMultiApplyAPI:foo.
+        self.assertEqual(outerMultiPrim.GetPrimTypeInfo().GetTypeName(), '')
+        self.assertEqual(outerMultiPrim.GetPrimTypeInfo().GetAppliedAPISchemas(),
+                         ["TestNestedOuterMultiApplyAPI:foo"])
+
+        # TestNestedOuterMultiApplyAPI's definition includes 
+        # TestNestedInnerMultiApplyDerivedAPI:builtin and 
+        # TestNestedInnerMultiApplyDerivedAPI:outerMulti. Thus, the composed 
+        # applied API schemas also contain both a "foo:builtin" and a 
+        # "foo:outerMulti" instance of TestNestedInnerMultiApplyDerivedAPI, 
+        # which in turn include "foo:builtin" and "foo:outerMulti" instances of 
+        # TestNestedInnerMultiApplyBaseAPI. Since TestNestedOuterMultiApplyAPI
+        # also includes TestNestedInnerMultiApplyBaseAPI a "foo" instance of it
+        # is included as well.
+        self.assertEqual(outerMultiPrim.GetTypeName(), '')
+        expectedAPISchemas = [
+            "TestNestedOuterMultiApplyAPI:foo",
+            "TestNestedInnerMultiApplyDerivedAPI:foo:builtin",
+            "TestNestedInnerMultiApplyBaseAPI:foo:builtin",
+            "TestNestedInnerMultiApplyDerivedAPI:foo:outerMulti",
+            "TestNestedInnerMultiApplyBaseAPI:foo:outerMulti",
+            "TestNestedInnerMultiApplyBaseAPI:foo"]
+        self.assertEqual(outerMultiPrim.GetAppliedSchemas(),
+                         expectedAPISchemas)
+
+        # Properties come from all composed built-in APIs
+        expectedPropNames = sorted([
+            # Properties from TestNestedOuterMultiApplyAPI:foo
+            "outerMulti:foo:int_attr",
+            "outerMulti:foo:relationship",
+            "outerMulti:foo:token_attr",
+            # Properties from TestNestedInnerMultiApplyDerivedAPI:foo:builtin
+            "innerMulti:foo:builtin:derived:int_attr",
+            # Properties from TestNestedInnerMultiApplyBaseAPI:foo:builtin
+            "innerMulti:foo:builtin:int_attr",
+            "innerMulti:foo:builtin:relationship",
+            "innerMulti:foo:builtin:token_attr",
+            # Properties from TestNestedInnerMultiApplyDerivedAPI:foo:outerMulti
+            "innerMulti:foo:outerMulti:derived:int_attr",
+            # Properties from TestNestedInnerMultiApplyBaseAPI:foo:outerMulti
+            "innerMulti:foo:outerMulti:int_attr",
+            "innerMulti:foo:outerMulti:relationship",
+            "innerMulti:foo:outerMulti:token_attr",
+            # Properties from TestNestedInnerMultiApplyBaseAPI:foo
+            "innerMulti:foo:int_attr",
+            "innerMulti:foo:relationship",
+            "innerMulti:foo:token_attr"])
+        self.assertEqual(outerMultiPrim.GetPropertyNames(), expectedPropNames)
+
+        # Verify that the attribute fallback values come from the API schemas
+        # that define them. The "innerMulti:foo:XXX:token_attr" values from
+        # from TestNestedInnerMultiApplyDerivedAPI override the values from
+        # TestNestedInnerMultiApplyBaseAPI. innerMulti:foo:token_attr uses
+        # the BaseAPI value since this instance is from the BaseAPI being 
+        # included on its own.
+        expectedAttrValues = {
+            # Properties from TestNestedOuterMultiApplyAPI:foo
+            "outerMulti:foo:int_attr" : 5,
+            "outerMulti:foo:token_attr" : "outer",
+            # Properties from TestNestedInnerMultiApplyDerivedAPI:foo:builtin
+            "innerMulti:foo:builtin:derived:int_attr" : 4,
+            "innerMulti:foo:builtin:token_attr" : "inner_derived",
+            # Properties from TestNestedInnerMultiApplyBaseAPI:foo:builtin
+            "innerMulti:foo:builtin:int_attr" : 3,
+            # Properties from TestNestedInnerMultiApplyDerivedAPI:foo:outerMulti
+            "innerMulti:foo:outerMulti:derived:int_attr" : 4,
+            "innerMulti:foo:outerMulti:token_attr" : "inner_derived",
+            # Properties from TestNestedInnerMultiApplyBaseAPI:foo:outerMulti
+            "innerMulti:foo:outerMulti:int_attr" : 3,
+            # Properties from TestNestedInnerMultiApplyBaseAPI:foo
+            "innerMulti:foo:int_attr" : 3,
+            "innerMulti:foo:token_attr" : "inner_base"}
+        _VerifyAttrValues(outerMultiPrim, expectedAttrValues)
+
+        # Get the prim definition for the API schema and verify its applied
+        # API schemas and properties match what was imparted on the prim.
+        outerMultiApplyAPIDef = \
+            Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
+                "TestNestedOuterMultiApplyAPI")
+        self.assertTrue(outerMultiApplyAPIDef)
+
+        # Note that the __INSTANCE_NAME__ is alway directly after the API
+        # schema name even when it is included as an encapsulated subinstance.
+        expectedAPISchemas = [
+            "TestNestedOuterMultiApplyAPI:__INSTANCE_NAME__",
+            "TestNestedInnerMultiApplyDerivedAPI:__INSTANCE_NAME__:builtin",
+            "TestNestedInnerMultiApplyBaseAPI:__INSTANCE_NAME__:builtin",
+            "TestNestedInnerMultiApplyDerivedAPI:__INSTANCE_NAME__:outerMulti",
+            "TestNestedInnerMultiApplyBaseAPI:__INSTANCE_NAME__:outerMulti",
+            "TestNestedInnerMultiApplyBaseAPI:__INSTANCE_NAME__"]
+        self.assertEqual(outerMultiApplyAPIDef.GetAppliedAPISchemas(),
+                         expectedAPISchemas)
+
+        expectedPropNames = sorted([
+            # Properties from TestNestedOuterMultiApplyAPI
+            "outerMulti:__INSTANCE_NAME__:int_attr",
+            "outerMulti:__INSTANCE_NAME__:relationship",
+            "outerMulti:__INSTANCE_NAME__:token_attr",
+            # Properties from TestNestedInnerMultiApplyDerivedAPI:builtin
+            "innerMulti:__INSTANCE_NAME__:builtin:derived:int_attr",
+            # Properties from TestNestedInnerMultiApplyBaseAPI:builtin
+            "innerMulti:__INSTANCE_NAME__:builtin:int_attr",
+            "innerMulti:__INSTANCE_NAME__:builtin:relationship",
+            "innerMulti:__INSTANCE_NAME__:builtin:token_attr",
+            # Properties from TestNestedInnerMultiApplyDerivedAPI:outerMulti
+            "innerMulti:__INSTANCE_NAME__:outerMulti:derived:int_attr",
+            # Properties from TestNestedInnerMultiApplyBaseAPI:outerMulti
+            "innerMulti:__INSTANCE_NAME__:outerMulti:int_attr",
+            "innerMulti:__INSTANCE_NAME__:outerMulti:relationship",
+            "innerMulti:__INSTANCE_NAME__:outerMulti:token_attr",
+            # Properties from TestNestedInnerMultiApplyBaseAPI
+            "innerMulti:__INSTANCE_NAME__:int_attr",
+            "innerMulti:__INSTANCE_NAME__:relationship",
+            "innerMulti:__INSTANCE_NAME__:token_attr"])
+        self.assertEqual(sorted(outerMultiApplyAPIDef.GetPropertyNames()),
+                         expectedPropNames)
+        self.assertEqual(outerMultiApplyAPIDef.GetDocumentation(),
+            "Test nested multi apply API schema: outer schema")
+
+        # Add a prim with no type and apply the 
+        # TestNestedMultiApplyInSingleApplyAPI.
+        singleApplyPrim = stage.DefinePrim("/SingleApply")
+        singleApplyPrim.ApplyAPI(self.NestedMultiApplyInSingleApplyAPIType)
+
+        # The authored applied API schemas for the prim is only the applied
+        # TestNestedMultiApplyInSingleApplyAPI.
+        self.assertEqual(singleApplyPrim.GetPrimTypeInfo().GetTypeName(), '')
+        self.assertEqual(singleApplyPrim.GetPrimTypeInfo().GetAppliedAPISchemas(),
+                         ["TestNestedMultiApplyInSingleApplyAPI"])
+
+        # TestNestedMultiApplyInSingleApplyAPI includes 
+        # TestNestedOuterMultiApplyAPI:foo and 
+        # TestNestedInnerMultiApplyDerivedAPI:bar so "foo" and "bar" instances
+        # of these multi apply schemas are fully expanded into the composed API
+        # schemas udner TestNestedMultiApplyInSingleApplyAPI.
+        self.assertEqual(singleApplyPrim.GetTypeName(), '')
+        expectedAPISchemas = [
+            "TestNestedMultiApplyInSingleApplyAPI",
+            # Expanded from TestNestedOuterMultiApplyAPI:foo
+            "TestNestedOuterMultiApplyAPI:foo",
+            "TestNestedInnerMultiApplyDerivedAPI:foo:builtin",
+            "TestNestedInnerMultiApplyBaseAPI:foo:builtin",
+            "TestNestedInnerMultiApplyDerivedAPI:foo:outerMulti",
+            "TestNestedInnerMultiApplyBaseAPI:foo:outerMulti",
+            "TestNestedInnerMultiApplyBaseAPI:foo",
+            # Expanded from TestNestedInnerMultiApplyDerivedAPI:bar
+            "TestNestedInnerMultiApplyDerivedAPI:bar",
+            "TestNestedInnerMultiApplyBaseAPI:bar"]
+        self.assertEqual(singleApplyPrim.GetAppliedSchemas(),
+                         expectedAPISchemas)
+
+        # Properties come from all composed built-in APIs
+        expectedPropNames = sorted([
+            # Properties from TestNestedMultiApplyInSingleApplyAPI
+            "int_attr",
+            # Properties from TestNestedOuterMultiApplyAPI:foo
+            "outerMulti:foo:int_attr",
+            "outerMulti:foo:relationship",
+            "outerMulti:foo:token_attr",
+            # Properties from TestNestedInnerMultiApplyDerivedAPI:foo:builtin
+            "innerMulti:foo:builtin:derived:int_attr",
+            # Properties from TestNestedInnerMultiApplyBaseAPI:foo:builtin
+            "innerMulti:foo:builtin:int_attr",
+            "innerMulti:foo:builtin:relationship",
+            "innerMulti:foo:builtin:token_attr",
+            # Properties from TestNestedInnerMultiApplyDerivedAPI:foo:outerMulti
+            "innerMulti:foo:outerMulti:derived:int_attr",
+            # Properties from TestNestedInnerMultiApplyBaseAPI:foo:outerMulti
+            "innerMulti:foo:outerMulti:int_attr",
+            "innerMulti:foo:outerMulti:relationship",
+            "innerMulti:foo:outerMulti:token_attr",
+            # Properties from TestNestedInnerMultiApplyBaseAPI:foo
+            "innerMulti:foo:int_attr",
+            "innerMulti:foo:relationship",
+            "innerMulti:foo:token_attr",
+            # Properties from TestNestedInnerMultiApplyDerivedAPI:bar
+            "innerMulti:bar:derived:int_attr",
+            # Properties from TestNestedInnerMultiApplyBaseAPI:bar
+            "innerMulti:bar:int_attr",
+            "innerMulti:bar:relationship",
+            "innerMulti:bar:token_attr"])
+        self.assertEqual(singleApplyPrim.GetPropertyNames(), expectedPropNames)
+
+        # Verify that the attribute fallback values come from the API schemas
+        # that define them.
+        expectedAttrValues = {
+            # Property only defined in TestNestedMultiApplyInSingleApplyAPI
+            "int_attr" : 10,
+            # Property from TestNestedInnerMultiApplyDerivedAPI:foo:builtin
+            # overridden in TestNestedMultiApplyInSingleApplyAPI
+            "innerMulti:foo:builtin:derived:int_attr" : 20,
+            # Property from TestNestedInnerMultiApplyBaseAPI:bar overridden in
+            # TestNestedMultiApplyInSingleApplyAPI
+            "innerMulti:bar:int_attr" : 30,
+            # Properties from TestNestedOuterMultiApplyAPI:foo
+            "outerMulti:foo:int_attr" : 5,
+            "outerMulti:foo:token_attr" : "outer",
+            # Properties from TestNestedInnerMultiApplyDerivedAPI:foo:builtin
+            "innerMulti:foo:builtin:token_attr" : "inner_derived",
+            # Properties from TestNestedInnerMultiApplyBaseAPI:foo:builtin
+            "innerMulti:foo:builtin:int_attr" : 3,
+            # Properties from TestNestedInnerMultiApplyDerivedAPI:foo:outerMulti
+            "innerMulti:foo:outerMulti:derived:int_attr" : 4,
+            "innerMulti:foo:outerMulti:token_attr" : "inner_derived",
+            # Properties from TestNestedInnerMultiApplyBaseAPI:foo:outerMulti
+            "innerMulti:foo:outerMulti:int_attr" : 3,
+            # Properties from TestNestedInnerMultiApplyBaseAPI:foo
+            "innerMulti:foo:int_attr" : 3,
+            "innerMulti:foo:token_attr" : "inner_base",
+            # Properties from TestNestedInnerMultiApplyDerivedAPI:bar
+            "innerMulti:bar:derived:int_attr" : 4,
+            # Properties from TestNestedInnerMultiApplyBaseAPI:bar
+            "innerMulti:bar:token_attr" : "inner_derived"}
+        _VerifyAttrValues(singleApplyPrim, expectedAttrValues)
+
+        # Get the prim definition for the API schema and verify its applied
+        # API schemas and properties match what was imparted on the prim. This
+        # is an exact match because this a single apply API schema that contains
+        # specific instances of the multi apply API schemas.
+        singleApplyAPIDef = \
+            Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
+                "TestNestedMultiApplyInSingleApplyAPI")
+        self.assertTrue(singleApplyAPIDef)
+        self.assertEqual(singleApplyAPIDef.GetAppliedAPISchemas(),
+                         expectedAPISchemas)
+        self.assertEqual(sorted(singleApplyAPIDef.GetPropertyNames()),
+                         expectedPropNames)
+        self.assertEqual(singleApplyAPIDef.GetDocumentation(),
+            "Test single apply API with builtin nested multi apply API schema "
+            "instances")
 
     def test_NestedCycleAPISchema(self):
         """
@@ -1582,6 +1954,188 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
                          expectedPropNames)
         self.assertEqual(cycle3APIDef.GetDocumentation(),
             "Test nested single apply API schema with a cycle #3")
+
+    def test_NestedMultiApplyCycleAPISchema(self):
+        """
+        Tests the handling of inclusion cycles that are particular to how 
+        built-in multiple apply schemas are processed.
+        """
+        stage = Usd.Stage.CreateInMemory()
+
+        # Test behavior when nested API schema form a cycle. In this example we
+        # have two types of cycles. 
+        # 
+        # The first is an "inheritance" cycle where 
+        # TestNestedMultiApplyCycle1API includes TestNestedMultiApplyCycle3API
+        # directly which includes TestNestedMultiApplyCycle2API which comes
+        # and includes TestNestedMultiApplyCycle1API again. Since these are
+        # all "inheritance" style built-ins, these will all use the same 
+        # instance name and can be handled gracefully, like we do with single
+        # apply built-in cycles, by always skipping duplicate API schemas when
+        # expanding.
+        #
+        # The second type of cycle comes from encapsulated sub-instance built-in
+        # API schemas, where TestNestedMultiApplyCycle1API includes a "cycle1"
+        # sub-instance of TestNestedMultiApplyCycle2API which includes a 
+        # "cycle2" sub-instance of TestNestedMultiApplyCycle3API which then 
+        # includes a "cycle3" sub-instance of TestNestedMultiApplyCycle1API. 
+        # Because of the way instance names nest (e.g. applying Cycle1:foo
+        # will include Cycle2:foo:cycle1 will include Cycle3:foo:cycle1:cycle2
+        # will include Cycle1:foo:cycle1:cycle2:cycle3 and so on) these kinds of
+        # cycles will become infinite as every instance will be unique as we 
+        # expand. These types of cycles must be broken by making sure that we 
+        # don't add a built-in API if it is the same schema type as one of its
+        # direct ancestors during the depth first expansion of included API 
+        # schemas.
+        nestedCyclePrim1 = stage.DefinePrim("/Cycle1")
+        nestedCyclePrim2 = stage.DefinePrim("/Cycle2")
+        nestedCyclePrim3 = stage.DefinePrim("/Cycle3")
+        nestedCyclePrim1.ApplyAPI(self.NestedMultiApplyCycle1APIType, "foo")
+        nestedCyclePrim2.ApplyAPI(self.NestedMultiApplyCycle2APIType, "foo")
+        nestedCyclePrim3.ApplyAPI(self.NestedMultiApplyCycle3APIType, "foo")
+
+        # For each prim the authored applied API schemas for the prim are still
+        # only the single API that was applied.
+        self.assertEqual(nestedCyclePrim1.GetPrimTypeInfo().GetTypeName(), '')
+        self.assertEqual(
+            nestedCyclePrim1.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestNestedMultiApplyCycle1API:foo"])
+        self.assertEqual(nestedCyclePrim2.GetPrimTypeInfo().GetTypeName(), '')
+        self.assertEqual(
+            nestedCyclePrim2.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestNestedMultiApplyCycle2API:foo"])
+        self.assertEqual(nestedCyclePrim3.GetPrimTypeInfo().GetTypeName(), '')
+        self.assertEqual(
+            nestedCyclePrim3.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestNestedMultiApplyCycle3API:foo"])
+
+        # The composed applied API schemas include all the possible instances
+        # of all three API schemas that can be added before the cycle detection
+        # stops the depth first traversal of the built-ins. The commented out
+        # entries represent the schemas that trip the cycle detection and 
+        # therefore were not added when expanded halting their branch of API 
+        # schema expansion.
+        self.assertEqual(nestedCyclePrim1.GetTypeName(), '')
+        self.assertEqual(nestedCyclePrim1.GetAppliedSchemas(), [
+            "TestNestedMultiApplyCycle1API:foo",
+                "TestNestedMultiApplyCycle2API:foo:cycle1",
+                    "TestNestedMultiApplyCycle3API:foo:cycle1:cycle2",
+                        # "TestNestedMultiApplyCycle1API:foo:cycle1:cycle2:cycle3",
+                        # "TestNestedMultiApplyCycle2API:foo:cycle1:cycle2",
+                    # "TestNestedMultiApplyCycle1API:foo:cycle1"
+                "TestNestedMultiApplyCycle3API:foo",
+                    # "TestNestedMultiApplyCycle1API:foo:cycle3",
+                    "TestNestedMultiApplyCycle2API:foo",
+                        # "TestNestedMultiApplyCycle3API:foo:cycle2",
+                        # "TestNestedMultiApplyCycle1API:foo"
+            ])
+        self.assertEqual(nestedCyclePrim2.GetTypeName(), '')
+        self.assertEqual(nestedCyclePrim2.GetAppliedSchemas(), [
+            "TestNestedMultiApplyCycle2API:foo",
+                "TestNestedMultiApplyCycle3API:foo:cycle2",
+                    "TestNestedMultiApplyCycle1API:foo:cycle2:cycle3",
+                        # "TestNestedMultiApplyCycle2API:foo:cycle2:cycle3:cycle1",
+                        # "TestNestedMultiApplyCycle3API:foo:cycle2:cycle3",
+                    # "TestNestedMultiApplyCycle2API:foo:cycle2"
+                "TestNestedMultiApplyCycle1API:foo",
+                    # "TestNestedMultiApplyCycle2API:foo:cycle1",
+                    "TestNestedMultiApplyCycle3API:foo",
+                        # "TestNestedMultiApplyCycle1API:foo:cycle3",
+                        # "TestNestedMultiApplyCycle2API:foo"
+            ])
+        self.assertEqual(nestedCyclePrim3.GetTypeName(), '')
+        self.assertEqual(nestedCyclePrim3.GetAppliedSchemas(), [
+            "TestNestedMultiApplyCycle3API:foo",
+                "TestNestedMultiApplyCycle1API:foo:cycle3",
+                    "TestNestedMultiApplyCycle2API:foo:cycle3:cycle1",
+                        # "TestNestedMultiApplyCycle3API:foo:cycle3:cycle1:cycle2",
+                        # "TestNestedMultiApplyCycle1API:foo:cycle3:cycle1",
+                    # "TestNestedMultiApplyCycle3API:foo:cycle3"
+                "TestNestedMultiApplyCycle2API:foo",
+                    # "TestNestedMultiApplyCycle3API:foo:cycle2",
+                    "TestNestedMultiApplyCycle1API:foo",
+                        # "TestNestedMultiApplyCycle2API:foo:cycle1",
+                        # "TestNestedMultiApplyCycle3API:foo"
+            ])
+
+        # Each of the three API schemas provides a "token_attr" so each of 
+        # prims has the prefixed "token_attr" for the API schemas that managed
+        # to be included for each one.
+        expectedPropNames = [
+            "cycle1:foo:token_attr",
+            "cycle2:foo:cycle1:token_attr",
+            "cycle2:foo:token_attr",
+            "cycle3:foo:cycle1:cycle2:token_attr",
+            "cycle3:foo:token_attr"
+        ]
+        self.assertEqual(nestedCyclePrim1.GetPropertyNames(), expectedPropNames)
+        expectedPropNames = [
+            "cycle1:foo:cycle2:cycle3:token_attr",
+            "cycle1:foo:token_attr",
+            "cycle2:foo:token_attr",
+            "cycle3:foo:cycle2:token_attr",
+            "cycle3:foo:token_attr"
+        ]
+        self.assertEqual(nestedCyclePrim2.GetPropertyNames(), expectedPropNames)
+        expectedPropNames = [
+            "cycle1:foo:cycle3:token_attr",
+            "cycle1:foo:token_attr",
+            "cycle2:foo:cycle3:cycle1:token_attr",
+            "cycle2:foo:token_attr",
+            "cycle3:foo:token_attr"
+        ]
+        self.assertEqual(nestedCyclePrim3.GetPropertyNames(), expectedPropNames)
+
+        # Get the prim definitions for each of these API schemas and verify its
+        # applied API schemas and properties match what was imparted on the
+        # prims.
+        cycle1APIDef = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
+            "TestNestedMultiApplyCycle1API")
+        self.assertTrue(cycle1APIDef)
+        self.assertEqual(cycle1APIDef.GetAppliedAPISchemas(),
+            ["TestNestedMultiApplyCycle1API:__INSTANCE_NAME__",
+             "TestNestedMultiApplyCycle2API:__INSTANCE_NAME__:cycle1",
+             "TestNestedMultiApplyCycle3API:__INSTANCE_NAME__:cycle1:cycle2",
+             "TestNestedMultiApplyCycle3API:__INSTANCE_NAME__",
+             "TestNestedMultiApplyCycle2API:__INSTANCE_NAME__"])
+        self.assertEqual(sorted(cycle1APIDef.GetPropertyNames()),
+            ["cycle1:__INSTANCE_NAME__:token_attr",
+             "cycle2:__INSTANCE_NAME__:cycle1:token_attr",
+             "cycle2:__INSTANCE_NAME__:token_attr",
+             "cycle3:__INSTANCE_NAME__:cycle1:cycle2:token_attr",
+             "cycle3:__INSTANCE_NAME__:token_attr"])
+
+        cycle2APIDef = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
+            "TestNestedMultiApplyCycle2API")
+        self.assertTrue(cycle2APIDef)
+        self.assertEqual(cycle2APIDef.GetAppliedAPISchemas(),
+            ["TestNestedMultiApplyCycle2API:__INSTANCE_NAME__",
+             "TestNestedMultiApplyCycle3API:__INSTANCE_NAME__:cycle2",
+             "TestNestedMultiApplyCycle1API:__INSTANCE_NAME__:cycle2:cycle3",
+             "TestNestedMultiApplyCycle1API:__INSTANCE_NAME__",
+             "TestNestedMultiApplyCycle3API:__INSTANCE_NAME__"])
+        self.assertEqual(sorted(cycle2APIDef.GetPropertyNames()),
+            ["cycle1:__INSTANCE_NAME__:cycle2:cycle3:token_attr",
+             "cycle1:__INSTANCE_NAME__:token_attr",
+             "cycle2:__INSTANCE_NAME__:token_attr",
+             "cycle3:__INSTANCE_NAME__:cycle2:token_attr",
+             "cycle3:__INSTANCE_NAME__:token_attr"])
+
+        cycle3APIDef = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
+            "TestNestedMultiApplyCycle3API")
+        self.assertTrue(cycle3APIDef)
+        self.assertEqual(cycle3APIDef.GetAppliedAPISchemas(),
+            ["TestNestedMultiApplyCycle3API:__INSTANCE_NAME__",
+             "TestNestedMultiApplyCycle1API:__INSTANCE_NAME__:cycle3",
+             "TestNestedMultiApplyCycle2API:__INSTANCE_NAME__:cycle3:cycle1",
+             "TestNestedMultiApplyCycle2API:__INSTANCE_NAME__",
+             "TestNestedMultiApplyCycle1API:__INSTANCE_NAME__"])
+        self.assertEqual(sorted(cycle3APIDef.GetPropertyNames()),
+            ["cycle1:__INSTANCE_NAME__:cycle3:token_attr",
+             "cycle1:__INSTANCE_NAME__:token_attr",
+             "cycle2:__INSTANCE_NAME__:cycle3:cycle1:token_attr",
+             "cycle2:__INSTANCE_NAME__:token_attr",
+             "cycle3:__INSTANCE_NAME__:token_attr"])
 
     def test_ConcreteTypeWithBuiltinNestedAPISchemas(self):
         """

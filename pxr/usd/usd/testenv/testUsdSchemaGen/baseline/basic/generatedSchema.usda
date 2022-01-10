@@ -30,7 +30,9 @@ class "MultipleApplyAPI"
     double test:__INSTANCE_NAME__:testAttrTwo
 }
 
-class "PublicMultipleApplyAPI"
+class "PublicMultipleApplyAPI" (
+    apiSchemas = ["MultiApplyAPI:__INSTANCE_NAME__", "BuiltinMultiApplyAPI:__INSTANCE_NAME__:builtin"]
+)
 {
     int testo:__INSTANCE_NAME__:testAttrOne
     double testo:__INSTANCE_NAME__:testAttrTwo

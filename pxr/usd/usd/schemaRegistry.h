@@ -341,7 +341,7 @@ public:
     const UsdPrimDefinition* FindConcretePrimDefinition(
         const TfToken &typeName) const {
         const auto it = _concreteTypedPrimDefinitions.find(typeName);
-        return it != _concreteTypedPrimDefinitions.end() ? it->second : nullptr;
+        return it != _concreteTypedPrimDefinitions.end() ? it->second.get() : nullptr;
     }
 
     /// Finds the prim definition for the given \p typeName token if 
@@ -353,9 +353,9 @@ public:
         // apply schemas. This function will most often be used to find a 
         // single apply schema's prim definition as the prim definitions for
         // multiple apply schemas aren't generally useful.
-        const auto it = _singleApplyAPIPrimDefinitions.find(typeName);
-        if (it != _singleApplyAPIPrimDefinitions.end()) {
-            return it->second;
+        const auto it = _appliedAPIPrimDefinitions.find(typeName);
+        if (it != _appliedAPIPrimDefinitions.end()) {
+            return it->second.get();
         }
         const auto multiIt = _multiApplyAPIPrimDefinitions.find(typeName);
         return multiIt != _multiApplyAPIPrimDefinitions.end() ? 
@@ -414,13 +414,20 @@ private:
     class _SchemaDefInitHelper;
 
     using _TypeNameToPrimDefinitionMap = std::unordered_map<
-        TfToken, UsdPrimDefinition *, TfToken::HashFunctor>;
+        TfToken, const std::unique_ptr<UsdPrimDefinition>, TfToken::HashFunctor>;
 
     SdfLayerRefPtr _schematics;
 
     _TypeNameToPrimDefinitionMap _concreteTypedPrimDefinitions;
-    _TypeNameToPrimDefinitionMap _singleApplyAPIPrimDefinitions;
-    _TypeNameToPrimDefinitionMap _multiApplyAPIPrimDefinitions;
+    _TypeNameToPrimDefinitionMap _appliedAPIPrimDefinitions;
+
+    // This is a mapping from multiple apply API schema name (e.g. 
+    // "CollectionAPI") to the template prim definition stored for it in
+    // _appliedAPIPrimDefinitions as the template prim definition is actually 
+    // mapped to its template name (e.g. "CollectionAPI:__INSTANCE_NAME__") in
+    // that map.
+    std::unordered_map<TfToken, const UsdPrimDefinition *, TfToken::HashFunctor> 
+        _multiApplyAPIPrimDefinitions;
     UsdPrimDefinition *_emptyPrimDefinition;
 
     VtDictionary _fallbackPrimTypes;
