@@ -37,6 +37,7 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/shaderKey.h"
+#include "pxr/imaging/hdSt/textureBinder.h"
 
 #include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/debugCodes.h"
@@ -45,6 +46,9 @@
 
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
+#include "pxr/imaging/hgi/graphicsCmds.h"
+#include "pxr/imaging/hgi/graphicsPipeline.h"
+#include "pxr/imaging/hgi/resourceBindings.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
@@ -57,6 +61,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+
+    (constantPrimvars)
 
     (dispatchBuffer)
 
@@ -860,13 +866,14 @@ struct _BindingState : public _DrawItemState
         , geometricShader(geometricShader)
     { }
 
-    // Bind core resources needed for view transformation & frustum culling.
-    void BindResourcesForViewTransformation() const;
-    void UnbindResourcesForViewTransformation() const;
 
-    // Bind core resources and additional resources needed for drawing.
-    void BindResourcesForDrawing() const;
-    void UnbindResourcesForDrawing() const;
+    // Core resources needed for view transformation & frustum culling.
+    void GetBindingsForViewTransformation(
+                HgiResourceBindingsDesc * bindingsDesc) const;
+
+    // Core resources plus additional resources needed for drawing.
+    void GetBindingsForDrawing(
+                HgiResourceBindingsDesc * bindingsDesc) const;
 
     HdStDispatchBufferSharedPtr dispatchBuffer;
     HdSt_ResourceBinder const & binder;
@@ -876,77 +883,56 @@ struct _BindingState : public _DrawItemState
 };
 
 void
-_BindingState::BindResourcesForViewTransformation() const
+_BindingState::GetBindingsForViewTransformation(
+    HgiResourceBindingsDesc * bindingsDesc) const
 {
+    bindingsDesc->debugName = "PipelineDrawBatch.ViewTransformation";
+
     // Bind the constant buffer for the prim transformation and bounds.
-    binder.BindConstantBuffer(constantBar);
+    binder.GetInterleavedBufferArrayBindingDesc(
+        bindingsDesc, constantBar, _tokens->constantPrimvars);
 
     // Bind the instance buffers to support instance transformations.
     if (instanceIndexBar) {
-        for (size_t i = 0; i < instancePrimvarBars.size(); ++i) {
-            binder.BindInstanceBufferArray(instancePrimvarBars[i], i);
+        for (size_t level = 0; level < instancePrimvarBars.size(); ++level) {
+            binder.GetInstanceBufferArrayBindingDesc(
+                bindingsDesc, instancePrimvarBars[level], level);
         }
-        binder.BindBufferArray(instanceIndexBar);
+        binder.GetBufferArrayBindingDesc(bindingsDesc, instanceIndexBar);
     }
 }
 
 void
-_BindingState::UnbindResourcesForViewTransformation() const
+_BindingState::GetBindingsForDrawing(
+    HgiResourceBindingsDesc * bindingsDesc) const
 {
-    binder.UnbindConstantBuffer(constantBar);
+    GetBindingsForViewTransformation(bindingsDesc);
 
-    if (instanceIndexBar) {
-        for (size_t i = 0; i < instancePrimvarBars.size(); ++i) {
-            binder.UnbindInstanceBufferArray(instancePrimvarBars[i], i);
-        }
-        binder.UnbindBufferArray(instanceIndexBar);
-    }
-}
+    bindingsDesc->debugName = "PipelineDrawBatch.Drawing";
 
-void
-_BindingState::BindResourcesForDrawing() const
-{
-    BindResourcesForViewTransformation();
+    binder.GetInterleavedBufferArrayBindingDesc(
+        bindingsDesc, topVisBar, HdTokens->topologyVisibility);
 
-    binder.BindInterleavedBuffer(topVisBar, HdTokens->topologyVisibility);
-    binder.BindBufferArray(indexBar);
-    binder.BindBufferArray(elementBar);
-    binder.BindBufferArray(fvarBar);
-    binder.BindBufferArray(varyingBar);
+    binder.GetBufferArrayBindingDesc(bindingsDesc, indexBar);
+    binder.GetBufferArrayBindingDesc(bindingsDesc, elementBar);
+    binder.GetBufferArrayBindingDesc(bindingsDesc, fvarBar);
+    binder.GetBufferArrayBindingDesc(bindingsDesc, varyingBar);
 
     for (HdStShaderCodeSharedPtr const & shader : shaders) {
         HdStBufferArrayRangeSharedPtr shaderBar =
                 std::static_pointer_cast<HdStBufferArrayRange>(
                         shader->GetShaderData());
-        if (shaderBar) {
-            binder.BindBuffer(HdTokens->materialParams,
-                              shaderBar->GetResource());
+
+        binder.GetInterleavedBufferArrayBindingDesc(
+            bindingsDesc, shaderBar, HdTokens->materialParams);
+
+        HdBindingRequestVector bindingRequests;
+        shader->AddBindings(&bindingRequests);
+        for (auto const & req : bindingRequests) {
+            binder.GetBindingRequestBindingDesc(bindingsDesc, req);
         }
-        shader->BindResources(
-                glslProgram->GetProgram()->GetRawResource(), binder);
-    }
-}
-
-void
-_BindingState::UnbindResourcesForDrawing() const
-{
-    UnbindResourcesForViewTransformation();
-
-    binder.UnbindInterleavedBuffer(topVisBar, HdTokens->topologyVisibility);
-    binder.UnbindBufferArray(indexBar);
-    binder.UnbindBufferArray(elementBar);
-    binder.UnbindBufferArray(fvarBar);
-    binder.UnbindBufferArray(varyingBar);
-
-    for (HdStShaderCodeSharedPtr const & shader : shaders) {
-        HdStBufferArrayRangeSharedPtr shaderBar =
-                std::static_pointer_cast<HdStBufferArrayRange>(
-                        shader->GetShaderData());
-        if (shaderBar) {
-            binder.UnbindBuffer(HdTokens->materialParams,
-                                shaderBar->GetResource());
-        }
-        shader->UnbindResources(0, binder);
+        HdSt_TextureBinder::GetBindingDescs(
+                binder, bindingsDesc, shader->GetNamedTextureHandles());
     }
 }
 
@@ -1147,6 +1133,8 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
             program.GetComposedShaders(),
             program.GetGeometricShader());
 
+    Hgi * hgi = resourceRegistry->GetHgi();
+
     HgiGraphicsPipelineSharedPtr pso =
         _GetDrawPipeline(
             renderPassState,
@@ -1155,9 +1143,14 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
     HgiGraphicsPipelineHandle psoHandle = *pso.get();
     gfxCmds->BindPipeline(psoHandle);
 
-    _BindVertexBuffersForDrawing(gfxCmds, state);
+    HgiResourceBindingsDesc bindingsDesc;
+    state.GetBindingsForDrawing(&bindingsDesc);
 
-    state.BindResourcesForDrawing();
+    HgiResourceBindingsHandle resourceBindings =
+            hgi->CreateResourceBindings(bindingsDesc);
+    gfxCmds->BindResources(resourceBindings);
+
+    _BindVertexBuffersForDrawing(gfxCmds, state);
 
     if (drawIndirect) {
         _ExecuteDrawIndirect(gfxCmds, _dispatchBuffer, state.indexBar);
@@ -1165,7 +1158,7 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
         _ExecuteDrawImmediate(gfxCmds, _dispatchBuffer, state.indexBar);
     }
 
-    state.UnbindResourcesForDrawing();
+    hgi->DestroyResourceBindings(&resourceBindings);
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->drawCalls);
     HD_PERF_COUNTER_ADD(HdTokens->itemsDrawn, _numVisibleItems);
@@ -1363,19 +1356,32 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
     }
     cullGfxCmds->BindPipeline(psoHandle);
 
-    _BindVertexBuffersForViewTransformation(cullGfxCmds.get(), state);
-
-    state.BindResourcesForViewTransformation();
+    HgiResourceBindingsDesc bindingsDesc;
+    state.GetBindingsForViewTransformation(&bindingsDesc);
 
     if (IsEnabledGPUCountVisibleInstances()) {
         _BeginGPUCountVisibleInstances(resourceRegistry);
-        state.binder.BindBuffer(_tokens->drawIndirectResult, _resultBuffer);
+        state.binder.GetBufferBindingDesc(
+                &bindingsDesc,
+                _tokens->drawIndirectResult,
+                _resultBuffer,
+                _resultBuffer->GetOffset());
+                
     }
 
     // bind destination buffer
     // (using entire buffer bind to start from offset=0)
-    state.binder.BindBuffer(_tokens->dispatchBuffer,
-                            _dispatchBuffer->GetEntireResource());
+    state.binder.GetBufferBindingDesc(
+            &bindingsDesc,
+            _tokens->dispatchBuffer,
+            _dispatchBuffer->GetEntireResource(),
+            _dispatchBuffer->GetEntireResource()->GetOffset());
+
+    HgiResourceBindingsHandle resourceBindings =
+            hgi->CreateResourceBindings(bindingsDesc);
+    cullGfxCmds->BindResources(resourceBindings);
+
+    _BindVertexBuffersForViewTransformation(cullGfxCmds.get(), state);
 
     GfMatrix4f const &cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
     GfVec2f const &drawRangeNdc = renderPassState->GetDrawingRangeNDC();
@@ -1444,16 +1450,11 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
     cullGfxCmds->PopDebugGroup();
     hgi->SubmitCmds(cullGfxCmds.get());
 
-    state.UnbindResourcesForViewTransformation();
-
-    // unbind destination dispatch buffer
-    state.binder.UnbindBuffer(_tokens->dispatchBuffer,
-                              _dispatchBuffer->GetEntireResource());
-
     if (IsEnabledGPUCountVisibleInstances()) {
-        state.binder.UnbindBuffer(_tokens->drawIndirectResult, _resultBuffer);
         _EndGPUCountVisibleInstances(resourceRegistry, &_numVisibleItems);
     }
+
+    hgi->DestroyResourceBindings(&resourceBindings);
 }
 
 void
