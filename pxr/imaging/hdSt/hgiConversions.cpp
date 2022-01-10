@@ -226,6 +226,58 @@ static_assert(_CompileTimeValidateMinTable(),
 
 }
 
+struct _CompareFunctionDesc {
+    HdCompareFunction hdCompareFunction;
+    HgiCompareFunction hgiCompareFunction;
+};
+
+const _CompareFunctionDesc _COMPARE_FUNCTION_DESC[] =
+{
+    {HdCmpFuncNever,    HgiCompareFunctionNever},
+    {HdCmpFuncLess,     HgiCompareFunctionLess},
+    {HdCmpFuncEqual,    HgiCompareFunctionEqual},
+    {HdCmpFuncLEqual,   HgiCompareFunctionLEqual},
+    {HdCmpFuncGreater,  HgiCompareFunctionGreater},
+    {HdCmpFuncNotEqual, HgiCompareFunctionNotEqual},
+    {HdCmpFuncGEqual,   HgiCompareFunctionGEqual},
+    {HdCmpFuncAlways,   HgiCompareFunctionAlways},
+};
+
+constexpr bool _CompileTimeValidateCompareFunctionTable() {
+    return
+        HdCmpFuncNever == 0 &&
+        HdCmpFuncLast == 8;
+}
+
+static_assert(_CompileTimeValidateCompareFunctionTable(),
+              "_compareFunctionDesc array out of sync with HdCompareFunction");
+
+struct _StencilOpDesc {
+    HdStencilOp hdStencilOp;
+    HgiStencilOp hgiStencilOp;
+};
+
+const _StencilOpDesc _STENCIL_OP_DESC[] =
+{
+    {HdStencilOpKeep,           HgiStencilOpKeep},
+    {HdStencilOpZero,           HgiStencilOpZero},
+    {HdStencilOpReplace,        HgiStencilOpReplace},
+    {HdStencilOpIncrement,      HgiStencilOpIncrementClamp},
+    {HdStencilOpIncrementWrap,  HgiStencilOpIncrementWrap},
+    {HdStencilOpDecrement,      HgiStencilOpDecrementClamp},
+    {HdStencilOpDecrementWrap,  HgiStencilOpDecrementWrap},
+    {HdStencilOpInvert,         HgiStencilOpInvert},
+};
+
+constexpr bool _CompileTimeValidateStencilOpTable() {
+    return
+        HdStencilOpKeep == 0 &&
+        HdStencilOpLast == 8;
+}
+
+static_assert(_CompileTimeValidateStencilOpTable(),
+              "_stencilOpDesc array out of sync with HdStencilOp");
+
 HgiFormat
 HdStHgiConversions::GetHgiFormat(const HdFormat hdFormat)
 {
@@ -295,6 +347,28 @@ HdStHgiConversions::GetHgiMinAndMipFilter(
     }
     *hgiSamplerFilter = MIN_DESC[hdMinFilter].hgiSamplerFilter;
     *hgiMipFilter     = MIN_DESC[hdMinFilter].hgiMipFilter;
+}
+
+HgiCompareFunction
+HdStHgiConversions::GetHgiCompareFunction(HdCompareFunction hdCompareFunc)
+{
+    if ((hdCompareFunc < 0) ||
+        (hdCompareFunc >= HdCmpFuncLast)) {
+        TF_CODING_ERROR("Unexpected HdCompareFunction %d", hdCompareFunc);
+        return HgiCompareFunctionAlways;
+    }
+    return _COMPARE_FUNCTION_DESC[hdCompareFunc].hgiCompareFunction;
+}
+
+HgiStencilOp
+HdStHgiConversions::GetHgiStencilOp(HdStencilOp hdStencilOp)
+{
+    if ((hdStencilOp < 0) ||
+        (hdStencilOp >= HdStencilOpLast)) {
+        TF_CODING_ERROR("Unexpected HdStencilOp %d", hdStencilOp);
+        return HgiStencilOpKeep;
+    }
+    return _STENCIL_OP_DESC[hdStencilOp].hgiStencilOp;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

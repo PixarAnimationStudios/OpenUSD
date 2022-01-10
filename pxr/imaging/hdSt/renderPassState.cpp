@@ -45,6 +45,7 @@
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
+#include "pxr/imaging/hgi/graphicsPipeline.h"
 
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -352,103 +353,120 @@ namespace {
 // including disabling h/w culling altogether.
 // Disabling h/w culling is required to handle instancing wherein
 // instanceScale/instanceTransform can flip the xform handedness.
-void
-_SetGLCullState(
+HgiCullMode
+_ResolveCullMode(
         HdCullStyle const rsCullStyle,
-        HdSt_ResourceBinder const &binder,
         HdSt_GeometricShaderSharedPtr const &geometricShader)
 {
+    if (!geometricShader->GetUseHardwareFaceCulling()) {
+        // Use fragment shader culling via discard.
+        return HgiCullModeNone;
+    }
+
+    HgiCullMode resolvedCullMode = HgiCullModeNone;
+
     // renderPass culling opinions
     switch (rsCullStyle) {
         case HdCullStyleFront:
         case HdCullStyleFrontUnlessDoubleSided:
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_FRONT);
+            resolvedCullMode = HgiCullModeFront;
             break;
         case HdCullStyleBack:
         case HdCullStyleBackUnlessDoubleSided:
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_BACK);
+            resolvedCullMode = HgiCullModeBack;
             break;
         case HdCullStyleNothing:
         case HdCullStyleDontCare:
         default:
             // disable culling
-            glDisable(GL_CULL_FACE);
+            resolvedCullMode = HgiCullModeNone;
             break;
     }
 
     // geometricShader culling opinions
-    HdCullStyle const gsCullStyle = geometricShader->GetCullStyle();
-    if (geometricShader->GetUseHardwareFaceCulling()) {
-        bool const hasMirroredTransform =
-                            geometricShader->GetHasMirroredTransform();
-        bool const doubleSided = geometricShader->GetDoubleSided();
+    bool const hasMirroredTransform =
+                        geometricShader->GetHasMirroredTransform();
+    bool const doubleSided = geometricShader->GetDoubleSided();
 
-        switch (gsCullStyle) {
-            case HdCullStyleFront:
-                glEnable(GL_CULL_FACE);
+    switch (geometricShader->GetCullStyle()) {
+        case HdCullStyleFront:
+            if (hasMirroredTransform) {
+                resolvedCullMode = HgiCullModeBack;
+            } else {
+                resolvedCullMode = HgiCullModeFront;
+            }
+            break;
+        case HdCullStyleFrontUnlessDoubleSided:
+            if (!doubleSided) {
                 if (hasMirroredTransform) {
-                    glCullFace(GL_BACK);
+                    resolvedCullMode = HgiCullModeBack;
                 } else {
-                    glCullFace(GL_FRONT);
+                    resolvedCullMode = HgiCullModeFront;
                 }
-                break;
-            case HdCullStyleFrontUnlessDoubleSided:
-                if (!doubleSided) {
-                    glEnable(GL_CULL_FACE);
-                    if (hasMirroredTransform) {
-                        glCullFace(GL_BACK);
-                    } else {
-                        glCullFace(GL_FRONT);
-                    }
-                }
-                break;
-            case HdCullStyleBack:
-                glEnable(GL_CULL_FACE);
+            }
+            break;
+        case HdCullStyleBack:
+            if (hasMirroredTransform) {
+                resolvedCullMode = HgiCullModeFront;
+            } else {
+                resolvedCullMode = HgiCullModeBack;
+            }
+            break;
+        case HdCullStyleBackUnlessDoubleSided:
+            if (!doubleSided) {
                 if (hasMirroredTransform) {
-                    glCullFace(GL_FRONT);
+                    resolvedCullMode = HgiCullModeFront;
                 } else {
-                    glCullFace(GL_BACK);
+                    resolvedCullMode = HgiCullModeBack;
                 }
-                break;
-            case HdCullStyleBackUnlessDoubleSided:
-                if (!doubleSided) {
-                    glEnable(GL_CULL_FACE);
-                    if (hasMirroredTransform) {
-                        glCullFace(GL_FRONT);
-                    } else {
-                        glCullFace(GL_BACK);
-                    }
-                }
-                break;
-            case HdCullStyleNothing:
-                glDisable(GL_CULL_FACE);
-                break;
-            case HdCullStyleDontCare:
-            default:
-                // Fallback to the renderPass opinion, but account for
-                // combinations of parameters that require extra handling
-                if (doubleSided &&
-                   (rsCullStyle == HdCullStyleBackUnlessDoubleSided ||
-                    rsCullStyle == HdCullStyleFrontUnlessDoubleSided)) {
-                    glDisable(GL_CULL_FACE);
-                } else if (hasMirroredTransform &&
-                    (rsCullStyle == HdCullStyleBack ||
-                     rsCullStyle == HdCullStyleBackUnlessDoubleSided)) {
-                    glEnable(GL_CULL_FACE);
-                    glCullFace(GL_FRONT);
-                } else if (hasMirroredTransform &&
-                    (rsCullStyle == HdCullStyleFront ||
-                     rsCullStyle == HdCullStyleFrontUnlessDoubleSided)) {
-                    glEnable(GL_CULL_FACE);
-                    glCullFace(GL_BACK);
-                }
-                break;
-        }
-    } else {
-        // Use fragment shader culling via discard.
-        glDisable(GL_CULL_FACE);
+            }
+            break;
+        case HdCullStyleNothing:
+            resolvedCullMode = HgiCullModeNone;
+            break;
+        case HdCullStyleDontCare:
+        default:
+            // Fallback to the renderPass opinion, but account for
+            // combinations of parameters that require extra handling
+            if (doubleSided &&
+               (rsCullStyle == HdCullStyleBackUnlessDoubleSided ||
+                rsCullStyle == HdCullStyleFrontUnlessDoubleSided)) {
+                resolvedCullMode = HgiCullModeNone;
+            } else if (hasMirroredTransform &&
+                (rsCullStyle == HdCullStyleBack ||
+                 rsCullStyle == HdCullStyleBackUnlessDoubleSided)) {
+                resolvedCullMode = HgiCullModeFront;
+            } else if (hasMirroredTransform &&
+                (rsCullStyle == HdCullStyleFront ||
+                 rsCullStyle == HdCullStyleFrontUnlessDoubleSided)) {
+                resolvedCullMode = HgiCullModeBack;
+            }
+            break;
+    }
+
+    return resolvedCullMode;
+}
+
+void
+_SetGLCullState(HgiCullMode const resolvedCullMode)
+{
+    switch (resolvedCullMode) {
+        default:
+        case HgiCullModeNone:
+            glDisable(GL_CULL_FACE);
+            break;
+        case HgiCullModeFront:
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_FRONT);
+            break;
+        case HgiCullModeBack:
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+            break;
+        case HgiCullModeFrontAndBack:
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_FRONT_AND_BACK);
+            break;
     }
 }
 
@@ -471,7 +489,7 @@ _SetGLPolygonMode(float rsLineWidth,
 }
 
 void
-_SetColorMask(int drawBufferIndex, HdRenderPassState::ColorMask const& mask)
+_SetGLColorMask(int drawBufferIndex, HdRenderPassState::ColorMask const& mask)
 {
     bool colorMask[4] = {true, true, true, true};
     switch (mask)
@@ -494,6 +512,27 @@ _SetColorMask(int drawBufferIndex, HdRenderPassState::ColorMask const& mask)
     }
 }
 
+HgiColorMask
+_GetColorMask(HdRenderPassState::ColorMask const & mask)
+{
+    switch (mask) {
+        default:
+        case HdStRenderPassState::ColorMaskNone:
+            return HgiColorMask(0);
+
+        case HdStRenderPassState::ColorMaskRGB:
+            return HgiColorMaskRed |
+                   HgiColorMaskGreen |
+                   HgiColorMaskBlue;
+
+        case HdStRenderPassState::ColorMaskRGBA:
+            return HgiColorMaskRed |
+                   HgiColorMaskGreen |
+                   HgiColorMaskBlue |
+                   HgiColorMaskAlpha;
+    }
+}
+
 } // anonymous namespace
 
 void
@@ -501,7 +540,7 @@ HdStRenderPassState::ApplyStateFromGeometricShader(
         HdSt_ResourceBinder const &binder,
         HdSt_GeometricShaderSharedPtr const &geometricShader)
 {
-    _SetGLCullState(_cullStyle, binder, geometricShader);
+    _SetGLCullState(_ResolveCullMode(_cullStyle, geometricShader));
     _SetGLPolygonMode(_lineWidth, geometricShader);
 }
 
@@ -598,14 +637,14 @@ HdStRenderPassState::Bind()
 
     if (_colorMaskUseDefault) {
         // Enable color writes for all components for all attachments.
-        _SetColorMask(-1, ColorMaskRGBA);
+        _SetGLColorMask(-1, ColorMaskRGBA);
     } else {
         if (_colorMasks.size() == 1) {
             // Use the same color mask for all attachments.
-            _SetColorMask(-1, _colorMasks[0]);
+            _SetGLColorMask(-1, _colorMasks[0]);
         } else {
             for (size_t i = 0; i < _colorMasks.size(); i++) {
-                _SetColorMask(i, _colorMasks[i]);
+                _SetGLColorMask(i, _colorMasks[i]);
             }
         }
     }
@@ -750,7 +789,8 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
     // resized at any time, which will destroy and recreate the HgiTextureHandle
     // that backs the render buffer and was attached for graphics encoding.
 
-    for (const HdRenderPassAovBinding& aov : aovBindings) {
+    for (size_t aovIndex = 0; aovIndex < aovBindings.size(); ++aovIndex) {
+        HdRenderPassAovBinding const & aov = aovBindings[aovIndex];
         HdRenderBuffer * const renderBuffer =
             _GetRenderBuffer(aov, renderIndex);
 
@@ -806,6 +846,14 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
             attachmentDesc.clearValue = _ToVec4f(aov.clearValue);
         }
 
+        if (!_colorMaskUseDefault) {
+            if (_colorMasks.size() == 1) {
+                attachmentDesc.colorMask = _GetColorMask(_colorMasks[0]);
+            } else if (aovIndex < _colorMasks.size()) {
+                attachmentDesc.colorMask = _GetColorMask(_colorMasks[aovIndex]);
+            }
+        }
+
         // HdSt expresses blending per RenderPassState, where Hgi expresses
         // blending per-attachment. Transfer pass blend state to attachments.
         attachmentDesc.blendEnabled = _blendEnabled;
@@ -815,6 +863,7 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
         attachmentDesc.srcAlphaBlendFactor=HgiBlendFactor(_blendAlphaSrcFactor);
         attachmentDesc.dstAlphaBlendFactor=HgiBlendFactor(_blendAlphaDstFactor);
         attachmentDesc.alphaBlendOp = HgiBlendOp(_blendAlphaOp);
+        attachmentDesc.blendConstantColor = _blendConstantColor;
 
         if (HdAovHasDepthSemantic(aov.aovName) ||
             HdAovHasDepthStencilSemantic(aov.aovName)) {
@@ -870,5 +919,95 @@ HdStRenderPassState::GetClipPlanes() const
 
     return HdRenderPassState::GetClipPlanes();
 }
+
+void
+HdStRenderPassState::_InitPrimitiveState(
+    HgiGraphicsPipelineDesc * pipeDesc,
+    HdSt_GeometricShaderSharedPtr const & geometricShader) const
+{
+    pipeDesc->primitiveType = geometricShader->GetHgiPrimitiveType();
+
+    if (pipeDesc->primitiveType == HgiPrimitiveTypePatchList) {
+        pipeDesc->tessellationState.primitiveIndexSize =
+                            geometricShader->GetPrimitiveIndexSize();
+    }
+}
+
+void
+HdStRenderPassState::_InitDepthStencilState(
+    HgiDepthStencilState * depthState) const
+{
+    if (GetEnableDepthTest()) {
+        depthState->depthTestEnabled = true;
+        depthState->depthCompareFn =
+            HdStHgiConversions::GetHgiCompareFunction(_depthFunc);
+        depthState->depthWriteEnabled = GetEnableDepthMask();
+    }
+
+    if (!GetDepthBiasUseDefault() && GetDepthBiasEnabled()) {
+        depthState->depthBiasEnabled = true;
+        depthState->depthBiasConstantFactor = _depthBiasConstantFactor;
+        depthState->depthBiasSlopeFactor = _depthBiasSlopeFactor;
+    }
+
+    if (GetStencilEnabled()) {
+        depthState->stencilTestEnabled = true;
+        depthState->stencilFront.compareFn =
+            HdStHgiConversions::GetHgiCompareFunction(_stencilFunc);
+        depthState->stencilFront.referenceValue = _stencilRef;
+        depthState->stencilFront.stencilFailOp =
+            HdStHgiConversions::GetHgiStencilOp(_stencilFailOp);
+        depthState->stencilFront.depthFailOp =
+            HdStHgiConversions::GetHgiStencilOp(_stencilZFailOp);
+        depthState->stencilFront.depthStencilPassOp =
+            HdStHgiConversions::GetHgiStencilOp(_stencilZPassOp);
+        depthState->stencilFront.readMask = _stencilMask;
+        depthState->stencilBack = depthState->stencilFront;
+    }
+}
+
+void
+HdStRenderPassState::_InitMultiSampleState(
+    HgiMultiSampleState * multiSampleState) const
+{
+    if (_alphaToCoverageEnabled) {
+        multiSampleState->alphaToCoverageEnable = true;
+        multiSampleState->alphaToOneEnable = true;
+    }
+}
+
+void
+HdStRenderPassState::_InitRasterizationState(
+    HgiRasterizationState * rasterizationState,
+    HdSt_GeometricShaderSharedPtr const & geometricShader) const
+{
+    if (geometricShader->GetPolygonMode() == HdPolygonModeLine) {
+        rasterizationState->polygonMode = HgiPolygonModeLine;
+        float const gsLineWidth = geometricShader->GetLineWidth();
+        if (gsLineWidth > 0) {
+            rasterizationState->lineWidth = gsLineWidth;
+        }
+    } else {
+        rasterizationState->polygonMode = HgiPolygonModeFill;
+        if (_lineWidth > 0) {
+            glLineWidth(_lineWidth);
+        }
+    }
+
+    rasterizationState->cullMode =
+        _ResolveCullMode(_cullStyle, geometricShader);
+}
+
+void
+HdStRenderPassState::InitGraphicsPipelineDesc(
+    HgiGraphicsPipelineDesc * pipeDesc,
+    HdSt_GeometricShaderSharedPtr const & geometricShader) const
+{
+    _InitPrimitiveState(pipeDesc, geometricShader);
+    _InitDepthStencilState(&pipeDesc->depthState);
+    _InitMultiSampleState(&pipeDesc->multiSampleState);
+    _InitRasterizationState(&pipeDesc->rasterizationState, geometricShader);
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

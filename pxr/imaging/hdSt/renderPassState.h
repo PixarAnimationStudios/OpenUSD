@@ -33,6 +33,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct HgiGraphicsPipelineDesc;
+struct HgiDepthStencilState;
+struct HgiMultiSampleState;
+struct HgiRasterizationState;
+
 using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
 using HdStRenderPassStateSharedPtr = std::shared_ptr<class HdStRenderPassState>;
 
@@ -174,10 +179,27 @@ public:
     // AOV bindings.
     //
     HDST_API
-    HgiGraphicsCmdsDesc MakeGraphicsCmdsDesc(const HdRenderIndex *) const;
+    HgiGraphicsCmdsDesc MakeGraphicsCmdsDesc(
+                HdRenderIndex const * renderIndex) const;
+
+    // Helper to initialize graphics pipeline descriptor state including
+    // any additional state from the geometric shader.
+    HDST_API
+    void InitGraphicsPipelineDesc(
+                HgiGraphicsPipelineDesc * pipeDesc,
+                HdSt_GeometricShaderSharedPtr const & geometricShader) const;
 
 private:
     bool _UseAlphaMask() const;
+
+    void _InitPrimitiveState(
+                HgiGraphicsPipelineDesc * pipeDesc,
+                HdSt_GeometricShaderSharedPtr const & geometricShader) const;
+    void _InitDepthStencilState(HgiDepthStencilState * depthState) const;
+    void _InitMultiSampleState(HgiMultiSampleState * multisampleState) const;
+    void _InitRasterizationState(
+                HgiRasterizationState * rasterizationState,
+                HdSt_GeometricShaderSharedPtr const & geometricShader) const;
 
     // ---------------------------------------------------------------------- //
     // Camera state used when no HdCamera available

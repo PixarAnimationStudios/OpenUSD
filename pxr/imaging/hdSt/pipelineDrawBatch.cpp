@@ -865,10 +865,8 @@ struct _BindingState : public _DrawItemState
     void UnbindResourcesForViewTransformation() const;
 
     // Bind core resources and additional resources needed for drawing.
-    void BindResourcesForDrawing(
-                HdStRenderPassStateSharedPtr const & renderPassState) const;
-    void UnbindResourcesForDrawing(
-                HdStRenderPassStateSharedPtr const & renderPassState) const;
+    void BindResourcesForDrawing() const;
+    void UnbindResourcesForDrawing() const;
 
     HdStDispatchBufferSharedPtr dispatchBuffer;
     HdSt_ResourceBinder const & binder;
@@ -906,8 +904,7 @@ _BindingState::UnbindResourcesForViewTransformation() const
 }
 
 void
-_BindingState::BindResourcesForDrawing(
-    HdStRenderPassStateSharedPtr const & renderPassState) const
+_BindingState::BindResourcesForDrawing() const
 {
     BindResourcesForViewTransformation();
 
@@ -928,14 +925,10 @@ _BindingState::BindResourcesForDrawing(
         shader->BindResources(
                 glslProgram->GetProgram()->GetRawResource(), binder);
     }
-
-    renderPassState->Bind();
-    renderPassState->ApplyStateFromGeometricShader(binder, geometricShader);
 }
 
 void
-_BindingState::UnbindResourcesForDrawing(
-    HdStRenderPassStateSharedPtr const & renderPassState) const
+_BindingState::UnbindResourcesForDrawing() const
 {
     UnbindResourcesForViewTransformation();
 
@@ -955,8 +948,6 @@ _BindingState::UnbindResourcesForDrawing(
         }
         shader->UnbindResources(0, binder);
     }
-
-    renderPassState->Unbind();
 }
 
 HgiVertexBufferDescVector
@@ -1094,6 +1085,7 @@ _BindVertexBuffersForDrawing(
 static
 HgiGraphicsPipelineSharedPtr
 _GetDrawPipeline(
+    HdStRenderPassStateSharedPtr const & renderPassState,
     HdStResourceRegistrySharedPtr const & resourceRegistry,
     _BindingState const & state)
 {
@@ -1107,14 +1099,11 @@ _GetDrawPipeline(
 
     if (pipelineInstance.IsFirstInstance()) {
         HgiGraphicsPipelineDesc pipeDesc;
-        pipeDesc.primitiveType = state.geometricShader->GetHgiPrimitiveType();
+
+        renderPassState->InitGraphicsPipelineDesc(&pipeDesc,      
+                                                  state.geometricShader);
+
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
-
-        if (pipeDesc.primitiveType == HgiPrimitiveTypePatchList) {
-            pipeDesc.tessellationState.primitiveIndexSize =
-                        state.geometricShader->GetPrimitiveIndexSize();
-        }
-
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
 
         Hgi* hgi = resourceRegistry->GetHgi();
@@ -1160,6 +1149,7 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
 
     HgiGraphicsPipelineSharedPtr pso =
         _GetDrawPipeline(
+            renderPassState,
             resourceRegistry,
             state);
     HgiGraphicsPipelineHandle psoHandle = *pso.get();
@@ -1167,7 +1157,7 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
 
     _BindVertexBuffersForDrawing(gfxCmds, state);
 
-    state.BindResourcesForDrawing(renderPassState);
+    state.BindResourcesForDrawing();
 
     if (drawIndirect) {
         _ExecuteDrawIndirect(gfxCmds, _dispatchBuffer, state.indexBar);
@@ -1175,7 +1165,7 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
         _ExecuteDrawImmediate(gfxCmds, _dispatchBuffer, state.indexBar);
     }
 
-    state.UnbindResourcesForDrawing(renderPassState);
+    state.UnbindResourcesForDrawing();
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->drawCalls);
     HD_PERF_COUNTER_ADD(HdTokens->itemsDrawn, _numVisibleItems);
