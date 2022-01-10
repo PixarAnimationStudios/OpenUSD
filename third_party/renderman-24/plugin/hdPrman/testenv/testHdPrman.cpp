@@ -29,6 +29,8 @@
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/renderPass.h"
 #include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hd/rendererPluginRegistry.h"
+#include "pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h"
 #include "pxr/imaging/hd/camera.h"
 
 #include "pxr/usd/usd/stage.h"
@@ -46,8 +48,6 @@
 #include "pxr/base/work/threadLimits.h"
 
 #include "hdPrman/renderDelegate.h"
-
-#include "Riley.h"
 
 #include <fstream>
 #include <memory>
@@ -314,15 +314,6 @@ int main(int argc, char *argv[])
     // Render loop for products
     //
 
-    // Since this test uses HdPrman directly (usually we would
-    // use the plugin system), it does not use HdPrmanLoader. This means
-    // we need to link the test against libPrman, however our build system
-    // will look at the elf and remove any unused libraries. 
-    // By calling RixGetContext here, we make sure the symbols are 
-    // not removed post compilation.
-    RixContext *rix = RixGetContext();
-    TF_UNUSED(rix);
-
     TfStopwatch timer_hydra;
 
     // XXX In the future, we should be able to produce multiple
@@ -452,7 +443,13 @@ int main(int argc, char *argv[])
         // We should also configure the scene to filter for the
         // requested includedPurposes.
 
-        HdPrmanRenderDelegate hdPrmanBackend(settingsMap);
+        // In order to pick up the plugin scene indices, we need to
+        // instantiate the HdPrmanRenderDelegate through the
+        // renderer plugin registry.
+        HdPluginRenderDelegateUniqueHandle const renderDelegate =
+            HdRendererPluginRegistry::GetInstance().CreateRenderDelegate(
+                TfToken("HdPrmanLoaderRendererPlugin"),
+                settingsMap);
         
         // Hydra setup
         //
@@ -470,8 +467,8 @@ int main(int argc, char *argv[])
         // simple usage example like this, if you don't consider the range of
         // other scenarios Hydra is meant to handle.
         {
-            std::unique_ptr<HdRenderIndex> hdRenderIndex(
-                HdRenderIndex::New(&hdPrmanBackend, HdDriverVector()));
+            std::unique_ptr<HdRenderIndex> const hdRenderIndex(
+                HdRenderIndex::New(renderDelegate.Get(), HdDriverVector()));
             UsdImagingDelegate hdUsdFrontend(hdRenderIndex.get(),
                                              SdfPath::AbsoluteRootPath());
             hdUsdFrontend.Populate(stage->GetPseudoRoot());
@@ -481,7 +478,7 @@ int main(int argc, char *argv[])
                 hdUsdFrontend.SetCameraForSampling(product.cameraPath);
             }
 
-            TfTokenVector renderTags(1, HdRenderTagTokens->geometry);
+            const TfTokenVector renderTags{HdRenderTagTokens->geometry};
             // The collection of scene contents to render
             HdRprimCollection hdCollection(
                 _tokens->testCollection,
@@ -491,14 +488,14 @@ int main(int argc, char *argv[])
 
             // We don't need multi-pass rendering with a pathtracer
             // so we use a single, simple render pass.
-            HdRenderPassSharedPtr hdRenderPass =
-                hdPrmanBackend.CreateRenderPass(hdRenderIndex.get(),
-                                                hdCollection);
-            HdRenderPassStateSharedPtr hdRenderPassState =
-                hdPrmanBackend.CreateRenderPassState();
+            HdRenderPassSharedPtr const hdRenderPass =
+                renderDelegate->CreateRenderPass(hdRenderIndex.get(),
+                                                 hdCollection);
+            HdRenderPassStateSharedPtr const hdRenderPassState =
+                renderDelegate->CreateRenderPassState();
 
-            HdCamera * camera = 
-                dynamic_cast<HdCamera*>(
+            const HdCamera * const camera = 
+                dynamic_cast<const HdCamera*>(
                     hdRenderIndex->GetSprim(HdTokens->camera, sceneCamPath));
 
             hdRenderPassState->SetCameraAndFraming(
