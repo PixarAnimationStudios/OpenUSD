@@ -253,7 +253,7 @@ public:
     HD_API
     void SetEnableDepthMask(bool state);
     HD_API
-    bool GetEnableDepthMask();
+    bool GetEnableDepthMask() const;
 
     HD_API
     void SetEnableDepthTest(bool enabled);
