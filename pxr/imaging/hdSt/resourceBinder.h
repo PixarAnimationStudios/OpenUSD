@@ -40,6 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdStDrawItem;
+struct HgiResourceBindingsDesc;
 
 using HdStBufferResourceSharedPtr = 
     std::shared_ptr<class HdStBufferResource>;
@@ -326,7 +327,61 @@ public:
                                 HdStShaderCodeSharedPtrVector const &shaders,
                                 MetaData *metaDataOut,
                                 HgiCapabilities const *capabilities);
+
+    ////////////////////////////////////////////////////////////
+    // Hgi Binding
+    ////////////////////////////////////////////////////////////
+
+    HDST_API
+    void GetBufferBindingDesc(
+                HgiResourceBindingsDesc * bindingsDesc,
+                TfToken const & name,
+                HdStBufferResourceSharedPtr const & resource,
+                int offset,
+                int level = -1,
+                int numElements = 1) const;
+
+    HDST_API
+    void GetBufferArrayBindingDesc(
+                HgiResourceBindingsDesc * bindingsDesc,
+                HdStBufferArrayRangeSharedPtr const & bar) const;
+
+    HDST_API
+    void GetInterleavedBufferArrayBindingDesc(
+                HgiResourceBindingsDesc *bindingsDesc,
+                HdStBufferArrayRangeSharedPtr const & bar,
+                TfToken const & name) const;
+
+    HDST_API
+    void GetInstanceBufferArrayBindingDesc(
+                HgiResourceBindingsDesc * bindingsDesc,
+                HdStBufferArrayRangeSharedPtr const & bar,
+                int level) const;
     
+    HDST_API
+    void GetBindingRequestBindingDesc(
+                HgiResourceBindingsDesc * bindingsDesc,
+                HdBindingRequest const & req) const;
+
+    HDST_API
+    void GetTextureBindingDesc(
+                HgiResourceBindingsDesc * bindingsDesc,
+                TfToken const & name,
+                HgiSamplerHandle const & texelSampler,
+                HgiTextureHandle const & texelTexture) const;
+
+    HDST_API
+    void GetTextureWithLayoutBindingDesc(
+                HgiResourceBindingsDesc * bindingsDesc,
+                TfToken const & name,
+                HgiSamplerHandle const & texelSampler,
+                HgiTextureHandle const & texelTexture,
+                HgiTextureHandle const & layoutTexture) const;
+
+    ////////////////////////////////////////////////////////////
+    // GL Binding
+    ////////////////////////////////////////////////////////////
+
     HDST_API
     void Bind(HdBindingRequest const& req) const;
     HDST_API
@@ -400,6 +455,10 @@ public:
     /// bind a standalone uniform (float, vec2, vec3, vec4, mat4)
     HDST_API
     void BindUniformf(TfToken const &name, int count, const float *value) const;
+
+    ////////////////////////////////////////////////////////////
+    // Binding Queries
+    ////////////////////////////////////////////////////////////
 
     /// Returns whether a binding exists.
     bool HasBinding(TfToken const &name, int level=-1) const {

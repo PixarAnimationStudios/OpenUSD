@@ -43,6 +43,8 @@
 #include "pxr/imaging/hgiGL/sampler.h"
 #include "pxr/imaging/hgiGL/shaderProgram.h"
 
+#include "pxr/imaging/hgi/resourceBindings.h"
+
 #include "pxr/base/tf/staticTokens.h"
 
 #include <boost/functional/hash.hpp>
@@ -946,6 +948,176 @@ HdSt_ResourceBinder::ResolveComputeBindings(
                                              spec.tupleType.type));
     }
 }
+
+////////////////////////////////////////////////////////////
+// Hgi Binding
+////////////////////////////////////////////////////////////
+
+void
+HdSt_ResourceBinder::GetBufferBindingDesc(
+    HgiResourceBindingsDesc * bindingsDesc,
+    TfToken const & name,
+    HdStBufferResourceSharedPtr const & resource,
+    int offset,
+    int level,
+    int numElements) const
+{
+    if (!resource || !resource->GetHandle()) return;
+
+    HdBinding binding = GetBinding(name, level);
+
+    HgiShaderStage stageUsage = HgiShaderStageVertex | HgiShaderStageFragment;
+    HgiBufferBindDesc desc;
+
+    switch (binding.GetType()) {
+    case HdBinding::SSBO:
+        desc.buffers = { resource->GetHandle() };
+        desc.offsets = { static_cast<uint32_t>(offset) };
+        desc.bindingIndex = static_cast<uint32_t>(binding.GetLocation());
+        desc.resourceType = HgiBindResourceTypeStorageBuffer;
+        desc.stageUsage = stageUsage;
+        bindingsDesc->buffers.push_back(desc);
+        break;
+    case HdBinding::UBO:
+        desc.buffers = { resource->GetHandle() };
+        desc.offsets = { static_cast<uint32_t>(offset) };
+        desc.bindingIndex = static_cast<uint32_t>(binding.GetLocation());
+        desc.resourceType = HgiBindResourceTypeUniformBuffer;
+        desc.stageUsage = stageUsage;
+        bindingsDesc->buffers.push_back(desc);
+        break;
+    default:
+        // Do nothing here for other binding types.
+        break;
+    }
+}
+
+void
+HdSt_ResourceBinder::GetBufferArrayBindingDesc(
+    HgiResourceBindingsDesc * bindingsDesc,
+    HdStBufferArrayRangeSharedPtr const & bar) const
+{
+    if (!bar) return;
+
+    for (auto const & it : bar->GetResources()) {
+        GetBufferBindingDesc(bindingsDesc,
+                             it.first,
+                             it.second, it.second->GetOffset());
+    }
+}
+
+void
+HdSt_ResourceBinder::GetInterleavedBufferArrayBindingDesc(
+    HgiResourceBindingsDesc *bindingsDesc,
+    HdStBufferArrayRangeSharedPtr const & bar,
+    TfToken const & name) const
+{
+    if (!bar) return;
+
+    GetBufferBindingDesc(bindingsDesc,
+                         name,
+                         bar->GetResource(),
+                         bar->GetResource()->GetOffset());
+}
+
+void
+HdSt_ResourceBinder::GetInstanceBufferArrayBindingDesc(
+    HgiResourceBindingsDesc * bindingsDesc,
+    HdStBufferArrayRangeSharedPtr const & bar,
+    int level) const
+{
+    if (!bar) return;
+
+    for (auto const & it : bar->GetResources()) {
+        if (HasBinding(it.first, level)) {
+            GetBufferBindingDesc(
+                bindingsDesc,
+                it.first, it.second, it.second->GetOffset(), level);
+        }
+    }
+}
+
+void
+HdSt_ResourceBinder::GetBindingRequestBindingDesc(
+    HgiResourceBindingsDesc * bindingsDesc,
+    HdBindingRequest const & req) const
+{
+    if (req.IsTypeless()) {
+        return;
+    } else if (req.IsResource()) {
+        HdStBufferResourceSharedPtr resource =
+            std::static_pointer_cast<HdStBufferResource>(req.GetResource());
+
+        GetBufferBindingDesc(bindingsDesc,
+                             req.GetName(),
+                             resource,
+                             req.GetByteOffset());
+
+    } else if (req.IsInterleavedBufferArray()) {
+        // note: interleaved buffer needs only 1 binding
+        HdStBufferArrayRangeSharedPtr bar =
+            std::static_pointer_cast<HdStBufferArrayRange>(req.GetBar());
+
+        GetBufferBindingDesc(bindingsDesc,
+                             req.GetName(),
+                             bar->GetResource(),
+                             req.GetByteOffset());
+
+    } else if (req.IsBufferArray()) {
+        HdStBufferArrayRangeSharedPtr bar =
+            std::static_pointer_cast<HdStBufferArrayRange>(req.GetBar());
+
+        GetBufferArrayBindingDesc(bindingsDesc, bar);
+    }
+}
+
+void
+HdSt_ResourceBinder::GetTextureBindingDesc(
+    HgiResourceBindingsDesc * bindingsDesc,
+    TfToken const & name,
+    HgiSamplerHandle const & texelSampler,
+    HgiTextureHandle const & texelTexture) const
+{
+    if (!texelSampler.Get() || !texelTexture.Get()) {
+        return;
+    }
+
+    HdBinding const binding = GetBinding(name);
+
+    HgiTextureBindDesc texelDesc;
+    texelDesc.textures = { texelTexture };
+    texelDesc.samplers = { texelSampler };
+    texelDesc.resourceType = HgiBindResourceTypeSampledImage;
+    texelDesc.bindingIndex = binding.GetTextureUnit();
+    bindingsDesc->textures.push_back(std::move(texelDesc));
+}
+
+void
+HdSt_ResourceBinder::GetTextureWithLayoutBindingDesc(
+    HgiResourceBindingsDesc * bindingsDesc,
+    TfToken const & name,
+    HgiSamplerHandle const & texelSampler,
+    HgiTextureHandle const & texelTexture,
+    HgiTextureHandle const & layoutTexture) const
+{
+    if (!texelSampler.Get() || !texelTexture.Get() || !layoutTexture.Get()) {
+        return;
+    }
+
+    GetTextureBindingDesc(bindingsDesc, name, texelSampler, texelTexture);
+
+    HdBinding const layoutBinding = GetBinding(_ConcatLayout(name));
+    HgiTextureBindDesc layoutDesc;
+    layoutDesc.textures = { layoutTexture };
+    layoutDesc.samplers = { };
+    layoutDesc.resourceType = HgiBindResourceTypeSampledImage;
+    layoutDesc.bindingIndex = layoutBinding.GetTextureUnit();
+    bindingsDesc->textures.push_back(std::move(layoutDesc));
+}
+
+////////////////////////////////////////////////////////////
+// GL Binding
+////////////////////////////////////////////////////////////
 
 void
 HdSt_ResourceBinder::BindBuffer(TfToken const &name,
