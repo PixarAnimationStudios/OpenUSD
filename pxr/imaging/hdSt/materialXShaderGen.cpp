@@ -26,6 +26,7 @@
 #include "pxr/base/tf/stringUtils.h"
 
 #include <MaterialXCore/Value.h>
+#include <MaterialXGenGlsl/Nodes/SurfaceNodeGlsl.h>
 #include <MaterialXGenShader/Shader.h>
 #include <MaterialXGenShader/ShaderGenerator.h>
 #include <MaterialXGenShader/Syntax.h>
@@ -34,6 +35,31 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+    // Create a customized version of the class mx::SurfaceNodeGlsl
+    // to be able to notify the shader generator when we start/end
+    // emitting the code for the SurfaceNode
+    class HdStMaterialXSurfaceNodeGen : public mx::SurfaceNodeGlsl
+    {
+    public:
+        static mx::ShaderNodeImplPtr create() {
+            return std::make_shared<HdStMaterialXSurfaceNodeGen>();
+        }
+
+        void emitFunctionCall(
+            const mx::ShaderNode& node, 
+            mx::GenContext& context,
+            mx::ShaderStage& stage) const override
+        {
+            HdStMaterialXShaderGen& shadergen = 
+                static_cast<HdStMaterialXShaderGen&>(context.getShaderGenerator());
+            
+            shadergen.SetEmittingSurfaceNode(true);
+            mx::SurfaceNodeGlsl::emitFunctionCall(node, context, stage);
+            shadergen.SetEmittingSurfaceNode(false);
+        }
+    };
+}
 
 static const std::string MxHdTangentString = 
 R"(
@@ -83,6 +109,14 @@ R"(#if NUM_LIGHTS > 0
                 $lightData[u_numActiveLightSources].decay_rate = 0.0;
             }
 
+            // ShadowOcclusion value
+            #if USE_SHADOWS
+                u_lightData[u_numActiveLightSources].shadowOcclusion = 
+                    light.hasShadow ? shadowing(i, Peye) : 1.0;
+            #else 
+                u_lightData[u_numActiveLightSources].shadowOcclusion = 1.0;
+            #endif
+
             u_numActiveLightSources++;
         }
     }
@@ -95,10 +129,15 @@ HdStMaterialXShaderGen::HdStMaterialXShaderGen(
       _mxHdTextureMap(mxHdInfo.textureMap),
       _mxHdPrimvarMap(mxHdInfo.primvarMap),
       _materialTag(mxHdInfo.materialTag),
-      _bindlessTexturesEnabled(mxHdInfo.bindlessTexturesEnabled)
+      _bindlessTexturesEnabled(mxHdInfo.bindlessTexturesEnabled),
+      _emittingSurfaceNode(false)
 {
     _defaultTexcoordName = (mxHdInfo.defaultTexcoordName == mx::EMPTY_STRING) ?
                             "st" : mxHdInfo.defaultTexcoordName;
+
+    // Register the customized version of the Surface node generator
+    registerImplementation("IM_surface_" + GlslShaderGenerator::TARGET, 
+        HdStMaterialXSurfaceNodeGen::create);
 }
 
 // Based on GlslShaderGenerator::generate()
@@ -130,6 +169,10 @@ HdStMaterialXShaderGen::_EmitGlslfxShader(
     mx::GenContext& mxContext,
     mx::ShaderStage& mxStage) const
 {
+    // Add a per-light shadowOcclusion value to the lightData uniform block
+    addStageUniform(mx::HW::LIGHT_DATA, mx::Type::FLOAT, 
+        "shadowOcclusion", mxStage);
+
     _EmitGlslfxHeader(mxStage);
     _EmitMxFunctions(mxGraph, mxContext, mxStage);
     _EmitMxSurfaceShader(mxGraph, mxContext, mxStage);
@@ -706,5 +749,22 @@ HdStMaterialXShaderGen::emitVariableDeclarations(
     }
 }
 
+void 
+HdStMaterialXShaderGen::emitLine(
+    const std::string& str, 
+    MaterialX::ShaderStage& stage, 
+    bool semicolon) const
+{
+    mx::GlslShaderGenerator::emitLine(str, stage, semicolon);
+
+    // When emitting the Light loop code for the Surface node, the variable
+    // 'occlusion' represents shadow occlusion. We don't use MaterialX's
+    // shadow implementation (hwShadowMap is false). Instead, use our own 
+    // per-light occlusion value calculated in mxInit() and stored in lightData
+    if (_emittingSurfaceNode && str == "vec3 L = lightShader.direction") {
+        emitLine(
+            "occlusion = u_lightData[activeLightIndex].shadowOcclusion", stage);
+    }
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
