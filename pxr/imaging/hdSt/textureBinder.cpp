@@ -327,6 +327,67 @@ public:
     }
 };
 
+class _BindingDescsFunctor {
+public:
+    static void Compute(
+        TfToken const &name,
+        HdStUvTextureObject const &texture,
+        HdStUvSamplerObject const &sampler,
+        HdSt_ResourceBinder const &binder,
+        HgiResourceBindingsDesc * bindingsDesc)
+    {
+        binder.GetTextureBindingDesc(
+                bindingsDesc,
+                name,
+                sampler.GetSampler(),
+                texture.GetTexture());
+    }
+
+    static void Compute(
+        TfToken const &name,
+        HdStFieldTextureObject const &texture,
+        HdStFieldSamplerObject const &sampler,
+        HdSt_ResourceBinder const &binder,
+        HgiResourceBindingsDesc * bindingsDesc)
+    {
+        binder.GetTextureBindingDesc(
+                bindingsDesc,
+                name,
+                sampler.GetSampler(),
+                texture.GetTexture());
+    }
+
+    static void Compute(
+        TfToken const &name,
+        HdStPtexTextureObject const &texture,
+        HdStPtexSamplerObject const &sampler,
+        HdSt_ResourceBinder const &binder,
+        HgiResourceBindingsDesc * bindingsDesc)
+    {
+        binder.GetTextureWithLayoutBindingDesc(
+                bindingsDesc,
+                name,
+                sampler.GetTexelsSampler(),
+                texture.GetTexelTexture(),
+                texture.GetLayoutTexture());
+    }
+
+    static void Compute(
+        TfToken const &name,
+        HdStUdimTextureObject const &texture,
+        HdStUdimSamplerObject const &sampler,
+        HdSt_ResourceBinder const &binder,
+        HgiResourceBindingsDesc * bindingsDesc)
+    {
+        binder.GetTextureWithLayoutBindingDesc(
+                bindingsDesc,
+                name,
+                sampler.GetTexelsSampler(),
+                texture.GetTexelTexture(),
+                texture.GetLayoutTexture());
+    }
+};
+
 template<HdTextureType textureType, class Functor, typename ...Args>
 void _CastAndCompute(
     HdStShaderCode::NamedTextureHandle const &namedTextureHandle,
@@ -425,6 +486,15 @@ HdSt_TextureBinder::UnbindResources(
     const NamedTextureHandleVector &textures)
 {
     _Dispatch<_BindFunctor>(textures, binder, /* bind = */ false);
+}
+
+void
+HdSt_TextureBinder::GetBindingDescs(
+        HdSt_ResourceBinder const &binder,
+        HgiResourceBindingsDesc * bindingsDesc,
+        const NamedTextureHandleVector &textures)
+{
+    _Dispatch<_BindingDescsFunctor>(textures, binder, bindingsDesc);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
