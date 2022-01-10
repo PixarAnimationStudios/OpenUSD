@@ -1013,8 +1013,14 @@ private:
     }
 
     friend void swap(SdfPath &lhs, SdfPath &rhs) {
-        lhs._primPart.swap(rhs._primPart);
-        lhs._propPart.swap(rhs._propPart);
+        // This memcpy approach compiles to 4 64-bit register <-> memory movs on
+        // x86-64.  The clear and obvious approach of swapping each member
+        // compiles to 8 32-bit register <-> memory movs.
+        static_assert(sizeof(lhs) == sizeof(uint64_t), "");
+        uint64_t tmp;
+        std::memcpy(&tmp, &lhs, sizeof(lhs));
+        std::memcpy(&lhs, &rhs, sizeof(rhs));
+        std::memcpy(&rhs, &tmp, sizeof(tmp));
     }
 
     Sdf_PathPrimNodeHandle _primPart;
