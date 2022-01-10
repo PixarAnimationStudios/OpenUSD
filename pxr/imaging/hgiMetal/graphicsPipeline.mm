@@ -166,6 +166,11 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
     } else {
         stateDesc.alphaToCoverageEnabled = NO;
     }
+    if (_descriptor.multiSampleState.alphaToOneEnable) {
+        stateDesc.alphaToOneEnabled = YES;
+    } else {
+        stateDesc.alphaToOneEnabled = NO;
+    }
 
     stateDesc.vertexDescriptor = _vertexDescriptor;
 
@@ -182,6 +187,26 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(id<MTLDevice> device)
     }
 }
 
+static MTLStencilDescriptor *
+_CreateStencilDescriptor(HgiStencilState const & stencilState)
+{
+    MTLStencilDescriptor *stencilDescriptor =
+        [[MTLStencilDescriptor alloc] init];
+
+    stencilDescriptor.stencilCompareFunction =
+        HgiMetalConversions::GetCompareFunction(stencilState.compareFn);
+    stencilDescriptor.stencilFailureOperation =
+        HgiMetalConversions::GetStencilOp(stencilState.stencilFailOp);
+    stencilDescriptor.depthFailureOperation =
+        HgiMetalConversions::GetStencilOp(stencilState.depthFailOp);
+    stencilDescriptor.depthStencilPassOperation =
+        HgiMetalConversions::GetStencilOp(stencilState.depthStencilPassOp);
+    stencilDescriptor.readMask = stencilState.readMask;
+    stencilDescriptor.writeMask = stencilState.writeMask;
+
+    return stencilDescriptor;
+}
+
 void
 HgiMetalGraphicsPipeline::_CreateDepthStencilState(id<MTLDevice> device)
 {
@@ -191,29 +216,30 @@ HgiMetalGraphicsPipeline::_CreateDepthStencilState(id<MTLDevice> device)
     HGIMETAL_DEBUG_LABEL(
         depthStencilStateDescriptor, _descriptor.debugName.c_str());
 
-    if (_descriptor.depthState.depthWriteEnabled) {
-        depthStencilStateDescriptor.depthWriteEnabled = YES;
-    }
-    else {
-        depthStencilStateDescriptor.depthWriteEnabled = NO;
-    }
     if (_descriptor.depthState.depthTestEnabled) {
-        MTLCompareFunction depthFn = HgiMetalConversions::GetDepthCompareFunction(
+        MTLCompareFunction depthFn = HgiMetalConversions::GetCompareFunction(
             _descriptor.depthState.depthCompareFn);
         depthStencilStateDescriptor.depthCompareFunction = depthFn;
+        if (_descriptor.depthState.depthWriteEnabled) {
+            depthStencilStateDescriptor.depthWriteEnabled = YES;
+        }
+        else {
+            depthStencilStateDescriptor.depthWriteEnabled = NO;
+        }
     }
     else {
         // Even if there is no depth attachment, some drivers may still perform
         // the depth test. So we pick Always over Never.
         depthStencilStateDescriptor.depthCompareFunction =
             MTLCompareFunctionAlways;
+        depthStencilStateDescriptor.depthWriteEnabled = NO;
     }
     
     if (_descriptor.depthState.stencilTestEnabled) {
-        TF_CODING_ERROR("Missing implementation stencil mask enabled");
-    } else {
-        depthStencilStateDescriptor.backFaceStencil = nil;
-        depthStencilStateDescriptor.frontFaceStencil = nil;
+        depthStencilStateDescriptor.backFaceStencil =
+            _CreateStencilDescriptor(_descriptor.depthState.stencilFront);
+        depthStencilStateDescriptor.frontFaceStencil =
+            _CreateStencilDescriptor(_descriptor.depthState.stencilBack);
     }
     
     _depthStencilState = [device
@@ -228,6 +254,23 @@ void
 HgiMetalGraphicsPipeline::BindPipeline(id<MTLRenderCommandEncoder> renderEncoder)
 {
     [renderEncoder setRenderPipelineState:_renderPipelineState];
+
+    //
+    // DepthStencil state
+    //
+    HgiDepthStencilState const & dsState = _descriptor.depthState;
+    if (_descriptor.depthState.depthBiasEnabled) {
+        [renderEncoder
+            setDepthBias: dsState.depthBiasConstantFactor
+              slopeScale: dsState.depthBiasSlopeFactor
+                   clamp: 0.0f];
+    }
+
+    if (_descriptor.depthState.stencilTestEnabled) {
+        [renderEncoder
+            setStencilFrontReferenceValue: dsState.stencilFront.referenceValue
+                       backReferenceValue: dsState.stencilBack.referenceValue];
+    }
 
     //
     // Rasterization state

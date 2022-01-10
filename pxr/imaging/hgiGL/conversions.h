@@ -71,7 +71,10 @@ public:
     static GLenum GetBlendEquation(HgiBlendOp bo);
 
     HGIGL_API
-    static GLenum GetDepthCompareFunction(HgiCompareFunction cf);
+    static GLenum GetCompareFunction(HgiCompareFunction cf);
+
+    HGIGL_API
+    static GLenum GetStencilOp(HgiStencilOp op);
 
     HGIGL_API
     static GLenum GetTextureType(HgiTextureType tt);

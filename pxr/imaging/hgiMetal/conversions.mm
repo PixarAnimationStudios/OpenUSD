@@ -320,6 +320,27 @@ struct {
 static_assert(TfArraySize(_compareFnTable) == HgiCompareFunctionCount,
               "_compareFnTable array out of sync with HgiFormat enum");
 
+//
+// HgiStencilOp
+//
+struct {
+    HgiStencilOp hgiStencilOp;
+    MTLStencilOperation metalStencilOp;
+} static const _stencilOpTable[] =
+{
+    {HgiStencilOpKeep,           MTLStencilOperationKeep},
+    {HgiStencilOpZero,           MTLStencilOperationZero},
+    {HgiStencilOpReplace,        MTLStencilOperationReplace},
+    {HgiStencilOpIncrementClamp, MTLStencilOperationIncrementClamp},
+    {HgiStencilOpDecrementClamp, MTLStencilOperationDecrementClamp},
+    {HgiStencilOpInvert,         MTLStencilOperationInvert},
+    {HgiStencilOpIncrementWrap,  MTLStencilOperationIncrementWrap},
+    {HgiStencilOpDecrementWrap,  MTLStencilOperationDecrementWrap},
+};
+
+static_assert(TfArraySize(_stencilOpTable) == HgiStencilOpCount,
+              "_stencilOpTable array out of sync with HgiStencilOp enum");
+
 struct {
     HgiTextureType hgiTextureType;
     MTLTextureType metalTT;
@@ -493,9 +514,15 @@ HgiMetalConversions::GetAttachmentStoreOp(HgiAttachmentStoreOp storeOp)
 }
 
 MTLCompareFunction
-HgiMetalConversions::GetDepthCompareFunction(HgiCompareFunction cf)
+HgiMetalConversions::GetCompareFunction(HgiCompareFunction cf)
 {
     return _compareFnTable[cf].metalCF;
+}
+
+MTLStencilOperation
+HgiMetalConversions::GetStencilOp(HgiStencilOp op)
+{
+    return _stencilOpTable[op].metalStencilOp;
 }
 
 MTLTextureType

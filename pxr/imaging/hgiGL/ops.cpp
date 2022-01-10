@@ -810,6 +810,10 @@ HgiGLOps::BindFramebufferOp(
 
             glBlendFuncSeparatei(i, srcColor, dstColor, srcAlpha, dstAlpha);
             glBlendEquationSeparatei(i, colorOp, alphaOp);
+            glBlendColor(colorAttachment.blendConstantColor[0],
+                         colorAttachment.blendConstantColor[1],
+                         colorAttachment.blendConstantColor[2],
+                         colorAttachment.blendConstantColor[3]);
         }
 
         HgiAttachmentDesc const& depthAttachment =

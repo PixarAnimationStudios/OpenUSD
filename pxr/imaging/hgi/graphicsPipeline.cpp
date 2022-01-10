@@ -75,6 +75,7 @@ bool operator!=(
 
 HgiMultiSampleState::HgiMultiSampleState()
     : alphaToCoverageEnable(false)
+    , alphaToOneEnable(false)
     , sampleCount(HgiSampleCount1)
 {
 }
@@ -84,6 +85,7 @@ bool operator==(
     const HgiMultiSampleState& rhs)
 {
     return lhs.alphaToCoverageEnable == rhs.alphaToCoverageEnable &&
+           lhs.alphaToOneEnable == rhs.alphaToOneEnable &&
            lhs.sampleCount == rhs.sampleCount;
 }
 
@@ -125,7 +127,12 @@ HgiDepthStencilState::HgiDepthStencilState()
     : depthTestEnabled(true)
     , depthWriteEnabled(true)
     , depthCompareFn(HgiCompareFunctionLess)
+    , depthBiasEnabled(false)
+    , depthBiasConstantFactor(0.0f)
+    , depthBiasSlopeFactor(0.0f)
     , stencilTestEnabled(false)
+    , stencilFront()
+    , stencilBack()
 {
 }
 
@@ -136,12 +143,48 @@ bool operator==(
     return lhs.depthTestEnabled == rhs.depthTestEnabled &&
            lhs.depthWriteEnabled == rhs.depthWriteEnabled &&
            lhs.depthCompareFn == rhs.depthCompareFn &&
-           lhs.stencilTestEnabled == rhs.stencilTestEnabled;
+           lhs.depthBiasEnabled == rhs.depthBiasEnabled &&
+           lhs.depthBiasConstantFactor == rhs.depthBiasConstantFactor &&
+           lhs.depthBiasSlopeFactor == rhs.depthBiasSlopeFactor &&
+           lhs.stencilTestEnabled == rhs.stencilTestEnabled &&
+           lhs.stencilFront == rhs.stencilFront &&
+           lhs.stencilBack == rhs.stencilBack;
 }
 
 bool operator!=(
     const HgiDepthStencilState& lhs,
     const HgiDepthStencilState& rhs)
+{
+    return !(lhs == rhs);
+}
+
+HgiStencilState::HgiStencilState()
+    : compareFn(HgiCompareFunctionAlways)
+    , referenceValue(0)
+    , stencilFailOp(HgiStencilOpKeep)
+    , depthFailOp(HgiStencilOpKeep)
+    , depthStencilPassOp(HgiStencilOpKeep)
+    , readMask(0xffffffff)
+    , writeMask(0xffffffff)
+{
+}
+
+bool operator==(
+    const HgiStencilState& lhs,
+    const HgiStencilState& rhs)
+{
+    return lhs.compareFn == rhs.compareFn &&
+           lhs.referenceValue == rhs.referenceValue &&
+           lhs.stencilFailOp == rhs.stencilFailOp &&
+           lhs.depthFailOp == rhs.depthFailOp &&
+           lhs.depthStencilPassOp == rhs.depthStencilPassOp &&
+           lhs.readMask == rhs.readMask &&
+           lhs.writeMask == rhs.writeMask;
+}
+
+bool operator!=(
+    const HgiStencilState& lhs,
+    const HgiStencilState& rhs)
 {
     return !(lhs == rhs);
 }

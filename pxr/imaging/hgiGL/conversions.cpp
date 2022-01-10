@@ -189,6 +189,19 @@ _compareFunctionTable[HgiCompareFunctionCount][2] =
 };
 
 static uint32_t
+_stencilOpTable[HgiStencilOpCount][2] =
+{
+    {HgiStencilOpKeep,           GL_KEEP},
+    {HgiStencilOpZero,           GL_ZERO},
+    {HgiStencilOpReplace,        GL_REPLACE},
+    {HgiStencilOpIncrementClamp, GL_INCR},
+    {HgiStencilOpDecrementClamp, GL_DECR},
+    {HgiStencilOpInvert,         GL_INVERT},
+    {HgiStencilOpIncrementWrap,  GL_INCR_WRAP},
+    {HgiStencilOpDecrementWrap,  GL_DECR_WRAP},
+};
+
+static uint32_t
 _textureTypeTable[HgiTextureTypeCount][2] =
 {
     {HgiTextureType1D,      GL_TEXTURE_1D},
@@ -361,9 +374,15 @@ HgiGLConversions::GetBlendEquation(HgiBlendOp bo)
 }
 
 GLenum
-HgiGLConversions::GetDepthCompareFunction(HgiCompareFunction cf)
+HgiGLConversions::GetCompareFunction(HgiCompareFunction cf)
 {
     return _compareFunctionTable[cf][1];
+}
+
+GLenum
+HgiGLConversions::GetStencilOp(HgiStencilOp op)
+{
+    return _stencilOpTable[op][1];
 }
 
 GLenum

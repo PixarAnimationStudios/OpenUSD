@@ -72,7 +72,10 @@ public:
     static MTLStoreAction GetAttachmentStoreOp(HgiAttachmentStoreOp storeOp);
     
     HGIMETAL_API
-    static MTLCompareFunction GetDepthCompareFunction(HgiCompareFunction cf);
+    static MTLCompareFunction GetCompareFunction(HgiCompareFunction cf);
+
+    HGIMETAL_API
+    static MTLStencilOperation GetStencilOp(HgiStencilOp op);
     
     HGIMETAL_API
     static MTLTextureType GetTextureType(HgiTextureType tt);

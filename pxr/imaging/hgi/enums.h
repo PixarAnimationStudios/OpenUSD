@@ -463,6 +463,19 @@ enum HgiBlendFactor
     HgiBlendFactorCount
 };
 
+/// \enum HgiColorMaskBits
+///
+/// Describes whether to permit or restrict writing to color components
+/// of a color attachment.
+///
+enum HgiColorMaskBits : HgiBits
+{
+    HgiColorMaskRed             = 1 << 0,
+    HgiColorMaskGreen           = 1 << 1,
+    HgiColorMaskBlue            = 1 << 2,
+    HgiColorMaskAlpha           = 1 << 3,
+};
+using HgiColorMask = HgiBits;
 
 /// \enum HgiCompareFunction
 ///
@@ -480,6 +493,24 @@ enum HgiCompareFunction
     HgiCompareFunctionAlways,
 
     HgiCompareFunctionCount
+};
+
+/// \enum HgiStencilOp
+///
+/// Stencil operations.
+///
+enum HgiStencilOp
+{
+    HgiStencilOpKeep = 0,
+    HgiStencilOpZero,
+    HgiStencilOpReplace,
+    HgiStencilOpIncrementClamp,
+    HgiStencilOpDecrementClamp,
+    HgiStencilOpInvert,
+    HgiStencilOpIncrementWrap,
+    HgiStencilOpDecrementWrap,
+
+    HgiStencilOpCount
 };
 
 /// \enum HgiComponentSwizzle

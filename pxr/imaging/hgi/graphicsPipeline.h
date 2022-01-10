@@ -119,6 +119,10 @@ inline bool operator!=(
 /// <ul>
 /// <li>alphaToCoverageEnable:
 ///   Fragment's color.a determines coverage (screen door transparency).</li>
+/// <li>alphaToOneEnable:
+///   Fragment's color.a is replaced by the maximum representable alpha
+///   value for fixed-point color attachments, or by 1.0 for floating-point
+///   attachments.</li>
 /// <li>sampleCount:
 ///   The number of samples for each fragment. Must match attachments</li>
 /// </ul>
@@ -129,6 +133,7 @@ struct HgiMultiSampleState
     HgiMultiSampleState();
 
     bool alphaToCoverageEnable;
+    bool alphaToOneEnable;
     HgiSampleCount sampleCount;
 };
 
@@ -182,6 +187,53 @@ bool operator!=(
     const HgiRasterizationState& lhs,
     const HgiRasterizationState& rhs);
 
+/// \struct HgiStencilState
+///
+/// Properties controlling the operation of the stencil test.
+///
+/// <ul>
+/// <li>compareFn:
+///   The function used to test the reference value with the masked
+///   value read from the stencil buffer.</li>
+/// <li>referenceValue:
+//.   The reference value used by the stencil test function.</li>
+/// <li>stencilFailOp:
+///   The operation executed when the stencil test fails.</li>
+/// <li>depthFailOp:
+///   The operation executed when the stencil test passes but the
+///   depth test fails.</li>
+/// <li>depthStencilPassOp:
+///   The operation executed when both stencil and depth tests pass.</li>
+/// <li>readMask:
+///   The mask applied to values before the stencil test function.</li>
+/// <li>writeMak:
+///   The mask applied when writing to the stencil buffer.</li>
+/// </ul>
+///
+struct HgiStencilState
+{
+    HGI_API
+    HgiStencilState();
+
+    HgiCompareFunction compareFn;
+    uint32_t referenceValue;
+    HgiStencilOp stencilFailOp;
+    HgiStencilOp depthFailOp;
+    HgiStencilOp depthStencilPassOp;
+    uint32_t readMask;
+    uint32_t writeMask;
+};
+
+HGI_API
+bool operator==(
+    const HgiStencilState& lhs,
+    const HgiStencilState& rhs);
+
+HGI_API
+bool operator!=(
+    const HgiStencilState& lhs,
+    const HgiStencilState& rhs);
+
 /// \struct HgiDepthStencilState
 ///
 /// Properties to configure depth and stencil test.
@@ -195,8 +247,20 @@ bool operator!=(
 ///   When enabled uses `depthCompareFn` to test if a fragment passes the
 ///   depth test. Note that depth writes are automatically disabled when
 ///   depthTestEnabled is false.</li>
+/// <li>depthCompareFn:
+///   The function used to test depth values.</li>
+/// <li>depthBiasEnabled:
+///   When enabled applies a bias to depth values before the depth test.
+/// <li>depthBiasConstantFactor:
+///   The constant depth bias.</li>
+/// <li>depthBiasSlopeFactor:
+///   The depth bias that scales with the gradient of the primitive.</li>
 /// <li>stencilTestEnabled:
 ///   Enables the stencil test.</li>
+/// <li>stencilFront:
+///   Stencil operation for front faces.</li>
+/// <li>stencilBack:
+///   Stencil operation for back faces.</li>
 /// </ul>
 ///
 struct HgiDepthStencilState
@@ -207,7 +271,14 @@ struct HgiDepthStencilState
     bool depthTestEnabled;
     bool depthWriteEnabled;
     HgiCompareFunction depthCompareFn;
+
+    bool depthBiasEnabled;
+    float depthBiasConstantFactor;
+    float depthBiasSlopeFactor;
+
     bool stencilTestEnabled;
+    HgiStencilState stencilFront;
+    HgiStencilState stencilBack;
 };
 
 HGI_API
