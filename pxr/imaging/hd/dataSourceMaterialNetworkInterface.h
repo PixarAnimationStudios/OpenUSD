@@ -25,6 +25,7 @@
 #ifndef HD_DATA_SOURCE_MATERIAL_NETWORK_INTERFACE_H
 #define HD_DATA_SOURCE_MATERIAL_NETWORK_INTERFACE_H
 
+#include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/hd/containerDataSourceEditor.h"
 #include "pxr/imaging/hd/materialNetworkInterface.h"
 #include <unordered_map>
@@ -45,10 +46,16 @@ class HdDataSourceMaterialNetworkInterface
 public:
 
     HdDataSourceMaterialNetworkInterface(
+        const SdfPath &materialPrimPath,
         const HdContainerDataSourceHandle &networkContainer)
-    : _networkContainer(networkContainer)
+    : _materialPrimPath(materialPrimPath)
+    , _networkContainer(networkContainer)
     , _containerEditor(networkContainer)
     {}
+
+    SdfPath GetMaterialPrimPath() const override {
+        return _materialPrimPath;
+    }
 
     HD_API
     TfTokenVector GetNodeNames() const override;
@@ -134,6 +141,7 @@ private:
         const HdDataSourceLocator &loc,
         const HdDataSourceBaseHandle &ds);
 
+    SdfPath _materialPrimPath;
     HdContainerDataSourceHandle _networkContainer;
     HdContainerDataSourceEditor _containerEditor;
     _OverrideMap _existingOverrides;

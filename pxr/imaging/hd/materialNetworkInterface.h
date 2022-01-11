@@ -25,6 +25,7 @@
 #define PXR_IMAGING_HD_MATERIAL_NETWORK_INTERFACE_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/tf/smallVector.h"
 #include "pxr/base/tf/token.h"
@@ -48,6 +49,8 @@ class HdMaterialNetworkInterface
 {
 public:
     virtual ~HdMaterialNetworkInterface() = default;
+
+    virtual SdfPath GetMaterialPrimPath() const = 0;
 
     virtual TfTokenVector GetNodeNames() const  = 0;
     virtual TfToken GetNodeType(const TfToken &nodeName) const = 0;

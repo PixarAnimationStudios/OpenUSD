@@ -47,10 +47,7 @@ void MatfiltMaterialX(const SdfPath & networkId,
 /// Implementation that uses the abstract material interface instead.
 void
 MatfiltMaterialX(
-    const SdfPath & networkId,
     HdMaterialNetworkInterface *netInterface,
-    const std::map<TfToken, VtValue> & contextValues,
-    const NdrTokenVec & shaderTypePriority,
     std::vector<std::string> * outputErrorMessages);
 
 PXR_NAMESPACE_CLOSE_SCOPE

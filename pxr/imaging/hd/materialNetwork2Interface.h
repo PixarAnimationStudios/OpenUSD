@@ -41,10 +41,18 @@ class HdMaterialNetwork2Interface
 {
 public:
 
-    HdMaterialNetwork2Interface(HdMaterialNetwork2 *materialNetwork)
-    : _materialNetwork(materialNetwork)
+    HdMaterialNetwork2Interface(
+        const SdfPath &materialPrimPath,
+        HdMaterialNetwork2 *materialNetwork)
+    : _materialPrimPath(materialPrimPath)
+    , _materialNetwork(materialNetwork)
     , _lastAccessedNode(nullptr)
     {}
+
+    SdfPath GetMaterialPrimPath() const override {
+        return _materialPrimPath;
+    }
+
     HD_API
     TfTokenVector GetNodeNames() const override;
 
@@ -115,6 +123,7 @@ public:
         const InputConnection &connection) override;
 
 private:
+    SdfPath _materialPrimPath;
     HdMaterialNetwork2 *_materialNetwork;
     mutable TfToken _lastAccessedNodeName;
     mutable HdMaterialNode2 *_lastAccessedNode;

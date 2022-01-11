@@ -360,7 +360,7 @@ HdMtlxCreateMtlxDocumentFromHdNetwork(
     // XXX Unfortunate but necessary to cast away constness even though
     // hdNetwork isn't modified.
     HdMaterialNetwork2Interface netInterface(
-        const_cast<HdMaterialNetwork2*>(&hdNetwork));
+        materialPath, const_cast<HdMaterialNetwork2*>(&hdNetwork));
 
     TfToken terminalNodeName = hdMaterialXNodePath.GetAsToken();
     
@@ -368,7 +368,6 @@ HdMtlxCreateMtlxDocumentFromHdNetwork(
         &netInterface,
         terminalNodeName,
         netInterface.GetNodeInputConnectionNames(terminalNodeName),
-        materialPath,
         libraries,
         hdTextureNodes,
         mxHdTextureMap,
@@ -482,7 +481,6 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
     HdMaterialNetworkInterface *netInterface,
     TfToken const& terminalNodeName,
     TfTokenVector const& terminalNodeConnectionNames,
-    SdfPath const& materialPath,
     MaterialX::DocumentPtr const& libraries,
     std::set<SdfPath> * hdTextureNodes,
     MaterialX::StringMap * mxHdTextureMap,
@@ -497,6 +495,7 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
     mxDoc->importLibrary(libraries);
     
     // Create a material that instantiates the shader
+    SdfPath materialPath = netInterface->GetMaterialPrimPath();
     const std::string & materialName = materialPath.GetName();
     TfToken mxType =
         _GetMxNodeType(mxDoc, netInterface->GetNodeType(terminalNodeName));

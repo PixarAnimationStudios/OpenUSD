@@ -125,9 +125,11 @@ MatfiltConvertPreviewMaterial(
     const NdrTokenVec & shaderTypePriority,
     std::vector<std::string> * outputErrorMessages)
 {
-    HdMaterialNetwork2Interface netInterface(&network);
-    MatfiltConvertPreviewMaterial(networkId, &netInterface, contextValues,
-                                  shaderTypePriority, outputErrorMessages);
+    TF_UNUSED(contextValues);
+    TF_UNUSED(shaderTypePriority);
+
+    HdMaterialNetwork2Interface netInterface(networkId, &network);
+    MatfiltConvertPreviewMaterial(&netInterface, outputErrorMessages);
 }
 
 // Returns a sibling path to nodeName.
@@ -317,7 +319,7 @@ _ProcessPreviewSurfaceNode(
 // to read them via a Renderman texture plugin.
 void
 _ProcessUVTextureNode(
-    HdMaterialNetworkInterface *netInterface,
+    HdMaterialNetworkInterface * netInterface,
     const TfToken &nodeName,
     std::vector<std::string> * outputErrorMessages)
 {
@@ -415,15 +417,9 @@ _ProcessUVTextureNode(
 
 void
 MatfiltConvertPreviewMaterial(
-    const SdfPath & networkId,
-    HdMaterialNetworkInterface *netInterface,
-    const std::map<TfToken, VtValue> & contextValues,
-    const NdrTokenVec & shaderTypePriority,
+    HdMaterialNetworkInterface * netInterface,
     std::vector<std::string> * outputErrorMessages)
 {
-    TF_UNUSED(contextValues);
-    TF_UNUSED(shaderTypePriority);
-
     if (!netInterface) {
         return;
     }
@@ -436,9 +432,9 @@ MatfiltConvertPreviewMaterial(
     
         if (nodeType == _tokens->UsdPreviewSurface) {
             if (foundPreviewSurface) {
-                outputErrorMessages->push_back(
-                    TfStringPrintf("Found multiple UsdPreviewSurface "
-                                   "nodes in <%s>", networkId.GetText()));
+                outputErrorMessages->push_back(TfStringPrintf(
+                    "Found multiple UsdPreviewSurface nodes in <%s>",
+                    netInterface->GetMaterialPrimPath().GetText()));
                 continue;
             }
             foundPreviewSurface = true;

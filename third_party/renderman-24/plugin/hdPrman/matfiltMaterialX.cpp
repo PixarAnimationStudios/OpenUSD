@@ -590,15 +590,9 @@ _UpdateTextureNodes(
 
 void
 MatfiltMaterialX(
-    const SdfPath & materialPath,
     HdMaterialNetworkInterface *netInterface,
-    const std::map<TfToken, VtValue> & contextValues,
-    const NdrTokenVec & shaderTypePriority,
     std::vector<std::string> * outputErrorMessages)
 {
-    TF_UNUSED(contextValues);
-    TF_UNUSED(shaderTypePriority);
-
     if (!netInterface) {
         return;
     }
@@ -633,12 +627,12 @@ MatfiltMaterialX(
         mx::DocumentPtr stdLibraries = mx::createDocument();
         mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
 
-        // Create the MaterialX Document from the material network 
+        // Create the MaterialX Document from the material network
         std::set<SdfPath> hdTextureNodePaths;
         mx::StringMap mxHdTextureMap; // Store Mx-Hd texture counterparts 
         mx::DocumentPtr mxDoc =
             HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
-                netInterface, terminalNodeName, cNames, materialPath,
+                netInterface, terminalNodeName, cNames,
                 stdLibraries, &hdTextureNodePaths, &mxHdTextureMap);
         
         _UpdateTextureNodes(netInterface, hdTextureNodePaths, mxDoc);
@@ -646,6 +640,7 @@ MatfiltMaterialX(
         // Remove the material and shader nodes from the MaterialX Document
         // (since we need to use PxrSurface as the closure instead of the 
         // MaterialX surfaceshader node)
+        SdfPath materialPath = netInterface->GetMaterialPrimPath();
         mxDoc->removeNode("SR_" + materialPath.GetName());  // Shader Node
         mxDoc->removeNode(materialPath.GetName());          // Material Node
 
@@ -666,9 +661,11 @@ MatfiltMaterialX(
     const NdrTokenVec & shaderTypePriority,
     std::vector<std::string> * outputErrorMessages)
 {
-    HdMaterialNetwork2Interface netInterface(&hdNetwork);
-    MatfiltMaterialX(materialPath, &netInterface, contextValues,
-                     shaderTypePriority, outputErrorMessages);
+    TF_UNUSED(contextValues);
+    TF_UNUSED(shaderTypePriority);
+
+    HdMaterialNetwork2Interface netInterface(materialPath, &hdNetwork);
+    MatfiltMaterialX(&netInterface, outputErrorMessages);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE                        

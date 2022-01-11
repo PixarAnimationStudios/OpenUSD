@@ -365,7 +365,7 @@ MatfiltResolveVstructs(
         }
     }
 
-    HdMaterialNetwork2Interface interface(&network);
+    HdMaterialNetwork2Interface interface(networkId, &network);
     MatfiltResolveVstructs(&interface, shaderTypePriority, enableConditions);
 }
 

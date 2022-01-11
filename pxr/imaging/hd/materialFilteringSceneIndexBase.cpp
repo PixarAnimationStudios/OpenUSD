@@ -36,9 +36,12 @@ class _MaterialDataSource : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(_MaterialDataSource);
 
-    _MaterialDataSource(const HdContainerDataSourceHandle &input,
+    _MaterialDataSource(
+        const HdContainerDataSourceHandle &input,
+        const SdfPath &primPath,
         const HdMaterialFilteringSceneIndexBase::FilteringFnc &fnc)
     : _input(input)
+    , _primPath(primPath)
     , _fnc(fnc)
     {}
 
@@ -69,7 +72,7 @@ public:
                     HdContainerDataSource::Cast(result)) {
 
                 HdDataSourceMaterialNetworkInterface networkInterface(
-                    networkContainer);
+                    _primPath, networkContainer);
                 _fnc(&networkInterface);
                 return networkInterface.Finish();
             }
@@ -81,6 +84,7 @@ public:
 
 private:
     HdContainerDataSourceHandle _input;
+    SdfPath _primPath;
     HdMaterialFilteringSceneIndexBase::FilteringFnc _fnc;
 };
 
@@ -90,9 +94,12 @@ class _PrimDataSource : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(_PrimDataSource);
 
-    _PrimDataSource(const HdContainerDataSourceHandle &input,
+    _PrimDataSource(
+        const HdContainerDataSourceHandle &input,
+        const SdfPath &primPath,
         const HdMaterialFilteringSceneIndexBase::FilteringFnc &fnc)
     : _input(input)
+    , _primPath(primPath)
     , _fnc(fnc)
     {}
 
@@ -123,7 +130,7 @@ public:
                 if (HdContainerDataSourceHandle materialContainer =
                         HdContainerDataSource::Cast(result)) {
                     return _MaterialDataSource::New(
-                        materialContainer, _fnc);
+                        materialContainer, _primPath, _fnc);
                 }
             }
             return result;
@@ -134,6 +141,7 @@ public:
 
 private:
     HdContainerDataSourceHandle _input;
+    SdfPath _primPath;
     HdMaterialFilteringSceneIndexBase::FilteringFnc _fnc;
 };
 
@@ -154,7 +162,7 @@ HdMaterialFilteringSceneIndexBase::GetPrim(const SdfPath &primPath) const
         HdSceneIndexPrim prim = input->GetPrim(primPath);
         if (prim.dataSource) {
             prim.dataSource = _PrimDataSource::New(prim.dataSource,
-                _GetFilteringFunction());
+                primPath, _GetFilteringFunction());
         }
 
         return prim;

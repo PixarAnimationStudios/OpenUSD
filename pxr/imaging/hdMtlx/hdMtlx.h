@@ -80,7 +80,6 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
     HdMaterialNetworkInterface *netInterface,
     TfToken const& terminalNodeName,
     TfTokenVector const& terminalNodeConnectionNames,
-    SdfPath const& materialPath,
     MaterialX::DocumentPtr const& libraries,
     std::set<SdfPath> * hdTextureNodes = nullptr,
     MaterialX::StringMap * mxHdTextureMap = nullptr,

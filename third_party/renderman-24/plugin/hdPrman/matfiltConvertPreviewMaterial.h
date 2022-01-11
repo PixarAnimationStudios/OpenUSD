@@ -44,10 +44,7 @@ MatfiltConvertPreviewMaterial(
 /// Implementation that uses the abstract material interface instead.
 void
 MatfiltConvertPreviewMaterial(
-    const SdfPath & networkId,
     HdMaterialNetworkInterface *networkInterface,
-    const std::map<TfToken, VtValue> & contextValues,
-    const NdrTokenVec & shaderTypePriority,
     std::vector<std::string> * outputErrorMessages);
 
 PXR_NAMESPACE_CLOSE_SCOPE
