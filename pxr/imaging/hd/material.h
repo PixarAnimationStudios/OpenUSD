@@ -142,7 +142,7 @@ struct HdMaterialNetworkMap
 /// \struct HdMaterialConnection2
 ///
 /// Describes a single connection to an upsream node and output port 
-/// Replacement for HdRelationship.
+/// Replacement for HdMaterialRelationship.
 struct HdMaterialConnection2
 {
     SdfPath upstreamNode;
