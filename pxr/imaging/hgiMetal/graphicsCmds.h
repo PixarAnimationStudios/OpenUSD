@@ -130,6 +130,33 @@ private:
     HgiMetalGraphicsCmds(const HgiMetalGraphicsCmds&) = delete;
 
     void _CreateEncoder();
+
+    // We implement multi-draw commands on Metal by iterating and encoding
+    // separate draw commands and we support per draw command data by
+    // setting vertex buffer offsets appropriately before each of these
+    // draw commands. We determine which vertex buffers are affected when
+    // binding the graphics pipeline and we capture the base byte offset
+    // when binding an affected vertex buffer.
+    struct _VertexBufferStepFunctionDesc
+    {
+        _VertexBufferStepFunctionDesc(
+                uint32_t bindingIndex,
+                uint32_t byteOffset,
+                uint32_t vertexStride)
+            : bindingIndex(bindingIndex)
+            , byteOffset(byteOffset)
+            , vertexStride(vertexStride)
+            { }
+        uint32_t bindingIndex;
+        uint32_t byteOffset;
+        uint32_t vertexStride;;
+    };
+    std::vector<_VertexBufferStepFunctionDesc> _vertexBufferStepFunctionDescs;
+
+    void _InitVertexBufferStepFunction(HgiGraphicsPipeline const * pipeline);
+    void _BindVertexBufferStepFunction(uint32_t byteOffset,
+                                       uint32_t bindingIndex);
+    void _SetVertexBufferStepFunctionOffsets(uint32_t firstInstance);
     
     HgiMetal* _hgi;
     MTLRenderPassDescriptor* _renderPassDescriptor;

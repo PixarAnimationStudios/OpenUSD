@@ -69,12 +69,27 @@ HgiMetalGraphicsPipeline::_CreateVertexDescriptor()
     for (HgiVertexBufferDesc const& vbo : _descriptor.vertexBuffers) {
 
         HgiVertexAttributeDescVector const& vas = vbo.vertexAttributes;
-        
-        _vertexDescriptor.layouts[index].stepFunction =
-            MTLVertexStepFunctionPerVertex;
-        _vertexDescriptor.layouts[index].stepRate = 1;
         _vertexDescriptor.layouts[index].stride = vbo.vertexStride;
-        
+
+        // Set the vertex step rate such that the attribute index
+        // will advance only according to the base instance at the
+        // start of each draw command of a multi-draw. To do this
+        // we set the vertex attribute to be constant and advance
+        // the vertex buffer offset appropriately when encoding
+        // draw commands.
+        if (vbo.vertexStepFunction ==
+                HgiVertexBufferStepFunctionConstant ||
+            vbo.vertexStepFunction ==
+                HgiVertexBufferStepFunctionPerDrawCommand) {
+            _vertexDescriptor.layouts[index].stepFunction =
+                MTLVertexStepFunctionConstant;
+            _vertexDescriptor.layouts[index].stepRate = 0;
+        } else {
+            _vertexDescriptor.layouts[index].stepFunction =
+                MTLVertexStepFunctionPerVertex;
+            _vertexDescriptor.layouts[index].stepRate = 1;
+        }
+
         // Describe each vertex attribute in the vertex buffer
         for (size_t loc = 0; loc<vas.size(); loc++) {
             HgiVertexAttributeDesc const& va = vas[loc];
@@ -85,6 +100,7 @@ HgiMetalGraphicsPipeline::_CreateVertexDescriptor()
             _vertexDescriptor.attributes[idx].bufferIndex = vbo.bindingIndex;
             _vertexDescriptor.attributes[idx].offset = va.offset;
         }
+
         index++;
     }
 }
