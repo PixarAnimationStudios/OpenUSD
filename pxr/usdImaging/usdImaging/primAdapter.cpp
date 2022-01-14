@@ -88,6 +88,29 @@ UsdImagingPrimAdapter::~UsdImagingPrimAdapter()
 {
 }
 
+TfTokenVector
+UsdImagingPrimAdapter::GetImagingSubprims()
+{
+    TF_WARN("Datasource support not yet added for adapter '%s'",
+            TfType::GetCanonicalTypeName(typeid(*this)).c_str());
+    return TfTokenVector();
+}
+
+TfToken
+UsdImagingPrimAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingPrimAdapter::GetImagingSubprimData(
+        TfToken const& subprim,
+        UsdPrim const& prim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    return nullptr;
+}
+
 /*static*/
 bool
 UsdImagingPrimAdapter::ShouldCullSubtree(UsdPrim const& prim)

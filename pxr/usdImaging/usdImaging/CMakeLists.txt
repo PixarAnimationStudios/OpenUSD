@@ -36,6 +36,7 @@ pxr_library(usdImaging
         materialParamUtils
         resolvedAttributeCache
         instancerContext
+        stageSceneIndex
         tokens
         basisCurvesAdapter
         capsuleAdapter

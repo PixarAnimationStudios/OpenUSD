@@ -55,6 +55,8 @@ class UsdImagingIndexProxy;
 class UsdImagingInstancerContext;
 class HdExtComputationContext;
 
+class UsdImagingDataSourceStageGlobals;
+
 using UsdImagingPrimAdapterSharedPtr = 
     std::shared_ptr<class UsdImagingPrimAdapter>;
 
@@ -67,16 +69,32 @@ class UsdImagingPrimAdapter
 {
 public:
     
-    // ---------------------------------------------------------------------- //
-    /// \name Initialization
-    // ---------------------------------------------------------------------- //
- 
     UsdImagingPrimAdapter()
     {}
 
     USDIMAGING_API
     virtual ~UsdImagingPrimAdapter();
 
+    // ---------------------------------------------------------------------- //
+    /// \name Scene Index Support
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    virtual TfTokenVector GetImagingSubprims();
+
+    USDIMAGING_API
+    virtual TfToken GetImagingSubprimType(TfToken const& subprim);
+
+    USDIMAGING_API
+    virtual HdContainerDataSourceHandle GetImagingSubprimData(
+            TfToken const& subprim,
+            UsdPrim const& prim,
+            const UsdImagingDataSourceStageGlobals &stageGlobals);
+
+    // ---------------------------------------------------------------------- //
+    /// \name Initialization
+    // ---------------------------------------------------------------------- //
+ 
     /// Called to populate the RenderIndex for this UsdPrim. The adapter is
     /// expected to create one or more prims in the render index using the
     /// given proxy.
