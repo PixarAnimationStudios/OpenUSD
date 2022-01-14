@@ -87,7 +87,8 @@ pxr_plugin(${PXR_PACKAGE}
         renderParam
         renderViewContext
         resourceRegistry
-        
+        velocityMotionBlurSceneIndexPlugin
+
     PUBLIC_HEADERS
         api.h
 
