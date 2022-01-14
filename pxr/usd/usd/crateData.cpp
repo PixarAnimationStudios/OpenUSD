@@ -101,6 +101,8 @@ class Usd_CrateDataImpl
 {
     friend class Usd_CrateData;
 
+    struct _SpecData;
+
 public:
 
     Usd_CrateDataImpl() 
@@ -250,7 +252,7 @@ public:
         if (ARCH_UNLIKELY(path.IsTargetPath())) {
             return _HasTargetOrConnectionSpec(path);
         }
-        return _data.find(path) != _data.end();
+        return _GetSpecData(path) != nullptr;
     }
 
     inline void EraseSpec(const SdfPath &path) {
@@ -296,8 +298,10 @@ public:
             }
             return SdfSpecTypeUnknown;
         }
-        auto i = _data.find(path);
-        return i == _data.end() ? SdfSpecTypeUnknown : i->second.specType;
+        if (_SpecData const *specData = _GetSpecData(path)) {
+            return specData->specType;
+        }
+        return SdfSpecTypeUnknown;
     }
 
     inline void
@@ -311,7 +315,7 @@ public:
         }
         // Need to blow/reset the _lastSet cache here, since inserting
         // into the table will invalidate existing references.
-        auto iter = _data.emplace(path, _MapSpecData()).first;
+        auto iter = _data.emplace(path, _SpecData()).first;
         iter.value().specType = specType;
         _lastSet = iter;
     }
@@ -372,9 +376,10 @@ public:
 
     inline bool Has(const SdfPath &path,
                     const TfToken &field,
-                    SdfAbstractDataValue* value) const {
+                    SdfAbstractDataValue* value,
+                    SdfSpecType *specType=nullptr) const {
         
-        if (VtValue const *fieldValue = _GetFieldValue(path, field)) {
+        if (VtValue const *fieldValue = _GetFieldValue(path, field, specType)) {
             if (value) {
                 VtValue val = _DetachValue(*fieldValue);
                 if (field == SdfDataTokens->TimeSamples) {
@@ -401,12 +406,13 @@ public:
 
     inline bool Has(const SdfPath& path,
                     const TfToken & field,
-                    VtValue *value) const {
+                    VtValue *value,
+                    SdfSpecType *specType=nullptr) const {
         // These are too expensive to do here, but could be uncommented for
         // debugging & tracking down corruption.
         //TF_DESCRIBE_SCOPE(GetAssetPath().c_str());
         //TfScopeDescription desc2(field.GetText());
-        if (VtValue const *fieldValue = _GetFieldValue(path, field)) {
+        if (VtValue const *fieldValue = _GetFieldValue(path, field, specType)) {
             if (value) {
                 *value = _DetachValue(*fieldValue);
                 if (field == SdfDataTokens->TimeSamples) {
@@ -483,9 +489,8 @@ public:
 
     inline vector<TfToken> List(const SdfPath& path) const {
         vector<TfToken> names;
-        auto i = _data.find(path);
-        if (i != _data.end()) {
-            auto const &fields = i->second.fields.Get();
+        if (_SpecData const *specData = _GetSpecData(path)) {
+            auto const &fields = specData->fields.Get();
             names.resize(fields.size());
             for (size_t j=0, jEnd = fields.size(); j != jEnd; ++j) {
                 names[j] = fields[j].first;
@@ -761,7 +766,7 @@ private:
                   
         // Allocate all the spec data structures in the hashtable first,
         // so we can populate fields in parallel without locking.
-        vector<_MapSpecData *> specDataPtrs;
+        vector<_SpecData *> specDataPtrs;
                 
         // Create all the specData entries and store pointers to them.
         dispatcher.Run([this, &specs, &specDataPtrs]() {
@@ -962,17 +967,32 @@ private:
         return val;
     }
 
-    inline VtValue const *
-    _GetFieldValue(SdfPath const &path,
-                   TfToken const &field) const {
+    inline _SpecData const *
+    _GetSpecData(SdfPath const &path) const {
+        _SpecData const *specData = nullptr;
         auto i = _data.find(path);
         if (i != _data.end()) {
-            auto const &fields = i->second.fields.Get();
+            specData = &i.value();
+        }
+        return specData;
+    }
+
+    inline VtValue const *
+    _GetFieldValue(SdfPath const &path,
+                   TfToken const &field,
+                   SdfSpecType *specType=nullptr) const {
+        if (_SpecData const *specData = _GetSpecData(path)) {
+            if (specType) {
+                *specType = specData->specType;
+            }
+            auto const &fields = specData->fields.Get();
             for (size_t j=0, jEnd = fields.size(); j != jEnd; ++j) {
                 if (fields[j].first == field) {
                     return &fields[j].second;
                 }
             }
+        } else if (specType) {
+            *specType = SdfSpecTypeUnknown;
         }
         return nullptr;
     }
@@ -980,7 +1000,8 @@ private:
     inline VtValue *
     _GetMutableFieldValue(const SdfPath& path,
                           const TfToken& field) {
-        auto i = _data.find(path);
+        auto i = _lastSet != _data.end() && _lastSet->first == path ?
+            _lastSet : _data.find(path);
         if (i != _data.end()) {
             auto &spec = i.value();
             auto const &fields = spec.fields.Get();
@@ -1008,9 +1029,9 @@ private:
     typedef std::pair<TfToken, VtValue> _FieldValuePair;
     typedef std::vector<_FieldValuePair> _FieldValuePairVector;
 
-    struct _MapSpecData {
-        _MapSpecData() = default;
-        explicit _MapSpecData(Usd_EmptySharedTagType) noexcept
+    struct _SpecData {
+        _SpecData() = default;
+        explicit _SpecData(Usd_EmptySharedTagType) noexcept
             : fields(Usd_EmptySharedTag) {}
         inline void DetachIfNotUnique() { fields.MakeUnique(); }
         Usd_Shared<_FieldValuePairVector> fields;
@@ -1018,13 +1039,13 @@ private:
     };
 
     using _HashMap = pxr_tsl::robin_map<
-        SdfPath, _MapSpecData, SdfPath::Hash, std::equal_to<SdfPath>,
-        std::allocator<std::pair<SdfPath, _MapSpecData>>,
+        SdfPath, _SpecData, SdfPath::Hash, std::equal_to<SdfPath>,
+        std::allocator<std::pair<SdfPath, _SpecData>>,
         /*StoreHash=*/true>;
 
     // In-memory data for specs.
     _HashMap _data;
-    _HashMap::iterator _lastSet;
+    _HashMap::iterator _lastSet; // cached last authored spec.
 
     // Underlying file.
     std::unique_ptr<CrateFile> _crateFile;
@@ -1158,6 +1179,22 @@ Usd_CrateData::Has(const SdfPath& path,
                    VtValue *value) const
 {
     return _impl->Has(path, field, value);
+}
+
+bool
+Usd_CrateData
+::HasSpecAndField(const SdfPath &path, const TfToken &field,
+                  SdfAbstractDataValue *value, SdfSpecType *specType) const
+{
+    return _impl->Has(path, field, value, specType);
+}
+
+bool
+Usd_CrateData
+::HasSpecAndField(const SdfPath &path, const TfToken &field,
+                  VtValue *value, SdfSpecType *specType) const
+{
+    return _impl->Has(path, field, value, specType);
 }
 
 VtValue

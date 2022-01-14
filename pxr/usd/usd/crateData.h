@@ -73,6 +73,13 @@ public:
                      SdfAbstractDataValue* value) const;
     virtual bool Has(const SdfPath& path, const TfToken& fieldName,
                      VtValue *value=nullptr) const;
+    virtual bool
+    HasSpecAndField(const SdfPath &path, const TfToken &fieldName,
+                    SdfAbstractDataValue *value, SdfSpecType *specType) const;
+    virtual bool
+    HasSpecAndField(const SdfPath &path, const TfToken &fieldName,
+                    VtValue *value, SdfSpecType *specType) const;
+
     virtual VtValue Get(const SdfPath& path, 
                         const TfToken& fieldName) const;
     virtual std::type_info const &GetTypeid(const SdfPath& path,
