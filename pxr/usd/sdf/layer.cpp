@@ -3306,8 +3306,18 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
         info.isAnonymous ? info.layerPath : info.resolvedLayerPath;
 
     if (!layer->IsMuted()) {
-        // Run the file parser to read in the file contents.
-        if (!layer->_Read(info.identifier, readFilePath, metadataOnly)) {
+        // Run the file parser to read in the file contents.  We do this in a
+        // dispatcher, so that other threads that "wait" to read this file can
+        // actually participate in completing its loading (assuming the layer
+        // _Read is internally task-parallel).
+        bool readSuccess = false;
+        layer->_initDispatcher.Run([&readSuccess, &layer, &info,
+                                    &readFilePath, metadataOnly]() {
+            readSuccess =
+                layer->_Read(info.identifier, readFilePath, metadataOnly);
+        });
+        layer->_initDispatcher.Wait();
+        if (!readSuccess) {
             layer->_FinishInitialization(/* success = */ false);
             return TfNullPtr;
         }
