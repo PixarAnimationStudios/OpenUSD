@@ -347,9 +347,9 @@ _MakeNamedTextureHandle(
         TfToken(texturePath + "[" + name.GetString() + "]"),
         std::make_unique<HdStDynamicUvSubtextureIdentifier>());
 
-    const HdSamplerParameters samplerParameters{
+    const HdSamplerParameters samplerParameters(
         wrapModeS, wrapModeT, wrapModeR,
-        minFilter, HdMagFilterLinear};
+        minFilter, HdMagFilterLinear);
 
     HdStTextureHandleSharedPtr const textureHandle =
         resourceRegistry->AllocateTextureHandle(
@@ -402,9 +402,9 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdSceneDelegate *const delegate
             /* premultiplyAlpha = */ false,
 	        /* sourceColorSpace = */ HdStTokens->colorSpaceAuto));
 
-    static const HdSamplerParameters envSamplerParameters{
+    static const HdSamplerParameters envSamplerParameters(
         HdWrapRepeat, HdWrapClamp, HdWrapClamp,
-        HdMinFilterLinearMipmapLinear, HdMagFilterLinear};
+        HdMinFilterLinearMipmapLinear, HdMagFilterLinear);
 
     _domeLightEnvironmentTextureHandle =
         resourceRegistry->AllocateTextureHandle(

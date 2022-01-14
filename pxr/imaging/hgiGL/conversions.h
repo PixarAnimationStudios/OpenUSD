@@ -29,6 +29,7 @@
 #include "pxr/imaging/garch/glApi.h"
 #include "pxr/imaging/hgi/enums.h"
 #include "pxr/imaging/hgi/types.h"
+#include "pxr/base/gf/vec4f.h"
 
 #include <vector>
 
@@ -89,6 +90,9 @@ public:
     static GLenum GetMinFilter(
         HgiSamplerFilter minFilter, 
         HgiMipFilter mipFilter);
+
+    HGIGL_API
+    static GfVec4f GetBorderColor(HgiBorderColor borderColor);
 
     HGIGL_API
     static GLenum GetComponentSwizzle(HgiComponentSwizzle);

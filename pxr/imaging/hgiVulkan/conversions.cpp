@@ -303,6 +303,15 @@ _mipFilterTable[HgiMipFilterCount][2] =
 static_assert(HgiMipFilterCount==3, "");
 
 static const uint32_t
+_borderColorTable[HgiBorderColorCount][2] =
+{
+    {HgiBorderColorTransparentBlack, VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK},
+    {HgiBorderColorOpaqueBlack,      VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK},
+    {HgiBorderColorOpaqueWhite,      VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE}
+};
+static_assert(HgiBorderColorCount==3, "");
+
+static const uint32_t
 _componentSwizzleTable[HgiComponentSwizzleCount][2] =
 {
     {HgiComponentSwizzleZero, VK_COMPONENT_SWIZZLE_ZERO},
@@ -559,6 +568,12 @@ VkSamplerMipmapMode
 HgiVulkanConversions::GetMipFilter(HgiMipFilter mf)
 {
     return VkSamplerMipmapMode(_mipFilterTable[mf][1]);
+}
+
+VkBorderColor
+HgiVulkanConversions::GetBorderColor(HgiBorderColor bc)
+{
+    return VkBorderColor(_borderColorTable[bc][1]);
 }
 
 VkComponentSwizzle

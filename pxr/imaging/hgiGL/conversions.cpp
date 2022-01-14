@@ -447,6 +447,20 @@ HgiGLConversions::GetMinFilter(
     return GL_NONE;
 }
 
+GfVec4f
+HgiGLConversions::GetBorderColor(HgiBorderColor borderColor)
+{
+    switch(borderColor) {
+        case HgiBorderColorTransparentBlack: return GfVec4f(0, 0, 0, 0);
+        case HgiBorderColorOpaqueBlack: return GfVec4f(0, 0, 0, 1);
+        case HgiBorderColorOpaqueWhite: return GfVec4f(1, 1, 1, 1);
+        default: break;
+    }
+
+    TF_CODING_ERROR("Unsupported sampler options");
+    return GfVec4f(0, 0, 0, 0);
+}
+
 GLenum
 HgiGLConversions::GetComponentSwizzle(HgiComponentSwizzle componentSwizzle)
 {

@@ -62,6 +62,9 @@ public:
         HgiSamplerFilter *hgiSamplerFilter, HgiMipFilter *hgiMipFilter);
 
     HDST_API
+    static HgiBorderColor GetHgiBorderColor(HdBorderColor hdBorderColor);
+
+    HDST_API
     static HgiCompareFunction GetHgiCompareFunction(
         HdCompareFunction hdCompareFunc);
 

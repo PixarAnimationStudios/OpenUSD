@@ -106,6 +106,9 @@ public:
 
     HGIVULKAN_API
     static VkSamplerMipmapMode GetMipFilter(HgiMipFilter mf);
+    
+    HGIVULKAN_API
+    static VkBorderColor GetBorderColor(HgiBorderColor bc);
 
     HGIVULKAN_API
     static VkComponentSwizzle GetComponentSwizzle(HgiComponentSwizzle cs);

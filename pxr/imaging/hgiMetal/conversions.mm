@@ -387,6 +387,16 @@ struct {
     {HgiMipFilterLinear,       MTLSamplerMipFilterLinear}
 };
 
+struct {
+    HgiBorderColor hgiBorderColor;
+    MTLSamplerBorderColor metalBC;
+} static const _borderColorTable[HgiBorderColorCount] =
+{
+    {HgiBorderColorTransparentBlack, MTLSamplerBorderColorTransparentBlack},
+    {HgiBorderColorOpaqueBlack,      MTLSamplerBorderColorOpaqueBlack},
+    {HgiBorderColorOpaqueWhite,      MTLSamplerBorderColorOpaqueWhite}
+};
+
 #if (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15) \
     || __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
 struct {
@@ -547,6 +557,12 @@ MTLSamplerMipFilter
 HgiMetalConversions::GetMipFilter(HgiMipFilter mf)
 {
     return _mipFilterTable[mf].metalMF;
+}
+
+MTLSamplerBorderColor
+HgiMetalConversions::GetBorderColor(HgiBorderColor bc)
+{
+    return _borderColorTable[bc].metalBC;
 }
 
 #if (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15) \

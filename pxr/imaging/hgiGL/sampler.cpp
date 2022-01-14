@@ -71,18 +71,26 @@ HgiGLSampler::HgiGLSampler(HgiSamplerDesc const& desc)
         GL_TEXTURE_MAG_FILTER,
         HgiGLConversions::GetMagFilter(desc.magFilter));
 
-    static const GfVec4f borderColor(0);
     glSamplerParameterfv(
         _samplerId,
         GL_TEXTURE_BORDER_COLOR,
-        borderColor.GetArray());
+        HgiGLConversions::GetBorderColor(desc.borderColor).GetArray());
 
     static const float maxAnisotropy = 16.0;
-
     glSamplerParameterf(
         _samplerId,
         GL_TEXTURE_MAX_ANISOTROPY_EXT,
         maxAnisotropy);
+
+    glSamplerParameteri(
+        _samplerId, 
+        GL_TEXTURE_COMPARE_MODE, 
+        desc.enableCompare ? GL_COMPARE_REF_TO_TEXTURE : GL_NONE);
+        
+    glSamplerParameteri(
+        _samplerId, 
+        GL_TEXTURE_COMPARE_FUNC, 
+        HgiGLConversions::GetCompareFunction(desc.compareFunction));
 
     HGIGL_POST_PENDING_GL_ERRORS();
 }

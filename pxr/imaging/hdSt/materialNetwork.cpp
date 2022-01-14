@@ -687,7 +687,10 @@ _GetSamplerParameters(
              _ResolveMinSamplerParameter(
                  nodePath, node, sdrNode),
              _ResolveMagSamplerParameter(
-                 nodePath, node, sdrNode)};
+                 nodePath, node, sdrNode),
+             HdBorderColorTransparentBlack, 
+             /*enableCompare*/false, 
+             HdCmpFuncNever };
 }
 
 //

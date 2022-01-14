@@ -47,6 +47,9 @@ HgiMetalSampler::HgiMetalSampler(HgiMetal *hgi, HgiSamplerDesc const& desc)
     smpDesc.minFilter = HgiMetalConversions::GetMinMagFilter(desc.magFilter);
     smpDesc.magFilter = HgiMetalConversions::GetMinMagFilter(desc.minFilter);
     smpDesc.mipFilter = HgiMetalConversions::GetMipFilter(desc.mipFilter);
+    smpDesc.borderColor = HgiMetalConversions::GetBorderColor(desc.borderColor);
+    smpDesc.compareFunction = 
+        HgiMetalConversions::GetCompareFunction(desc.compareFunction);
     
     HGIMETAL_DEBUG_LABEL(smpDesc, _descriptor.debugName.c_str());
     

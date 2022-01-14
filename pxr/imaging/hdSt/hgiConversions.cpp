@@ -224,7 +224,28 @@ constexpr bool _CompileTimeValidateMinTable() {
 static_assert(_CompileTimeValidateMinTable(),
               "_MinDesc array out of sync with HdMinFilter");
 
+struct _BorderColorDesc {
+    HdBorderColor hdBorderColor;
+    HgiBorderColor hgiBorderColor;
+};
+
+const _BorderColorDesc BORDER_COLOR_DESC[] =
+{
+    {HdBorderColorTransparentBlack, HgiBorderColorTransparentBlack}, 
+    {HdBorderColorOpaqueBlack,      HgiBorderColorOpaqueBlack}, 
+    {HdBorderColorOpaqueWhite,      HgiBorderColorOpaqueWhite},
+};
+
+constexpr bool _CompileTimeValidateBorderColorTable() {
+    return
+        HdBorderColorTransparentBlack == 0 && 
+        HgiBorderColorTransparentBlack == 0 &&
+        HdBorderColorOpaqueWhite == 2 && HdBorderColorOpaqueWhite == 2;
 }
+
+static_assert(_CompileTimeValidateBorderColorTable(), 
+              "_BorderColorDesc array out of sync with "
+              "HdBorderColor/HgiBorderColor enum");
 
 struct _CompareFunctionDesc {
     HdCompareFunction hdCompareFunction;
@@ -277,6 +298,7 @@ constexpr bool _CompileTimeValidateStencilOpTable() {
 
 static_assert(_CompileTimeValidateStencilOpTable(),
               "_stencilOpDesc array out of sync with HdStencilOp");
+}
 
 HgiFormat
 HdStHgiConversions::GetHgiFormat(const HdFormat hdFormat)
@@ -347,6 +369,17 @@ HdStHgiConversions::GetHgiMinAndMipFilter(
     }
     *hgiSamplerFilter = MIN_DESC[hdMinFilter].hgiSamplerFilter;
     *hgiMipFilter     = MIN_DESC[hdMinFilter].hgiMipFilter;
+}
+
+HgiBorderColor
+HdStHgiConversions::GetHgiBorderColor(HdBorderColor hdBorderColor)
+{
+    if ((hdBorderColor < 0) || (hdBorderColor > HdBorderColorOpaqueWhite)) {
+        TF_CODING_ERROR("Unexpected HdBorderColor %d", hdBorderColor);
+        return HgiBorderColorTransparentBlack;
+    }
+    
+    return BORDER_COLOR_DESC[hdBorderColor].hgiBorderColor;  
 }
 
 HgiCompareFunction

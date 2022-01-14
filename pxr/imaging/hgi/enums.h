@@ -192,6 +192,25 @@ enum HgiMipFilter
     HgiMipFilterCount
 };
 
+/// \enum HgiBorderColor
+///
+/// Border color to use for clamped texture values.
+///
+/// <ul>
+/// <li>HgiBorderColorTransparentBlack</li>
+/// <li>HgiBorderColorOpaqueBlack</li>
+/// <li>HgiBorderColorOpaqueWhite</li>
+/// </ul>
+///
+enum HgiBorderColor
+{
+    HgiBorderColorTransparentBlack = 0,
+    HgiBorderColorOpaqueBlack      = 1,
+    HgiBorderColorOpaqueWhite      = 2,
+
+    HgiBorderColorCount
+};
+
 /// \enum HgiSampleCount
 ///
 /// Sample count for multi-sampling

@@ -422,9 +422,9 @@ HdSt_VolumeShader::UpdateTextureHandles(
         const size_t textureMemory =
             TF_VERIFY(fieldPrim) ?
             fieldPrim->GetTextureMemory() : 0;
-        static const HdSamplerParameters samplerParams{
+        static const HdSamplerParameters samplerParams(
             HdWrapBlack, HdWrapBlack, HdWrapBlack,
-            HdMinFilterLinear, HdMagFilterLinear };
+            HdMinFilterLinear, HdMagFilterLinear);
         
         // allocate texture handle and assign it.
         textureHandles[i].handle =
