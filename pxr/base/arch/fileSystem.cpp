@@ -1225,6 +1225,14 @@ std::string ArchReadLink(const char* path)
             std::wstring ws(reparsePath.get());
             string str(ws.begin(), ws.end());
 
+            // Mount point paths starting with \?? are NT Object Manager paths
+            // and cannot be used as file paths, so disable converting the path
+            // by returning the original path.
+            //
+            // See: https://superuser.com/questions/1069055/what-is-the-function-of-question-marks-in-file-system-paths-in-windows-registry
+            if (str.length() >= 3 && str.substr(0, 3) == "\\??")
+                return path;
+
             // Note that junctions do not support the relative path form
             // like SYMLINKS do, so nothing more to do here.
 
