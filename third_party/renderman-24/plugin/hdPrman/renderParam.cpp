@@ -1951,12 +1951,14 @@ HdPrman_RenderParam::StartRender()
 }
 
 void
-HdPrman_RenderParam::StopRender()
+HdPrman_RenderParam::StopRender(bool blocking)
 {
-    if (!_renderThread) {
+    if (!_renderThread || !_renderThread->IsRendering()) {
         return;
     }
-    if (!_renderThread->IsRendering()) {
+
+    if (!blocking) {
+        _riley->RequestUpdate();
         return;
     }
 

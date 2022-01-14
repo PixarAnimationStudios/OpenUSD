@@ -236,13 +236,13 @@ HdRenderDelegate::IsStopSupported() const
 bool
 HdRenderDelegate::IsStopped() const
 {
-    return false;
+    return true;
 }
 
 bool
-HdRenderDelegate::Stop()
+HdRenderDelegate::Stop(bool blocking)
 {
-    return false;
+    return true;
 }
 
 bool

@@ -160,7 +160,7 @@ public:
 
     /// Stop background rendering threads.
     HDPRMAN_API 
-    bool Stop() override;
+    bool Stop(bool blocking) override;
 
     /// Restart background rendering threads.
     HDPRMAN_API 

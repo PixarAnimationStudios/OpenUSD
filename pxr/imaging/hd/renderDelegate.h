@@ -235,13 +235,14 @@ public:
     virtual bool IsStopped() const;
 
     ///
-    /// Stop all of this delegate's background rendering threads. Default
-    /// implementation does nothing.
+    /// Stop all of this delegate's background rendering threads; if blocking
+    /// is true, the function waits until they exit.
+    /// Default implementation does nothing.
     ///
-    /// Returns \c true if successful.
+    /// Returns \c true if successfully stopped.
     ///
     HD_API
-    virtual bool Stop();
+    virtual bool Stop(bool blocking = true);
 
     ///
     /// Restart all of this delegate's background rendering threads previously

@@ -207,7 +207,7 @@ public:
     void StartRender();
 
     // Request Riley (and the HdRenderThread) to stop.
-    void StopRender();
+    void StopRender(bool blocking = true);
 
     // Query whether or not the HdRenderThread is running.
     bool IsRenderStopped();
