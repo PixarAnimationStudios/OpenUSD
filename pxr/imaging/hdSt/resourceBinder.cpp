@@ -971,16 +971,21 @@ HdSt_ResourceBinder::GetBufferBindingDesc(
 
     switch (binding.GetType()) {
     case HdBinding::SSBO:
+        // Bind the entire buffer at offset zero.
         desc.buffers = { resource->GetHandle() };
-        desc.offsets = { static_cast<uint32_t>(offset) };
+        desc.offsets = { 0 };
+        desc.sizes = { 0 };
         desc.bindingIndex = static_cast<uint32_t>(binding.GetLocation());
         desc.resourceType = HgiBindResourceTypeStorageBuffer;
         desc.stageUsage = stageUsage;
         bindingsDesc->buffers.push_back(desc);
         break;
     case HdBinding::UBO:
+        // Bind numElements slices of the buffer at the specified offset.
         desc.buffers = { resource->GetHandle() };
         desc.offsets = { static_cast<uint32_t>(offset) };
+        desc.sizes =
+            { static_cast<uint32_t>(numElements * resource->GetStride()) };
         desc.bindingIndex = static_cast<uint32_t>(binding.GetLocation());
         desc.resourceType = HgiBindResourceTypeUniformBuffer;
         desc.stageUsage = stageUsage;

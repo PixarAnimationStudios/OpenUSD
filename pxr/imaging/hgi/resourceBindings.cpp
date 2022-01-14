@@ -51,6 +51,7 @@ bool operator==(
     return lhs.buffers == rhs.buffers &&
            lhs.resourceType == rhs.resourceType &&
            lhs.offsets == rhs.offsets &&
+           lhs.sizes == rhs.sizes &&
            lhs.bindingIndex == rhs.bindingIndex &&
            lhs.stageUsage == rhs.stageUsage;
 }
