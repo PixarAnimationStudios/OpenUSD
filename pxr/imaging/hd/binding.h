@@ -66,6 +66,9 @@ public:
                 // shader parameter bindings
                 FALLBACK,             // fallback value
                 TEXTURE_2D,           // non-bindless uv texture
+                ARRAY_OF_TEXTURE_2D,  // non-bindless array of uv textures. Not 
+                                      // to be confused with a texture array 
+                                      // (what udim and ptex textures use).
                 TEXTURE_FIELD,        // non-bindless field texture
                                       // creates accessor that samples uvw
                                       // texture after transforming coordinates
@@ -75,6 +78,7 @@ public:
                 TEXTURE_PTEX_TEXEL,   // non-bindless ptex texels
                 TEXTURE_PTEX_LAYOUT,  // non-bindless ptex layout
                 BINDLESS_TEXTURE_2D,          // bindless uv texture
+                BINDLESS_ARRAY_OF_TEXTURE_2D, // bindless array of uv textures
                 BINDLESS_TEXTURE_FIELD,       // bindless field texture
                                               // (see above)
                 BINDLESS_TEXTURE_UDIM_ARRAY,  // bindless uv texture array
@@ -85,7 +89,7 @@ public:
                 FIELD_REDIRECT, // accesses a field texture by name and
                                 // uses fallbackValue if no accessor for
                                 // the texture exists.
-                TRANSFORM_2D    // transform2d          
+                TRANSFORM_2D    // transform2d
     };
     enum Location {
                 // NOT_EXIST is a special value of location for a uniform

@@ -458,7 +458,9 @@ namespace {
             out << "layout (location = " << location << ") ";
             break;
         case HdBinding::TEXTURE_2D:
+        case HdBinding::ARRAY_OF_TEXTURE_2D:
         case HdBinding::BINDLESS_TEXTURE_2D:
+        case HdBinding::BINDLESS_ARRAY_OF_TEXTURE_2D:
         case HdBinding::TEXTURE_FIELD:
         case HdBinding::BINDLESS_TEXTURE_FIELD:
         case HdBinding::TEXTURE_UDIM_ARRAY:
@@ -736,6 +738,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         // coordinates associated with it
         if (bindingType == HdBinding::TEXTURE_2D ||
             bindingType == HdBinding::BINDLESS_TEXTURE_2D ||
+            bindingType == HdBinding::ARRAY_OF_TEXTURE_2D ||
+            bindingType == HdBinding::BINDLESS_ARRAY_OF_TEXTURE_2D ||
             bindingType == HdBinding::TEXTURE_UDIM_ARRAY || 
             bindingType == HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY) {
             _genCommon
@@ -1468,9 +1472,16 @@ static void _EmitTextureAccessors(
     bool const hasTextureTransform,
     bool const hasTextureScaleAndBias,
     bool const isBindless,
-    bool const bindlessTextureEnabled)
+    bool const bindlessTextureEnabled,
+    bool const isArray=false,
+    bool const isShadowSampler=false)
 {
     TfToken const &name = acc.name;
+
+    int const coordDim = isShadowSampler ? dim + 1 : dim;
+    std::string const samplerType = isShadowSampler ? 
+        "sampler" + std::to_string(dim) + "DShadow" : 
+        "sampler" + std::to_string(dim) + "D";
 
     // Forward declare texture scale and bias
     if (hasTextureScaleAndBias) {
@@ -1486,25 +1497,51 @@ static void _EmitTextureAccessors(
     if (!isBindless) {
         // a function returning sampler requires bindless_texture
         if (bindlessTextureEnabled) {
-            accessors
-                << "sampler" << dim << "D\n"
-                << "HdGetSampler_" << name << "() {\n"
-                << "  return sampler" << dim << "d_" << name << ";"
-                << "}\n";
+            if (isArray) {
+                accessors
+                    << samplerType << " "
+                    << "HdGetSampler_" << name << "(int index) {\n"
+                    << "  return sampler" << dim << "d_" << name << "[index];\n"
+                    << "}\n";
+            } else {
+                accessors
+                    << samplerType << " "
+                    << "HdGetSampler_" << name << "() {\n"
+                    << "  return sampler" << dim << "d_" << name << ";\n"
+                    << "}\n";
+            }
         } else {
-            accessors
-                << "#define HdGetSampler_" << name << "()"
-                << " sampler" << dim << "d_" << name << "\n";
+            if (isArray) {
+                accessors
+                    << samplerType << " HdGetSampler_" << name 
+                    << "(int index) {\n"
+                    << " return sampler" << dim << "d_" << name 
+                    << "[index];\n}\n";
+            } else {
+                accessors
+                    << samplerType << " HdGetSampler_" << name << "() {\n"
+                    << " return sampler" << dim << "d_" << name << ";\n}\n";
+            }
         }
     } else {
         if (bindlessTextureEnabled) {
-            accessors
-                << "sampler" << dim << "D\n"
-                << "HdGetSampler_" << name << "() {\n"
-                << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n"
-                << "  return sampler" << dim << "D("
-                << "    shaderData[shaderCoord]." << name << ");\n"
-                << "}\n";
+            if (isArray) {
+                accessors
+                    << samplerType << " "
+                    << "HdGetSampler_" << name << "(int index) {\n"
+                    << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n"
+                    << "  return " << samplerType << "("
+                    << "    shaderData[shaderCoord]." << name << ");\n"
+                    << "}\n";
+            } else {
+                accessors
+                    << samplerType << " "
+                    << "HdGetSampler_" << name << "() {\n"
+                    << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n"
+                    << "  return " << samplerType << "("
+                    << "    shaderData[shaderCoord]." << name << ");\n"
+                    << "}\n";
+            }
         }
     }
 
@@ -1533,10 +1570,17 @@ static void _EmitTextureAccessors(
             << "}\n";
     }
 
-    accessors
+    if (isArray) {
+        accessors
         << _GetUnpackedType(dataType, false)
-        << " HdGet_" << name << "(vec" << dim << " coord) {\n"
+        << " HdGet_" << name << "(int index, vec" << coordDim << " coord) {\n"
         << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n";
+    } else {
+        accessors
+            << _GetUnpackedType(dataType, false)
+            << " HdGet_" << name << "(vec" << coordDim << " coord) {\n"
+            << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n";
+    }
 
     if (hasTextureTransform) {
         const std::string eyeToSamplingTransform =
@@ -1548,7 +1592,7 @@ static void _EmitTextureAccessors(
             << "   vec3 sampleCoord = c.xyz / c.w;\n";
     } else {
         accessors
-            << "  vec" << dim << " sampleCoord = coord;\n";
+            << "  vec" << coordDim << " sampleCoord = coord;\n";
     }
 
     if (hasTextureScaleAndBias) {
@@ -1556,7 +1600,13 @@ static void _EmitTextureAccessors(
             << "  " << _GetUnpackedType(dataType, false)
             << " result = "
             << _GetPackedTypeAccessor(dataType, false)
-            << "((texture(HdGetSampler_" << name << "(), sampleCoord)\n"
+            << "((texture(HdGetSampler_" << name;
+        if (isArray) {
+            accessors << "(index), sampleCoord)\n";
+        } else {
+            accessors << "(), sampleCoord)\n";
+        }
+        accessors
             << "#ifdef HD_HAS_" << name << "_" << HdStTokens->scale << "\n"
             << "    * HdGet_" << name << "_" << HdStTokens->scale << "()\n"
             << "#endif\n" 
@@ -1569,8 +1619,13 @@ static void _EmitTextureAccessors(
             << "  " << _GetUnpackedType(dataType, false)
             << " result = "
             << _GetPackedTypeAccessor(dataType, false)
-            << "(texture(HdGetSampler_" << name << "(), sampleCoord)"
-            << swizzle << ");\n";
+            << "(texture(HdGetSampler_" << name;
+        if (isArray) {
+            accessors << "(index), sampleCoord)";
+        } else {
+            accessors << "(), sampleCoord)\n";
+        }
+        accessors << swizzle << ");\n";
     }
 
     if (acc.processTextureFallbackValue) {
@@ -1645,38 +1700,46 @@ static void _EmitTextureAccessors(
     // Create accessor for texture coordinates based on texture param name
     // vec2 HdGetCoord_name(int localIndex)
     accessors
-        << "vec" << dim << " HdGetCoord_" << name << "(int localIndex) {\n"
+        << "vec" << coordDim << " HdGetCoord_" << name << "(int localIndex) {\n"
         << "  return \n";
     if (!inPrimvars.empty()) {
         accessors 
             << "#if defined(HD_HAS_" << inPrimvars[0] <<")\n"
             << "  HdGet_" << inPrimvars[0] << "(localIndex).xy\n"
             << "#else\n"
-            << "  vec" << dim << "(0.0)\n"
+            << "  vec" << coordDim << "(0.0)\n"
             << "#endif\n";
     } else {
         accessors
-            << "  vec" << dim << "(0.0)\n";
+            << "  vec" << coordDim << "(0.0)";
     }
-    accessors << ";}\n"; 
+    accessors << ";\n}\n"; 
 
     // vec2 HdGetCoord_name()
     accessors
-        << "vec" << dim << " HdGetCoord_" << name << "() {"
-        << "  return HdGetCoord_" << name << "(0); }\n";
+        << "vec" << coordDim << " HdGetCoord_" << name << "() {"
+        << "  return HdGetCoord_" << name << "(0);\n }\n";
 
     // vec4 HdGet_name(int localIndex)
-    accessors
-        << _GetUnpackedType(dataType, false)
-        << " HdGet_" << name
-        << "(int localIndex) { return HdGet_" << name << "("
-        << "HdGetCoord_" << name << "(localIndex)); }\n";
+    if (isArray) {
+        accessors
+            << _GetUnpackedType(dataType, false)
+            << " HdGet_" << name
+            << "(int localIndex) { return HdGet_" << name << "(localIndex, "
+            << "HdGetCoord_" << name << "(localIndex));\n}\n";
+    } else {
+        accessors
+            << _GetUnpackedType(dataType, false)
+            << " HdGet_" << name
+            << "(int localIndex) { return HdGet_" << name << "("
+            << "HdGetCoord_" << name << "(localIndex));\n}\n";
+    }
 
     // vec4 HdGet_name()
     accessors
         << _GetUnpackedType(dataType, false)
         << " HdGet_" << name
-        << "() { return HdGet_" << name << "(0); }\n";
+        << "() { return HdGet_" << name << "(0);\n }\n";
 
     // Emit pre-multiplication by alpha indicator
     if (acc.isPremultiplied) {
@@ -3357,9 +3420,21 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                 /* hasTextureScaleAndBias = */ true,
                 /* isBindless = */ true,
                 bindlessTextureEnabled);
+        } else if (bindingType == HdBinding::BINDLESS_ARRAY_OF_TEXTURE_2D) {      
+            // Handle special case for shadow textures.
+            bool const isShadowTexture = 
+                (it->second.name == HdStTokens->shadowCompareTextures);
 
+            _EmitTextureAccessors(
+                accessors, it->second, swizzle,
+                /* dim = */ 2,
+                /* hasTextureTransform = */ false,
+                /* hasTextureScaleAndBias = */ !isShadowTexture,
+                /* isBindless = */ true,
+                bindlessTextureEnabled,
+                /* isArray = */ true,
+                /* isShadowSampler = */ isShadowTexture);
         } else if (bindingType == HdBinding::TEXTURE_2D) {
-
             declarations
                 << LayoutQualifier(it->first)
                 << "uniform sampler2D sampler2d_" << it->second.name << ";\n";
@@ -3371,7 +3446,34 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                 /* hasTextureScaleAndBias = */ true,
                 /* isBindless = */ false,
                 bindlessTextureEnabled);
+        } else if (bindingType == HdBinding::ARRAY_OF_TEXTURE_2D) {       
+            // Handle special case for shadow textures.
+            bool const isShadowTexture = 
+                (it->second.name == HdStTokens->shadowCompareTextures);
 
+            declarations << "#define " << it->second.name << "_SIZE " 
+                << it->second.arrayOfTexturesSize << "\n";
+            if (isShadowTexture) {
+                declarations
+                    << LayoutQualifier(it->first)
+                    << "uniform sampler2DShadow sampler2d_" << it->second.name 
+                    << "[" << it->second.name << "_SIZE];\n";
+            } else {
+                declarations
+                    << LayoutQualifier(it->first)
+                    << "uniform sampler2D sampler2d_" << it->second.name 
+                    << "[" << it->second.name << "_SIZE];\n";
+            }
+
+            _EmitTextureAccessors(
+                accessors, it->second, swizzle,
+                /* dim = */ 2,
+                /* hasTextureTransform = */ false,
+                /* hasTextureScaleAndBias = */ !isShadowTexture,
+                /* isBindless = */ false,
+                bindlessTextureEnabled,
+                /* isArray = */ true,
+                /* isShadowSampler = */ isShadowTexture);
         } else if (bindingType == HdBinding::BINDLESS_TEXTURE_FIELD) {
 
             _EmitTextureAccessors(

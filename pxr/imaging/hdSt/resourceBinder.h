@@ -237,10 +237,12 @@ public:
                                      std::string const &swizzle=std::string(),
                                      TfTokenVector const &inPrimvars=TfTokenVector(),
                                      bool const isPremultiplied=false,
-                                     bool const processTextureFallbackValue=false)
+                                     bool const processTextureFallbackValue=false,
+                                     size_t const arrayOfTexturesSize=0)
                  : name(name), dataType(dataType), swizzle(swizzle),
                   inPrimvars(inPrimvars), isPremultiplied(isPremultiplied),
-                  processTextureFallbackValue(processTextureFallbackValue) {}
+                  processTextureFallbackValue(processTextureFallbackValue),
+                  arrayOfTexturesSize(arrayOfTexturesSize) {}
              TfToken name;        // e.g. Kd
              TfToken dataType;    // e.g. vec4
              std::string swizzle; // e.g. xyzw
@@ -255,6 +257,11 @@ public:
                                                // handle), only supported for
                                                // material shader and for uv
                                                // and field textures.
+            size_t arrayOfTexturesSize; // If the shaderParameterAccessor is 
+                                     // associated with an HdBinding of type 
+                                     // ARRAY_OF_TEXTURE_2D or 
+                                     // BINDLESS_ARRAY_OF_TEXTURE_2D, this will 
+                                     // indicate the size of the array.
         };
         typedef std::map<HdBinding, ShaderParameterAccessor> ShaderParameterBinding;
 

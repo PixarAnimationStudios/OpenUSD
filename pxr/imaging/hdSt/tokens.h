@@ -74,7 +74,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (geomSubsetFaceIndices)                     \
     (pointSizeScale)                            \
     (screenSpaceWidths)                         \
-    (minScreenSpaceWidths) 
+    (minScreenSpaceWidths)                      \
+    (shadowCompareTextures)
 
 #define HDST_TEXTURE_TOKENS                     \
     (wrapS)                                     \

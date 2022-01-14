@@ -757,23 +757,59 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     // used for non-bindless
                     _bindingMap[layoutName] = layoutBinding;
                 } else if (param.textureType == HdTextureType::Uv) {
-                    // 2d texture
-                    HdBinding textureBinding = bindless
-                        ? HdBinding(HdBinding::BINDLESS_TEXTURE_2D,
+                    if (param.IsArrayOfTextures()) {
+                        size_t const numTextures = param.arrayOfTexturesSize;
+                        
+                        // Create binding for each texture in array of textures.
+                        HdBinding firstBinding;
+                        for (size_t i = 0; i < numTextures; i++) {
+                            HdBinding textureBinding = bindless
+                                ? HdBinding(
+                                    HdBinding::BINDLESS_ARRAY_OF_TEXTURE_2D,
                                     bindlessTextureLocation++)
-                        : HdBinding(HdBinding::TEXTURE_2D,
+                                : HdBinding(
+                                    HdBinding::ARRAY_OF_TEXTURE_2D,
                                     locator.uniformLocation++,
                                     locator.textureUnit++);
+                            if (i == 0) {
+                                firstBinding = textureBinding;
+                            }            
+                            TfToken const indexedName(
+                                name.GetString() + std::to_string(i));
+                            // used for non-bindless
+                            _bindingMap[indexedName] = textureBinding;
+                        } 
 
-                    metaDataOut->shaderParameterBinding[textureBinding] =
-                        MetaData::ShaderParameterAccessor(
-                            /*name=*/glName,
-                            /*type=*/glType,
-                            /*swizzle=*/glSwizzle,
-                            /*inPrimvars=*/param.samplerCoords,
-                            /*isPremultiplied=*/param.isPremultiplied,
-                            /*processTextureFallbackValue=*/isMaterialShader);
-                    _bindingMap[name] = textureBinding; // used for non-bindless
+                        // Only fill metadata for the first binding.
+                        metaDataOut->shaderParameterBinding[firstBinding] =
+                            MetaData::ShaderParameterAccessor(
+                                /*name=*/glName,
+                                /*type=*/glType,
+                                /*swizzle=*/glSwizzle,
+                                /*inPrimvars=*/param.samplerCoords,
+                                /*isPremultiplied=*/param.isPremultiplied,
+                                /*processTextureFallbackValue=*/isMaterialShader,
+                                /*arrayOfTexturesSize*/numTextures);
+                    } else {
+                        // 2d texture
+                        HdBinding textureBinding = bindless
+                            ? HdBinding(HdBinding::BINDLESS_TEXTURE_2D,
+                                        bindlessTextureLocation++)
+                            : HdBinding(HdBinding::TEXTURE_2D,
+                                        locator.uniformLocation++,
+                                        locator.textureUnit++);
+
+                        metaDataOut->shaderParameterBinding[textureBinding] =
+                            MetaData::ShaderParameterAccessor(
+                                /*name=*/glName,
+                                /*type=*/glType,
+                                /*swizzle=*/glSwizzle,
+                                /*inPrimvars=*/param.samplerCoords,
+                                /*isPremultiplied=*/param.isPremultiplied,
+                                /*processTextureFallbackValue=*/isMaterialShader);
+                        // used for non-bindless
+                        _bindingMap[name] = textureBinding;
+                    }
                 } else if (param.textureType == HdTextureType::Field) {
                     // 3d texture
                     HdBinding textureBinding = bindless
@@ -1749,6 +1785,7 @@ _IsBindless(HdBinding const & binding)
 {
     switch (binding.GetType()) {
         case HdBinding::BINDLESS_TEXTURE_2D:
+        case HdBinding::BINDLESS_ARRAY_OF_TEXTURE_2D:
         case HdBinding::BINDLESS_TEXTURE_FIELD:
         case HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY:
         case HdBinding::BINDLESS_TEXTURE_UDIM_LAYOUT:
@@ -1766,6 +1803,7 @@ _GetTextureTarget(HdBinding const & binding)
 {
     switch (binding.GetType()) {
         case HdBinding::TEXTURE_2D:
+        case HdBinding::ARRAY_OF_TEXTURE_2D:
             return GL_TEXTURE_2D;
         case HdBinding::TEXTURE_FIELD:
             return GL_TEXTURE_3D;
