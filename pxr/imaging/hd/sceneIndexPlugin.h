@@ -46,6 +46,7 @@ protected:
     /// which take the provided scene as input. The return value should be
     /// the final scene created -- or the inputScene itself if nothing is
     /// created.
+    HD_API
     virtual HdSceneIndexBaseRefPtr _AppendSceneIndex(
         const HdSceneIndexBaseRefPtr &inputScene,
         const HdContainerDataSourceHandle &inputArgs);
