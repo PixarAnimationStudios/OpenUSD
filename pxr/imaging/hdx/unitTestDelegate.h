@@ -69,6 +69,7 @@ public:
     // light
     void AddLight(SdfPath const &id, GlfSimpleLight const &light);
     void SetLight(SdfPath const &id, TfToken const &key, VtValue value);
+    void RemoveLight(SdfPath const &id);
 
     // transform
     void UpdateTransform(SdfPath const& id, GfMatrix4f const& mat);

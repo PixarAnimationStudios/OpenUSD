@@ -197,6 +197,25 @@ int main(int argc, char *argv[])
     GLF_POST_PENDING_GL_ERRORS();
 
     // --------------------------------------------------------------------
+    // remove first light
+    delegate->RemoveLight(SdfPath("/light1"));
+
+    // --------------------------------------------------------------------
+    // draw.
+    drawTarget->Bind();
+    glViewport(0, 0, 512, 512);
+    glEnable(GL_DEPTH_TEST);
+    glClearBufferfv(GL_COLOR, 0, clearColor);
+    glClearBufferfv(GL_DEPTH, 0, clearDepth);
+
+    engine.Execute(index.get(), &tasks);
+
+    drawTarget->Unbind();
+    drawTarget->WriteToFile("color", "color4.png");
+
+    GLF_POST_PENDING_GL_ERRORS();
+
+    // --------------------------------------------------------------------
 
     std::cout << "OK" << std::endl;
 }

@@ -273,6 +273,14 @@ Hdx_UnitTestDelegate::SetLight(SdfPath const &id, TfToken const &key,
 }
 
 void
+Hdx_UnitTestDelegate::RemoveLight(SdfPath const &id)
+{
+    // remove light
+    GetRenderIndex().RemoveSprim(HdPrimTypeTokens->simpleLight, id);
+    _valueCacheMap.erase(id);
+}
+
+void
 Hdx_UnitTestDelegate::UpdateTransform(SdfPath const& id,
                                       GfMatrix4f const& mat)
 {
