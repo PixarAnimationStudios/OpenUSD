@@ -766,41 +766,31 @@ private:
                     }),
                 specs.end());
         }
-                  
-        // Allocate all the spec data structures in the hashtable first,
-        // so we can populate fields in parallel without locking.
-        vector<_SpecData *> specDataPtrs;
-                
-        // Create all the specData entries and store pointers to them.
-        dispatcher.Run([this, &specs, &specDataPtrs]() {
-            // XXX Won't need first two tags when bug #132031 is addressed
+
+        CrateFile const * const crateFile = _crateFile.get();
+
+        // Reserving the space in the _data table is pretty expensive, so start
+        // that upfront as a task and overlap it with building up all the live
+        // field sets.
+        dispatcher.Run([this, &specs, crateFile]() {
             TfAutoMallocTag2 tag("Usd", "Usd_CrateDataImpl::Open");
             TfAutoMallocTag tag2("Usd_CrateDataImpl main hash table");
-
-            _data.reserve(specs.size());
-            specDataPtrs.resize(specs.size());
-
-            CrateFile const *crateFile = _crateFile.get();
-
-            // Do all the insertions first, then swing back and pick up the
-            // pointers, since inserting can invalidate the pointers. 
+            // over-reserve by 25% to help ensure no rehashes.
+            _data.reserve(specs.size() + (specs.size() >> 2));
+            
+            // Do all the insertions first, since inserting can invalidate
+            // references.
             for (size_t i = 0; i != specs.size(); ++i) {
                 _data.emplace(crateFile->GetPath(specs[i].pathIndex),
                               Usd_EmptySharedTag);
             }
-           
-            for (size_t i = 0; i != specs.size(); ++i) {
-                specDataPtrs[i] = &_data.find(
-                    crateFile->GetPath(specs[i].pathIndex)).value();
-            }
         });
-                
-        typedef Usd_Shared<_FieldValuePairVector> SharedFieldValuePairVector;
 
         // XXX robin_map ?
+        typedef Usd_Shared<_FieldValuePairVector> SharedFieldValuePairVector;
         unordered_map<
             FieldSetIndex, SharedFieldValuePairVector, _Hasher> liveFieldSets;
-                
+
         for (auto fsBegin = fieldSets.begin(),
                  fsEnd = find(fsBegin, fieldSets.end(), FieldIndex());
              fsBegin != fieldSets.end();
@@ -829,25 +819,29 @@ private:
         }
                 
         dispatcher.Wait();
-                
-        dispatcher.Run(
-            [this, &specs, &specDataPtrs, &liveFieldSets]() {
-                tbb::parallel_for(
-                    static_cast<size_t>(0), static_cast<size_t>(specs.size()),
-                    [this, &specs, &specDataPtrs, &liveFieldSets]
-                    (size_t specIdx) {
-                        auto const &s = specs[specIdx];
-                        auto *specData = specDataPtrs[specIdx];
-                        specData->specType = s.specType;
-                        specData->fields =
-                            liveFieldSets.find(s.fieldSetIndex)->second;
-                    });
-            });
-                
-        dispatcher.Wait();
+
+        // Create all the specData entries and store pointers to them.
+        tbb::parallel_for(
+            tbb::blocked_range<size_t>(0, specs.size()),
+            [this, crateFile, &liveFieldSets, &specs](
+                tbb::blocked_range<size_t> const &r) {
+                for (size_t i = r.begin(),
+                         end = r.end(); i != end; ++i) {
+                    
+                    CrateFile::Spec const &spec = specs[i];
+                    _SpecData &specData = _data.find(
+                        crateFile->GetPath(spec.pathIndex)).value();
+                    
+                    specData.specType = spec.specType;
+                    specData.fields =
+                        liveFieldSets.find(spec.fieldSetIndex)->second;
+                    
+                }
+            },
+            tbb::static_partitioner());
 
         _lastSet = _data.end();
-        
+
         return true;
     }
 
@@ -1050,7 +1044,7 @@ private:
     using _HashMap = pxr_tsl::robin_map<
         SdfPath, _SpecData, SdfPath::Hash, std::equal_to<SdfPath>,
         std::allocator<std::pair<SdfPath, _SpecData>>,
-        /*StoreHash=*/true>;
+        /*StoreHash=*/false>;
 
     // In-memory data for specs.
     _HashMap _data;
