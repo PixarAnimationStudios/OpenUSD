@@ -2504,6 +2504,143 @@ UsdImagingInstanceAdapter::GetScenePrimPath(
     return SdfPath();
 }
 
+struct UsdImagingInstanceAdapter::_GetScenePrimPathsFn
+{
+    _GetScenePrimPathsFn(
+        const UsdImagingInstanceAdapter* adapter_,
+        const std::vector<int> &instanceIndices_,
+        const SdfPath &protoPath_)
+        : adapter(adapter_)
+        , protoPath(protoPath_)
+    {
+        instanceIndices.insert(
+            instanceIndices_.begin(), instanceIndices_.end());
+    }
+
+    void Initialize(size_t numInstances)
+    {
+    }
+
+    bool operator()(
+        const std::vector<UsdPrim>& instanceContext, size_t instanceIdx)
+    {
+        // If this iteration is the right instance index, compose all the USD
+        // prototype paths together to get the instance proxy path.  Include the
+        // proto path (of the child prim), if one was provided.
+        if (instanceIndices.find(instanceIdx) != instanceIndices.end()) {
+            SdfPathVector instanceChain;
+            // To get the correct prim-in-prototype, we need to add the
+            // prototype path to the instance chain.  However, there's a case in
+            // _Populate where we populate prims that are just a USD prototype
+            // (used by e.g. cards).  In this case, the hydra proto path is
+            // overridden to be the path of the USD instance, and we don't want
+            // to add it to the instance chain since instanceContext.front
+            // would duplicate it.
+            UsdPrim p = adapter->_GetPrim(protoPath);
+            if (p && !p.IsInstance()) {
+                instanceChain.push_back(protoPath);
+            }
+            for (UsdPrim const& prim : instanceContext) {
+                instanceChain.push_back(prim.GetPath());
+            }
+            primPaths.emplace(instanceIdx,
+                adapter->_GetPrimPathFromInstancerChain(instanceChain));
+            // We can stop iterating when we've found a prim path for each
+            // instance index.
+            return primPaths.size() != instanceIndices.size();
+        }
+        return true;
+    }
+
+    const UsdImagingInstanceAdapter* adapter;
+    const SdfPath& protoPath;
+    std::set<int> instanceIndices;
+    std::map<int, SdfPath> primPaths;
+};
+
+/* virtual */
+SdfPathVector
+UsdImagingInstanceAdapter::GetScenePrimPaths(
+    SdfPath const& cachePath,
+    std::vector<int> const& instanceIndices,
+    std::vector<HdInstancerContext> *instancerCtxs) const
+{
+    HD_TRACE_FUNCTION();
+
+    // For child prims (hydra prototypes) and USD instances, the process is
+    // the same: find the associated hydra instancer, and use the instance
+    // index to look up the composed instance path.  They differ based on
+    // whether you append a hydra proto path, and how you find the
+    // hydra instancer.
+    UsdPrim usdPrim = _GetPrim(cachePath.GetAbsoluteRootOrPrimPath());
+    if (_IsChildPrim(usdPrim, cachePath)) {
+
+        TF_DEBUG(USDIMAGING_SELECTION).Msg(
+            "GetScenePrimPaths: instance proto = %s\n", cachePath.GetText());
+
+        UsdImagingInstancerContext instancerContext;
+        _ProtoPrim const& proto = _GetProtoPrim(
+            cachePath.GetAbsoluteRootOrPrimPath(),
+            cachePath, &instancerContext);
+
+        if (!proto.adapter) {
+            return SdfPathVector(instanceIndices.size(), cachePath);
+        }
+
+        _InstancerData const* instrData =
+            TfMapLookupPtr(_instancerData, instancerContext.instancerCachePath);
+        if (!instrData) {
+            return SdfPathVector(instanceIndices.size(), cachePath);
+        }
+
+        UsdPrim instancerPrim = _GetPrim(instancerContext.instancerCachePath);
+
+        // Translate from hydra instance index to USD (since hydra filters out
+        // invisible instances).
+        VtIntArray indices = _ComputeInstanceMap(instancerPrim, *instrData, 
+            _GetTimeWithOffset(0.0));
+        std::vector<int> remappedIndices;
+
+        remappedIndices.reserve(instanceIndices.size());
+        for (size_t i = 0; i < instanceIndices.size(); i++)
+            remappedIndices.push_back(indices[instanceIndices[i]]);
+
+        SdfPathVector result;
+        result.reserve(instanceIndices.size());
+        _GetScenePrimPathsFn primPathsFn(this, remappedIndices, proto.path);
+        _RunForAllInstancesToDraw(instancerPrim, &primPathsFn);
+        for (size_t i = 0; i < remappedIndices.size(); i++)
+            result.push_back(primPathsFn.primPaths[remappedIndices[i]]);
+        return result;
+    } else {
+
+        TF_DEBUG(USDIMAGING_SELECTION).Msg(
+            "GetScenePrimPaths: instance = %s\n", cachePath.GetText());
+
+        SdfPath const* instancerPath =
+            TfMapLookupPtr(_instanceToInstancerMap, cachePath);
+        if (instancerPath == nullptr) {
+            return SdfPathVector(instanceIndices.size(), cachePath);
+        }
+        _InstancerData const* instrData =
+            TfMapLookupPtr(_instancerData, *instancerPath);
+        if (instrData == nullptr) {
+            return SdfPathVector(instanceIndices.size(), cachePath);
+        }
+
+        SdfPathVector result;
+        result.reserve(instanceIndices.size());
+        _GetScenePrimPathsFn primPathsFn(this, instanceIndices,
+            SdfPath::EmptyPath());
+        _RunForAllInstancesToDraw(_GetPrim(*instancerPath), &primPathsFn);
+        for (size_t i = 0; i < instanceIndices.size(); i++)
+            result.push_back(primPathsFn.primPaths[instanceIndices[i]]);
+        return result;
+    }
+
+    return SdfPathVector(instanceIndices.size(), cachePath);
+}
+
 struct UsdImagingInstanceAdapter::_PopulateInstanceSelectionFn
 {
     _PopulateInstanceSelectionFn(
