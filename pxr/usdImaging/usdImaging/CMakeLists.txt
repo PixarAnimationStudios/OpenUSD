@@ -26,6 +26,9 @@ pxr_library(usdImaging
     PUBLIC_CLASSES
         adapterRegistry
         collectionCache
+        dataSourceAttribute
+        dataSourceRelationship
+        dataSourceStageGlobals
         debugCodes
         delegate
         indexProxy
