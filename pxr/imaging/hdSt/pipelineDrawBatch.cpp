@@ -98,6 +98,7 @@ HdSt_PipelineDrawBatch::HdSt_PipelineDrawBatch(
     , _useInstancing(false)
     , _useGpuCulling(false)
     , _useInstanceCulling(false)
+    , _allowGpuFrustumCulling(true)
 
     , _instanceCountOffset(0)
     , _cullInstanceCountOffset(0)
@@ -177,6 +178,12 @@ bool
 HdSt_PipelineDrawBatch::IsEnabledGPUInstanceFrustumCulling()
 {
     return HdSt_IndirectDrawBatch::IsEnabledGPUInstanceFrustumCulling();
+}
+
+void
+HdSt_PipelineDrawBatch::SetAllowGpuFrustumCulling(bool allowGpuFrustumCulling)
+{
+    _allowGpuFrustumCulling = allowGpuFrustumCulling;
 }
 
 ////////////////////////////////////////////////////////////
@@ -455,6 +462,12 @@ _AddNonInstanceCullResourceViews(HdStDispatchBufferSharedPtr const & cullInput,
         traits.instanceCount_offset);
 }
 
+HdBufferArrayRangeSharedPtr
+_GetShaderBar(HdSt_MaterialNetworkShaderSharedPtr const & shader)
+{
+    return shader ? shader->GetShaderData() : nullptr;
+}
+
 // Collection of resources for a drawItem
 struct _DrawItemState
 {
@@ -474,7 +487,7 @@ struct _DrawItemState
         , vertexBar(std::static_pointer_cast<HdStBufferArrayRange>(
                     drawItem->GetVertexPrimvarRange()))
         , shaderBar(std::static_pointer_cast<HdStBufferArrayRange>(
-                    drawItem->GetMaterialNetworkShader()->GetShaderData()))
+                    _GetShaderBar(drawItem->GetMaterialNetworkShader())))
         , instanceIndexBar(std::static_pointer_cast<HdStBufferArrayRange>(
                     drawItem->GetInstanceIndexRange()))
     {
@@ -836,7 +849,7 @@ HdSt_PipelineDrawBatch::PrepareDraw(
         _drawCommandBufferDirty = false;
     }
 
-    if (_useGpuCulling) {
+    if (_allowGpuFrustumCulling && _useGpuCulling) {
         _ExecuteFrustumCull(updateBufferData,
                             renderPassState, resourceRegistry);
     }

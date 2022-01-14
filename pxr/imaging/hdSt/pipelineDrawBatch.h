@@ -94,6 +94,11 @@ public:
     HDST_API
     static bool IsEnabledGPUInstanceFrustumCulling();
 
+    /// Sets whether to allow GPU frustum culling for this instance,
+    /// unlike the methods above which are global switches.
+    HDST_API
+    void SetAllowGpuFrustumCulling(bool allowGpuFrustumCulling);
+
 protected:
     HDST_API
     void _Init(HdStDrawItemInstance * drawItemInstance) override;
@@ -173,6 +178,7 @@ private:
     bool _useInstancing;
     bool _useGpuCulling;
     bool _useInstanceCulling;
+    bool _allowGpuFrustumCulling;
 
     int _instanceCountOffset;
     int _cullInstanceCountOffset;

@@ -30,6 +30,7 @@
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
+#include "pxr/imaging/hdSt/pipelineDrawBatch.h"
 #include "pxr/imaging/hd/drawingCoord.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/imaging/hgi/graphicsCmds.h"
@@ -38,6 +39,21 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+static
+HdSt_DrawBatchSharedPtr
+_NewDrawBatch(HdStDrawItemInstance * drawItemInstance)
+{
+    if (HdSt_PipelineDrawBatch::IsEnabled()) {
+        std::shared_ptr<HdSt_PipelineDrawBatch> pipelineDrawBatch =
+            std::make_shared<HdSt_PipelineDrawBatch>(drawItemInstance);
+        // We don't want or need frustum culling of our fullscreen triangle.
+        pipelineDrawBatch->SetAllowGpuFrustumCulling(false);
+        return pipelineDrawBatch;
+    } else {
+        return std::make_shared<HdSt_ImmediateDrawBatch>(drawItemInstance);
+    }
+}
 
 HdSt_ImageShaderRenderPass::HdSt_ImageShaderRenderPass(
     HdRenderIndex *index,
@@ -50,23 +66,20 @@ HdSt_ImageShaderRenderPass::HdSt_ImageShaderRenderPass(
 {
     _sharedData.instancerLevels = 0;
     _sharedData.rprimID = SdfPath("/imageShaderRenderPass");
-    _immediateBatch = 
-        std::make_shared<HdSt_ImmediateDrawBatch>(&_drawItemInstance);
+    _drawBatch = _NewDrawBatch(&_drawItemInstance);
 
     HdStRenderDelegate* renderDelegate =
         static_cast<HdStRenderDelegate*>(index->GetRenderDelegate());
     _hgi = renderDelegate->GetHgi();
 }
 
-HdSt_ImageShaderRenderPass::~HdSt_ImageShaderRenderPass()
-{
-}
+HdSt_ImageShaderRenderPass::~HdSt_ImageShaderRenderPass() = default;
 
 void
 HdSt_ImageShaderRenderPass::_SetupVertexPrimvarBAR(
     HdStResourceRegistrySharedPtr const& registry)
 {
-    // The current logic in HdSt_ImmediateDrawBatch::ExecuteDraw will use
+    // The current logic in HdSt_PipelineDrawBatch::ExecuteDraw will use
     // glDrawArraysInstanced if it finds a VertexPrimvar buffer but no
     // index buffer, We setup the BAR to meet this requirement to draw our
     // full-screen triangle for post-process shaders.
@@ -135,7 +148,7 @@ HdSt_ImageShaderRenderPass::_Execute(
         GetRenderIndex()->GetResourceRegistry());
     TF_VERIFY(resourceRegistry);
 
-    _immediateBatch->PrepareDraw(stRenderPassState, resourceRegistry);
+    _drawBatch->PrepareDraw(stRenderPassState, resourceRegistry);
 
     // Create graphics work to render into aovs.
     const HgiGraphicsCmdsDesc desc =
@@ -148,8 +161,7 @@ HdSt_ImageShaderRenderPass::_Execute(
     // Camera state needs to be updated once per pass (not per batch).
     stRenderPassState->ApplyStateFromCamera();
 
-    _immediateBatch->ExecuteDraw(
-                        gfxCmds.get(), stRenderPassState, resourceRegistry);
+    _drawBatch->ExecuteDraw(gfxCmds.get(), stRenderPassState, resourceRegistry);
 
     gfxCmds->PopDebugGroup();
     _hgi->SubmitCmds(gfxCmds.get());
