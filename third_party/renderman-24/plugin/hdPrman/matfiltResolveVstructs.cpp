@@ -77,22 +77,22 @@ struct _ShaderInfoEntry {
 
     /// Constructs a _ShaderInfoEntry::Ptr for a single shader without caching
     static Ptr
-    Build(const TfToken & nodeTypeId,
-          const NdrTokenVec & shaderTypePriority)
+    Build(const TfToken &nodeTypeId,
+          const NdrTokenVec &shaderTypePriority)
     {
         auto result = Ptr(new _ShaderInfoEntry);
         if (auto sdrShader =
                 SdrRegistry::GetInstance().GetShaderNodeByIdentifier(
                         nodeTypeId, shaderTypePriority))
         {
-            for (const auto & inputName : sdrShader->GetInputNames()) {
+            for (const auto &inputName : sdrShader->GetInputNames()) {
                 auto sdrInput = sdrShader->GetShaderInput(inputName);
                 if (!sdrInput) {
                     continue;
                 }
                 _ProcessProperty(result, sdrInput);
             }
-            for (const auto & outputName : sdrShader->GetOutputNames()) {
+            for (const auto &outputName : sdrShader->GetOutputNames()) {
                 auto sdrOutput = sdrShader->GetShaderOutput(outputName);
                 if (!sdrOutput) {
                     continue;
@@ -108,8 +108,8 @@ struct _ShaderInfoEntry {
 
     /// Constructs and caches a _ShaderInfoEntry::Ptr for a single shader
     static Ptr
-    Get(const TfToken & nodeTypeId,
-        const NdrTokenVec & shaderTypePriority)
+    Get(const TfToken &nodeTypeId,
+        const NdrTokenVec &shaderTypePriority)
     {
         std::lock_guard<std::mutex> lock(_cachedEntryMutex);
 
@@ -135,8 +135,8 @@ private:
             return;
         }
 
-        const TfToken & vsName = prop->GetVStructMemberOf();
-        const TfToken & vsMemberName = prop->GetVStructMemberName();
+        const TfToken &vsName = prop->GetVStructMemberOf();
+        const TfToken &vsMemberName = prop->GetVStructMemberName();
         if (vsName.IsEmpty() || vsMemberName.IsEmpty()) {
             return;
         }
@@ -152,7 +152,7 @@ private:
 
         TfToken vsMemberAlias;
 
-        const auto & metadata = prop->GetMetadata();
+        const auto &metadata = prop->GetMetadata();
         {
             auto I = metadata.find(_tokens->vstructmemberaliases);
             if (I != metadata.end()) {
@@ -160,7 +160,7 @@ private:
             }
         }
 
-        auto & memberNames = entry->members[prop->GetName()];
+        auto &memberNames = entry->members[prop->GetName()];
         memberNames.push_back(vsMemberName);
         
         entry->reverseMembers[vsMemberName] = prop->GetName();
@@ -170,7 +170,7 @@ private:
             entry->reverseMembers[vsMemberAlias] = prop->GetName();
         }
 
-        const TfToken & condExpr = prop->GetVStructConditionalExpr();
+        const TfToken &condExpr = prop->GetVStructConditionalExpr();
 
         if (!condExpr.IsEmpty()) {
             entry->conditionals[prop->GetName()] =
@@ -223,7 +223,7 @@ _ResolveVstructsForNode(
         TF_DEBUG(HDPRMAN_VSTRUCTS)
             .Msg("Found input %s with a vstruct\n", inputName.GetText());
 
-        const auto & vstructInfo = (*I).second;
+        const auto &vstructInfo = (*I).second;
 
         HdMaterialNetworkInterface::InputConnectionVector
             upstreamConnections =
@@ -239,7 +239,7 @@ _ResolveVstructsForNode(
         TF_DEBUG(HDPRMAN_VSTRUCTS)
             .Msg("Found upstream vstruct connection\n");
 
-        const auto & upstreamConnection = upstreamConnections.front();
+        const auto &upstreamConnection = upstreamConnections.front();
 
         TfToken upstreamTypeId = interface->GetNodeType(
             upstreamConnection.upstreamNodeName);
@@ -269,8 +269,8 @@ _ResolveVstructsForNode(
         interface->DeleteNodeInputConnection(nodeId, inputName);
 
 
-        for (auto & memberI : vstructInfo->members) {
-            const TfToken & memberInputName = memberI.first;
+        for (auto &memberI : vstructInfo->members) {
+            const TfToken &memberInputName = memberI.first;
 
             // If there's an existing connection to a member input, skip
             // expansion as a direct connection has a stronger opinion.
@@ -280,14 +280,14 @@ _ResolveVstructsForNode(
             }
 
             // loop over member names (which may be > 1 due to member aliases)
-            for (const TfToken & memberName : memberI.second) {
+            for (const TfToken &memberName : memberI.second) {
                 auto revMemberI =
                     upstreamVstruct->reverseMembers.find(memberName);
 
                 if (revMemberI == upstreamVstruct->reverseMembers.end()) {
                     continue;
                 }
-                const TfToken & upstreamMemberOutputName = (*revMemberI).second;
+                const TfToken &upstreamMemberOutputName = (*revMemberI).second;
                 
                 // check for condition, otherwise connect
                 auto condI = upstreamVstruct->conditionals.find(
@@ -296,7 +296,7 @@ _ResolveVstructsForNode(
                 if (enableConditions &&
                         condI != upstreamVstruct->conditionals.end())
                 {
-                    auto & evaluator = (*condI).second;
+                    auto &evaluator = (*condI).second;
                     evaluator->Evaluate(
                             nodeId,
                             memberInputName,
@@ -327,7 +327,7 @@ _ResolveVstructsForNode(
 void
 MatfiltResolveVstructs(
     HdMaterialNetworkInterface *interface,
-    const NdrTokenVec & shaderTypePriority,
+    const NdrTokenVec &shaderTypePriority,
     bool enableConditions)
 {
 
@@ -349,17 +349,17 @@ MatfiltResolveVstructs(
 
 void
 MatfiltResolveVstructs(
-    const SdfPath & networkId,
-    HdMaterialNetwork2 & network,
-    const std::map<TfToken, VtValue> & contextValues,
-    const NdrTokenVec & shaderTypePriority,
-    std::vector<std::string> * outputErrorMessages)
+    const SdfPath &networkId,
+    HdMaterialNetwork2 &network,
+    const std::map<TfToken, VtValue> &contextValues,
+    const NdrTokenVec &shaderTypePriority,
+    std::vector<std::string> *outputErrorMessages)
 {
     bool enableConditions = true;
 
     auto I = contextValues.find(_tokens->enableVstructConditions);
     if (I != contextValues.end()) {
-        const VtValue & value = (*I).second;
+        const VtValue &value = (*I).second;
         if (value.IsHolding<bool>()) {
             enableConditions = value.UncheckedGet<bool>();
         }

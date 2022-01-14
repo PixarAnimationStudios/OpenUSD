@@ -95,10 +95,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 // with the given hdOutputName
 static std::string
 _GenMaterialXShaderCode(
-    mx::DocumentPtr const& mxDoc,
-    mx::FileSearchPath const& searchPath,
-    std::string const& hdOutputName,
-    std::string const& shaderName)
+    mx::DocumentPtr const &mxDoc,
+    mx::FileSearchPath const &searchPath,
+    std::string const &hdOutputName,
+    std::string const &shaderName)
 {
     // Initialize the Context for shaderGen
     mx::GenContext mxContext = mx::OslShaderGenerator::create();
@@ -132,7 +132,7 @@ _GenMaterialXShaderCode(
 
 // Convert the MaterialX SurfaceShader Token to the MaterialX Adapter Node Type
 static TfToken
-_GetAdapterNodeType(TfToken const& hdNodeType)
+_GetAdapterNodeType(TfToken const &hdNodeType)
 {
     if (hdNodeType == _tokens->ND_standard_surface_surfaceshader) {
         return _tokens->SS_Adapter;
@@ -149,7 +149,7 @@ _GetAdapterNodeType(TfToken const& hdNodeType)
 // Convert the TfToken associated with the input parameters to the Standard
 // Surface Adapter Node that conflict with OSL reserved words. 
 static TfToken
-_GetUpdatedInputToken(TfToken const& currInputName)
+_GetUpdatedInputToken(TfToken const &currInputName)
 {
     // { currentInputNname , updatedInputName }
     static const mx::StringMap conflicts = {{"emission",   "emission_value"},
@@ -174,8 +174,8 @@ static void
 _GatherNodeGraphNodes(
     HdMaterialNetworkInterface *netInterface,
     TfToken const &hdNodeName,
-    std::set<TfToken> * upstreamNodeNames,
-    std::set<TfToken> * visitedNodeNames)
+    std::set<TfToken> *upstreamNodeNames,
+    std::set<TfToken> *visitedNodeNames)
 {
      TfTokenVector cNames =
         netInterface->GetNodeInputConnectionNames(hdNodeName);
@@ -209,9 +209,9 @@ _GatherNodeGraphNodes(
 // Compile the given oslSource returning the path to the compiled oso code 
 static std::string 
 _CompileOslSource(
-    std::string const& name, 
-    std::string const& oslSource,
-    mx::FileSearchPath const& searchPaths)
+    std::string const &name, 
+    std::string const &oslSource,
+    mx::FileSearchPath const &searchPaths)
 {
 #ifdef PXR_OSL_SUPPORT_ENABLED
 
@@ -223,7 +223,7 @@ _CompileOslSource(
     std::vector<std::string> oslArgs;
     oslArgs.reserve(searchPaths.size());
     const mx::FilePath stdlibOslPath = "stdlib/osl";
-    for (mx::FilePath const& path : searchPaths) {
+    for (mx::FilePath const &path : searchPaths) {
         const mx::FilePath fullPath = path/stdlibOslPath;
         oslArgs.push_back(fullPath.exists() ? "-I" + fullPath.asString()
                                             : "-I" + path.asString());
@@ -236,7 +236,7 @@ _CompileOslSource(
 
     // Save compiled shader
     std::string compiledFilePath = ArchMakeTmpFileName("MX." + name, ".oso");
-    FILE * compiledShader;
+    FILE *compiledShader;
     compiledShader = fopen((compiledFilePath).c_str(), "w+");
     if (!compiledShader) {
         TF_WARN("Unable to save compiled MaterialX Osl shader at '%s'\n",
@@ -286,9 +286,9 @@ _DeleteAllParameters(
 static void
 _UpdateNetwork(
     HdMaterialNetworkInterface *netInterface,
-    TfToken const& terminalNodeName,
-    mx::DocumentPtr const& mxDoc,
-    mx::FileSearchPath const& searchPath)
+    TfToken const &terminalNodeName,
+    mx::DocumentPtr const &mxDoc,
+    mx::FileSearchPath const &searchPath)
 {
     // Gather the nodeGraph nodes
     std::set<TfToken> nodesToKeep;   // nodes directly connected to the terminal
@@ -408,7 +408,7 @@ _UpdateNetwork(
 static void 
 _TransformTerminalNode(
     HdMaterialNetworkInterface *netInterface,
-    TfToken const& terminalNodeName)
+    TfToken const &terminalNodeName)
 {
     // Create a SdrShaderNodes for the Adapter and PxrSurface Nodes.
     TfToken adapterType = _GetAdapterNodeType(
@@ -479,8 +479,8 @@ _TransformTerminalNode(
 // Get the Hydra equivalent for the given MaterialX input value
 static TfToken
 _GetHdWrapString(
-    TfToken const& hdTextureNodeName,
-    std::string const& mxInputValue)
+    TfToken const &hdTextureNodeName,
+    std::string const &mxInputValue)
 {
     if (mxInputValue == "constant") {
         TF_WARN("RtxHioImagePlugin: Texture '%s' has unsupported wrap mode "
@@ -501,9 +501,9 @@ _GetHdWrapString(
 static void
 _GetWrapModes(
     HdMaterialNetworkInterface *netInterface,
-    TfToken const& hdTextureNodeName,
-    TfToken * uWrap,
-    TfToken * vWrap)
+    TfToken const &hdTextureNodeName,
+    TfToken *uWrap,
+    TfToken *vWrap)
 {
     // For <tiledimage> nodes want to always use "repeat"
     *uWrap = _tokens->repeat;
@@ -527,10 +527,10 @@ _GetWrapModes(
 static void 
 _UpdateTextureNodes(
     HdMaterialNetworkInterface *netInterface,
-    std::set<SdfPath> const& hdTextureNodePaths,
-    mx::DocumentPtr const& mxDoc)
+    std::set<SdfPath> const &hdTextureNodePaths,
+    mx::DocumentPtr const &mxDoc)
 {
-    for (SdfPath const& texturePath : hdTextureNodePaths) {
+    for (SdfPath const &texturePath : hdTextureNodePaths) {
         TfToken const &textureNodeName = texturePath.GetToken();
         const TfToken nodeType = netInterface->GetNodeType(textureNodeName);
         if (nodeType.IsEmpty()) {
@@ -562,7 +562,7 @@ _UpdateTextureNodes(
                 TfToken uWrap, vWrap;
                 _GetWrapModes(netInterface, textureNodeName, &uWrap, &vWrap);
                 
-                std::string const& mxInputValue = 
+                std::string const &mxInputValue = 
                     TfStringPrintf("rtxplugin:%s?filename=%s&wrapS=%s&wrapT=%s", 
                                     pluginName.c_str(), path.c_str(), 
                                     uWrap.GetText(), vWrap.GetText());
@@ -591,7 +591,7 @@ _UpdateTextureNodes(
 void
 MatfiltMaterialX(
     HdMaterialNetworkInterface *netInterface,
-    std::vector<std::string> * outputErrorMessages)
+    std::vector<std::string> *outputErrorMessages)
 {
     if (!netInterface) {
         return;
@@ -655,11 +655,11 @@ MatfiltMaterialX(
 
 void
 MatfiltMaterialX(
-    const SdfPath & materialPath,
-    HdMaterialNetwork2 & hdNetwork,
-    const std::map<TfToken, VtValue> & contextValues,
-    const NdrTokenVec & shaderTypePriority,
-    std::vector<std::string> * outputErrorMessages)
+    const SdfPath &materialPath,
+    HdMaterialNetwork2 &hdNetwork,
+    const std::map<TfToken, VtValue> &contextValues,
+    const NdrTokenVec &shaderTypePriority,
+    std::vector<std::string> *outputErrorMessages)
 {
     TF_UNUSED(contextValues);
     TF_UNUSED(shaderTypePriority);

@@ -39,17 +39,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// within \p contextValues. This defaults to true.
 ///
 void MatfiltResolveVstructs(
-        const SdfPath & networkId,
-        HdMaterialNetwork2 & network,
-        const std::map<TfToken, VtValue> & contextValues,
-        const NdrTokenVec & shaderTypePriority,
-        std::vector<std::string> * outputErrorMessages);
+        const SdfPath &networkId,
+        HdMaterialNetwork2 &network,
+        const std::map<TfToken, VtValue> &contextValues,
+        const NdrTokenVec &shaderTypePriority,
+        std::vector<std::string> *outputErrorMessages);
 
 
 /// Resolves vstructs against an abstract material interface.
 void MatfiltResolveVstructs(
         HdMaterialNetworkInterface *networkInterface,
-        const NdrTokenVec & shaderTypePriority,
+        const NdrTokenVec &shaderTypePriority,
         bool enableConditions);
 
 
@@ -67,7 +67,7 @@ public:
 
     ~MatfiltVstructConditionalEvaluator();
 
-    static Ptr Parse(const std::string & inputExpr);
+    static Ptr Parse(const std::string &inputExpr);
 
     /// Runs the conditional actions specified by the parsed inputExpr.
     /// 
@@ -81,12 +81,12 @@ public:
             const TfToken &nodeInputId,
             const TfToken &upstreamNodeId,
             const TfToken &upstreamNodeOutput,
-            const NdrTokenVec & shaderTypePriority,
+            const NdrTokenVec &shaderTypePriority,
             HdMaterialNetworkInterface *networkInterface) const;
 private:
     MatfiltVstructConditionalEvaluator() = default;
 
-    MatfiltVstructConditionalEvaluatorImpl * _impl = nullptr;
+    MatfiltVstructConditionalEvaluatorImpl *_impl = nullptr;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

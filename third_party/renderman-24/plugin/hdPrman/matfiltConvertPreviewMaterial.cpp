@@ -119,11 +119,11 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 void
 MatfiltConvertPreviewMaterial(
-    const SdfPath & networkId,
-    HdMaterialNetwork2 & network,
-    const std::map<TfToken, VtValue> & contextValues,
-    const NdrTokenVec & shaderTypePriority,
-    std::vector<std::string> * outputErrorMessages)
+    const SdfPath &networkId,
+    HdMaterialNetwork2 &network,
+    const std::map<TfToken, VtValue> &contextValues,
+    const NdrTokenVec &shaderTypePriority,
+    std::vector<std::string> *outputErrorMessages)
 {
     TF_UNUSED(contextValues);
     TF_UNUSED(shaderTypePriority);
@@ -178,7 +178,7 @@ void
 _ProcessPreviewSurfaceNode(
     HdMaterialNetworkInterface *netInterface,
     const TfToken &nodeName,
-    std::vector<std::string> * outputErrorMessages)
+    std::vector<std::string> *outputErrorMessages)
 {
     TF_UNUSED(outputErrorMessages);
 
@@ -321,7 +321,7 @@ void
 _ProcessUVTextureNode(
     HdMaterialNetworkInterface * netInterface,
     const TfToken &nodeName,
-    std::vector<std::string> * outputErrorMessages)
+    std::vector<std::string> *outputErrorMessages)
 {
     TF_UNUSED(outputErrorMessages);
 
@@ -417,8 +417,8 @@ _ProcessUVTextureNode(
 
 void
 MatfiltConvertPreviewMaterial(
-    HdMaterialNetworkInterface * netInterface,
-    std::vector<std::string> * outputErrorMessages)
+    HdMaterialNetworkInterface *netInterface,
+    std::vector<std::string> *outputErrorMessages)
 {
     if (!netInterface) {
         return;
