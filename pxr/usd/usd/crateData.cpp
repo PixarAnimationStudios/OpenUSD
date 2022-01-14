@@ -753,16 +753,19 @@ private:
         vector<Usd_CrateFile::FieldIndex> fieldSets;
         _crateFile->RemoveStructuralData(specs, fields, fieldSets);
                 
-        // Remove any target specs, we do not store target specs in Usd,
-        // but old files could contain them.
-        specs.erase(
-            remove_if(
-                specs.begin(), specs.end(),
-                [this](CrateFile::Spec const &spec) {
-                    return _crateFile->GetPath(
-                        spec.pathIndex).IsTargetPath();
-                }),
-            specs.end());
+        // Remove any target specs, we do not store target specs in Usd, but old
+        // files could contain them.  We stopped writing target specs in version
+        // 0.1.0, so skip this step if the version is newer or equal to that.
+        if (_crateFile->GetFileVersion() < CrateFile::Version(0, 1, 0)) {
+            specs.erase(
+                remove_if(
+                    specs.begin(), specs.end(),
+                    [this](CrateFile::Spec const &spec) {
+                        return _crateFile->GetPath(
+                            spec.pathIndex).IsTargetPath();
+                    }),
+                specs.end());
+        }
                   
         // Allocate all the spec data structures in the hashtable first,
         // so we can populate fields in parallel without locking.
