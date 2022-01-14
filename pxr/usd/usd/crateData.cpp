@@ -1034,6 +1034,12 @@ private:
         explicit _SpecData(Usd_EmptySharedTagType) noexcept
             : fields(Usd_EmptySharedTag) {}
         inline void DetachIfNotUnique() { fields.MakeUnique(); }
+
+        friend inline void swap(_SpecData &l, _SpecData &r) {
+            std::swap(l.specType, r.specType);
+            l.fields.swap(r.fields);
+        }
+        
         Usd_Shared<_FieldValuePairVector> fields;
         SdfSpecType specType;
     };
