@@ -94,29 +94,15 @@ UsdImagingStageSceneIndex::_GetImagingSubprimData(
 }
 
 void
-UsdImagingStageSceneIndex::_PopulateAdapterMap(UsdPrim prim)
+UsdImagingStageSceneIndex::_PopulateAdapterMap()
 {
-    // Pre-populate the adapter map with all of the adapters we'll need for
-    // this prim type.  We do this here because _AdapterLookup is frequently
-    // called from multithreaded functions; this function is intended to be
-    // called only by Populate(), which traverses single-threaded.
+    TRACE_FUNCTION();
 
-    const UsdPrimTypeInfo &typeInfo = prim.GetPrimTypeInfo();
-    TfTokenVector types = typeInfo.GetAppliedAPISchemas();
-    types.push_back(typeInfo.GetSchemaTypeName());
+    UsdImagingAdapterRegistry& reg = UsdImagingAdapterRegistry::GetInstance();
+    TfTokenVector adapterKeys = reg.GetAdapterKeys();
 
-    for (TfToken const& type : types) {
-        _AdapterMap::const_iterator it = _adapterMap.find(type);
-        if (it != _adapterMap.end()) {
-            continue;
-        }
-
-        UsdImagingAdapterRegistry& reg =
-            UsdImagingAdapterRegistry::GetInstance();
-        UsdImagingPrimAdapterSharedPtr adapter =
-            reg.ConstructAdapter(type);
-
-        _adapterMap.insert(std::make_pair(type, adapter));
+    for (TfToken const& adapterKey : adapterKeys) {
+        _adapterMap.insert({adapterKey, reg.ConstructAdapter(adapterKey)});
     }
 }
 
@@ -132,22 +118,16 @@ UsdImagingStageSceneIndex::_AdapterLookup(UsdPrim prim) const
 
     _AdapterMap::const_iterator it =
         _adapterMap.find(typeInfo.GetSchemaTypeName());
-    if(!TF_VERIFY(it != _adapterMap.end(), "Corrupt adapter map")) {
-        // Note, _PopulateAdapterMap should mean that there's always an entry,
-        // even if null...
-        return nullptr;
-    }
-
-    if (it->second) {
+    if(it != _adapterMap.end() && TF_VERIFY(it->second)) {
         return it->second;
     }
 
+    // XXX: Note that we're hardcoding handling for LightAPI here to match
+    // UsdImagingDelegate, but the hope is to more generally support imaging
+    // behaviors for API classes in the future.
     if (prim.HasAPI<UsdLuxLightAPI>()) {
         it = _adapterMap.find(TfToken("LightAPI"));
-        if (!TF_VERIFY(it != _adapterMap.end(), "Corrupt adapter map")) {
-            return nullptr;
-        }
-        if (it->second) {
+        if (it != _adapterMap.end() && TF_VERIFY(it->second)) {
             return it->second;
         }
     }
@@ -262,8 +242,10 @@ void UsdImagingStageSceneIndex::SetStage(UsdStageRefPtr stage)
     if (_stage) {
         _SendPrimsRemoved({SdfPath::AbsoluteRootPath()});
         _stageGlobals.Clear();
+        _adapterMap.clear();
     }
     _stage = stage;
+    _PopulateAdapterMap();
 }
 
 void UsdImagingStageSceneIndex::Populate()
@@ -290,9 +272,6 @@ void UsdImagingStageSceneIndex::Populate()
                 // XXX(USD-7119): Add native instancing support...
                 continue;
             }
-
-            // Populate the adapter map.
-            _PopulateAdapterMap(prim);
 
             // Enumerate the imaging sub-prims.
             SdfPath const& primPath = prim.GetPath();

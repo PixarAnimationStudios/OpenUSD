@@ -192,7 +192,6 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
     }
 }
 
-USDIMAGING_API
 bool
 UsdImagingAdapterRegistry::HasAdapter(TfToken const& adapterKey)
 {
@@ -201,6 +200,16 @@ UsdImagingAdapterRegistry::HasAdapter(TfToken const& adapterKey)
         return true;
     }
     return _typeMap.find(adapterKey) != _typeMap.end();
+}
+
+TfTokenVector
+UsdImagingAdapterRegistry::GetAdapterKeys()
+{
+    TfTokenVector keys;
+    for (auto const &pair : _typeMap) {
+        keys.push_back(pair.first);
+    }
+    return keys;
 }
 
 UsdImagingPrimAdapterSharedPtr
