@@ -2413,6 +2413,12 @@ CrateFile::~CrateFile()
         _mmapSrc.reset();
     }
 
+    WorkMoveDestroyAsync(_paths);
+    WorkMoveDestroyAsync(_tokens);
+    WorkMoveDestroyAsync(_strings);
+    WorkMoveDestroyAsync(_sharedTimes);
+    WorkMoveDestroyAsync(_packValueFunctions);
+
     _DeleteValueHandlers();
 }
 
