@@ -342,10 +342,17 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                     TfType::GetCanonicalTypeName(typeid(*primAdapter)).c_str() :
                     "none");
         }
+
+        UsdPrim instancerPrim = _GetPrim(instancerPath);
+
         // Add this instancer into the render index
         index->InsertInstancer(instancerPath,
-                               _GetPrim(instancerPath),
+                               instancerPrim,
                                ctx.instancerAdapter);
+
+        // Add a dependency to the instance's proto root (to pick up scene
+        // edits to the proto root).
+        index->AddDependency(instancerPath, instancerPrim.GetPrototype());
 
         // Mark this instancer as having a TrackVariability queued, since
         // we automatically queue it in InsertInstancer.
@@ -1357,13 +1364,21 @@ UsdImagingInstanceAdapter::_ResyncPath(SdfPath const& cachePath,
 void UsdImagingInstanceAdapter::ProcessPrimResync(SdfPath const& cachePath,
                                                   UsdImagingIndexProxy* index)
 {
-    _ResyncPath(cachePath, index, /*reload=*/true);
+    if (cachePath.IsPropertyPath()) {
+        _ResyncPath(cachePath.GetParentPath(), index, /*reload=*/true);
+    } else {
+        _ResyncPath(cachePath, index, /*reload=*/true);
+    }
 }
 
 void UsdImagingInstanceAdapter::ProcessPrimRemoval(SdfPath const& cachePath,
                                                    UsdImagingIndexProxy* index)
 {
-    _ResyncPath(cachePath, index, /*reload=*/false);
+    if (cachePath.IsPropertyPath()) {
+        _ResyncPath(cachePath.GetParentPath(), index, /*reload=*/false);
+    } else {
+        _ResyncPath(cachePath, index, /*reload=*/false);
+    }
 }
 
 void
