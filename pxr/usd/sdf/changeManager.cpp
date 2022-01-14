@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/changeManager.h"
+#include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/debugCodes.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/notice.h"
@@ -43,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_INSTANTIATE_SINGLETON(Sdf_ChangeManager);
 
 Sdf_ChangeManager::_Data::_Data()
-    : changeBlockDepth(0)
+    : outermostBlock(nullptr)
 {
 }
 
@@ -87,53 +88,54 @@ Sdf_ChangeManager::_SendNoticesForChangeList( const SdfLayerHandle & layer,
     }
 }
 
-void
-Sdf_ChangeManager::OpenChangeBlock()
+void const *
+Sdf_ChangeManager::_OpenChangeBlock(SdfChangeBlock const *block)
 {
-    ++_data.local().changeBlockDepth;
+    _Data &data = _data.local();
+    if (!data.outermostBlock) {
+        data.outermostBlock = block;
+        return static_cast<void const *>(&data);
+    }
+    return nullptr;
 }
 
 void
-Sdf_ChangeManager::CloseChangeBlock()
+Sdf_ChangeManager::_CloseChangeBlock(
+    SdfChangeBlock const *block, void const *key)
 {
-    int &changeBlockDepth = _data.local().changeBlockDepth;
-    if (changeBlockDepth == 1) {
-        // Closing outermost (last) change block.  Process removes while
-        // the change block is still open.
-        _ProcessRemoveIfInert();
+    _Data &data = *static_cast<_Data *>(const_cast<void *>(key));
+    TF_VERIFY(data.outermostBlock == block,
+              "Improperly nested SdfChangeBlocks!");
 
-        // Send notices with no change block open.
-        --changeBlockDepth;
-        TF_VERIFY(changeBlockDepth == 0);
-        _SendNotices();
-    }
-    else {
-        // Not outermost.
-        TF_VERIFY(changeBlockDepth > 0);
-        --changeBlockDepth;
-    }
+    // Closing outermost (last) change block.  Process removes while the change
+    // block is still open.
+    _ProcessRemoveIfInert(&data);
+
+    // Send notices with no change block open.
+    data.outermostBlock = nullptr;
+    _SendNotices(&data);
 }
 
 void
 Sdf_ChangeManager::RemoveSpecIfInert(const SdfSpec& spec)
 {
     // Add spec.   Process remove if we're not in a change block.
-    OpenChangeBlock();
+    SdfChangeBlock block;
     _data.local().removeIfInert.push_back(spec);
-    CloseChangeBlock();
 }
 
 void
-Sdf_ChangeManager::_ProcessRemoveIfInert()
+Sdf_ChangeManager::_ProcessRemoveIfInert(_Data *data)
 {
-    _Data& data = _data.local();
-
-    // We expect to be in an outermost change block here.
-    TF_VERIFY(data.changeBlockDepth == 1);
-
+    // Note, \p data is never allowed to be null here.
+    
+    if (data->removeIfInert.empty()) {
+        return;
+    }
+    
     // Swap pending removes into a local variable.
     vector<SdfSpec> remove;
-    remove.swap(data.removeIfInert);
+    remove.swap(data->removeIfInert);
 
     // Remove inert stuff.
     TF_FOR_ALL(i, remove) {
@@ -141,10 +143,10 @@ Sdf_ChangeManager::_ProcessRemoveIfInert()
     }
 
     // We don't expect any deferred removes to have been added.
-    TF_VERIFY(data.removeIfInert.empty());
+    TF_VERIFY(data->removeIfInert.empty());
 
     // We should still be in an outermost change block.
-    TF_VERIFY(data.changeBlockDepth == 1);
+    TF_VERIFY(data->outermostBlock);
 }
 
 static tbb::atomic<size_t> &
@@ -155,13 +157,15 @@ _InitChangeSerialNumber() {
 }
 
 void
-Sdf_ChangeManager::_SendNotices()
+Sdf_ChangeManager::_SendNotices(_Data *data)
 {
+    // Note, \p data is never allowed to be null here.
+
     // Move aside the list of changes to deliver and clear the TLS so that
     // notice listeners can safely queue up more changes. We also need to filter
     // out any changes from layers that have since been destroyed, as the change
     // manager should only send notifications for existing layers.
-    SdfLayerChangeListVec &tlsChanges = _data.local().changes;
+    SdfLayerChangeListVec &tlsChanges = data->changes;
     SdfLayerChangeListVec changes = std::move(tlsChanges);
     tlsChanges.clear();
 
