@@ -257,7 +257,11 @@ private:
 /// \class GlfAnyGLContextScopeHolder
 ///
 /// Helper class to make the shared GL context current if there is no
-/// valid current context.
+/// valid current context, or when the current context isn't sharing with the
+/// shared context.
+/// This mechanism lets us skip context switches to the shared context (see
+/// GlfSharedGLContextScopeHolder) when possible, while ensuring that we have a
+/// valid GL context prior to any resource allocation or destruction.
 ///
 /// Example:
 ///
@@ -311,7 +315,9 @@ private:
         if (GlfGLContext::IsInitialized() && ArchIsMainThread()) {
             GlfGLContextSharedPtr const current =
                 GlfGLContext::GetCurrentGLContext();
-            if (!(current && current->IsValid())) {
+            if (!(current &&
+                  current->IsValid() &&
+                  current->IsSharing(GlfGLContext::GetSharedGLContext()))) {
                 return GlfGLContext::GetSharedGLContext();
             }
         }
