@@ -144,8 +144,28 @@ public:
             Time startTime, Time endTime,
             std::vector<Time> * outSampleTimes) override
     {
-        return _indexedValue->GetContributingSampleTimesForInterval(
-            startTime, endTime, outSampleTimes);
+        std::vector<Time> valueSampleTimes;
+        const bool valueVarying =
+            _indexedValue->GetContributingSampleTimesForInterval(
+                startTime, endTime, &valueSampleTimes);
+        std::vector<Time> indexSampleTimes;
+        const bool indexVarying =
+            _indices->GetContributingSampleTimesForInterval(
+                startTime, endTime, &indexSampleTimes);
+
+        if (outSampleTimes) {
+            if (valueVarying && indexVarying) {
+                std::set_union(
+                    valueSampleTimes.begin(), valueSampleTimes.end(),
+                    indexSampleTimes.begin(), indexSampleTimes.end(),
+                    std::back_inserter(*outSampleTimes));
+            } else if (valueVarying) {
+                *outSampleTimes = std::move(valueSampleTimes);
+            } else if (indexVarying) {
+                *outSampleTimes = std::move(indexSampleTimes);
+            }
+        }
+        return valueVarying || indexVarying;
     }
 
 private:
