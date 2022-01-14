@@ -1349,47 +1349,45 @@ UsdSchemaRegistry::UsdSchemaRegistry()
 bool 
 UsdSchemaRegistry::IsDisallowedField(const TfToken &fieldName)
 {
-    static TfHashSet<TfToken, TfToken::HashFunctor> disallowedFields;
+    static auto &disallowedFields = *[]() {
+        auto *disallowedFields = new TfHashSet<TfToken, TfToken::HashFunctor>;
 
-    // XXX -- Use this instead of an initializer list in case TfHashSet
-    //        doesn't support initializer lists.  Should ensure that
-    //        TfHashSet does support them.
-    static std::once_flag once;
-    std::call_once(once, [](){
         // Disallow fallback values for composition arc fields, since they
         // won't be used during composition.
-        disallowedFields.insert(SdfFieldKeys->InheritPaths);
-        disallowedFields.insert(SdfFieldKeys->Payload);
-        disallowedFields.insert(SdfFieldKeys->References);
-        disallowedFields.insert(SdfFieldKeys->Specializes);
-        disallowedFields.insert(SdfFieldKeys->VariantSelection);
-        disallowedFields.insert(SdfFieldKeys->VariantSetNames);
+        disallowedFields->insert(SdfFieldKeys->InheritPaths);
+        disallowedFields->insert(SdfFieldKeys->Payload);
+        disallowedFields->insert(SdfFieldKeys->References);
+        disallowedFields->insert(SdfFieldKeys->Specializes);
+        disallowedFields->insert(SdfFieldKeys->VariantSelection);
+        disallowedFields->insert(SdfFieldKeys->VariantSetNames);
 
         // Disallow customData, since it contains information used by
         // usdGenSchema that isn't relevant to other consumers.
-        disallowedFields.insert(SdfFieldKeys->CustomData);
+        disallowedFields->insert(SdfFieldKeys->CustomData);
 
         // Disallow fallback values for these fields, since they won't be
         // used during scenegraph population or value resolution.
-        disallowedFields.insert(SdfFieldKeys->Active);
-        disallowedFields.insert(SdfFieldKeys->Instanceable);
-        disallowedFields.insert(SdfFieldKeys->TimeSamples);
-        disallowedFields.insert(SdfFieldKeys->ConnectionPaths);
-        disallowedFields.insert(SdfFieldKeys->TargetPaths);
+        disallowedFields->insert(SdfFieldKeys->Active);
+        disallowedFields->insert(SdfFieldKeys->Instanceable);
+        disallowedFields->insert(SdfFieldKeys->TimeSamples);
+        disallowedFields->insert(SdfFieldKeys->ConnectionPaths);
+        disallowedFields->insert(SdfFieldKeys->TargetPaths);
 
         // Disallow fallback values for specifier. Even though it will always
         // be present, it has no meaning as a fallback value.
-        disallowedFields.insert(SdfFieldKeys->Specifier);
+        disallowedFields->insert(SdfFieldKeys->Specifier);
 
         // Disallow fallback values for children fields.
-        disallowedFields.insert(SdfChildrenKeys->allTokens.begin(),
-                                SdfChildrenKeys->allTokens.end());
+        disallowedFields->insert(SdfChildrenKeys->allTokens.begin(),
+                                 SdfChildrenKeys->allTokens.end());
 
         // Disallow fallback values for clip-related fields, since they won't
         // be used during value resolution.
         const std::vector<TfToken> clipFields = UsdGetClipRelatedFields();
-        disallowedFields.insert(clipFields.begin(), clipFields.end());
-    });
+        disallowedFields->insert(clipFields.begin(), clipFields.end());
+
+        return disallowedFields;
+    }();
 
     return (disallowedFields.find(fieldName) != disallowedFields.end());
 }
