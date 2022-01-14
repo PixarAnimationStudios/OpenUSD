@@ -27,7 +27,10 @@ pxr_library(usdImaging
         adapterRegistry
         collectionCache
         dataSourceAttribute
+        dataSourceGprim
+        dataSourceMesh
         dataSourcePrim
+        dataSourcePrimvars
         dataSourceRelationship
         dataSourceStageGlobals
         debugCodes

@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/meshAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourceMesh.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
@@ -54,6 +55,36 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingMeshAdapter::~UsdImagingMeshAdapter()
 {
+}
+
+TfTokenVector
+UsdImagingMeshAdapter::GetImagingSubprims()
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingMeshAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->mesh;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingMeshAdapter::GetImagingSubprimData(
+        TfToken const& subprim,
+        UsdPrim const& prim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceMeshPrim::New(
+            prim.GetPath(),
+            prim,
+            stageGlobals);
+    }
+    return nullptr;
 }
 
 bool
