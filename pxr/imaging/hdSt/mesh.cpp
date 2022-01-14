@@ -667,7 +667,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                                      sizeof(int) * it.first.size(), 
                                      _topologyId);
             for (const TfToken& it2 : it.second) {
-                _topologyId = ArchHash64(it2.GetText(), it.first.size(),
+                _topologyId = ArchHash64(it2.GetText(), it2.size(),
                                         _topologyId);
             }
         }
