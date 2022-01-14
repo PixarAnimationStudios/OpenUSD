@@ -246,6 +246,7 @@ void Sdf_wrapAncestorsRange()
 void wrapPath() {    
     typedef SdfPath This;
 
+    def("_PathGetDebuggerPathText", Sdf_PathGetDebuggerPathText);
     def("_PathStress", &_PathStress);
     def("_DumpPathStats", &Sdf_DumpPathStats);
 

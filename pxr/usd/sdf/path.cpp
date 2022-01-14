@@ -2267,5 +2267,11 @@ distance(const SdfPathAncestorsRange::iterator& first,
             static_cast<std::ptrdiff_t>(last->GetPathElementCount()));
 }
 
+char const *
+Sdf_PathGetDebuggerPathText(SdfPath const &path)
+{
+    return Sdf_PathNode::GetDebugText(path._primPart.get(),
+                                      path._propPart.get());
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

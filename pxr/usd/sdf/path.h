@@ -1023,6 +1023,9 @@ private:
         std::memcpy(&rhs, &tmp, sizeof(tmp));
     }
 
+    SDF_API friend char const *
+    Sdf_PathGetDebuggerPathText(SdfPath const &);
+
     Sdf_PathPrimNodeHandle _primPart;
     Sdf_PathPropNodeHandle _propPart;
 
@@ -1375,6 +1378,15 @@ SdfPathFindLongestStrictPrefix(
         std::map<SdfPath, T> &>(map, path, /*strictPrefix=*/true,
                                 TfGet<0>());
 }
+
+// A helper function for debugger pretty-printers, etc.  This function is *not*
+// thread-safe.  It writes to a static buffer and returns a pointer to it.
+// Subsequent calls to this function overwrite the memory written in prior
+// calls.  If the given path's string representation exceeds the static buffer
+// size, return a pointer to a message indicating so.
+SDF_API
+char const *
+Sdf_PathGetDebuggerPathText(SdfPath const &);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

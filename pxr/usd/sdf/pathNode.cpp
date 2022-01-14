@@ -534,59 +534,178 @@ Sdf_PathNode::GetPathAsToken(Sdf_PathNode const *primPart,
     return _CreatePathToken(primPart, propPart);
 }
 
+namespace {
+
+struct _StringBuffer
+{
+    template <class ... Ts>
+    void WriteText(Ts ... args) {
+        _eltStart = _str.size();
+        _WriteTextImpl(args ...);
+    }
+
+    std::string
+    GetString() const {
+        return std::string(_str.crbegin(), _str.crend());
+    }
+
+private:
+    template <class ... Ts>
+    void _WriteTextImpl(char const *a0, Ts ... args) {
+        _str.append(a0);
+        _WriteTextImpl(args ...);
+    }
+
+    // Base case.
+    void _WriteTextImpl(char const *aN) {
+        _str.append(aN);
+        std::reverse(_str.begin() + _eltStart, _str.end());
+    }
+
+    std::string _str;
+    size_t _eltStart = 0;
+};
+
+static constexpr size_t _DebugPathBufferSize = 1024*8;
+static char _debugPathBuffer[_DebugPathBufferSize];
+static char *_debugPathCur = _debugPathBuffer;
+static char _debugPathOverrunMsg[] =
+    "<< path text exceeds debug buffer size >>";
+
+struct _DebugBuffer
+{
+    template <class ... Ts>
+    void WriteText(Ts ... args) {
+        _eltStart = _debugPathCur;
+        _WriteTextImpl(args ...);
+    }
+
+    char const *
+    GetText() const {
+        if (_pathTextTooLong) {
+            return _debugPathOverrunMsg;
+        }
+        std::reverse(_debugPathBuffer, _debugPathCur);
+        _debugPathCur = _debugPathBuffer;
+        return _debugPathBuffer;
+    }
+
+private:
+    template <class ... Ts>
+    void _WriteTextImpl(char const *a0, Ts ... args) {
+        if (_Write(a0)) {
+            _WriteTextImpl(args ...);
+        }
+    }
+
+    // Base case.
+    void _WriteTextImpl(char const *aN) {
+        if (_Write(aN)) {
+            std::reverse(_eltStart, _debugPathCur);
+        }
+    }
+
+    // Write text to buffer if it fits.
+    bool _Write(char const *a) {
+        size_t len = strlen(a);
+        char const *end = _debugPathBuffer + _DebugPathBufferSize;
+        if (_debugPathCur + len >= end) { // >= accounts for null terminator.
+            _pathTextTooLong = true;
+            return false;
+        }
+        strcpy(_debugPathCur, a);
+        _debugPathCur += len; // leave this pointing at the null.
+        return true;
+    }
+    
+    char *_eltStart = nullptr;
+    bool _pathTextTooLong = false;
+};
+
+} // anon
+
+TfToken
+Sdf_PathNode::_GetElementImpl() const
+{
+    _StringBuffer buf;
+    _WriteText(buf);
+    return TfToken(buf.GetString());
+}
+        
 TfToken
 Sdf_PathNode::_CreatePathToken(Sdf_PathNode const *primPart,
                                Sdf_PathNode const *propPart)
 {
-    TRACE_FUNCTION();
+    _StringBuffer buf;
+    _WriteTextToBuffer(primPart, propPart, buf);
+    return TfToken(buf.GetString());
+}
 
+template <class Buffer>
+void
+Sdf_PathNode::_WriteTextToBuffer(Sdf_PathNode const *primPart,
+                                 Sdf_PathNode const *propPart,
+                                 Buffer &out)
+{
     if (primPart == GetRelativeRootNode() && !propPart) {
-        return SdfPathTokens->relativeRoot;
+        out.WriteText(SDF_PATH_RELATIVE_ROOT_STR);
+        return;
     }
 
+    // Write all the nodes in reverse order, reversing each element as we go.
+    // Then at the end we reverse the entire string, to produce the correct
+    // output.  We do it this way so we do not have to do any heap
+    // allocation/recursion/etc because we use this function to produce string
+    // representations in debuggers, and if, say, another thread is in the
+    // middle of a malloc/free and holds a lock, or if we're in a signal
+    // handler, we're in trouble.
+    
     Sdf_PathNode const * const root = (primPart->IsAbsolutePath() ?
                                        Sdf_PathNode::GetAbsoluteRootNode() : 
                                        Sdf_PathNode::GetRelativeRootNode());
-    
-    std::vector<const Sdf_PathNode *> nodes;
-    nodes.reserve(primPart->GetElementCount() +
-                  (propPart ? propPart->GetElementCount() : 0));
-    
+
     Sdf_PathNode const *curNode = propPart;
     while (curNode) {
-        nodes.push_back(curNode);
+        curNode->_WriteText(out);
         curNode = curNode->GetParentNode();
+    }
+    // This covers cases like '../.property'
+    if (propPart && primPart->GetNodeType() == Sdf_PathNode::PrimNode &&
+        primPart->GetName() == SdfPathTokens->parentPathElement) {
+        out.WriteText(SDF_PATH_CHILD_DELIMITER_STR);
     }
     curNode = primPart;
     while (curNode && (curNode != root)) {
-        nodes.push_back(curNode);
-        curNode = curNode->GetParentNode();
+        curNode->_WriteText(out);
+        Sdf_PathNode const *parent = curNode->GetParentNode();
+        if (curNode->GetNodeType() == Sdf_PathNode::PrimNode &&
+            parent && parent->GetNodeType() == Sdf_PathNode::PrimNode) {
+            out.WriteText(SDF_PATH_CHILD_DELIMITER_STR);
+        }            
+        curNode = parent;
     }
 
-    std::string str;
     if (primPart->IsAbsolutePath()) {
         // Put the leading / on absolute
-        str.append(SdfPathTokens->absoluteIndicator.GetString());
+        out.WriteText(SDF_PATH_ABSOLUTE_INDICATOR_STR);
     }
+}
 
-    TfToken prevElem;
-    Sdf_PathNode::NodeType prevNodeType = Sdf_PathNode::NumNodeTypes;
-    TF_REVERSE_FOR_ALL(i, nodes) {
-        const Sdf_PathNode * const node = *i;
-        Sdf_PathNode::NodeType curNodeType = node->GetNodeType();
-        if (prevNodeType == Sdf_PathNode::PrimNode && 
-            (curNodeType == Sdf_PathNode::PrimNode ||
-             // This covers cases like '../.property'
-             prevElem == SdfPathTokens->parentPathElement)) {
-            str.append(SdfPathTokens->childDelimiter.GetString());
-        }
-        TfToken elem = node->GetElement();
-        str.append(elem.GetString());
-        prevElem.Swap(elem);
-        prevNodeType = curNodeType;
-    }
+template <class Buffer>
+void
+Sdf_PathNode::_WriteTextToBuffer(SdfPath const &path, Buffer &out)
+{
+    _WriteTextToBuffer(path._primPart.get(),
+                       path._propPart.get(), out);
+}
 
-    return TfToken(str);
+char const *
+Sdf_PathNode::GetDebugText(Sdf_PathNode const *primPart,
+                           Sdf_PathNode const *propPart)
+{
+    _DebugBuffer buf;
+    _WriteTextToBuffer(primPart, propPart, buf);
+    return buf.GetText();
 }
 
 void
@@ -609,38 +728,39 @@ Sdf_PathNode::_IsNamespacedImpl() const
     return _HasNamespaceDelimiter(GetName().GetString());
 }
 
+template <class Buffer>
 void
-Sdf_PathNode::AppendText(std::string *str) const
+Sdf_PathNode::_WriteText(Buffer &out) const
 {
     switch (_nodeType) {
     case RootNode:
         return;
     case PrimNode:
-        str->append(_Downcast<Sdf_PrimPathNode>()->_name.GetString());
+        out.WriteText(_Downcast<Sdf_PrimPathNode>()->_name.GetText());
         return;
     case PrimPropertyNode:
-        str->append(SdfPathTokens->propertyDelimiter.GetString());
-        str->append(_Downcast<Sdf_PrimPropertyPathNode>()->_name.GetString());
+        out.WriteText(SDF_PATH_PROPERTY_DELIMITER_STR,
+                      _Downcast<Sdf_PrimPropertyPathNode>()->_name.GetText());
         return;
     case PrimVariantSelectionNode:
-        _Downcast<Sdf_PrimVariantSelectionNode>()->_AppendText(str);
+        _Downcast<Sdf_PrimVariantSelectionNode>()->_WriteTextImpl(out);
         return;
     case TargetNode:
-        _Downcast<Sdf_TargetPathNode>()->_AppendText(str);
+        _Downcast<Sdf_TargetPathNode>()->_WriteTextImpl(out);
         return;
     case RelationalAttributeNode:
-        str->append(SdfPathTokens->propertyDelimiter.GetString());
-        str->append(_Downcast<Sdf_RelationalAttributePathNode>()->
-                    _name.GetString());
+        out.WriteText(
+            SDF_PATH_PROPERTY_DELIMITER_STR,
+            _Downcast<Sdf_RelationalAttributePathNode>()->_name.GetText());
         return;
     case MapperNode:
-        _Downcast<Sdf_MapperPathNode>()->_AppendText(str);
+        _Downcast<Sdf_MapperPathNode>()->_WriteTextImpl(out);
         return;
     case MapperArgNode:
-        _Downcast<Sdf_MapperArgPathNode>()->_AppendText(str);
+        _Downcast<Sdf_MapperArgPathNode>()->_WriteTextImpl(out);
         return;
     case ExpressionNode:
-        _Downcast<Sdf_ExpressionPathNode>()->_AppendText(str);
+        _Downcast<Sdf_ExpressionPathNode>()->_WriteTextImpl(out);
         return;
     default:
         return;
@@ -663,34 +783,25 @@ Sdf_PrimVariantSelectionNode::_GetNameImpl() const
             : _variantSelection->second;
 }
 
+template <class Buffer>
 void
-Sdf_PrimVariantSelectionNode::_AppendText(std::string *str) const
+Sdf_PrimVariantSelectionNode::_WriteTextImpl(Buffer &out) const
 {
-    std::string const &vset = _variantSelection->first.GetString();
-    std::string const &vsel = _variantSelection->second.GetString();
-    str->reserve(str->size() + vset.size() + vsel.size() + 3);
-    str->push_back('{');
-    str->append(vset);
-    str->push_back('=');
-    str->append(vsel);
-    str->push_back('}');
+    char const *vset = _variantSelection->first.GetText();
+    char const *vsel = _variantSelection->second.GetText();
+    out.WriteText("{", vset, "=", vsel, "}");
 }
 
 Sdf_PrimVariantSelectionNode::~Sdf_PrimVariantSelectionNode() {
     _Remove(this, *_primVarSelNodes, GetParentNode(), *_variantSelection);
 }
 
+template <class Buffer>
 void
-Sdf_TargetPathNode::_AppendText(std::string *str) const {
-    std::string const &open =
-        SdfPathTokens->relationshipTargetStart.GetString();
-    std::string const &target = _targetPath.GetString();
-    std::string const &close =
-        SdfPathTokens->relationshipTargetEnd.GetString();
-    str->reserve(str->size() + open.size() + target.size() + close.size());
-    str->append(open);
-    str->append(target);
-    str->append(close);
+Sdf_TargetPathNode::_WriteTextImpl(Buffer &out) const {
+    out.WriteText(SDF_PATH_RELATIONSHIP_TARGET_END_STR);
+    _WriteTextToBuffer(_targetPath, out);
+    out.WriteText(SDF_PATH_RELATIONSHIP_TARGET_START_STR);
 }
 
 Sdf_TargetPathNode::~Sdf_TargetPathNode() {
@@ -701,48 +812,35 @@ Sdf_RelationalAttributePathNode::~Sdf_RelationalAttributePathNode() {
     _Remove(this, *_relAttrNodes, GetParentNode(), _name);
 }
 
+template <class Buffer>
 void
-Sdf_MapperPathNode::_AppendText(std::string *str) const {
-    std::string const &delim = SdfPathTokens->propertyDelimiter.GetString();
-    std::string const &mapperIndicator =
-        SdfPathTokens->mapperIndicator.GetString();
-    std::string const &open =
-        SdfPathTokens->relationshipTargetStart.GetString();
-    std::string const &target = _targetPath.GetString();
-    std::string const &close = SdfPathTokens->relationshipTargetEnd.GetString();
-    str->reserve(str->size() + delim.size() + mapperIndicator.size() +
-                 open.size() + target.size() + close.size());
-    str->append(delim);
-    str->append(mapperIndicator);
-    str->append(open);
-    str->append(target);
-    str->append(close);
+Sdf_MapperPathNode::_WriteTextImpl(Buffer &out) const {
+    out.WriteText(SDF_PATH_RELATIONSHIP_TARGET_END_STR);
+    _WriteTextToBuffer(_targetPath, out);
+    out.WriteText(SDF_PATH_RELATIONSHIP_TARGET_START_STR);
+    out.WriteText(SdfPathTokens->mapperIndicator.GetText());
+    out.WriteText(SDF_PATH_PROPERTY_DELIMITER_STR);
 }
 
 Sdf_MapperPathNode::~Sdf_MapperPathNode() {
     _Remove(this, *_mapperNodes, GetParentNode(), _targetPath);
 }
 
+template <class Buffer>
 void
-Sdf_MapperArgPathNode::_AppendText(std::string *str) const {
-    std::string const &delim = SdfPathTokens->propertyDelimiter.GetString();
-    std::string const &name = _name.GetString();
-    str->reserve(str->size() + delim.size() + name.size());
-    str->append(delim);
-    str->append(name);
+Sdf_MapperArgPathNode::_WriteTextImpl(Buffer &out) const {
+    out.WriteText(SDF_PATH_PROPERTY_DELIMITER_STR, _name.GetText());
 }
 
 Sdf_MapperArgPathNode::~Sdf_MapperArgPathNode() {
     _Remove(this, *_mapperArgNodes, GetParentNode(), _name);
 }
 
+template <class Buffer>
 void
-Sdf_ExpressionPathNode::_AppendText(std::string *str) const {
-    std::string const &delim = SdfPathTokens->propertyDelimiter.GetString();
-    std::string const &expr = SdfPathTokens->expressionIndicator.GetString();
-    str->reserve(str->size() + delim.size() + expr.size());
-    str->append(delim);
-    str->append(expr);
+Sdf_ExpressionPathNode::_WriteTextImpl(Buffer &out) const {
+    out.WriteText(SDF_PATH_PROPERTY_DELIMITER_STR,
+                  SdfPathTokens->expressionIndicator.GetText());
 }
 
 Sdf_ExpressionPathNode::~Sdf_ExpressionPathNode() {
