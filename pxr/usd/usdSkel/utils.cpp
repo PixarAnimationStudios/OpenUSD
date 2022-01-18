@@ -1253,7 +1253,7 @@ struct _FaceVaryingPointIndexFn
 
     size_t GetPointIndex(size_t index) const
     {
-        int pointIndex = faceVertexIndices[index];
+        const int pointIndex = faceVertexIndices[index];
         if (pointIndex < 0 || pointIndex >= numPoints)
         {
             TF_WARN("faceVertexIndices is out of range [%d] at index [%zu]",
@@ -1632,6 +1632,46 @@ _NonInterleavedSkinNormalsLBS(const Matrix3& geomBindTransform,
 }
 
 
+template <typename Matrix3>
+bool
+_SkinFaceVaryingNormalsLBS(const Matrix3& geomBindTransform,
+                           TfSpan<const Matrix3> jointXforms,
+                           TfSpan<const int> jointIndices,
+                           TfSpan<const float> jointWeights,
+                           int numInfluencesPerPoint,
+                           TfSpan<const int> faceVertexIndices,
+                           TfSpan<GfVec3f> normals,
+                           bool inSerial)
+{
+    if (jointIndices.size() != jointWeights.size()) {
+        TF_WARN("Size of jointIndices [%zu] != size of jointWeights [%zu]",
+                jointIndices.size(), jointWeights.size());
+        return false;
+    }
+
+    if (jointIndices.size() % numInfluencesPerPoint != 0) {
+        TF_WARN("Size of jointIndices [%zu] is not a multiple of "
+                "numInfluencesPerPoint [%d]",
+                jointIndices.size(), numInfluencesPerPoint);
+        return false;
+    }
+
+    if (faceVertexIndices.size() != normals.size()) {
+        TF_WARN("Size of faceVertexIndices [%zu] != size of normals [%zu]",
+                faceVertexIndices.size(), normals.size());
+        return false;
+    }
+
+    const _NonInterleavedInfluencesFn influenceFn{jointIndices, jointWeights};
+
+    const int numPoints = jointIndices.size() / numInfluencesPerPoint;
+    const _FaceVaryingPointIndexFn indexFn{faceVertexIndices, numPoints};
+
+    return _SkinNormalsLBS(geomBindTransform, jointXforms, influenceFn, indexFn,
+                           numInfluencesPerPoint, normals, inSerial);
+}
+
+
 } // namespace
 
 
@@ -1705,33 +1745,27 @@ UsdSkelSkinFaceVaryingNormalsLBS(const GfMatrix3d& geomBindTransform,
                                  TfSpan<GfVec3f> normals,
                                  bool inSerial)
 {
-    if (jointIndices.size() != jointWeights.size()) {
-        TF_WARN("Size of jointIndices [%zu] != size of jointWeights [%zu]",
-                jointIndices.size(), jointWeights.size());
-        return false;
-    }
-
-    if (jointIndices.size() % numInfluencesPerPoint != 0) {
-        TF_WARN("Size of jointIndices [%zu] is not a multiple of "
-                "numInfluencesPerPoint [%d]",
-                jointIndices.size(), numInfluencesPerPoint);
-        return false;
-    }
-
-    if (faceVertexIndices.size() != normals.size()) {
-        TF_WARN("Size of faceVertexIndices [%zu] != size of normals [%zu]",
-                faceVertexIndices.size(), normals.size());
-        return false;
-    }
-
-    const _NonInterleavedInfluencesFn influenceFn{jointIndices, jointWeights};
-
-    const int numPoints = jointIndices.size() / numInfluencesPerPoint;
-    const _FaceVaryingPointIndexFn indexFn{faceVertexIndices, numPoints};
-
-    return _SkinNormalsLBS(geomBindTransform, jointXforms, influenceFn, indexFn,
-                           numInfluencesPerPoint, normals, inSerial);
+    return _SkinFaceVaryingNormalsLBS(
+        geomBindTransform, jointXforms, jointIndices, jointWeights,
+        numInfluencesPerPoint, faceVertexIndices, normals, inSerial);
 }
+
+
+bool
+UsdSkelSkinFaceVaryingNormalsLBS(const GfMatrix3f& geomBindTransform,
+                                 TfSpan<const GfMatrix3f> jointXforms,
+                                 TfSpan<const int> jointIndices,
+                                 TfSpan<const float> jointWeights,
+                                 int numInfluencesPerPoint,
+                                 TfSpan<const int> faceVertexIndices,
+                                 TfSpan<GfVec3f> normals,
+                                 bool inSerial)
+{
+    return _SkinFaceVaryingNormalsLBS(
+        geomBindTransform, jointXforms, jointIndices, jointWeights,
+        numInfluencesPerPoint, faceVertexIndices, normals, inSerial);
+}
+
 
 namespace {
 

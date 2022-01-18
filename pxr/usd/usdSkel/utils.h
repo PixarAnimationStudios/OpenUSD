@@ -608,6 +608,18 @@ UsdSkelSkinFaceVaryingNormalsLBS(const GfMatrix3d& geomBindTransform,
                                  TfSpan<GfVec3f> normals,
                                  bool inSerial=false);
 
+/// \overload
+USDSKEL_API
+bool
+UsdSkelSkinFaceVaryingNormalsLBS(const GfMatrix3f& geomBindTransform,
+                                 TfSpan<const GfMatrix3f> jointXforms,
+                                 TfSpan<const int> jointIndices,
+                                 TfSpan<const float> jointWeights,
+                                 int numInfluencesPerPoint,
+                                 TfSpan<const int> faceVertexIndices,
+                                 TfSpan<GfVec3f> normals,
+                                 bool inSerial=false);
+
 
 /// Skin a transform using linear blend skinning (LBS).
 /// The \p jointXforms are \ref UsdSkel_Term_SkinningTransforms
