@@ -111,7 +111,29 @@ TfPyConvertPythonExceptionToTfErrors()
                     TfDiagnosticMgr::GetInstance().AppendError(*e);
             }
         } else {
-            TF_ERROR(exc, TF_PYTHON_EXCEPTION, "Tf Python Exception");
+            // Give as much info as possible to allow debugging
+            std::string msg = "Tf Python Exception";
+            extract<std::string> valueExtractor(exc.GetValue().get());
+            if (valueExtractor.check()) {
+                std::string errValue = valueExtractor();
+                if (!errValue.empty()) {
+                    msg += ": ";
+                    msg += errValue;
+                }
+            }
+            if (exc.GetTrace()) {
+                object formatted_list(import("traceback").attr("format_tb")(exc.GetTrace(), 5));
+                object joined(str("").join(formatted_list));
+                extract<std::string> traceExtractor(joined);
+                if (traceExtractor.check()) {
+                    std::string tb = traceExtractor();
+                    if (!tb.empty()) {
+                        msg += "\n";
+                        msg += tb;
+                    }
+                }
+            }
+            TF_ERROR(exc, TF_PYTHON_EXCEPTION, msg.c_str());
         }
     }
     else if (exc.GetValue()) {
