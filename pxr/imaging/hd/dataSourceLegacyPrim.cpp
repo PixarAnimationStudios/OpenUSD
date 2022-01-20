@@ -1248,10 +1248,11 @@ public:
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
     {
-        VtValue v = _sceneDelegate->GetCameraParamValue(_id, name);
         // Smooth out some incompatibilities between scene delegate and
         // datasource schemas...
         if (name == HdCameraSchemaTokens->projection) {
+            VtValue v = _sceneDelegate->GetCameraParamValue(_id, name);
+        
             HdCamera::Projection proj = HdCamera::Perspective;
             if (v.IsHolding<HdCamera::Projection>()) {
                 proj = v.UncheckedGet<HdCamera::Projection>();
@@ -1261,6 +1262,8 @@ public:
                 HdCameraSchemaTokens->perspective :
                 HdCameraSchemaTokens->orthographic);
         } else if (name == HdCameraSchemaTokens->clippingRange) {
+            VtValue v = _sceneDelegate->GetCameraParamValue(_id, name);
+        
             GfRange1f range;
             if (v.IsHolding<GfRange1f>()) {
                 range = v.UncheckedGet<GfRange1f>();
@@ -1268,6 +1271,8 @@ public:
             return HdRetainedTypedSampledDataSource<GfVec2f>::New(
                 GfVec2f(range.GetMin(), range.GetMax()));
         } else if (name == HdCameraTokens->windowPolicy) {
+            VtValue v = _sceneDelegate->GetCameraParamValue(_id, name);
+        
             // XXX: this should probably be in the schema, and a token...
             CameraUtilConformWindowPolicy wp = CameraUtilDontConform;
             if (v.IsHolding<CameraUtilConformWindowPolicy>()) {
@@ -1276,6 +1281,8 @@ public:
             return HdRetainedTypedSampledDataSource<
                         CameraUtilConformWindowPolicy>::New(wp);
         } else if (name == HdCameraTokens->clipPlanes) {
+            VtValue v = _sceneDelegate->GetCameraParamValue(_id, name);
+        
             // XXX: this should probably be in the schema, and a vec4f array.
             std::vector<GfVec4d> cp;
             if (v.IsHolding<std::vector<GfVec4d>>()) {
@@ -1283,9 +1290,9 @@ public:
             }
             return HdRetainedTypedSampledDataSource<std::vector<GfVec4d>>::New(
                         cp);
-        } else if (std::find(HdCameraTokens->allTokens.begin(),
-                HdCameraTokens->allTokens.end(), name)
-                    != HdCameraTokens->allTokens.end()) {
+        } else if (std::find(HdCameraSchemaTokens->allTokens.begin(),
+                HdCameraSchemaTokens->allTokens.end(), name)
+                    != HdCameraSchemaTokens->allTokens.end()) {
             // all remaining HdCameraSchema members are floats and should
             // be returned as a typed data source for schema conformance.
             return Hd_TypedDataSourceLegacyCameraParamValue<float>::New(
