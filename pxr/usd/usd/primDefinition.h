@@ -322,12 +322,13 @@ private:
     void _ComposePropertiesFromPrimSpec(
         const SdfLayerRefPtr &layer,
         const SdfPath &weakerPrimSpecPath,
-        const std::string &propPrefix = "");
+        const std::string &instanceName = "");
 
     USD_API
     void _ComposePropertiesFromPrimDef(
         const UsdPrimDefinition &weakerPrimDef, 
-        const std::string &propPrefix = "");
+        bool useWeakerPropertyForTypeConflict,
+        const std::string &instanceName = "");
 
     // Path to the prim in the schematics for this prim definition.
     SdfPath _schematicsPrimPath;

@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 
 import os, unittest
-from pxr import Plug, Sdf, Usd, Vt, Tf
+from pxr import Plug, Sdf, Usd, Vt, Tf, Gf
 
 class TestUsdAppliedAPISchemas(unittest.TestCase):
     @classmethod
@@ -2474,6 +2474,369 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), [])
         self.assertEqual(prim.GetPropertyNames(), [])
 
+    @unittest.skipIf(Tf.GetEnvSetting('USD_DISABLE_AUTO_APPLY_API_SCHEMAS'),
+                    "Auto apply API schemas are disabled")
+    def test_PropertyTypeConflicts(self):
+        """
+        Test the resolution of property type conflicts between prim type and 
+        API schema prim definitions when API schemas are applied to prims.
+        """
+        stage = Usd.Stage.CreateInMemory()
+
+        # Helper for verifying the attribute types and computed values of 
+        # any arbitrary set of attributes on the prim. The arguments are the 
+        # prim followed by any number of keyword arguments of the form:
+        #   <attrName> = (<attrTypeNameStr>, <attrValue>, <docStr>)
+        # For each keyword arg, it verifies that the prim has an attribute
+        # named <attrName> whose typeName computes to <attrTypeNameStr> and 
+        # computed valued computes to <attrValue>. Also verifies that the 
+        # attribute's documentation matches <docStr>
+        def _VerifyAttrTypes(prim, **kwargs):
+            for name, (attrTypeNameStr, attrValue, docStr) in kwargs.items():
+                attr = prim.GetAttribute(name)
+                self.assertEqual(attr.GetTypeName(), attrTypeNameStr)
+                self.assertEqual(attr.Get(), attrValue)
+                self.assertEqual(attr.GetDocumentation(), docStr)
+
+        # Helper for verifying that an arbitrary set of properties is or isn't 
+        # a relationship. The arguments are the prim followed by any number of 
+        # keyword arguments of the form:
+        #   <propertyName> = (<isRelationship>, <docStr>)
+        # For each keyword arg, it verifies that the prim has a property
+        # named <propertyName> that is a relationship iff <isRelationship> is 
+        # True. Also verifies that the property's documentation matches <docStr>
+        def _VerifyIsRel(prim, **kwargs):
+            for name, (isRelationship, docStr) in kwargs.items():
+                prop = prim.GetProperty(name)
+                self.assertTrue(prop)
+                if isRelationship:
+                    self.assertTrue(prim.GetRelationship(name))
+                else:
+                    self.assertFalse(prim.GetRelationship(name))
+                self.assertEqual(prop.GetDocumentation(), docStr)
+
+        # We've defined 3 API schema types for applying directly to a prim
+        authoredOneAPIName = "TestPropTypeConflictAuthoredOneAPI"
+        authoredTwoAPIName = "TestPropTypeConflictAuthoredTwoAPI" 
+        nestedAPIName = "TestPropTypeConflictNestedAuthoredAPI"
+        # We also typed prim type for this test case that includes a separate
+        # built-in API schema type.
+        conflictPrimTypeName = "TestPropTypeConflictsPrim"
+        builtinAPIName = "TestPropTypeConflictBuiltinAPI" 
+
+        # Each of the defined schema types above uses a single doc string for
+        # all of it properties which we can use to help verify which schemas
+        # the property definitions come from.
+        authoredOneAPIDocStr = "From TestPropTypeConflictAuthoredOneAPI"
+        authoredTwoAPIDocStr = "From TestPropTypeConflictAuthoredTwoAPI"
+        nestedAPIDocStr = "From TestPropTypeConflictNestedAuthoredAPI"
+        conflictPrimTypeDocStr = "From TestPropTypeConflictsPrim"
+        builtinAPIDocStr = "From TestPropTypeConflictBuiltinAPI"
+
+        # Test 1: Prim with no type name; apply the authoredOneAPI and 
+        # authoredTwoAPI schemas in that strength order.
+        untypedPrim = stage.DefinePrim("/UntypedPrim")
+        untypedPrim.AddAppliedSchema(authoredOneAPIName)
+        untypedPrim.AddAppliedSchema(authoredTwoAPIName)
+        self.assertEqual(untypedPrim.GetAppliedSchemas(),
+                         [authoredOneAPIName,
+                          authoredTwoAPIName])
+
+        # Only the authoredOneAPI defines attr1 and attr2
+        # Only the authoredTwoAPI defines attr3 and attr4
+        # Both define attr5 and attr6, so authoredOneAPI's version of those 
+        # attributes are used since it's stronger.
+        _VerifyAttrTypes(untypedPrim,
+            attr1 = ("int",     0,                  authoredOneAPIDocStr),
+            attr2 = ("double",  0.0,                authoredOneAPIDocStr),
+            attr3 = ("int",     10,                 authoredTwoAPIDocStr),
+            attr4 = ("string",  "foo",              authoredTwoAPIDocStr),
+            attr5 = ("point3f", Gf.Vec3f(0, 0, 0),  authoredOneAPIDocStr),
+            attr6 = ("int",     20,                 authoredOneAPIDocStr))
+        # Both define rel1 and rel2, but since authoredOneAPI is stronger, it wins
+        # and only rel2 is a relationship.
+        _VerifyIsRel(untypedPrim,
+            rel1 = (False, authoredOneAPIDocStr),
+            rel2 = (True, authoredOneAPIDocStr))
+
+        # Test 2: Prim with no type name; apply the authoredTwoAPI and builtAPI
+        # schemas in that strength order. This is the reverse order of Test 1
+        untypedPrim = stage.DefinePrim("/UntypedPrim2")
+        untypedPrim.AddAppliedSchema(authoredTwoAPIName)
+        untypedPrim.AddAppliedSchema(authoredOneAPIName)
+        self.assertEqual(untypedPrim.GetAppliedSchemas(),
+                         [authoredTwoAPIName,
+                          authoredOneAPIName])
+
+        # Only the authoredOneAPI defines attr1 and attr2 (same as Test 1)
+        # Only the authoredTwoAPI defines attr3 and attr4 (same as Test 1)
+        # Both define attr5 and attr6, but now authoredTwoAPI is stronger so
+        # its version of those attributes are used. Note that this leads to a
+        # different type and default value for attr5 and just a different 
+        # default value for attr6.
+        _VerifyAttrTypes(untypedPrim,
+            attr1 = ("int",     0,                  authoredOneAPIDocStr),
+            attr2 = ("double",  0.0,                authoredOneAPIDocStr),
+            attr3 = ("int",     10,                 authoredTwoAPIDocStr),
+            attr4 = ("string",  "foo",              authoredTwoAPIDocStr),
+            attr5 = ("float3",  Gf.Vec3f(1, 2, 3),  authoredTwoAPIDocStr),
+            attr6 = ("int",     10,                 authoredTwoAPIDocStr))
+        # Both define rel1 and rel2, but now since authoredTwoAPI is stronger, 
+        # it wins and only rel1 is a relationship (opposite of Test 1).
+        _VerifyIsRel(untypedPrim,
+            rel1 = (True, authoredTwoAPIDocStr),
+            rel2 = (False, authoredTwoAPIDocStr))
+
+        # Test 3: Prim with type name set to the conflictPrimType; no authored
+        # applied API schemas. The conflictPrimType has a single built-in API 
+        # schema builtinAPI.
+        prim = stage.DefinePrim("/TypedPrim", conflictPrimTypeName)
+        self.assertEqual(prim.GetAppliedSchemas(),
+                         [builtinAPIName])
+
+        # The conflictPrimType schema defines all of attr1-6 attributes EXCEPT
+        # attr4. It also defines rel1 and rel2. So outside of attr4, the typed 
+        # schema's version of these properties are used. 
+        # For attr4, it is defined in the builtinAPI schema so that attribute's
+        # opinion comes from the builtinAPI. Note that builtinAPI does define
+        # attr2, rel1, and rel2 (all with different types than the 
+        # conflictPrimType schema) but the stronger conflictPrimType still wins
+        # over its built-in APIs.
+        _VerifyAttrTypes(prim, 
+            attr1 = ("int",     1,                  conflictPrimTypeDocStr),
+            attr2 = ("int",     2,                  conflictPrimTypeDocStr),
+            attr3 = ("int",     3,                  conflictPrimTypeDocStr),
+            attr4 = ("int",     4,                  builtinAPIDocStr),
+            attr5 = ("color3f", Gf.Vec3f(1, 1, 1),  conflictPrimTypeDocStr),
+            attr6 = ("int",     6,                  conflictPrimTypeDocStr))
+        _VerifyIsRel(prim,
+            rel1 = (True, conflictPrimTypeDocStr),
+            rel2 = (False, conflictPrimTypeDocStr))
+
+        # Test 4: Take the same prim from Test 3 above, with type name set to 
+        # the conflictPrimType, and author authoredOneAPI and authoredTwoAPI 
+        # applied schemas in that strength order (like in Test 1).
+        prim.AddAppliedSchema(authoredOneAPIName)
+        prim.AddAppliedSchema(authoredTwoAPIName)
+        self.assertEqual(prim.GetAppliedSchemas(),
+                         [authoredOneAPIName,
+                          authoredTwoAPIName,
+                          builtinAPIName])
+
+        _VerifyAttrTypes(prim,
+            # attr1 is defined in authoredOneAPI which is now the strongest 
+            # opinion. Since its type name matches attr1's type name in the prim
+            # type's definition, it can be used for attr1 in the composed prim
+            #  definition.
+            attr1 = ("int",     0,                  authoredOneAPIDocStr),
+            # attr2 is defined in authoredOneAPI which would be the strongest 
+            # opinion. However, its type name is "double" which doesn't match
+            # the existing prim type's definition of the attribute which has it
+            # as "int". We use the prim type's definition for this attribute
+            # ignoring the API schema.
+            attr2 = ("int",     2,                  conflictPrimTypeDocStr),
+            # attr3 is defined in authoredTwoAPI (and not authoredOneAPI) which
+            # makes it the strongest opinion. Since its type name matches
+            # attr3's type name in the prim type's definition, it can be used
+            # for attr3 in the composed prim definition.
+            attr3 = ("int",     10,                 authoredTwoAPIDocStr),
+            # attr4 is defined in authoredTwoAPI (and not authoredOneAPI) which 
+            # would be the strongest opinion. However, its type name is "string" 
+            # which doesn't match the existing prim type's definition of the 
+            # attribute which has it as "int". We use the prim type's definition
+            # for this attribute ignoring the API schema. Note the prim type's 
+            # definition actually gets its opinion on attr4 from the builtinAPI
+            # (as the typed schema itself doesn't define attr4). The builtinAPI
+            # attr4 opinion is part of the composed prim type definition which
+            # is type wins over any applied API schemas authored over the prim.
+            attr4 = ("int",     4,                  builtinAPIDocStr),
+            # attr5 is defined in both authoredOneAPI and authoredTwoAPI which
+            # makes authoredOneAPI the strongest opiniion. However its type of
+            # "point3f" doesn't match the prim type's opinion of the type name
+            # "color3f". Even though the default values for these types are
+            # stored as GfVec3f, the type name mismatch means we still used the
+            # prim type's version in the composed prim definition.
+            attr5 = ("color3f", Gf.Vec3f(1, 1, 1),  conflictPrimTypeDocStr),
+            # attr6 is defined in both authoredOneAPI and authoredTwoAPI which
+            # makes authoredOneAPI the strongest opiniion. And since its type
+            # name matches the prim type definition's attr6 type name, we use
+            # the attr6 from authoredOneAPI.
+            attr6 = ("int",     20,                 authoredOneAPIDocStr))
+        # For rel1 and rel2, authoredOneAPI, authoredTwoAPI and the prim type 
+        # all define them both. Both authoredTwoAPI and the prim type definition 
+        # define rel1 as a relationship and rel2 as an attribute, but 
+        # authoredOneAPI defines the reverse with rel2 as the relationship. 
+        # Since authoredOneAPI is stronger than authoredTwoAPI, its opinions for
+        # these properties override the ones from authoredTwoAPI. However, since
+        # the property types of these strongest opinions don't match match the
+        # property types from the prim type definition, they fall back to the
+        # prim type definition's opinions of these properties in the composed
+        # prim definition.
+        _VerifyIsRel(prim,
+            rel1 = (True, conflictPrimTypeDocStr),
+            rel2 = (False, conflictPrimTypeDocStr))
+
+        # Test 5: Prim with no type name; apply the nestedAPI schema only to 
+        # the prim. The nestedAPI has authoredOneAPI included as a built-in and
+        # authoredTwoAPI auto-applied to it. So all three schemas end up as 
+        # applied schemas on the prim.
+        nestedAPIPrim = stage.DefinePrim("/NestedAPIPrim")
+        nestedAPIPrim.AddAppliedSchema(nestedAPIName)
+        self.assertEqual(nestedAPIPrim.GetAppliedSchemas(),
+                         [nestedAPIName,
+                          authoredOneAPIName,
+                          authoredTwoAPIName])
+
+        # The nestedAPI schema defines its own opinions for all of attr1-6 
+        # attributes as well as rel1 and rel2. Since it is stronger than all its
+        # built-in API schemas, its version of all these properties win for this
+        # prim, regardless of the property and attributes types.
+        _VerifyAttrTypes(nestedAPIPrim,
+            attr1 = ("int",     1,                  nestedAPIDocStr),
+            attr2 = ("int",     2,                  nestedAPIDocStr),
+            attr3 = ("int",     3,                  nestedAPIDocStr),
+            attr4 = ("int",     4,                  nestedAPIDocStr),
+            attr5 = ("color3f", Gf.Vec3f(1, 1, 1),  nestedAPIDocStr),
+            attr6 = ("token",   "bar",              nestedAPIDocStr))
+        _VerifyIsRel(nestedAPIPrim,
+            rel1 = (True, nestedAPIDocStr),
+            rel2 = (False, nestedAPIDocStr))
+
+        # Test 6: Prim with no type name; apply the bultinAPI, authoredTwoAPI, 
+        # and nestedAPI schemas to the prim in that strength order. The same
+        # three schemas are applied to the prim as in Test 5, but now the 
+        # strength order is different.
+        nestedAPIPrim2 = stage.DefinePrim("/NestedAPIPrim2")
+        nestedAPIPrim2.AddAppliedSchema(authoredOneAPIName)
+        nestedAPIPrim2.AddAppliedSchema(authoredTwoAPIName)
+        nestedAPIPrim2.AddAppliedSchema(nestedAPIName)
+        self.assertEqual(nestedAPIPrim2.GetAppliedSchemas(),
+                         [authoredOneAPIName,
+                          authoredTwoAPIName,
+                          nestedAPIName,
+                          authoredOneAPIName,
+                          authoredTwoAPIName])
+
+        # Only the authoredOneAPI and nestedAPI define attr1 and attr2; 
+        # authoredOneAPI is stronger and wins
+        # Only the authoredTwoAPI and nestedAPI define attr3 and attr4; 
+        # authoredTwoAPI is stronger and wins
+        # All define attr5 and attr6, so authoredOneAPI's version of those 
+        # attributes are used since it's strongest.
+        _VerifyAttrTypes(nestedAPIPrim2,
+            attr1 = ("int",     0,                  authoredOneAPIDocStr),
+            attr2 = ("double",  0.0,                authoredOneAPIDocStr),
+            attr3 = ("int",     10,                 authoredTwoAPIDocStr),
+            attr4 = ("string",  "foo",              authoredTwoAPIDocStr),
+            attr5 = ("point3f", Gf.Vec3f(0, 0, 0),  authoredOneAPIDocStr),
+            attr6 = ("int",     20,                 authoredOneAPIDocStr))
+        # All define rel1 and rel2, but since authoredOneAPI is strongest, it 
+        # wins and only rel2 is a relationship.
+        _VerifyIsRel(nestedAPIPrim2,
+            rel1 = (False, authoredOneAPIDocStr),
+            rel2 = (True, authoredOneAPIDocStr))
+
+        # Test 7: Prim with type name set to the conflictPrimType; author the 
+        # nestedAPI schema on this prim. nestedAPI still brings in the 
+        # authoredOneAPI and authoredTwoAPI as its own built-ins to the applied 
+        # API schemas which will be stronger than the prim type definition 
+        # itself.
+        prim = stage.DefinePrim("/TypedPrim2", conflictPrimTypeName)
+        prim.AddAppliedSchema(nestedAPIName)
+        self.assertEqual(prim.GetAppliedSchemas(),
+                         [nestedAPIName,
+                          authoredOneAPIName,
+                          authoredTwoAPIName,
+                          builtinAPIName])
+
+        # nestedAPI defines all same properties as the prim type definition,
+        # is the strongest opinion, and, with the exception of attr6, uses the 
+        # same property types and type names as the prim type definition. So 
+        # all properties except attr6 in the composed definition use property
+        # definitions from nestedAPI.
+        # For attr6, the strongest opinion from nestedAPI has the type name 
+        # "token" which doesn't match the type name "int" in the prim type
+        # definition. So, we have to use the opinion from the prim type 
+        # definition. Note that both authoredOneAPI and authoredTwoAPI are 
+        # technically stronger than prim type definition in this case AND have 
+        # the attribute type of "int" for attr6. However, we still fall back to
+        # the prim type definition's opinion as we only consider the strongest
+        # opinion from the authored applied API schemas.
+        _VerifyAttrTypes(prim, 
+            attr1 = ("int",     1,                  nestedAPIDocStr),
+            attr2 = ("int",     2,                  nestedAPIDocStr),
+            attr3 = ("int",     3,                  nestedAPIDocStr),
+            attr4 = ("int",     4,                  nestedAPIDocStr),
+            attr5 = ("color3f", Gf.Vec3f(1, 1, 1),  nestedAPIDocStr),
+            attr6 = ("int",     6,                  conflictPrimTypeDocStr))
+        _VerifyIsRel(prim,
+            rel1 = (True, nestedAPIDocStr),
+            rel2 = (False, nestedAPIDocStr))
+
+        # Now also apply authoredOneAPI and authoredTwoAPI directly to the same
+        # prim (previously they were included as built-ins under nestedAPI).
+        # These are still weaker than nestedAPI but this means they're also now 
+        # siblings of nestedAPI in the composed definition as opposed to 
+        # built-in to nestedAPI's own prim definition.
+        prim.AddAppliedSchema(authoredOneAPIName)
+        prim.AddAppliedSchema(authoredTwoAPIName)
+        self.assertEqual(prim.GetAppliedSchemas(),
+                         [nestedAPIName,
+                          authoredOneAPIName,
+                          authoredTwoAPIName,
+                          authoredOneAPIName,
+                          authoredTwoAPIName,
+                          builtinAPIName])
+
+        # This extra condition changes nothing about the composed prim 
+        # definition but is here to verify that the same behavior for attr6 
+        # above (where only the strongest authored API schema opinion for an 
+        # attribute is considered) still hold for sibling applied API schemas.
+        _VerifyAttrTypes(prim, 
+            attr1 = ("int", 1, nestedAPIDocStr),
+            attr2 = ("int", 2, nestedAPIDocStr),
+            attr3 = ("int", 3, nestedAPIDocStr),
+            attr4 = ("int", 4, nestedAPIDocStr),
+            attr5 = ("color3f", Gf.Vec3f(1, 1, 1), nestedAPIDocStr),
+            attr6 = ("int", 6, conflictPrimTypeDocStr))
+        _VerifyIsRel(prim,
+            rel1 = (True, nestedAPIDocStr),
+            rel2 = (False, nestedAPIDocStr))
+
+        # Test 8: Prim with type name set to the conflictPrimType; author the 
+        # authoredOneAPI, authoredTwoAPI, and nestedAPI schemas on this prim in
+        # that strength order. This brings in the same 3 applied API schemas as
+        # Test 7, but now authoredOneAPI and authoredTwoAPI are stronger than
+        # when they were just brought in as built-ins of nestedAPI.
+        prim = stage.DefinePrim("/TypedPrim3", conflictPrimTypeName)
+        prim.AddAppliedSchema(authoredOneAPIName)
+        prim.AddAppliedSchema(authoredTwoAPIName)
+        prim.AddAppliedSchema(nestedAPIName)
+        self.assertEqual(prim.GetAppliedSchemas(),
+                         [authoredOneAPIName,
+                          authoredTwoAPIName,
+                          nestedAPIName,
+                          authoredOneAPIName,
+                          authoredTwoAPIName,
+                          builtinAPIName])
+
+        # The results of this test case are identical to Test 4 above as 
+        # builtAPI is the strongest opinion and authoredTwoAPI is next and the 
+        # same property type conflicts exist. Even though nestedAPI is stronger
+        # than the prim type definition and has opinions for attr2, attr4, 
+        # attr5, rel1, and rel2 of the matching property/attribute type, these 
+        # are never the strongest API schema property opinion and are not
+        # considered.
+        _VerifyAttrTypes(prim,
+            attr1 = ("int",     0,                  authoredOneAPIDocStr),
+            attr2 = ("int",     2,                  conflictPrimTypeDocStr),
+            attr3 = ("int",     10,                 authoredTwoAPIDocStr),
+            attr4 = ("int",     4,                  builtinAPIDocStr),
+            attr5 = ("color3f", Gf.Vec3f(1, 1, 1),  conflictPrimTypeDocStr),
+            attr6 = ("int",     20,                 authoredOneAPIDocStr))
+        _VerifyIsRel(prim,
+            rel1 = (True, conflictPrimTypeDocStr),
+            rel2 = (False, conflictPrimTypeDocStr))
 
 if __name__ == "__main__":
     unittest.main()

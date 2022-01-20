@@ -547,3 +547,70 @@ class "TestNestedMultiApplyCycle3API"
     )
 }
 
+class TestPropTypeConflictsPrim "TestPropTypeConflictsPrim" (
+    inherits = </Typed>
+    prepend apiSchemas = ["TestPropTypeConflictBuiltinAPI"]
+)
+{
+    int attr1 = 1 ( doc = "From TestPropTypeConflictsPrim" )
+    int attr2 = 2 ( doc = "From TestPropTypeConflictsPrim" )
+    int attr3 = 3 ( doc = "From TestPropTypeConflictsPrim" )
+    color3f attr5 = (1, 1, 1) ( doc = "From TestPropTypeConflictsPrim" )
+    int attr6 = 6 ( doc = "From TestPropTypeConflictsPrim" )
+    rel rel1 ( doc = "From TestPropTypeConflictsPrim" )
+    int rel2 ( doc = "From TestPropTypeConflictsPrim" )
+}
+
+class "TestPropTypeConflictBuiltinAPI" (
+    inherits = </APISchemaBase>
+)
+{
+    double attr2 = 0.0 ( doc = "From TestPropTypeConflictBuiltinAPI" )
+    int attr4 = 4 ( doc = "From TestPropTypeConflictBuiltinAPI" )
+    int rel1 ( doc = "From TestPropTypeConflictBuiltinAPI" )
+    rel rel2 ( doc = "From TestPropTypeConflictBuiltinAPI" )
+}
+
+class "TestPropTypeConflictAuthoredOneAPI" (
+    inherits = </APISchemaBase>
+)
+{
+    int attr1 = 0 ( doc = "From TestPropTypeConflictAuthoredOneAPI" )
+    double attr2 = 0.0 ( doc = "From TestPropTypeConflictAuthoredOneAPI" )
+    point3f attr5 = (0, 0, 0) ( doc = "From TestPropTypeConflictAuthoredOneAPI" )
+    int attr6 = 20 ( doc = "From TestPropTypeConflictAuthoredOneAPI" )
+    int rel1 ( doc = "From TestPropTypeConflictAuthoredOneAPI" )
+    rel rel2 ( doc = "From TestPropTypeConflictAuthoredOneAPI" )
+}
+
+class "TestPropTypeConflictAuthoredTwoAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token[] apiSchemaAutoApplyTo = [
+           "TestPropTypeConflictNestedAuthoredAPI"] 
+    }
+)
+{
+    int attr3 = 10 ( doc = "From TestPropTypeConflictAuthoredTwoAPI" )
+    string attr4 = "foo" ( doc = "From TestPropTypeConflictAuthoredTwoAPI" )
+    float3 attr5 = (1, 2, 3) ( doc = "From TestPropTypeConflictAuthoredTwoAPI" )
+    int attr6 = 10 ( doc = "From TestPropTypeConflictAuthoredTwoAPI" )
+    rel rel1 ( doc = "From TestPropTypeConflictAuthoredTwoAPI" )
+    int rel2 ( doc = "From TestPropTypeConflictAuthoredTwoAPI" )
+}
+
+class "TestPropTypeConflictNestedAuthoredAPI" (
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestPropTypeConflictAuthoredOneAPI"]
+)
+{
+    int attr1 = 1 ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+    int attr2 = 2 ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+    int attr3 = 3 ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+    int attr4 = 4 ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+    color3f attr5 = (1, 1, 1) ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+    token attr6 = "bar" ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+    rel rel1 ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+    int rel2 ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+}
+

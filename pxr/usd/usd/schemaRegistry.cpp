@@ -1555,7 +1555,19 @@ UsdSchemaRegistry::BuildComposedPrimDefinition(
         
     // Now compose in the prim type's properties if we can.        
     if (primDef) {
-        composedPrimDef->_ComposePropertiesFromPrimDef(*primDef);
+        // When building a definition from authored applied API schemas we 
+        // don't want API schemas applied on top of a typed prim definition to 
+        // change any of property types from the typed prim definition. That's 
+        // why we compose in the weaker typed prim definition with 
+        // useWeakerPropertyForTypeConflict set to true. 
+        // 
+        // Note that the strongest API schema wins for a property type conflict
+        // amongst the authored applied API schemas themselves. But this 
+        // "winning" property will be ignored if it tries to changed the type
+        // of an existing property in the typed prim definition.
+        composedPrimDef->_ComposePropertiesFromPrimDef(
+            *primDef, /* useWeakerPropertyForTypeConflict = */ true);
+
         // The prim type's prim definition may have its own built-in API 
         // schemas (which were already composed into its definition). We need
         // to append these to applied API schemas list for our composed prim
@@ -1612,7 +1624,9 @@ void UsdSchemaRegistry::_ComposeAPISchemasIntoPrimDefinition(
         if (apiSchemaTypeDef) {
             // Compose in the properties from the API schema def.
             primDef->_ComposePropertiesFromPrimDef(
-                *apiSchemaTypeDef, instanceName);
+                *apiSchemaTypeDef, 
+                /* useWeakerPropertyForTypeConflict = */ false, 
+                instanceName);
 
             // Append all the API schemas included in the schema def to the 
             // prim def's API schemas list. This list will always include the 
