@@ -45,13 +45,34 @@ HgiGLGraphicsCmds::HgiGLGraphicsCmds(
     , _descriptor(desc)
     , _primitiveType(HgiPrimitiveTypeTriangleList)
     , _pushStack(0)
+    , _restoreReadFramebuffer(0)
+    , _restoreDrawFramebuffer(0)
 {
     if (desc.HasAttachments()) {
+        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &_restoreReadFramebuffer);    
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &_restoreDrawFramebuffer);
         _ops.push_back( HgiGLOps::BindFramebufferOp(device, desc) );
     }
 }
 
-HgiGLGraphicsCmds::~HgiGLGraphicsCmds() = default;
+static bool
+_IsValidFbo(int32_t id)
+{
+    return id == 0 || glIsFramebuffer(id) == GL_TRUE;
+}
+
+HgiGLGraphicsCmds::~HgiGLGraphicsCmds()
+{
+    if (_descriptor.HasAttachments()) {
+        // Restore framebuffer state.
+        if (_IsValidFbo(_restoreReadFramebuffer)) {
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, _restoreReadFramebuffer);
+        }
+        if (_IsValidFbo(_restoreDrawFramebuffer)) {
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _restoreDrawFramebuffer);
+        }
+    }
+}
 
 void
 HgiGLGraphicsCmds::InsertFunctionOp(std::function<void(void)> const& fn)

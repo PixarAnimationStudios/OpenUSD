@@ -145,6 +145,8 @@ private:
     int _primitiveIndexSize;
     HgiGLOpsVector _ops;
     int _pushStack;
+    int32_t _restoreReadFramebuffer;
+    int32_t _restoreDrawFramebuffer;
 
     // Cmds is used only one frame so storing multi-frame state on will not
     // survive.
