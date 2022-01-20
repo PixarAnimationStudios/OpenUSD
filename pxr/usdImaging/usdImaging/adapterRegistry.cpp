@@ -190,6 +190,12 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
             }
         }
     }
+
+    // Fill in the _adapterKeys vector, from the valid keys to _typeMap.
+    _adapterKeys.reserve(_typeMap.size());
+    for (auto const &pair : _typeMap) {
+        _adapterKeys.push_back(pair.first);
+    }
 }
 
 bool
@@ -202,14 +208,10 @@ UsdImagingAdapterRegistry::HasAdapter(TfToken const& adapterKey)
     return _typeMap.find(adapterKey) != _typeMap.end();
 }
 
-TfTokenVector
+const TfTokenVector&
 UsdImagingAdapterRegistry::GetAdapterKeys()
 {
-    TfTokenVector keys;
-    for (auto const &pair : _typeMap) {
-        keys.push_back(pair.first);
-    }
-    return keys;
+    return _adapterKeys;
 }
 
 UsdImagingPrimAdapterSharedPtr

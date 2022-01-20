@@ -62,6 +62,7 @@ class UsdImagingAdapterRegistry : public TfSingleton<UsdImagingAdapterRegistry>
 
     typedef std::unordered_map<TfToken,TfType,TfToken::HashFunctor> _TypeMap;
     _TypeMap _typeMap;
+    TfTokenVector _adapterKeys;
 
 public:
 
@@ -95,7 +96,7 @@ public:
     /// Returns the set of adapter keys this class responds to; i.e. the set of
     /// usd prim types for which we've registered a prim adapter.
     USDIMAGING_API
-    TfTokenVector GetAdapterKeys();
+    const TfTokenVector& GetAdapterKeys();
 };
 
 USDIMAGING_API_TEMPLATE_CLASS(TfSingleton<UsdImagingAdapterRegistry>);

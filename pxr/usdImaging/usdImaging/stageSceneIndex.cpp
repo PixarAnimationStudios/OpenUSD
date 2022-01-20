@@ -99,7 +99,7 @@ UsdImagingStageSceneIndex::_PopulateAdapterMap()
     TRACE_FUNCTION();
 
     UsdImagingAdapterRegistry& reg = UsdImagingAdapterRegistry::GetInstance();
-    TfTokenVector adapterKeys = reg.GetAdapterKeys();
+    const TfTokenVector& adapterKeys = reg.GetAdapterKeys();
 
     for (TfToken const& adapterKey : adapterKeys) {
         _adapterMap.insert({adapterKey, reg.ConstructAdapter(adapterKey)});
