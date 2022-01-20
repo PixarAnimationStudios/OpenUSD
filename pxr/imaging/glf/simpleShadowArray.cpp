@@ -50,7 +50,8 @@ GlfSimpleShadowArray::GlfSimpleShadowArray() :
     _shadowCompareSampler(0),
     _unbindRestoreDrawFramebuffer(0),
     _unbindRestoreReadFramebuffer(0),
-    _unbindRestoreViewport{0,0,0,0}
+    _unbindRestoreViewport{0,0,0,0},
+    _texturesAllocatedExternally(false)
 {
 }
 
@@ -67,12 +68,18 @@ GlfSimpleShadowArray::GetShadowMapTexture(int shadowIndex) const
 GLuint
 GlfSimpleShadowArray::GetShadowMapDepthSampler() const
 {
+    if (!_shadowDepthSampler) {
+        TF_CODING_ERROR("Shadow depth sampler has not been allocated");
+    }
     return _shadowDepthSampler;
 }
 
 GLuint
 GlfSimpleShadowArray::GetShadowMapCompareSampler() const
 {
+    if (!_shadowCompareSampler) {
+        TF_CODING_ERROR("Shadow compare sampler has not been allocated");
+    }
     return _shadowCompareSampler;
 }
 
@@ -86,7 +93,9 @@ GlfSimpleShadowArray::SetShadowMapResolutions(
 
     _resolutions = resolutions;
 
-    _FreeTextures();
+    if (!_texturesAllocatedExternally) {
+        _FreeTextures();
+    }
 
     size_t numShadowMaps = _resolutions.size();
     if (_viewMatrix.size() != numShadowMaps ||
@@ -95,6 +104,7 @@ GlfSimpleShadowArray::SetShadowMapResolutions(
         _projectionMatrix.resize(numShadowMaps, GfMatrix4d().SetIdentity());
     }
 
+    _texturesAllocatedExternally = false;
 }
 
 size_t
@@ -267,7 +277,7 @@ GlfSimpleShadowArray::_ShadowMapExists() const
 }
 
 void
-GlfSimpleShadowArray::_AllocResources()
+GlfSimpleShadowArray::AllocSamplers()
 {
     // Samplers
     GLfloat border[] = {1, 1, 1, 1};
@@ -304,14 +314,30 @@ GlfSimpleShadowArray::_AllocResources()
         glSamplerParameteri(
             _shadowCompareSampler, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL );
     }
+}
+
+void
+GlfSimpleShadowArray::_AllocResources()
+{
+    // Samplers
+    AllocSamplers();
 
     // Shadow maps
-    _AllocTextures();
+    if (!_texturesAllocatedExternally) {
+        _AllocTextures();
+    }
 
     // Framebuffer
     if (!_framebuffer) {
         glGenFramebuffers(1, &_framebuffer);
     }
+}
+
+void
+GlfSimpleShadowArray::SetTextures(std::vector<GLuint> textureIds)
+{
+    _textures = textureIds;
+    _texturesAllocatedExternally = true;
 }
 
 void
@@ -342,6 +368,7 @@ GlfSimpleShadowArray::_AllocTextures()
     }
 
     glBindTexture(GL_TEXTURE_2D, 0);
+    _texturesAllocatedExternally = false;
 }
 
 void
@@ -349,7 +376,9 @@ GlfSimpleShadowArray::_FreeResources()
 {
     GlfSharedGLContextScopeHolder sharedContextScopeHolder;
 
-    _FreeTextures();
+    if (!_texturesAllocatedExternally) {
+        _FreeTextures();
+    }
 
     if (_framebuffer) {
         glDeleteFramebuffers(1, &_framebuffer);

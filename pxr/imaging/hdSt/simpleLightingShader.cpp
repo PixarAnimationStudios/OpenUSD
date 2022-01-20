@@ -32,9 +32,12 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/domeLightComputations.h"
 #include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
+#include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
+#include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/binding.h"
 
@@ -61,13 +64,16 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 HdStSimpleLightingShader::HdStSimpleLightingShader() 
     : _lightingContext(GlfSimpleLightingContext::New())
-    , _bindingMap(TfCreateRefPtr(new GlfBindingMap()))
     , _useLighting(true)
     , _glslfx(std::make_unique<HioGlslfx>(HdStPackageSimpleLightingShader()))
+    , _renderParam(nullptr)
 {
 }
 
-HdStSimpleLightingShader::~HdStSimpleLightingShader() = default;
+HdStSimpleLightingShader::~HdStSimpleLightingShader()
+{
+    _CleanupAovBindings();
+};
 
 /* virtual */
 HdStSimpleLightingShader::ID
@@ -162,13 +168,6 @@ HdStSimpleLightingShader::BindResources(const int program,
         binder.Bind(buffer.second);
     }
     
-    // XXX: we'd like to use HdSt_ResourceBinder instead of GlfBindingMap.
-    _bindingMap->ResetSamplerBindings(
-                binder.GetNumReservedTextureUnits());
-    _lightingContext->InitSamplerUnitBindings(_bindingMap);
-    _bindingMap->AssignSamplerUnitsToProgram(program);
-    _lightingContext->BindSamplers(_bindingMap);
-
     HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
 
     binder.BindShaderResources(this);
@@ -182,9 +181,6 @@ HdStSimpleLightingShader::UnbindResources(const int program,
     for (auto const& buffer : _customBuffers) {
         binder.Unbind(buffer.second);
     }
-
-    // XXX: we'd like to use HdSt_ResourceBinder instead of GlfBindingMap.
-    _lightingContext->UnbindSamplers(_bindingMap);
 
     HdSt_TextureBinder::UnbindResources(binder, _namedTextureHandles);
 }
@@ -221,11 +217,10 @@ HdStSimpleLightingShader::AddBindings(HdBindingRequestVector *customBindings)
         customBindings->push_back(it->second);
     }
 
-    // For now we assume that the only simple light with a texture is
-    // a domeLight (ignoring RectLights, and multiple domeLights)
-
     _lightTextureParams.clear();
     
+    // For now we assume that the only simple light with a texture is
+    // a domeLight (ignoring RectLights, and multiple domeLights)
     if (_HasDomeLight(_lightingContext) && _domeLightEnvironmentTextureHandle) {
         // irradiance map
         _lightTextureParams.push_back(
@@ -251,6 +246,26 @@ HdStSimpleLightingShader::AddBindings(HdBindingRequestVector *customBindings)
                 VtValue(GfVec4f(0.0)),
                 TfTokenVector(),
                 HdTextureType::Uv));
+    }
+
+    const bool useShadows =
+        _useLighting ? _lightingContext->GetUseShadows() : false;
+    if (useShadows) {
+        size_t const numShadowPasses = 
+            _lightingContext->GetShadows()->GetNumShadowMapPasses();
+
+        // Create one param for all shadow passes as shadow compare textures 
+        // will be bound to shader as an array of samplers.
+        _lightTextureParams.push_back(
+            HdSt_MaterialParam(
+                HdSt_MaterialParam::ParamTypeTexture,
+                HdStTokens->shadowCompareTextures,
+                VtValue(GfVec4f(0.0)),
+                TfTokenVector(),
+                HdTextureType::Uv,
+                /*swizzle*/std::string(),
+                /*isPremultiplied*/false,
+                /*arrayOfTexturesSize*/numShadowPasses));
     }
 }
 
@@ -365,17 +380,85 @@ _MakeNamedTextureHandle(
              name.Hash() };
 }
 
+SdfPath
+HdStSimpleLightingShader::_GetAovPath(
+    TfToken const &aovName, size_t shadowIndex) const
+{
+    std::string identifier = std::string("aov_shadowMap") +
+        std::to_string(shadowIndex) + "_" + 
+        TfMakeValidIdentifier(aovName.GetString());
+    return SdfPath(identifier);
+}
+
 void
-HdStSimpleLightingShader::AllocateTextureHandles(HdSceneDelegate *const delegate)
+HdStSimpleLightingShader::_ResizeOrCreateBufferForAov(size_t shadowIndex) const
+{
+    GlfSimpleShadowArrayRefPtr const& shadows = _lightingContext->GetShadows();
+
+    GfVec3i const dimensions = GfVec3i(
+        shadows->GetShadowMapSize(shadowIndex)[0], 
+        shadows->GetShadowMapSize(shadowIndex)[1], 
+        1);
+
+    HdRenderPassAovBinding const & aovBinding = _shadowAovBindings[shadowIndex];
+    VtValue existingResource = aovBinding.renderBuffer->GetResource(false);
+    if (existingResource.IsHolding<HgiTextureHandle>()) {
+        int32_t const width = aovBinding.renderBuffer->GetWidth();
+        int32_t const height = aovBinding.renderBuffer->GetHeight();
+        if (width == dimensions[0] && height == dimensions[1]) {
+            return;
+        }
+    }
+
+    // If the resolution has changed then reallocate the
+    // renderBuffer and  texture.
+    aovBinding.renderBuffer->Allocate(dimensions,
+                                      HdFormatFloat32,
+                                      /*multiSampled*/false);
+
+    VtValue newResource = aovBinding.renderBuffer->GetResource(false);
+
+    if (!newResource.IsHolding<HgiTextureHandle>()) {
+        TF_CODING_ERROR("No texture on render buffer for AOV "
+                        "%s", aovBinding.aovName.GetText());
+    }
+}
+
+void
+HdStSimpleLightingShader::_CleanupAovBindings()
+{
+    if (_renderParam) {
+        for (auto const & aovBuffer : _shadowAovBuffers) {
+            aovBuffer->Finalize(_renderParam);
+        }
+    }
+    _shadowAovBuffers.clear();
+    _shadowAovBindings.clear();
+}
+
+void
+HdStSimpleLightingShader::AllocateTextureHandles(HdRenderIndex const &renderIndex)
 {
     const std::string &resolvedPath =
         _GetResolvedDomeLightEnvironmentFilePath(_lightingContext);
+    const bool useShadows =
+        _useLighting ? _lightingContext->GetUseShadows() : false;
     if (resolvedPath.empty()) {
         _domeLightEnvironmentTextureHandle = nullptr;
+        _domeLightTextureHandles.clear();
+    }
+
+    if (!useShadows) {
+        _CleanupAovBindings();
+        _shadowTextureHandles.clear();
+    }
+
+    if (resolvedPath.empty() && !useShadows) {
         _namedTextureHandles.clear();
         return;
     }
 
+    bool recomputeDomeLightTextures = !resolvedPath.empty();
     if (_domeLightEnvironmentTextureHandle) {
         HdStTextureObjectSharedPtr const &textureObject =
             _domeLightEnvironmentTextureHandle->GetTextureObject();
@@ -384,61 +467,153 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdSceneDelegate *const delegate
         if (textureId.GetFilePath() == resolvedPath) {
             // Same environment map, no need to recompute
             // dome light textures.
-            return;
+            recomputeDomeLightTextures = false;
         }
     }
 
+    // Store render index for render buffer destruction.
+    _renderParam = renderIndex.GetRenderDelegate()->GetRenderParam();
+
     HdStResourceRegistry * const resourceRegistry =
         dynamic_cast<HdStResourceRegistry*>(
-            delegate->GetRenderIndex().GetResourceRegistry().get());
+            renderIndex.GetResourceRegistry().get());
     if (!TF_VERIFY(resourceRegistry)) {
         return;
     }
 
-    const HdStTextureIdentifier textureId(
-        TfToken(resolvedPath),
-        std::make_unique<HdStAssetUvSubtextureIdentifier>(
-            /* flipVertically = */ true,
-            /* premultiplyAlpha = */ false,
-	        /* sourceColorSpace = */ HdStTokens->colorSpaceAuto));
+    // Allocate texture handles for dome light textures.
+    if (recomputeDomeLightTextures) {
+        _domeLightTextureHandles.clear();
 
-    static const HdSamplerParameters envSamplerParameters(
-        HdWrapRepeat, HdWrapClamp, HdWrapClamp,
-        HdMinFilterLinearMipmapLinear, HdMagFilterLinear);
+        const HdStTextureIdentifier textureId(
+            TfToken(resolvedPath),
+            std::make_unique<HdStAssetUvSubtextureIdentifier>(
+                /* flipVertically = */ true,
+                /* premultiplyAlpha = */ false,
+                /* sourceColorSpace = */ HdStTokens->colorSpaceAuto));
 
-    _domeLightEnvironmentTextureHandle =
-        resourceRegistry->AllocateTextureHandle(
-            textureId,
-            HdTextureType::Uv,
-            envSamplerParameters,
-            /* targetMemory = */ 0,
-            shared_from_this());
+        static const HdSamplerParameters envSamplerParameters(
+            HdWrapRepeat, HdWrapClamp, HdWrapClamp,
+            HdMinFilterLinearMipmapLinear, HdMagFilterLinear);
 
-    _namedTextureHandles = {
-        _MakeNamedTextureHandle(
-            _tokens->domeLightIrradiance,
-            resolvedPath,
-            HdWrapRepeat, HdWrapClamp, HdWrapRepeat,
-            HdMinFilterLinear,
-            resourceRegistry,
-            shared_from_this()),
+        _domeLightEnvironmentTextureHandle =
+            resourceRegistry->AllocateTextureHandle(
+                textureId,
+                HdTextureType::Uv,
+                envSamplerParameters,
+                /* targetMemory = */ 0,
+                shared_from_this());
 
-        _MakeNamedTextureHandle(
-            _tokens->domeLightPrefilter,
-            resolvedPath,
-            HdWrapRepeat, HdWrapClamp, HdWrapRepeat,
-            HdMinFilterLinearMipmapLinear,
-            resourceRegistry,
-            shared_from_this()),
+        _domeLightTextureHandles = {
+            _MakeNamedTextureHandle(
+                _tokens->domeLightIrradiance,
+                resolvedPath,
+                HdWrapRepeat, HdWrapClamp, HdWrapRepeat,
+                HdMinFilterLinear,
+                resourceRegistry,
+                shared_from_this()),
 
-        _MakeNamedTextureHandle(
-            _tokens->domeLightBRDF,
-            resolvedPath,
-            HdWrapClamp, HdWrapClamp, HdWrapClamp,
-            HdMinFilterLinear,
-            resourceRegistry,
-            shared_from_this())
-    };
+            _MakeNamedTextureHandle(
+                _tokens->domeLightPrefilter,
+                resolvedPath,
+                HdWrapRepeat, HdWrapClamp, HdWrapRepeat,
+                HdMinFilterLinearMipmapLinear,
+                resourceRegistry,
+                shared_from_this()),
+
+            _MakeNamedTextureHandle(
+                _tokens->domeLightBRDF,
+                resolvedPath,
+                HdWrapClamp, HdWrapClamp, HdWrapClamp,
+                HdMinFilterLinear,
+                resourceRegistry,
+                shared_from_this())
+        };
+    }
+    _namedTextureHandles = _domeLightTextureHandles;
+
+    // Allocate texture handles for shadow map textures.
+    if (useShadows) {     
+        GlfSimpleShadowArrayRefPtr const& shadows = 
+            _lightingContext->GetShadows();
+        size_t const prevNumShadowPasses = _shadowAovBindings.size();
+        size_t const numShadowPasses = shadows->GetNumShadowMapPasses();
+
+        if (prevNumShadowPasses < numShadowPasses) {
+            // If increasing number of shadow maps, need to create new
+            // aov bindings and render buffers.
+            _shadowAovBindings.resize(numShadowPasses);
+
+            for (size_t i = prevNumShadowPasses; i < numShadowPasses; i++) {
+                SdfPath const aovId = _GetAovPath(HdAovTokens->depth, i);
+                _shadowAovBuffers.push_back(
+                    std::make_unique<HdStRenderBuffer>(
+                        resourceRegistry, aovId));
+                    
+                HdAovDescriptor aovDesc = HdAovDescriptor(HdFormatFloat32, 
+                                                          /*multiSampled*/false, 
+                                                          VtValue(1.f));
+
+                HdRenderPassAovBinding &binding = _shadowAovBindings[i];
+                binding.aovName = HdAovTokens->depth;
+                binding.aovSettings = aovDesc.aovSettings;
+                binding.renderBufferId = aovId;
+                binding.clearValue = aovDesc.clearValue;
+                binding.renderBuffer = _shadowAovBuffers.back().get();
+            }
+        } else if (prevNumShadowPasses > numShadowPasses) {
+            // If decreasing number of shadow maps, only need to finalize 
+            // and resize.
+            if (_renderParam) {
+                for (size_t i = numShadowPasses; i < prevNumShadowPasses; i++) {
+                    _shadowAovBuffers[i]->Finalize(_renderParam);
+                }
+            }
+            _shadowAovBindings.resize(numShadowPasses);
+            _shadowAovBuffers.resize(numShadowPasses);
+        }
+        
+        for (size_t i = 0; i < numShadowPasses; i++) {
+            _ResizeOrCreateBufferForAov(i);
+        }
+
+        if (prevNumShadowPasses < numShadowPasses) {
+            // If increasing number of shadow maps, allocate texture handles
+            // for just-allocated texture objects.
+            HdSamplerParameters const shadowSamplerParameters{
+                HdWrapClamp, HdWrapClamp, HdWrapClamp,
+                HdMinFilterLinear, HdMagFilterLinear,
+                HdBorderColorOpaqueWhite, /*enableCompare*/true, 
+                HdCmpFuncLEqual};
+
+            for (size_t i = prevNumShadowPasses; i < numShadowPasses; i++) {
+                HdStTextureHandleSharedPtr const textureHandle =
+                    resourceRegistry->AllocateTextureHandle(
+                        _shadowAovBuffers[i]->GetTextureIdentifier(false),
+                        HdTextureType::Uv,
+                        shadowSamplerParameters,
+                        /* memoryRequest = */ 0,
+                        shared_from_this());
+
+                TfToken const shadowTextureName = TfToken(
+                    HdStTokens->shadowCompareTextures.GetString() + 
+                    std::to_string(i));
+                _shadowTextureHandles.push_back(
+                    NamedTextureHandle{ 
+                        shadowTextureName,
+                        HdTextureType::Uv,
+                        textureHandle,
+                        shadowTextureName.Hash()});
+            }
+        } else if (prevNumShadowPasses > numShadowPasses) {
+            _shadowTextureHandles.resize(numShadowPasses);
+        }
+    }
+
+    _namedTextureHandles.insert(
+        _namedTextureHandles.end(), 
+        _shadowTextureHandles.begin(),
+        _shadowTextureHandles.end());
 }
 
 void

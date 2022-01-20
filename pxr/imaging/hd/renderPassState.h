@@ -261,6 +261,16 @@ public:
     bool GetEnableDepthTest() const;
 
     HD_API
+    void SetEnableDepthClamp(bool enabled);
+    HD_API
+    bool GetEnableDepthClamp() const;
+
+    HD_API
+    void SetDepthRange(GfVec2f const &depthRange);
+    HD_API
+    const GfVec2f& GetDepthRange() const;
+
+    HD_API
     void SetStencil(HdCompareFunction func, int ref, int mask,
                     HdStencilOp fail, HdStencilOp zfail, HdStencilOp zpass);
     HdCompareFunction GetStencilFunc() const { return _stencilFunc; }
@@ -352,6 +362,8 @@ protected:
     HdCompareFunction _depthFunc;
     bool _depthMaskEnabled;
     bool _depthTestEnabled;
+    bool _depthClampEnabled;
+    GfVec2f _depthRange;
 
     HdCullStyle _cullStyle;
 

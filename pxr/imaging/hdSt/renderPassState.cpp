@@ -581,6 +581,10 @@ HdStRenderPassState::Bind()
     } else {
         glDisable(GL_DEPTH_TEST);
     }
+    if (GetEnableDepthClamp()) {
+        glEnable(GL_DEPTH_CLAMP);
+    }
+    glDepthRange(GetDepthRange()[0], GetDepthRange()[1]);
 
     // Stencil
     if (GetStencilEnabled()) {
@@ -670,6 +674,8 @@ HdStRenderPassState::Unbind()
     glDepthFunc(GL_LESS);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glLineWidth(1.0f);
+    glDisable(GL_DEPTH_CLAMP);
+    glDepthRange(0, 1);
 
     glDisable(GL_BLEND);
     glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);

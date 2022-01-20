@@ -316,7 +316,7 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
         }
     }
 
-    _lightingShader->AllocateTextureHandles(delegate);
+    _lightingShader->AllocateTextureHandles(renderIndex);
 
     *dirtyBits = HdChangeTracker::Clean;
 }

@@ -57,6 +57,7 @@ public:
     // Returns the GL texture id of the shadow texture.
     GLF_API
     GLuint GetShadowMapTexture(int shadowIndex) const;
+
     // Returns the GL sampler id of the sampler object used to read the raw
     // depth values.
     GLF_API
@@ -65,7 +66,6 @@ public:
     // Returns the GL sampler id of the sampler object used for depth comparison
     GLF_API
     GLuint GetShadowMapCompareSampler() const;
-
 
     // Set the resolutions of all the shadow maps necessary. The number of
     // resolutions corresponds to the number of shadow map textures necessary,
@@ -108,6 +108,15 @@ public:
     GLF_API
     void EndCapture(size_t index);
 
+    // Sets the GL texture ids of the shadow textures, as opposed to creating
+    // them internally with _AllocTextures().
+    GLF_API
+    void SetTextures(std::vector<GLuint> textureIds);
+
+    // Allocates the shadow samplers.
+    GLF_API
+    void AllocSamplers();
+
 private:
     void _AllocResources();
     void _AllocTextures();
@@ -133,6 +142,8 @@ private:
     GLuint _unbindRestoreReadFramebuffer;
 
     GLint  _unbindRestoreViewport[4];
+
+    bool _texturesAllocatedExternally;
 };
 
 

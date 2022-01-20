@@ -21,21 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/imaging/hdx/shadowTask.h"
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hdx/package.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-
 
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
+#include "pxr/imaging/hdSt/simpleLightingShader.h"
+#include "pxr/imaging/hdSt/textureUtils.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -205,6 +205,8 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
             renderPassState->SetDepthBiasEnabled(_params.depthBiasEnable);
             renderPassState->SetDepthBias(_params.depthBiasConstantFactor,
                                           _params.depthBiasSlopeFactor);
+            renderPassState->SetEnableDepthClamp(true);
+            renderPassState->SetDepthRange(GfVec2f(0, 0.99999));
 
             // This state is invariant of parameter changes so set it
             // once.
@@ -220,6 +222,17 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
             _UpdateDirtyParams(renderPassState, _params);
 
             _renderPassStates.push_back(std::move(renderPassState));
+        }
+    }
+
+    // Get AOV bindings created by simple lighting shader.
+    HdRenderPassAovBindingVector shadowAovBindings;
+    VtValue lightingShader = (*ctx)[HdxTokens->lightingShader];
+    if (lightingShader.IsHolding<HdStLightingShaderSharedPtr>()) {
+        if (HdStSimpleLightingShaderSharedPtr simpleLightingShader =
+            std::dynamic_pointer_cast<HdStSimpleLightingShader>(
+                lightingShader.UncheckedGet<HdStLightingShaderSharedPtr>())) {
+            shadowAovBindings = simpleLightingShader->GetShadowAovBindings();
         }
     }
 
@@ -244,6 +257,21 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
             shadows->GetProjectionMatrix(shadowMapId),
             GfVec4d(0,0,shadowMapRes[0], shadowMapRes[1]),
             HdRenderPassState::ClipPlanesVector());
+        
+        // Set AOV bindings.
+        if (shadowMapId < shadowAovBindings.size()) {
+            if (passId == shadowMapId) {
+                _renderPassStates[passId]->SetAovBindings(
+                    { shadowAovBindings[shadowMapId] });
+            } else {
+                // Don't want "masked" render passes to clear.
+                HdRenderPassAovBinding aovBindingCopy = 
+                    shadowAovBindings[shadowMapId];
+                aovBindingCopy.clearValue = VtValue();
+                _renderPassStates[passId]->SetAovBindings(
+                    { aovBindingCopy });
+            }
+        }
 
         _passes[passId]->Sync();
     }
@@ -280,6 +308,39 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
     // Generate the actual shadow maps
     GlfSimpleShadowArrayRefPtr const shadows = lightingContext->GetShadows();
     size_t numShadowMaps = shadows->GetNumShadowMapPasses();
+
+    // Get AOV bindings.
+    HdRenderPassAovBindingVector shadowAovBindings;
+    VtValue lightingShader = (*ctx)[HdxTokens->lightingShader];
+    if (lightingShader.IsHolding<HdStLightingShaderSharedPtr>()) {
+        if (HdStSimpleLightingShaderSharedPtr simpleLightingShader =
+            std::dynamic_pointer_cast<HdStSimpleLightingShader>(
+                lightingShader.UncheckedGet<HdStLightingShaderSharedPtr>())) {
+            shadowAovBindings = simpleLightingShader->GetShadowAovBindings();
+        }
+    }
+
+    // Though we no longer use GlfSimpleShadowArray's raw GL code to capture 
+    // shadows in Hdx, Presto expects the textures in GlfSimpleShadowArray to 
+    // contain the shadows captured here. We fulfill this by setting 
+    // GlfSimpleShadowArray's shadow textures to the textures backing the 
+    // shadow render buffers.
+    std::vector<uint32_t> textureIds;
+    for (size_t shadowId = 0; shadowId < numShadowMaps; shadowId++) {
+        if (shadowId < shadowAovBindings.size()) {
+            HdRenderBuffer const * renderBuffer = 
+                shadowAovBindings[shadowId].renderBuffer;
+            VtValue aov = renderBuffer->GetResource(false);
+            if (aov.IsHolding<HgiTextureHandle>()) {
+                HgiTextureHandle texture = aov.UncheckedGet<HgiTextureHandle>();
+                if (texture) {
+                    textureIds.push_back((uint32_t)texture->GetRawResource());
+                }
+            }
+        }
+    }
+    shadows->SetTextures(textureIds);
+
     for (size_t shadowId = 0; shadowId < numShadowMaps; shadowId++) {
 
         // Make sure each pass got created. Light shadow indices are supposed
@@ -289,25 +350,18 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
             continue;
         }
 
-        // Bind the framebuffer that will store shadowId shadow map
-        shadows->BeginCapture(shadowId, true);
-
-        if (_HasDrawItems(_passes[shadowId], GetRenderTags())) {
-            // Render the actual geometry in the "defaultMaterialTag" collection
-            _passes[shadowId]->Execute(
-                _renderPassStates[shadowId],
-                GetRenderTags());
-        }
+        // Render the actual geometry in the "defaultMaterialTag" collection.
+        // Always execute this render pass because it clears the AOVs.
+        _passes[shadowId]->Execute(
+            _renderPassStates[shadowId],
+            GetRenderTags());
 
         if (_HasDrawItems(_passes[shadowId + numShadowMaps], GetRenderTags())) {
             // Render the actual geometry in the "masked" materialTag collection
             _passes[shadowId + numShadowMaps]->Execute(
-                _renderPassStates[shadowId + numShadowMaps],
-                GetRenderTags());
+               _renderPassStates[shadowId + numShadowMaps],
+               GetRenderTags());
         }
-   
-        // Unbind the buffer and move on to the next shadow map
-        shadows->EndCapture(shadowId);
     }
 }
 

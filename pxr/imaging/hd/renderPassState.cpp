@@ -61,6 +61,8 @@ HdRenderPassState::HdRenderPassState()
     , _depthFunc(HdCmpFuncLEqual)
     , _depthMaskEnabled(true)
     , _depthTestEnabled(true)
+    , _depthClampEnabled(false)
+    , _depthRange(GfVec2f(0, 1))
     , _cullStyle(HdCullStyleNothing)
     , _stencilFunc(HdCmpFuncAlways)
     , _stencilRef(0)
@@ -81,7 +83,6 @@ HdRenderPassState::HdRenderPassState()
     , _alphaToCoverageEnabled(false)
     , _colorMaskUseDefault(true)
     , _useMultiSampleAov(true)
-
 {
 }
 
@@ -342,6 +343,30 @@ bool
 HdRenderPassState::GetEnableDepthTest() const
 {
     return _depthTestEnabled;
+}
+
+void
+HdRenderPassState::SetEnableDepthClamp(bool enabled)
+{
+    _depthClampEnabled = enabled;
+}
+
+bool
+HdRenderPassState::GetEnableDepthClamp() const
+{
+    return _depthClampEnabled;
+}
+
+void
+HdRenderPassState::SetDepthRange(GfVec2f const &depthRange)
+{
+    _depthRange = depthRange;
+}
+
+const GfVec2f&
+HdRenderPassState::GetDepthRange() const
+{
+    return _depthRange;
 }
 
 void
