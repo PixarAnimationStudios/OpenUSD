@@ -53,7 +53,7 @@ _ResolveVirtualStructsWithoutConditionals(
     _ResolveVirtualStructs(networkInterface, false);
 }
 
-HdPrmanVirtualStructResolvingSceneIndex::HdPrmanVirtualStructResolvingSceneIndex(
+HdPrman_VirtualStructResolvingSceneIndex::HdPrman_VirtualStructResolvingSceneIndex(
     const HdSceneIndexBaseRefPtr &inputSceneIndex, bool applyConditionals)
 : HdMaterialFilteringSceneIndexBase(inputSceneIndex)
 , _applyConditionals(applyConditionals)
@@ -61,7 +61,7 @@ HdPrmanVirtualStructResolvingSceneIndex::HdPrmanVirtualStructResolvingSceneIndex
 }
 
 HdMaterialFilteringSceneIndexBase::FilteringFnc
-HdPrmanVirtualStructResolvingSceneIndex::_GetFilteringFunction() const
+HdPrman_VirtualStructResolvingSceneIndex::_GetFilteringFunction() const
 {
     // could capture _applyCondition but instead use wrapper function
     if (_applyConditionals) {

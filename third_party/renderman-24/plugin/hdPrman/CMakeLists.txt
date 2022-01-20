@@ -74,7 +74,6 @@ pxr_plugin(${PXR_PACKAGE}
         points
         renderDelegate
         rixStrings
-        virtualStructResolvingSceneIndex
         volume
         xcpt
         ${optionalPublicClasses}
@@ -88,6 +87,7 @@ pxr_plugin(${PXR_PACKAGE}
         renderViewContext
         resourceRegistry
         velocityMotionBlurSceneIndexPlugin
+        virtualStructResolvingSceneIndex
 
     PUBLIC_HEADERS
         api.h

@@ -28,23 +28,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_WEAK_AND_REF_PTRS(HdPrmanVirtualStructResolvingSceneIndex);
+TF_DECLARE_WEAK_AND_REF_PTRS(HdPrman_VirtualStructResolvingSceneIndex);
 
-class HdPrmanVirtualStructResolvingSceneIndex :
+class HdPrman_VirtualStructResolvingSceneIndex :
     public HdMaterialFilteringSceneIndexBase
 {
 public:
 
-    static HdPrmanVirtualStructResolvingSceneIndexRefPtr New(
+    static HdPrman_VirtualStructResolvingSceneIndexRefPtr New(
         const HdSceneIndexBaseRefPtr &inputScene, bool applyConditionals=true) 
     {
         return TfCreateRefPtr(
-            new HdPrmanVirtualStructResolvingSceneIndex(
+            new HdPrman_VirtualStructResolvingSceneIndex(
                 inputScene, applyConditionals));
     }
 
 protected:
-    HdPrmanVirtualStructResolvingSceneIndex(
+    HdPrman_VirtualStructResolvingSceneIndex(
         const HdSceneIndexBaseRefPtr &inputSceneIndex, bool applyConditionals);
 
     FilteringFnc _GetFilteringFunction() const override;
