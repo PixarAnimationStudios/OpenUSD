@@ -2270,8 +2270,12 @@ distance(const SdfPathAncestorsRange::iterator& first,
 char const *
 Sdf_PathGetDebuggerPathText(SdfPath const &path)
 {
-    return Sdf_PathNode::GetDebugText(path._primPart.get(),
-                                      path._propPart.get());
+    if (path._primPart) {
+        return Sdf_PathNode::GetDebugText(path._primPart.get(),
+                                          path._propPart.get());
+    }
+
+    return "";
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
