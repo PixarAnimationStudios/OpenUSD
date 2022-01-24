@@ -432,7 +432,7 @@ Prints to terminal a unixtree-like summary of a USD layer or composition.
 usdzip
 ******************
 
-Utility for creating :doc:`USDZ packages <wp_usdz>` from USD compositions and
+Utility for creating :doc:`USDZ packages <spec_usdz>` from USD compositions and
 the assets (images and others in future) they reference.
 
 .. code-block:: none

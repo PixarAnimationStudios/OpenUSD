@@ -1,9 +1,9 @@
-################
-USD White Papers
-################
+#########
+Proposals
+#########
 
 .. toctree::
-   :caption: USD White Papers
+   :caption: Proposals
    :titlesonly:
 
    wp_usdlux_for_geometry_lights
@@ -14,7 +14,5 @@ USD White Papers
    wp_render_settings
    wp_rigid_body_physics
    wp_usdaudio
-   wp_usdpreviewsurface
    wp_usdshade
-   wp_usdz
 

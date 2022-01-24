@@ -120,7 +120,7 @@ shading network, and is an important property to preserve. We set the surface's
 *metallic* and *roughness* properties to get familiar with setting shader input
 properties. Any input whose value we do not set will be filled in by the
 renderer with the fallback value defined in the :doc:`shader specification
-<wp_usdpreviewsurface>` . After creating the shader, we connect the material's
+<spec_usdpreviewsurface>` . After creating the shader, we connect the material's
 *surface* output to the :cpp:`UsdPreviewSurface` 's *surface* output - this is
 what identifies the source of the Material's surface shading.
 

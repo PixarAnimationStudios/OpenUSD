@@ -18,7 +18,8 @@
 
    apiDocs
    Toolset <toolset>
-   White Papers <wp>
+   Specifications <spec>
+   Proposals <wp>
    FAQ <usdfaq>
    Performance Considerations <maxperf>
    Third Party Plugins <plugins>

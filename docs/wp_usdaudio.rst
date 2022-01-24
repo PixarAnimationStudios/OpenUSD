@@ -308,7 +308,7 @@ In general, the formats allowed for audio files is no more constrained by USD
 than is image-type. As with images, however, Usdz has stricter requirements
 based on DMA and format support in browsers and consumer devices. We propose the
 allowed audio filetypes for usdz be **M4A, MP3, !WAV** (in order of preference);
-the :ref:`wp_usdz:Usdz Specification` has been accordingly updated.
+the :ref:`spec_usdz:Usdz Specification` has been accordingly updated.
 
 Reference Implementation
 ************************

@@ -62,5 +62,6 @@ USD Home
    - :doc:`Terms and Concepts <glossary>`
    - `API Documentation <api/index.html>`_
    - `usd-interest Group <https://groups.google.com/g/usd-interest>`_
-   - :doc:`White Papers <wp>`
+   - :doc:`Specifications <spec>`
+   - :doc:`Proposals <wp>`
    - `USD Cookbook <https://github.com/ColinKennedy/USD-Cookbook>`_
