@@ -70,6 +70,11 @@ private:
 
     HdStRenderPassShaderSharedPtr _oitVolumeRenderPassShader;
     const bool _isOitEnabled;
+    
+    int _lastRenderSettingsVersion;
+    float _stepSize;
+    float _stepSizeLighting;
+    HdBufferArrayRangeSharedPtr _stepSizeBar;
 };
 
 

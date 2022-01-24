@@ -322,8 +322,7 @@ _ComputeMaterialNetworkShader(
 
     // Generate new shader from volume shader
     HdSt_VolumeShaderSharedPtr const result =
-        std::make_shared<HdSt_VolumeShader>(
-            sceneDelegate->GetRenderIndex().GetRenderDelegate());
+        std::make_shared<HdSt_VolumeShader>();
 
     // Buffer specs and source for the shader BAR
     HdBufferSpecVector bufferSpecs;
