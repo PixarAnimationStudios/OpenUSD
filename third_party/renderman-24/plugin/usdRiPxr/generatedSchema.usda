@@ -45,6 +45,10 @@ class "PxrIntegratorPluginBase" (
     it."""
 )
 {
+    token outputs:result (
+        doc = """Connect PxrRenderTerminalsAPI's outputs:ri:integrator
+        terminal to this output to add the integrator for processing."""
+    )
 }
 
 class "PxrRenderTerminalsAPI" (
