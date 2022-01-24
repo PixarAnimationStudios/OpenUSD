@@ -118,17 +118,8 @@ HgiGraphicsCmdsUniquePtr
 HgiMetal::CreateGraphicsCmds(
     HgiGraphicsCmdsDesc const& desc)
 {
-    // XXX We should TF_CODING_ERROR here when there are no attachments, but
-    // during the Hgi transition we allow it to render to global gl framebuffer.
-    if (!desc.HasAttachments()) {
-        // TF_CODING_ERROR("Graphics encoder desc has no attachments");
-        return nullptr;
-    }
-
-    HgiMetalGraphicsCmds* encoder(
-        new HgiMetalGraphicsCmds(this, desc));
-
-    return HgiGraphicsCmdsUniquePtr(encoder);
+    HgiMetalGraphicsCmds* gfxCmds(new HgiMetalGraphicsCmds(this, desc));
+    return HgiGraphicsCmdsUniquePtr(gfxCmds);
 }
 
 HgiComputeCmdsUniquePtr
