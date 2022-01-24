@@ -1,0 +1,58 @@
+#sdf 1.4.32
+
+def "_shared_HumanHair"
+{
+    def "Hair_Chiang_Head_Chiang_Hair" (
+        specializes = </_shared_HumanHair/Hair_Chiang>
+    )
+    {
+        over "Class"
+        {
+        }
+
+        over "Inner"
+        {
+        }
+    }
+
+    def "Hair_Chiang"
+    {
+        def "Class"
+        {
+        }
+
+        def "Inner" (
+            specializes = </_shared_HumanHair/Hair_Chiang/Class>
+        )
+        {
+        }
+    }
+}
+
+def "HumanMaleStdHair" (
+    specializes = </_shared_HumanHair>
+)
+{
+    over "Hair_Chiang_Head_Chiang_Hair"
+    {
+        over "Class"
+        {
+        }
+
+        over "Inner"
+        {
+        }
+    }
+
+    over "Hair_Chiang"
+    {
+        over "Class"
+        {
+        }
+
+        over "Inner"
+        {
+        }
+    }
+}
+

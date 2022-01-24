@@ -460,98 +460,6 @@ _HasClassBasedChild(const PcpNodeRef & parent)
     return false;
 }
 
-// Find the starting node of the class hierarchy of which node n is a part.
-// This is the prim that starts the class chain, aka the 'instance' of the
-// class hierarchy. Also returns the node for the first class in the
-// chain that the instance inherits opinions from.
-//
-// For example, consider an inherits chain like this: I --> C1 --> C2 --> C3.  
-// When given either C1, C2, or C3, this method will return (I, C1).
-// What will it do when given I?  Keep reading.
-//
-// One tricky aspect is that we need to distinguish nested class
-// hierarchies at different levels of namespace, aka ancestral classes.
-// Returning to the example above, consider if I -> ... -> C3 were all
-// nested as sibling children under a class, G, with instance M:
-//
-//          inherits
-// M ------------------------> G (depth=1)
-// |                           |                 
-// +- I  (depth=1)             +- I  (depth=1)
-// |  :                        |  :
-// |  : inherits               |  : inherits
-// |  v                        |  v
-// +- C1 (depth=2)             +- C1 (depth=2)
-// |  :                        |  :
-// |  : inherits               |  : inherits
-// |  v                        |  v
-// +- C2 (depth=2)             +- C2 (depth=2)
-// |  :                        |  :
-// |  : inherits               |  : inherits
-// |  v                        |  v
-// +- C3 (depth=2)             +- C3 (depth=2)
-//
-// Asking for the starting node of M/C1 .. M/C3 should all return (M/I, M/C1).
-// Asking for the starting node of G/C1 .. G/C3 should all return (G/I, G/C1).
-//
-// However, asking for the starting node of G/I should return (M/I, G/I),
-// because it is walking up the ancestral classes (M->G) instead.
-//
-// We distinguish ancestral class chains by considering, for the
-// nodes being examined, how far they are below the point in namespace
-// where they were introduced, using GetDepthBelowIntroduction().
-// This lets us distinguish the hierarchy connecting the children
-// G/C1, G/C2, and G/C3 (all at depth=2) from the ancestral hierarchy
-// connecting G/I to M/I, which was introduced at depth=1 and thus up
-// one level of ancestry.
-//
-// Note that this approach also handles a chain of classes that
-// happen to live at different levels of namespace but which are not
-// ancestrally connected to one another.  For example, consider if C2 
-// was tucked under a parent scope D:
-//
-//          inherits
-// M ------------------------> G
-// |                           |                 
-// +- I  (depth=1)             +- I  (depth=1)  
-// |  :                        |  :             
-// |  : inherits               |  : inherits    
-// |  v                        |  v             
-// +- C1 (depth=2)             +- C1 (depth=2)  
-// |    :                      |    :           
-// +- D  : inherits            +- D  : inherits
-// |  |  v                     |  |  v          
-// |  +- C2 (depth=3)          |  +- C2 (depth=3)
-// |    :                      |    :          
-// |   : inherits              |   : inherits 
-// |  v                        |  v          
-// +- C3 (depth=2)             +- C3 (depth=2)
-//
-// Here, G/C1, G/D/C2, and G/C3 are all still identified as part of
-// the same hierarchy.  C1 and C3 are at depth=2 and have 2 path
-// components; C2 is at depth=3 and has 3 path components.  Thus,
-// they all have the same GetDepthBelowIntroduction().
-//
-static 
-std::pair<PcpNodeRef, PcpNodeRef>
-_FindStartingNodeOfClassHierarchy(const PcpNodeRef& n)
-{
-    TF_VERIFY(PcpIsClassBasedArc(n.GetArcType()));
-
-    const int depth = n.GetDepthBelowIntroduction();
-    PcpNodeRef instanceNode = n;
-    PcpNodeRef classNode;
-
-    while (PcpIsClassBasedArc(instanceNode.GetArcType())
-           && instanceNode.GetDepthBelowIntroduction() == depth) {
-        TF_VERIFY(instanceNode.GetParentNode());
-        classNode = instanceNode;
-        instanceNode = instanceNode.GetParentNode();
-    }
-
-    return std::make_pair(instanceNode, classNode);
-}
-
 // Given class-based node n, returns the 'starting' node where implied class
 // processing should begin in order to correctly propagate n through the
 // graph.
@@ -563,7 +471,7 @@ _FindStartingNodeOfClassHierarchy(const PcpNodeRef& n)
 //  I ---> C1 ---> C2 ---> C3 ...
 //
 // Given any of { C1, C2, C3, ... }, the starting node would be I 
-// (See _FindStartingNodeOfClassHierarchy). This causes the entire class
+// (See Pcp_FindStartingNodeOfClassHierarchy). This causes the entire class
 // hierarchy to be propagated as a unit. If we were to propagate each class
 // individually, it would be as if I inherited directly from C1, C2, and C3,
 // which is incorrect.
@@ -635,7 +543,7 @@ _FindStartingNodeForImpliedClasses(const PcpNodeRef& n)
 
     while (PcpIsClassBasedArc(startNode.GetArcType())) {
         const std::pair<PcpNodeRef, PcpNodeRef> instanceAndClass = 
-            _FindStartingNodeOfClassHierarchy(startNode);
+            Pcp_FindStartingNodeOfClassHierarchy(startNode);
 
         const PcpNodeRef& instanceNode = instanceAndClass.first;
         const PcpNodeRef& classNode = instanceAndClass.second;

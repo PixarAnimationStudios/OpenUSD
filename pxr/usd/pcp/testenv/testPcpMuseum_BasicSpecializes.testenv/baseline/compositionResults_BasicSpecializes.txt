@@ -127,3 +127,16 @@ Results for composing </NonExistentSpecializes/Child>
 Prim Stack:
     ref.sdf              /NonExistentSpecializes/Child
 
+------------------------------------------------------------------------
+Results for composing </MultipleRefsAndSpecializes>
+
+Prim Stack:
+    root.sdf             /MultipleRefsAndSpecializes
+    ref.sdf              /Ref_1
+    ref2.sdf             /Ref_2
+    root.sdf             /Specializes_2
+    ref.sdf              /Specializes_2
+    ref2.sdf             /Specializes_2
+    root.sdf             /Specializes_1
+    ref.sdf              /Specializes_1
+
