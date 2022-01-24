@@ -152,8 +152,6 @@ namespace {
 }
 
 HdSt_ResourceBinder::HdSt_ResourceBinder()
-    : _numReservedUniformBlockLocations(0)
-    , _numReservedTextureUnits(0)
 {
 }
 
@@ -934,8 +932,6 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             }
         }
     }
-    _numReservedUniformBlockLocations = locator.uboLocation;
-    _numReservedTextureUnits = locator.textureUnit;
 }
 
 void

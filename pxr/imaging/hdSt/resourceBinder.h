@@ -481,14 +481,6 @@ public:
         return binding;
     }
 
-    int GetNumReservedUniformBlockLocations() const {
-        return _numReservedUniformBlockLocations;
-    }
-
-    int GetNumReservedTextureUnits() const {
-        return _numReservedTextureUnits;
-    }
-
     /// Returns the bindless handle for \p textureHandle using \p samplerHandle
     HDST_API
     static uint64_t GetSamplerBindlessHandle(
@@ -533,8 +525,6 @@ private:
     };
     typedef std::map<NameAndLevel, HdBinding> _BindingMap;
     _BindingMap _bindingMap;
-    int _numReservedUniformBlockLocations;
-    int _numReservedTextureUnits;
 };
 
 
