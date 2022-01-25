@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/basisCurvesAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourceBasisCurves.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -59,6 +60,36 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingBasisCurvesAdapter::~UsdImagingBasisCurvesAdapter() 
 {
+}
+
+TfTokenVector
+UsdImagingBasisCurvesAdapter::GetImagingSubprims()
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingBasisCurvesAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->basisCurves;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingBasisCurvesAdapter::GetImagingSubprimData(
+        TfToken const& subprim,
+        UsdPrim const& prim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceBasisCurvesPrim::New(
+            prim.GetPath(),
+            prim,
+            stageGlobals);
+    }
+    return nullptr;
 }
 
 bool
