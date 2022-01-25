@@ -82,6 +82,12 @@ typedef std::vector<HdAovDescriptor> HdAovDescriptorList;
 ///
 /// Describes the allocation structure of a render buffer bprim.
 struct HdRenderBufferDescriptor {
+
+    HdRenderBufferDescriptor()
+        : dimensions(0), format(HdFormatInvalid), multiSampled(false) {}
+    HdRenderBufferDescriptor(GfVec3i const& _d, HdFormat _f, bool _ms)
+        : dimensions(_d), format(_f), multiSampled(_ms) {}
+
     /// The width, height, and depth of the allocated render buffer.
     GfVec3i dimensions;
 

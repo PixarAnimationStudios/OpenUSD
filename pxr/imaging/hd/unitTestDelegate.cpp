@@ -921,7 +921,8 @@ HdRenderBufferDescriptor
 HdUnitTestDelegate::GetRenderBufferDescriptor(SdfPath const& id)
 {
     if (_RenderBuffer *rb = TfMapLookupPtr(_renderBuffers, id)) {
-        return { rb->dims, rb->format, rb->multiSampled };
+        return HdRenderBufferDescriptor(
+                rb->dims, rb->format, rb->multiSampled);
     }
     return HdRenderBufferDescriptor();
 }
