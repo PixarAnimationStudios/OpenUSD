@@ -38,6 +38,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// XXX: These primvar names are known here so that they may be exempted from 
+// the filtering procedure that would normally exclude them.  This primvar
+// filtering procedure is slated for removal in favor of the one in hdSt, 
+// but in the mean time we must know these names here, despite them not yet
+// being part of any formal schema and thus subject to change or deletion.
 TF_DEFINE_PRIVATE_TOKENS(
     _rprimPrimvarNameTokens,
     (pointSizeScale)
@@ -427,6 +432,9 @@ UsdImagingBasisCurvesAdapter::_GetRprimPrimvarNames() const
     // HdStBasisCurves, which we're not allowed to call here. Points, normals
     // and widths are already handled explicitly in GprimAdapter, so there's no
     // need to except them from filtering by claiming them here.
+    //
+    // See comment on _rprimPrimvarNameTokens warning regarding using these 
+    // primvars.
     static TfTokenVector primvarNames{
         _rprimPrimvarNameTokens->pointSizeScale,
         _rprimPrimvarNameTokens->screenSpaceWidths,
