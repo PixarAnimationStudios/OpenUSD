@@ -136,6 +136,13 @@ HdStRenderPassShader::HdStRenderPassShader(TfToken const &glslfxFile)
 /*virtual*/
 HdStRenderPassShader::~HdStRenderPassShader() = default;
 
+/* virtual */
+HioGlslfx const *
+HdStRenderPassShader::_GetGlslfx() const
+{
+    return _glslfx.get();
+}
+
 /*virtual*/
 HdStRenderPassShader::ID
 HdStRenderPassShader::ComputeHash() const

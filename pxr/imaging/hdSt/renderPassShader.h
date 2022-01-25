@@ -114,6 +114,8 @@ private:
     // No copying
     HdStRenderPassShader(const HdStRenderPassShader &)                     = delete;
     HdStRenderPassShader &operator =(const HdStRenderPassShader &)         = delete;
+
+    HioGlslfx const * _GetGlslfx() const override;
 };
 
 

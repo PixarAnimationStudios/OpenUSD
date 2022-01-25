@@ -89,9 +89,13 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
     //
 }
 
-HdSt_GeometricShader::~HdSt_GeometricShader()
+HdSt_GeometricShader::~HdSt_GeometricShader() = default;
+
+/* virtual */
+HioGlslfx const *
+HdSt_GeometricShader::_GetGlslfx() const
 {
-    // nothing
+    return _glslfx.get();
 }
 
 /* virtual */

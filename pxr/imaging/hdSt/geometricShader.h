@@ -275,6 +275,8 @@ private:
     // No copying
     HdSt_GeometricShader(const HdSt_GeometricShader &) = delete;
     HdSt_GeometricShader &operator =(const HdSt_GeometricShader &) = delete;
+
+    HioGlslfx const * _GetGlslfx() const override;
 };
 
 
