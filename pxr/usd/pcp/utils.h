@@ -83,9 +83,9 @@ Pcp_GetArgumentsForFileFormatTarget(
 // nested as sibling children under a class, G, with instance M:
 //
 //          inherits
-// M ------------------------> G (depth=1)
+// M ------------------------> G
 // |                           |                 
-// +- I  (depth=1)             +- I  (depth=1)
+// +- I  (depth=0)             +- I  (depth=1)
 // |  :                        |  :
 // |  : inherits               |  : inherits
 // |  v                        |  v
@@ -99,6 +99,12 @@ Pcp_GetArgumentsForFileFormatTarget(
 // |  v                        |  v
 // +- C3 (depth=2)             +- C3 (depth=2)
 //
+// "depth" refers to the value of PcpNode::GetNamespaceDepth, which is the
+// number of path components in the parent of the node when that node was
+// introduced. Note that M/I's depth is 0 as it is the root node of the
+// prim index for M/I and G/I's depth is 1 because the node was actually 
+// introduced in the ancestral inherit arc between M and G.
+//
 // Asking for the starting node of M/C1 .. M/C3 should all return (M/I, M/C1).
 // Asking for the starting node of G/C1 .. G/C3 should all return (G/I, G/C1).
 //
@@ -107,10 +113,13 @@ Pcp_GetArgumentsForFileFormatTarget(
 //
 // We distinguish ancestral class chains by considering, for the
 // nodes being examined, how far they are below the point in namespace
-// where they were introduced, using GetDepthBelowIntroduction().
-// This lets us distinguish the hierarchy connecting the children
-// G/C1, G/C2, and G/C3 (all at depth=2) from the ancestral hierarchy
-// connecting G/I to M/I, which was introduced at depth=1 and thus up
+// where they were introduced, using PcpNode::GetDepthBelowIntroduction().
+// This function returns the difference between number of path components
+// in the parent node and the recorded namespace depth.
+//
+// This lets us distinguish the hierarchy connecting the children G/C1, G/C2,
+// and G/C3 (all with parent path components = 2 and depth=2) from the ancestral
+// hierarchy connecting G/I to M/I, which was introduced at depth=1 and thus up
 // one level of ancestry.
 //
 // Note that this approach also handles a chain of classes that
@@ -121,7 +130,7 @@ Pcp_GetArgumentsForFileFormatTarget(
 //          inherits
 // M ------------------------> G
 // |                           |                 
-// +- I  (depth=1)             +- I  (depth=1)  
+// +- I  (depth=0)             +- I  (depth=1)  
 // |  :                        |  :             
 // |  : inherits               |  : inherits    
 // |  v                        |  v             
@@ -129,17 +138,21 @@ Pcp_GetArgumentsForFileFormatTarget(
 // |    :                      |    :           
 // +- D  : inherits            +- D  : inherits
 // |  |  v                     |  |  v          
-// |  +- C2 (depth=3)          |  +- C2 (depth=3)
+// |  +- C2 (depth=2)          |  +- C2 (depth=2)
 // |    :                      |    :          
 // |   : inherits              |   : inherits 
 // |  v                        |  v          
-// +- C3 (depth=2)             +- C3 (depth=2)
+// +- C3 (depth=3)             +- C3 (depth=3)
 //
 // Here, G/C1, G/D/C2, and G/C3 are all still identified as part of
-// the same hierarchy.  C1 and C3 are at depth=2 and have 2 path
-// components; C2 is at depth=3 and has 3 path components.  Thus,
-// they all have the same GetDepthBelowIntroduction().
+// the same hierarchy because they have the same value of 0 for
+// GetDepthBelowIntroduction() -- G/C1 and G/D/C2 have 2 parent path
+// components and depth 2, and G/C3 has 3 parent path components and
+// depth 3.
 //
+// If this function used namespace depth to identify hierarchies
+// instead of depth below introduction, G/C3 would have been
+// incorrectly excluded.
 std::pair<PcpNodeRef, PcpNodeRef>
 Pcp_FindStartingNodeOfClassHierarchy(const PcpNodeRef& n);
 
