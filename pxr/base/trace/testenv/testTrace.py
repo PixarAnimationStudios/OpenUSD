@@ -213,7 +213,12 @@ class TestTrace(unittest.TestCase):
         elapsedSeconds = Trace.GetElapsedSeconds(b, e)
         expectedElapsedSeconds = e2 - b2
         gr.Report()
-        self.assertTrue(abs(elapsedSeconds - expectedElapsedSeconds) < 0.001)
+
+        elapsedDiff = abs(elapsedSeconds - expectedElapsedSeconds)
+        self.assertTrue(elapsedDiff < 0.005,
+                        "Elapsed: {} Expected: {} Diff: {}".format(
+                            elapsedSeconds, expectedElapsedSeconds, 
+                            elapsedDiff))
 
         print("")
 
