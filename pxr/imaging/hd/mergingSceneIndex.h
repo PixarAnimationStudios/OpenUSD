@@ -24,6 +24,7 @@
 #ifndef PXR_IMAGING_HD_MERGING_SCENE_H
 #define PXR_IMAGING_HD_MERGING_SCENE_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -50,22 +51,27 @@ public:
     /// at which prims should be considered. This is an optional optimization
     /// to avoid having to query multiple inputs when it's known in advance
     /// which might be relevant for a given prim.
+    HD_API
     void AddInputScene(
         const HdSceneIndexBaseRefPtr &inputScene,
         const SdfPath &activeInputSceneRoot);
 
+    HD_API
     void RemoveInputScene(const HdSceneIndexBaseRefPtr &sceneIndex);
 
     /// satisfying HdFilteringSceneIndex
+    HD_API
     std::vector<HdSceneIndexBaseRefPtr> GetInputScenes() const override;
 
     // satisfying HdSceneIndexBase
+    HD_API
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
+
+    HD_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
-
 protected:
-
+    HD_API
     HdMergingSceneIndex();
 
 private:
