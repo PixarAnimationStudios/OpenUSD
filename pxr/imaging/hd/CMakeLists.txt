@@ -269,6 +269,16 @@ pxr_build_test(testHdPerfLog
 #        testenv/testHdRenderIndex.cpp
 # )
 
+pxr_build_test(testHdDataSource
+   LIBRARIES
+       hd
+       sdf
+       tf
+
+   CPPFILES
+       testenv/testHdDataSource.cpp
+)
+
 pxr_build_test(testHdSceneIndex
    LIBRARIES
        hd
@@ -351,6 +361,10 @@ pxr_register_test(testHdPerfLog
 # pxr_register_test(testHdRenderIndex
 #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdRenderIndex"
 # )
+
+pxr_register_test(testHdDataSource
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDataSource"
+)
 
 pxr_register_test(testHdSceneIndex
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdSceneIndex"
