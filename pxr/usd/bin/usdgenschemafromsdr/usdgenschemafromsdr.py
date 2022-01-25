@@ -268,6 +268,8 @@ if __name__ == '__main__':
         # Extract sdrNodes from the config
         sdrRegistry = Sdr.Registry()
         for sourceType in sdrNodesDict.keys():
+            if sourceType == SchemaConfigConstants.RENDER_CONTEXT:
+                continue
             if sourceType == SchemaConfigConstants.SOURCE_ASSET_NODES:
                 # process sdrNodes provided by explicit sourceAssetNodes
                 for assetPath in \
@@ -283,7 +285,12 @@ if __name__ == '__main__':
             for nodeId in sdrNodesDict.get(sourceType):
                 node = sdrRegistry.GetShaderNodeByNameAndType(nodeId,
                         sourceType)
-                if node:
+                if node is not None:
+                    # This is a workaround to iterate through invalid sdrNodes 
+                    # (nodes not having any input or output properties). 
+                    # Currently these nodes return false when queried for 
+                    # IsValid().
+                    # Refer: pxr/usd/ndr/node.h#140-149
                     sdrNodesToParse.append(node)
                 else:
                     Tf.Warn("Invalid Node (%s:%s) provided." %(sourceType,

@@ -123,7 +123,27 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning,
     if prop.GetLabel():
         attrSpec.displayName = prop.GetLabel()
     if options and attrType == Sdf.ValueTypeNames.Token:
-        attrSpec.allowedTokens = [ x[0] for x in options ]
+        # If the value for token list is empty then use the name
+        # If options list has a mix of empty and non-empty value thats an error.
+        tokenList = []
+        hasEmptyValue = len(options[0][1]) == 0
+        for option in options:
+            if len(option[1]) == 0:
+                if not hasEmptyValue:
+                    Tf.Warn("Property (%s) for schema (%s) has mix of empty " \
+                    "non-empty values for token options (%s)." \
+                    %(propName, primSpec.name, options))
+                hasEmptyValue = True
+                tokenList.append(option[0])
+            else:
+                if hasEmptyValue:
+                    Tf.Warn("Property (%s) for schema (%s) has mix of empty " \
+                    "non-empty values for token options (%s)." \
+                    %(propName, primSpec.name, options))
+                hasEmptyValue = False
+                tokenList.append(option[1])
+        attrSpec.allowedTokens = tokenList
+
     attrSpec.default = prop.GetDefaultValueAsSdfType()
 
     # The core UsdLux inputs should remain connectable (interfaceOnly)
@@ -222,7 +242,11 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
     if not schemaLayer:
         Tf.Warn("No Schema Layer provided")
         return
-    if not sdrNode:
+    if sdrNode is None:
+        # This is a workaround to iterate through invalid sdrNodes (nodes not 
+        # having any input or output properties). Currently these nodes return
+        # false when queried for IsValid().
+        # Refer: pxr/usd/ndr/node.h#140-149
         Tf.Warn("No valid sdrNode provided")
         return
 
