@@ -41,7 +41,7 @@ void DiscardBasedOnShading(bool frontFacing, bool isFlipped)
 
 void DiscardBasedOnShading(bool frontFacing, bool isFlipped)
 {
-    if (frontFacing ^^ isFlipped) {
+    if (frontFacing != isFlipped) {
         discard;
     }
 }
@@ -51,7 +51,7 @@ void DiscardBasedOnShading(bool frontFacing, bool isFlipped)
 
 void DiscardBasedOnShading(bool frontFacing, bool isFlipped)
 {
-    if (!frontFacing ^^ isFlipped) {
+    if ((!frontFacing) != isFlipped) {
         discard;
     }
 }
