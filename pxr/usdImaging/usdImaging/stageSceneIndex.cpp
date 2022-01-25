@@ -179,7 +179,7 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
     }
 
     // If this is a subprim path, treat it as a leaf.
-    if (!path.IsPrimPath()) {
+    if (!path.IsAbsoluteRootOrPrimPath()) {
         return {};
     }
 
