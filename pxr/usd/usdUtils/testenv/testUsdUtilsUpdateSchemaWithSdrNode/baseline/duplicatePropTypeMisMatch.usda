@@ -8,7 +8,8 @@ class "TestDuplicatePropsAPI" (
     inherits = </APISchemaBase>
 )
 {
-    uniform string inputs:colorMapGamma (
+    uniform token inputs:colorMapGamma (
+        allowedTokens = ["texture"]
         connectability = "interfaceOnly"
         displayGroup = "Basic"
         displayName = "Map Gamma"
