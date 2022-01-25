@@ -44,6 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdPrmanFramebuffer;
 class HdPrmanCamera;
 class HdPrmanRenderDelegate;
+class SdfAssetPath;
 
 // Compile-time limit on max time samples.
 // The idea is to avoid heap allocation of sample buffers in the Sync()
@@ -406,6 +407,14 @@ HdPrman_ResolveMaterial(HdSceneDelegate *sceneDelegate,
                         riley::MaterialId *materialId,
                         riley::DisplacementId *dispId);
 
+// Attempt to extract a useful texture identifier from the given \p asset.
+// If \p asset is determined to not be a .tex file, attempt to use the Hio
+// based Rtx plugin to load the texture.  If \p asset is non-empty, we will
+// always return _something_
+RtUString
+HdPrman_ResolveAssetToRtUString(SdfAssetPath const &asset,
+                                bool flipTexture = true,
+                                char const *debugNodeType=nullptr);
 
 /// Update the supplied list of options using searchpaths
 /// pulled from envrionment variables:

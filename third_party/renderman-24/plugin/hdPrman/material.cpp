@@ -30,16 +30,13 @@
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include "hdPrman/matfiltMaterialX.h"
 #endif
-#include "pxr/base/arch/library.h"
 #include "pxr/base/gf/vec3f.h"
-#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hio/imageRegistry.h"
 #include "pxr/imaging/hf/diagnostic.h"
 #include "RiTypesHelper.h"
 
@@ -60,6 +57,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (bxdf)
     (OSL)
     (omitFromRender)
+    (material)
+    (light)
 );
 
 TF_MAKE_STATIC_DATA(NdrTokenVec, _sourceTypes) {
@@ -476,37 +475,19 @@ _ConvertNodes(
                 ok = true;
             }
         } else if (param.second.IsHolding<SdfAssetPath>()) {
-            static HioImageRegistry& imageRegistry =
-                HioImageRegistry::GetInstance();
+            // This code processes nodes for both surface materials
+            // and lights.  RenderMan does not flip light textures
+            // as it does surface textures.
+            bool isLight = (sn.type == riley::ShadingNode::Type::k_Light &&
+                            param.first == HdLightTokens->textureFile);
 
-            SdfAssetPath p = param.second.Get<SdfAssetPath>();
-            std::string v = p.GetResolvedPath();
-            if (v.empty()) {
-                v = p.GetAssetPath();
-            }
+            RtUString v = HdPrman_ResolveAssetToRtUString(
+                param.second.UncheckedGet<SdfAssetPath>(),
+                !isLight, // only flip if NOT a light
+                isLight ? _tokens->light.GetText() : 
+                          _tokens->material.GetText());
 
-            // Use the RtxHioImage plugin for resolved paths that appear
-            // to be non-tex image files as only RenderMan itself can read
-            // tex files.  Note, we cannot read tex files from USDZ until
-            // RenderMan can read tex from an ArAsset.
-            else if (ArGetResolver().GetExtension(v) != "tex") {
-                // A light's texture:file is not flipped like surface
-                // textures are, per prman conventions.
-                if (sn.type == riley::ShadingNode::Type::k_Light &&
-                        param.first == HdLightTokens->textureFile) {
-                    v = "rtxplugin:RtxHioImage" ARCH_LIBRARY_SUFFIX
-                        "?filename=" + v + "&flipped=false";
-                }
-
-                // Check for images.
-                else if (!v.empty() && imageRegistry.IsSupportedImageFile(v)) {
-                    v = "rtxplugin:RtxHioImage" ARCH_LIBRARY_SUFFIX
-                        "?filename=" + v;
-                }
-            }
-            TF_DEBUG(HDPRMAN_IMAGE_ASSET_RESOLVE)
-                .Msg("Resolved material asset path: %s\n", v.c_str());
-            sn.params.SetString(name, RtUString(v.c_str()));
+            sn.params.SetString(name, v);
             ok = true;
         } else if (param.second.IsHolding<bool>()) {
             // RixParamList (specifically, RixDataType) doesn't have

@@ -33,6 +33,7 @@
 #include "hdPrman/framebuffer.h"
 
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/arch/library.h"
 #include "pxr/base/work/threadLimits.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec2f.h"
@@ -46,8 +47,11 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/pathUtils.h"  // Extract extension from tf token
+#include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdr/registry.h"
+#include "pxr/imaging/hio/imageRegistry.h"
 #include "pxr/imaging/hd/extComputationUtils.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/renderBuffer.h"
@@ -66,6 +70,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (PrimvarPass)
     (sourceName)
     (sourceType)
+    (primvar)
 );
 
 
@@ -602,6 +607,14 @@ _SetPrimVarValue(RtUString const& name,
     } else if (val.IsHolding<std::string>()) {
         std::string v = val.UncheckedGet<std::string>();
         params.SetString(name, RtUString(v.c_str()));
+    } else if (val.IsHolding<SdfAssetPath>()) {
+        // Since we can't know how the primvar will be consumed,
+        // go with the default of flipping textures
+        const bool flipTexture = true;
+        SdfAssetPath asset = val.UncheckedGet<SdfAssetPath>();
+        RtUString v = HdPrman_ResolveAssetToRtUString(asset, flipTexture,
+                                                   _tokens->primvar.GetText());
+        params.SetString(name, v);
     } else if (val.IsHolding<VtArray<std::string>>()) {
         // Convert to RtUString.
         const VtArray<std::string>& v =
@@ -624,6 +637,24 @@ _SetPrimVarValue(RtUString const& name,
         us.reserve(v.size());
         for (TfToken const& s: v) {
             us.push_back(RtUString(s.GetText()));
+        }
+        if (detail == RtDetailType::k_constant) {
+            params.SetStringArray(name, us.data(), us.size());
+        } else {
+            params.SetStringDetail(name, us.data(), detail);
+        }
+    } else if (val.IsHolding<VtArray<SdfAssetPath>>()) {
+        // Convert to RtUString.
+        // Since we can't know how the primvar will be consumed,
+        // go with the default of flipping textures
+        const bool flipTexture = true;
+        const VtArray<SdfAssetPath>& v =
+            val.UncheckedGet<VtArray<SdfAssetPath>>();
+        std::vector<RtUString> us;
+        us.reserve(v.size());
+        for (SdfAssetPath const& asset: v) {
+            us.push_back(HdPrman_ResolveAssetToRtUString(asset, flipTexture,
+                                                   _tokens->primvar.GetText()));
         }
         if (detail == RtDetailType::k_constant) {
             params.SetStringArray(name, us.data(), us.size());
@@ -1123,6 +1154,50 @@ HdPrman_ResolveMaterial(HdSceneDelegate *sceneDelegate,
     }
     return false;
 }
+
+RtUString
+HdPrman_ResolveAssetToRtUString(SdfAssetPath const &asset,
+                                bool flipTexture,
+                                char const *debugNodeType)
+{
+
+    static HioImageRegistry& imageRegistry =
+        HioImageRegistry::GetInstance();
+
+    std::string v = asset.GetResolvedPath();
+    if (v.empty()) {
+        v = asset.GetAssetPath();
+    }
+
+    // Use the RtxHioImage plugin for resolved paths that appear
+    // to be non-tex image files as only RenderMan itself can read
+    // tex files.  Note, we cannot read tex files from USDZ until
+    // RenderMan can read tex from an ArAsset.
+    // FUTURE NOTE: When we want to support primvar substitutions with
+    // the use of non-tex textures, the following clause can no longer
+    // be an "else if" (because such paths won't ArResolve), and we may 
+    // not be able to even do an extension check...
+    else if (ArGetResolver().GetExtension(v) != "tex") {
+        if (!flipTexture) {
+            v = "rtxplugin:RtxHioImage" ARCH_LIBRARY_SUFFIX
+                "?filename=" + v + "&flipped=false";
+        }
+
+        // Check for images.
+        else if (!v.empty() && imageRegistry.IsSupportedImageFile(v)) {
+            v = "rtxplugin:RtxHioImage" ARCH_LIBRARY_SUFFIX
+                "?filename=" + v;
+        }
+    }
+
+    TF_DEBUG(HDPRMAN_IMAGE_ASSET_RESOLVE)
+        .Msg("Resolved %s asset path: %s\n", 
+             debugNodeType ? debugNodeType : "image",
+             v.c_str());
+
+    return RtUString(v.c_str());
+}
+
 
 HdPrman_RenderParam::RileyCoordSysIdVecRefPtr
 HdPrman_RenderParam::ConvertAndRetainCoordSysBindings(
