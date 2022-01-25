@@ -5,6 +5,11 @@ Adapting UsdLux to Accommodate Geometry Lights
 .. include:: rolesAndUtils.rst
 .. include:: <isonum.txt>
 
+.. note::
+   This proposal has been implemented. This document exists for historical
+   reference and may be outdated. For up-to-date documentation, see the
+   `UsdLux overview page <api/usd_lux_page_front.html>`_.
+
 Copyright |copy| 2021, Pixar Animation Studios,  *version 1.2*
 
 .. contents:: :local:

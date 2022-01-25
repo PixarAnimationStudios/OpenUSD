@@ -3,8 +3,12 @@ Rigid Body Physics in USD Proposal
 ==================================
 
 .. include:: rolesAndUtils.rst
-
 .. include:: <isonum.txt>
+
+.. note::
+   This proposal has been implemented. This document exists for historical
+   reference and may be outdated. For up-to-date documentation, see the
+   `UsdPhysics overview page <api/usd_physics_page_front.html>`_.
 
 Copyright |copy| 2020, Apple, NVIDIA, Pixar Animation Studios,  *version 1.0*
 

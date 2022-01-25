@@ -5,6 +5,11 @@ UsdAudio Proposal
 .. include:: rolesAndUtils.rst
 .. include:: <isonum.txt>
 
+.. note::
+   This proposal has been implemented. This document exists for historical
+   reference and may be outdated. For up-to-date documentation, see the
+   `UsdMediaSpatialAudio page <api/class_usd_media_spatial_audio.html>`_.
+
 Copyright |copy| 2019, Pixar Animation Studios,  *version 1.1*
 
 .. contents:: :local:

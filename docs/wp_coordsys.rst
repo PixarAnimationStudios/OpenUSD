@@ -1,10 +1,14 @@
-.. include:: rolesAndUtils.rst
-
 ==================================
 Coordinate Systems in USD Proposal
 ==================================
 
+.. include:: rolesAndUtils.rst
 .. include:: <isonum.txt>
+
+.. note::
+   This proposal has been implemented. This document exists for historical
+   reference and may be outdated. For up-to-date documentation, see the
+   `UsdShadeCoordSysAPI page <api/class_usd_shade_coord_sys_a_p_i.html>`_.
 
 Copyright |copy| 2019, Pixar Animation Studios, *version 1.0*
 
@@ -352,13 +356,13 @@ from a :usda:`Camera` prim to a shader encapsulated inside a :usda:`Material`.
 
 In order to make the USD encoding of projection as natural and robust as
 possible for artists, we stipulate as part of the object model that, **when the
-target of a** :bi:`coordSys` **is a :usda:`Camera` prim, a Hydra scene delegate
-will extract the relevant projection-related properties from the camera, and
-make them available to Hydra render delegates as part of the Hd representation
-of the coordinate system.** If this seems reasonable in spirit, it will be a
-coda of this proposal to define precisely what :usda:`Camera` properties (and
-other, API-schema-based properties on a :usda:`Camera` prim, such as properties
-defining feathering between projections).
+target of a** :bi:`coordSys` **is a** :usda:`Camera` **prim**, a Hydra scene
+delegate will extract the relevant projection-related properties from the
+camera, and make them available to Hydra render delegates as part of the Hd
+representation of the coordinate system.** If this seems reasonable in spirit,
+it will be a coda of this proposal to define precisely what :usda:`Camera`
+properties (and other, API-schema-based properties on a :usda:`Camera` prim,
+such as properties defining feathering between projections).
 
 This behavior makes it the responsibility of the render delegate to map those
 parameters, just-in-time, to the relevant parameters of its renderer-specific

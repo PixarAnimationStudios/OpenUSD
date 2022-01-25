@@ -5,6 +5,11 @@ Asset Resolution (Ar) 2.0
 .. include:: rolesAndUtils.rst
 .. include:: <isonum.txt>
 
+.. note::
+   This proposal has been implemented. This document exists for historical
+   reference and may be outdated. For up-to-date documentation, see the
+   `Ar overview page <api/ar_page_front.html>`_.
+
 Copyright |copy| 2020, Pixar Animation Studios,  *version 1.0*
 
 .. contents:: :local:
