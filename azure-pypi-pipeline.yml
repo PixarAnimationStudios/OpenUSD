@@ -88,17 +88,17 @@ stages:
           PYTHON_TAG: cp39
     timeoutInMinutes: 90
     pool:
-      vmImage: 'VS2017-Win2016'
+      vmImage: 'windows-2019'
     steps:
     - task: UsePythonVersion@0
       inputs:
         versionSpec: $(PYTHON_VERSION_SPEC)
         addToPath: true
     - script: |
-        call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+        call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat
         set BOOST_ROOT=
         python --version
-        python build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-imaging --no-examples --no-tutorials --build %HOME%/USDgen/build --src %HOME%/USDgen/src %HOME%/USDinst -v
+        python build_scripts/build_usd.py --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo" --no-imaging --no-examples --no-tutorials --build %HOME%/USDgen/build --src %HOME%/USDgen/src %HOME%/USDinst -v
       displayName: 'Building USD'
     - script: |
         dir
@@ -143,7 +143,7 @@ stages:
           PYTHON_TAG: cp39
     timeoutInMinutes: 90
     pool:
-      vmImage: 'macOS-10.14'
+      vmImage: 'macOS-10.15'
     steps:
     - task: UsePythonVersion@0
       inputs:
@@ -152,7 +152,7 @@ stages:
     - script: |
         # The SYSTEM env var is used by the Makefile of glew and having it set trips it up
         unset SYSTEM
-        /bin/bash -c "sudo xcode-select -s /Applications/Xcode_10.1.app/Contents/Developer"
+        sudo xcode-select -s /Applications/Xcode_11.7.app/Contents/Developer
         $(PYTHON_INTERPRETER) build_scripts/build_usd.py --build-args USD,"-DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_INSTALL_LOCATION=../pluginfo" --no-imaging --no-examples --no-tutorials --generator Xcode --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst -v
       displayName: 'Building USD'
     - bash: |
@@ -238,35 +238,35 @@ stages:
           PYTHON_INTERPRETER: python3
         Windows_Python36:
           PYTHON_VERSION_SPEC: 3.6
-          IMAGE: 'VS2017-Win2016'
+          IMAGE: 'windows-2019'
           PYTHON_INTERPRETER: python
         Windows_Python37:
           PYTHON_VERSION_SPEC: 3.7
-          IMAGE: 'VS2017-Win2016'
+          IMAGE: 'windows-2019'
           PYTHON_INTERPRETER: python
         Windows_Python38:
           PYTHON_VERSION_SPEC: 3.8
-          IMAGE: 'VS2017-Win2016'
+          IMAGE: 'windows-2019'
           PYTHON_INTERPRETER: python
         Windows_Python39:
           PYTHON_VERSION_SPEC: 3.9
-          IMAGE: 'VS2017-Win2016'
+          IMAGE: 'windows-2019'
           PYTHON_INTERPRETER: python
         Mac_Python36:
           PYTHON_VERSION_SPEC: 3.6
-          IMAGE: 'macOS-10.14'
+          IMAGE: 'macOS-10.15'
           PYTHON_INTERPRETER: python3
         Mac_Python37:
           PYTHON_VERSION_SPEC: 3.7
-          IMAGE: 'macOS-10.14'
+          IMAGE: 'macOS-10.15'
           PYTHON_INTERPRETER: python3
         Mac_Python38:
           PYTHON_VERSION_SPEC: 3.8
-          IMAGE: 'macOS-10.14'
+          IMAGE: 'macOS-10.15'
           PYTHON_INTERPRETER: python3
         Mac_Python39:
           PYTHON_VERSION_SPEC: 3.9
-          IMAGE: 'macOS-10.14'
+          IMAGE: 'macOS-10.15'
           PYTHON_INTERPRETER: python3
     timeoutInMinutes: 10
     pool:

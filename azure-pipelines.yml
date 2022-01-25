@@ -25,14 +25,14 @@ jobs:
 - job: macOS
   timeoutInMinutes: 90
   pool:
-    vmImage: 'macOS-10.14'
+    vmImage: 'macOS-10.15'
   steps:
   - script: |
       # The SYSTEM env var is used by the Makefile of glew and having it set trips it up
       unset SYSTEM
       # Update PATH to ensure that pyside2-uic can be found
       export PATH=/Library/Frameworks/Python.framework/Versions/2.7/bin:$PATH
-      /bin/bash -c "sudo xcode-select -s /Applications/Xcode_10.1.app/Contents/Developer"
+      sudo xcode-select -s /Applications/Xcode_11.7.app/Contents/Developer
       sudo pip install pyside2 ;
       sudo pip install PyOpenGL ;
       python build_scripts/build_usd.py --generator Xcode --build $HOME/USDgen/build --src $HOME/USDgen/src $HOME/USDinst -v
@@ -45,10 +45,10 @@ jobs:
 - job: Windows
   timeoutInMinutes: 90
   pool:
-    vmImage: 'VS2017-Win2016'
+    vmImage: 'windows-2019'
   steps:
   - script: |
-      call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+      call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat
       call set PYTHONLOCATION=C:\hostedtoolcache\windows\Python\2.7.18\x64
       call set PYTHONBIN=%PYTHONLOCATION%\python.exe
       call set PATH=%PYTHONLOCATION%;%PYTHONLOCATION%\Scripts;%PATH%
@@ -57,7 +57,7 @@ jobs:
       call %PYTHONBIN% -m pip install --upgrade pip
       call %PYTHONBIN% -m pip install PySide
       call %PYTHONBIN% -m pip install PyOpenGL
-      call %PYTHONBIN% build_scripts/build_usd.py --build %HOME%/USDgen/build --src %HOME%/USDgen/src %HOME%/USDinst -v
+      call %PYTHONBIN% build_scripts/build_usd.py --build %HOME%/USDgen/build --src %HOME%/USDgen/src %HOME%/USDinst --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF" -v
     displayName: 'Building USD'
   - task: PublishPipelineArtifact@0
     inputs:
