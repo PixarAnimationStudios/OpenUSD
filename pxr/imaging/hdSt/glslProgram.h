@@ -56,6 +56,10 @@ public:
     HDST_API
     bool CompileShader(HgiShaderStage stage, std::string const & source);
 
+    /// Compile shader source for a shader stage from an HgiShaderFunctionDesc.
+    HDST_API
+    bool CompileShader(HgiShaderFunctionDesc const &desc);
+
     /// Link the compiled shaders together.
     HDST_API
     bool Link();
