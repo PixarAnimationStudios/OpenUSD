@@ -181,6 +181,8 @@ HgiGLCapabilities::_LoadCapabilities()
         builtinBarycentricsEnabled);
     _SetFlag(HgiDeviceCapabilitiesBitsShaderDrawParameters, 
         shaderDrawParametersEnabled);
+    _SetFlag(HgiDeviceCapabilitiesBitsShaderDoublePrecision, 
+        true);
 
     if (TfDebug::IsEnabled(HGI_DEBUG_DEVICE_CAPABILITIES)) {
         std::cout

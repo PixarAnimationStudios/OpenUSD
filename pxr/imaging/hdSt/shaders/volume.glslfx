@@ -98,12 +98,14 @@ transformPoint(mat4 m, vec3 point)
     return result.xyz / result.w;
 }
 
+#ifdef HD_SHADER_SUPPORTS_DOUBLE_PRECISION   
 vec3
 transformPoint(dmat4 m, vec3 point)
 {
     const vec4 result = vec4(m * vec4(point, 1.0));
     return result.xyz / result.w;
 }
+#endif
 
 // Transform a direction by a 4x4 matrix
 vec3
@@ -113,12 +115,14 @@ transformDir(mat4 m, vec3 dir)
     return result.xyz;
 }
 
+#ifdef HD_SHADER_SUPPORTS_DOUBLE_PRECISION   
 vec3
 transformDir(dmat4 m, vec3 dir)
 {
     const vec4 result = vec4(m * vec4(dir, 0.0));
     return result.xyz;
 }
+#endif
 
 // Compute time when a ray starting at pos with direction dir
 // exits the axis-aligned box with vertices lMin and lMax.

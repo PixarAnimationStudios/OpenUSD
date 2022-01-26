@@ -51,6 +51,8 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
 
     _SetFlag(HgiDeviceCapabilitiesBitsBuiltinBarycentrics, true);
 
+    _SetFlag(HgiDeviceCapabilitiesBitsShaderDoublePrecision, false);
+
 #if defined(ARCH_OS_MACOS)
     if (!unifiedMemory) {
         defaultStorageMode = MTLResourceStorageModeManaged;
