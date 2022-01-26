@@ -315,6 +315,12 @@ public:
     void SetColorMaskUseDefault(bool useDefault);
     bool GetColorMaskUseDefault() const { return _colorMaskUseDefault;}
 
+    HD_API
+    void SetConservativeRasterizationEnabled(bool enabled);
+    bool GetConservativeRasterizationEnabled() const {
+        return _conservativeRasterizationEnabled;
+    }
+
     enum ColorMask {
         ColorMaskNone,
         ColorMaskRGB,
@@ -398,6 +404,8 @@ protected:
     HdRenderPassAovBindingVector _aovBindings;
     HdRenderPassAovBindingVector _aovInputBindings;
     bool _useMultiSampleAov;
+
+    bool _conservativeRasterizationEnabled;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

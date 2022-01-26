@@ -189,6 +189,10 @@ public:
                 HgiGraphicsPipelineDesc * pipeDesc,
                 HdSt_GeometricShaderSharedPtr const & geometricShader) const;
 
+    /// Generates the hash for the settings used to init the graphics pipeline.
+    HDST_API
+    uint64_t GetGraphicsPipelineHash() const;
+
 private:
     bool _UseAlphaMask() const;
 

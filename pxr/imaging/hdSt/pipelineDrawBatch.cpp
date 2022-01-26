@@ -1088,10 +1088,14 @@ _GetDrawPipeline(
     HdStResourceRegistrySharedPtr const & resourceRegistry,
     _BindingState const & state)
 {
-    // Drawing pipeline is compatible as long as the shader is the same.
+    // Drawing pipeline is compatible as long as the shader and
+    // pipeline state are the same.
     HgiShaderProgramHandle const & programHandle =
                                         state.glslProgram->GetProgram();
-    uint64_t const hash = reinterpret_cast<uint64_t>(programHandle.Get());
+
+    uint64_t const hash = TfHash::Combine(
+        programHandle.Get(),
+        renderPassState->GetGraphicsPipelineHash());
 
     HdInstance<HgiGraphicsPipelineSharedPtr> pipelineInstance =
         resourceRegistry->RegisterGraphicsPipeline(hash);

@@ -83,6 +83,7 @@ HdRenderPassState::HdRenderPassState()
     , _alphaToCoverageEnabled(false)
     , _colorMaskUseDefault(true)
     , _useMultiSampleAov(true)
+    , _conservativeRasterizationEnabled(false)
 {
 }
 
@@ -438,6 +439,12 @@ void
 HdRenderPassState::SetColorMaskUseDefault(bool useDefault)
 {
     _colorMaskUseDefault = useDefault;
+}
+
+void
+HdRenderPassState::SetConservativeRasterizationEnabled(bool enabled)
+{
+    _conservativeRasterizationEnabled = enabled;
 }
 
 void

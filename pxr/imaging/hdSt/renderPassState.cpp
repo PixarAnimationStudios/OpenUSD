@@ -1015,5 +1015,43 @@ HdStRenderPassState::InitGraphicsPipelineDesc(
     _InitRasterizationState(&pipeDesc->rasterizationState, geometricShader);
 }
 
+uint64_t
+HdStRenderPassState::GetGraphicsPipelineHash() const
+{
+    // Hash all of the state that is captured in the pipeline state object.
+    return TfHash::Combine(
+        _depthBiasUseDefault,
+        _depthBiasEnabled,
+        _depthBiasConstantFactor,
+        _depthBiasSlopeFactor,
+        _depthFunc,
+        _depthMaskEnabled,
+        _depthTestEnabled,
+        _depthClampEnabled,
+        _depthRange,
+        _cullStyle,
+        _stencilFunc,
+        _stencilRef,
+        _stencilMask,
+        _stencilFailOp,
+        _stencilZFailOp,
+        _stencilZPassOp,
+        _stencilEnabled,
+        _lineWidth,
+        _blendColorOp,
+        _blendColorSrcFactor,
+        _blendColorDstFactor,
+        _blendAlphaOp,
+        _blendAlphaSrcFactor,
+        _blendAlphaDstFactor,
+        _blendAlphaDstFactor,
+        _blendConstantColor,
+        _blendEnabled,
+        _alphaToCoverageEnabled,
+        _colorMaskUseDefault,
+        _useMultiSampleAov,
+        _conservativeRasterizationEnabled);
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
