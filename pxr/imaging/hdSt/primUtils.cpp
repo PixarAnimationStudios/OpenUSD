@@ -1063,9 +1063,7 @@ _GetBitmaskEncodedVisibilityBuffer(VtIntArray invisibleIndices,
     for (VtIntArray::const_iterator i = invisibleIndices.begin(),
                                   end = invisibleIndices.end(); i != end; ++i) {
         if (*i >= numTotalIndices || *i < 0) {
-            HF_VALIDATION_WARN(rprimId,
-                "Topological invisibility data (%d) is not in the range [0, %d)"
-                ".", *i, numTotalIndices);
+            // This invisible index is out of range.  Ignore it silently.
             continue;
         }
         const size_t arrayIndex = *i/numBitsPerUInt;
