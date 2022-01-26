@@ -284,29 +284,46 @@ private:
     class _DiscoveryContext;
     friend class _DiscoveryContext;
 
-    typedef std::unordered_map<TfToken, NdrParserPlugin*,
-        TfToken::HashFunctor> TypeToParserPluginMap;
-    typedef std::pair<NdrIdentifier, TfToken> NodeMapKey;
-    struct NodeMapKeyHashFunctor {
-        size_t operator()(const NodeMapKey& x) const {
-            return NdrIdentifierHashFunctor()(x.first) ^
-                   TfToken::HashFunctor()(x.second);
-        }
-    };
-    typedef std::unordered_multimap<NodeMapKey, NdrNodeUniquePtr,
-                                    NodeMapKeyHashFunctor> NodeMap;
+    using _TypeToParserPluginMap = 
+        std::unordered_map<TfToken, NdrParserPlugin*, TfToken::HashFunctor>;
 
-    // The discovery result vec is not a concurrent data structure, thus it
-    // needs some locking infrastructure.
+    // Node cache data structure, stored NdrNodes keyed by identifier and source
+    // type.
+    using _NodeMapKey = std::pair<NdrIdentifier, TfToken>;
+    using _NodeMap = std::unordered_map<_NodeMapKey, NdrNodeUniquePtr, TfHash>;
+
+    // Discovery results data structure, NdrNodeDiscoveryResults multimap keyed
+    // by identifier
+    using _DiscoveryResultsByIdentifier = std::unordered_multimap<
+        TfToken, NdrNodeDiscoveryResult, TfHash>;
+    using _DiscoveryResultsByIdentifierRange = 
+        std::pair<_DiscoveryResultsByIdentifier::const_iterator,
+                  _DiscoveryResultsByIdentifier::const_iterator>;
+
+    // Discovery results data structure: a multimap of raw pointers to 
+    // NdrNodeDiscoveryResults (i.e. pointers to the discovery results stored 
+    // in a _DiscoveryResultsByIdentifier) keyed by name.
+    using _DiscoveryResultPtrsByName = std::unordered_multimap<
+        std::string, const NdrNodeDiscoveryResult *, TfHash>;
+    using _DiscoveryResultPtrsByNameRange = 
+        std::pair<_DiscoveryResultPtrsByName::const_iterator,
+                  _DiscoveryResultPtrsByName::const_iterator>;
+
+    // The discovery result data structures are not concurrent and must be kept
+    // in sync, thus they need some locking infrastructure.
     mutable std::mutex _discoveryResultMutex;
 
     // The node map is not a concurrent data structure, thus it needs some
     // locking infrastructure.
     mutable std::mutex _nodeMapMutex;
 
-    // Runs each discovery plugin provided and appends the results to the
-    // internal discovery results vector
+    // Runs each discovery plugin provided and adds the results to the
+    // internal discovery result maps
     void _RunDiscoveryPlugins(const DiscoveryPluginRefPtrVec& discoveryPlugins);
+
+    // Takes the discovery and puts in the maps that hold the discovery results,
+    // keeping them in sync.
+    void _AddDiscoveryResultNoLock(NdrNodeDiscoveryResult&& dr);
 
     // Finds and instantiates the discovery plugins
     void _FindAndInstantiateDiscoveryPlugins();
@@ -318,37 +335,40 @@ private:
     // the registry.
     void _InstantiateParserPlugins(const std::set<TfType>& parserPluginTypes);
 
-    // Returns the cached or newly parsed node for the discovery result if its
-    // identifier matches the given identifier.
-    NdrNodeConstPtr _ParseNodeMatchingIdentifier(
-        const NdrNodeDiscoveryResult& dr, const NdrIdentifier& identifier);
-
-    // Returns the cached or newly parsed node for the discovery result if its
-    // name and version match the given name and version filter.
-    NdrNodeConstPtr _ParseNodeMatchingNameAndFilter(
-        const NdrNodeDiscoveryResult& dr, const std::string& name, 
-        NdrVersionFilter filter);
+    // Parses the node for the discovery result if adding it to the node map if
+    // able and adds the discovery result to the discovery result maps. Intended
+    // for the GetNodeFromAsset and GetNodeFromSourceCode APIs which can add
+    // nodes that don't already appear in the discovery results.
+    NdrNodeConstPtr _ParseNodeFromAssetOrSourceCode(
+        NdrParserPlugin &parser, NdrNodeDiscoveryResult &&dr);
 
     // Implementation helper for getting the first node of the given sourceType 
-    // that matches the given indentifier.
-    NdrNodeConstPtr _GetNodeByIdentifierAndTypeImpl(
-        const NdrIdentifier& identifier, const TfToken& sourceType);
+    // in the range of node discovery results for a paricular identifier.
+    NdrNodeConstPtr _GetNodeInIdentifierRangeWithSourceType(
+        _DiscoveryResultsByIdentifierRange range, const TfToken& sourceType);
 
     // Implementation helper for getting the first node of the given sourceType 
-    // that matches the given name and version filter.
-    NdrNodeConstPtr _GetNodeByNameAndTypeImpl(
-        const std::string& name, const TfToken& sourceType,
+    // and matching the given version filter in the range of node discovery 
+    // results for a paricular name.
+    NdrNodeConstPtr _GetNodeInNameRangeWithSourceType(
+        _DiscoveryResultPtrsByNameRange range, const TfToken& sourceType,
         NdrVersionFilter filter);
 
-    // Inserts a new node into the node cache. If a node with the
-    // same name and type already exists in the cache, the pointer to the
-    // existing node will be returned. If there was an error inserting the node,
+    // Thread-safe find of a node in the cache by key.
+    NdrNodeConstPtr _FindNodeInCache(const _NodeMapKey &key) const;
+
+    // Thread-safe insertion of a node into the cache with a given key. If a 
+    // node with the same key already exists in the cache, the pointer to the
+    // existing node will be returned, otherwise the pointer to pointer to the
+    // inserted node is returned.
+    NdrNodeConstPtr _InsertNodeInCache(
+        _NodeMapKey &&key, NdrNodeUniquePtr &&node);
+
+    // Finds an existing node in the node cache for the discovery result if one
+    // exists. Otherwise it parses the new node, inserts it into the cache, and
+    // returns it. If there was an error parsing or validating the node, 
     // `nullptr` will be returned.
-    NdrNodeConstPtr _InsertNodeIntoCache(const NdrNodeDiscoveryResult& dr);
-
-    // Get a vector of all of the node unique_ptrs in the node map as raw ptrs
-    NdrNodeConstPtrVec _GetNodeMapAsNodePtrVec(const TfToken& family,
-                                               NdrVersionFilter filter) const;
+    NdrNodeConstPtr _FindOrParseNodeInCache(const NdrNodeDiscoveryResult& dr);
 
     // Return the parser plugin for a discovery type. Returns null if no parser 
     // plugin has that discovery type.
@@ -361,23 +381,25 @@ private:
 
     // The parser plugins that have been discovered via the plugin system. Maps
     // a discovery result's "discovery type" to a specific parser.
-    TypeToParserPluginMap _parserPluginMap;
+    _TypeToParserPluginMap _parserPluginMap;
 
     // The parser plugins.  This has ownership of the plugin objects.
     std::vector<std::unique_ptr<NdrParserPlugin>> _parserPlugins;
 
-    // The preliminary discovery results prior to parsing. If accessing or
+    // The preliminary discovery results prior to parsing. These are stored 
+    // in a multimap by identifier and a multimap by name. If accessing or
     // mutating, _discoveryResultMutex should be used.
-    NdrNodeDiscoveryResultVec _discoveryResults;
+    _DiscoveryResultsByIdentifier _discoveryResultsByIdentifier;
+    _DiscoveryResultPtrsByName _discoveryResultPtrsByName;
 
-    // Additional mapping of discovery results by grouped source type to aid in 
-    // getting nodes by type priority. Stored as indices into the 
-    // _disoveryResults vector.
-    std::map<TfToken, std::vector<size_t>> _discoveryResultIndicesBySourceType;
+    // Set of all possible source types as determined by the existing discovery
+    // results. Populated along with the discovery result multimaps. If 
+    // accessing or mutating, _discoveryResultMutex should be used.
+    TfToken::Set _allSourceTypes;
 
-    // Maps a node's name to a node instance. If accessing or mutating,
-    // _nodeMapMutex should be used.
-    NodeMap _nodeMap;
+    // Maps a node's identifier and source type to a node instance. If accessing
+    // or mutating, _nodeMapMutex should be used.
+    _NodeMap _nodeMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

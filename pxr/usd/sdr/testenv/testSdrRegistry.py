@@ -92,7 +92,8 @@ class TestShaderNode(unittest.TestCase):
         # The _NdrTestDiscoveryPlugin should find discovery results that have
         # source types of RmanCpp and OSL
         cls.reg.SetExtraDiscoveryPlugins([cls.tdpType])
-        assert cls.reg.GetAllNodeSourceTypes() == [cls.oslType, cls.argsType]
+        assert sorted(cls.reg.GetAllNodeSourceTypes()) == \
+            [cls.oslType, cls.argsType]
 
         # The _NdrTestDiscoveryPlugin2 should find discovery results that have
         # source types of RmanCpp and glslfx
@@ -106,7 +107,7 @@ class TestShaderNode(unittest.TestCase):
 
         # Test that the registry does not see 'RmanCpp' twice as a source type,
         # and that it finds 'glslfx' as a source type
-        assert self.reg.GetAllNodeSourceTypes() == \
+        assert sorted(self.reg.GetAllNodeSourceTypes()) == \
             [self.oslType, self.argsType, self.glslfxType]
 
         # Calling SdrRegistry::GetShaderNodesByFamily() will actually parse the
