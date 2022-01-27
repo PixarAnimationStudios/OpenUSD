@@ -479,6 +479,12 @@ public:
     HD_API
     unsigned GetVisibilityChangeCount() const;
 
+    /// Returns the number of changes to instance index. This is intended to be used
+    /// to detect when instance indices changed for *any* Rprim. Use in with
+    /// GetInstancerIndexVersion() to detect all changes to instance indices.
+    HD_API
+    unsigned GetInstanceIndicesChangeCount() const;
+
     /// Returns the current version of varying state. This is used to refresh
     /// cached DirtyLists
     unsigned GetVaryingStateVersion() const {
@@ -636,6 +642,9 @@ private:
 
     // Used to detect that visibility changed somewhere in the render index.
     unsigned _visChangeCount;
+
+    // Used to detect that instance indices changed somewhere in the render index.
+    unsigned _instanceIndicesChangeCount;
 
     // Used to detect changes to the render tag opinion of rprims.
     unsigned _rprimRenderTagVersion;
