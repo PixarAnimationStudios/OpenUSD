@@ -35,6 +35,8 @@
 #include <boost/python/extract.hpp>
 #include <boost/python/list.hpp>
 #include <boost/python/tuple.hpp>
+#include <boost/python/str.hpp>
+#include <boost/python/import.hpp>
 
 #include <vector>
 
