@@ -54,6 +54,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (preamble)                  \
     (tessControlShader)         \
     (tessEvalShader)            \
+    (postTessControlShader)     \
+    (postTessVertexShader)      \
     (vertexShader)              \
     (vertexShaderInjection)     \
                                 \

@@ -91,6 +91,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (primvar)                                   \
     (primID)                                    \
     (primitiveParam)                            \
+    (tessFactors)                               \
     (quadInfo)                                  \
     (renderTags)                                \
     (rightHanded)                               \
@@ -188,6 +189,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (cullStyle)                                 \
     (drawRange)                                 \
     (environmentMap)                            \
+    (displacementShader)                        \
     (fragmentShader)                            \
     (geometryShader)                            \
     (indicatorColor)                            \
@@ -201,6 +203,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (materialTag)                               \
     (tessControlShader)                         \
     (tessEvalShader)                            \
+    (postTessControlShader)                     \
+    (postTessVertexShader)                      \
     (tessLevel)                                 \
     (viewport)                                  \
     (vertexShader)                              \
