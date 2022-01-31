@@ -268,6 +268,12 @@ HdStRenderBuffer::IsMultiSampled() const
     return bool(_textureMSAAObject);
 }
 
+uint32_t
+HdStRenderBuffer::GetMSAASampleCount() const
+{
+    return _msaaSampleCount;
+}
+
 static
 const GfVec3i &
 _GetDimensions(HdStDynamicUvTextureObjectSharedPtr const &textureObject)
