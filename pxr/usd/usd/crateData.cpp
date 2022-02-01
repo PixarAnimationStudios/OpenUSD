@@ -392,7 +392,7 @@ public:
                     // SdfPayload to be compatible with older crate versions.
                     val = _ToPayloadListOpValue(val);
                 }
-                return value->StoreValue(val);
+                return value->StoreValue(std::move(val));
             }
             return true;
         }
