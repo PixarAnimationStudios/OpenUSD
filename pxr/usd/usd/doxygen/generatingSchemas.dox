@@ -60,14 +60,13 @@ Schema classes can be classified into the following two types:
         Apply() method, for the schema object to evaluate to true when 
         converted to a bool using the explicit bool conversion operator.
         Examples of applied API schemas include UsdCollectionAPI, 
-        UsdGeomModelAPI and UsdGeomMotionAPI. All API schemas must inherit from 
-        UsdAPISchemaBase directly and cannot inherit from other schemas. Applied
-        API schemas are further classified into the following two categories:
+        UsdGeomModelAPI and UsdGeomMotionAPI. All applied API schemas must 
+        inherit from UsdAPISchemaBase directly and cannot inherit from other
+        schemas. However, applied API schemas can include other applied API
+        schemas as \ref Usd_BuiltinAPISchemas "built-ins". Applied API schemas
+        are further classified into the following two categories:
             - <b>Single-Apply API Schemas</b> - Applied API schemas that can 
-            only be applied as a single instance to a prim.  Even though API 
-            schemas cannot inherit from other API schemas, single-apply API 
-            schemas can include other API schemas as 
-            \ref Usd_BuiltinAPISchemas "built-ins". 
+            only be applied as a single instance to a prim. 
             Examples of single-apply API schemas include UsdGeomModelAPI and 
             UsdGeomMotionAPI. 
             - <b>Multiple-Apply API Schemas</b> - Applied API schemas that can 
@@ -137,19 +136,44 @@ schemas can be queried from the prim type's
 \ref UsdPrimDefinition::GetAppliedAPISchemas "prim definition" and the prim will
 also return true from UsdPrim::HasAPI for all of its built-in API schemas.
 
-Additionally, for some applied API schema types, we may want the application of 
+Furthermore, for some applied API schema types, we may want the application of 
 the API schema to additionally apply one or more other API schemas. We also 
 provide, through the same mechanisms as we have for IsA schemas, the ability to 
-specify built-in applied API schemas for single-apply API schema types. When a
-single-apply API schema with built-in API schemas is applied to a prim (or is 
-included as a built-in for another type), all of its built-in API schemas are 
-also applied. These built-ins nest, so an API schema can include another 
-built-in API schema which itself includes yet another built-in API schema and 
-all these be applied when the top level API schema is applied.
+specify built-in applied API schemas for both single-apply and multiple-apply 
+API schema types. When an API schema with built-in API schemas is applied to a
+prim (or is included as a built-in for another type), all of its built-in API
+schemas are also applied. These built-ins nest, so an API schema can include
+another built-in API schema which itself includes yet another built-in API
+schema and all these will be applied when the top level API schema is applied.
+
+The built-ins of both IsA and single-apply API schemas may only contain the
+names of single-apply API schemas and named instances of multiple-apply API
+schemas (such as "ExampleSingleApplyAPI" and "MultiApplyAPI:foo").
+
+For multiple-apply schemas, since they must always be applied to a prim using an
+instance name, their built-in schemas must be able to be applied to a prim
+using the same instance name (or a suffixed version of it) as the schema 
+they're built in to. Thus, the schema names listed as built-ins for
+multiple-apply API schemas must only refer to other multiple-apply API schemas
+and can be specified in two ways:
+
+1. By a non-instanced multiple-apply API schema name, e.g. "OtherMultiApplyAPI".
+   This indicates an "inheritance-like" built-in as applying an instance of
+   the multiple-apply API schema will always also apply an instance of 
+   built-in API schema with the same instance name.
+
+2. By a full instance name of a multiple-apply API schema, 
+   e.g. "OtherMultiApplyAPI:someName".
+   This indicates an "encapsulated instance" built-in since it provides an
+   instance name suffix to append to the applied instance name to use for the
+   built-in API schema's instance name. For example, if we had a multiple-apply
+   API that included the built-in "OtherMultiApplyAPI:someName" and were to 
+   apply it using the instance name "foo", then, OtherMultiApplyAPI would also 
+   be applied using the suffixed instance name "foo:someName"
 
 \subsection Usd_SchemaDefinedBuiltinAPIs Schema defined built-in APIs
 
-The first and most straightforward way an IsA or single-apply API schema author
+The first and most straightforward way an IsA or applied API schema author
 can specify which applied API schemas it wants built-in is by prepending them 
 to the \em apiSchemas field in their schema definition like so:
 
@@ -180,6 +204,29 @@ class "MyCustomAPI" (
     # will be used for the added property.
     bool exampleMulti:foo:boolAttr = true
 }
+
+# Example of a multiple-apply API schema with built-in applied API schemas
+class "MyCustomMultiApplyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "myCustomProp"
+    }
+
+    # These listed applied API schemas will be built-in to this schema type and
+    # will always be applied when this schema is applied.
+    # Applying MyCustomMultiApplyAPI with instance name like "bar" will apply 
+    # the following multiple-apply schema instances:
+    #   MyCustomMultiApplyAPI:bar
+    #   ExampleMultiApplyAPI:bar
+    #   OtherMultiApplyAPI:bar:foo
+    prepend apiSchemas = ["ExampleMultiApplyAPI", "OtherMultiApplyAPI:foo"]
+)  {
+    # Example attribute. It will have the full name 
+    # myCustomProp:<instanceName>:boolAttr when applied.
+    bool boolAttr = true
+}
+
 \endcode
 
 The listed API schemas will be built-in to the declared schema type. For IsA
@@ -319,9 +366,19 @@ depth first expansion of any API schema that itself has included built-in API
 schemas. This list order is strongest to weakest, so property name conflicts 
 will prefer a property definition from an API schema earlier in the list.
 
-Also note that any API schemas that are applied to a prim instance in scene 
-description will still have a stronger opinion on properties they define that 
-are also present as built-in properties from the prim's schema type definition.
+Any API schemas that are applied to a prim instance in scene description (which
+we'll refer to as "authored API schemas") are considered to be applied over the
+prim's type schema definition and will have a stronger opinion on any properties
+they define that are also present in the prim's type schema definition. But
+there's one exception: authored API schemas are **not allowed to change the 
+property type** of any property found in the prim's schema type definition (which
+includes its built-in API schemas). The property type consists of whether the 
+property is an attribute or a relationship and, if the property is an attribute,
+the type name (int, float, color3f, etc.) of the attribute. If the strongest 
+property opinion from the authored API schemas would end up changing the
+property type of an existing prim type schema property, all opinions on that
+property from the authored API schemas are ignored and the prim type schema's 
+property is used.
 
 \section Usd_SchemaCodeGeneration Schema Code Generation
 
