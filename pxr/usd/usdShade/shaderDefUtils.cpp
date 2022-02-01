@@ -404,6 +404,23 @@ _CreateSdrShaderProperty(
         }
     }
 
+    // If sdrUsdDefinitionType is not already set, we try to have it set in
+    // order to save the SdfValueTypeName set for this property. This makes sure
+    // ShaderProperty::GetAsSdfType and ShaderProperty::GetDefaultValueAsSdfType
+    // return appropriate result.
+    if (metadata.find(SdrPropertyMetadata->SdrUsdDefinitionType) == 
+            metadata.end()) {
+        // Note that currently we only have a usecase where bool properties are
+        // marked with sdrUsdDefinitionType, but this may be extended for other 
+        // types in future, example Asset or AssetArray. When this happens, it
+        // would be good to break this logic in its own little helper function.
+        const SdfValueTypeName &sdfTypeName = shaderProperty.GetTypeName();
+        if (sdfTypeName == SdfValueTypeNames->Bool) {
+            metadata[SdrPropertyMetadata->SdrUsdDefinitionType] =
+                sdfTypeName.GetType().GetTypeName();
+        }
+    }
+
     TfToken propertyType;
     size_t arraySize;
     std::tie(propertyType, arraySize) = _GetShaderPropertyTypeAndArraySize(
