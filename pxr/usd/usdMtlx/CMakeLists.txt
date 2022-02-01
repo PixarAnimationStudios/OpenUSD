@@ -5,7 +5,7 @@ if (MATERIALX_STDLIB_DIR)
     add_definitions(-DPXR_MATERIALX_STDLIB_DIR="${MATERIALX_STDLIB_DIR}")
 endif()
 
-pxr_plugin(usdMtlx
+pxr_library(usdMtlx
     LIBRARIES
         arch
         gf
@@ -37,7 +37,7 @@ pxr_plugin(usdMtlx
 
     PRIVATE_HEADERS
         api.h
-	debugCodes.h
+        debugCodes.h
 
     PYTHON_CPPFILES
         moduleDeps.cpp

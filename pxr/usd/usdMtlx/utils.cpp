@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/usd/plugin/usdMtlx/utils.h"
+#include "pxr/usd/usdMtlx/utils.h"
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"

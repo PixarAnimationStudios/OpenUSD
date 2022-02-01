@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2018 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -22,18 +22,23 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/usd/plugin/usdMtlx/debugCodes.h"
 
-#include "pxr/base/tf/debug.h"
-#include "pxr/base/tf/registryManager.h"
+#include "pxr/usd/usdMtlx/backdoor.h"
+#include "pxr/usd/usd/stage.h"
+#include "pxr/base/tf/makePyConstructor.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <boost/python/def.hpp>
 
-TF_REGISTRY_FUNCTION(TfDebug)
+using namespace boost::python;
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+void wrapUsdMtlxBackdoor()
 {
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USDMTLX_READER, 
-                                "UsdMtlx reader details");
+    def("_TestString", UsdMtlx_TestString,
+        (arg("buffer"), arg("nodeGraphs") = false),
+        return_value_policy<TfPyRefPtrFactory<>>());
+    def("_TestFile", UsdMtlx_TestFile,
+        (arg("pathname"), arg("nodeGraphs") = false),
+        return_value_policy<TfPyRefPtrFactory<>>());
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
