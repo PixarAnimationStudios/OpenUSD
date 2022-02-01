@@ -731,11 +731,17 @@ _SceneIndex::_PrimsDirtied(
         HdPrimvarsSchemaTokens->primvars,
         _tokens->velocities,
         HdPrimvarSchemaTokens->primvarValue);
+
+    static const HdDataSourceLocator accelerationsValueLocator(
+        HdPrimvarsSchemaTokens->primvars,
+        _tokens->accelerations,
+        HdPrimvarSchemaTokens->primvarValue);
     
     std::vector<size_t> indices;
 
     for (size_t i = 0; i < entries.size(); i++) {
-        if (entries[i].dirtyLocators.Intersects(velocitiesValueLocator)) {
+        if (entries[i].dirtyLocators.Intersects(velocitiesValueLocator) ||
+            entries[i].dirtyLocators.Intersects(accelerationsValueLocator)) {
             if (!entries[i].dirtyLocators.Intersects(pointsValueLocator)) {
                 indices.push_back(i);
             }
