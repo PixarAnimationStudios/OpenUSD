@@ -186,6 +186,9 @@ public:
     static HgiGLOpsFn Dispatch(int dimX, int dimY);
 
     HGIGL_API
+    static HgiGLOpsFn FillBuffer(HgiBufferHandle const& buffer, uint8_t value);
+
+    HGIGL_API
     static HgiGLOpsFn GenerateMipMaps(HgiTextureHandle const& texture);
 
     HGIGL_API

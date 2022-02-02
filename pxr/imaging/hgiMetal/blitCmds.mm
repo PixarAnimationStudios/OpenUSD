@@ -365,6 +365,20 @@ HgiMetalBlitCmds::CopyBufferToTexture(HgiBufferToTextureOp const& copyOp)
 }
 
 void
+HgiMetalBlitCmds::FillBuffer(HgiBufferHandle const& buffer, uint8_t value)
+{
+    HgiMetalBuffer* metalBuf = static_cast<HgiMetalBuffer*>(buffer.Get());
+    if (metalBuf) {
+        _CreateEncoder();
+        
+        size_t length = metalBuf->GetDescriptor().byteSize;
+        [_blitEncoder fillBuffer:metalBuf->GetBufferId()
+                           range:NSMakeRange(0, length)
+                           value:value];
+    }
+}
+
+void
 HgiMetalBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 {
     HgiMetalTexture* metalTex = static_cast<HgiMetalTexture*>(texture.Get());

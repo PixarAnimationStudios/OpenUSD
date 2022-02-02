@@ -855,6 +855,24 @@ HgiGLOps::BindFramebufferOp(
 }
 
 HgiGLOpsFn
+HgiGLOps::FillBuffer(HgiBufferHandle const& buffer, uint8_t value)
+{
+    return [buffer, value] {
+        TRACE_SCOPE("HgiGLOps::FillBuffer");
+
+        HgiGLBuffer* glBuffer = static_cast<HgiGLBuffer*>(buffer.Get());
+        if (glBuffer && glBuffer->GetBufferId()) {
+            glClearNamedBufferData(glBuffer->GetBufferId(),
+                                   GL_R8UI,
+                                   GL_RED_INTEGER,
+                                   GL_UNSIGNED_BYTE,
+                                   &value);
+            HGIGL_POST_PENDING_GL_ERRORS();
+        }
+    };
+}
+
+HgiGLOpsFn
 HgiGLOps::GenerateMipMaps(HgiTextureHandle const& texture)
 {
     return [texture] {
