@@ -1608,7 +1608,7 @@ _ComputeRenderViewDesc(
                     renderVar,
                     HdPrmanExperimentalRenderSpecTokens->type)));
         renderOutputDesc.sourceName = name;
-        renderOutputDesc.filterName = RixStr.k_filter;
+        renderOutputDesc.rule = RixStr.k_filter;
         renderOutputDesc.params = _ToRtParamList(
             VtDictionaryGet<VtDictionary>(
                 renderVar,
@@ -2136,7 +2136,7 @@ _ComputeRenderOutputAndAovDescs(
         RtUString aovName(aovBinding.aovName.GetText());
         RtUString sourceName;
         riley::RenderOutputType rt = riley::RenderOutputType::k_Float;
-        RtUString filterName = RixStr.k_filter;
+        RtUString rule = RixStr.k_filter;
 
         HdFormat aovFormat = aovBinding.renderBuffer->GetFormat();
 
@@ -2262,9 +2262,10 @@ _ComputeRenderOutputAndAovDescs(
         }
 
         // z and integer types require zmin filter
-        if(sourceName == RixStr.k_z || rt == riley::RenderOutputType::k_Integer)
+        if(sourceName == RixStr.k_id || sourceName == RixStr.k_id2 ||
+           sourceName == RixStr.k_z || rt == riley::RenderOutputType::k_Integer)
         {
-            filterName = RixStr.k_zmin;
+            rule = RixStr.k_zmin;
         }
 
         if(!sourceName.Empty())
@@ -2288,7 +2289,7 @@ _ComputeRenderOutputAndAovDescs(
             renderOutputDesc.name = aovName;
             renderOutputDesc.type = rt;
             renderOutputDesc.sourceName = sourceName;
-            renderOutputDesc.filterName = filterName;
+            renderOutputDesc.rule = rule;
             
             renderOutputDescs->push_back(
                 std::move(renderOutputDesc));
@@ -2302,7 +2303,7 @@ _ComputeRenderOutputAndAovDescs(
             renderOutputDesc.name = RixStr.k_a;
             renderOutputDesc.type = riley::RenderOutputType::k_Float;
             renderOutputDesc.sourceName = RixStr.k_a;
-            renderOutputDesc.filterName = RixStr.k_filter;
+            renderOutputDesc.rule = RixStr.k_filter;
 
             renderOutputDescs->push_back(
                 std::move(renderOutputDesc));
@@ -2313,6 +2314,7 @@ _ComputeRenderOutputAndAovDescs(
             aovDesc.name = aovBinding.aovName;
             aovDesc.format = aovFormat;
             aovDesc.clearValue = aovBinding.clearValue;
+            aovDesc.rule = HdPrmanFramebuffer::ToAccumulationRule(rule);
             
             aovDescs->push_back(std::move(aovDesc));
         }
