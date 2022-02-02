@@ -549,23 +549,17 @@ HdSt_TextureTestDriver::_CreateBufferResources()
 
     constexpr size_t elementsPerVertex = 6;
     constexpr size_t vertDataCount = elementsPerVertex * 3;
-    constexpr float vertDataGL[vertDataCount] = 
+    constexpr float vertData[vertDataCount] =
             { -1,  1, 0, 1,     0, 1,
               -1, -1, 0, 1,     0, 0,
                1, -1, 0, 1,     1, 0};
 
-    constexpr float vertDataOther[vertDataCount] =
-            { -1,  1, 0, 1,     0, -1,
-              -1, -1, 0, 1,     0, 1,
-               1, -1, 0, 1,     1, 1};
-
     HgiBufferDesc vboDesc;
     vboDesc.debugName = "HdSt_TextureTestDriver VertexBuffer";
     vboDesc.usage = HgiBufferUsageVertex;
-    vboDesc.initialData = _hgi->GetAPIName() != HgiTokens->OpenGL 
-        ? vertDataOther : vertDataGL;
-    vboDesc.byteSize = sizeof(vertDataGL);
-    vboDesc.vertexStride = elementsPerVertex * sizeof(vertDataGL[0]);
+    vboDesc.initialData = vertData;
+    vboDesc.byteSize = sizeof(vertData);
+    vboDesc.vertexStride = elementsPerVertex * sizeof(vertData[0]);
     _vertexBuffer = _hgi->CreateBuffer(vboDesc);
 
     static const int32_t indices[3] = { 0, 1, 2 };

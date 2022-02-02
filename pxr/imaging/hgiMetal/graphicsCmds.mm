@@ -204,11 +204,15 @@ HgiMetalGraphicsCmds::SetViewport(GfVec4i const& vp)
     double y = vp[1];
     double w = vp[2];
     double h = vp[3];
+    // Viewport is inverted in the y. Along with the front face winding order
+    // being inverted.
+    // This combination allows us to emulate the OpenGL coordinate space on
+    // Metal
     if (_encoder) {
-        [_encoder setViewport:(MTLViewport){x, y, w, h, 0.0, 1.0}];
+        [_encoder setViewport:(MTLViewport){x, h-y, w, -h, 0.0, 1.0}];
     }
     else {
-        _viewport = (MTLViewport){x, y, w, h, 0.0, 1.0};
+        _viewport = (MTLViewport){x, h-y, w, -h, 0.0, 1.0};
     }
     _viewportSet = true;
 }

@@ -261,8 +261,11 @@ struct {
     MTLWinding metalWinding;
 } static const _windingTable[] =
 {
-    {HgiWindingClockwise,           MTLWindingClockwise},
-    {HgiWindingCounterClockwise,    MTLWindingCounterClockwise},
+    // Winding order is inverted because our viewport is inverted.
+    // This combination allows us to emulate the OpenGL coordinate space on
+    // Metal
+    {HgiWindingClockwise,           MTLWindingCounterClockwise},
+    {HgiWindingCounterClockwise,    MTLWindingClockwise},
 };
 
 static_assert(TfArraySize(_windingTable) == HgiWindingCount,

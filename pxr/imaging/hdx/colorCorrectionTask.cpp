@@ -288,23 +288,17 @@ HdxColorCorrectionTask::_CreateBufferResources()
     }
 
     // A larger-than screen triangle made to fit the screen.
-    constexpr float vertDataGL[][6] =
+    constexpr float vertData[][6] =
             { { -1,  3, 0, 1,     0, 2 },
               { -1, -1, 0, 1,     0, 0 },
               {  3, -1, 0, 1,     2, 0 } };
 
-    constexpr float vertDataOther[][6] =
-            { { -1,  3, 0, 1,     0, -1 },
-              { -1, -1, 0, 1,     0,  1 },
-              {  3, -1, 0, 1,     2,  1 } };
-
     HgiBufferDesc vboDesc;
     vboDesc.debugName = "HdxColorCorrectionTask VertexBuffer";
     vboDesc.usage = HgiBufferUsageVertex;
-    vboDesc.initialData = _hgi->GetAPIName() != HgiTokens->OpenGL
-        ? vertDataOther : vertDataGL;
-    vboDesc.byteSize = sizeof(vertDataOther);
-    vboDesc.vertexStride = sizeof(vertDataOther[0]);
+    vboDesc.initialData = vertData;
+    vboDesc.byteSize = sizeof(vertData);
+    vboDesc.vertexStride = sizeof(vertData[0]);
     _vertexBuffer = _GetHgi()->CreateBuffer(vboDesc);
 
     static const int32_t indices[3] = {0,1,2};
@@ -411,7 +405,7 @@ HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
     // pixels that were set with a clearColor alpha of 0.0.
     desc.multiSampleState.alphaToCoverageEnable = false;
 
-    // Setup raserization state
+    // Setup rasterization state
     desc.rasterizationState.cullMode = HgiCullModeBack;
     desc.rasterizationState.polygonMode = HgiPolygonModeFill;
     desc.rasterizationState.winding = HgiWindingCounterClockwise;
