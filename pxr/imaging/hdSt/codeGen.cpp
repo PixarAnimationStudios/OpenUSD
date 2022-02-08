@@ -904,6 +904,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             _genTES << shader->GetSource(HdShaderTokens->tessEvalShader);
         if (hasGS)
             _genGS  << shader->GetSource(HdShaderTokens->geometryShader);
+            _genGS  << shader->GetSource(HdShaderTokens->displacementShader);
         if (hasFS)
             _genFS  << shader->GetSource(HdShaderTokens->fragmentShader);
     }

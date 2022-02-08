@@ -84,6 +84,9 @@ HdSt_MaterialNetworkShader::_SetSource(
     } else if (shaderStageKey == HdShaderTokens->geometryShader) {
         _geometrySource = source;
         _isValidComputedHash = false;
+    } else if (shaderStageKey == HdShaderTokens->displacementShader) {
+        _displacementSource = source;
+        _isValidComputedHash = false;
     }
 }
 
@@ -99,6 +102,8 @@ HdSt_MaterialNetworkShader::GetSource(TfToken const &shaderStageKey) const
         return _fragmentSource;
     } else if (shaderStageKey == HdShaderTokens->geometryShader) {
         return _geometrySource;
+    } else if (shaderStageKey == HdShaderTokens->displacementShader) {
+        return _displacementSource;
     }
 
     return std::string();
@@ -207,6 +212,8 @@ HdSt_MaterialNetworkShader::_ComputeHash() const
         ArchHash(_fragmentSource.c_str(), _fragmentSource.size()));
     boost::hash_combine(hash, 
         ArchHash(_geometrySource.c_str(), _geometrySource.size()));
+    boost::hash_combine(hash,
+        ArchHash(_displacementSource.c_str(), _displacementSource.size()));
 
     // Codegen is inspecting the shader bar spec to generate some
     // of the struct's, so we should probably use _paramSpec
@@ -247,6 +254,13 @@ void
 HdSt_MaterialNetworkShader::SetGeometrySource(const std::string &source)
 {
     _geometrySource = source;
+    _isValidComputedHash = false;
+}
+
+void
+HdSt_MaterialNetworkShader::SetDisplacementSource(const std::string &source)
+{
+    _displacementSource = source;
     _isValidComputedHash = false;
 }
 

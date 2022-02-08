@@ -34,7 +34,8 @@ HdStGLSLFXShader::HdStGLSLFXShader(HioGlslfxSharedPtr const& glslfx)
     , _glslfx(glslfx)
 {
     _SetSource(HdShaderTokens->fragmentShader, _glslfx->GetSurfaceSource());
-    _SetSource(HdShaderTokens->geometryShader, _glslfx->GetDisplacementSource());
+    _SetSource(HdShaderTokens->displacementShader,
+               _glslfx->GetDisplacementSource());
 }
 
 HdStGLSLFXShader::~HdStGLSLFXShader()
@@ -52,7 +53,8 @@ HdStGLSLFXShader::Reload()
         _glslfx = newGlslFx;
 
         _SetSource(HdShaderTokens->fragmentShader, _glslfx->GetSurfaceSource());
-        _SetSource(HdShaderTokens->geometryShader, _glslfx->GetDisplacementSource());
+        _SetSource(HdShaderTokens->displacementShader,
+                   _glslfx->GetDisplacementSource());
     }
 }
 

@@ -1211,6 +1211,7 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
 
     _fragmentSource.clear();
     _geometrySource.clear();
+    _displacementSource.clear();
     _materialMetadata.clear();
     _materialParams.clear();
     _textureDescriptors.clear();
@@ -1264,7 +1265,7 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
                 // under terminal: HdMaterialTerminalTokens->displacement.
                 // For Storm however we expect the displacement shader to be
                 // provided via the surface glslfx / terminal.
-                _geometrySource = _surfaceGfx->GetDisplacementSource();
+                _displacementSource = _surfaceGfx->GetDisplacementSource();
             }
         }
     }
@@ -1292,6 +1293,12 @@ std::string const&
 HdStMaterialNetwork::GetGeometryCode() const
 {
     return _geometrySource;
+}
+
+std::string const&
+HdStMaterialNetwork::GetDisplacementCode() const
+{
+    return _displacementSource;
 }
 
 VtDictionary const&

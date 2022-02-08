@@ -202,6 +202,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
     std::string fragmentSource;
     std::string geometrySource;
+    std::string displacementSource;
     std::string volumeSource;
     VtDictionary materialMetadata;
     TfToken materialTag = _materialTag;
@@ -218,6 +219,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
             fragmentSource = _networkProcessor.GetFragmentCode();
             volumeSource = _networkProcessor.GetVolumeCode();
             geometrySource = _networkProcessor.GetGeometryCode();
+            displacementSource = _networkProcessor.GetDisplacementCode();
             materialMetadata = _networkProcessor.GetMetadata();
             materialTag = _networkProcessor.GetMaterialTag();
             params = _networkProcessor.GetMaterialParams();
@@ -225,9 +227,12 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    // Use fallback shader when there is no source for fragment and geometry
-    // shader.
-    if (fragmentSource.empty() && geometrySource.empty()) {
+    // Use fallback shader when there is no source for
+    // fragment and geometry and displacement shader.
+    if (fragmentSource.empty() &&
+        geometrySource.empty() &&
+        displacementSource.empty()) {
+
         _InitFallbackShader();
         fragmentSource = _fallbackGlslfx->GetSurfaceSource();
         // Note that we don't want displacement on purpose for the 
@@ -261,14 +266,18 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         _materialNetworkShader->GetSource(HdShaderTokens->fragmentShader);
     std::string const& oldGeometrySource = 
         _materialNetworkShader->GetSource(HdShaderTokens->geometryShader);
+    std::string const& oldDisplacementSource =
+        _materialNetworkShader->GetSource(HdShaderTokens->displacementShader);
 
     markBatchesDirty |= (oldFragmentSource!=fragmentSource) || 
-                        (oldGeometrySource!=geometrySource);
+                        (oldGeometrySource!=geometrySource) ||
+                        (oldDisplacementSource!=displacementSource);
 
     _materialNetworkShader->SetFragmentSource(fragmentSource);
     _materialNetworkShader->SetGeometrySource(geometrySource);
+    _materialNetworkShader->SetDisplacementSource(displacementSource);
 
-    bool hasDisplacement = !(geometrySource.empty());
+    bool hasDisplacement = !(displacementSource.empty());
 
     if (_hasDisplacement != hasDisplacement) {
         _hasDisplacement = hasDisplacement;
