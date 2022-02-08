@@ -521,7 +521,7 @@ static VtValue Vt_CastPyObjToArray(VtValue const &v)
         ret.Swap(array);
     }
     else {
-        ret = Vt_ConvertFromPySequence<VtArray<T>>(obj);
+        ret = Vt_ConvertFromPySequenceOrIter<VtArray<T>>(obj);
     }
 
     return ret;

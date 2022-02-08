@@ -428,7 +428,7 @@ class TestUsdBugs(unittest.TestCase):
             layer.Save()
             del layer
             # Now truncate layer to corrupt it.
-            fobj = open(f.name, "rw+")
+            fobj = open(f.name, "r+")
             size = os.path.getsize(f.name)
             fobj.truncate(size / 2)
             fobj.close()
