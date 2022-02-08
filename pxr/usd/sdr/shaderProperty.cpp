@@ -33,15 +33,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(
-    SDR_DEFAULT_VALUE_AS_SDF_DEFAULT_VALUE, false,
-    "This is set to true, until all the internal codesites using "
-    "GetDefaultValue() are updated to use GetDefaultValueAsSdfType(). As "
-    "previous implementation for type conformance code would update "
-    "_defaultValue, for backward compatibility we need to set _defaultValue to "
-    "_sdfTypeDefaultValue. Following needs to be removed or set to false once "
-    "appropriate GetDefaultValue() codesite changes are made. ");
-
 TF_DEFINE_PUBLIC_TOKENS(SdrPropertyTypes, SDR_PROPERTY_TYPE_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(SdrPropertyMetadata, SDR_PROPERTY_METADATA_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(SdrPropertyRole,
@@ -818,13 +809,6 @@ SdrShaderProperty::_FinalizeProperty()
 
     _defaultValue = _ConformSdrDefaultValue(_defaultValue, _type, _arraySize, 
             _metadata, _name);
-    // XXX: Note that until all the codesites using GetDefaultValue() are
-    // updated, we need to set the _defaultValue to _sdfTypeDefaultValue.
-    // Following needs to be removed once appropriate GetDefaultValue() 
-    // codesite changes are made. (This is for backward compatibility)
-    if (TfGetEnvSetting(SDR_DEFAULT_VALUE_AS_SDF_DEFAULT_VALUE)) {
-        _defaultValue = _sdfTypeDefaultValue;
-    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
