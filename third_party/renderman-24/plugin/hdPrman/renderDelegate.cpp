@@ -194,6 +194,11 @@ HdPrmanRenderDelegate::_Initialize()
         VtValue(TfGetenv("RILEY_VARIANT"))
     });
 
+    _settingDescriptors.push_back({
+        std::string("Disable motion blur"),
+        HdPrmanRenderSettingsTokens->disableMotionBlur,
+        VtValue(false)});
+
     _PopulateDefaultSettings(_settingDescriptors);
 
     _renderParam->Begin(this);

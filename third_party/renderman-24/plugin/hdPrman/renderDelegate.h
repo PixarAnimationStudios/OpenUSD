@@ -39,7 +39,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((dataWindowNDC,                  "dataWindowNDC"))                \
     ((pixelAspectRatio,               "pixelAspectRatio"))             \
     ((resolution,                     "resolution"))                   \
+                                                                       \
+    /* \deprecated Use disableMotionBlur instead */                    \
     ((instantaneousShutter,           "instantaneousShutter"))         \
+    ((disableMotionBlur,              "disableMotionBlur"))            \
     ((shutterOpen,                    "shutter:open"))                 \
     ((shutterClose,                   "shutter:close"))                \
     ((experimentalRenderSpec,         "experimental:renderSpec"))

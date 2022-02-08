@@ -2525,7 +2525,7 @@ HdPrman_RenderParam::UpdateQuickIntegrator(
 }
 
 // Note that we only support motion blur with the correct shutter
-// interval if the the camera path and instantaneous shutter value
+// interval if the the camera path and disableMotionBlur value
 // have been set to the desired values before any syncing or rendering
 // has happened. We don't update the riley shutter interval in
 // response to setting these render settings. The only callee of
@@ -2551,12 +2551,22 @@ HdPrman_RenderParam::UpdateRileyShutterInterval(
         shutterInterval[1] = camera->GetShutterClose();
     }
 
+    // Deprecated.
     const bool instantaneousShutter =
         renderIndex->GetRenderDelegate()->GetRenderSetting<bool>(
             HdPrmanRenderSettingsTokens->instantaneousShutter, false);
     if (instantaneousShutter) {
         // Disable motion blur by making the interval a single point.
         shutterInterval[1] = shutterInterval[0];
+    }
+
+    const bool disableMotionBlur =
+        renderIndex->GetRenderDelegate()->GetRenderSetting<bool>(
+            HdPrmanRenderSettingsTokens->disableMotionBlur, false);
+    if (disableMotionBlur) {
+        // Disable motion blur by sampling at current frame only.
+        shutterInterval[0] = 0.0f;
+        shutterInterval[1] = 0.0f;
     }
     
     RtParamList &options = GetOptions();
