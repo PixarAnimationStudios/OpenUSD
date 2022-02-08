@@ -61,6 +61,7 @@ pxr_plugin(${PXR_PACKAGE}
         coordSys
         debugCodes
         gprim
+        gprimbase
         instancer
         light
         lightFilter

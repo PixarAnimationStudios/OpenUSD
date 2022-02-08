@@ -29,6 +29,7 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/gf/matrix4d.h"
 
+#include "hdPrman/gprimbase.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
@@ -43,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// A mix-in template that adds shared gprim behavior to support
 /// various HdRprim types.
 template <typename BASE>
-class HdPrman_Gprim : public BASE
+class HdPrman_Gprim : public BASE, public HdPrman_GprimBase
 {
 public:
     using BaseType = BASE;
@@ -130,9 +131,6 @@ protected:
     HdPrman_Gprim(const HdPrman_Gprim&)             = delete;
     HdPrman_Gprim &operator =(const HdPrman_Gprim&) = delete;
 
-protected:
-    std::vector<riley::GeometryPrototypeId> _prototypeIds;
-    std::vector<riley::GeometryInstanceId> _instanceIds;
 };
 
 template <typename BASE>
@@ -168,6 +166,11 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     // Sample transform
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
     sceneDelegate->SampleTransform(id, &xf);
+
+    // Update visibility so thet rprim->IsVisible() will work in render pass
+    if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
+        BASE::_UpdateVisibility(sceneDelegate, dirtyBits);
+    }
 
     // Resolve material binding.  Default to fallbackGprimMaterial.
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
