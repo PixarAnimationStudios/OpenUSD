@@ -203,6 +203,38 @@ public:
     UsdAttribute CreateVelocityScaleAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
+    // --------------------------------------------------------------------- //
+    // ACCELERATIONSSAMPLECOUNT 
+    // --------------------------------------------------------------------- //
+    /// If 'accelerations' are given in a USD document but an
+    /// application (such as a renderer) consuming 'points' or
+    /// 'positions' cannot apply 'accelerations' itself, an
+    /// intermediate layer has to compute samples for the point
+    /// positions for the application instead. The number of samples
+    /// is given by 'accelerationsSamplesCount'. They are equally
+    /// spaced within the sampling interval and computed from the
+    /// 'points' or 'positions', 'velocities' and 'accelerations'.
+    /// 
+    /// 'accelerationsSampleCount' is an **inherited** attribute, also
+    /// see ComputeAccelerationsSampleCount()
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `int motion:accelerationsSampleCount = 3` |
+    /// | C++ Type | int |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
+    USDGEOM_API
+    UsdAttribute GetAccelerationsSampleCountAttr() const;
+
+    /// See GetAccelerationsSampleCountAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateAccelerationsSampleCountAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 
@@ -227,6 +259,19 @@ public:
     USDGEOM_API
     float ComputeVelocityScale(UsdTimeCode time = UsdTimeCode::Default()) const;
 
+    /// Compute the inherited value of *accelerationsSampleCount* at \p time,
+    /// i.e. the authored value on the prim closest to this prim in namespace,
+    /// resolved upwards through its ancestors in namespace.
+    ///
+    /// \return the inherited value, or 3 if neither the prim nor any
+    /// of its ancestors possesses an authored value.
+    ///
+    /// \note this is a reference implementation that is not particularly 
+    /// efficient if evaluating over many prims, because it does not share
+    /// inherited results.
+    USDGEOM_API
+    int ComputeAccelerationsSampleCount(
+        UsdTimeCode time = UsdTimeCode::Default()) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

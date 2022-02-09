@@ -30,25 +30,40 @@ class TestUsdGeomConstraintTarget(unittest.TestCase):
         stage = Usd.Stage.CreateInMemory()
         self.assertTrue(stage)
 
-        # When velocityScale is authored on parent root, child that does
-        # not author (Child1) inherits from parent, but child that does
-        # author computes its own value (Child2)
+        # When velocityScale/accelerationsSampleCount is authored on
+        # parent root, child that does not author (Child1) inherits
+        # from parent, but child that does author computes its own
+        # value (Child2)
         root1 = UsdGeom.Xform.Define(stage, '/root1')
         UsdGeom.MotionAPI(root1).CreateVelocityScaleAttr(0.5)
+        UsdGeom.MotionAPI(root1).CreateAccelerationsSampleCountAttr(5)
         root1Child1 = UsdGeom.Mesh.Define(stage, '/root1/mesh1')
-        self.assertEqual(UsdGeom.MotionAPI(root1Child1).ComputeVelocityScale(),
-                         0.5)
+        self.assertEqual(
+            UsdGeom.MotionAPI(root1Child1).ComputeVelocityScale(),
+            0.5)
+        self.assertEqual(
+            UsdGeom.MotionAPI(root1Child1).ComputeAccelerationsSampleCount(),
+            5)
 
         root1Child2 = UsdGeom.Mesh.Define(stage, '/root1/mesh2')
         UsdGeom.MotionAPI(root1Child2).CreateVelocityScaleAttr(2.0)
-        self.assertEqual(UsdGeom.MotionAPI(root1Child2).ComputeVelocityScale(),
-                         2.0)
+        UsdGeom.MotionAPI(root1Child2).CreateAccelerationsSampleCountAttr(10)
+        self.assertEqual(
+            UsdGeom.MotionAPI(root1Child2).ComputeVelocityScale(),
+            2.0)
+        self.assertEqual(
+            UsdGeom.MotionAPI(root1Child2).ComputeAccelerationsSampleCount(),
+            10)
 
-        # When nothing is authord anywhere, fallback is 1.0
+        # When nothing is authord anywhere, fallback is 1.0 and 3
         root2 = UsdGeom.Xform.Define(stage, '/root2')
         root2Child = UsdGeom.Mesh.Define(stage, '/root2/mesh')
-        self.assertEqual(UsdGeom.MotionAPI(root2Child).ComputeVelocityScale(),
-                         1.0)
+        self.assertEqual(
+            UsdGeom.MotionAPI(root2Child).ComputeVelocityScale(),
+            1.0)
+        self.assertEqual(
+            UsdGeom.MotionAPI(root2Child).ComputeAccelerationsSampleCount(),
+            3)
 
 
 if __name__ == "__main__":

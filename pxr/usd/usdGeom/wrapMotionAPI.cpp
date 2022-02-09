@@ -56,6 +56,13 @@ _CreateVelocityScaleAttr(UsdGeomMotionAPI &self,
     return self.CreateVelocityScaleAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateAccelerationsSampleCountAttr(UsdGeomMotionAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateAccelerationsSampleCountAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
+}
 
 static std::string
 _Repr(const UsdGeomMotionAPI &self)
@@ -126,6 +133,13 @@ void wrapUsdGeomMotionAPI()
              &_CreateVelocityScaleAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
+        
+        .def("GetAccelerationsSampleCountAttr",
+             &This::GetAccelerationsSampleCountAttr)
+        .def("CreateAccelerationsSampleCountAttr",
+             &_CreateAccelerationsSampleCountAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -157,6 +171,9 @@ namespace {
 WRAP_CUSTOM {
     _class
         .def("ComputeVelocityScale", &UsdGeomMotionAPI::ComputeVelocityScale,
+                (arg("time")=UsdTimeCode::Default()))
+        .def("ComputeAccelerationsSampleCount",
+             &UsdGeomMotionAPI::ComputeAccelerationsSampleCount,
                 (arg("time")=UsdTimeCode::Default()))
      ;
 }

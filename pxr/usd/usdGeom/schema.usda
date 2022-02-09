@@ -2289,6 +2289,23 @@ class "MotionAPI"
         
         See also ComputeVelocityScale()"""
     )
+
+    int motion:accelerationsSampleCount = 3 (
+        customData = {
+            string apiName = "accelerationsSampleCount"
+        }
+        doc = """If 'accelerations' are given in a USD document but an
+        application (such as a renderer) consuming 'points' or
+        'positions' cannot apply 'accelerations' itself, an
+        intermediate layer has to compute samples for the point
+        positions for the application instead. The number of samples
+        is given by 'accelerationsSamplesCount'. They are equally
+        spaced within the sampling interval and computed from the
+        'points' or 'positions', 'velocities' and 'accelerations'.
+
+        'accelerationsSampleCount' is an **inherited** attribute, also
+        see ComputeAccelerationsSampleCount()"""
+    )
 }
 
 class "XformCommonAPI"

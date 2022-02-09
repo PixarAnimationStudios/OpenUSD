@@ -382,6 +382,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomCamera::GetStereoRoleAttr(), Default value for UsdGeomCamera::GetStereoRoleAttr()
     const TfToken mono;
+    /// \brief "motion:accelerationsSampleCount"
+    /// 
+    /// UsdGeomMotionAPI
+    const TfToken motionAccelerationsSampleCount;
     /// \brief "motion:velocityScale"
     /// 
     /// UsdGeomMotionAPI

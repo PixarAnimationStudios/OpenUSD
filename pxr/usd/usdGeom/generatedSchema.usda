@@ -3788,6 +3788,19 @@ class "MotionAPI" (
     be computed by velocity-consuming schemas."""
 )
 {
+    int motion:accelerationsSampleCount = 3 (
+        doc = """If 'accelerations' are given in a USD document but an
+        application (such as a renderer) consuming 'points' or
+        'positions' cannot apply 'accelerations' itself, an
+        intermediate layer has to compute samples for the point
+        positions for the application instead. The number of samples
+        is given by 'accelerationsSamplesCount'. They are equally
+        spaced within the sampling interval and computed from the
+        'points' or 'positions', 'velocities' and 'accelerations'.
+
+        'accelerationsSampleCount' is an **inherited** attribute, also
+        see ComputeAccelerationsSampleCount()"""
+    )
     float motion:velocityScale = 1 (
         doc = """VelocityScale is an **inherited** float attribute that
         velocity-based schemas (e.g. PointBased, PointInstancer) can consume

@@ -125,6 +125,23 @@ UsdGeomMotionAPI::CreateVelocityScaleAttr(VtValue const &defaultValue, bool writ
                        writeSparsely);
 }
 
+UsdAttribute
+UsdGeomMotionAPI::GetAccelerationsSampleCountAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->motionAccelerationsSampleCount);
+}
+
+UsdAttribute
+UsdGeomMotionAPI::CreateAccelerationsSampleCountAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->motionAccelerationsSampleCount,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -143,6 +160,7 @@ UsdGeomMotionAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdGeomTokens->motionVelocityScale,
+        UsdGeomTokens->motionAccelerationsSampleCount,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -185,6 +203,25 @@ float UsdGeomMotionAPI::ComputeVelocityScale(UsdTimeCode time) const
     }
 
     return velocityScale;
+}
+
+int UsdGeomMotionAPI::ComputeAccelerationsSampleCount(UsdTimeCode time) const
+{
+    UsdPrim prim = GetPrim();
+    UsdPrim pseudoRoot = prim.GetStage()->GetPseudoRoot();
+    int count = 3;
+
+    while (prim != pseudoRoot){
+        UsdAttribute attr = 
+            prim.GetAttribute(UsdGeomTokens->motionAccelerationsSampleCount);
+        if (attr.HasAuthoredValue() && 
+            attr.Get(&count, time)){
+            return count;
+        }
+        prim = prim.GetParent();
+    }
+
+    return count;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

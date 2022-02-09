@@ -144,6 +144,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "modelDrawMode", UsdGeomTokens->modelDrawMode);
     _AddToken(cls, "modelDrawModeColor", UsdGeomTokens->modelDrawModeColor);
     _AddToken(cls, "mono", UsdGeomTokens->mono);
+    _AddToken(cls, "motionAccelerationsSampleCount", UsdGeomTokens->motionAccelerationsSampleCount);
     _AddToken(cls, "motionVelocityScale", UsdGeomTokens->motionVelocityScale);
     _AddToken(cls, "none", UsdGeomTokens->none);
     _AddToken(cls, "nonOverlapping", UsdGeomTokens->nonOverlapping);
