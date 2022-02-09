@@ -51,6 +51,13 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
+_CreateMotionBlurScaleAttr(UsdGeomMotionAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateMotionBlurScaleAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateVelocityScaleAttr(UsdGeomMotionAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateVelocityScaleAttr(
@@ -127,6 +134,13 @@ void wrapUsdGeomMotionAPI()
         .def(!self)
 
         
+        .def("GetMotionBlurScaleAttr",
+             &This::GetMotionBlurScaleAttr)
+        .def("CreateMotionBlurScaleAttr",
+             &_CreateMotionBlurScaleAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
         .def("GetVelocityScaleAttr",
              &This::GetVelocityScaleAttr)
         .def("CreateVelocityScaleAttr",
@@ -175,6 +189,9 @@ WRAP_CUSTOM {
         .def("ComputeAccelerationsSampleCount",
              &UsdGeomMotionAPI::ComputeAccelerationsSampleCount,
                 (arg("time")=UsdTimeCode::Default()))
+        .def("ComputeMotionBlurScale", 
+             &UsdGeomMotionAPI::ComputeMotionBlurScale,
+             (arg("time")=UsdTimeCode::Default()))
      ;
 }
 

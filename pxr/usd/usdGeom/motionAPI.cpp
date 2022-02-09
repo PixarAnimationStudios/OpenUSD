@@ -109,6 +109,23 @@ UsdGeomMotionAPI::_GetTfType() const
 }
 
 UsdAttribute
+UsdGeomMotionAPI::GetMotionBlurScaleAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->motionBlurScale);
+}
+
+UsdAttribute
+UsdGeomMotionAPI::CreateMotionBlurScaleAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->motionBlurScale,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdGeomMotionAPI::GetVelocityScaleAttr() const
 {
     return GetPrim().GetAttribute(UsdGeomTokens->motionVelocityScale);
@@ -159,6 +176,7 @@ const TfTokenVector&
 UsdGeomMotionAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdGeomTokens->motionBlurScale,
         UsdGeomTokens->motionVelocityScale,
         UsdGeomTokens->motionAccelerationsSampleCount,
     };
@@ -186,42 +204,56 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-float UsdGeomMotionAPI::ComputeVelocityScale(UsdTimeCode time) const
+template <class T> 
+static T _ComputeInheritedMotionAttr(UsdPrim const &queriedPrim,
+                                     TfToken const &attrName,
+                                     T const &fallbackValue,
+                                     UsdTimeCode time)
 {
-    UsdPrim prim = GetPrim();
+    UsdPrim prim(queriedPrim);
     UsdPrim pseudoRoot = prim.GetStage()->GetPseudoRoot();
-    float  velocityScale = 1.0;
+    T val = fallbackValue;
 
     while (prim != pseudoRoot){
-        UsdAttribute vsAttr = 
-            prim.GetAttribute(UsdGeomTokens->motionVelocityScale);
-        if (vsAttr.HasAuthoredValue() && 
-            vsAttr.Get(&velocityScale, time)){
-            return velocityScale;
+        if (prim.HasAPI<UsdGeomMotionAPI>()){
+            UsdAttribute attr = 
+                prim.GetAttribute(attrName);
+            if (attr.HasAuthoredValue() && 
+                attr.Get(&val, time)){
+                return val;
+            }
         }
         prim = prim.GetParent();
     }
 
-    return velocityScale;
+    return val;
+}
+
+float UsdGeomMotionAPI::ComputeVelocityScale(UsdTimeCode time) const
+{
+    return _ComputeInheritedMotionAttr<float>(
+                  GetPrim(), 
+                  UsdGeomTokens->motionVelocityScale,
+                  1.0,
+                  time);
 }
 
 int UsdGeomMotionAPI::ComputeAccelerationsSampleCount(UsdTimeCode time) const
 {
-    UsdPrim prim = GetPrim();
-    UsdPrim pseudoRoot = prim.GetStage()->GetPseudoRoot();
-    int count = 3;
+    return _ComputeInheritedMotionAttr<int>(
+                  GetPrim(), 
+                  UsdGeomTokens->motionAccelerationsSampleCount,
+                  3,
+                  time);
+}
 
-    while (prim != pseudoRoot){
-        UsdAttribute attr = 
-            prim.GetAttribute(UsdGeomTokens->motionAccelerationsSampleCount);
-        if (attr.HasAuthoredValue() && 
-            attr.Get(&count, time)){
-            return count;
-        }
-        prim = prim.GetParent();
-    }
-
-    return count;
+float UsdGeomMotionAPI::ComputeMotionBlurScale(UsdTimeCode time) const
+{
+    return _ComputeInheritedMotionAttr<float>(
+                  GetPrim(), 
+                  UsdGeomTokens->motionBlurScale,
+                  1.0,
+                  time);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

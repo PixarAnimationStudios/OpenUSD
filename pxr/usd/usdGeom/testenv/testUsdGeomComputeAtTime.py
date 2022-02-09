@@ -324,20 +324,6 @@ class TestUsdGeomComputeAtTimeBase(object):
         self.assertAllMatrixListsEqual(xformsArrayUnalignedVelocitiesAndAccelerations, xformsArrayPositionsAndVelocitiesOnly)
         self.assertAllMatrixListsEqual(xformsArrayDiffNumberPositionsAndVelocitiesAndAccelerations, xformsArrayPositionsOnly)
 
-    def test_OneInstanceVelocityScale(self):
-        stage = Usd.Stage.Open("test.usda")
-        pi = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceVelocityScale"))
-
-        # Test when the velocityScale is set to 2.
-        baseTime = 0
-        tr = timeRange(baseTime)
-        xformsArray = self.computeInstanceTransforms(pi, tr, baseTime)
-        compares = [[Gf.Matrix4d(
-                Gf.Rotation(Gf.Vec3d(0, 0, 1), time * 72),
-                Gf.Vec3d(time * 10, time * 20, time * 40))]
-            for time, delta in tr]
-        self.assertAllMatrixListsEqual(xformsArray, compares)
-
     def test_OneInstanceProtoXform(self):
         stage = Usd.Stage.Open("test.usda")
         pi = UsdGeom.PointInstancer(stage.GetPrimAtPath("/OneInstanceProtoXform"))
@@ -587,18 +573,6 @@ class TestUsdGeomComputeAtTimeBase(object):
         self.assertAllVectorListsEqual(pointsArrayDiffNumberVelocitiesAndAccelerations, pointsArrayPositionsAndVelocitiesOnly)
         self.assertAllVectorListsEqual(pointsArrayUnalignedVelocitiesAndAccelerations, pointsArrayPositionsAndVelocitiesOnly)
         self.assertAllVectorListsEqual(pointsArrayDiffNumberPositionsAndVelocitiesAndAccelerations, pointsArrayPositionsOnly)
-
-    def test_OnePointVelocityScale(self):
-        stage = Usd.Stage.Open("test.usda")
-        pb = UsdGeom.PointBased(stage.GetPrimAtPath("/OnePointVelocityScale"))
-
-        # Test when the velocityScale is set to 2.
-        baseTime = 0
-        tr = timeRange(baseTime)
-        pointsArray = self.computePoints(pb, tr, baseTime)
-        compares = [[Gf.Vec3f(time * 10, time * 20, time * 40)]
-            for time, delta in tr]
-        self.assertAllVectorListsEqual(pointsArray, compares)
 
     def test_MultiPoints(self):
         stage = Usd.Stage.Open("test.usda")

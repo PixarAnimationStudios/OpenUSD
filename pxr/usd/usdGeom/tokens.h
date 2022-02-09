@@ -386,6 +386,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomMotionAPI
     const TfToken motionAccelerationsSampleCount;
+    /// \brief "motion:blurScale"
+    /// 
+    /// UsdGeomMotionAPI
+    const TfToken motionBlurScale;
     /// \brief "motion:velocityScale"
     /// 
     /// UsdGeomMotionAPI

@@ -3196,11 +3196,6 @@ class PointInstancer "PointInstancer" (
     ( 1.0 / UsdStage::GetTimeCodesPerSecond() ), because velocities are recorded
     in units/second, while we are interpolating in UsdTimeCode ordinates.
     
-    Additionally, if *motion:velocityScale* is authored or inherited (see
-    UsdGeomMotionAPI::ComputeVelocityScale()), it is used to scale both the
-    velocity and angular velocity by a constant value during computation. The
-    *motion:velocityScale* attribute is encoded by UsdGeomMotionAPI.
-
     We provide both high and low-level API's for dealing with the
     transformation as a matrix, both will compute the instance matrices using
     multiple threads; the low-level API allows the client to cache unvarying
@@ -3778,14 +3773,17 @@ class "GeomModelAPI" (
 }
 
 class "MotionAPI" (
-    doc = """UsdGeomMotionAPI encodes data that can live on any prim that
+    doc = '''UsdGeomMotionAPI encodes data that can live on any prim that
     may affect computations involving:
     - computed motion for motion blur
     - sampling for motion blur
     
-    For example, UsdGeomMotionAPI provides *velocityScale* 
-    (GetVelocityScaleAttr()) for controlling how motion-blur samples should
-    be computed by velocity-consuming schemas."""
+    The "motion:blurScale" attribute allows
+    artists to scale the __amount__ of motion blur to be rendered for parts
+    of the scene without changing the recorded animation.  See
+    for use and implementation details.
+    
+    '''
 )
 {
     int motion:accelerationsSampleCount = 3 (
@@ -3801,8 +3799,31 @@ class "MotionAPI" (
         'accelerationsSampleCount' is an **inherited** attribute, also
         see ComputeAccelerationsSampleCount()"""
     )
+    float motion:blurScale = 1 (
+        doc = """BlurScale is an __inherited__ float attribute that stipulates
+        the rendered motion blur (as typically specified via UsdGeomCamera's
+        _shutter:open_ and _shutter:close_ properties) should be scaled for
+        __all objects__ at and beneath the prim in namespace on which the
+        _motion:blurScale_ value is specified.
+        
+        Without changing any other data in the scene, _blurScale_ allows artists to
+        \"dial in\" the amount of blur on a per-object basis.  A _blurScale_
+        value of zero removes all blur, a value of 0.5 reduces blur by half, 
+        and a value of 2.0 doubles the blur.  The legal range for _blurScale_
+        is [0, inf), although very high values may result in extremely expensive
+        renders, and may exceed the capabilities of some renderers.
+        
+        Although renderers are free to implement this feature however they see
+        fit, see for our guidance on implementing
+        the feature universally and efficiently.
+        
+        \\sa ComputeMotionBlurScale()
+        """
+    )
     float motion:velocityScale = 1 (
-        doc = """VelocityScale is an **inherited** float attribute that
+        doc = """\\deprecated
+        
+        VelocityScale is an **inherited** float attribute that
         velocity-based schemas (e.g. PointBased, PointInstancer) can consume
         to compute interpolated positions and orientations by applying
         velocity and angularVelocity, which is required for interpolating 
@@ -3811,9 +3832,7 @@ class "MotionAPI" (
         we require more or less motion-blur to achieve the desired look.  
         VelocityScale allows artists to dial-in, as a post-sim correction, 
         a scale factor to be applied to the velocity prior to computing 
-        interpolated positions from it.
-        
-        See also ComputeVelocityScale()"""
+        interpolated positions from it."""
     )
 }
 
