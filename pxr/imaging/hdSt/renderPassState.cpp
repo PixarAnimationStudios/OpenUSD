@@ -158,6 +158,9 @@ HdStRenderPassState::Prepare(
             HdShaderTokens->projectionMatrix,
             HdTupleType{matType, 1});
         bufferSpecs.emplace_back(
+            HdShaderTokens->imageToWorldMatrix,
+            HdTupleType{matType, 1});
+        bufferSpecs.emplace_back(
             HdShaderTokens->overrideColor,
             HdTupleType{HdTypeFloatVec4, 1});
         bufferSpecs.emplace_back(
@@ -234,6 +237,9 @@ HdStRenderPassState::Prepare(
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->projectionMatrix,
             projMatrix),
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->imageToWorldMatrix,
+            GetImageToWorldMatrix()),
         // Override color alpha component is used as the amount to blend in the
         // override color over the top of the regular fragment color.
         std::make_shared<HdVtBufferSource>(

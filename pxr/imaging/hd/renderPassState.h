@@ -139,6 +139,13 @@ public:
     /// \deprecated
     GfVec4f const & GetViewport() const { return _viewport; }
 
+    /// Compute a transform from window relative coordinates (x,y,z,1) to
+    /// homogeneous world coordinates (x,y,z,w), using the HdCamera's 
+    /// attributes, framing, and viewport dimensions.
+    /// 
+    HD_API
+    GfMatrix4d GetImageToWorldMatrix() const;
+
     /// Returns HdCamera's clip planes.
     ///
     HD_API

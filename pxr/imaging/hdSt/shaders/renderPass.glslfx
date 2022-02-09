@@ -66,6 +66,16 @@ MAT4  GetProjectionMatrix() {
     return MAT4(1);
 #endif
 }
+vec3 GetPositionInWorldSpace(vec3 windowRelativeCoord)
+{
+#if defined(HD_HAS_imageToWorldMatrix)
+    vec4 pImage = vec4(windowRelativeCoord, 1.0);
+    vec4 pWorld = vec4(HdGet_imageToWorldMatrix() * pImage);
+    return (pWorld / pWorld.w).xyz;
+#else
+    return windowRelativeCoord;
+#endif
+}
 float GetLightingBlendAmount() {
 #if defined(HD_HAS_lightingBlendAmount)
     return HdGet_lightingBlendAmount();

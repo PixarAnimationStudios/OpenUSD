@@ -192,6 +192,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (displacementShader)                        \
     (fragmentShader)                            \
     (geometryShader)                            \
+    (imageToWorldMatrix)                        \
     (indicatorColor)                            \
     (lightingBlendAmount)                       \
     (overrideColor)                             \
