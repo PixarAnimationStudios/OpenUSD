@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/gf/vec3f.h"
 
@@ -36,16 +37,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (fps)
-    (numAccelerationSamples) // Number of samples when accelerations are given
-    (velocities)
-    (accelerations)
     ((sceneIndexPluginName, "HdPrman_VelocityMotionBlurSceneIndexPlugin"))
 );
 
 static const char * const _pluginDisplayName = "Prman";
 
-// XXX: This should be a render or per-prim setting.
-static const int _numAccelerationSamples = 3;
+static const int _defaultAccelerationsSampleCount = 3;
 
 // XXX: We need to encode the fps in the scene index (in a standard
 // place). Note that fps is called timeCodesPerSecond in USD.
@@ -67,9 +64,7 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
     HdContainerDataSourceHandle const inputArgs =
         HdRetainedContainerDataSource::New(
             _tokens->fps,
-            HdRetainedSampledDataSource::New(VtValue(_fps)),
-            _tokens->numAccelerationSamples,
-            HdRetainedSampledDataSource::New(VtValue(_numAccelerationSamples)));
+            HdRetainedSampledDataSource::New(VtValue(_fps)));
 
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
         _pluginDisplayName,
@@ -119,6 +114,7 @@ private:
     VtValue _GetSourcePrimvarValue(const HdDataSourceLocator &locator) const;
     VtValue _GetSourceVelocitiesValue() const;
     VtValue _GetSourceAccelerationsValue() const;
+    int _GetSourceAccelerationsSampleCount() const;
 
     std::pair<Time, Time> _GetSamplingInterval(
         Time startTime,
@@ -155,27 +151,6 @@ float _GetFps(const HdContainerDataSourceHandle &inputArgs)
     return value.UncheckedGet<float>();
 }
 
-// Get number of samples to produce when we have acclerations
-int _GetNumAccelerationSamples(const HdContainerDataSourceHandle &inputArgs)
-{
-    if (!inputArgs) {
-        return _numAccelerationSamples;
-    }
-
-    HdSampledDataSourceHandle const source =
-        HdSampledDataSource::Cast(inputArgs->Get(_tokens->numAccelerationSamples));
-    if (!source) {
-        return _numAccelerationSamples;
-    }
-    
-    const VtValue &value = source->GetValue(0.0f);
-    if (!value.IsHolding<float>()) {
-        return _numAccelerationSamples;
-    }
-
-    return value.UncheckedGet<float>();
-}
-
 VtValue
 _PrimvarValueDataSource::_GetSourcePointsValue(const Time shutterOffset) const
 {
@@ -201,7 +176,7 @@ _PrimvarValueDataSource::_GetSourceVelocitiesValue() const
 {
     // Find velocities located on prim at primvars>velocities>primvarValue
     static const HdDataSourceLocator locator(
-        _tokens->velocities, HdPrimvarSchemaTokens->primvarValue);
+        HdTokens->velocities, HdPrimvarSchemaTokens->primvarValue);
     return _GetSourcePrimvarValue(locator);
 }
 
@@ -210,8 +185,19 @@ _PrimvarValueDataSource::_GetSourceAccelerationsValue() const
 {
     // Find velocities located on prim at primvars>velocities>primvarValue
     static const HdDataSourceLocator locator(
-        _tokens->accelerations, HdPrimvarSchemaTokens->primvarValue);
+        HdTokens->accelerations, HdPrimvarSchemaTokens->primvarValue);
     return _GetSourcePrimvarValue(locator);
+}
+
+int
+_PrimvarValueDataSource::_GetSourceAccelerationsSampleCount() const
+{
+    // Find count located on prim at
+    // primvars>accelertionsSampleCount>primvarValue
+    static const HdDataSourceLocator locator(
+        HdTokens->accelerationsSampleCount, HdPrimvarSchemaTokens->primvarValue);
+    const VtValue value = _GetSourcePrimvarValue(locator);
+    return value.GetWithDefault<int>(_defaultAccelerationsSampleCount);
 }
 
 bool
@@ -397,11 +383,11 @@ _PrimvarValueDataSource::GetContributingSampleTimesForInterval(
         *outSampleTimes = { startTime, endTime };
         return true;
     }
-        
-    const size_t numAccelerationSamples =
-        _GetNumAccelerationSamples(_inputArgs);
 
-    if (numAccelerationSamples < 2) {
+    const size_t accelerationsSampleCount =
+        _GetSourceAccelerationsSampleCount();
+
+    if (accelerationsSampleCount < 2) {
         // Degenerate case (e.g. only one sample).
         //
         // Catch to avoid division by zero below.
@@ -413,10 +399,10 @@ _PrimvarValueDataSource::GetContributingSampleTimesForInterval(
         return false;
     }
 
-    const float m(numAccelerationSamples - 1);
+    const float m(accelerationsSampleCount - 1);
 
-    outSampleTimes->reserve(numAccelerationSamples);
-    for (size_t i = 0; i < numAccelerationSamples; ++i) {
+    outSampleTimes->reserve(accelerationsSampleCount);
+    for (size_t i = 0; i < accelerationsSampleCount; ++i) {
         // Do floating point operations in such a way that
         // we get startTime and endTime on the nose for the first
         // and last value.
@@ -727,22 +713,26 @@ _SceneIndex::_PrimsDirtied(
         HdPrimvarsSchema::GetPointsLocator().Append(
             HdPrimvarSchemaTokens->primvarValue);
 
-    static const HdDataSourceLocator velocitiesValueLocator(
-        HdPrimvarsSchemaTokens->primvars,
-        _tokens->velocities,
-        HdPrimvarSchemaTokens->primvarValue);
+    static const HdDataSourceLocatorSet relevantLocators{
+        HdDataSourceLocator(
+            HdPrimvarsSchemaTokens->primvars,
+            HdTokens->velocities,
+            HdPrimvarSchemaTokens->primvarValue),
+        HdDataSourceLocator(
+            HdPrimvarsSchemaTokens->primvars,
+            HdTokens->accelerations,
+            HdPrimvarSchemaTokens->primvarValue),
+        HdDataSourceLocator(
+            HdPrimvarsSchemaTokens->primvars,
+            HdTokens->accelerationsSampleCount,
+            HdPrimvarSchemaTokens->primvarValue) };
 
-    static const HdDataSourceLocator accelerationsValueLocator(
-        HdPrimvarsSchemaTokens->primvars,
-        _tokens->accelerations,
-        HdPrimvarSchemaTokens->primvarValue);
-    
     std::vector<size_t> indices;
 
     for (size_t i = 0; i < entries.size(); i++) {
-        if (entries[i].dirtyLocators.Intersects(velocitiesValueLocator) ||
-            entries[i].dirtyLocators.Intersects(accelerationsValueLocator)) {
-            if (!entries[i].dirtyLocators.Intersects(pointsValueLocator)) {
+        const HdDataSourceLocatorSet &locators = entries[i].dirtyLocators;
+        if (locators.Intersects(relevantLocators)) {
+            if (!locators.Intersects(pointsValueLocator)) {
                 indices.push_back(i);
             }
         }
