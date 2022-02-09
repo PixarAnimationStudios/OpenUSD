@@ -1019,6 +1019,72 @@ struct UsdImaging_CoordSysBindingStrategy
 PXR_NAMESPACE_CLOSE_SCOPE
 
 // -------------------------------------------------------------------------- //
+// Accelerations sample count Primvar Cache
+// -------------------------------------------------------------------------- //
+
+#include "pxr/usd/usdGeom/motionAPI.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+struct UsdImaging_AccelerationsSampleCountStrategy;
+typedef UsdImaging_ResolvedAttributeCache<
+                                UsdImaging_AccelerationsSampleCountStrategy>
+    UsdImaging_AccelerationsSampleCountCache;
+
+struct UsdImaging_AccelerationsSampleCountStrategy
+{
+    typedef int value_type;
+    typedef UsdAttributeQuery query_type;
+
+    // Used to indicate that no (valid) opinion exists
+    // for accelerations sample count.
+    static constexpr value_type invalidValue = -1;
+
+    static
+    bool ValueMightBeTimeVarying() { return true; }
+
+    static
+    value_type MakeDefault() {
+        return invalidValue;
+    }
+
+    static
+    query_type MakeQuery(UsdPrim const& prim, bool *) {
+        if (UsdGeomMotionAPI motionAPI = UsdGeomMotionAPI(prim)) {
+            if (UsdAttribute a = motionAPI.GetAccelerationsSampleCountAttr()) {
+                return query_type(a);
+            }
+        }
+        return query_type();
+    }
+    
+    static
+    value_type
+    Compute(UsdImaging_AccelerationsSampleCountCache const* owner, 
+            UsdPrim const& prim,
+            query_type const* query)
+    {
+        if (query->HasAuthoredValue()) {
+            int value;
+            if (query->Get(&value, owner->GetTime())) {
+                return value;
+            }
+        }
+        
+        return *owner->_GetValue(prim.GetParent());
+    }
+
+    static
+    value_type
+    ComputeAccelerationsSampleCount(UsdPrim const &prim, UsdTimeCode time)
+    {
+        return UsdGeomMotionAPI(prim).ComputeAccelerationsSampleCount(time);
+    }
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+// -------------------------------------------------------------------------- //
 // Inherited Primvar Cache
 // -------------------------------------------------------------------------- //
 

@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 
 #include "pxr/usd/usdGeom/gprim.h"
+#include "pxr/usd/usdGeom/motionAPI.h"
 #include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
 
@@ -243,7 +244,14 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
                    HdChangeTracker::DirtyPoints,
                    UsdImagingTokens->usdVaryingPrimvar,
                    timeVaryingBits,
-                   false);
+                   false) ||
+            _IsVarying(prim,
+                       UsdGeomTokens->motionAccelerationsSampleCount,
+                       HdChangeTracker::DirtyPoints,
+                       UsdImagingTokens->usdVaryingPrimvar,
+                       timeVaryingBits,
+                       true);
+
     // XXX: "points" is handled by derived classes.
 
     // Discover time-varying double-sidedness.
@@ -317,6 +325,23 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                 HdTokens->accelerations,
                 HdInterpolationVertex,
                 HdPrimvarRoleTokens->vector);
+        }
+
+        // Since accelerationsSampleCount is tied to the calculation
+        // of the motion-blurred points, we also use the points dirty
+        // bit here to know when to publish its value. Since it is
+        // inherited, we go through the corresponding resolved attribute
+        // cache.
+        UsdImaging_AccelerationsSampleCountCache *cache =
+            _GetAccelerationsSampleCountCache();
+        // Check that it has any opinions.
+        if (cache->GetValue(prim) !=
+                UsdImaging_AccelerationsSampleCountStrategy::invalidValue) {
+            _MergePrimvar(
+                &vPrimvars,
+                HdTokens->accelerationsSampleCount,
+                HdInterpolationConstant,
+                HdPrimvarRoleTokens->none);
         }
     }
 
@@ -453,7 +478,8 @@ UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
         return HdChangeTracker::DirtyDoubleSided;
 
     if (propertyName == UsdGeomTokens->velocities ||
-             propertyName == UsdGeomTokens->accelerations)
+             propertyName == UsdGeomTokens->accelerations ||
+             propertyName == UsdGeomTokens->motionAccelerationsSampleCount)
         // XXX: "points" is handled by derived classes.
         return HdChangeTracker::DirtyPoints;
 
@@ -711,7 +737,23 @@ UsdImagingGprimAdapter::Get(UsdPrim const& prim,
             pointBased.GetAccelerationsAttr().Get(&accelerations, time)) {
             return VtValue(accelerations);
         }
-
+    } else if (key == HdTokens->accelerationsSampleCount) {
+        UsdImaging_AccelerationsSampleCountCache *cache =
+            _GetAccelerationsSampleCountCache();
+        const int value =
+            cache->GetTime() == time
+                ? cache->GetValue(prim)
+                : UsdImaging_AccelerationsSampleCountStrategy::
+                      ComputeAccelerationsSampleCount(prim,time);
+        if (value !=
+                UsdImaging_AccelerationsSampleCountStrategy::invalidValue) {
+            return VtValue(value);
+        } else {
+            // Default value from UsdGeom's
+            // MotionAPI.motion:accelerationsSampleCount
+            constexpr int defaultValue = 3;
+            return VtValue(defaultValue);
+        }
     } else if (UsdGeomPrimvar pv = gprim.GetPrimvar(key)) {
         if (outIndices) {
             if (pv && pv.Get(&value, time)) {

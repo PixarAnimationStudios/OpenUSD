@@ -576,6 +576,12 @@ UsdImagingPrimAdapter::_GetPrimvarDescCache() const
     return &_delegate->_primvarDescCache; 
 }
 
+UsdImaging_AccelerationsSampleCountCache* 
+UsdImagingPrimAdapter::_GetAccelerationsSampleCountCache() const
+{
+    return &_delegate->_accelerationsSampleCountCache;
+}
+
 GfMatrix4d 
 UsdImagingPrimAdapter::GetRootTransform() const
 {

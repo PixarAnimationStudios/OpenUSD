@@ -119,6 +119,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _drawModeCache(GetTime())
     , _inheritedPrimvarCache()
     , _pointInstancerIndicesCache(GetTime())
+    , _accelerationsSampleCountCache(GetTime())
     , _displayRender(true)
     , _displayProxy(true)
     , _displayGuides(true)
@@ -841,6 +842,7 @@ UsdImagingDelegate::SetTime(UsdTimeCode time)
     _xformCache.SetTime(_time);
     _visCache.SetTime(_time);
     _pointInstancerIndicesCache.SetTime(_time);
+    _accelerationsSampleCountCache.SetTime(_time);
 
     // No need to set time on the look binding cache here, since we know we're
     // only querying relationships.
@@ -975,6 +977,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
     _coordSysBindingCache.Clear();
     _inheritedPrimvarCache.Clear();
     _pointInstancerIndicesCache.Clear();
+    _accelerationsSampleCountCache.Clear();
 
     UsdImagingDelegate::_Worker worker(this);
     UsdImagingIndexProxy indexProxy(this, &worker);
@@ -1370,6 +1373,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
         // from plugins (such as the PointInstancer).
         if (attrName == UsdGeomTokens->visibility ||
             attrName == UsdGeomTokens->purpose ||
+            attrName == UsdGeomTokens->motionAccelerationsSampleCount ||
             UsdGeomXformable::IsTransformationAffectedByAttrNamed(attrName)) {
             // Because these are inherited attributes, we must update all
             // children.

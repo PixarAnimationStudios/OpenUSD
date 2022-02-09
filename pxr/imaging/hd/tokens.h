@@ -33,6 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_TOKENS                               \
     (accelerations)                             \
+    (accelerationsSampleCount)                  \
     (adjacency)                                 \
     (bboxLocalMin)                              \
     (bboxLocalMax)                              \
