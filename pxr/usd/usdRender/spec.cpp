@@ -92,8 +92,20 @@ _ReadSettingsBase(UsdRenderSettingsBase const& base,
                 GfVec2f(dataWindowNDCVec[2], dataWindowNDCVec[3]));
         }
     }
-    _Get( base.GetInstantaneousShutterAttr(),
-          &pd->instantaneousShutter, sparse );
+
+    _Get( base.GetDisableMotionBlurAttr(),
+          &pd->disableMotionBlur, sparse );
+
+    {
+        // For backwards-compatibility:
+        // instantaneousShutter disables motion blur
+        bool instantaneousShutter = false;
+        _Get( base.GetDisableMotionBlurAttr(),
+              &instantaneousShutter, sparse);
+        if (instantaneousShutter) {
+            pd->disableMotionBlur = true;
+        }
+    }
 }
 
 // TODO: Consolidate with CameraUtilConformedWindow().  Resolve policy

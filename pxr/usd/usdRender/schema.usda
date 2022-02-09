@@ -103,10 +103,16 @@ class "RenderSettingsBase" (
         """
     )
     uniform bool instantaneousShutter = false (
-        doc = """Override the targeted _camera_'s _shutterClose_ to be
-        equal to the value of its _shutterOpen_, to produce a zero-width
-        shutter interval.  This gives us a convenient way to disable
-        motion blur."""
+        doc = """Deprecated - use disableMotionBlur instead. Override
+        the targeted _camera_'s _shutterClose_ to be equal to the
+        value of its _shutterOpen_, to produce a zero-width shutter
+        interval.  This gives us a convenient way to disable motion
+        blur."""
+    )
+    uniform bool disableMotionBlur = false (
+        doc = """Disable all motion blur by setting the shutter interval
+        of the targeted camera to [0,0] - that is, take only one sample,
+        namely at the current time code."""
     )
 }
  

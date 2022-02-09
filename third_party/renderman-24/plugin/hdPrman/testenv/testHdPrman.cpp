@@ -250,6 +250,7 @@ int main(int argc, char *argv[])
                     TfToken(outputFilename),
                     // camera path
                     SdfPath(),
+                    // disableMotionBlur
                     false,
                     GfVec2i(512,512),
                     1.0f,
