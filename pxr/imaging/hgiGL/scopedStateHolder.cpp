@@ -58,6 +58,8 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     , _cullMode(GL_BACK)
     , _frontFace(GL_CCW)
     , _rasterizerDiscard(true)
+    , _restoreDepthClamp(false)
+    , _depthRange{0.f,1.f}
     , _restoreFramebufferSRGB(false)
 {
     TRACE_FUNCTION();
@@ -115,6 +117,8 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     glGetIntegerv(GL_CULL_FACE_MODE, &_cullMode);
     glGetIntegerv(GL_FRONT_FACE, &_frontFace);
     glGetBooleanv(GL_RASTERIZER_DISCARD, (GLboolean*)&_rasterizerDiscard);
+    glGetBooleanv(GL_DEPTH_CLAMP, (GLboolean*)&_restoreDepthClamp);
+    glGetFloatv(GL_DEPTH_RANGE, _depthRange);
     glGetBooleanv(GL_FRAMEBUFFER_SRGB, (GLboolean*)&_restoreFramebufferSRGB);
 
     HGIGL_POST_PENDING_GL_ERRORS();
@@ -225,6 +229,13 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
     } else {
         glDisable(GL_RASTERIZER_DISCARD);
     }
+
+    if (_restoreDepthClamp) {
+        glEnable(GL_DEPTH_CLAMP);
+    } else {
+        glDisable(GL_DEPTH_CLAMP);
+    }
+    glDepthRangef(_depthRange[0], _depthRange[1]);
 
     if (_restoreFramebufferSRGB) {
        glEnable(GL_FRAMEBUFFER_SRGB);

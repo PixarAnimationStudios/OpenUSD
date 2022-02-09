@@ -205,6 +205,14 @@ HgiGLGraphicsPipeline::BindPipeline()
         glEnable(GL_RASTERIZER_DISCARD);
     }
 
+    if (_descriptor.rasterizationState.depthClampEnabled) {
+        glEnable(GL_DEPTH_CLAMP);
+    } else {
+        glDisable(GL_DEPTH_CLAMP);
+    }
+    glDepthRange(_descriptor.rasterizationState.depthRange[0], 
+                 _descriptor.rasterizationState.depthRange[1]);
+
     glEnable(GL_PROGRAM_POINT_SIZE);
 
     //

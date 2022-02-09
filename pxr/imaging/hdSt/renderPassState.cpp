@@ -1008,6 +1008,11 @@ HdStRenderPassState::_InitRasterizationState(
 
     rasterizationState->cullMode =
         _ResolveCullMode(_cullStyle, geometricShader);
+
+    if (GetEnableDepthClamp()) {
+        rasterizationState->depthClampEnabled = true;
+    }
+    rasterizationState->depthRange = GetDepthRange();
 }
 
 void

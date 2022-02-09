@@ -102,6 +102,8 @@ HgiRasterizationState::HgiRasterizationState()
     , cullMode(HgiCullModeBack)
     , winding(HgiWindingCounterClockwise)
     , rasterizerEnabled(true)
+    , depthClampEnabled(false)
+    , depthRange(0.f, 1.f)
 {
 }
 
@@ -113,7 +115,9 @@ bool operator==(
            lhs.lineWidth == rhs.lineWidth &&
            lhs.cullMode == rhs.cullMode &&
            lhs.winding == rhs.winding &&
-           lhs.rasterizerEnabled == rhs.rasterizerEnabled;
+           lhs.rasterizerEnabled == rhs.rasterizerEnabled &&
+           lhs.depthClampEnabled == rhs.depthClampEnabled &&
+           lhs.depthRange == rhs.depthRange;
 }
 
 bool operator!=(

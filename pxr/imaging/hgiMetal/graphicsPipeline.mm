@@ -299,6 +299,11 @@ HgiMetalGraphicsPipeline::BindPipeline(id<MTLRenderCommandEncoder> renderEncoder
         _descriptor.rasterizationState.winding)];
     [renderEncoder setDepthStencilState:_depthStencilState];
 
+    if (_descriptor.rasterizationState.depthClampEnabled) {
+        [renderEncoder
+            setDepthClipMode: MTLDepthClipModeClamp];     
+    }
+
     TF_VERIFY(_descriptor.rasterizationState.lineWidth == 1.0f,
         "Missing implementation buffers");
 }

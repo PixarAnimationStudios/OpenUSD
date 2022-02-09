@@ -95,6 +95,8 @@ private:
     int32_t _cullMode;
     int32_t _frontFace;
     bool _rasterizerDiscard;
+    bool _restoreDepthClamp;
+    float _depthRange[2];
     bool _restoreFramebufferSRGB;
 };
 

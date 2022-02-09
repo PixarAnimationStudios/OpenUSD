@@ -153,6 +153,7 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
         HgiVulkanConversions::GetPolygonMode(ras.polygonMode);
     rasterState.frontFace = HgiVulkanConversions::GetWinding(ras.winding);
     rasterState.rasterizerDiscardEnable = !ras.rasterizerEnabled;
+    rasterState.depthClampEnable = ras.depthClampEnabled;
     pipeCreateInfo.pRasterizationState = &rasterState;
 
     //

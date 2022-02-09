@@ -33,6 +33,8 @@
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/types.h"
 
+#include "pxr/base/gf/vec2f.h"
+
 #include <string>
 #include <vector>
 
@@ -150,7 +152,7 @@ bool operator!=(
 
 /// \struct HgiRasterizationState
 ///
-/// Properties to configure multi sampling.
+/// Properties to configure the rasterization state.
 ///
 /// <ul>
 /// <li>polygonMode:
@@ -163,6 +165,11 @@ bool operator!=(
 ///   The rule that determines what makes a front-facing primitive.</li>
 /// <li>rasterizationEnabled:
 ///   When false all primitives are discarded before rasterization stage.</li>
+/// <li>depthClampEnabled:
+///   When enabled clamps the clip space depth to the view volume, rather than
+///   clipping the depth to the near and far planes.</li>
+/// <li>depthRange:
+///   The mapping of NDC depth values to window depth values.</li>
 /// </ul>
 ///
 struct HgiRasterizationState
@@ -175,6 +182,8 @@ struct HgiRasterizationState
     HgiCullMode cullMode;
     HgiWinding winding;
     bool rasterizerEnabled;
+    bool depthClampEnabled;
+    GfVec2f depthRange;
 };
 
 HGI_API
