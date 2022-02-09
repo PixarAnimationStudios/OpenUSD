@@ -139,32 +139,7 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
     //
     // Point positions (P)
     //
-    HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES> points;
-    {
-        HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedPoints;
-        sceneDelegate->SamplePrimvar(id, HdTokens->points, &boxedPoints);
-        if (!points.UnboxFrom(boxedPoints)) {
-            TF_WARN("<%s> points did not have expected type vec3f[]",
-                    id.GetText());
-        }
-    }
-
-    primvars.SetTimes(points.count, &points.times[0]);
-    for (size_t i=0; i < points.count; ++i) {
-        if (points.values[i].size() == npoints) {
-            primvars.SetPointDetail(
-                RixStr.k_P, 
-                (RtPoint3*) points.values[i].cdata(),
-                RtDetailType::k_vertex, 
-                i);
-        } else {
-            TF_WARN("<%s> primvar 'points' size (%zu) did not match "
-                    "expected (%zu)", 
-                    id.GetText(), 
-                    points.values[i].size(), 
-                    npoints);
-        }
-    }
+    HdPrman_ConvertPointsPrimvar(sceneDelegate, id, primvars, npoints);
 
     // Topology.
     primvars.SetIntegerDetail(RixStr.k_Ri_nvertices, nverts.cdata(),

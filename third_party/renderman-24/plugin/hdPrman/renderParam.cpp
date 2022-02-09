@@ -161,6 +161,72 @@ HdPrman_RenderParam::IsLightFilterUsed(TfToken const& name)
     return _lightFilterRefs.find(name) != _lightFilterRefs.end();
 }
 
+static
+size_t
+_ConvertPointsPrimvar(HdSceneDelegate *sceneDelegate, SdfPath const &id,
+                      RtPrimVarList& primvars, const size_t * npointsHint)
+{
+    HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES> points;
+    {
+        HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedPoints;
+        sceneDelegate->SamplePrimvar(id, HdTokens->points, &boxedPoints);
+        if (!points.UnboxFrom(boxedPoints)) {
+            TF_WARN("<%s> points did not have expected type vec3f[]",
+                    id.GetText());
+        }
+    }
+
+    size_t npoints = 0;
+    if (npointsHint) {
+        npoints = *npointsHint;
+    } else {
+        if (points.count > 0) {
+            npoints = points.values[0].size();
+        }
+        primvars.SetDetail(
+            1,        /* uniform */
+            npoints,  /* vertex */
+            npoints,  /* varying */
+            npoints   /* faceVarying */);
+    }
+        
+    primvars.SetTimes(points.count, &points.times[0]);
+    for (size_t i=0; i < points.count; ++i) {
+        if (points.values[i].size() == npoints) {
+            primvars.SetPointDetail(
+                RixStr.k_P, 
+                (RtPoint3*) points.values[i].cdata(),
+                RtDetailType::k_vertex, 
+                i);
+        } else {
+            TF_WARN("<%s> primvar 'points' size (%zu) dod not match "
+                    "expected (%zu)",
+                    id.GetText(), 
+                    points.values[i].size(),
+                    npoints);
+        }
+    }
+
+    return npoints;
+}
+
+void
+HdPrman_ConvertPointsPrimvar(HdSceneDelegate *sceneDelegate, SdfPath const &id,
+                             RtPrimVarList& primvars, const size_t npoints)
+
+{
+    _ConvertPointsPrimvar(sceneDelegate, id, primvars, &npoints);
+}
+
+size_t
+HdPrman_ConvertPointsPrimvarForPoints(
+    HdSceneDelegate *sceneDelegate, SdfPath const &id,
+    RtPrimVarList& primvars)
+{
+    return _ConvertPointsPrimvar(sceneDelegate, id, primvars, nullptr);
+}
+
+
 inline static RtDetailType
 _RixDetailForHdInterpolation(HdInterpolation interp)
 {

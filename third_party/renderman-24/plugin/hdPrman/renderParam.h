@@ -388,6 +388,17 @@ HdPrman_RtMatrixToGfMatrix(const RtMatrix4x4 &m)
         m.m[3][0], m.m[3][1], m.m[3][2], m.m[3][3]);
 }
 
+// Convert Hydra points to Riley point primvar.
+void
+HdPrman_ConvertPointsPrimvar(HdSceneDelegate *sceneDelegate, SdfPath const &id,
+                             RtPrimVarList& primvars, size_t npoints);
+
+// Count hydra points to set element count on primvars and then
+// convert them to Riley point primvar.
+size_t
+HdPrman_ConvertPointsPrimvarForPoints(HdSceneDelegate *sceneDelegate, SdfPath const &id,
+                                      RtPrimVarList& primvars);
+
 // Convert any Hydra primvars that should be Riley primvars.
 void
 HdPrman_ConvertPrimvars(HdSceneDelegate *sceneDelegate, SdfPath const& id,
