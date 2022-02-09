@@ -28,7 +28,7 @@ import unittest
 
 class TestUsdBugs(unittest.TestCase):
     def test_153956(self):
-        from pixar import Sdf
+        from pxr import Sdf
 
         # Create a crate-backed .usd file and populate it with an
         # attribute connection. These files do not store specs for
