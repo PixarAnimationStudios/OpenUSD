@@ -156,6 +156,11 @@ TestPreds()
     TF_AXIOM(DictLessThan("foo", "foo") == 0);
     TF_AXIOM(DictLessThan("aa", "aaa"));
     TF_AXIOM(!DictLessThan("aaa", "aa"));
+    TF_AXIOM(DictLessThan("0a", "00A"));
+    TF_AXIOM(!DictLessThan("00A", "0a"));
+    TF_AXIOM(DictLessThan("000a", "0000a"));
+    TF_AXIOM(!DictLessThan("0000a", "000a"));
+    
 
     TF_AXIOM(TfIsValidIdentifier("f"));
     TF_AXIOM(TfIsValidIdentifier("foo"));

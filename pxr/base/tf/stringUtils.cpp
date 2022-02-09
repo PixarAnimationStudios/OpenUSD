@@ -31,6 +31,7 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/math.h"
 #include "pxr/base/arch/vsnprintf.h"
 
 #include <boost/type_traits/is_signed.hpp>
@@ -40,7 +41,9 @@
 #include <cstdarg>
 #include <ctype.h>
 #include <limits>
+#include <string>
 #include <utility>
+#include <tuple>
 #include <vector>
 #include <memory>
 
@@ -722,68 +725,165 @@ TfMatchedStringTokenize(const string& source,
     return resultVec;
 }
 
-namespace { // helpers for DictionaryLess
-
-inline bool IsDigit(char ch) { return '0' <= ch && ch <= '9'; }
-inline char Lower(char ch) { return ('A' <= ch && ch <= 'Z') ? ch | 32 : ch; }
-
-inline long
-AtoL(char const * &s)
-{
-    long value = 0;
-    do {
-        value = value * 10 + (*s++ - '0');
-    } while (IsDigit(*s));
-    return value;
+// Return true if ch is one of the characters '0'..'9', otherwise false.
+static inline bool
+IsDigit(unsigned ch) {
+    return (ch - (unsigned)'0') < 10u;
 }
 
-} // anon
-
-static bool
-DictionaryLess(char const *l, char const *r)
+// Like std::mismatch, return a pair of pointers to the first different chars
+// starting from b1 and b2.  If there is no difference, return e1 and b2 +
+// distance(b1, e1).
+static inline
+std::pair<char const *, char const *>
+Mismatch(const char *b1, const char *e1, const char *b2)
 {
-    int caseCmp = 0;
-    int leadingZerosCmp = 0;
+    // We examine 8 bytes at a time until we find a difference, then scan for
+    // where that difference occurs.
+    //
+    // The code may look ridiculous at first glance -- memcpy!?  But it turns
+    // out that modern compilers optimize this to single 64-bit memory to
+    // register move instructions.  So this is a nice way to get a simd-esque
+    // approach without resorting to compiler/cpu specific intrinsics or inline
+    // asm.
+    constexpr size_t WordSz = sizeof(uint64_t);
+    int tail = (e1 - b1) % WordSz;
+    e1 -= tail;
+    uint64_t a, b, x;
+    int idx = tail;
 
-    while (*l && *r) {
-        if (ARCH_UNLIKELY(IsDigit(*l) && IsDigit(*r))) {
-            char const *oldL = l, *oldR = r;
-            long lval = AtoL(l), rval = AtoL(r);
-            if (lval != rval)
+    auto check = [&](int nBytes) {
+        memcpy(&a, b1, nBytes);
+        memcpy(&b, b2, nBytes);
+        // Take the exclusive-or and scan for the first nonzero byte.
+        x = a ^ b;
+        if (x) {
+            idx = ArchCountTrailingZeros(x) / WordSz;
+            return true;
+        }
+        return false;
+    };
+
+    // Check word-size chunks at a time.
+    for (; b1 != e1; b1 += WordSz, b2 += WordSz) {
+        if (check(WordSz)) {
+            return { b1 + idx, b2 + idx };
+        }
+    }
+    // There will be a tail remainder if the string length is not a multiple of
+    // 8, just scan it.
+    if (tail) {
+        a = b = 0;
+        check(tail);
+    }
+    return { b1 + idx, b2 + idx };
+}
+
+static inline
+bool DictionaryLess(std::string const &lstr, std::string const &rstr)
+{
+    // Note that this code is fairly performance sensitive for certain
+    // use-cases, so be careful making changes here.  Note that the use of
+    // bitwise |, &, operators here is intentional, since the logical &&, ||
+    // generally produce branches due to the short-circuiting requirement.
+    
+    auto lcur = lstr.c_str(), rcur = rstr.c_str();
+    auto lend = lcur + lstr.size(), rend = rcur + rstr.size();
+
+    auto curEnd = lcur + std::min(std::distance(lcur, lend),
+                                  std::distance(rcur, rend));
+
+    char l, r;
+    while (true) {
+
+        // Find the next differing byte in the strings.
+        std::tie(lcur, rcur) = Mismatch(lcur, curEnd, rcur);
+        if (lcur == curEnd) {
+            // If we have hit the end we're done.
+            break;
+        }
+        l = *lcur, r = *rcur;
+        if (bool((l ^ r) & 0x20) & (l >= 64) & (r >= 64)) {
+            // Both are in the "letters" range.  With a difference in the 6th
+            // bit, they cannot both be numerals, and they cannot be same-case
+            // letters.
+            auto lowl = (l + 5) % 32, lowr = (r + 5) % 32;
+            if (lowl != lowr) {
+                return lowl < lowr;
+            }
+            ++lcur, ++rcur;
+        }
+        else if (IsDigit(l) & IsDigit(r)) {
+            // If both are numerals, parse numbers and compare numerically.
+            // Note that there may have been a string of matching digits before
+            // here, but it's okay for us to ignore those since they have no
+            // impact on which number is greater or less than the other.
+            long lval = 0, rval = 0;
+
+            bool lIsNumeral = true, rIsNumeral = true;
+            do {
+                unsigned lch = *lcur, rch = *rcur;
+                unsigned
+                    ldiff = lch - (unsigned)'0',
+                    rdiff = rch - (unsigned)'0';
+                lIsNumeral = ldiff < 10;
+                rIsNumeral = rdiff < 10;
+                if (lIsNumeral) {
+                    lval = lval * 10 + ldiff;
+                    ++lcur;
+                }
+                if (rIsNumeral) {
+                    rval = rval * 10 + rdiff;
+                    ++rcur;
+                }
+            } while (lIsNumeral | rIsNumeral);
+
+            if (lval != rval) {
                 return lval < rval;
-            // Leading zeros difference only, record for later use.
-            if (!leadingZerosCmp)
-                leadingZerosCmp = static_cast<int>((l-oldL) - (r-oldR));
-            continue;
+            }
+
+            // Reset the end since it may have changed due to differences in
+            // number length, if there were leading zeros.
+            curEnd = lcur + std::min(std::distance(lcur, lend),
+                                     std::distance(rcur, rend));
         }
-
-        if (*l != *r) {
-            int lowL = Lower(*l), lowR = Lower(*r);
-            if (lowL != lowR)
-                return lowL < lowR;
-
-            // Case difference only, record that for later use.
-            if (!caseCmp)
-                caseCmp = (lowL != *l) ? -1 : 1;
+        else if ((IsDigit(l) | IsDigit(r)) && lcur != lstr.c_str()) {
+            // If one is a digit (but not both), then we have to check the
+            // preceding character to determine the outcome.  If the preceding
+            // character is a digit, then lhs is less if rhs has the digit.  If
+            // not, then lhs is less if it has the digit.
+            auto prevChar = lcur[-1];
+            bool outcomes[] = { IsDigit(l), IsDigit(r) };
+            return outcomes[IsDigit(prevChar)];
         }
-
-        ++l, ++r;
+        else {
+            return l < r;
+        }
     }
 
-    // We are at the end of either one or both strings.  If not both, the
-    // shorter is considered less.
-    if (*l || *r)
-        return !*l;
+    // We are at the end of one or both, with at most 
+    // only case/leading zero differences.  If only one at end, shorter
+    // is less.
+    if ((lcur != lend) | (rcur != rend)) {
+        return lcur == lend;
+    }
 
-    // Otherwise we look to differences in case or leading zeros, preferring
-    // leading zeros.
-    return (leadingZerosCmp < 0) || (caseCmp < 0);
+    // End of both -- use the first mismatch to discriminate.  It must be that
+    // there's no difference, or it is either both numerals (one of them zero)
+    // or different-case letters.
+    std::tie(lcur, rcur) = Mismatch(
+        lstr.c_str(), lstr.c_str() + std::min(lstr.size(), rstr.size()),
+        rstr.c_str());
+    
+    l = *lcur, r = *rcur;
+    return (r == '0') | ((l != '0') & (l < r));
+
 }
 
 bool
 TfDictionaryLessThan::operator()(const string& lhs, const string& rhs) const
 {
-    return DictionaryLess(lhs.c_str(), rhs.c_str());
+    return DictionaryLess(lhs, rhs);
 }
 
 std::string
