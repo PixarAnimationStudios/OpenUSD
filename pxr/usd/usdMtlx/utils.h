@@ -40,17 +40,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define USD_MTLX_TOKENS \
     ((DefaultOutputName, "out"))
 
-TF_DECLARE_PUBLIC_TOKENS(UsdMtlxTokens, USDMTLX_LOCAL, USD_MTLX_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(UsdMtlxTokens, USDMTLX_API, USD_MTLX_TOKENS);
 
 /// Return the contents of a search path environment variable named
 /// \p name as a vector of strings.  The path is split on the platform's
 /// native path list separator.
-USDMTLX_LOCAL
+USDMTLX_API
 NdrStringVec
 UsdMtlxGetSearchPathsFromEnvVar(const char* name);
 
 /// Combines two search path lists.
-USDMTLX_LOCAL
+USDMTLX_API
 NdrStringVec
 UsdMtlxMergeSearchPaths(const NdrStringVec& stronger,
                         const NdrStringVec& weaker);
@@ -58,12 +58,12 @@ UsdMtlxMergeSearchPaths(const NdrStringVec& stronger,
 /// Return the MaterialX standard library paths.  All standard library
 /// files (and only standard library files) should be found on these
 /// paths.
-USDMTLX_LOCAL
+USDMTLX_API
 const NdrStringVec&
 UsdMtlxStandardLibraryPaths();
 
 /// Return the MaterialX standard file extensions.
-USDMTLX_LOCAL
+USDMTLX_API
 NdrStringVec
 UsdMtlxStandardFileExtensions();
 
@@ -72,7 +72,7 @@ UsdMtlxStandardFileExtensions();
 ///
 /// Unlike UsdMtlxGetDocument, this function does not implement any
 /// caching or special behavior for MaterialX standard library documents.
-USDMTLX_LOCAL
+USDMTLX_API
 MaterialX::DocumentPtr
 UsdMtlxReadDocument(const std::string& resolvedPath);
 
@@ -80,13 +80,13 @@ UsdMtlxReadDocument(const std::string& resolvedPath);
 /// Return null if the document could not be read and report a
 /// warning (once per uri).  \p resolvedUri may be empty to indicate
 /// the MaterialX standard library documents all rolled into one.
-USDMTLX_LOCAL
+USDMTLX_API
 MaterialX::ConstDocumentPtr
 UsdMtlxGetDocument(const std::string& resolvedUri);
 
 /// Returns the (possibly cached) MaterialX document created from the given 
 /// string containing the source MaterialX XML.
-USDMTLX_LOCAL
+USDMTLX_API
 MaterialX::ConstDocumentPtr 
 UsdMtlxGetDocumentFromString(const std::string &mtlxXml);
 
@@ -96,7 +96,7 @@ UsdMtlxGetDocumentFromString(const std::string &mtlxXml);
 // false iff the isdefaultversion attribute exists and isn't empty,
 // otherwise we set it to true;  and we return the version as a
 // default if isdefaultversion exists and is set to "true".
-USDMTLX_LOCAL
+USDMTLX_API
 NdrVersion
 UsdMtlxGetVersion(const MaterialX::ConstInterfaceElementPtr& mtlx,
                   bool* implicitDefault = nullptr);
@@ -105,7 +105,7 @@ UsdMtlxGetVersion(const MaterialX::ConstInterfaceElementPtr& mtlx,
 /// doesn't have a non-empty URI then return the source URI of the
 /// closest element up the element hierarchy that does have one.
 /// Return the empty string if no element has a source URI.
-USDMTLX_LOCAL
+USDMTLX_API
 const std::string&
 UsdMtlxGetSourceURI(const MaterialX::ConstElementPtr& element);
 
@@ -141,7 +141,7 @@ struct UsdMtlxUsdTypeInfo {
 };
 
 /// Convert a (standard) MaterialX type name.
-USDMTLX_LOCAL
+USDMTLX_API
 UsdMtlxUsdTypeInfo
 UsdMtlxGetUsdType(const std::string& mtlxTypeName);
 
@@ -150,14 +150,14 @@ UsdMtlxGetUsdType(const std::string& mtlxTypeName);
 /// applied.  If \p getDefaultValue is \c true then converts the
 /// default value.  It is not an error if the value doesn't exist;
 /// that silently returns an empty VtValue.
-USDMTLX_LOCAL
+USDMTLX_API
 VtValue
 UsdMtlxGetUsdValue(const MaterialX::ConstElementPtr& mtlx,
                    bool getDefaultValue = false);
 
 /// Return the MaterialX values in \p values assuming it contains an
 /// array of values of MaterialX type \p type as a vector of VtValue.
-USDMTLX_LOCAL
+USDMTLX_API
 std::vector<VtValue>
 UsdMtlxGetPackedUsdValues(const std::string& values, const std::string& type);
 
@@ -170,7 +170,7 @@ UsdMtlxGetPackedUsdValues(const std::string& values, const std::string& type);
 /// > characters in them is ignored.
 ///
 /// These restrictions do not apply to the string type.
-USDMTLX_LOCAL
+USDMTLX_API
 std::vector<std::string>
 UsdMtlxSplitStringArray(const std::string& s);
 

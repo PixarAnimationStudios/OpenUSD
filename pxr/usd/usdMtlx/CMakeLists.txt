@@ -32,12 +32,16 @@ pxr_library(usdMtlx
     PRIVATE_CLASSES
         backdoor
         fileFormat
+
+    PUBLIC_CLASSES
         reader
         utils
 
     PRIVATE_HEADERS
-        api.h
         debugCodes.h
+
+    PUBLIC_HEADERS
+        api.h
 
     PYTHON_CPPFILES
         moduleDeps.cpp

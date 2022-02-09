@@ -43,7 +43,7 @@ TF_DECLARE_WEAK_PTRS(UsdStage);
 ///
 /// Note that this method will traverse the materialx network following material
 /// nodes, and does an early exit if no looks are defined in the mtlx document.
-USDMTLX_LOCAL
+USDMTLX_API
 void UsdMtlxRead(const MaterialX::ConstDocumentPtr& mtlx,
                  const UsdStagePtr& stage,
                  const SdfPath& internalPath = SdfPath("/MaterialX"),
@@ -54,7 +54,7 @@ void UsdMtlxRead(const MaterialX::ConstDocumentPtr& mtlx,
 /// MaterialX objects will live.
 ///
 /// Note that this method will traverse all the nodegraphs in the mtlx document.
-USDMTLX_LOCAL
+USDMTLX_API
 void UsdMtlxReadNodeGraphs(const MaterialX::ConstDocumentPtr& mtlx,
                            const UsdStagePtr& stage,
                            const SdfPath& internalPath = SdfPath("/MaterialX"));

@@ -7,8 +7,9 @@
 
 \section usdMtlx_overview Overview
 
-This library provides the MaterialX file format, shader discovery and
-parsing plugin for USD, and currently has no user-level API.
+This library provides the MaterialX file format, shader discovery and 
+parsing plugin for USD. It also provides utility functions for reading
+and interacting with MaterialX documents.
 
 \section usdMtlx_concepts Concept Mappings
 
