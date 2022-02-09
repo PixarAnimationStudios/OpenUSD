@@ -847,7 +847,9 @@ private:
 
     inline VtValue _UnpackForField(ValueRep rep) const {
         VtValue ret;
-        if (rep.IsInlined() || rep.GetType() == TypeEnum::TimeSamples) {
+        if (rep.IsInlined() ||
+            rep.GetType() == TypeEnum::TimeSamples ||
+            rep.GetType() == TypeEnum::TokenVector) {
             ret = _crateFile->UnpackValue(rep);
         } else {
             ret = rep;
