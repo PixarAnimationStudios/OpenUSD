@@ -113,7 +113,7 @@ HdDataSourceMaterialNetworkInterface::_SetOverride(
     if (loc.Intersects(nodesLocator) && loc.GetElementCount() > 1) {
         _overriddenNodes.insert(loc.GetElement(1));
         _deletedNodes.erase(loc.GetElement(1));
-    } else if(loc.Intersects(terminalsLocator)) {
+    } else if (loc.Intersects(terminalsLocator)) {
         _terminalsOverridden = true;
     }
 }
@@ -160,7 +160,7 @@ HdDataSourceMaterialNetworkInterface::GetNodeType(
                 HdTypedSampledDataSource<TfToken>::Cast(it->second)) {
             return ds->GetTypedValue(0.0f);
         } else {
-            // if not a token, it's deleterd.
+            // if not a token, it's deleted.
             return TfToken();
         }
     }
