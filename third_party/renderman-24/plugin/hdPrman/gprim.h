@@ -373,6 +373,9 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                     riley::GeometryPrototypeId::InvalidId(),
                     oldInstanceId);
             }
+            // Clear before resize, because above we just deleted
+            // all the instances, so require re-creating them in riley.
+            _instanceIds.clear();
             _instanceIds.resize(newCount,
                                 riley::GeometryInstanceId::InvalidId());
         }
