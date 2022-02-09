@@ -68,7 +68,8 @@ private:
     Sdf_Identity(Sdf_IdRegistryImpl *regImpl, const SdfPath &path)
         : _refCount(0), _path(path), _regImpl(regImpl) {}
     
-    SDF_API void _UnregisterOrDelete();
+    SDF_API
+    static void _UnregisterOrDelete(Sdf_IdRegistryImpl *reg, Sdf_Identity *id);
     void _Forget();
 
     mutable std::atomic_int _refCount;
@@ -81,8 +82,15 @@ inline void intrusive_ptr_add_ref(PXR_NS::Sdf_Identity* p) {
     ++p->_refCount;
 }
 inline void intrusive_ptr_release(PXR_NS::Sdf_Identity* p) {
+    // Once the count hits zero, p is liable to be destroyed at any point,
+    // concurrently, by its owning registry if it happens to be doing a cleanup
+    // pass.  Cache 'this' and the impl ptr in local variables so we have them
+    // before decrementing the count.
+    Sdf_Identity *self = p;
+    Sdf_IdRegistryImpl *reg = p->_regImpl;
     if (--p->_refCount == 0) {
-        p->_UnregisterOrDelete();
+        // Cannot use 'p' anymore here.
+        Sdf_Identity::_UnregisterOrDelete(reg, self);
     }
 }
 

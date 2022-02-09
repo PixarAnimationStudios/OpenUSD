@@ -162,13 +162,15 @@ void Sdf_Identity::_Forget()
     _regImpl = nullptr;
 }
 
-void Sdf_Identity::_UnregisterOrDelete()
+void
+Sdf_Identity::_UnregisterOrDelete(Sdf_IdRegistryImpl *regImpl,
+                                  Sdf_Identity *id)
 {
-    if (_regImpl) {
-        _regImpl->UnregisterOrDelete();
+    if (regImpl) {
+        regImpl->UnregisterOrDelete();
     }
     else {
-        delete this;
+        delete id;
     }
 }
 
