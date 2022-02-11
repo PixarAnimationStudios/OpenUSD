@@ -33,9 +33,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \class HdPrman_VelocityMotionBlurSceneIndexPlugin
 ///
 /// Plugin provides a scene index that, for each prim, modifies the
-/// VtVec3fArray at locator primvars>points>primvarValue by adding the
-/// velocities at primvars>velocities>primvarValue (multiplied by shutter
-/// offset time).
+/// VtVec3fArray at locator primvars>points>primvarValue to:
+/// - unroll velocity motion blur, that is adding the velocities
+///   primvars>velocities>primvarValue and (if present) the accelerations
+///   at primvars>accelerations>primvarValue multiplied by the
+///   respective power of the shutter time to the points
+/// - apply blurScale, by scaling the time that is used to compute the
+///   points from the velocities and accelerations or that is given
+///   to the source scene index when forwarding the
+///   HdSampledDataSource::GetValue or GetContributingTimeSamples call.
 ///
 /// Note that the fps (needed because the shutter offset is in frames and
 /// the velocity in length/second) is hard-coded to 24.0.

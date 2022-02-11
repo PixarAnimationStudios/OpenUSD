@@ -103,10 +103,10 @@ public:
     {
     }
 
-    VtValue GetValue(Time shutterOffset) override;
+    VtValue GetValue(Time givenShutterOffset) override;
     bool GetContributingSampleTimesForInterval(
-        Time givenStartTime,
-        Time givenEndTime,
+        Time startTime,
+        Time endTime,
         std::vector<Time> * outSampleTimes) override;
 
 private: 
@@ -115,6 +115,7 @@ private:
     VtValue _GetSourceVelocitiesValue() const;
     VtValue _GetSourceAccelerationsValue() const;
     int _GetSourceAccelerationsSampleCount() const;
+    float _GetSourceBlurScale() const;
 
     std::pair<Time, Time> _GetSamplingInterval(
         Time startTime,
@@ -122,6 +123,17 @@ private:
 
     bool _HasVelocities() const;
     bool _HasAccelerations() const;
+
+    bool _GetSamplesDeformBlur(
+        Time startTime,
+        Time endTime,
+        float blurScale,
+        std::vector<Time> * outSampleTimes);
+
+    bool _GetSamplesVelocityBlur(
+        Time givenStartTime,
+        Time givenEndTime,
+        std::vector<Time> * outSampleTimes);
 
     HdSampledDataSourceHandle _samplesSource;
     HdContainerDataSourceHandle _primvarsSource;
@@ -200,6 +212,17 @@ _PrimvarValueDataSource::_GetSourceAccelerationsSampleCount() const
     return value.GetWithDefault<int>(_defaultAccelerationsSampleCount);
 }
 
+float
+_PrimvarValueDataSource::_GetSourceBlurScale() const
+{
+    // Find velocities located on prim at primvars>blurScale>primvarValue
+    static const HdDataSourceLocator locator(
+        HdTokens->blurScale, HdPrimvarSchemaTokens->primvarValue);
+    const VtValue value = _GetSourcePrimvarValue(locator);
+    return std::fabs(value.GetWithDefault<float>(1.0f));
+
+}
+
 bool
 _PrimvarValueDataSource::_HasVelocities() const
 {
@@ -223,16 +246,24 @@ _PrimvarValueDataSource::_HasAccelerations() const
 }
 
 VtValue
-_PrimvarValueDataSource::GetValue(const Time shutterOffset)
+_PrimvarValueDataSource::GetValue(const Time givenShutterOffset)
 {
     if (!_samplesSource) {
         return VtValue();
     }
 
-    // No math to do at time zero!
-    if (shutterOffset == 0.0f) {
+    // No math to do at time zero.
+    if (givenShutterOffset == 0.0f) {
         return _GetSourcePointsValue(0.0f);
     }
+
+    const float blurScale = _GetSourceBlurScale();
+    if (blurScale == 0.0f) {
+        // Motion blur disabled, always return at time zero.
+        return _GetSourcePointsValue(0.0f);
+    }
+
+    const Time shutterOffset = givenShutterOffset * blurScale;
 
     // Check that we have velocities matching the number of points.
     //
@@ -352,19 +383,92 @@ _PrimvarValueDataSource::_GetSamplingInterval(
 
 bool
 _PrimvarValueDataSource::GetContributingSampleTimesForInterval(
-    const Time givenStartTime,
-    const Time givenEndTime,
+    const Time startTime,
+    const Time endTime,
     std::vector<Time> * const outSampleTimes)
 {
     if (!_samplesSource) {
         return false;
     }
 
-    if (!_HasVelocities()) {
-        // No velocities, just forward call to source.
-        return _samplesSource->GetContributingSampleTimesForInterval(
-            givenStartTime, givenEndTime, outSampleTimes);
+    const float blurScale = _GetSourceBlurScale();
+    if (blurScale == 0.0f) {
+        // Motion blur disabled, return false to indicate that
+        // this is constant across shutter interval.
+        *outSampleTimes = { 0.0f };
+        return false;
     }
+
+    if (_HasVelocities()) {
+        // Velocities are given, forward call to source, applying
+        // blurScale if non-trivial.
+        return _GetSamplesVelocityBlur(
+            startTime, endTime, outSampleTimes);
+    } else {
+        return _GetSamplesDeformBlur(
+            startTime, endTime, blurScale, outSampleTimes);
+    }
+}
+    
+bool
+_PrimvarValueDataSource::_GetSamplesDeformBlur(
+    const Time startTime,
+    const Time endTime,
+    const float blurScale,
+    std::vector<Time> * const outSampleTimes)
+{
+    // Blur scale is trivial, just forward to source.
+    if (blurScale == 1.0f) {
+        return
+            _samplesSource->GetContributingSampleTimesForInterval(
+                startTime, endTime, outSampleTimes);
+    }
+
+    // Can't do anything if given a meaningless shutter interval.
+    if (!(std::numeric_limits<Time>::lowest() < startTime &&
+          endTime < std::numeric_limits<Time>::max())) {
+        static std::once_flag flag;
+        std::call_once(flag, [](){
+                TF_CODING_ERROR(
+                    "blurScale is not supported when consumer is not "
+                    "specifying interval for contributing sample times. "
+                    "In particular, blurScale is not supported by the "
+                    "scene index emulation.");
+            });
+        return
+            _samplesSource->GetContributingSampleTimesForInterval(
+                startTime, endTime, outSampleTimes);
+    }
+
+    // Scale shutter interval
+    if (!_samplesSource->GetContributingSampleTimesForInterval(
+            blurScale * startTime,
+            blurScale * endTime,
+            outSampleTimes)) {
+        return false;
+    }
+    
+    // Scale time samples to fit into original shutter interval.
+    //
+    // _GetSamplesDeformBlur is never called with blurScale = 0.0.
+    //
+    const float invBlurScale = 1.0f / blurScale;
+    for (Time & time : *outSampleTimes) {
+        time *= invBlurScale;
+    }
+    
+    return true;
+}
+
+bool
+_PrimvarValueDataSource::_GetSamplesVelocityBlur(
+    Time givenStartTime,
+    Time givenEndTime,
+    std::vector<Time> * outSampleTimes)
+{
+    // No need to take blurScale into account here.
+    //
+    // We apply blurScale to time in GetValue instead.
 
     // We have velocities!
     Time startTime, endTime;
@@ -700,6 +804,14 @@ private:
     HdContainerDataSourceHandle _inputArgs;
 };
 
+HdDataSourceLocator
+_GetPrimvarValueLocator(const TfToken &name)
+{
+    return HdDataSourceLocator(HdPrimvarsSchemaTokens->primvars,
+                               name,
+                               HdPrimvarSchemaTokens->primvarValue);
+}
+
 void
 _SceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
@@ -710,22 +822,13 @@ _SceneIndex::_PrimsDirtied(
     }
 
     static const HdDataSourceLocator pointsValueLocator =
-        HdPrimvarsSchema::GetPointsLocator().Append(
-            HdPrimvarSchemaTokens->primvarValue);
+        _GetPrimvarValueLocator(HdTokens->points);
 
     static const HdDataSourceLocatorSet relevantLocators{
-        HdDataSourceLocator(
-            HdPrimvarsSchemaTokens->primvars,
-            HdTokens->velocities,
-            HdPrimvarSchemaTokens->primvarValue),
-        HdDataSourceLocator(
-            HdPrimvarsSchemaTokens->primvars,
-            HdTokens->accelerations,
-            HdPrimvarSchemaTokens->primvarValue),
-        HdDataSourceLocator(
-            HdPrimvarsSchemaTokens->primvars,
-            HdTokens->accelerationsSampleCount,
-            HdPrimvarSchemaTokens->primvarValue) };
+        _GetPrimvarValueLocator(HdTokens->velocities),
+        _GetPrimvarValueLocator(HdTokens->accelerations),
+        _GetPrimvarValueLocator(HdTokens->accelerationsSampleCount),
+        _GetPrimvarValueLocator(HdTokens->blurScale)};
 
     std::vector<size_t> indices;
 
