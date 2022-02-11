@@ -258,7 +258,8 @@ accumulatedTransmittance(vec3 rayStartEye, vec3 rayDirectionEye)
     const float rayLength = timeRayExitsVolume(rayStartEye, rayDirectionEye);
     
     const int numSteps =
-        int(floor(min(maxNumSteps, rayLength / resolvedStepSizeEyeLighting)));
+        int(floor(min(float(maxNumSteps), 
+                      rayLength / resolvedStepSizeEyeLighting)));
 
     while(i < numSteps) {
         const vec3 rayPointEye = rayStartEye + i * rayStepEye;
@@ -344,7 +345,7 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayLength)
     const vec3 rayStepEye = resolvedStepSizeEye * rayDirectionEye;
 
     const int numSteps =
-        int(floor(min(maxNumSteps, rayLength / resolvedStepSizeEye)));
+        int(floor(min(float(maxNumSteps), rayLength / resolvedStepSizeEye)));
 
     // integrate transmittance and light along ray for bounding box
     while(i < numSteps) {
@@ -510,7 +511,7 @@ sampleZBuffer(vec2 fragcoord)
     // Sample the z-Buffer at the frag coordinate.
     const float bufferVal = texelFetch(HdGetSampler_depthReadback(),
                                        ivec2(fragcoord),
-                                       /* lod = */ 0).z;
+                                       /* lod = */ 0).x;
 #else
     // Assume far-plane if we cannot sample the z-Buffer.
     const float bufferVal = 1.0;
