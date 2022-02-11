@@ -228,10 +228,6 @@ TfStringStartsWith(const std::string& s, const std::string& prefix) {
     return TfStringStartsWith(s, prefix.c_str());
 }
 
-/// \overload
-TF_API
-bool TfStringStartsWith(const std::string &s, const TfToken& prefix);
-
 inline bool
 Tf_StringEndsWithImpl(char const *s, size_t slen,
                       char const *suffix, size_t suflen)
@@ -252,10 +248,6 @@ TfStringEndsWith(const std::string& s, const std::string& suffix)
 {
     return TfStringEndsWith(s, suffix.c_str());
 }
-
-/// \overload
-TF_API
-bool TfStringEndsWith(const std::string &s, const TfToken& suffix);
 
 /// Returns true if \p s contains \p substring.
 // \ingroup group_tf_String

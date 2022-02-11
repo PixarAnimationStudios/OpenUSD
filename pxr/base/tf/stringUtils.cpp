@@ -228,18 +228,6 @@ TfStringToUInt64(const std::string &txt, bool *outOfRange)
 }
 
 bool
-TfStringStartsWith(const std::string &s, const TfToken& prefix)
-{
-    return TfStringStartsWith(s, prefix.GetString());
-}
-
-bool
-TfStringEndsWith(const std::string &s, const TfToken& suffix)
-{
-    return TfStringEndsWith(s, suffix.GetString());
-}
-
-bool
 TfStringContains(const string &s, const char *substring)
 {
     return s.find(substring) != string::npos;
