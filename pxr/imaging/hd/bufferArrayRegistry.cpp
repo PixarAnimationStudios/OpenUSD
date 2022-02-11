@@ -24,6 +24,8 @@
 #include "pxr/imaging/hd/bufferArrayRegistry.h"
 #include "pxr/imaging/hd/bufferArray.h"
 
+#include <tuple>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -57,12 +59,17 @@ HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
         strategy->ComputeAggregationId(bufferSpecs, usageHint);
 
     // We use insert to do a find and insert operation
-    std::pair<_BufferArrayIndex::iterator, bool> result =
-            _entries.insert(std::make_pair(aggrId, _Entry()));
+    auto iter = _entries.find(aggrId);
+    bool inserted = false;
+    if (iter == _entries.end()) {
+        // _Entry()'s dtor is very expensive due to std::list member, so avoid
+        // constructing one unless we didn't find one.
+        std::tie(iter, inserted) = _entries.emplace(aggrId, _Entry());
+    }
 
-    _Entry &entry = (result.first)->second;
+    _Entry &entry = iter->second;
 
-    if (result.second) {
+    if (inserted) {
         // We just created a new entry so make sure it has a buffer in it.
         _InsertNewBufferArray(entry,
                               HdBufferArraySharedPtr(),
