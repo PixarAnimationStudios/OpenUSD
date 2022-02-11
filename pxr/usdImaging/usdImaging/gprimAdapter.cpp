@@ -250,7 +250,13 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
                        HdChangeTracker::DirtyPoints,
                        UsdImagingTokens->usdVaryingPrimvar,
                        timeVaryingBits,
-                       true);
+                       true) ||
+                _IsVarying(prim,
+                           UsdGeomTokens->motionBlurScale,
+                           HdChangeTracker::DirtyPoints,
+                           UsdImagingTokens->usdVaryingPrimvar,
+                           timeVaryingBits,
+                           true);
 
     // XXX: "points" is handled by derived classes.
 
@@ -332,14 +338,26 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         // bit here to know when to publish its value. Since it is
         // inherited, we go through the corresponding resolved attribute
         // cache.
-        UsdImaging_AccelerationsSampleCountCache *cache =
+        UsdImaging_AccelerationsSampleCountCache *accelerationsSampleCountCache =
             _GetAccelerationsSampleCountCache();
         // Check that it has any opinions.
-        if (cache->GetValue(prim) !=
+        if (accelerationsSampleCountCache->GetValue(prim) !=
                 UsdImaging_AccelerationsSampleCountStrategy::invalidValue) {
             _MergePrimvar(
                 &vPrimvars,
                 HdTokens->accelerationsSampleCount,
+                HdInterpolationConstant,
+                HdPrimvarRoleTokens->none);
+        }
+
+        // Comment similar to above accelerations sample count cache applies to
+        // blur scale.
+        UsdImaging_BlurScaleCache *blurScaleCache = _GetBlurScaleCache();
+        // Check that it has any opinions.
+        if (blurScaleCache->GetValue(prim).has_value) {
+            _MergePrimvar(
+                &vPrimvars,
+                HdTokens->blurScale,
                 HdInterpolationConstant,
                 HdPrimvarRoleTokens->none);
         }
@@ -479,7 +497,8 @@ UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
 
     if (propertyName == UsdGeomTokens->velocities ||
              propertyName == UsdGeomTokens->accelerations ||
-             propertyName == UsdGeomTokens->motionAccelerationsSampleCount)
+             propertyName == UsdGeomTokens->motionAccelerationsSampleCount ||
+             propertyName == UsdGeomTokens->motionBlurScale)
         // XXX: "points" is handled by derived classes.
         return HdChangeTracker::DirtyPoints;
 
@@ -752,6 +771,20 @@ UsdImagingGprimAdapter::Get(UsdPrim const& prim,
             // Default value from UsdGeom's
             // MotionAPI.motion:accelerationsSampleCount
             constexpr int defaultValue = 3;
+            return VtValue(defaultValue);
+        }
+    } else if (key == HdTokens->blurScale) {
+        UsdImaging_BlurScaleCache *cache = _GetBlurScaleCache();
+        const UsdImaging_BlurScaleStrategy::value_type value =
+            cache->GetTime() == time
+                ? cache->GetValue(prim)
+                : UsdImaging_BlurScaleStrategy::ComputeBlurScale(prim,time);
+        if (value.has_value) {
+            return VtValue(value.value);
+        } else {
+            // Default value from UsdGeom's
+            // MotionAPI.motion:blurScale
+            constexpr float defaultValue = 1.0f;
             return VtValue(defaultValue);
         }
     } else if (UsdGeomPrimvar pv = gprim.GetPrimvar(key)) {

@@ -40,6 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bbox)                                      \
     (bezier)                                    \
     (bSpline)                                   \
+    (blurScale)                                 \
     (camera)                                    \
     (catmullRom)                                \
     (collection)                                \

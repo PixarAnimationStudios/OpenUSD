@@ -1085,6 +1085,75 @@ struct UsdImaging_AccelerationsSampleCountStrategy
 PXR_NAMESPACE_CLOSE_SCOPE
 
 // -------------------------------------------------------------------------- //
+// Blur scale Primvar Cache
+// -------------------------------------------------------------------------- //
+
+#include "pxr/usd/usdGeom/motionAPI.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+struct UsdImaging_BlurScaleStrategy;
+typedef UsdImaging_ResolvedAttributeCache<UsdImaging_BlurScaleStrategy>
+    UsdImaging_BlurScaleCache;
+
+struct UsdImaging_BlurScaleStrategy
+{
+    struct value_type {
+        float value;
+        bool has_value;
+    };
+
+    typedef UsdAttributeQuery query_type;
+
+    // Used to indicate that no (valid) opinion exists
+    // for accelerations sample count.
+    static const value_type invalidValue;
+
+    static
+    bool ValueMightBeTimeVarying() { return true; }
+
+    static
+    value_type MakeDefault() {
+        return invalidValue;
+    }
+
+    static
+    query_type MakeQuery(UsdPrim const& prim, bool *) {
+        if (UsdGeomMotionAPI motionAPI = UsdGeomMotionAPI(prim)) {
+            if (UsdAttribute a = motionAPI.GetMotionBlurScaleAttr()) {
+                return query_type(a);
+            }
+        }
+        return query_type();
+    }
+    
+    static
+    value_type
+    Compute(UsdImaging_BlurScaleCache const* owner, 
+            UsdPrim const& prim,
+            query_type const* query)
+    {
+        if (query->HasAuthoredValue()) {
+            float value;
+            if (query->Get(&value, owner->GetTime())) {
+                return { value, true };
+            }
+        }
+        
+        return *owner->_GetValue(prim.GetParent());
+    }
+
+    static
+    value_type
+    ComputeBlurScale(UsdPrim const &prim, UsdTimeCode time)
+    {
+        return { UsdGeomMotionAPI(prim).ComputeMotionBlurScale(time), true };
+    }
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+// -------------------------------------------------------------------------- //
 // Inherited Primvar Cache
 // -------------------------------------------------------------------------- //
 

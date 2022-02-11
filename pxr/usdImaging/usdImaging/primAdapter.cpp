@@ -582,6 +582,12 @@ UsdImagingPrimAdapter::_GetAccelerationsSampleCountCache() const
     return &_delegate->_accelerationsSampleCountCache;
 }
 
+UsdImaging_BlurScaleCache* 
+UsdImagingPrimAdapter::_GetBlurScaleCache() const
+{
+    return &_delegate->_blurScaleCache;
+}
+
 GfMatrix4d 
 UsdImagingPrimAdapter::GetRootTransform() const
 {

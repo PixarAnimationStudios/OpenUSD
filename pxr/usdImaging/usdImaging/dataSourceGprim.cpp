@@ -44,6 +44,8 @@ UsdImagingDataSourceGprim::UsdImagingDataSourceGprim(
         _AddCustomPrimvar(HdTokens->accelerations, UsdGeomTokens->accelerations);
         _AddCustomPrimvar(HdTokens->accelerationsSampleCount,
                           UsdGeomTokens->motionAccelerationsSampleCount);
+        _AddCustomPrimvar(HdTokens->blurScale,
+                          UsdGeomTokens->motionBlurScale);
         _AddCustomPrimvar(HdTokens->normals, UsdGeomTokens->normals);
     }
 }

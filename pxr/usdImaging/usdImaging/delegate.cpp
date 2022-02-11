@@ -120,6 +120,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _inheritedPrimvarCache()
     , _pointInstancerIndicesCache(GetTime())
     , _accelerationsSampleCountCache(GetTime())
+    , _blurScaleCache(GetTime())
     , _displayRender(true)
     , _displayProxy(true)
     , _displayGuides(true)
@@ -843,6 +844,7 @@ UsdImagingDelegate::SetTime(UsdTimeCode time)
     _visCache.SetTime(_time);
     _pointInstancerIndicesCache.SetTime(_time);
     _accelerationsSampleCountCache.SetTime(_time);
+    _blurScaleCache.SetTime(_time);
 
     // No need to set time on the look binding cache here, since we know we're
     // only querying relationships.
@@ -978,6 +980,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
     _inheritedPrimvarCache.Clear();
     _pointInstancerIndicesCache.Clear();
     _accelerationsSampleCountCache.Clear();
+    _blurScaleCache.Clear();
 
     UsdImagingDelegate::_Worker worker(this);
     UsdImagingIndexProxy indexProxy(this, &worker);

@@ -750,6 +750,7 @@ private:
     UsdImaging_InheritedPrimvarCache _inheritedPrimvarCache;
     UsdImaging_PointInstancerIndicesCache _pointInstancerIndicesCache;
     UsdImaging_AccelerationsSampleCountCache _accelerationsSampleCountCache;
+    UsdImaging_BlurScaleCache _blurScaleCache;
 
     // Pickability
     PickabilityMap _pickablesMap;

@@ -631,6 +631,9 @@ protected:
     UsdImaging_AccelerationsSampleCountCache*
         _GetAccelerationsSampleCountCache() const;
 
+    UsdImaging_BlurScaleCache*
+        _GetBlurScaleCache() const;
+
     USDIMAGING_API
     UsdPrim _GetPrim(SdfPath const& usdPath) const;
 
