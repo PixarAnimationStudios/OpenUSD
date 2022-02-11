@@ -83,6 +83,7 @@ pxr_plugin(${PXR_PACKAGE}
         cameraContext
         renderPass
         framebuffer
+        matfiltSceneIndexPlugins
         renderBuffer
         renderParam
         renderViewContext

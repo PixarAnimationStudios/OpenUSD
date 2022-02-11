@@ -718,8 +718,11 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
             HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
                 hdMatVal.UncheckedGet<HdMaterialNetworkMap>(), 
                 &_materialNetwork);
-            // Apply material filter chain to the network.
-            if (!_filterChain->empty()) {
+            // Apply material filter chain to the network conditionally.
+            // NOTE: When use scene index plugins for matfilt transformations,
+            // the matfilt operations are triggered by the GetMaterialResource()
+            // call above.
+            if (!GetUseSceneIndexForMatfilt() && !_filterChain->empty()) {
                 std::vector<std::string> errors;
                 MatfiltExecFilterChain(*_filterChain, id, _materialNetwork, {},
                                        *_sourceTypes, &errors);
