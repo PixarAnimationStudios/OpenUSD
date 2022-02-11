@@ -1001,9 +1001,6 @@ HdStRenderPassState::_InitRasterizationState(
         }
     } else {
         rasterizationState->polygonMode = HgiPolygonModeFill;
-        if (_lineWidth > 0) {
-            glLineWidth(_lineWidth);
-        }
     }
 
     rasterizationState->cullMode =
