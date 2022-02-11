@@ -724,9 +724,6 @@ HdStResourceRegistry::_CommitTextures()
     for (HdStShaderCodeSharedPtr const & shaderCode : shaderCodes) {
         shaderCode->AddResourcesFromTextures(ctx);
     }
-
-    // MipMap generation for textures requires us to submit blit work.
-    SubmitBlitWork();
 }
 
 void
