@@ -2116,12 +2116,6 @@ HdPrman_RenderParam::StopRender(bool blocking)
 }
 
 bool
-HdPrman_RenderParam::IsRenderStopped()
-{
-    return !(_renderThread && _renderThread->IsThreadRunning());
-}
-
-bool
 HdPrman_RenderParam::IsRendering()
 {
     return _renderThread && _renderThread->IsRendering();
@@ -2137,7 +2131,7 @@ void
 HdPrman_RenderParam::DeleteRenderThread()
 {
     if (_renderThread) {
-        StopRender();
+        _renderThread->StopThread();
         _renderThread.reset();
     }
 }

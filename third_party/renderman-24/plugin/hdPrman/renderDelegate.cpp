@@ -518,7 +518,7 @@ bool
 HdPrmanRenderDelegate::IsStopped() const
 {
     if (IsInteractive()) {
-        return _renderParam->IsRenderStopped();
+        return !_renderParam->IsRendering();
     }
     return true;
 }
@@ -528,7 +528,7 @@ HdPrmanRenderDelegate::Stop(bool blocking)
 {
     if (IsInteractive()) {
         _renderParam->StopRender(blocking);
-        return _renderParam->IsRenderStopped();
+        return !_renderParam->IsRendering();
     }
     return true;
 }

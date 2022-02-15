@@ -204,17 +204,22 @@ public:
     void CreateRenderViewFromSpec(
         const VtDictionary &renderSpec);
 
-    // Starts riley and the thread if needed, and tells the thread render
+    // Starts the render thread (if needed), and tells the render thread to
+    // call into riley and start a render.
     void StartRender();
 
-    // Request Riley (and the HdRenderThread) to stop.
+    // Requests riley stop rendering; if blocking is true, waits until riley
+    // has exited and the render thread is idle before returning.  Note that
+    // after the render stops, the render thread will be running but idle;
+    // to stop the thread itself, call DeleteRenderThread. If the render thread
+    // is not running, this call does nothing.
     void StopRender(bool blocking = true);
 
-    // Query whether or not the HdRenderThread is running.
-    bool IsRenderStopped();
-
+    // Returns whether the render thread is active and rendering currently.
+    // Returns false if the render thread is active but idle (not in riley).
     bool IsRendering();
 
+    // Returns whether the user has requested pausing the render.
     bool IsPauseRequested();
 
     // Deletes the render thread if there is one.
