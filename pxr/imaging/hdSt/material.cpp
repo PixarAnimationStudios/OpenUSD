@@ -39,6 +39,8 @@
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hgi/capabilities.h"
+
 #include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -174,7 +176,11 @@ HdStMaterial::_ProcessTextureDescriptors(
                   : _GetTextureHandleHash(textureHandle) });
     }
 
-    HdSt_TextureBinder::GetBufferSpecs(*texturesFromStorm, specs);
+    bool const doublesSupported = resourceRegistry->GetHgi()->
+        GetCapabilities()->IsSet(
+            HgiDeviceCapabilitiesBitsShaderDoublePrecision);
+    HdSt_TextureBinder::GetBufferSpecs(*texturesFromStorm, specs,
+                                       doublesSupported);
 }
 
 /* virtual */

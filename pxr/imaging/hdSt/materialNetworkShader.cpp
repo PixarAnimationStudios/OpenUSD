@@ -455,12 +455,16 @@ _CollectPrimvarNames(const HdSt_MaterialParamVector &params)
 void
 HdSt_MaterialNetworkShader::AddResourcesFromTextures(ResourceContext &ctx) const
 {
+    const bool doublesSupported = ctx.GetResourceRegistry()->GetHgi()->
+        GetCapabilities()->IsSet(
+            HgiDeviceCapabilitiesBitsShaderDoublePrecision);
+
     // Add buffer sources for bindless texture handles (and
     // other texture metadata such as the sampling transform for
     // a field texture).
     HdBufferSourceSharedPtrVector result;
     HdSt_TextureBinder::ComputeBufferSources(
-        GetNamedTextureHandles(), &result);
+        GetNamedTextureHandles(), &result, doublesSupported);
 
     if (!result.empty()) {
         ctx.AddSources(GetShaderData(), std::move(result));

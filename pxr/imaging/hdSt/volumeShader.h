@@ -111,14 +111,16 @@ public:
     ///
     static void GetParamsAndBufferSpecsForBBoxAndSampleDistance(
         HdSt_MaterialParamVector *params,
-        HdBufferSpecVector *specs);
+        HdBufferSpecVector *specs,
+        bool doublesSupported);
 
     /// Add buffer sources to communicate volume bounding box and sample
     /// distance to shader.
     ///
     static void GetBufferSourcesForBBoxAndSampleDistance(
         const std::pair<GfBBox3d, float> &bboxAndSampleDistance,
-        HdBufferSourceSharedPtrVector * sources);
+        HdBufferSourceSharedPtrVector * sources,
+        bool doublesSupported);
 
     /// GfRange3d encodes empty range by (infinity, -infinity).
     /// Avoid those insane values by returning (0,0).
