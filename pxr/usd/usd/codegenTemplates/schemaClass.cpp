@@ -94,6 +94,30 @@ TF_DEFINE_PRIVATE_TOKENS(
     return {{ cls.cppClassName }}(prim, name);
 }
 
+/* static */
+std::vector<{{ cls.cppClassName }}>
+{{ cls.cppClassName }}::GetAll(const UsdPrim &prim)
+{
+    std::vector<{{ cls.cppClassName }}> schemas;
+    
+    auto appliedSchemas = prim.GetAppliedSchemas();
+    if (appliedSchemas.empty()) {
+        return schemas;
+    }
+
+    for (const auto &appliedSchema : appliedSchemas) {
+        const std::string schemaPrefix = std::string("{{ cls.usdPrimTypeName }}") +
+                                         UsdObject::GetNamespaceDelimiter();
+        if (TfStringStartsWith(appliedSchema, schemaPrefix)) {
+            const std::string schemaName =
+                    appliedSchema.GetString().substr(schemaPrefix.size());
+            schemas.emplace_back(prim, TfToken(schemaName));
+        }
+    }
+
+    return schemas;
+}
+
 {% endif %}
 {% endif %}
 {% if cls.isConcrete %}

@@ -194,6 +194,13 @@ public:
     {% endif -%}
     static {{ cls.cppClassName }}
     Get(const UsdPrim &prim, const TfToken &name);
+
+    /// Return a vector of {{ cls.cppClassName }} holding the prim \p prim.
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    static std::vector<{{ cls.cppClassName }}>
+    GetAll(const UsdPrim &prim);
 {% endif %}
 {% endif %}
 
