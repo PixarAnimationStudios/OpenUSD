@@ -744,7 +744,7 @@ _ComposePrimPropertyNames(
         if (node.IsCulled() || !node.CanContributeSpecs()) {
             continue;
         }
-        for (auto &layer : node.GetLayerStack()->GetLayers()) {
+        for (auto const &layer : node.GetLayerStack()->GetLayers()) {
             VtValue namesVal;
             if (layer->HasField(node.GetPath(),
                                 SdfChildrenKeys->PropertyChildren,
@@ -753,20 +753,19 @@ _ComposePrimPropertyNames(
                 // If we have a predicate, then check to see if the name is
                 // already included to avoid redundantly invoking it.  The most
                 // common case for us is repeated names already present.
-                TfTokenVector const &
-                    localNames = namesVal.UncheckedGet<TfTokenVector>();
+                TfTokenVector
+                    localNames = namesVal.UncheckedRemove<TfTokenVector>();
                 if (hasPredicate) {
                     for (auto &name: localNames) {
-                        if (!inOutNames->count(name) &&
-                            predicate(name)) {
-                            inOutNames->insert(name);
+                        if (!inOutNames->count(name) && predicate(name)) {
+                            inOutNames->insert(std::move(name));
                         }
                     }
                 } else {
-                    inOutNames->insert(localNames.begin(),
-                                       localNames.end());
+                    inOutNames->insert(
+                        std::make_move_iterator(localNames.begin()),
+                        std::make_move_iterator(localNames.end()));
                 }
-                WorkSwapDestroyAsync(namesVal);
             }
         }
     }
@@ -802,7 +801,6 @@ UsdPrim::_GetPropertyNames(
         // Sort and uniquify the names.
         namesVec.resize(names.size());
         std::copy(names.begin(), names.end(), namesVec.begin());
-        WorkSwapDestroyAsync(names);
         sort(namesVec.begin(), namesVec.end(), TfDictionaryLessThan());
         if (applyOrder) {
             _ApplyOrdering(GetPropertyOrder(), &namesVec);
