@@ -951,11 +951,16 @@ def _AddToken(tokenDict, tokenId, val, desc):
     if tokenId in reserved:
         tokenId = tokenId + '_'
     if not Tf.IsValidIdentifier(tokenId):
-        raise Exception(
-            'Token identifiers must be actual C/python-style identifiers.  '
-            '\"%s\" is not a valid identifier... for libraryTokens and '
-            'schemaTokens, use the "value" field to specify the non-identifier '
-            'token value.' % tokenId)
+        # TfMakeValidIdentifier currently replaces a tokenId's first element
+        # with a '_', if its a digit. In order to not have a broader impact
+        # we try to modify this behavior in schema gen such that, instead of
+        # replacing the first element digit, we prefix it with a '_' and
+        # then check for validity.
+        Print('Updating token {0} to a valid identifier'.format(tokenId))
+        if tokenId[0].isdigit():
+            tokenId = '_' + tokenId
+        if not Tf.IsValidIdentifier(tokenId):
+            tokenId = Tf.MakeValidIdentifier(tokenId)
 
     if tokenId in tokenDict:
         token = tokenDict[tokenId]
@@ -1033,7 +1038,8 @@ def GatherTokens(classes, libName, libTokens):
             cls.tokens.add(token)
             _AddToken(tokenDict, token, tokenInfo.get("value", token),
                       _SanitizeDoc(tokenInfo.get("doc", 
-                          "Special token for the %s schema." % cls.cppClassName), ' '))
+                          "Special token for the %s schema." % \
+                                  cls.cppClassName), ' '))
 
         # Add property namespace prefix token for multiple-apply API
         # schema to token set
@@ -1041,7 +1047,8 @@ def GatherTokens(classes, libName, libTokens):
             cls.tokens.add(cls.propertyNamespacePrefix)
             _AddToken(tokenDict, cls.propertyNamespacePrefix,
                       cls.propertyNamespacePrefix,
-                      "Property namespace prefix for the %s schema." % cls.cppClassName)
+                      "Property namespace prefix for the %s schema." \
+                              % cls.cppClassName)
 
     # Add library-wide tokens to token set
     for token, tokenInfo in libTokens.items():

@@ -18,6 +18,16 @@ to compile and work with USD Core successfully.
     for more information.
   - usd/schema.usda must exist in the LayerStack, not necessarily as a direct 
     subLayer. 
+  - If the names, default values and token values are not valid C/python
+    identifiers, then during schema gen we try to update these such that:
+      - If the first element of the token is a digit, an '_' is prefixed before
+      running it through TfMakeValidIdentifier.
+      - All invalid tokens are updated to replace any illegal element with an
+      '_'.
+      - Do note that since all special characters are replaced with an '_',
+      tokens like "foo#bar" and "foo$bar", will result in the same identifier
+      "foo_bar", hence violating the One-to-One mapping of token identifiers
+      mentioned in \ref Usd_NameSpacedPropertiesInCodeGen below.
 
 See pxr/usd/lib/usdGeom/schema.usda for an example.
 
