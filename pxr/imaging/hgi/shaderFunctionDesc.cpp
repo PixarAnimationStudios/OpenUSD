@@ -28,6 +28,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiShaderFunctionTextureDesc::HgiShaderFunctionTextureDesc()
   : dimensions(2)
   , format(HgiFormatInvalid)
+  , textureType(HgiShaderTextureTypeTexture)
+  , arraySize(0)
   , writable(false)
 {
 }
@@ -69,6 +71,8 @@ bool operator==(
     return lhs.nameInShader == rhs.nameInShader &&
            lhs.dimensions == rhs.dimensions &&
            lhs.format == rhs.format &&
+           lhs.textureType == rhs.textureType &&
+           lhs.arraySize == rhs.arraySize &&
            lhs.writable == rhs.writable;
 }
 
@@ -174,12 +178,35 @@ HgiShaderFunctionAddTexture(
     HgiShaderFunctionDesc * const desc,
     const std::string &nameInShader,
     const uint32_t dimensions /* = 2 */,
-    const HgiFormat &format /* = HgiFormatFloat32Vec4*/)
+    const HgiFormat &format /* = HgiFormatFloat32Vec4*/,
+    const HgiShaderTextureType textureType /* = HgiShaderTextureTypeTexture */)
 {
     HgiShaderFunctionTextureDesc texDesc;
     texDesc.nameInShader = nameInShader;
     texDesc.dimensions = dimensions;
     texDesc.format = format;
+    texDesc.textureType = textureType;
+    texDesc.arraySize = 0;
+    texDesc.writable = false;
+
+    desc->textures.push_back(std::move(texDesc));
+}
+
+void
+HgiShaderFunctionAddArrayOfTextures(
+    HgiShaderFunctionDesc * const desc,
+    const std::string &nameInShader,
+    const uint32_t arraySize,
+    const uint32_t dimensions /* = 2 */,
+    const HgiFormat &format /* = HgiFormatFloat32Vec4*/,
+    const HgiShaderTextureType textureType /* = HgiShaderTextureTypeTexture */)
+{
+    HgiShaderFunctionTextureDesc texDesc;
+    texDesc.nameInShader = nameInShader;
+    texDesc.dimensions = dimensions;
+    texDesc.format = format;
+    texDesc.textureType = textureType;
+    texDesc.arraySize = arraySize;
     texDesc.writable = false;
 
     desc->textures.push_back(std::move(texDesc));
@@ -190,12 +217,15 @@ HgiShaderFunctionAddWritableTexture(
     HgiShaderFunctionDesc * const desc,
     const std::string &nameInShader,
     const uint32_t dimensions /* = 2 */,
-    const HgiFormat &format /* = HgiFormatFloat32Vec4*/)
+    const HgiFormat &format /* = HgiFormatFloat32Vec4*/,
+    const HgiShaderTextureType textureType /* = HgiShaderTextureTypeTexture */)
 {
     HgiShaderFunctionTextureDesc texDesc;
     texDesc.nameInShader = nameInShader;
     texDesc.dimensions = dimensions;
     texDesc.format = format;
+    texDesc.textureType = textureType;
+    texDesc.arraySize = 0;
     texDesc.writable = true;
 
     desc->textures.push_back(std::move(texDesc));

@@ -35,7 +35,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 /// \struct HgiShaderFunctionTextureDesc
 ///
 /// Describes a texture to be passed into a shader
@@ -48,6 +47,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// <li>format
 ///   Format of the texture. This is required in APIs where sampler types depend
 ///   on the texture (e.g., GL) </li>
+/// <li>textureType:
+///   Type of the texture (e.g. array texture, shadow, etc.).</li>
+/// <li>arraySize:
+///   If arraySize > 0, indicates the size of the array. Note that textureType 
+///   = HgiTextureTypeTexture and arraySize = 2 would create an array with two 
+///   textures whereas textureType  = HgiTextureTypeArrayTexture and arraySize 
+///   = 0 would create a single array texture (arrays of array textures are 
+///   supported as well).</li>
 /// <li>writable
 ///   Whether the texture is writable.</li>
 /// </ul>
@@ -60,6 +67,8 @@ struct HgiShaderFunctionTextureDesc
     std::string nameInShader;
     uint32_t dimensions;
     HgiFormat format;
+    HgiShaderTextureType textureType;
+    size_t arraySize;
     bool writable;
 };
 
@@ -294,16 +303,29 @@ HgiShaderFunctionAddTexture(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     uint32_t dimensions = 2,
-    const HgiFormat &format = HgiFormatFloat32Vec4);
+    const HgiFormat &format = HgiFormatFloat32Vec4,
+    const HgiShaderTextureType textureType = HgiShaderTextureTypeTexture);
+
+/// Adds array of textures descriptor to given shader function descriptor.
+HGI_API
+void
+HgiShaderFunctionAddArrayOfTextures(
+    HgiShaderFunctionDesc * const desc,
+    const std::string &nameInShader,
+    const uint32_t arraySize,
+    const uint32_t dimensions = 2,
+    const HgiFormat &format = HgiFormatFloat32Vec4,
+    const HgiShaderTextureType textureType = HgiShaderTextureTypeTexture);
 
 /// Adds writable texture descriptor to given shader function descriptor.
 HGI_API
 void
 HgiShaderFunctionAddWritableTexture(
-    HgiShaderFunctionDesc *desc,
+    HgiShaderFunctionDesc * const desc,
     const std::string &nameInShader,
-    uint32_t dimensions = 2,
-    const HgiFormat &format = HgiFormatFloat32Vec4);
+    const uint32_t dimensions = 2,
+    const HgiFormat &format = HgiFormatFloat32Vec4,
+    const HgiShaderTextureType textureType = HgiShaderTextureTypeTexture);
 
 /// Adds buffer descriptor to given shader function descriptor.
 HGI_API
@@ -314,8 +336,7 @@ HgiShaderFunctionAddBuffer(
     const std::string &type,
     const uint32_t bindIndex,
     HgiBindingType binding,
-    const uint32_t arraySize = 0
-    );
+    const uint32_t arraySize = 0);
 
 /// Adds buffer descriptor to given shader function descriptor.
 HGI_API
@@ -324,8 +345,7 @@ HgiShaderFunctionAddWritableBuffer(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const std::string &type,
-    const uint32_t bindIndex
-    );
+    const uint32_t bindIndex);
 
 /// Adds constant function param descriptor to given shader function
 /// descriptor.

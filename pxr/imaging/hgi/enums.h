@@ -699,6 +699,27 @@ enum HgiInterpolationType
     HgiInterpolationNoPerspective,
 };
 
+
+/// \enum HgiShaderTextureType
+///
+/// Describes the type of texture to be used in shader gen.
+///
+/// <ul>
+/// <li>HgiShaderTextureTypeTexture:
+///   Indicates a regular texture.</li>
+/// <li>HgiShaderTextureTypeShadowTexture:
+///   Indicates a shadow texture.</li>
+/// <li>HgiShaderTextureTypeArrayTexture:
+///   Indicates an array texture.</li>
+/// </ul>
+///
+enum HgiShaderTextureType
+{
+    HgiShaderTextureTypeTexture = 0,
+    HgiShaderTextureTypeShadowTexture,
+    HgiShaderTextureTypeArrayTexture
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
