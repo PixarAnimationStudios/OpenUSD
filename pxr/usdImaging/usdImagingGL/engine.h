@@ -72,8 +72,10 @@ class HdRenderIndex;
 class HdxTaskController;
 class UsdImagingDelegate;
 class UsdImagingGLLegacyEngine;
+class UsdImagingStageSceneIndex;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
+TF_DECLARE_WEAK_AND_REF_PTRS(UsdImagingStageSceneIndex);
 
 /// \class UsdImagingGLEngine
 ///
@@ -630,7 +632,11 @@ protected:
 private:
     void _DestroyHydraObjects();
 
+    // Note that we'll only ever use one of _sceneIndex/_sceneDelegate
+    // at a time...
+    UsdImagingStageSceneIndexRefPtr _sceneIndex;
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
+
     std::unique_ptr<HdEngine> _engine;
 };
 
