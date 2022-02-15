@@ -44,19 +44,19 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
         id<MTLDevice> device = hgi->GetPrimaryDevice();
 
         HgiMetalShaderGenerator shaderGenerator {desc, device};
-        std::stringstream ss;
-        shaderGenerator.Execute(ss);
+        shaderGenerator.Execute();
+        const char *shaderCode = shaderGenerator.GetGeneratedShaderCode();
+
         MTLCompileOptions *options = [[MTLCompileOptions alloc] init];
         options.fastMathEnabled = YES;
-        options.languageVersion = MTLLanguageVersion2_1;
+        options.languageVersion = MTLLanguageVersion2_2;
         options.preprocessorMacros = @{
                 @"ARCH_GFX_METAL": @1,
         };
 
         NSError *error = NULL;
-        std::string shaderStr = ss.str();
         id<MTLLibrary> library =
-            [hgi->GetPrimaryDevice() newLibraryWithSource:@(shaderStr.c_str())
+            [hgi->GetPrimaryDevice() newLibraryWithSource:@(shaderCode)
                                                         options:options
                                                         error:&error];
 
@@ -77,14 +77,12 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
                 TF_CODING_ERROR("Todo: Unsupported shader stage");
                 break;
         }
-    
+
         // Load the function into the library
         _shaderId = [library newFunctionWithName:entryPoint];
         if (!_shaderId) {
             NSString *err = [error localizedDescription];
-            TF_WARN("Failed to compile shader: \n%s",
-                    [err UTF8String]);
-            TF_WARN("%s", shaderStr.c_str());
+            _errors = [err UTF8String];
         }
         else {
             HGIMETAL_DEBUG_LABEL(_shaderId, _descriptor.debugName.c_str());
@@ -93,7 +91,11 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
         [library release];
     }
 
+    // Clear these pointers in our copy of the descriptor since we
+    // have to assume they could become invalid after we return.
+    _descriptor.shaderCodeDeclarations = nullptr;
     _descriptor.shaderCode = nullptr;
+    _descriptor.generatedShaderCodeOut = nullptr;
 }
 
 HgiMetalShaderFunction::~HgiMetalShaderFunction()

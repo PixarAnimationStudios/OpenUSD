@@ -54,7 +54,9 @@ HgiShaderFunctionTessellationDesc::HgiShaderFunctionTessellationDesc()
 
 HgiShaderFunctionDesc::HgiShaderFunctionDesc() 
   : shaderStage(0)
+  , shaderCodeDeclarations(nullptr)
   , shaderCode(nullptr)
+  , generatedShaderCodeOut(nullptr)
   , textures()
   , constantParams()
   , stageInputs()
@@ -157,7 +159,9 @@ bool operator==(
     return lhs.debugName == rhs.debugName &&
            lhs.shaderStage == rhs.shaderStage &&
            // Omitted. Only used tmp during shader compile
+           // lhs.shaderCodeDeclarations == rhs.shaderCodeDeclarations
            // lhs.shaderCode == rhs.shaderCode
+           // lhs.generatedShaderCodeOut == rhs.generatedShaderCodeOut
            lhs.textures == rhs.textures &&
            lhs.constantParams == rhs.constantParams &&
            lhs.stageInputs == rhs.stageInputs &&

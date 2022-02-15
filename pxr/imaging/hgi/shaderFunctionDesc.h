@@ -35,6 +35,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 /// \struct HgiShaderFunctionTextureDesc
 ///
 /// Describes a texture to be passed into a shader
@@ -249,8 +250,14 @@ bool operator!=(
 ///   This label can be applied as debug label for gpu debugging.</li>
 /// <li>shaderStage:
 ///   The shader stage this function represents.</li>
+/// <li>shaderCodeDeclarations:
+///   Optional ascii shader code containing defines and type declarations
+///   which need to be emitted before generated resource bindings.</li>
 /// <li>shaderCode:
 ///   The ascii shader code used to compile the shader.</li>
+/// <li>generatedShaderCodeOut:
+///   Optional pointer to a string that will be filled in with the
+///   ascii shader code after shader generation is complete.</li>
 /// <li>textures:
 ///   List of texture descriptions to be passed into a shader.</li>
 /// <li>buffers:
@@ -273,7 +280,9 @@ struct HgiShaderFunctionDesc
     HgiShaderFunctionDesc();
     std::string debugName;
     HgiShaderStage shaderStage;
-    const char*  shaderCode;
+    const char *shaderCodeDeclarations;
+    const char *shaderCode;
+    std::string *generatedShaderCodeOut;
     std::vector<HgiShaderFunctionTextureDesc> textures;
     std::vector<HgiShaderFunctionBufferDesc> buffers;
     std::vector<HgiShaderFunctionParamDesc> constantParams;

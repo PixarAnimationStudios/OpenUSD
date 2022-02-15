@@ -33,6 +33,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class Hgi;
+
 using HgiGLShaderSectionUniquePtrVector =
     std::vector<std::unique_ptr<HgiGLShaderSection>>;
 
@@ -44,8 +46,9 @@ class HgiGLShaderGenerator final: public HgiShaderGenerator
 {
 public:
     HGIGL_API
-    explicit HgiGLShaderGenerator(const HgiShaderFunctionDesc &descriptor,
-        const std::string &version);
+    explicit HgiGLShaderGenerator(
+        Hgi const *hgi,
+        const HgiShaderFunctionDesc &descriptor);
 
     //This is not commonly consumed by the end user, but is available.
     HGIGL_API
@@ -53,14 +56,14 @@ public:
 
 protected:
     HGIGL_API
-    void _Execute(
-        std::ostream &ss,
-        const std::string &originalShaderShader) override;
+    void _Execute(std::ostream &ss) override;
 
 private:
     HgiGLShaderGenerator() = delete;
     HgiGLShaderGenerator & operator=(const HgiGLShaderGenerator&) = delete;
     HgiGLShaderGenerator(const HgiGLShaderGenerator&) = delete;
+
+    void _WriteVersion(std::ostream &ss);
 
     void _WriteTextures(const HgiShaderFunctionTextureDescVector &textures);
 
@@ -74,9 +77,9 @@ private:
         const HgiShaderFunctionParamDescVector &parameters,
         const std::string &qualifier);
     
+    Hgi const *_hgi;
     HgiGLShaderSectionUniquePtrVector _shaderSections;
     std::vector<std::string> _shaderLayoutAttributes;
-    std::string _version;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

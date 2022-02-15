@@ -24,6 +24,7 @@
 
 #include "pxr/imaging/hgiVulkan/shaderGenerator.h"
 #include "pxr/imaging/hgiVulkan/conversions.h"
+#include "pxr/imaging/hgiVulkan/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -43,11 +44,11 @@ _GetMacroBlob()
 }
 
 HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
-    const HgiShaderFunctionDesc &descriptor,
-    const std::string &version)
+    Hgi const *hgi,
+    const HgiShaderFunctionDesc &descriptor)
   : HgiShaderGenerator(descriptor)
+  , _hgi(hgi)
   , _bindIndex(0)
-  , _version(version)
 {
     // Write out all GL shaders and add to shader sections
     GetShaderSections()->push_back(
@@ -81,6 +82,14 @@ HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
     _WriteBuffers(descriptor.buffers);
     _WriteInOuts(descriptor.stageInputs, "in");
     _WriteInOuts(descriptor.stageOutputs, "out");
+}
+
+void
+HgiVulkanShaderGenerator::_WriteVersion(std::ostream &ss)
+{
+    const int glslVersion = _hgi->GetCapabilities()->GetShaderVersion();
+
+    ss << "#version " << std::to_string(glslVersion) << "\n";
 }
 
 void
@@ -206,12 +215,12 @@ HgiVulkanShaderGenerator::_WriteInOuts(
 }
 
 void
-HgiVulkanShaderGenerator::_Execute(
-    std::ostream &ss,
-    const std::string &originalShaderShader) 
+HgiVulkanShaderGenerator::_Execute(std::ostream &ss)
 {
     // Version number must be first line in glsl shader
-    ss << _version << " \n";
+    _WriteVersion(ss);
+
+    ss << _GetShaderCodeDeclarations();
     
     for (const std::string &attr : _shaderLayoutAttributes) {
         ss << attr;
@@ -256,7 +265,7 @@ HgiVulkanShaderGenerator::_Execute(
     ss << "\n";
 
     // write all the original shader
-    ss << originalShaderShader;
+    ss << _GetShaderCode();
 }
 
 HgiVulkanShaderSectionUniquePtrVector*

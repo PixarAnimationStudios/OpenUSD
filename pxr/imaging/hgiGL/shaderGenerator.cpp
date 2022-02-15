@@ -25,6 +25,8 @@
 
 #include "pxr/imaging/hgiGL/shaderGenerator.h"
 #include "pxr/imaging/hgiGL/conversions.h"
+#include "pxr/imaging/hgi/capabilities.h"
+#include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -44,10 +46,10 @@ _GetMacroBlob()
 }
 
 HgiGLShaderGenerator::HgiGLShaderGenerator(
-    const HgiShaderFunctionDesc &descriptor,
-    const std::string &version)
+    Hgi const *hgi,
+    const HgiShaderFunctionDesc &descriptor)
   : HgiShaderGenerator(descriptor)
-  , _version(version)
+  , _hgi(hgi)
 {
     // Write out all GL shaders and add to shader sections
     GetShaderSections()->push_back(
@@ -101,6 +103,14 @@ HgiGLShaderGenerator::HgiGLShaderGenerator(
     _WriteInOuts(descriptor.stageInputs, "in");
     _WriteConstantParams(descriptor.constantParams);
     _WriteInOuts(descriptor.stageOutputs, "out");
+}
+
+void
+HgiGLShaderGenerator::_WriteVersion(std::ostream &ss)
+{
+    const int glslVersion = _hgi->GetCapabilities()->GetShaderVersion();
+
+    ss << "#version " << std::to_string(glslVersion) << "\n";
 }
 
 void
@@ -222,12 +232,12 @@ HgiGLShaderGenerator::_WriteInOuts(
 }
 
 void
-HgiGLShaderGenerator::_Execute(
-    std::ostream &ss,
-    const std::string &originalShaderShader) 
+HgiGLShaderGenerator::_Execute(std::ostream &ss)
 {
     // Version number must be first line in glsl shader
-    ss << _version << "\n";
+    _WriteVersion(ss);
+
+    ss << _GetShaderCodeDeclarations() << "\n";
 
     for (const std::string &attr : _shaderLayoutAttributes) {
         ss << attr;
@@ -272,7 +282,7 @@ HgiGLShaderGenerator::_Execute(
     ss << "\n";
 
     // write all the original shader
-    ss << originalShaderShader;
+    ss << _GetShaderCode();
 }
 
 HgiGLShaderSectionUniquePtrVector*

@@ -938,8 +938,7 @@ HgiMetalShaderGenerator::HgiMetalShaderGenerator(
 
 HgiMetalShaderGenerator::~HgiMetalShaderGenerator() = default;
 
-void HgiMetalShaderGenerator::_Execute(
-    std::ostream &ss, const std::string &originalShaderCode)
+void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
 {
     HgiMetalShaderSectionUniquePtrVector * const shaderSections =
         GetShaderSections();
@@ -947,7 +946,9 @@ void HgiMetalShaderGenerator::_Execute(
         section->VisitGlobalMacros(ss);
         ss << "\n";
     }
-    
+
+    ss << _GetShaderCodeDeclarations();
+
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         section->VisitGlobalMemberDeclarations(ss);
         ss << "\n";
@@ -972,7 +973,7 @@ void HgiMetalShaderGenerator::_Execute(
         section->VisitScopeFunctionDefinitions(ss);
     }
 
-    ss << originalShaderCode;
+    ss << _GetShaderCode();
     ss << "};\n\n";
 
     //write out the entry point signature

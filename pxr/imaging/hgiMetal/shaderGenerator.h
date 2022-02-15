@@ -77,9 +77,7 @@ public:
 
 protected:
     HGIMETAL_API
-    void _Execute(
-        std::ostream &ss, 
-        const std::string &originalShaderShader) override;
+    void _Execute(std::ostream &ss) override;
 
 private:
     HgiMetalShaderStageEntryPointUniquePtr
