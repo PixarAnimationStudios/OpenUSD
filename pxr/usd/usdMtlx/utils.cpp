@@ -179,38 +179,68 @@ _GetUsdValue(const std::string& valueString, const std::string& type)
 
 } // anonymous namespace
 
-NdrStringVec
-UsdMtlxGetSearchPathsFromEnvVar(const char* name)
+// Return the contents of a search path environment variable
+// as a vector of strings.  The path is split on the platform's
+// native path list separator.
+static const NdrStringVec
+_GetSearchPathsFromEnvVar(const char* name)
 {
     const std::string paths = TfGetenv(name);
-    return !paths.empty() ? TfStringSplit(paths, ARCH_PATH_LIST_SEP) : NdrStringVec();
+    return !paths.empty() 
+                ? TfStringSplit(paths, ARCH_PATH_LIST_SEP) 
+                : NdrStringVec();
 }
 
-NdrStringVec
-UsdMtlxMergeSearchPaths(const NdrStringVec& stronger,
-                        const NdrStringVec& weaker)
+// Combines two search path lists.
+static const NdrStringVec
+_MergeSearchPaths(const NdrStringVec& stronger, const NdrStringVec& weaker)
 {
     NdrStringVec result = stronger;
     result.insert(result.end(), weaker.begin(), weaker.end());
     return result;
 }
 
+static const NdrStringVec
+_ComputeStdlibSearchPaths()
+{
+    // Get the MaterialX/libraries path(s)
+    // This is used to indicate the location of the MaterialX/libraries folder 
+    // if moved/changed from the path initialized in PXR_MATERIALX_STDLIB_DIR.
+    NdrStringVec stdlibSearchPaths =
+        _GetSearchPathsFromEnvVar("PXR_MTLX_STDLIB_SEARCH_PATHS");
+
+    // Add path to the MaterialX standard library discovered at build time.
+#ifdef PXR_MATERIALX_STDLIB_DIR
+    stdlibSearchPaths =
+        _MergeSearchPaths(stdlibSearchPaths, { PXR_MATERIALX_STDLIB_DIR });
+#endif
+    return stdlibSearchPaths;
+}
+
 const NdrStringVec&
 UsdMtlxStandardLibraryPaths()
 {
-    static const auto materialxLibraryPaths =
-        UsdMtlxMergeSearchPaths(
-            // Note this is the same envar used in HdMtlxSearchPaths() 
-            // This is used to indicate the location of the MaterialX/libraries
-            // folder if moved/changed from the path in PXR_MATERIALX_STDLIB_DIR
-            UsdMtlxGetSearchPathsFromEnvVar("PXR_MTLX_STDLIB_SEARCH_PATHS"),
-            NdrStringVec{
-#ifdef PXR_MATERIALX_STDLIB_DIR
-                PXR_MATERIALX_STDLIB_DIR
-#endif
-            }
-        );
+    static const auto materialxLibraryPaths = _ComputeStdlibSearchPaths();
     return materialxLibraryPaths;
+}
+
+const NdrStringVec&
+UsdMtlxCustomSearchPaths()
+{
+    // Get the location of any additional custom mtlx files outside 
+    // of the standard library files.
+    static const auto materialxCustomSearchPaths =
+        _GetSearchPathsFromEnvVar("PXR_MTLX_PLUGIN_SEARCH_PATHS");
+    return materialxCustomSearchPaths;
+}
+
+const NdrStringVec&
+UsdMtlxSearchPaths()
+{
+    static const auto materialxSearchPaths = 
+        _MergeSearchPaths(
+            UsdMtlxCustomSearchPaths(), UsdMtlxStandardLibraryPaths());
+    return materialxSearchPaths;
 }
 
 NdrStringVec

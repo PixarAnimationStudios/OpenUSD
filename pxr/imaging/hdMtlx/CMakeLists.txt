@@ -1,8 +1,6 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hdMtlx)
 
-add_definitions(-DPXR_MATERIALX_STDLIB_DIR="${MATERIALX_STDLIB_DIR}")
-
 pxr_library(hdMtlx
     LIBRARIES
         gf
@@ -11,6 +9,7 @@ pxr_library(hdMtlx
         sdr
         tf
         trace
+        usdMtlx
         vt
         ${MATERIALX_LIBRARIES}
 

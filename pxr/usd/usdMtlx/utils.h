@@ -42,25 +42,27 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_PUBLIC_TOKENS(UsdMtlxTokens, USDMTLX_API, USD_MTLX_TOKENS);
 
-/// Return the contents of a search path environment variable named
-/// \p name as a vector of strings.  The path is split on the platform's
-/// native path list separator.
-USDMTLX_API
-NdrStringVec
-UsdMtlxGetSearchPathsFromEnvVar(const char* name);
-
-/// Combines two search path lists.
-USDMTLX_API
-NdrStringVec
-UsdMtlxMergeSearchPaths(const NdrStringVec& stronger,
-                        const NdrStringVec& weaker);
-
 /// Return the MaterialX standard library paths.  All standard library
 /// files (and only standard library files) should be found on these
 /// paths.
 USDMTLX_API
 const NdrStringVec&
 UsdMtlxStandardLibraryPaths();
+
+/// Return the paths to directories containing custom MaterialX files, set in 
+/// the environment variable 'PXR_MTLX_PLUGIN_SEARCH_PATHS'
+USDMTLX_API
+const NdrStringVec&
+UsdMtlxCustomSearchPaths();
+
+/// Return the MaterialX search paths. In order, this includes:
+/// - directories containing custom MaterialX files set in the env var
+///   'PXR_MTLX_PLUGIN_SEARCH_PATHS'
+/// - standard library paths set in the env var 'PXR_MTLX_STDLIB_SEARCH_PATHS'
+/// - path to the MaterialX standard library discovered at build time.
+USDMTLX_API
+const NdrStringVec&
+UsdMtlxSearchPaths();
 
 /// Return the MaterialX standard file extensions.
 USDMTLX_API

@@ -37,6 +37,8 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/token.h"
 
+#include "pxr/usd/usdMtlx/utils.h"
+
 #include <MaterialXCore/Document.h>
 #include <MaterialXCore/Node.h>
 #include <MaterialXFormat/Util.h>
@@ -46,49 +48,18 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static const NdrStringVec
-_GetSearchPathsFromEnvVar(const char* name)
-{
-    const std::string paths = TfGetenv(name);
-    return !paths.empty() 
-                ? TfStringSplit(paths, ARCH_PATH_LIST_SEP) 
-                : NdrStringVec();
-}
-
 static mx::FileSearchPath
 _ComputeSearchPaths()
 {
     mx::FileSearchPath searchPaths;
-    // Add any additional custom mtlx path(s)
-    // Note this is the same envar used in UsdMtlxDiscoveryPlugin. This is used
-    // to indicate the location of any additional custom mtlx files.
-    static const auto customSearchPaths =
-        _GetSearchPathsFromEnvVar("PXR_MTLX_PLUGIN_SEARCH_PATHS");
-    for (auto path : customSearchPaths) {
+    static const NdrStringVec searchPathStrings = UsdMtlxSearchPaths();
+    for (auto path : searchPathStrings) {
         searchPaths.append(mx::FilePath(path));
     }
-
-    // Add the MaterialX/libraries path(s)
-    // Note this is the same envar used in UsdMtlxStandardLibraryPaths() 
-    // This is used to indicate the location of the MaterialX/libraries folder 
-    // if moved/changed from the path initilialized in PXR_MATERIALX_STDLIB_DIR.
-    static const auto stdlibSearchPaths =
-        _GetSearchPathsFromEnvVar("PXR_MTLX_STDLIB_SEARCH_PATHS");
-    for (auto path : stdlibSearchPaths) {
-        searchPaths.append(mx::FilePath(path));
-    }
-
-    // Add path to the MaterialX standard library discovered at build time.
-    searchPaths.append(mx::FilePath(PXR_MATERIALX_STDLIB_DIR));
-
     return searchPaths;
 }
 
-// Return the MaterialX search paths. In order, this includes:
-// - Paths set in the environment variable 'PXR_MTLX_PLUGIN_SEARCH_PATHS'
-// - Paths set in the environment variable 'PXR_MTLX_STDLIB_SEARCH_PATHS'
-// - Path to the MaterialX standard library discovered at build time.
-const mx::FileSearchPath &
+const mx::FileSearchPath&
 HdMtlxSearchPaths()
 {
     static const mx::FileSearchPath searchPaths = _ComputeSearchPaths();

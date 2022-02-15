@@ -181,20 +181,14 @@ public:
 
 private:
     /// The paths (abs) indicating where the plugin should search for nodes.
-    NdrStringVec _searchPaths;
+    NdrStringVec _customSearchPaths;
     NdrStringVec _allSearchPaths;
 };
 
 UsdMtlxDiscoveryPlugin::UsdMtlxDiscoveryPlugin()
 {
-    // Note this is the same envar used in HdMtlxSearchPaths(). This is used to 
-    // indicate the location of any additional custom mtlx files.
-    static const auto searchPaths =
-        UsdMtlxGetSearchPathsFromEnvVar("PXR_MTLX_PLUGIN_SEARCH_PATHS");
-
-    _searchPaths = searchPaths;
-    _allSearchPaths =
-        UsdMtlxMergeSearchPaths(_searchPaths, UsdMtlxStandardLibraryPaths());
+    _customSearchPaths = UsdMtlxCustomSearchPaths();
+    _allSearchPaths = UsdMtlxSearchPaths();
 }
 
 NdrNodeDiscoveryResultVec
@@ -227,7 +221,7 @@ UsdMtlxDiscoveryPlugin::DiscoverNodes(const Context& context)
     // Find the mtlx files from other search paths.
     for (auto&& fileResult:
             NdrFsHelpersDiscoverNodes(
-                _searchPaths,
+                _customSearchPaths,
                 UsdMtlxStandardFileExtensions(),
                 TfGetenvBool("USDMTLX_PLUGIN_FOLLOW_SYMLINKS", false))) {
         if (auto document = UsdMtlxGetDocument(fileResult.resolvedUri)) {
