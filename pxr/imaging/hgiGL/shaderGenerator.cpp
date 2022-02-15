@@ -118,10 +118,11 @@ HgiGLShaderGenerator::_WriteTextures(
     const HgiShaderFunctionTextureDescVector &textures)
 {
     // Extract texture descriptors and add appropriate texture sections
+    size_t binding = 0;
     for (size_t i=0; i<textures.size(); i++) {
         const HgiShaderFunctionTextureDesc &textureDescription = textures[i];
         HgiShaderSectionAttributeVector attrs = {
-            HgiShaderSectionAttribute{"binding", std::to_string(i)}};
+            HgiShaderSectionAttribute{"binding", std::to_string(binding)}};
 
         if (textureDescription.writable) {
             attrs.insert(attrs.begin(), HgiShaderSectionAttribute{
@@ -136,8 +137,16 @@ HgiGLShaderGenerator::_WriteTextures(
                 i,
                 textureDescription.dimensions,
                 textureDescription.format,
+                textureDescription.textureType,
+                textureDescription.arraySize,
                 textureDescription.writable,
                 attrs));
+
+        if (textureDescription.arraySize > 0) {
+            binding += textureDescription.arraySize;
+        } else {
+            binding++;
+        }
     }
 }
 

@@ -699,7 +699,6 @@ enum HgiInterpolationType
     HgiInterpolationNoPerspective,
 };
 
-
 /// \enum HgiShaderTextureType
 ///
 /// Describes the type of texture to be used in shader gen.

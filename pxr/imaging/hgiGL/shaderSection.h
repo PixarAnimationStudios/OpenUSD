@@ -46,7 +46,8 @@ public:
         const std::string &identifier,
         const HgiShaderSectionAttributeVector &attributes = {},
         const std::string &storageQualifier = std::string(),
-        const std::string &defaultValue = std::string());
+        const std::string &defaultValue = std::string(),
+        const std::string &arraySize = std::string());
 
     HGIGL_API
     ~HgiGLShaderSection() override;
@@ -73,6 +74,7 @@ private:
     HgiGLShaderSection(const HgiGLShaderSection&) = delete;
 
     const std::string _storageQualifier;
+    const std::string _arraySize;
 };
 
 /// \class HgiGLMacroShaderSection
@@ -174,6 +176,8 @@ public:
         const uint32_t layoutIndex,
         const uint32_t dimensions,
         const HgiFormat format,
+        const HgiShaderTextureType textureType,
+        const uint32_t arraySize,
         const bool writable,
         const HgiShaderSectionAttributeVector &attributes,
         const std::string &defaultValue = std::string());
@@ -200,6 +204,8 @@ private:
 
     const uint32_t _dimensions;
     const HgiFormat _format;
+    const HgiShaderTextureType _textureType;
+    const uint32_t _arraySize;
     const bool _writable;
     static const std::string _storageQualifier;
 };
