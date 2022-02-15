@@ -144,6 +144,26 @@ class TestFileFormat(unittest.TestCase):
             self.assertEqual(input.HasConnectedSource(), True)
             self.assertEqual(input.GetConnectedSource()[0].GetPath(), source)
 
+    def test_MultiOutputNodes(self):
+        """
+        Test MaterialX nodes with multiple outputs
+        """
+
+        stage = UsdMtlx._TestFile('MultiOutputNode.mtlx')
+        testInfo = [
+            ('/MaterialX/Materials/test_m/test_ng/specular',
+            'artistic_ior', 'extinction'),
+            ('/MaterialX/Materials/test_m/test_ng/ior',
+            'artistic_ior', 'ior')
+        ]
+
+        for path, connNodeName, connectionName in testInfo:
+            node = UsdShade.Shader.Get(stage, path)
+            conn = node.GetInput('in').GetConnectedSource()
+            self.assertEqual(conn[0].GetPrim().GetPath().name, connNodeName)
+            self.assertEqual(conn[1], connectionName)
+
+        
     def test_Looks(self):
         """
         Test general MaterialX look conversions.

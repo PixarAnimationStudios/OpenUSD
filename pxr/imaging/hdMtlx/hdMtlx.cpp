@@ -247,6 +247,64 @@ _AddMaterialXNode(
     return mxNode;
 }
 
+static void
+_AddInput(
+    HdMaterialNetworkInterface *netInterface,
+    HdMaterialNetworkInterface::InputConnection const &conn,
+    TfToken const &inputName,
+    mx::DocumentPtr const &mxDoc,
+    mx::NodePtr const &mxCurrNode,
+    mx::NodePtr const &mxNextNode,
+    mx::InputPtr *mxInput)
+{
+    // If the currNode is connected to a multi-output node, the input on the 
+    // currNode needs to get the output type and indicate the output name. 
+    if (mxNextNode->isMultiOutputType()) {
+        TfToken hdNextType = netInterface->GetNodeType(conn.upstreamNodeName);
+        mx::NodeDefPtr mxNextNodeDef = mxDoc->getNodeDef(hdNextType.GetString());
+        if (mxNextNodeDef) {
+            mx::OutputPtr mxConnOutput = mxNextNodeDef->getOutput(
+                    conn.upstreamOutputName.GetString());
+            // Add input with the connected Ouptut type and set the output name 
+            *mxInput = mxCurrNode->addInput(inputName, mxConnOutput->getType());
+            (*mxInput)->setConnectedOutput(mxConnOutput);
+        }
+    }
+    else {
+        *mxInput = mxCurrNode->addInput(inputName, mxNextNode->getType());
+    }
+}
+
+static void
+_AddNodeGraphOutput(
+    HdMaterialNetworkInterface *netInterface,
+    HdMaterialNetworkInterface::InputConnection const &conn,
+    std::string const &outputName,
+    mx::DocumentPtr const &mxDoc,
+    mx::NodeGraphPtr const &mxNodeGraph,
+    mx::NodePtr const &mxNextNode,
+    mx::OutputPtr *mxOutput)
+{
+    // If the mxNodeGraph output is connected to a multi-output node, the 
+    // output on the mxNodegraph needs to get the output type from that 
+    // connected node and indicate the output name.
+    if (mxNextNode->isMultiOutputType()) {
+        TfToken hdNextType = netInterface->GetNodeType(conn.upstreamNodeName);
+        mx::NodeDefPtr mxNextNodeDef = mxDoc->getNodeDef(hdNextType.GetString());
+        if (mxNextNodeDef) {
+            mx::OutputPtr mxConnOutput = mxNextNodeDef->getOutput(
+                    conn.upstreamOutputName.GetString());
+            // Add output with the connected Ouptut type and set the output name 
+            *mxOutput = mxNodeGraph->addOutput(
+                outputName, mxConnOutput->getType());
+            (*mxOutput)->setOutputString(mxConnOutput->getName());
+        }
+    }
+    else {
+        *mxOutput = mxNodeGraph->addOutput(outputName, mxNextNode->getType());
+    }
+}
+
 // Recursively traverse the material n/w and gather the nodes in the MaterialX
 // NodeGraph and Document
 static void
@@ -309,8 +367,9 @@ _GatherUpstreamNodes(
 
             // Make sure to not add the same input twice 
             mx::InputPtr mxInput = mxCurrNode->getInput(connName);
-            if (!mxInput){
-                mxInput = mxCurrNode->addInput(connName, mxNextNode->getType());
+            if (!mxInput) {
+                _AddInput(netInterface, currConnection, connName,
+                          mxDoc, mxCurrNode, mxNextNode, &mxInput);
             }
             mxInput->setConnectedNode(mxNextNode);
         }
@@ -438,13 +497,15 @@ _CreateMtlxNodeGraphFromTerminalNodeConnections(
             // Connect currNode to the upstream Node
             std::string fullOutputName = mxNodeGraphOutput + "_" +
                             currConnection.upstreamOutputName.GetString();
-            mx::OutputPtr mxOutput = mxNodeGraph->addOutput(fullOutputName, 
-                                            mxUpstreamNode->getType());
+            mx::OutputPtr mxOutput;
+            _AddNodeGraphOutput(netInterface, currConnection, fullOutputName,
+                       mxDoc, mxNodeGraph, mxUpstreamNode, &mxOutput);
             mxOutput->setConnectedNode(mxUpstreamNode);
 
             // Connect NodeGraph Output to the ShaderNode
-            mx::InputPtr mxInput = mxShaderNode->addInput(mxNodeGraphOutput,
-                                                    mxOutput->getType());
+            mx::InputPtr mxInput;
+            _AddInput(netInterface, currConnection, cName,
+                      mxDoc, mxShaderNode, mxUpstreamNode, &mxInput);
             mxInput->setConnectedOutput(mxOutput);
         }
     }

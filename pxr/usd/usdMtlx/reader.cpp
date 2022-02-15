@@ -620,7 +620,7 @@ private:
     SdfPath _usdPath;
     std::map<std::string, UsdShadeInput> _interfaceNames;
     std::map<mx::ConstInputPtr, UsdShadeInput> _inputs;
-    std::map<std::string, UsdShadeOutput> _outputs;
+    std::map<std::string, std::vector<UsdShadeOutput>> _outputs;
 };
 
 void
@@ -859,8 +859,13 @@ _NodeGraphBuilder::_AddOutput(
     // Compute a key for finding this output.
     auto key = nodeName;
 
-    auto result =
-        _outputs[key] = connectable.CreateOutput(outputName, usdType);
+    auto result = connectable.CreateOutput(outputName, usdType);
+    auto it = _outputs.insert(
+        std::pair<std::string, std::vector<UsdShadeOutput>>(key, {result}));
+    if (!it.second) {
+        it.first->second.push_back(result);
+    }
+
     if (!renderType.IsEmpty()) {
         result.SetRenderType(renderType);
     }
@@ -882,7 +887,23 @@ _NodeGraphBuilder::_ConnectPorts(
             return;
         }
 
-        _ConnectPorts(mtlxDownstream, i->second, usdDownstream);
+        // If the downstream node has multiple outpts, use the output attribute
+        // on the mtlxDownstream node to connect to the correct UsdShadeOutput
+        if (i->second.size() > 1) {
+            UsdShadeOutput downstreamOutput;
+            if (auto outputName = _Attr(mtlxDownstream, names.output)) {
+                for (const UsdShadeOutput &out : i->second) {
+                    if (out.GetBaseName() == TfToken(outputName)) {
+                        downstreamOutput = out;
+                        break;
+                    }
+                }
+            }
+            _ConnectPorts(mtlxDownstream, downstreamOutput, usdDownstream);
+        }
+        else {
+            _ConnectPorts(mtlxDownstream, i->second[0], usdDownstream);
+        }
     }
 }
 
