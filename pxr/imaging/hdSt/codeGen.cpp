@@ -536,6 +536,9 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     const bool doublePrecisionEnabled = registry->GetHgi()->
         GetCapabilities()->IsSet(
             HgiDeviceCapabilitiesBitsShaderDoublePrecision);
+    const bool minusOneToOneDepth = registry->GetHgi()->
+        GetCapabilities()->IsSet(
+          HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne);
 
     if (bindlessBufferEnabled) {
         _genHeader << "#extension GL_NV_shader_buffer_load : require\n"
@@ -580,6 +583,9 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     }
     if (doublePrecisionEnabled) {
         _genFS << "#define HD_SHADER_SUPPORTS_DOUBLE_PRECISION\n";
+    }
+    if (minusOneToOneDepth) {
+        _genFS << "#define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE\n";
     }
 
     // ------------------

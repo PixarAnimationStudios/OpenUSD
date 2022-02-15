@@ -78,6 +78,8 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     if (HgiVulkanIsDebugEnabled()) {
         TF_WARN("Selected GPU %s", vkDeviceProperties.deviceName);
     }
+    
+    _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne, false);
 }
 
 HgiVulkanCapabilities::~HgiVulkanCapabilities() = default;

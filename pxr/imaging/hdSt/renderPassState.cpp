@@ -227,6 +227,18 @@ HdStRenderPassState::Prepare(
     GfMatrix4d const& worldToViewMatrix = GetWorldToViewMatrix();
     GfMatrix4d projMatrix = GetProjectionMatrix();
 
+    if (!hdStResourceRegistry->GetHgi()->GetCapabilities()->IsSet(
+        HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne)) {
+        // Different backends use different clip space depth ranges. The
+        // codebase generally assumes an OpenGL-style depth of [-1, 1] when
+        // computing projection matrices, so we must add an additional
+        // conversion when the Hgi backend expects a [0, 1] depth range.
+        GfMatrix4d depthAdjustmentMat = GfMatrix4d(1);
+        depthAdjustmentMat[2][2] = 0.5;
+        depthAdjustmentMat[3][2] = 0.5;
+        projMatrix = projMatrix * depthAdjustmentMat;
+    }
+
     HdBufferSourceSharedPtrVector sources = {
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->worldToViewMatrix,

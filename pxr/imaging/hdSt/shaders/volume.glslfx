@@ -410,11 +410,14 @@ NDCtoEyeZ(float z)
 }
 
 // Compute the z-value of the near clipping plane in eye space.
-// Negative by OpenGL convention
 float
 computeNearZ()
 {
+#ifdef HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
     return NDCtoEyeZ(-1.0);
+#else
+    return NDCtoEyeZ(0.0);
+#endif
 }
 
 // Compute the near clipping distance. Always returns a positive value.
@@ -517,7 +520,12 @@ sampleZBuffer(vec2 fragcoord)
     const float bufferVal = 1.0;
 #endif
 
+#ifdef HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+    // Convert from [0, 1] to [-1, 1] to if necessary
     return NDCtoEyeZ(2.0 * bufferVal - 1.0);
+#else
+    return NDCtoEyeZ(bufferVal);
+#endif
 }
 
 // Compute how much length we need to ray march.

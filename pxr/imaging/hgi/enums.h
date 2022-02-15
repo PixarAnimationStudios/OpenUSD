@@ -57,19 +57,22 @@ using HgiBits = uint32_t;
 ///   The device can access GPU textures using bindless handles</li>
 /// <li>HgiDeviceCapabilitiesBitsShaderDoublePrecision:
 ///   The device supports double precision types in shaders</li>
+/// <li>HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne:
+///   The device's clip space depth ranges from [-1,1]</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
 {
-    HgiDeviceCapabilitiesBitsPresentation          = 1 << 0,
-    HgiDeviceCapabilitiesBitsBindlessBuffers       = 1 << 1,
-    HgiDeviceCapabilitiesBitsConcurrentDispatch    = 1 << 2,
-    HgiDeviceCapabilitiesBitsUnifiedMemory         = 1 << 3,
-    HgiDeviceCapabilitiesBitsBuiltinBarycentrics   = 1 << 4,
-    HgiDeviceCapabilitiesBitsShaderDrawParameters  = 1 << 5,
-    HgiDeviceCapabilitiesBitsMultiDrawIndirect     = 1 << 6,
-    HgiDeviceCapabilitiesBitsBindlessTextures      = 1 << 7,
-    HgiDeviceCapabilitiesBitsShaderDoublePrecision = 1 << 8
+    HgiDeviceCapabilitiesBitsPresentation            = 1 << 0,
+    HgiDeviceCapabilitiesBitsBindlessBuffers         = 1 << 1,
+    HgiDeviceCapabilitiesBitsConcurrentDispatch      = 1 << 2,
+    HgiDeviceCapabilitiesBitsUnifiedMemory           = 1 << 3,
+    HgiDeviceCapabilitiesBitsBuiltinBarycentrics     = 1 << 4,
+    HgiDeviceCapabilitiesBitsShaderDrawParameters    = 1 << 5,
+    HgiDeviceCapabilitiesBitsMultiDrawIndirect       = 1 << 6,
+    HgiDeviceCapabilitiesBitsBindlessTextures        = 1 << 7,
+    HgiDeviceCapabilitiesBitsShaderDoublePrecision   = 1 << 8,
+    HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne = 1 << 9,
 };
 
 using HgiDeviceCapabilities = HgiBits;

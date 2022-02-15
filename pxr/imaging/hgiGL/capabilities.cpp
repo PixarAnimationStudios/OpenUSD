@@ -183,6 +183,8 @@ HgiGLCapabilities::_LoadCapabilities()
         shaderDrawParametersEnabled);
     _SetFlag(HgiDeviceCapabilitiesBitsShaderDoublePrecision, 
         true);
+    _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne,
+        true);
 
     if (TfDebug::IsEnabled(HGI_DEBUG_DEVICE_CAPABILITIES)) {
         std::cout
