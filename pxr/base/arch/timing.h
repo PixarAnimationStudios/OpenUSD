@@ -137,7 +137,7 @@ ArchGetStopTickTime()
     return ArchGetTickTime();
 #elif defined (ARCH_CPU_ARM)
     std::atomic_signal_fence(std::memory_order_seq_cst);
-    asm volatile("mrs %0, cntvct_e l0" : "=r"(t));
+    asm volatile("mrs %0, cntvct_el0" : "=r"(t));
     std::atomic_signal_fence(std::memory_order_seq_cst);
 #elif defined (ARCH_COMPILER_MSVC)
     std::atomic_signal_fence(std::memory_order_seq_cst);
