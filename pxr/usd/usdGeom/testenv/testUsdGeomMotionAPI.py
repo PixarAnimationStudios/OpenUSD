@@ -30,18 +30,18 @@ class TestUsdGeomMotionAPI(unittest.TestCase):
         stage = Usd.Stage.CreateInMemory()
         self.assertTrue(stage)
 
-        # When blurScale/accelerationsSampleCount is authored on parent root,
+        # When blurScale/nonlinearSampleCount is authored on parent root,
         # child that does not apply and author (Child1) inherits from parent,
         # but child that does author computes its own value (Child2)
         root1 = UsdGeom.Xform.Define(stage, '/root1')
         UsdGeom.MotionAPI.Apply(root1.GetPrim()).CreateMotionBlurScaleAttr(0.5)
-        UsdGeom.MotionAPI.Apply(root1.GetPrim()).CreateAccelerationsSampleCountAttr(5)
+        UsdGeom.MotionAPI.Apply(root1.GetPrim()).CreateNonlinearSampleCountAttr(5)
         root1Child1 = UsdGeom.Mesh.Define(stage, '/root1/mesh1')
         self.assertEqual(UsdGeom.MotionAPI(root1Child1).
                          ComputeMotionBlurScale(),
                          0.5)
         self.assertEqual(UsdGeom.MotionAPI(root1Child1).
-                         ComputeAccelerationsSampleCount(),
+                         ComputeNonlinearSampleCount(),
                          5)
 
         # Even if Child1 applies the schema, but does not author a value,
@@ -51,18 +51,18 @@ class TestUsdGeomMotionAPI(unittest.TestCase):
                          ComputeMotionBlurScale(),
                          0.5)
         self.assertEqual(UsdGeom.MotionAPI(root1Child1).
-                         ComputeAccelerationsSampleCount(),
+                         ComputeNonlinearSampleCount(),
                          5)
 
         # Child authoring has no effect if MotionAPI is not applied
         root1Child2 = UsdGeom.Mesh.Define(stage, '/root1/mesh2')
         UsdGeom.MotionAPI(root1Child2).CreateMotionBlurScaleAttr(2.0)
-        UsdGeom.MotionAPI(root1Child2).CreateAccelerationsSampleCountAttr(10)
+        UsdGeom.MotionAPI(root1Child2).CreateNonlinearSampleCountAttr(10)
         self.assertEqual(UsdGeom.MotionAPI(root1Child2).
                          ComputeMotionBlurScale(),
                          0.5)
         self.assertEqual(UsdGeom.MotionAPI(root1Child2).
-                         ComputeAccelerationsSampleCount(),
+                         ComputeNonlinearSampleCount(),
                          5)
 
         UsdGeom.MotionAPI.Apply(root1Child2.GetPrim())
@@ -70,7 +70,7 @@ class TestUsdGeomMotionAPI(unittest.TestCase):
                          ComputeMotionBlurScale(),
                          2.0)
         self.assertEqual(UsdGeom.MotionAPI(root1Child2).
-                         ComputeAccelerationsSampleCount(),
+                         ComputeNonlinearSampleCount(),
                          10)
 
         # When nothing is authord anywhere, fallback is 1.0 and 3
@@ -80,7 +80,7 @@ class TestUsdGeomMotionAPI(unittest.TestCase):
                          ComputeMotionBlurScale(),
                          1.0)
         self.assertEqual(UsdGeom.MotionAPI(root2Child).
-                         ComputeAccelerationsSampleCount(),
+                         ComputeNonlinearSampleCount(),
                          3)
 
 

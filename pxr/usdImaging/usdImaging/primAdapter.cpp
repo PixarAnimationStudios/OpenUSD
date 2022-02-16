@@ -576,10 +576,10 @@ UsdImagingPrimAdapter::_GetPrimvarDescCache() const
     return &_delegate->_primvarDescCache; 
 }
 
-UsdImaging_AccelerationsSampleCountCache* 
-UsdImagingPrimAdapter::_GetAccelerationsSampleCountCache() const
+UsdImaging_NonlinearSampleCountCache* 
+UsdImagingPrimAdapter::_GetNonlinearSampleCountCache() const
 {
-    return &_delegate->_accelerationsSampleCountCache;
+    return &_delegate->_nonlinearSampleCountCache;
 }
 
 UsdImaging_BlurScaleCache* 

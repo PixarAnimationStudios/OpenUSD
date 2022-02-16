@@ -143,15 +143,15 @@ UsdGeomMotionAPI::CreateVelocityScaleAttr(VtValue const &defaultValue, bool writ
 }
 
 UsdAttribute
-UsdGeomMotionAPI::GetAccelerationsSampleCountAttr() const
+UsdGeomMotionAPI::GetNonlinearSampleCountAttr() const
 {
-    return GetPrim().GetAttribute(UsdGeomTokens->motionAccelerationsSampleCount);
+    return GetPrim().GetAttribute(UsdGeomTokens->motionNonlinearSampleCount);
 }
 
 UsdAttribute
-UsdGeomMotionAPI::CreateAccelerationsSampleCountAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomMotionAPI::CreateNonlinearSampleCountAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->motionAccelerationsSampleCount,
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->motionNonlinearSampleCount,
                        SdfValueTypeNames->Int,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -178,7 +178,7 @@ UsdGeomMotionAPI::GetSchemaAttributeNames(bool includeInherited)
     static TfTokenVector localNames = {
         UsdGeomTokens->motionBlurScale,
         UsdGeomTokens->motionVelocityScale,
-        UsdGeomTokens->motionAccelerationsSampleCount,
+        UsdGeomTokens->motionNonlinearSampleCount,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -238,11 +238,11 @@ float UsdGeomMotionAPI::ComputeVelocityScale(UsdTimeCode time) const
                   time);
 }
 
-int UsdGeomMotionAPI::ComputeAccelerationsSampleCount(UsdTimeCode time) const
+int UsdGeomMotionAPI::ComputeNonlinearSampleCount(UsdTimeCode time) const
 {
     return _ComputeInheritedMotionAttr<int>(
                   GetPrim(), 
-                  UsdGeomTokens->motionAccelerationsSampleCount,
+                  UsdGeomTokens->motionNonlinearSampleCount,
                   3,
                   time);
 }

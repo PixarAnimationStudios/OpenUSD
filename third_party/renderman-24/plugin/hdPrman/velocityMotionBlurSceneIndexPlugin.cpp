@@ -42,7 +42,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 static const char * const _pluginDisplayName = "Prman";
 
-static const int _defaultAccelerationsSampleCount = 3;
+static const int _defaultNonlinearSampleCount = 3;
 
 // XXX: We need to encode the fps in the scene index (in a standard
 // place). Note that fps is called timeCodesPerSecond in USD.
@@ -114,7 +114,7 @@ private:
     VtValue _GetSourcePrimvarValue(const HdDataSourceLocator &locator) const;
     VtValue _GetSourceVelocitiesValue() const;
     VtValue _GetSourceAccelerationsValue() const;
-    int _GetSourceAccelerationsSampleCount() const;
+    int _GetSourceNonlinearSampleCount() const;
     float _GetSourceBlurScale() const;
 
     std::pair<Time, Time> _GetSamplingInterval(
@@ -202,14 +202,14 @@ _PrimvarValueDataSource::_GetSourceAccelerationsValue() const
 }
 
 int
-_PrimvarValueDataSource::_GetSourceAccelerationsSampleCount() const
+_PrimvarValueDataSource::_GetSourceNonlinearSampleCount() const
 {
     // Find count located on prim at
     // primvars>accelertionsSampleCount>primvarValue
     static const HdDataSourceLocator locator(
-        HdTokens->accelerationsSampleCount, HdPrimvarSchemaTokens->primvarValue);
+        HdTokens->nonlinearSampleCount, HdPrimvarSchemaTokens->primvarValue);
     const VtValue value = _GetSourcePrimvarValue(locator);
-    return value.GetWithDefault<int>(_defaultAccelerationsSampleCount);
+    return value.GetWithDefault<int>(_defaultNonlinearSampleCount);
 }
 
 float
@@ -488,10 +488,10 @@ _PrimvarValueDataSource::_GetSamplesVelocityBlur(
         return true;
     }
 
-    const size_t accelerationsSampleCount =
-        _GetSourceAccelerationsSampleCount();
+    const size_t nonlinearSampleCount =
+        _GetSourceNonlinearSampleCount();
 
-    if (accelerationsSampleCount < 2) {
+    if (nonlinearSampleCount < 2) {
         // Degenerate case (e.g. only one sample).
         //
         // Catch to avoid division by zero below.
@@ -503,10 +503,10 @@ _PrimvarValueDataSource::_GetSamplesVelocityBlur(
         return false;
     }
 
-    const float m(accelerationsSampleCount - 1);
+    const float m(nonlinearSampleCount - 1);
 
-    outSampleTimes->reserve(accelerationsSampleCount);
-    for (size_t i = 0; i < accelerationsSampleCount; ++i) {
+    outSampleTimes->reserve(nonlinearSampleCount);
+    for (size_t i = 0; i < nonlinearSampleCount; ++i) {
         // Do floating point operations in such a way that
         // we get startTime and endTime on the nose for the first
         // and last value.
@@ -827,7 +827,7 @@ _SceneIndex::_PrimsDirtied(
     static const HdDataSourceLocatorSet relevantLocators{
         _GetPrimvarValueLocator(HdTokens->velocities),
         _GetPrimvarValueLocator(HdTokens->accelerations),
-        _GetPrimvarValueLocator(HdTokens->accelerationsSampleCount),
+        _GetPrimvarValueLocator(HdTokens->nonlinearSampleCount),
         _GetPrimvarValueLocator(HdTokens->blurScale)};
 
     std::vector<size_t> indices;

@@ -247,35 +247,44 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
-    // ACCELERATIONSSAMPLECOUNT 
+    // NONLINEARSAMPLECOUNT 
     // --------------------------------------------------------------------- //
-    /// If 'accelerations' are given in a USD document but an
-    /// application (such as a renderer) consuming 'points' or
-    /// 'positions' cannot apply 'accelerations' itself, an
-    /// intermediate layer has to compute samples for the point
-    /// positions for the application instead. The number of samples
-    /// is given by 'accelerationsSamplesCount'. They are equally
-    /// spaced within the sampling interval and computed from the
-    /// 'points' or 'positions', 'velocities' and 'accelerations'.
+    /// Determines the number of position or transformation samples
+    /// created when motion is described by attributes contributing non-linear
+    /// terms.
     /// 
-    /// 'accelerationsSampleCount' is an **inherited** attribute, also
-    /// see ComputeAccelerationsSampleCount()
+    /// To give an example, imagine an application (such as a
+    /// renderer) consuming 'points' and the USD document also
+    /// contains 'accelerations' for the same prim. Unless the
+    /// application can consume these 'accelerations' itself, an
+    /// intermediate layer has to compute samples within the sampling
+    /// interval for the point positions based on the value of
+    /// 'points', 'velocities' and 'accelerations'. The number of these
+    /// samples is given by 'nonlinearSampleCount'. The samples are
+    /// equally spaced within the sampling interval.
+    /// 
+    /// Another example involves the PointInstancer where
+    /// 'nonlinearSampleCount' is relevant when 'angularVelocities'
+    /// or 'accelerations' are authored.
+    /// 
+    /// 'nonlinearSampleCount' is an **inherited** attribute, also
+    /// see ComputeNonlinearSampleCount()
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `int motion:accelerationsSampleCount = 3` |
+    /// | Declaration | `int motion:nonlinearSampleCount = 3` |
     /// | C++ Type | int |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Int |
     USDGEOM_API
-    UsdAttribute GetAccelerationsSampleCountAttr() const;
+    UsdAttribute GetNonlinearSampleCountAttr() const;
 
-    /// See GetAccelerationsSampleCountAttr(), and also 
+    /// See GetNonlinearSampleCountAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
-    UsdAttribute CreateAccelerationsSampleCountAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateNonlinearSampleCountAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //
@@ -304,7 +313,7 @@ public:
     USDGEOM_API
     float ComputeVelocityScale(UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    /// Compute the inherited value of *accelerationsSampleCount* at \p time,
+    /// Compute the inherited value of *nonlinearSampleCount* at \p time,
     /// i.e. the authored value on the prim closest to this prim in namespace,
     /// resolved upwards through its ancestors in namespace.
     ///
@@ -315,7 +324,7 @@ public:
     /// efficient if evaluating over many prims, because it does not share
     /// inherited results.
     USDGEOM_API
-    int ComputeAccelerationsSampleCount(
+    int ComputeNonlinearSampleCount(
         UsdTimeCode time = UsdTimeCode::Default()) const;
 
     /// Compute the inherited value of *motion:blurScale* at \p time, i.e. the 

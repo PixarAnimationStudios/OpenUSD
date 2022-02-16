@@ -246,7 +246,7 @@ UsdImagingGprimAdapter::TrackVariability(UsdPrim const& prim,
                    timeVaryingBits,
                    false) ||
             _IsVarying(prim,
-                       UsdGeomTokens->motionAccelerationsSampleCount,
+                       UsdGeomTokens->motionNonlinearSampleCount,
                        HdChangeTracker::DirtyPoints,
                        UsdImagingTokens->usdVaryingPrimvar,
                        timeVaryingBits,
@@ -333,24 +333,24 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
                 HdPrimvarRoleTokens->vector);
         }
 
-        // Since accelerationsSampleCount is tied to the calculation
+        // Since nonlinearSampleCount is tied to the calculation
         // of the motion-blurred points, we also use the points dirty
         // bit here to know when to publish its value. Since it is
         // inherited, we go through the corresponding resolved attribute
         // cache.
-        UsdImaging_AccelerationsSampleCountCache *accelerationsSampleCountCache =
-            _GetAccelerationsSampleCountCache();
+        UsdImaging_NonlinearSampleCountCache *nonlinearSampleCountCache =
+            _GetNonlinearSampleCountCache();
         // Check that it has any opinions.
-        if (accelerationsSampleCountCache->GetValue(prim) !=
-                UsdImaging_AccelerationsSampleCountStrategy::invalidValue) {
+        if (nonlinearSampleCountCache->GetValue(prim) !=
+                UsdImaging_NonlinearSampleCountStrategy::invalidValue) {
             _MergePrimvar(
                 &vPrimvars,
-                HdTokens->accelerationsSampleCount,
+                HdTokens->nonlinearSampleCount,
                 HdInterpolationConstant,
                 HdPrimvarRoleTokens->none);
         }
 
-        // Comment similar to above accelerations sample count cache applies to
+        // Comment similar to above nonlinear sample count cache applies to
         // blur scale.
         UsdImaging_BlurScaleCache *blurScaleCache = _GetBlurScaleCache();
         // Check that it has any opinions.
@@ -497,7 +497,7 @@ UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
 
     if (propertyName == UsdGeomTokens->velocities ||
              propertyName == UsdGeomTokens->accelerations ||
-             propertyName == UsdGeomTokens->motionAccelerationsSampleCount ||
+             propertyName == UsdGeomTokens->motionNonlinearSampleCount ||
              propertyName == UsdGeomTokens->motionBlurScale)
         // XXX: "points" is handled by derived classes.
         return HdChangeTracker::DirtyPoints;
@@ -756,20 +756,20 @@ UsdImagingGprimAdapter::Get(UsdPrim const& prim,
             pointBased.GetAccelerationsAttr().Get(&accelerations, time)) {
             return VtValue(accelerations);
         }
-    } else if (key == HdTokens->accelerationsSampleCount) {
-        UsdImaging_AccelerationsSampleCountCache *cache =
-            _GetAccelerationsSampleCountCache();
+    } else if (key == HdTokens->nonlinearSampleCount) {
+        UsdImaging_NonlinearSampleCountCache *cache =
+            _GetNonlinearSampleCountCache();
         const int value =
             cache->GetTime() == time
                 ? cache->GetValue(prim)
-                : UsdImaging_AccelerationsSampleCountStrategy::
-                      ComputeAccelerationsSampleCount(prim,time);
+                : UsdImaging_NonlinearSampleCountStrategy::
+                      ComputeNonlinearSampleCount(prim,time);
         if (value !=
-                UsdImaging_AccelerationsSampleCountStrategy::invalidValue) {
+                UsdImaging_NonlinearSampleCountStrategy::invalidValue) {
             return VtValue(value);
         } else {
             // Default value from UsdGeom's
-            // MotionAPI.motion:accelerationsSampleCount
+            // MotionAPI.motion:nonlinearSampleCount
             constexpr int defaultValue = 3;
             return VtValue(defaultValue);
         }

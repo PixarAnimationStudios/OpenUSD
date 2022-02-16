@@ -1019,25 +1019,25 @@ struct UsdImaging_CoordSysBindingStrategy
 PXR_NAMESPACE_CLOSE_SCOPE
 
 // -------------------------------------------------------------------------- //
-// Accelerations sample count Primvar Cache
+// Nonlinear sample count Primvar Cache
 // -------------------------------------------------------------------------- //
 
 #include "pxr/usd/usdGeom/motionAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct UsdImaging_AccelerationsSampleCountStrategy;
+struct UsdImaging_NonlinearSampleCountStrategy;
 typedef UsdImaging_ResolvedAttributeCache<
-                                UsdImaging_AccelerationsSampleCountStrategy>
-    UsdImaging_AccelerationsSampleCountCache;
+                                UsdImaging_NonlinearSampleCountStrategy>
+    UsdImaging_NonlinearSampleCountCache;
 
-struct UsdImaging_AccelerationsSampleCountStrategy
+struct UsdImaging_NonlinearSampleCountStrategy
 {
     typedef int value_type;
     typedef UsdAttributeQuery query_type;
 
     // Used to indicate that no (valid) opinion exists
-    // for accelerations sample count.
+    // for nonlinear sample count.
     static constexpr value_type invalidValue = -1;
 
     static
@@ -1051,7 +1051,7 @@ struct UsdImaging_AccelerationsSampleCountStrategy
     static
     query_type MakeQuery(UsdPrim const& prim, bool *) {
         if (UsdGeomMotionAPI motionAPI = UsdGeomMotionAPI(prim)) {
-            if (UsdAttribute a = motionAPI.GetAccelerationsSampleCountAttr()) {
+            if (UsdAttribute a = motionAPI.GetNonlinearSampleCountAttr()) {
                 return query_type(a);
             }
         }
@@ -1060,7 +1060,7 @@ struct UsdImaging_AccelerationsSampleCountStrategy
     
     static
     value_type
-    Compute(UsdImaging_AccelerationsSampleCountCache const* owner, 
+    Compute(UsdImaging_NonlinearSampleCountCache const* owner, 
             UsdPrim const& prim,
             query_type const* query)
     {
@@ -1076,9 +1076,9 @@ struct UsdImaging_AccelerationsSampleCountStrategy
 
     static
     value_type
-    ComputeAccelerationsSampleCount(UsdPrim const &prim, UsdTimeCode time)
+    ComputeNonlinearSampleCount(UsdPrim const &prim, UsdTimeCode time)
     {
-        return UsdGeomMotionAPI(prim).ComputeAccelerationsSampleCount(time);
+        return UsdGeomMotionAPI(prim).ComputeNonlinearSampleCount(time);
     }
 };
 
@@ -1106,7 +1106,7 @@ struct UsdImaging_BlurScaleStrategy
     typedef UsdAttributeQuery query_type;
 
     // Used to indicate that no (valid) opinion exists
-    // for accelerations sample count.
+    // for blur scale.
     static const value_type invalidValue;
 
     static

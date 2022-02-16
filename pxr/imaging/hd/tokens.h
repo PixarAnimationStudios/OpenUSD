@@ -33,7 +33,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_TOKENS                               \
     (accelerations)                             \
-    (accelerationsSampleCount)                  \
     (adjacency)                                 \
     (bboxLocalMin)                              \
     (bboxLocalMax)                              \
@@ -79,6 +78,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (lightLink)                                 \
     (lightFilterLink)                           \
     (materialParams)                            \
+    (nonlinearSampleCount)                      \
     (nonperiodic)                               \
     (normals)                                   \
     (params)                                    \

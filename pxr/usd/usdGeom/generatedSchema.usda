@@ -3786,19 +3786,6 @@ class "MotionAPI" (
     '''
 )
 {
-    int motion:accelerationsSampleCount = 3 (
-        doc = """If 'accelerations' are given in a USD document but an
-        application (such as a renderer) consuming 'points' or
-        'positions' cannot apply 'accelerations' itself, an
-        intermediate layer has to compute samples for the point
-        positions for the application instead. The number of samples
-        is given by 'accelerationsSamplesCount'. They are equally
-        spaced within the sampling interval and computed from the
-        'points' or 'positions', 'velocities' and 'accelerations'.
-
-        'accelerationsSampleCount' is an **inherited** attribute, also
-        see ComputeAccelerationsSampleCount()"""
-    )
     float motion:blurScale = 1 (
         doc = """BlurScale is an __inherited__ float attribute that stipulates
         the rendered motion blur (as typically specified via UsdGeomCamera's
@@ -3819,6 +3806,28 @@ class "MotionAPI" (
         
         \\sa ComputeMotionBlurScale()
         """
+    )
+    int motion:nonlinearSampleCount = 3 (
+        doc = """Determines the number of position or transformation samples
+        created when motion is described by attributes contributing non-linear
+        terms.
+        
+        To give an example, imagine an application (such as a
+        renderer) consuming 'points' and the USD document also
+        contains 'accelerations' for the same prim. Unless the
+        application can consume these 'accelerations' itself, an
+        intermediate layer has to compute samples within the sampling
+        interval for the point positions based on the value of
+        'points', 'velocities' and 'accelerations'. The number of these
+        samples is given by 'nonlinearSampleCount'. The samples are
+        equally spaced within the sampling interval.
+
+        Another example involves the PointInstancer where
+        'nonlinearSampleCount' is relevant when 'angularVelocities'
+        or 'accelerations' are authored.
+
+        'nonlinearSampleCount' is an **inherited** attribute, also
+        see ComputeNonlinearSampleCount()"""
     )
     float motion:velocityScale = 1 (
         doc = """\\deprecated

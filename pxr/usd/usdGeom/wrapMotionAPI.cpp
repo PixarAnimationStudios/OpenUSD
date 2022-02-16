@@ -65,9 +65,9 @@ _CreateVelocityScaleAttr(UsdGeomMotionAPI &self,
 }
         
 static UsdAttribute
-_CreateAccelerationsSampleCountAttr(UsdGeomMotionAPI &self,
+_CreateNonlinearSampleCountAttr(UsdGeomMotionAPI &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateAccelerationsSampleCountAttr(
+    return self.CreateNonlinearSampleCountAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
 }
 
@@ -148,10 +148,10 @@ void wrapUsdGeomMotionAPI()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetAccelerationsSampleCountAttr",
-             &This::GetAccelerationsSampleCountAttr)
-        .def("CreateAccelerationsSampleCountAttr",
-             &_CreateAccelerationsSampleCountAttr,
+        .def("GetNonlinearSampleCountAttr",
+             &This::GetNonlinearSampleCountAttr)
+        .def("CreateNonlinearSampleCountAttr",
+             &_CreateNonlinearSampleCountAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
@@ -186,8 +186,8 @@ WRAP_CUSTOM {
     _class
         .def("ComputeVelocityScale", &UsdGeomMotionAPI::ComputeVelocityScale,
                 (arg("time")=UsdTimeCode::Default()))
-        .def("ComputeAccelerationsSampleCount",
-             &UsdGeomMotionAPI::ComputeAccelerationsSampleCount,
+        .def("ComputeNonlinearSampleCount",
+             &UsdGeomMotionAPI::ComputeNonlinearSampleCount,
                 (arg("time")=UsdTimeCode::Default()))
         .def("ComputeMotionBlurScale", 
              &UsdGeomMotionAPI::ComputeMotionBlurScale,

@@ -628,8 +628,8 @@ protected:
     USDIMAGING_API
     UsdImagingPrimvarDescCache* _GetPrimvarDescCache() const;
 
-    UsdImaging_AccelerationsSampleCountCache*
-        _GetAccelerationsSampleCountCache() const;
+    UsdImaging_NonlinearSampleCountCache*
+        _GetNonlinearSampleCountCache() const;
 
     UsdImaging_BlurScaleCache*
         _GetBlurScaleCache() const;

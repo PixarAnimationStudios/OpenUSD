@@ -119,7 +119,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _drawModeCache(GetTime())
     , _inheritedPrimvarCache()
     , _pointInstancerIndicesCache(GetTime())
-    , _accelerationsSampleCountCache(GetTime())
+    , _nonlinearSampleCountCache(GetTime())
     , _blurScaleCache(GetTime())
     , _displayRender(true)
     , _displayProxy(true)
@@ -843,7 +843,7 @@ UsdImagingDelegate::SetTime(UsdTimeCode time)
     _xformCache.SetTime(_time);
     _visCache.SetTime(_time);
     _pointInstancerIndicesCache.SetTime(_time);
-    _accelerationsSampleCountCache.SetTime(_time);
+    _nonlinearSampleCountCache.SetTime(_time);
     _blurScaleCache.SetTime(_time);
 
     // No need to set time on the look binding cache here, since we know we're
@@ -979,7 +979,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
     _coordSysBindingCache.Clear();
     _inheritedPrimvarCache.Clear();
     _pointInstancerIndicesCache.Clear();
-    _accelerationsSampleCountCache.Clear();
+    _nonlinearSampleCountCache.Clear();
     _blurScaleCache.Clear();
 
     UsdImagingDelegate::_Worker worker(this);
@@ -1376,7 +1376,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
         // from plugins (such as the PointInstancer).
         if (attrName == UsdGeomTokens->visibility ||
             attrName == UsdGeomTokens->purpose ||
-            attrName == UsdGeomTokens->motionAccelerationsSampleCount ||
+            attrName == UsdGeomTokens->motionNonlinearSampleCount ||
             UsdGeomXformable::IsTransformationAffectedByAttrNamed(attrName)) {
             // Because these are inherited attributes, we must update all
             // children.

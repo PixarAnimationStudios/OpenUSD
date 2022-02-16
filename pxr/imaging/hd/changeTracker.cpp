@@ -911,7 +911,7 @@ HdChangeTracker::IsPrimvarDirty(HdDirtyBits dirtyBits, SdfPath const& id,
         isDirty = (dirtyBits & DirtyPoints) != 0;
     } else if (name == HdTokens->accelerations) {
         isDirty = (dirtyBits & DirtyPoints) != 0;
-    } else if (name == HdTokens->accelerationsSampleCount) {
+    } else if (name == HdTokens->nonlinearSampleCount) {
         isDirty = (dirtyBits & DirtyPoints) != 0;
     } else if (name == HdTokens->normals) {
         isDirty = (dirtyBits & DirtyNormals) != 0;
