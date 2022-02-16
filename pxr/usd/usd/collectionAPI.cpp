@@ -72,6 +72,30 @@ UsdCollectionAPI::Get(const UsdPrim &prim, const TfToken &name)
     return UsdCollectionAPI(prim, name);
 }
 
+/* static */
+std::vector<UsdCollectionAPI>
+UsdCollectionAPI::GetAll(const UsdPrim &prim)
+{
+    std::vector<UsdCollectionAPI> schemas;
+    
+    auto appliedSchemas = prim.GetAppliedSchemas();
+    if (appliedSchemas.empty()) {
+        return schemas;
+    }
+
+    for (const auto &appliedSchema : appliedSchemas) {
+        const std::string schemaPrefix = std::string("CollectionAPI") +
+                                         UsdObject::GetNamespaceDelimiter();
+        if (TfStringStartsWith(appliedSchema, schemaPrefix)) {
+            const std::string schemaName =
+                    appliedSchema.GetString().substr(schemaPrefix.size());
+            schemas.emplace_back(prim, TfToken(schemaName));
+        }
+    }
+
+    return schemas;
+}
+
 
 /* static */
 bool 
