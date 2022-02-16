@@ -719,13 +719,22 @@ IsDigit(unsigned ch) {
     return (ch - (unsigned)'0') < 10u;
 }
 
+static inline bool
+IsAlpha(unsigned ch) {
+    return ((ch & ~0x20) - (unsigned)'A') < 26u;
+}
+
 // Like std::mismatch, return a pair of pointers to the first different chars
 // starting from b1 and b2.  If there is no difference, return e1 and b2 +
 // distance(b1, e1).
-static inline
-std::pair<char const *, char const *>
+static std::pair<char const *, char const *>
 Mismatch(const char *b1, const char *e1, const char *b2)
 {
+    // By far, the most frequent case is that the inputs immediately mismatch.
+    if (*b1 != *b2) {
+        return { b1, b2 };
+    }
+    
     // We examine 8 bytes at a time until we find a difference, then scan for
     // where that difference occurs.
     //
@@ -735,124 +744,159 @@ Mismatch(const char *b1, const char *e1, const char *b2)
     // approach without resorting to compiler/cpu specific intrinsics or inline
     // asm.
     constexpr size_t WordSz = sizeof(uint64_t);
+    size_t numWords = (e1 - b1) / WordSz;
     int tail = (e1 - b1) % WordSz;
-    e1 -= tail;
-    uint64_t a, b, x;
-    int idx = tail;
-
-    auto check = [&](int nBytes) {
-        memcpy(&a, b1, nBytes);
-        memcpy(&b, b2, nBytes);
-        // Take the exclusive-or and scan for the first nonzero byte.
+    // Check word-size chunks at a time.
+    for (; numWords--; b1 += WordSz, b2 += WordSz) {
+        uint64_t a, b, x;
+        memcpy(&a, b1, WordSz);
+        memcpy(&b, b2, WordSz);
         x = a ^ b;
         if (x) {
-            idx = ArchCountTrailingZeros(x) / WordSz;
-            return true;
-        }
-        return false;
-    };
-
-    // Check word-size chunks at a time.
-    for (; b1 != e1; b1 += WordSz, b2 += WordSz) {
-        if (check(WordSz)) {
-            return { b1 + idx, b2 + idx };
+            int idx = ArchCountTrailingZeros(x) / WordSz;
+            b1 += idx, b2 += idx;
+            return { b1, b2 };
         }
     }
     // There will be a tail remainder if the string length is not a multiple of
     // 8, just scan it.
-    if (tail) {
-        a = b = 0;
-        check(tail);
-    }
-    return { b1 + idx, b2 + idx };
+    switch (tail) {
+    case 7: if (*b1 != *b2) { break; } else { ++b1, ++b2; }
+    case 6: if (*b1 != *b2) { break; } else { ++b1, ++b2; }
+    case 5: if (*b1 != *b2) { break; } else { ++b1, ++b2; }
+    case 4: if (*b1 != *b2) { break; } else { ++b1, ++b2; }
+    case 3: if (*b1 != *b2) { break; } else { ++b1, ++b2; }
+    case 2: if (*b1 != *b2) { break; } else { ++b1, ++b2; }
+    case 1: if (*b1 != *b2) { break; } else { ++b1, ++b2; }
+    };
+    return { b1, b2 };
 }
 
-static inline
-bool DictionaryLess(std::string const &lstr, std::string const &rstr)
+bool
+TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
 {
     // Note that this code is fairly performance sensitive for certain
-    // use-cases, so be careful making changes here.  Note that the use of
-    // bitwise |, &, operators here is intentional, since the logical &&, ||
-    // generally produce branches due to the short-circuiting requirement.
-    
+    // use-cases, so be careful making changes here.
     auto lcur = lstr.c_str(), rcur = rstr.c_str();
-    auto lend = lcur + lstr.size(), rend = rcur + rstr.size();
 
-    auto curEnd = lcur + std::min(std::distance(lcur, lend),
-                                  std::distance(rcur, rend));
+    // General case.
+    size_t lsize = lstr.size(), rsize = rstr.size();
+    auto lend = lcur + lsize, rend = rcur + rsize;
+
+    auto curEnd = lcur + std::min(lsize, rsize);
+    
+    // Find the next differing byte in the strings.
+    std::tie(lcur, rcur) = Mismatch(lcur, curEnd, rcur);
+    // If the strings are identical, we're done.
+    if (lcur == curEnd && lsize == rsize) {
+        return false;
+    }
 
     char l, r;
-    while (true) {
 
-        // Find the next differing byte in the strings.
-        std::tie(lcur, rcur) = Mismatch(lcur, curEnd, rcur);
+    while (true) {
         if (lcur == curEnd) {
             // If we have hit the end we're done.
             break;
         }
         l = *lcur, r = *rcur;
-        if (bool((l ^ r) & 0x20) & (l >= 64) & (r >= 64)) {
-            // Both are in the "letters" range.  With a difference in the 6th
-            // bit, they cannot both be numerals, and they cannot be same-case
-            // letters.
-            auto lowl = (l + 5) % 32, lowr = (r + 5) % 32;
-            if (lowl != lowr) {
-                return lowl < lowr;
-            }
-            ++lcur, ++rcur;
+        // If they are letters that differ disregarding case, we're done.
+        if (((l & ~0x20) != (r & ~0x20)) & bool(l & r & ~0x3f)) {
+            // Add 5 mod 32 makes '_' sort before all letters.
+            return ((l + 5) & 31) < ((r + 5) & 31);
         }
-        else if (IsDigit(l) & IsDigit(r)) {
-            // If both are numerals, parse numbers and compare numerically.
-            // Note that there may have been a string of matching digits before
-            // here, but it's okay for us to ignore those since they have no
-            // impact on which number is greater or less than the other.
-            long lval = 0, rval = 0;
+        else if (IsDigit(l) | IsDigit(r)) {
+            if (IsDigit(l) & IsDigit(r)) {
+                // We backtrack to find the start of each digit string, then we
+                // scan each digit string, ignoring leading zeros to put the two
+                // strings into alignment with their most significant digits.
+                // Then we scan further and ignore digits while the digits
+                // match.  At the first difference, we record the initial digit
+                // of each, then count the remaining digits of each string.  The
+                // lesser value is the one with the fewest digits, or the one
+                // with the smaller initital digit if they have the same number
+                // of digits.
 
-            bool lIsNumeral = true, rIsNumeral = true;
-            do {
-                unsigned lch = *lcur, rch = *rcur;
-                unsigned
-                    ldiff = lch - (unsigned)'0',
-                    rdiff = rch - (unsigned)'0';
-                lIsNumeral = ldiff < 10;
-                rIsNumeral = rdiff < 10;
-                if (lIsNumeral) {
-                    lval = lval * 10 + ldiff;
-                    ++lcur;
+                // Backtrack to start of digit sequence.
+                char const *lDigStart = lcur, *rDigStart = rcur;
+                char const *lDigEnd = lcur, *rDigEnd = rcur;
+                char const *lBegin = lstr.c_str(), *rBegin = rstr.c_str();
+
+                while (lDigStart != lBegin && IsDigit(lDigStart[-1])) {
+                    --lDigStart;
                 }
-                if (rIsNumeral) {
-                    rval = rval * 10 + rdiff;
-                    ++rcur;
+                while (rDigStart != rBegin && IsDigit(rDigStart[-1])) {
+                    --rDigStart;
                 }
-            } while (lIsNumeral | rIsNumeral);
+                while (IsDigit(*lDigEnd) && lDigEnd != lend) {
+                    ++lDigEnd;
+                }
+                while (IsDigit(*rDigEnd) && rDigEnd != rend) {
+                    ++rDigEnd;
+                }
 
-            if (lval != rval) {
-                return lval < rval;
+                // Scan forward to find first significant digit (skip 0s).
+                while (lDigStart != lDigEnd && *lDigStart == '0') {
+                    ++lDigStart;
+                }
+                while (rDigStart != rDigEnd && *rDigStart == '0') {
+                    ++rDigStart;
+                }
+
+                // Scan both digit strings while they have matching digits.
+                while (lDigStart != lDigEnd && rDigStart != rDigEnd &&
+                       IsDigit(*lDigStart) && *lDigStart == *rDigStart) {
+                    ++lDigStart, ++rDigStart;
+                }
+
+                // If either but not both are at the end, then we can return.
+                if ((lDigStart == lDigEnd) ^ (rDigStart == rDigEnd)) {
+                    return lDigStart == lDigEnd && rDigStart != rDigEnd;
+                }
+                if (lDigStart != lDigEnd && rDigStart != rDigEnd) {
+                    // Now we can record the most significant digits.
+                    int lMSD = *lDigStart, rMSD = *rDigStart;
+                    // Now l is less if l has fewer digits, or if it has the
+                    // same number of digits and a smaller leading digit.
+                    size_t digitsL = std::distance(lDigStart, lDigEnd);
+                    size_t digitsR = std::distance(rDigStart, rDigEnd);
+                    return std::tie(digitsL, lMSD) < std::tie(digitsR, rMSD);
+                }
+                // Otherwise values are equal and we continue.  Reset curEnd to
+                // account for leading-zero count differences.
+                lcur = lDigEnd, rcur = rDigEnd;
+                curEnd = lcur + std::min(std::distance(lcur, lend),
+                                         std::distance(rcur, rend));
             }
+            else if (IsDigit(l) | IsDigit(r)) {
+                if (lcur == lstr.c_str()) {
+                    return l < r;
+                }
+                // If one is a digit (but not both), then we have to check the
+                // preceding character to determine the outcome.  If the
+                // preceding character is a digit, then lhs is less if rhs has
+                // the digit.  If not, then lhs is less if it has the digit.
+                auto prevChar = lcur[-1];
 
-            // Reset the end since it may have changed due to differences in
-            // number length, if there were leading zeros.
-            curEnd = lcur + std::min(std::distance(lcur, lend),
-                                     std::distance(rcur, rend));
+                return IsDigit(prevChar) ? IsDigit(r) : IsDigit(l);
+            }
         }
-        else if ((IsDigit(l) | IsDigit(r)) && lcur != lstr.c_str()) {
-            // If one is a digit (but not both), then we have to check the
-            // preceding character to determine the outcome.  If the preceding
-            // character is a digit, then lhs is less if rhs has the digit.  If
-            // not, then lhs is less if it has the digit.
-            auto prevChar = lcur[-1];
-            bool outcomes[] = { IsDigit(l), IsDigit(r) };
-            return outcomes[IsDigit(prevChar)];
-        }
-        else {
+        else if (!IsAlpha(l) || !IsAlpha(r)) {
+            // At least one isn't a letter.
             return l < r;
         }
+        else {
+            // Both letters, differ by case, continue.
+            ++lcur, ++rcur;
+        }
+        // Find the next differing byte in the strings.
+        std::tie(lcur, rcur) = Mismatch(lcur, curEnd, rcur);
     }
 
     // We are at the end of one or both, with at most 
     // only case/leading zero differences.  If only one at end, shorter
     // is less.
-    if ((lcur != lend) | (rcur != rend)) {
+    if ((lcur != lend) || (rcur != rend)) {
         return lcur == lend;
     }
 
@@ -866,12 +910,6 @@ bool DictionaryLess(std::string const &lstr, std::string const &rstr)
     l = *lcur, r = *rcur;
     return (r == '0') | ((l != '0') & (l < r));
 
-}
-
-bool
-TfDictionaryLessThan::operator()(const string& lhs, const string& rhs) const
-{
-    return DictionaryLess(lhs, rhs);
 }
 
 std::string

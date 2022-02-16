@@ -509,7 +509,26 @@ struct TfDictionaryLessThan {
     /// \code
     ///     bool aIsFirst = TfDictionaryLessThan()(aString, bString);
     /// \endcode
-    TF_API bool operator()(const std::string &lhs, const std::string &rhs) const;
+    inline bool operator()(const std::string &lhs,
+                           const std::string &rhs) const {
+        // Check first chars first.  By far, it is most common that these
+        // characters are letters of the same case that differ, or of different
+        // case that differ.  It is very rare that we have to account for
+        // different cases, or numerical comparisons, so we special-case this
+        // first.
+        char l = lhs.c_str()[0], r = rhs.c_str()[0];
+        if (((l & ~0x20) != (r & ~0x20)) & bool(l & r & ~0x3f)) {
+            // This bit about add 5 mod 32 makes it so that '_' sorts less than
+            // all letters, which preserves existing behavior.
+            return ((l + 5) & 31) < ((r + 5) & 31);
+        }
+        else {
+            return _LessImpl(lhs, rhs);
+        }
+    }
+private:
+    TF_API bool _LessImpl(const std::string &lhs,
+                          const std::string &rhs) const;
 };
 
 /// Convert an arbitrary type into a string
