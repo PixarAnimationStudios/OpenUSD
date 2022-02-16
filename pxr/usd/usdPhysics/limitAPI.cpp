@@ -72,6 +72,30 @@ UsdPhysicsLimitAPI::Get(const UsdPrim &prim, const TfToken &name)
     return UsdPhysicsLimitAPI(prim, name);
 }
 
+/* static */
+std::vector<UsdPhysicsLimitAPI>
+UsdPhysicsLimitAPI::GetAll(const UsdPrim &prim)
+{
+    std::vector<UsdPhysicsLimitAPI> schemas;
+    
+    auto appliedSchemas = prim.GetAppliedSchemas();
+    if (appliedSchemas.empty()) {
+        return schemas;
+    }
+
+    for (const auto &appliedSchema : appliedSchemas) {
+        const std::string schemaPrefix = std::string("PhysicsLimitAPI") +
+                                         UsdObject::GetNamespaceDelimiter();
+        if (TfStringStartsWith(appliedSchema, schemaPrefix)) {
+            const std::string schemaName =
+                    appliedSchema.GetString().substr(schemaPrefix.size());
+            schemas.emplace_back(prim, TfToken(schemaName));
+        }
+    }
+
+    return schemas;
+}
+
 
 /* static */
 bool 
