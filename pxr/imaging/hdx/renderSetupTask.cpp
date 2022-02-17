@@ -35,6 +35,8 @@
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
+#include "pxr/imaging/hdSt/tokens.h"
+#include "pxr/imaging/hdSt/volume.h"
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
@@ -82,12 +84,21 @@ void
 HdxRenderSetupTask::Prepare(HdTaskContext* ctx,
                             HdRenderIndex* renderIndex)
 {
-
     _PrepareAovBindings(ctx, renderIndex);
     PrepareCamera(renderIndex);
 
     HdRenderPassStateSharedPtr &renderPassState =
-            _GetRenderPassState(renderIndex);
+        _GetRenderPassState(renderIndex);
+
+    const float stepSize = renderIndex->GetRenderDelegate()->
+        GetRenderSetting<float>(
+            HdStRenderSettingsTokens->volumeRaymarchingStepSize,
+            HdStVolume::defaultStepSize);
+    const float stepSizeLighting = renderIndex->GetRenderDelegate()->
+        GetRenderSetting<float>(
+            HdStRenderSettingsTokens->volumeRaymarchingStepSizeLighting,
+            HdStVolume::defaultStepSizeLighting);
+    renderPassState->SetVolumeRenderingConstants(stepSize, stepSizeLighting);
 
     renderPassState->Prepare(renderIndex->GetResourceRegistry());
     (*ctx)[HdxTokens->renderPassState] = VtValue(_renderPassState);

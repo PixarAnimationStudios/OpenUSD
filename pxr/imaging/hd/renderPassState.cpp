@@ -84,6 +84,8 @@ HdRenderPassState::HdRenderPassState()
     , _colorMaskUseDefault(true)
     , _useMultiSampleAov(true)
     , _conservativeRasterizationEnabled(false)
+    , _stepSize(0.f)
+    , _stepSizeLighting(0.f)
 {
 }
 
@@ -485,6 +487,14 @@ void
 HdRenderPassState::SetConservativeRasterizationEnabled(bool enabled)
 {
     _conservativeRasterizationEnabled = enabled;
+}
+
+void
+HdRenderPassState::SetVolumeRenderingConstants(
+    float stepSize, float stepSizeLighting)
+{
+    _stepSize = stepSize;
+    _stepSizeLighting = stepSizeLighting;
 }
 
 void

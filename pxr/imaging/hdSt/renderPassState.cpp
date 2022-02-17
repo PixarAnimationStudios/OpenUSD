@@ -137,7 +137,7 @@ HdStRenderPassState::Prepare(
         clipPlanes.resize(maxClipPlanes);
     }
 
-    // allocate bar if not exists
+    // allocate bar if it does not exist
     if (!_renderPassStateBar || 
         (_clipPlanesBufferSize != clipPlanes.size()) ||
         _alphaThresholdCurrent != _alphaThreshold) {
@@ -183,6 +183,12 @@ HdStRenderPassState::Prepare(
             HdTupleType{HdTypeFloat, 1});
         bufferSpecs.emplace_back(
             HdShaderTokens->lightingBlendAmount,
+            HdTupleType{HdTypeFloat, 1});
+        bufferSpecs.emplace_back(
+            HdShaderTokens->stepSize,
+            HdTupleType{HdTypeFloat, 1});
+        bufferSpecs.emplace_back(
+            HdShaderTokens->stepSizeLighting,
             HdTupleType{HdTypeFloat, 1});
 
         if (_UseAlphaMask()) {
@@ -277,7 +283,13 @@ HdStRenderPassState::Prepare(
             VtValue(_pointSelectedSize)),
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->lightingBlendAmount,
-            VtValue(lightingBlendAmount))
+            VtValue(lightingBlendAmount)),
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->stepSize,
+            VtValue(_stepSize)),
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->stepSizeLighting,
+            VtValue(_stepSizeLighting))
     };
 
     if (_UseAlphaMask()) {

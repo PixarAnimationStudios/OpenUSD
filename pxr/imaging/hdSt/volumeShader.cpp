@@ -40,8 +40,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (stepSize)
-    (stepSizeLighting)
 
     (sampleDistance)
     (volumeBBoxInverseTransform)
@@ -54,7 +52,6 @@ HdSt_VolumeShader::HdSt_VolumeShader()
     : _fillsPointsBar(false)
 {
 }
-
 
 HdSt_VolumeShader::~HdSt_VolumeShader() = default;
 

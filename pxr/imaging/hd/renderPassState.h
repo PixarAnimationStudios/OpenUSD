@@ -328,6 +328,9 @@ public:
         return _conservativeRasterizationEnabled;
     }
 
+    HD_API
+    void SetVolumeRenderingConstants(float stepSize, float stepSizeLighting);
+
     enum ColorMask {
         ColorMaskNone,
         ColorMaskRGB,
@@ -413,6 +416,9 @@ protected:
     bool _useMultiSampleAov;
 
     bool _conservativeRasterizationEnabled;
+
+    float _stepSize;
+    float _stepSizeLighting;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -41,6 +41,8 @@
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/textureUtils.h"
+#include "pxr/imaging/hdSt/tokens.h"
+#include "pxr/imaging/hdSt/volume.h"
 
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/tokens.h"
@@ -469,6 +471,15 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
                      _contextParams.resolution[0],
                      _contextParams.resolution[1]);
 
+    const float stepSize = delegate->GetRenderIndex().GetRenderDelegate()->
+        GetRenderSetting<float>(
+        HdStRenderSettingsTokens->volumeRaymarchingStepSize,
+        HdStVolume::defaultStepSize);
+    const float stepSizeLighting = delegate->GetRenderIndex().
+        GetRenderDelegate()->GetRenderSetting<float>(
+        HdStRenderSettingsTokens->volumeRaymarchingStepSizeLighting,
+        HdStVolume::defaultStepSizeLighting);
+
     // Update the renderpass states.
     for (auto& state : states) {
         if (needStencilConditioning) {
@@ -493,6 +504,8 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         state->SetBlendEnabled(false);
         state->SetCullStyle(_params.cullStyle);
         state->SetLightingEnabled(false);
+
+        state->SetVolumeRenderingConstants(stepSize, stepSizeLighting);
 
         // If scene materials are disabled in this environment then
         // let's setup the override shader

@@ -213,7 +213,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (vertexShader)                              \
     (wireframeColor)                            \
     (worldToViewMatrix)                         \
-    (worldToViewInverseMatrix)
+    (worldToViewInverseMatrix)                  \
+    (stepSize)                                  \
+    (stepSizeLighting)
 
 // Deprecated. Use: HdStMaterialTagTokens
 #define HD_MATERIALTAG_TOKENS                   \

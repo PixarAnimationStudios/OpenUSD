@@ -41,13 +41,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (stepSize)
-    (stepSizeLighting)
-    (volumeRenderingConstants)
-);
-
 HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
                 HdSceneDelegate* delegate, SdfPath const& id)
     : HdxRenderTask(delegate, id)
@@ -55,10 +48,6 @@ HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
         std::make_shared<HdStRenderPassShader>(
             HdxPackageRenderPassOitVolumeShader()))
     , _isOitEnabled(HdxOitBufferAccessor::IsOitEnabled())
-    , _lastRenderSettingsVersion(0)
-    , _stepSize(HdStVolume::defaultStepSize)
-    , _stepSizeLighting(HdStVolume::defaultStepSizeLighting)
-    , _stepSizeBar(nullptr)
 {
 }
 
@@ -98,73 +87,6 @@ HdxOitVolumeRenderTask::Prepare(HdTaskContext* ctx,
         _oitVolumeRenderPassShader->UpdateAovInputTextures(
             state->GetAovInputBindings(),
             renderIndex);
-    }
-
-    HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
-        std::dynamic_pointer_cast<HdStResourceRegistry>(
-            renderIndex->GetResourceRegistry());
-
-    if (!hdStResourceRegistry) {
-        return;
-    }
-
-    // Allocate step size BAR
-    if (!_stepSizeBar) {
-        HdBufferSpecVector bufferSpecs;
-
-        bufferSpecs.emplace_back(
-            _tokens->stepSize,
-            HdTupleType{HdTypeFloat, 1});
-        bufferSpecs.emplace_back(
-            _tokens->stepSizeLighting,
-            HdTupleType{HdTypeFloat, 1});
-
-        _stepSizeBar = hdStResourceRegistry->AllocateUniformBufferArrayRange(
-            _tokens->stepSize, 
-            bufferSpecs, 
-            HdBufferArrayUsageHint());
-
-        _oitVolumeRenderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, 
-                             _tokens->volumeRenderingConstants,
-                             _stepSizeBar, /*interleaved=*/true));
-    }
-
-    // Add step size buffer sources
-    {
-        HdRenderDelegate *renderDelegate = renderIndex->GetRenderDelegate();
-
-        const int currentRenderSettingsVersion =
-            renderDelegate->GetRenderSettingsVersion();
-        
-        if (_lastRenderSettingsVersion != currentRenderSettingsVersion) {
-            float stepSize = renderDelegate->GetRenderSetting<float>(
-                HdStRenderSettingsTokens->volumeRaymarchingStepSize,
-                HdStVolume::defaultStepSize);
-            float stepSizeLighting = renderDelegate->GetRenderSetting<float>(
-                HdStRenderSettingsTokens->volumeRaymarchingStepSizeLighting,
-                HdStVolume::defaultStepSizeLighting);
-
-            if (_lastRenderSettingsVersion == 0 ||
-                _stepSize != stepSize || 
-                _stepSizeLighting != stepSizeLighting) {
-                _stepSize = stepSize;
-                _stepSizeLighting = stepSizeLighting;
-
-                HdBufferSourceSharedPtrVector sources = {
-                    std::make_shared<HdVtBufferSource>(
-                        _tokens->stepSize,
-                        VtValue(_stepSize)),
-                    std::make_shared<HdVtBufferSource>(
-                        _tokens->stepSizeLighting,
-                        VtValue(_stepSizeLighting))
-                };
- 
-                hdStResourceRegistry->AddSources(
-                    _stepSizeBar, std::move(sources));
-            }
-            _lastRenderSettingsVersion = currentRenderSettingsVersion;
-        }
     }
 }
 
