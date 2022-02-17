@@ -42,6 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (flatShadingEnabled) \
     (displacementEnabled) \
     (occludedSelectionShowsThrough) \
+    (pointsShadingEnabled) \
     (shadingStyle) \
     (reprSelector) \
     (cullStyle) \
@@ -68,6 +69,8 @@ public:
     HD_API
     HdBoolDataSourceHandle GetOccludedSelectionShowsThrough();
     HD_API
+    HdBoolDataSourceHandle GetPointsShadingEnabled();
+    HD_API
     HdTokenDataSourceHandle GetShadingStyle();
     HD_API
     HdTokenArrayDataSourceHandle GetReprSelector();
@@ -88,6 +91,7 @@ public:
         const HdBoolDataSourceHandle &flatShadingEnabled,
         const HdBoolDataSourceHandle &displacementEnabled,
         const HdBoolDataSourceHandle &occludedSelectionShowsThrough,
+        const HdBoolDataSourceHandle &pointsShadingEnabled,
         const HdTokenDataSourceHandle &shadingStyle,
         const HdTokenArrayDataSourceHandle &reprSelector,
         const HdTokenDataSourceHandle &cullStyle
@@ -115,6 +119,9 @@ public:
         Builder &SetOccludedSelectionShowsThrough(
             const HdBoolDataSourceHandle &occludedSelectionShowsThrough);
         HD_API
+        Builder &SetPointsShadingEnabled(
+            const HdBoolDataSourceHandle &pointsShadingEnabled);
+        HD_API
         Builder &SetShadingStyle(
             const HdTokenDataSourceHandle &shadingStyle);
         HD_API
@@ -133,6 +140,7 @@ public:
         HdBoolDataSourceHandle _flatShadingEnabled;
         HdBoolDataSourceHandle _displacementEnabled;
         HdBoolDataSourceHandle _occludedSelectionShowsThrough;
+        HdBoolDataSourceHandle _pointsShadingEnabled;
         HdTokenDataSourceHandle _shadingStyle;
         HdTokenArrayDataSourceHandle _reprSelector;
         HdTokenDataSourceHandle _cullStyle;

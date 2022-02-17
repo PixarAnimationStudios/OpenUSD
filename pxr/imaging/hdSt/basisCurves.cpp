@@ -63,6 +63,7 @@ HdStBasisCurves::HdStBasisCurves(SdfPath const& id)
     , _refineLevel(0)
     , _displayOpacity(false)
     , _occludedSelectionShowsThrough(false)
+    , _pointsShadingEnabled(false)
 {
     /*NOTHING*/
 }
@@ -375,7 +376,8 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
                                         _basisWidthInterpolation,
                                         _basisNormalInterpolation,
                                         shadingTerminal,
-                                        hasAuthoredTopologicalVisiblity);
+                                        hasAuthoredTopologicalVisiblity,
+                                        _pointsShadingEnabled);
 
     TF_DEBUG(HD_RPRIM_UPDATED).
             Msg("HdStBasisCurves(%s) - Shader Key PrimType: %s\n ",
@@ -609,6 +611,7 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         HdDisplayStyle ds = GetDisplayStyle(sceneDelegate);
         _refineLevel = ds.refineLevel;
         _occludedSelectionShowsThrough = ds.occludedSelectionShowsThrough;
+        _pointsShadingEnabled = ds.pointsShadingEnabled;
     }
 
     // XXX: is it safe to get topology even if it's not dirty?

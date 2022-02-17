@@ -90,16 +90,23 @@ struct HdDisplayStyle {
     /// Does the prim act "transparent" to allow occluded selection to show
     /// through?
     bool occludedSelectionShowsThrough;
+
+    /// Should the prim's points get shaded like surfaces, as opposed to 
+    /// constant shaded?
+    bool pointsShadingEnabled;
     
     /// Creates a default DisplayStyle.
     /// - refineLevel is 0.
     /// - flatShading is disabled.
     /// - displacement is enabled.
+    /// - occludedSelectionShowsThrough is disabled.
+    /// - pointsShading is disabled.
     HdDisplayStyle()
         : refineLevel(0)
         , flatShadingEnabled(false)
         , displacementEnabled(true)
         , occludedSelectionShowsThrough(false)
+        , pointsShadingEnabled(false)
     { }
     
     /// Creates a DisplayStyle.
@@ -109,14 +116,18 @@ struct HdDisplayStyle {
     /// \param displacement enables displacement shading, defaults to false.
     /// \param occludedSelectionShowsThrough controls whether the prim lets
     ///        occluded selection show through it, defaults to false.
+    /// \param pointsShadingEnabled controls whether the prim's points 
+    ///        are shaded as surfaces or constant-shaded, defaults to false.
     HdDisplayStyle(int refineLevel_,
                    bool flatShading = false,
                    bool displacement = true,
-                   bool occludedSelectionShowsThrough_ = false)
+                   bool occludedSelectionShowsThrough_ = false,
+                   bool pointsShadingEnabled_ = false)
         : refineLevel(std::max(0, refineLevel_))
         , flatShadingEnabled(flatShading)
         , displacementEnabled(displacement)
         , occludedSelectionShowsThrough(occludedSelectionShowsThrough_)
+        , pointsShadingEnabled(pointsShadingEnabled_)
     {
         if (refineLevel_ < 0) {
             TF_CODING_ERROR("negative refine level is not supported");
@@ -133,7 +144,8 @@ struct HdDisplayStyle {
             && flatShadingEnabled == rhs.flatShadingEnabled
             && displacementEnabled == rhs.displacementEnabled
             && occludedSelectionShowsThrough ==
-                rhs.occludedSelectionShowsThrough;
+                rhs.occludedSelectionShowsThrough
+            && pointsShadingEnabled == rhs.pointsShadingEnabled;
     }
     bool operator!=(HdDisplayStyle const& rhs) const {
         return !(*this == rhs);

@@ -66,6 +66,13 @@ HdLegacyDisplayStyleSchema::GetOccludedSelectionShowsThrough()
         HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough);
 }
 
+HdBoolDataSourceHandle
+HdLegacyDisplayStyleSchema::GetPointsShadingEnabled()
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        HdLegacyDisplayStyleSchemaTokens->pointsShadingEnabled);
+}
+
 HdTokenDataSourceHandle
 HdLegacyDisplayStyleSchema::GetShadingStyle()
 {
@@ -94,6 +101,7 @@ HdLegacyDisplayStyleSchema::BuildRetained(
         const HdBoolDataSourceHandle &flatShadingEnabled,
         const HdBoolDataSourceHandle &displacementEnabled,
         const HdBoolDataSourceHandle &occludedSelectionShowsThrough,
+        const HdBoolDataSourceHandle &pointsShadingEnabled,
         const HdTokenDataSourceHandle &shadingStyle,
         const HdTokenArrayDataSourceHandle &reprSelector,
         const HdTokenDataSourceHandle &cullStyle
@@ -121,6 +129,11 @@ HdLegacyDisplayStyleSchema::BuildRetained(
     if (occludedSelectionShowsThrough) {
         names[count] = HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough;
         values[count++] = occludedSelectionShowsThrough;
+    }
+
+    if (pointsShadingEnabled) {
+        names[count] = HdLegacyDisplayStyleSchemaTokens->pointsShadingEnabled;
+        values[count++] = pointsShadingEnabled;
     }
 
     if (shadingStyle) {
@@ -218,6 +231,14 @@ HdLegacyDisplayStyleSchema::Builder::SetOccludedSelectionShowsThrough(
 }
 
 HdLegacyDisplayStyleSchema::Builder &
+HdLegacyDisplayStyleSchema::Builder::SetPointsShadingEnabled(
+    const HdBoolDataSourceHandle &pointsShadingEnabled)
+{
+    _pointsShadingEnabled = pointsShadingEnabled;
+    return *this;
+}
+
+HdLegacyDisplayStyleSchema::Builder &
 HdLegacyDisplayStyleSchema::Builder::SetShadingStyle(
     const HdTokenDataSourceHandle &shadingStyle)
 {
@@ -249,6 +270,7 @@ HdLegacyDisplayStyleSchema::Builder::Build()
         _flatShadingEnabled,
         _displacementEnabled,
         _occludedSelectionShowsThrough,
+        _pointsShadingEnabled,
         _shadingStyle,
         _reprSelector,
         _cullStyle

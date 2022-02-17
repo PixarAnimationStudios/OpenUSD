@@ -132,6 +132,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((constantColorFS,         "Fragment.ConstantColor"))
     ((hullColorFS,             "Fragment.HullColor"))
     ((pointColorFS,            "Fragment.PointColor"))
+    ((pointShadedFS,           "Fragment.PointShaded"))
     ((scalarOverrideFS,        "Fragment.ScalarOverride"))
     ((noScalarOverrideFS,      "Fragment.NoScalarOverride"))
 );
@@ -153,7 +154,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool blendWireframeColor,
     bool hasMirroredTransform,
     bool hasInstancer,
-    bool enableScalarOverride)
+    bool enableScalarOverride,
+    bool pointsShadingEnabled)
     : primType(primitiveType)
     , cullStyle(cullStyle)
     , hasMirroredTransform(hasMirroredTransform)
@@ -416,7 +418,14 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     } else if (shadingTerminal == HdMeshReprDescTokens->hullColor) {
         terminalFS = _tokens->hullColorFS;
     } else if (shadingTerminal == HdMeshReprDescTokens->pointColor) {
-        terminalFS = _tokens->pointColorFS;
+        if (pointsShadingEnabled) {
+            // Let points be affected by the associated material so as to appear
+            // coherent with the other shaded surfaces that may be part of this
+            // mesh.
+            terminalFS = _tokens->pointShadedFS;
+        } else {
+            terminalFS = _tokens->pointColorFS;
+        }
     } else if (!shadingTerminal.IsEmpty()) {
         terminalFS = shadingTerminal;
     } else {

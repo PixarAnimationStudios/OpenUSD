@@ -1605,6 +1605,7 @@ public:
             name == HdLegacyDisplayStyleSchemaTokens->flatShadingEnabled ||
             name == HdLegacyDisplayStyleSchemaTokens->displacementEnabled ||
             name == HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough ||
+            name == HdLegacyDisplayStyleSchemaTokens->pointsShadingEnabled ||
             name == HdLegacyDisplayStyleSchemaTokens->shadingStyle ||
             name == HdLegacyDisplayStyleSchemaTokens->reprSelector ||
             name == HdLegacyDisplayStyleSchemaTokens->cullStyle) {
@@ -1620,6 +1621,7 @@ public:
         results.push_back(HdLegacyDisplayStyleSchemaTokens->flatShadingEnabled);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->displacementEnabled);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough);
+        results.push_back(HdLegacyDisplayStyleSchemaTokens->pointsShadingEnabled);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->shadingStyle);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->reprSelector);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->cullStyle);
@@ -1658,6 +1660,13 @@ public:
             }
             return HdRetainedTypedSampledDataSource<bool>::New(
                     _displayStyle.occludedSelectionShowsThrough);
+        } else if (name == HdLegacyDisplayStyleSchemaTokens->pointsShadingEnabled) {
+            if (!_displayStyleRead) {
+                _displayStyle = _sceneDelegate->GetDisplayStyle(_id);
+                _displayStyleRead = true;
+            }
+            return HdRetainedTypedSampledDataSource<bool>::New(
+                    _displayStyle.pointsShadingEnabled);
         } else if (name == HdLegacyDisplayStyleSchemaTokens->shadingStyle) {
             TfToken shadingStyle = _sceneDelegate->GetShadingStyle(_id)
                 .GetWithDefault<TfToken>();

@@ -73,7 +73,8 @@ struct HdSt_BasisCurvesShaderKey : public HdSt_ShaderKey
                               bool basisWidthInterpolation,
                               bool basisNormalInterpolation,
                               TfToken shadingTerminal,
-                              bool hasAuthoredTopologicalVisibility);
+                              bool hasAuthoredTopologicalVisibility,
+                              bool pointsShadingEnabled);
     ~HdSt_BasisCurvesShaderKey();
 
     TfToken const &GetGlslfxFilename() const override { return glslfx; }

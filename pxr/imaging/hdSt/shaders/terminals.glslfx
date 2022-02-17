@@ -400,6 +400,28 @@ ReprStyle GetReprStyle()
 }
 
 --- --------------------------------------------------------------------------
+-- glsl Fragment.PointShaded
+
+ReprStyle GetReprStyle()
+{
+    vec4 pointColor = vec4(vec3(0.18), 1.0);
+#if defined(HD_HAS_pointColor)
+    pointColor = HdGet_pointColor();
+#endif
+
+    ReprStyle reprStyle;
+    
+    reprStyle.color                    = pointColor;
+    reprStyle.usePrimvarColor          = false;
+    reprStyle.usePrimvarAlpha          = false;
+    reprStyle.applyColorOverride       = true;
+    reprStyle.useSurfaceShaderColor    = true;
+    reprStyle.useSurfaceShaderAlpha    = true;
+    
+    return reprStyle; 
+}
+
+--- --------------------------------------------------------------------------
 -- glsl Fragment.ScalarOverride
 
 ScalarOverride GetScalarOverride()

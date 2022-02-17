@@ -105,6 +105,7 @@ HdStMesh::HdStMesh(SdfPath const& id)
     , _hasVaryingTopology(false)
     , _displayOpacity(false)
     , _occludedSelectionShowsThrough(false)
+    , _pointsShadingEnabled(false)
     , _fvarTopologyTracker(std::make_unique<_FvarTopologyTracker>())
 {
     /*NOTHING*/
@@ -569,6 +570,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         _displacementEnabled = displayStyle.displacementEnabled;
         _occludedSelectionShowsThrough =
             displayStyle.occludedSelectionShowsThrough;
+        _pointsShadingEnabled = displayStyle.pointsShadingEnabled;
 
         HdMeshTopology meshTopology = HdMesh::GetMeshTopology(sceneDelegate);
 
@@ -2588,7 +2590,8 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  blendWireframeColor,
                                  _hasMirroredTransform,
                                  hasInstancer,
-                                 desc.enableScalarOverride);
+                                 desc.enableScalarOverride,
+                                 _pointsShadingEnabled);
 
     HdSt_GeometricShaderSharedPtr geomShader =
         HdSt_GeometricShader::Create(shaderKey, resourceRegistry);

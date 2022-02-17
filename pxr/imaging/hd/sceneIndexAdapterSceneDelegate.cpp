@@ -2096,6 +2096,11 @@ HdSceneIndexAdapterSceneDelegate::GetDisplayStyle(SdfPath const &id)
                 styleSchema.GetOccludedSelectionShowsThrough()) {
             result.occludedSelectionShowsThrough = ds->GetTypedValue(0.0f);
         }
+
+        if (HdBoolDataSourceHandle ds =
+                styleSchema.GetPointsShadingEnabled()) {
+            result.pointsShadingEnabled = ds->GetTypedValue(0.0f);
+        }
     }
 
     return result;
