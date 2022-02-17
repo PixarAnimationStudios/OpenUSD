@@ -397,18 +397,20 @@ GlfSimpleShadowArray::_FreeResources()
 void
 GlfSimpleShadowArray::_FreeTextures()
 {
-    GlfSharedGLContextScopeHolder sharedContextScopeHolder;
-    // XXX: Ideally, we don't deallocate all textures, and only those that have
-    // resolution modified.
+    if (!_textures.empty()) {
+        GlfSharedGLContextScopeHolder sharedContextScopeHolder;
+        // XXX: Ideally, we don't deallocate all textures, and only those that
+        // have resolution modified.
 
-    for (GLuint const& id : _textures) {
-        if (id) {
-            glDeleteTextures(1, &id);
+        for (GLuint const& id : _textures) {
+            if (id) {
+                glDeleteTextures(1, &id);
+            }
         }
+        _textures.clear();
+        
+        GLF_POST_PENDING_GL_ERRORS();
     }
-    _textures.clear();
-    
-    GLF_POST_PENDING_GL_ERRORS();
 }
 
 void
