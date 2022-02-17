@@ -454,8 +454,9 @@ struct UsdImaging_XfStrategy {
 
     static
     query_type MakeQuery(UsdPrim const& prim, bool *) {
-        if (UsdGeomXformable xf = UsdGeomXformable(prim))
+        if (const UsdGeomXformable xf = UsdGeomXformable(prim)) {
             return query_type(xf);
+        }
         return query_type();
     }
 
@@ -596,8 +597,10 @@ struct UsdImaging_PurposeStrategy {
 
     static
     query_type MakeQuery(UsdPrim const& prim, bool *) {
-        UsdGeomImageable im = UsdGeomImageable(prim);
-        return im ? query_type(im.GetPurposeAttr()) : query_type();
+        if (const UsdGeomImageable im = UsdGeomImageable(prim)) {
+            return query_type(im.GetPurposeAttr());
+        }
+        return query_type();
     }
 
     static 
@@ -781,8 +784,9 @@ struct UsdImaging_DrawModeStrategy
 
     static
     query_type MakeQuery(UsdPrim const& prim, bool *) {
-        if (UsdAttribute a = UsdGeomModelAPI(prim).GetModelDrawModeAttr())
-            return query_type(a);
+        if (const UsdGeomModelAPI modelApi = UsdGeomModelAPI(prim)) {
+            return query_type(modelApi.GetModelDrawModeAttr());
+        }
         return query_type();
     }
 
@@ -1050,10 +1054,8 @@ struct UsdImaging_NonlinearSampleCountStrategy
 
     static
     query_type MakeQuery(UsdPrim const& prim, bool *) {
-        if (UsdGeomMotionAPI motionAPI = UsdGeomMotionAPI(prim)) {
-            if (UsdAttribute a = motionAPI.GetNonlinearSampleCountAttr()) {
-                return query_type(a);
-            }
+        if (const UsdGeomMotionAPI motionAPI = UsdGeomMotionAPI(prim)) {
+            return query_type(motionAPI.GetNonlinearSampleCountAttr());
         }
         return query_type();
     }
@@ -1119,10 +1121,8 @@ struct UsdImaging_BlurScaleStrategy
 
     static
     query_type MakeQuery(UsdPrim const& prim, bool *) {
-        if (UsdGeomMotionAPI motionAPI = UsdGeomMotionAPI(prim)) {
-            if (UsdAttribute a = motionAPI.GetMotionBlurScaleAttr()) {
-                return query_type(a);
-            }
+        if (const UsdGeomMotionAPI motionAPI = UsdGeomMotionAPI(prim)) {
+            return query_type(motionAPI.GetMotionBlurScaleAttr());
         }
         return query_type();
     }
