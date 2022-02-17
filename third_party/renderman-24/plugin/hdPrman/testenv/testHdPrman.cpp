@@ -141,6 +141,58 @@ ComputeFraming(const UsdRenderSpec::Product &product)
         displayWindow, dataWindow, product.pixelAspectRatio);
 }
 
+// Provides a fallback camera for test cases that don't provide a camera.
+class CameraDelegate : public HdSceneDelegate
+{
+public:
+    CameraDelegate(HdRenderIndex * const parentIndex)
+      : HdSceneDelegate(parentIndex, SdfPath("/_cameraDelegate"))
+    {
+        GetRenderIndex().InsertSprim(
+            HdPrimTypeTokens->camera,
+            this,
+            GetCameraId());
+    }
+
+    ~CameraDelegate() override
+    {
+        GetRenderIndex().RemoveSprim(
+            HdPrimTypeTokens->camera,
+            GetCameraId());
+    }
+
+    SdfPath GetCameraId() const
+    {
+        static const TfToken name("camera");
+        return GetDelegateID().AppendChild(name);
+    }
+    
+    GfMatrix4d GetTransform(const SdfPath &id) override
+    {
+        static const GfMatrix4d m =
+            GfMatrix4d().SetDiagonal(GfVec4d(1.0, 1.0, -1.0, 1.0)) *
+            GfMatrix4d().SetTranslate(GfVec3d(0,0,-10));
+        return m;
+    }
+
+    VtValue GetCameraParamValue(
+        const SdfPath &id,
+        const TfToken &key) override
+    {
+        if (key == HdCameraTokens->focalLength) {
+            return VtValue(1.0f);
+        } 
+        if (key == HdCameraTokens->horizontalAperture ||
+            key == HdCameraTokens->verticalAperture) {
+            static const float fieldOfView = 60.0f;
+            static const float apertureSize =
+                2.0f * tan(GfDegreesToRadians(fieldOfView) / 2.0f);
+            return VtValue(apertureSize);
+        }
+        return VtValue();
+    }
+};
+
 void
 PrintUsage(const char* cmd, const char *err=nullptr)
 {
@@ -495,9 +547,15 @@ int main(int argc, char *argv[])
             HdRenderPassStateSharedPtr const hdRenderPassState =
                 renderDelegate->CreateRenderPassState();
 
+            CameraDelegate cameraDelegate(hdRenderIndex.get());
+
             const HdCamera * const camera = 
                 dynamic_cast<const HdCamera*>(
-                    hdRenderIndex->GetSprim(HdTokens->camera, sceneCamPath));
+                    hdRenderIndex->GetSprim(
+                        HdTokens->camera,
+                        product.cameraPath.IsEmpty()
+                            ? cameraDelegate.GetCameraId()
+                            : product.cameraPath));
 
             hdRenderPassState->SetCameraAndFraming(
                 camera,
