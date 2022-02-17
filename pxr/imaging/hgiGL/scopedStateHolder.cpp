@@ -61,6 +61,7 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     , _restoreDepthClamp(false)
     , _depthRange{0.f,1.f}
     , _restoreFramebufferSRGB(false)
+    , _restoreConservativeRaster(false)
 {
     TRACE_FUNCTION();
 
@@ -120,6 +121,11 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     glGetBooleanv(GL_DEPTH_CLAMP, (GLboolean*)&_restoreDepthClamp);
     glGetFloatv(GL_DEPTH_RANGE, _depthRange);
     glGetBooleanv(GL_FRAMEBUFFER_SRGB, (GLboolean*)&_restoreFramebufferSRGB);
+
+    if (GARCH_GLAPI_HAS(NV_conservative_raster)) {
+        glGetBooleanv(GL_CONSERVATIVE_RASTERIZATION_NV,
+            (GLboolean*)&_restoreConservativeRaster);
+    }
 
     HGIGL_POST_PENDING_GL_ERRORS();
     #if defined(GL_KHR_debug)
@@ -241,6 +247,14 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
        glEnable(GL_FRAMEBUFFER_SRGB);
     } else {
        glDisable(GL_FRAMEBUFFER_SRGB);
+    }
+
+    if (GARCH_GLAPI_HAS(NV_conservative_raster)) {
+        if (_restoreConservativeRaster) {
+            glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
+        } else {
+            glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+        }
     }
 
     static const GLuint samplers[8] = {0};

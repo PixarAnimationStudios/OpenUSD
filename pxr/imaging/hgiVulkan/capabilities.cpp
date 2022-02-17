@@ -79,7 +79,12 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         TF_WARN("Selected GPU %s", vkDeviceProperties.deviceName);
     }
     
+    const bool conservativeRasterEnabled = (device->IsSupportedExtension(
+        VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME));
+
     _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne, false);
+    _SetFlag(HgiDeviceCapabilitiesBitsConservativeRaster, 
+        conservativeRasterEnabled);
 }
 
 HgiVulkanCapabilities::~HgiVulkanCapabilities() = default;

@@ -682,6 +682,12 @@ HdStRenderPassState::Bind()
             }
         }
     }
+    
+    if (_conservativeRasterizationEnabled) {
+        glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
+    } else {
+        glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+    }
 }
 
 void
@@ -1034,6 +1040,8 @@ HdStRenderPassState::_InitRasterizationState(
         rasterizationState->depthClampEnabled = true;
     }
     rasterizationState->depthRange = GetDepthRange();
+
+    rasterizationState->conservativeRaster = _conservativeRasterizationEnabled;
 }
 
 void

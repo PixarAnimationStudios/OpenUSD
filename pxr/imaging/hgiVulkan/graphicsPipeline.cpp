@@ -154,6 +154,18 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     rasterState.frontFace = HgiVulkanConversions::GetWinding(ras.winding);
     rasterState.rasterizerDiscardEnable = !ras.rasterizerEnabled;
     rasterState.depthClampEnable = ras.depthClampEnabled;
+
+    if (ras.conservativeRaster) {
+        VkPipelineRasterizationConservativeStateCreateInfoEXT 
+            conservativeRasterState = {};
+        conservativeRasterState.sType = 
+            VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT;
+        conservativeRasterState.conservativeRasterizationMode = 
+            VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT;
+
+        rasterState.pNext = &conservativeRasterState;
+    }
+
     pipeCreateInfo.pRasterizationState = &rasterState;
 
     //

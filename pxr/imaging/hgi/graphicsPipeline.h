@@ -170,6 +170,9 @@ bool operator!=(
 ///   clipping the depth to the near and far planes.</li>
 /// <li>depthRange:
 ///   The mapping of NDC depth values to window depth values.</li>
+/// <li>conservativeRaster:
+///   When enabled, any pixel at least partially covered by a rendered primitive
+///   will be rasterized.</li>
 /// </ul>
 ///
 struct HgiRasterizationState
@@ -184,6 +187,7 @@ struct HgiRasterizationState
     bool rasterizerEnabled;
     bool depthClampEnabled;
     GfVec2f depthRange;
+    bool conservativeRaster;
 };
 
 HGI_API

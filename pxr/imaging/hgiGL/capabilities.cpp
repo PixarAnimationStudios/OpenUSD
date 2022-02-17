@@ -76,6 +76,7 @@ HgiGLCapabilities::_LoadCapabilities()
     bool bindlessBufferEnabled        = false;
     bool builtinBarycentricsEnabled   = false;
     bool shaderDrawParametersEnabled  = false;
+    bool conservativeRasterEnabled    = false;
 
     const char *glVendorStr = (const char*)glGetString(GL_VENDOR);
     const char *glRendererStr = (const char*)glGetString(GL_RENDERER);
@@ -146,6 +147,9 @@ HgiGLCapabilities::_LoadCapabilities()
     if (GARCH_GLAPI_HAS(ARB_shader_draw_parameters)) {
         shaderDrawParametersEnabled = true;
     }
+    if (GARCH_GLAPI_HAS(NV_conservative_raster)) {
+        conservativeRasterEnabled = true;
+    }
 
     // Environment variable overrides (only downgrading is possible)
     if (!TfGetEnvSetting(HGIGL_ENABLE_BINDLESS_TEXTURE)) {
@@ -185,6 +189,8 @@ HgiGLCapabilities::_LoadCapabilities()
         true);
     _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne,
         true);
+    _SetFlag(HgiDeviceCapabilitiesBitsConservativeRaster, 
+        conservativeRasterEnabled);
 
     if (TfDebug::IsEnabled(HGI_DEBUG_DEVICE_CAPABILITIES)) {
         std::cout
@@ -218,6 +224,8 @@ HgiGLCapabilities::_LoadCapabilities()
             <<    builtinBarycentricsEnabled << "\n"
             << "  NV_shader_buffer_load              = "
             <<    bindlessBufferEnabled << "\n"
+            << "  NV_conservative_raster             = "
+            <<    conservativeRasterEnabled << "\n"
             ;
     }
 }

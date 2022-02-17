@@ -215,6 +215,12 @@ HgiGLGraphicsPipeline::BindPipeline()
 
     glEnable(GL_PROGRAM_POINT_SIZE);
 
+    if (_descriptor.rasterizationState.conservativeRaster) {
+        glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
+    } else {
+        glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+    }
+
     //
     // Shader program
     //

@@ -98,6 +98,7 @@ private:
     bool _restoreDepthClamp;
     float _depthRange[2];
     bool _restoreFramebufferSRGB;
+    bool _restoreConservativeRaster;
 };
 
 

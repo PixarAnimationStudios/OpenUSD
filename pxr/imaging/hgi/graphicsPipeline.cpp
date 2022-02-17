@@ -104,6 +104,7 @@ HgiRasterizationState::HgiRasterizationState()
     , rasterizerEnabled(true)
     , depthClampEnabled(false)
     , depthRange(0.f, 1.f)
+    , conservativeRaster(false)
 {
 }
 
@@ -117,7 +118,8 @@ bool operator==(
            lhs.winding == rhs.winding &&
            lhs.rasterizerEnabled == rhs.rasterizerEnabled &&
            lhs.depthClampEnabled == rhs.depthClampEnabled &&
-           lhs.depthRange == rhs.depthRange;
+           lhs.depthRange == rhs.depthRange &&
+           lhs.conservativeRaster == rhs.conservativeRaster;
 }
 
 bool operator!=(

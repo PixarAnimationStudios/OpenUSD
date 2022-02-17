@@ -61,6 +61,8 @@ using HgiBits = uint32_t;
 ///   The device's clip space depth ranges from [-1,1]</li>
 /// <li>HgiDeviceCapabilitiesBitsCppShaderPadding:
 ///   Use CPP padding for shader language structures</li>
+/// <li>HgiDeviceCapabilitiesBitsConservativeRaster:
+///   The device supports conservative rasterization</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
@@ -75,7 +77,8 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsBindlessTextures        = 1 << 7,
     HgiDeviceCapabilitiesBitsShaderDoublePrecision   = 1 << 8,
     HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne = 1 << 9,
-    HgiDeviceCapabilitiesBitsCppShaderPadding        = 1 << 10
+    HgiDeviceCapabilitiesBitsCppShaderPadding        = 1 << 10,
+    HgiDeviceCapabilitiesBitsConservativeRaster      = 1 << 11
 };
 
 using HgiDeviceCapabilities = HgiBits;

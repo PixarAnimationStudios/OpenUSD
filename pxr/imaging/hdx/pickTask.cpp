@@ -480,6 +480,9 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         HdStRenderSettingsTokens->volumeRaymarchingStepSizeLighting,
         HdStVolume::defaultStepSizeLighting);
 
+    const bool conservativeRaster = _hgi->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsConservativeRaster);
+
     // Update the renderpass states.
     for (auto& state : states) {
         if (needStencilConditioning) {
@@ -506,6 +509,9 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         state->SetLightingEnabled(false);
 
         state->SetVolumeRenderingConstants(stepSize, stepSizeLighting);
+        
+        // Enable conservative rasterization, if available.
+        state->SetConservativeRasterizationEnabled(conservativeRaster);
 
         // If scene materials are disabled in this environment then
         // let's setup the override shader
@@ -609,14 +615,6 @@ HdxPickTask::Execute(HdTaskContext* ctx)
             _widgetDepthStencilBuffer.get());
     }
 
-    //
-    // Enable conservative rasterization, if available.
-    //
-    bool convRstr = GARCH_GLAPI_HAS(NV_conservative_raster);
-    if (convRstr) {
-        glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
-    }
-
     if (_UseOcclusionPass()) {
         _occluderRenderPass->Execute(_occluderRenderPassState,
                                      _nonWidgetRenderTags);
@@ -653,10 +651,6 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     }
 
     glDisable(GL_STENCIL_TEST);
-
-    if (convRstr) {
-        glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
-    }
 
     glBindVertexArray(0);
     glDeleteVertexArrays(1, &vao);
