@@ -254,7 +254,7 @@ if __name__ == '__main__':
     # Note that for nodes with explicit asset paths, this list stores a tuple,
     # with first entry being the sdrNode and second the true identifier
     # (identified from the file basename, which should match the node identifier
-    # when queries using GetShaderNodeByNameAndType at runtime).
+    # when queries using GetShaderNodeByIdentifierAndType at runtime).
     sdrNodesToParse = []
     renderContext = ""
 
@@ -283,7 +283,7 @@ if __name__ == '__main__':
                         Tf.Warn("Node not found at path: %s." %(assetPath))
                 continue
             for nodeId in sdrNodesDict.get(sourceType):
-                node = sdrRegistry.GetShaderNodeByNameAndType(nodeId,
+                node = sdrRegistry.GetShaderNodeByIdentifierAndType(nodeId,
                         sourceType)
                 if node is not None:
                     # This is a workaround to iterate through invalid sdrNodes 

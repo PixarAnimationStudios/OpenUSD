@@ -171,7 +171,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
     discover at runtime, such as when this function is def a node constructed 
     from an explicit asset path. This should only be used when clients know the 
     identifier being passed is the true identifier which sdr Runtime will 
-    provide when querying using GetShaderNodeByNameAndType, etc.
+    provide when querying using GetShaderNodeByIdentifierAndType, etc.
 
     It consumes the following attributes (that manifest as Sdr 
     metadata) in addition to many of the standard Sdr metadata

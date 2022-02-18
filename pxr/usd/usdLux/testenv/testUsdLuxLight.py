@@ -505,7 +505,7 @@ class TestUsdLuxLight(unittest.TestCase):
             # shaderId as sdr Identifier) in usdLux domain will have an 
             # SdrShaderNode with source type 'USD' registered for it under its 
             # USD schema type name. 
-            node = Sdr.Registry().GetNodeByName(sdrIdentifier, ['USD'])
+            node = Sdr.Registry().GetNodeByIdentifier(sdrIdentifier, ['USD'])
             self.assertTrue(node is not None)
             self.assertIn(sdrIdentifier, expectedLightNodes)
 
