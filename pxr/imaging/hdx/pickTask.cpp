@@ -48,7 +48,6 @@
 #include "pxr/imaging/hgi/tokens.h"
 #include "pxr/imaging/hgiGL/graphicsCmds.h"
 #include "pxr/imaging/glf/diagnostic.h"
-#include "pxr/imaging/glf/glContext.h"
 
 #include <boost/functional/hash.hpp>
 
@@ -443,13 +442,6 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
 
     // Store the render index so we can map ids to paths in Execute()...
     _index = &(delegate->GetRenderIndex());
-
-    // Make sure we're in a sane GL state before attempting anything.
-    GlfGLContextSharedPtr context = GlfGLContext::GetCurrentGLContext();
-    if (!TF_VERIFY(context)) {
-        TF_RUNTIME_ERROR("Invalid GL context");
-        return;
-    }
 
     _InitIfNeeded();
 
