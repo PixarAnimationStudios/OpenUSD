@@ -100,7 +100,7 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
         HdxOitBufferAccessor oitBufferAccessor(ctx);
 
         oitBufferAccessor.RequestOitBuffers();
-        oitBufferAccessor.InitializeOitBuffersIfNecessary();
+        oitBufferAccessor.InitializeOitBuffersIfNecessary(_GetHgi());
         if (!oitBufferAccessor.AddOitBufferBindings(
                 _oitTranslucentRenderPassShader)) {
             TF_CODING_ERROR(

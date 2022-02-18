@@ -109,7 +109,7 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
     HdxOitBufferAccessor oitBufferAccessor(ctx);
 
     oitBufferAccessor.RequestOitBuffers();
-    oitBufferAccessor.InitializeOitBuffersIfNecessary();
+    oitBufferAccessor.InitializeOitBuffersIfNecessary(_GetHgi());
 
     HdRenderPassStateSharedPtr renderPassState = _GetRenderPassState(ctx);
     if (!TF_VERIFY(renderPassState)) return;
