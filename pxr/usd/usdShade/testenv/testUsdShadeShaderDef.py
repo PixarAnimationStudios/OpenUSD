@@ -29,20 +29,6 @@ import unittest
 import os
 
 class TestUsdShadeShaderDef(unittest.TestCase):
-    def test_testSplitShaderIdentifier(self):
-        SSI = UsdShade.ShaderDefUtils.SplitShaderIdentifier
-        self.assertEqual(SSI('Primvar'), 
-                ('Primvar', 'Primvar', Ndr.Version()))
-        self.assertEqual(SSI('Primvar_float2'), 
-                ('Primvar', 'Primvar_float2', Ndr.Version()))
-        self.assertEqual(SSI('Primvar_float2_3'), 
-                ('Primvar', 'Primvar_float2', Ndr.Version(3, 0)))
-        self.assertEqual(SSI('Primvar_float_3_4'), 
-                ('Primvar', 'Primvar_float', Ndr.Version(3, 4)))
-
-        self.assertIsNone(SSI('Primvar_float2_3_nonNumber'))
-        self.assertIsNone(SSI('Primvar_4_nonNumber'))
-
     def test_ShaderDefParser_NodeDefAPI(self):
         # Test the NodeDefAPI path.
         self.test_ShaderDefParser(useForwardedAPI=False)

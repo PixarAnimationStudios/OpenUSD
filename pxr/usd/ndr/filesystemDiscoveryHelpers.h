@@ -43,6 +43,31 @@ class NdrDiscoveryPluginContext;
 /// in a large chunk of the functionality.
 ///
 
+/// Given a shader's \p identifier token, computes the corresponding 
+/// NdrNode's family name, implementation name and shader version 
+/// (as NdrVersion).
+/// 
+/// * \p family is the prefix of \p identifier up to and not 
+/// including the first underscore. 
+/// * \p version is the suffix of \p identifier comprised of one or 
+/// two integers representing the major and minor version numbers.
+/// * \p name is the string we get by joining 
+/// <i>family</i> with everything that's in between <i>family</i> 
+/// and <i>version</i> with an underscore.
+/// 
+/// Returns true if \p identifier is valid and was successfully split 
+/// into the different components. 
+/// 
+/// \note The python version of this function returns a tuple containing
+/// (famiyName, implementationName, version).
+NDR_API 
+bool
+NdrFsHelpersSplitShaderIdentifier(
+    const TfToken &identifier, 
+    TfToken *family,
+    TfToken *name,
+    NdrVersion *version);
+
 /// Walks the specified search paths, optionally following symlinks. Paths
 /// are walked recursively, and each directory has `FsHelpersExamineFiles()`
 /// called on it. Only files that match one of the provided extensions (case

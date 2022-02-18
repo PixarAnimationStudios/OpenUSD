@@ -27,14 +27,13 @@
 #include "pxr/base/tf/weakPtr.h"
 
 #include <boost/python/def.hpp>
+#include <boost/python/tuple.hpp>
 
 using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
-
-NdrNodeDiscoveryResultVec
+static NdrNodeDiscoveryResultVec
 _WrapFsHelpersDiscoverNodes(
     const NdrStringVec& searchPaths,
     const NdrStringVec& allowedExtensions,
@@ -47,10 +46,24 @@ _WrapFsHelpersDiscoverNodes(
                                      boost::get_pointer(context));
 }
 
+static object
+_WrapFsHelpersSplitShaderIdentifier(const TfToken &identifier)
+{
+    TfToken family;
+    TfToken name;
+    NdrVersion version;
+    if (NdrFsHelpersSplitShaderIdentifier(identifier,
+            &family, &name, &version)) {
+        return boost::python::make_tuple(family, name, version);
+    } else {
+        return object();
+    }
 }
 
 void wrapFilesystemDiscoveryHelpers()
 {
+    def("FsHelpersSplitShaderIdentifier", _WrapFsHelpersSplitShaderIdentifier,
+        arg("identifier"));
     def("FsHelpersDiscoverNodes", _WrapFsHelpersDiscoverNodes,
         (args("searchPaths"),
         args("allowedExtensions"),

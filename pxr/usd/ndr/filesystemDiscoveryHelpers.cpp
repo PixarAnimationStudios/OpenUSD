@@ -31,10 +31,9 @@
 #include "pxr/usd/ndr/filesystemDiscoveryHelpers.h"
 
 #include <algorithm>
+#include <cctype>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-namespace {
 
 // Examines the specified set of files, and determines if any of the files
 // are candidates for being parsed into a node. If a file is determined
@@ -47,7 +46,7 @@ namespace {
 // \param[in]  dirFileNames The file names in the \p dirPath dir to test
 // \return `true` if the search should continue on to other paths in the
 //         search path
-bool
+static bool
 FsHelpersExamineFiles(
     NdrNodeDiscoveryResultVec* foundNodes,
     NdrStringSet* foundNodesWithTypes,
@@ -116,7 +115,74 @@ FsHelpersExamineFiles(
     return true;
 }
 
-} // anonymous namespace
+static bool 
+_IsNumber(const std::string& s)
+{
+    return !s.empty() &&
+        std::find_if(s.begin(), s.end(),
+                     [](unsigned char c) { return !std::isdigit(c); })
+        == s.end();
+}
+
+bool
+NdrFsHelpersSplitShaderIdentifier(
+    const TfToken &identifier, 
+    TfToken *family,
+    TfToken *name,
+    NdrVersion *version)
+{
+    const std::vector<std::string> tokens = 
+        TfStringTokenize(identifier.GetString(), "_");
+
+    if (tokens.empty()) {
+        return false;
+    }
+
+    *family = TfToken(tokens[0]);
+
+    if (tokens.size() == 1) {
+        *family = identifier;
+        *name = identifier;
+        *version = NdrVersion();
+        return true;
+    }
+
+    if (tokens.size() == 2) {
+        if (_IsNumber(tokens.back())) {
+            const int major = std::stoi(tokens.back());
+            *version = NdrVersion(major);
+            *name = *family;
+        } else {
+            *version = NdrVersion();
+            *name = identifier;
+        }
+        return true;
+    } 
+
+    const bool lastTokenIsNumber = _IsNumber(*(tokens.end() - 1));
+    const bool penultimateTokenIsNumber = _IsNumber(*(tokens.end() - 2));
+
+    if (penultimateTokenIsNumber) {
+        if (!lastTokenIsNumber) {
+            TF_WARN("Invalid shader identifier '%s'.", identifier.GetText()); 
+            return false;
+        }
+        // Has a major and minor version
+        *version = NdrVersion(std::stoi(*(tokens.end() - 2)), 
+                              std::stoi(*(tokens.end() - 1)));
+        *name = TfToken(TfStringJoin(tokens.begin(), tokens.end() - 2, "_"));
+    } else if (lastTokenIsNumber) {
+        // Has just a major version
+        *version = NdrVersion(std::stoi(tokens[tokens.size()-1]));
+        *name = TfToken(TfStringJoin(tokens.begin(), tokens.end() - 1, "_"));
+    } else {
+        // No version information is available. 
+        *name = identifier;
+        *version = NdrVersion();
+    }
+
+    return true;
+}
 
 NdrNodeDiscoveryResultVec
 NdrFsHelpersDiscoverNodes(

@@ -32,7 +32,7 @@ import unittest
 os.environ["PXR_NDR_FS_PLUGIN_SEARCH_PATHS"] = os.getcwd()
 os.environ["PXR_NDR_FS_PLUGIN_ALLOWED_EXTS"] = "oso:args"
 
-from pxr.Ndr import _FilesystemDiscoveryPlugin
+from pxr import Ndr
 
 class TestNdrFilesystemDiscovery(unittest.TestCase):
     def test_NdrFilesystemDiscovery(self):
@@ -41,8 +41,8 @@ class TestNdrFilesystemDiscovery(unittest.TestCase):
         directories and nodes with the same name.
         """
 
-        fsPlugin = _FilesystemDiscoveryPlugin()
-        context = _FilesystemDiscoveryPlugin.Context()
+        fsPlugin = Ndr._FilesystemDiscoveryPlugin()
+        context = Ndr._FilesystemDiscoveryPlugin.Context()
         discoveryResults = fsPlugin.DiscoverNodes(context)
         discoveredNodeNames = [result.name for result in discoveryResults]
 
@@ -51,6 +51,25 @@ class TestNdrFilesystemDiscovery(unittest.TestCase):
             "TestNodeARGS", "TestNodeOSL", "NestedTestARGS", "NestedTestOSL",
             "TestNodeSameName"
         }
+
+    def test_testSplitShaderIdentifier(self):
+        self.assertEqual(
+            Ndr.FsHelpersSplitShaderIdentifier('Primvar'),
+            ('Primvar', 'Primvar', Ndr.Version()))
+        self.assertEqual(
+            Ndr.FsHelpersSplitShaderIdentifier('Primvar_float2'),
+            ('Primvar', 'Primvar_float2', Ndr.Version()))
+        self.assertEqual(
+            Ndr.FsHelpersSplitShaderIdentifier('Primvar_float2_3'),
+            ('Primvar', 'Primvar_float2', Ndr.Version(3, 0)))
+        self.assertEqual(
+            Ndr.FsHelpersSplitShaderIdentifier('Primvar_float_3_4'),
+            ('Primvar', 'Primvar_float', Ndr.Version(3, 4)))
+    
+        self.assertIsNone(
+            Ndr.FsHelpersSplitShaderIdentifier('Primvar_float2_3_nonNumber'))
+        self.assertIsNone(
+            Ndr.FsHelpersSplitShaderIdentifier('Primvar_4_nonNumber'))
 
 if __name__ == '__main__':
     unittest.main()
