@@ -801,13 +801,26 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     }
 
     // prep interstage plumbing function
-    _procVS  << "void ProcessPrimvars() {\n";
-    _procTCS << "void ProcessPrimvars() {\n";
-    _procTES << "float ProcessPrimvar(float inPv0, float inPv1, float inPv2, float inPv3, vec4 basis, vec2 uv);\n";
-    _procTES << "vec2 ProcessPrimvar(vec2 inPv0, vec2 inPv1, vec2 inPv2, vec2 inPv3, vec4 basis, vec2 uv);\n";
-    _procTES << "vec3 ProcessPrimvar(vec3 inPv0, vec3 inPv1, vec3 inPv2, vec3 inPv3, vec4 basis, vec2 uv);\n";
-    _procTES << "vec4 ProcessPrimvar(vec4 inPv0, vec4 inPv1, vec4 inPv3, vec4 inPv3, vec4 basis, vec2 uv);\n";
-    _procTES << "void ProcessPrimvars(vec4 basis, int i0, int i1, int i2, int i3, vec2 uv) {\n";
+    _procVS  << "void ProcessPrimvarsIn() {\n";
+    _procTCS << "void ProcessPrimvarsOut() {\n";
+    _procTES << "float InterpolatePrimvar("
+                "float inPv0, float inPv1, float inPv2, float inPv3, "
+                "vec4 basis, vec2 uv);\n"
+
+                "vec2 InterpolatePrimvar("
+                "vec2 inPv0, vec2 inPv1, vec2 inPv2, vec2 inPv3, "
+                "vec4 basis, vec2 uv);\n"
+
+                "vec3 InterpolatePrimvar("
+                "vec3 inPv0, vec3 inPv1, vec3 inPv2, vec3 inPv3, "
+                "vec4 basis, vec2 uv);\n"
+
+                "vec4 InterpolatePrimvar("
+                "vec4 inPv0, vec4 inPv1, vec4 inPv3, vec4 inPv3, "
+                "vec4 basis, vec2 uv);\n"
+
+                "void ProcessPrimvarsOut("
+                "vec4 basis, int i0, int i1, int i2, int i3, vec2 uv) {\n";
     // geometry shader plumbing
     switch(_geometricShader->GetPrimitiveType())
     {
@@ -819,14 +832,14 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_REFINED_TRIQUADS:
         {
             _procGS << "vec4 GetPatchCoord(int index);\n"
-                    << "void ProcessPrimvars(int index) {\n"
+                    << "void ProcessPrimvarsOut(int index) {\n"
                     << "  vec2 localST = GetPatchCoord(index).xy;\n";
             break;
         }
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BSPLINE:
         case HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
         {
-            _procGS << "void ProcessPrimvars(int index, vec2 tessST) {\n"
+            _procGS << "void ProcessPrimvarsOut(int index, vec2 tessST) {\n"
                     << "  vec2 localST = tessST;\n";
             break;
         }
@@ -2935,7 +2948,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
           vec3 points;
       } outPrimvars;
 
-      void ProcessPrimvars() {
+      void ProcessPrimvarsIn() {
           outPrimvars.normals = normals;
           outPrimvars.points = points;
       }
@@ -2950,7 +2963,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
           vec3 points;
       } outPrimvars;
 
-      void ProcessPrimvars(int index) {
+      void ProcessPrimvarsOut(int index) {
           outPrimvars = inPrimvars[index];
       }
 
@@ -3027,7 +3040,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
           vec3 displayColor;
       } outPrimvars;
 
-      void ProcessPrimvars() {
+      void ProcessPrimvarsIn() {
           outPrimvars.displayColor = HdGet_displayColor();
       }
 
@@ -3066,7 +3079,8 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
                 << " = " << "HdGet_" << name << "();\n";
         _procTCS << "  outPrimvars[gl_InvocationID]." << name
                  << " = inPrimvars[gl_InvocationID]." << name << ";\n";
-        _procTES << "  outPrimvars." << name  << " = ProcessPrimvar("
+        _procTES << "  outPrimvars." << name
+                 << " = InterpolatePrimvar("
                  << "inPrimvars[i0]." << name 
                  << ", inPrimvars[i1]." << name 
                  << ", inPrimvars[i2]." << name 
@@ -3092,7 +3106,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
           float map2_u;
       } outPrimvars;
 
-      void ProcessPrimvars(int index) {
+      void ProcessPrimvarsOut(int index) {
           outPrimvars.map1 = HdGet_map1(index, localST);
           outPrimvars.map2_u = HdGet_map2_u(index, localST);
       }

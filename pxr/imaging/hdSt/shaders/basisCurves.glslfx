@@ -76,7 +76,7 @@ void main(void)
     outData.Neye = getNormal(transpose(transformInv *
                                   GetWorldToViewInverseMatrix()));
 
-    ProcessPrimvars();
+    ProcessPrimvarsIn();
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
@@ -129,7 +129,7 @@ void main(void)
     outData.Peye = vec4(GetWorldToViewMatrix() * transform *
                         vec4(HdGet_points(), 1));
 
-    ProcessPrimvars();
+    ProcessPrimvarsIn();
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
@@ -192,7 +192,7 @@ void main(void)
     outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
     outData[gl_InvocationID].Neye = inData[gl_InvocationID].Neye;
 
-    ProcessPrimvars();
+    ProcessPrimvarsOut();
 }
 
 
@@ -276,7 +276,7 @@ void main(void)
 
     outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
 
-    ProcessPrimvars();
+    ProcessPrimvarsOut();
 }
 
 // Use the length of the control points in screen space to determine how many 
@@ -329,7 +329,7 @@ void main(void)
     outData[gl_InvocationID].Peye = inData[gl_InvocationID].Peye;
     outData[gl_InvocationID].Neye = inData[gl_InvocationID].Neye;
 
-    ProcessPrimvars();
+    ProcessPrimvarsOut();
 }
 
 --- --------------------------------------------------------------------------
@@ -460,7 +460,7 @@ void main()
 
     ApplyClipPlanes(outData.Peye);
 
-    ProcessPrimvars(basis, 0, 1, 2, 3, vec2(u, v)); // interpolate varying primvars
+    ProcessPrimvarsOut(basis, 0, 1, 2, 3, vec2(u, v)); // interpolate varying primvars
 }
 
 --- --------------------------------------------------------------------------
@@ -574,7 +574,7 @@ void main()
     gl_Position = vec4(projMat * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    ProcessPrimvars(basis, 0, 1, 2, 3, vec2(u, v)); // interpolate varying primvars
+    ProcessPrimvarsOut(basis, 0, 1, 2, 3, vec2(u, v)); // interpolate varying primvars
 }
 
 --- --------------------------------------------------------------------------
@@ -736,8 +736,8 @@ float evaluateWidths(vec4 basis, float u)
 --- --------------------------------------------------------------------------
 -- glsl Curves.Linear.VaryingInterpolation
 
-float ProcessPrimvar(float inPv0, float inPv1, float inPv2, float inPv3, 
-                     vec4 basis, vec2 uv)
+float InterpolatePrimvar(float inPv0, float inPv1, float inPv2, float inPv3, 
+                         vec4 basis, vec2 uv)
 {   
     return inPv0 * basis.x + 
            inPv1 * basis.y +
@@ -745,8 +745,8 @@ float ProcessPrimvar(float inPv0, float inPv1, float inPv2, float inPv3,
            inPv3 * basis.w;
 }
 
-vec2 ProcessPrimvar(vec2 inPv0, vec2 inPv1, vec2 inPv2, vec2 inPv3, 
-                    vec4 basis, vec2 uv)
+vec2 InterpolatePrimvar(vec2 inPv0, vec2 inPv1, vec2 inPv2, vec2 inPv3, 
+                        vec4 basis, vec2 uv)
 {   
     return inPv0 * basis.x + 
            inPv1 * basis.y +
@@ -754,8 +754,8 @@ vec2 ProcessPrimvar(vec2 inPv0, vec2 inPv1, vec2 inPv2, vec2 inPv3,
            inPv3 * basis.w;
 }
 
-vec3 ProcessPrimvar(vec3 inPv0, vec3 inPv1, vec3 inPv2, vec3 inPv3, 
-                    vec4 basis, vec2 uv)
+vec3 InterpolatePrimvar(vec3 inPv0, vec3 inPv1, vec3 inPv2, vec3 inPv3, 
+                        vec4 basis, vec2 uv)
 {   
     return inPv0 * basis.x + 
            inPv1 * basis.y +
@@ -763,8 +763,8 @@ vec3 ProcessPrimvar(vec3 inPv0, vec3 inPv1, vec3 inPv2, vec3 inPv3,
            inPv3 * basis.w;
 }
 
-vec4 ProcessPrimvar(vec4 inPv0, vec4 inPv1, vec4 inPv2, vec4 inPv3, 
-                    vec4 basis, vec2 uv)
+vec4 InterpolatePrimvar(vec4 inPv0, vec4 inPv1, vec4 inPv2, vec4 inPv3, 
+                        vec4 basis, vec2 uv)
 {   
     return inPv0 * basis.x + 
            inPv1 * basis.y +
@@ -775,26 +775,26 @@ vec4 ProcessPrimvar(vec4 inPv0, vec4 inPv1, vec4 inPv2, vec4 inPv3,
 --- --------------------------------------------------------------------------
 -- glsl Curves.Cubic.VaryingInterpolation
 
-float ProcessPrimvar(float inPv0, float inPv1, float inPv2, float inPv3, 
-                     vec4 basis, vec2 uv)
+float InterpolatePrimvar(float inPv0, float inPv1, float inPv2, float inPv3, 
+                         vec4 basis, vec2 uv)
 {   
     return mix(inPv2, inPv1, uv.x);
 }
 
-vec2 ProcessPrimvar(vec2 inPv0, vec2 inPv1, vec2 inPv2, vec2 inPv3, 
-                    vec4 basis, vec2 uv)
+vec2 InterpolatePrimvar(vec2 inPv0, vec2 inPv1, vec2 inPv2, vec2 inPv3, 
+                        vec4 basis, vec2 uv)
 {   
     return mix(inPv2, inPv1, uv.x);
 }
 
-vec3 ProcessPrimvar(vec3 inPv0, vec3 inPv1, vec3 inPv2, vec3 inPv3, 
-                    vec4 basis, vec2 uv)
+vec3 InterpolatePrimvar(vec3 inPv0, vec3 inPv1, vec3 inPv2, vec3 inPv3, 
+                        vec4 basis, vec2 uv)
 {   
     return mix(inPv2, inPv1, uv.x);
 }
 
-vec4 ProcessPrimvar(vec4 inPv0, vec4 inPv1, vec4 inPv2, vec4 inPv3, 
-                    vec4 basis, vec2 uv)
+vec4 InterpolatePrimvar(vec4 inPv0, vec4 inPv1, vec4 inPv2, vec4 inPv3, 
+                        vec4 basis, vec2 uv)
 {   
     return mix(inPv2, inPv1, uv.x);
 }
