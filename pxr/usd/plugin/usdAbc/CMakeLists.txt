@@ -70,6 +70,7 @@ pxr_test_scripts(
     testenv/testUsdAbcConversionSubdiv.py
     testenv/testUsdAbcFaceset.py
     testenv/testUsdAbcIndexedProperties.py
+    testenv/testUsdAbcIndexedGeomArb.py
     testenv/testUsdAbcInstancing.py
     testenv/testUsdAbcIsConstant.py
     testenv/testUsdAbcP_OldEncoding.py
@@ -111,6 +112,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdAbcIndexedProperties
     DEST testUsdAbcIndexedProperties
+)
+
+pxr_install_test_dir(
+        SRC testenv/testUsdAbcIndexedGeomArb
+        DEST testUsdAbcIndexedGeomArb
 )
 
 pxr_install_test_dir(
@@ -200,6 +206,15 @@ pxr_register_test(testUsdAbcIndexedProperties
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcIndexedProperties"
     DIFF_COMPARE indexedTextureCoordinates.def.usda
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ABC_TESTSUFFIX=def
+)
+
+pxr_register_test(testUsdAbcIndexedGeomArb
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcIndexedGeomArb"
+    DIFF_COMPARE good_primvars_namespace_after_fix.usda
     EXPECTED_RETURN_CODE 0
     ENV
         USD_ABC_TESTSUFFIX=def
