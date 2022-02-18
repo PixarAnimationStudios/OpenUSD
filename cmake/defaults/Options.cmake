@@ -134,6 +134,21 @@ if (${PXR_BUILD_USD_IMAGING} AND NOT ${PXR_BUILD_IMAGING})
     set(PXR_BUILD_USD_IMAGING "OFF" CACHE BOOL "" FORCE)
 endif()
 
+if (${PXR_ENABLE_METAL_SUPPORT})
+    if (NOT APPLE)
+        message(STATUS
+            "Setting PXR_ENABLE_METAL_SUPPORT=OFF because Metal is only supported on macOS")
+        set(PXR_ENABLE_METAL_SUPPORT "OFF" CACHE BOOL "" FORCE)
+    endif()
+
+    cmake_host_system_information(RESULT MACOS_VER QUERY OS_RELEASE)
+    if (MACOS_VER VERSION_LESS 10.15)
+        message(STATUS
+            "Setting PXR_ENABLE_METAL_SUPPORT=OFF because Metal requires macOS 10.15+")
+        set(PXR_ENABLE_METAL_SUPPORT "OFF" CACHE BOOL "" FORCE)
+    endif()
+endif()
+
 if (${PXR_ENABLE_GL_SUPPORT} OR ${PXR_ENABLE_METAL_SUPPORT} OR ${PXR_ENABLE_VULKAN_SUPPORT})
     set(PXR_BUILD_GPU_SUPPORT "ON")
 else()
