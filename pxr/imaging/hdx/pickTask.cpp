@@ -597,9 +597,6 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     GfVec2i dimensions = _contextParams.resolution;
     GfVec4i viewport(0, 0, dimensions[0], dimensions[1]);
 
-    GLuint restoreDrawFB = 0;
-    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, (GLint*)&restoreDrawFB);
-
     // Are we using stencil conditioning?
     bool needStencilConditioning =
         (_contextParams.depthMaskCallback != nullptr);
@@ -647,8 +644,6 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     }
 
     glDisable(GL_STENCIL_TEST);
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, restoreDrawFB);
 
     // Capture the result buffers and cast to the appropriate types.
     std::vector<uint8_t> primIds;
