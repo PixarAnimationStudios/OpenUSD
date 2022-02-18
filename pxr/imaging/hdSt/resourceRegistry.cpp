@@ -60,12 +60,30 @@ _CopyChainedBuffers(HdBufferSourceSharedPtr const&  src,
 {
     if (src->HasChainedBuffer()) {
         HdBufferSourceSharedPtrVector chainedSrcs = src->GetChainedBuffers();
-        // traverse the tree in a DFS fashion
+        // Traverse the tree in a depth-first fashion.
         for(auto& c : chainedSrcs) {
             range->CopyData(c);
             _CopyChainedBuffers(c, range);
         }
     }
+}
+
+static size_t
+_GetChainedStagingSize(HdBufferSourceSharedPtr const& src)
+{
+    size_t size = 0;
+
+    if (src->HasChainedBuffer()) {
+        HdBufferSourceSharedPtrVector chainedSrcs = src->GetChainedBuffers();
+        // Traverse the tree in a depth-first fashion.
+        for (auto& c : chainedSrcs) {
+            size_t chainedSize = c->GetNumElements()
+                * HdDataSizeOfTupleType(c->GetTupleType());
+            size += chainedSize + _GetChainedStagingSize(c);
+        }
+    }
+
+    return size;
 }
 
 static bool
@@ -776,15 +794,16 @@ HdStResourceRegistry::_Commit()
                                     req.range->Resize(
                                         source->GetNumElements());
                                 }
-                            }
 
-                            // Calculate the size of the staging buffer.
-                            if (req.range && req.range->RequiresStaging()) {
-                                size_t srcSize =
-                                    source->GetNumElements() *
-                                    HdDataSizeOfTupleType(
-                                                source->GetTupleType());
-                                stagingBufferSize += srcSize;
+                                // Calculate the size of the staging buffer.
+                                if (req.range && req.range->RequiresStaging()) {
+                                    size_t srcSize =
+                                        source->GetNumElements() *
+                                        HdDataSizeOfTupleType(
+                                            source->GetTupleType());
+                                    srcSize += _GetChainedStagingSize(source);
+                                    stagingBufferSize += srcSize;
+                                }
                             }
                         }
                     }
@@ -792,7 +811,7 @@ HdStResourceRegistry::_Commit()
             }
             if (++numIterations > 100) {
                 TF_WARN("Too many iterations in resolving buffer source. "
-                        "It's likely due to incosistent dependency.");
+                        "It's likely due to inconsistent dependency.");
                 break;
             }
         }
