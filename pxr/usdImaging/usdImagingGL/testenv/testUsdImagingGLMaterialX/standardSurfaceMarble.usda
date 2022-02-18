@@ -1,5 +1,7 @@
 #usda 1.0
-
+(
+    upAxis = "Z"
+)
 def Sphere "ball1" {
     rel material:binding = </Materials/MaterialX/Materials/Emission>
     color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]

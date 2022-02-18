@@ -1,8 +1,11 @@
 #usda 1.0
-# This test draws two identical cylindrical triangle meshes with catmullClark 
-# subdivision. The first uses catmullClark for the triangle weights, while 
-# the second uses smooth weights during subdivision.
-# The second cylinder should appear smoother.
+(
+    # This test draws two identical cylindrical triangle meshes with catmullClark
+    # subdivision. The first uses catmullClark for the triangle weights, while
+    # the second uses smooth weights during subdivision.
+    # The second cylinder should appear smoother.
+    upAxis = "Z"
+)
 def Mesh "catmark_smoothtris0"
 {
     int[] faceVertexCounts = [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]

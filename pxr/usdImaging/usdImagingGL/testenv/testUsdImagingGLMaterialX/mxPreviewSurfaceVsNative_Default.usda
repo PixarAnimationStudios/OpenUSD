@@ -1,5 +1,7 @@
 #usda 1.0
-
+(
+    upAxis = "Z"
+)
 def Scope "MaterialX_Default" {
     def Sphere "MxUsdDefault" {
         rel material:binding = </Materials/MaterialX/Materials/USD_Default>

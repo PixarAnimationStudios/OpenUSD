@@ -2,6 +2,7 @@
 (
     startTimeCode = 1
     endTimeCode = 3
+    upAxis = "Z"
 )
 
 def Sphere "sphere" {

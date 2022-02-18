@@ -3,6 +3,7 @@
     doc = "Test Hole Imaging"
     endFrame = 40
     startFrame = 1
+    upAxis = "Z"
 )
 
 def Mesh "pPlane1" (

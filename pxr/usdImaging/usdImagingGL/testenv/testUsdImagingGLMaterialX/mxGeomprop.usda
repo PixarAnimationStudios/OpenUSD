@@ -1,5 +1,8 @@
 #usda 1.0
- 
+(
+    upAxis = "Z"
+)
+
 def Scope "MaterialX" (
     references = [
  		@./geomprop.mtlx@</MaterialX>,
