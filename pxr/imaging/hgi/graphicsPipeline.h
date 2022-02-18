@@ -173,6 +173,8 @@ bool operator!=(
 /// <li>conservativeRaster:
 ///   When enabled, any pixel at least partially covered by a rendered primitive
 ///   will be rasterized.</li>
+/// <li>numClipDistances:
+///   The number of user-defined clip distances.</li>
 /// </ul>
 ///
 struct HgiRasterizationState
@@ -188,6 +190,7 @@ struct HgiRasterizationState
     bool depthClampEnabled;
     GfVec2f depthRange;
     bool conservativeRaster;
+    size_t numClipDistances;
 };
 
 HGI_API
@@ -219,7 +222,7 @@ bool operator!=(
 ///   The operation executed when both stencil and depth tests pass.</li>
 /// <li>readMask:
 ///   The mask applied to values before the stencil test function.</li>
-/// <li>writeMak:
+/// <li>writeMask:
 ///   The mask applied when writing to the stencil buffer.</li>
 /// </ul>
 ///

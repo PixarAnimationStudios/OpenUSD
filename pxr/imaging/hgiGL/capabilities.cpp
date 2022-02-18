@@ -52,6 +52,7 @@ TF_DEFINE_ENV_SETTING(HGIGL_GLSL_VERSION, 0,
 static const int _DefaultMaxUniformBlockSize          = 16*1024;
 static const int _DefaultMaxShaderStorageBlockSize    = 16*1024*1024;
 static const int _DefaultGLSLVersion                  = 400;
+static const int _DefaultMaxClipDistances             = 8;
 
 HgiGLCapabilities::HgiGLCapabilities()
     : _glVersion(0)
@@ -71,6 +72,7 @@ HgiGLCapabilities::_LoadCapabilities()
     _maxUniformBlockSize              = _DefaultMaxUniformBlockSize;
     _maxShaderStorageBlockSize        = _DefaultMaxShaderStorageBlockSize;
     _uniformBufferOffsetAlignment     = 0;
+    _maxClipDistances                 = _DefaultMaxClipDistances;
     bool multiDrawIndirectEnabled     = false;
     bool bindlessTextureEnabled       = false;
     bool bindlessBufferEnabled        = false;
@@ -112,6 +114,8 @@ HgiGLCapabilities::_LoadCapabilities()
     } else {
         _glslVersion = 0;
     }
+
+    glGetIntegerv(GL_MAX_CLIP_PLANES, &_maxClipDistances);
 
     // initialize by Core versions
     if (_glVersion >= 310) {

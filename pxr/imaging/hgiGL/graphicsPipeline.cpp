@@ -221,6 +221,11 @@ HgiGLGraphicsPipeline::BindPipeline()
         glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
     }
 
+    for (size_t i = 0; i < _descriptor.rasterizationState.numClipDistances; i++)
+    {
+        glEnable(GL_CLIP_DISTANCE0 + i);
+    }
+
     //
     // Shader program
     //

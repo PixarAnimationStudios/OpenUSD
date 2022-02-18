@@ -66,6 +66,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     _maxUniformBlockSize          = 64 * 1024;
     _maxShaderStorageBlockSize    = 1 * 1024 * 1024 * 1024;
     _uniformBufferOffsetAlignment = 16;
+    _maxClipDistances             = 8;
 }
 
 HgiMetalCapabilities::~HgiMetalCapabilities() = default;

@@ -127,6 +127,15 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
             (GLboolean*)&_restoreConservativeRaster);
     }
 
+    GLint maxClipPlanes;
+    glGetIntegerv(GL_MAX_CLIP_PLANES, &maxClipPlanes);
+    _restoreClipDistances.resize(maxClipPlanes);
+    for (int i = 0; i < maxClipPlanes; i++) {
+        bool clipDistanceEnabled = false;
+        glGetBooleanv(GL_CLIP_DISTANCE0 + i, (GLboolean*)&clipDistanceEnabled);
+        _restoreClipDistances[i] = clipDistanceEnabled;
+    }
+
     HGIGL_POST_PENDING_GL_ERRORS();
     #if defined(GL_KHR_debug)
     if (GARCH_GLAPI_HAS(KHR_debug)) {
@@ -254,6 +263,14 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
             glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
         } else {
             glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+        }
+    }
+
+    for (size_t i = 0; i < _restoreClipDistances.size(); i++) {
+        if (_restoreClipDistances[i]) {
+            glEnable(GL_CLIP_DISTANCE0 + i);  
+        } else {
+            glDisable(GL_CLIP_DISTANCE0 + i);  
         }
     }
 

@@ -130,9 +130,8 @@ HdStRenderPassState::Prepare(
     TF_FOR_ALL(it, GetClipPlanes()) {
         clipPlanes.push_back(GfVec4f(*it));
     }
-    GLint glMaxClipPlanes;
-    glGetIntegerv(GL_MAX_CLIP_PLANES, &glMaxClipPlanes);
-    size_t maxClipPlanes = (size_t)glMaxClipPlanes;
+    const size_t maxClipPlanes = (size_t)hdStResourceRegistry->GetHgi()->
+        GetCapabilities()->GetMaxClipDistances();
     if (clipPlanes.size() >= maxClipPlanes) {
         clipPlanes.resize(maxClipPlanes);
     }
@@ -1042,6 +1041,8 @@ HdStRenderPassState::_InitRasterizationState(
     rasterizationState->depthRange = GetDepthRange();
 
     rasterizationState->conservativeRaster = _conservativeRasterizationEnabled;
+
+    rasterizationState->numClipDistances = GetClipPlanes().size();
 }
 
 void
@@ -1090,7 +1091,8 @@ HdStRenderPassState::GetGraphicsPipelineHash() const
         _alphaToCoverageEnabled,
         _colorMaskUseDefault,
         _useMultiSampleAov,
-        _conservativeRasterizationEnabled);
+        _conservativeRasterizationEnabled,
+        GetClipPlanes().size());
 }
 
 

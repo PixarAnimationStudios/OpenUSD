@@ -28,6 +28,7 @@
 #include "pxr/imaging/hgiGL/api.h"
 
 #include <cstdint>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -99,6 +100,7 @@ private:
     float _depthRange[2];
     bool _restoreFramebufferSRGB;
     bool _restoreConservativeRaster;
+    std::vector<bool> _restoreClipDistances;
 };
 
 

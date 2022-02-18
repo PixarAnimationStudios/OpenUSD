@@ -66,6 +66,11 @@ public:
         return _uniformBufferOffsetAlignment;
     }
 
+    HGI_API
+    int GetMaxClipDistances() const {
+        return _maxClipDistances;
+    }
+
 protected:
     HgiCapabilities()
         : _maxUniformBlockSize(0)
@@ -84,6 +89,7 @@ protected:
     int _maxUniformBlockSize;
     int _maxShaderStorageBlockSize;
     int _uniformBufferOffsetAlignment;
+    int _maxClipDistances;
 
 private:
     HgiCapabilities & operator=(const HgiCapabilities&) = delete;
