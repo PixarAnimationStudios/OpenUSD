@@ -84,7 +84,12 @@ _ToHgiSamplerDesc(HdSamplerParameters const &samplerParameters)
         HdStHgiConversions::GetHgiSamplerAddressMode(samplerParameters.wrapT);
     desc.addressModeW =
         HdStHgiConversions::GetHgiSamplerAddressMode(samplerParameters.wrapR);
-
+    desc.borderColor =
+        HdStHgiConversions::GetHgiBorderColor(samplerParameters.borderColor);
+    desc.enableCompare = samplerParameters.enableCompare;
+    desc.compareFunction = HdStHgiConversions::GetHgiCompareFunction(
+        samplerParameters.compareFunction);
+    
     return desc;
 }
 
@@ -211,12 +216,15 @@ HdStFieldSamplerObject::~HdStFieldSamplerObject()
 // Wrap modes such as repeat or mirror do not make sense for ptex, so set them
 // to clamp.
 static
-HdSamplerParameters PTEX_SAMPLER_PARAMETERS{
+HdSamplerParameters PTEX_SAMPLER_PARAMETERS(
     HdWrapClamp,
     HdWrapClamp,
     HdWrapClamp,
     HdMinFilterLinear,
-    HdMagFilterLinear};
+    HdMagFilterLinear,
+    HdBorderColorTransparentBlack, 
+    /*enableCompare*/false, 
+    HdCmpFuncNever);
 
 HdStPtexSamplerObject::HdStPtexSamplerObject(
     HdStPtexTextureObject const &ptexTexture,
@@ -250,12 +258,15 @@ HdStPtexSamplerObject::~HdStPtexSamplerObject()
 // The old texture system apparently never exercised the case of using
 // mipmaps for a udim.
 static
-HdSamplerParameters UDIM_SAMPLER_PARAMETERS{
+HdSamplerParameters UDIM_SAMPLER_PARAMETERS(
     HdWrapClamp,
     HdWrapClamp,
     HdWrapClamp,
     HdMinFilterLinearMipmapLinear,
-    HdMagFilterLinear};
+    HdMagFilterLinear,
+    HdBorderColorTransparentBlack, 
+    /*enableCompare*/false, 
+    HdCmpFuncNever);
 
 HdStUdimSamplerObject::HdStUdimSamplerObject(
     HdStUdimTextureObject const &udimTexture,

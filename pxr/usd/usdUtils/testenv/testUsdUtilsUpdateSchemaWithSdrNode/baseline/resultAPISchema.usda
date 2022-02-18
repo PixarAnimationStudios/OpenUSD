@@ -11,7 +11,8 @@ class "TestSchemaAPI" (
 {
     bool[] inputs:boolArray
     bool inputs:boolNotInt = 1
-    uniform string inputs:colorMapGamma (
+    uniform token inputs:colorMapGamma (
+        allowedTokens = ["texture"]
         connectability = "interfaceOnly"
         displayGroup = "Basic"
         displayName = "Map Gamma"

@@ -85,4 +85,11 @@ def Scope "Scene" (
             point3f[] points = [(-2,-2,-2), (2, -2,-2), (2, 2, -2), (-2, 2, -2)]
         }
     }
+
+    def Xform "Lights"
+    {
+        def DomeLight "DomeLight"
+        {
+        }
+    }
 }

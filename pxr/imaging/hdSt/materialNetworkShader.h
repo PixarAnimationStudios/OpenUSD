@@ -31,7 +31,6 @@
 
 #include "pxr/usd/sdf/path.h"
 
-#include "pxr/base/vt/value.h"
 #include "pxr/base/tf/token.h"
 
 #include <memory>
@@ -87,12 +86,10 @@ public:
     NamedTextureHandleVector const & GetNamedTextureHandles() const override;
     HDST_API
     void BindResources(int program,
-                       HdSt_ResourceBinder const &binder,
-                       HdRenderPassState const &state) override;
+                       HdSt_ResourceBinder const &binder) override;
     HDST_API
     void UnbindResources(int program,
-                         HdSt_ResourceBinder const &binder,
-                         HdRenderPassState const &state) override;
+                         HdSt_ResourceBinder const &binder) override;
     HDST_API
     void AddBindings(HdBindingRequestVector *customBindings) override;
     HDST_API
@@ -150,6 +147,12 @@ public:
         HdBufferSpecVector * const specs,
         HdBufferSourceSharedPtrVector * const sources);
 
+    HDST_API
+    bool IsSceneMaterial() const;
+
+    HDST_API
+    void SetIsSceneMaterial(bool IsSceneMaterial);
+
 protected:
     HDST_API
     void _SetSource(TfToken const &shaderStageKey, std::string const &source);
@@ -180,6 +183,8 @@ private:
     NamedTextureHandleVector _namedTextureHandles;
 
     TfToken _materialTag;
+
+    bool _isSceneMaterial;
 
     // No copying
     HdSt_MaterialNetworkShader(const HdSt_MaterialNetworkShader &) = delete;

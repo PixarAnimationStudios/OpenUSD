@@ -35,6 +35,7 @@
 #include "pxr/usd/ar/writableAsset.h"
 #include "pxr/base/tf/diagnosticLite.h"
 
+#include <algorithm>
 #include <cstring>
 #include <memory>
 #include <ostream>

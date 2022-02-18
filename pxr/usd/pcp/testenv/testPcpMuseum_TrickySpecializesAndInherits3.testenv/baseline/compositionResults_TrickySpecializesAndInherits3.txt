@@ -1,0 +1,65 @@
+Loading @TrickySpecializesAndInherits3/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </SetClass>
+
+Prim Stack:
+    root.sdf             /SetClass
+
+Child names:
+     ['Metal', 'CorrodedMetal']
+
+------------------------------------------------------------------------
+Results for composing </SetClass/Metal>
+
+Prim Stack:
+    root.sdf             /SetClass/Metal
+
+------------------------------------------------------------------------
+Results for composing </SetClass/CorrodedMetal>
+
+Prim Stack:
+    root.sdf             /SetClass/CorrodedMetal
+
+------------------------------------------------------------------------
+Results for composing </Set>
+
+Prim Stack:
+    root.sdf             /Set
+    root.sdf             /SetClass
+    package.sdf          /SetPackage
+    package.sdf          /SetClass
+    model.sdf            /SetModel
+
+Child names:
+     ['Metal', 'CorrodedMetal']
+
+------------------------------------------------------------------------
+Results for composing </Set/Metal>
+
+Prim Stack:
+    root.sdf             /Set/Metal
+    root.sdf             /SetClass/Metal
+    package.sdf          /SetPackage/Metal
+    package.sdf          /SetClass/Metal
+    model.sdf            /SetModel/Metal
+
+------------------------------------------------------------------------
+Results for composing </Set/CorrodedMetal>
+
+Prim Stack:
+    root.sdf             /Set/CorrodedMetal
+    root.sdf             /SetClass/CorrodedMetal
+    package.sdf          /SetPackage/CorrodedMetal
+    package.sdf          /SetClass/CorrodedMetal
+    model.sdf            /SetModel/CorrodedMetal
+    root.sdf             /Set/Metal
+    root.sdf             /SetClass/Metal
+    package.sdf          /SetPackage/Metal
+    package.sdf          /SetClass/Metal
+    model.sdf            /SetModel/Metal
+

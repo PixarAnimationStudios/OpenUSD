@@ -512,8 +512,8 @@ HdStPtexMipmapTextureLoader::~HdStPtexMipmapTextureLoader()
     for (size_t i = 0; i < _pages.size(); ++i) {
         delete _pages[i];
     }
-    delete _texelBuffer;
-    delete _layoutBuffer;
+    delete[] _texelBuffer;
+    delete[] _layoutBuffer;
 }
 
 // resample border texels for guttering

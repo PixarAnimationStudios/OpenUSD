@@ -50,7 +50,9 @@ GlfUniformBlock::~GlfUniformBlock()
 {
     GlfSharedGLContextScopeHolder sharedGLContextScopeHolder;
 
-    if (_buffer) glDeleteBuffers(1, &_buffer);
+    if (glIsBuffer(_buffer) == GL_TRUE) {
+        glDeleteBuffers(1, &_buffer);
+    }
 }
 
 GlfUniformBlockRefPtr

@@ -181,6 +181,7 @@ HgiVulkanTextureShaderSection::HgiVulkanTextureShaderSection(
     const std::string &identifier,
     const unsigned int layoutIndex,
     const unsigned int dimensions,
+    const bool writable,
     const HgiShaderSectionAttributeVector &attributes,
     const std::string &defaultValue)
   : HgiVulkanShaderSection( identifier,
@@ -188,6 +189,7 @@ HgiVulkanTextureShaderSection::HgiVulkanTextureShaderSection(
                             "uniform",
                             defaultValue)
   , _dimensions(dimensions)
+  , _writable(writable)
 {
 }
 
@@ -212,32 +214,81 @@ HgiVulkanTextureShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
 bool
 HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
 {
-    //Write a function that let's you query the texture with HDGet_texName(uv)
-    //Used to unify texture sampling across platforms that depend on samplers
-    //and don't store textures in global space
-    ss << "vec4 HdGet_";
-    WriteIdentifier(ss);
-    ss << "(vec" << _dimensions
-             << " uv) {\n";
-    ss << "    vec4 result = texture(";
-    WriteIdentifier(ss);
-    ss << ", uv);\n";
-    ss << "    return result;\n";
-    ss << "}";
+    // Used to unify texture sampling and writing across platforms that depend 
+    // on samplers and don't store textures in global space.
 
-    //Same except for texelfetch
-    if(_dimensions != 2) {
-        return true;
+    const std::string intType = _dimensions == 1 ? 
+        "int" :
+        "ivec" + std::to_string(_dimensions);
+
+    if (_writable) {
+        // Write a function that lets you write to the texture with 
+        // HdSet_texName(uv, data).
+        ss << "void HdSet_";
+        WriteIdentifier(ss);
+        ss << "(" << intType << " uv, vec4 data) {\n";
+        ss << "    ";
+        ss << "imageStore(";
+        WriteIdentifier(ss);
+        ss << ", uv, data);\n";
+        ss << "}\n";
+
+        // HdGetSize_texName()
+        ss << intType << " HdGetSize_";
+        WriteIdentifier(ss);
+        ss << "() {\n";
+        ss << "    ";
+        ss << "return imageSize(";
+        WriteIdentifier(ss);
+        ss << ");\n";
+        ss << "}\n";
+    } else {
+        // Write a function that lets you query the texture with 
+        // HdGet_texName(uv).
+        const std::string floatType = _dimensions == 1 ? 
+            "float" :
+            "vec" + std::to_string(_dimensions);
+
+        ss << "vec4 HdGet_";
+        WriteIdentifier(ss);
+        ss << "(" << floatType << " uv) {\n";
+        ss << "    ";
+        ss << "vec4 result = texture(";
+        WriteIdentifier(ss);
+        ss << ", uv);\n";
+        ss << "    return result;\n";
+        ss << "}\n";
+            
+        // HdGetSize_texName()
+        ss << intType << " HdGetSize_";
+        WriteIdentifier(ss);
+        ss << "() {\n";
+        ss << "    ";
+        ss << "return textureSize(";
+        WriteIdentifier(ss);
+        ss << ", 0);\n";
+        ss << "}\n";
+
+        // HdTextureLod_texName()
+        ss << "vec4 HdTextureLod_";
+        WriteIdentifier(ss);
+        ss << "(" << floatType << " coord, float lod) {\n";
+        ss << "    ";
+        ss << "return textureLod(";
+        WriteIdentifier(ss);
+        ss << ", coord, lod);\n";
+        ss << "}\n";
+
+        // HdTexelFetch_texName()
+        ss << "vec4 HdTexelFetch_";
+        WriteIdentifier(ss);
+        ss << "(" << intType << " coord) {\n";
+        ss << "    vec4 result = texelFetch(";
+        WriteIdentifier(ss);
+        ss << ", coord, 0);\n";
+        ss << "    return result;\n";
+        ss << "}\n";
     }
-    
-    ss << "vec4 HdTexelFetch_";
-    WriteIdentifier(ss);
-    ss << "(ivec2 coord) {\n";
-    ss << "    vec4 result = texelFetch(";
-    WriteIdentifier(ss);
-    ss << ", coord, 0);\n";
-    ss << "    return result;\n";
-    ss << "}\n";
 
     return true;
 }

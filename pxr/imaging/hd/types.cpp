@@ -119,6 +119,26 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(HdFormatFloat32UInt8);
 }
 
+HdSamplerParameters::HdSamplerParameters()
+    : HdSamplerParameters(HdWrapRepeat, HdWrapRepeat, HdWrapClamp, 
+                          HdMinFilterNearest, HdMagFilterNearest)
+{}
+
+HdSamplerParameters::HdSamplerParameters(
+    HdWrap wrapS, HdWrap wrapT, HdWrap wrapR, 
+    HdMinFilter minFilter, HdMagFilter magFilter, 
+    HdBorderColor borderColor,
+    bool enableCompare, HdCompareFunction compareFunction)
+    : wrapS(wrapS)
+    , wrapT(wrapT)
+    , wrapR(wrapR)
+    , minFilter(minFilter)
+    , magFilter(magFilter)
+    , borderColor(borderColor)
+    , enableCompare(enableCompare)
+    , compareFunction(compareFunction)
+{}
+
 bool
 HdSamplerParameters::operator==(const HdSamplerParameters &other) const
 {
@@ -127,7 +147,10 @@ HdSamplerParameters::operator==(const HdSamplerParameters &other) const
         (wrapT == other.wrapT) &&
         (wrapR == other.wrapR) &&
         (minFilter == other.minFilter) &&
-        (magFilter == other.magFilter);
+        (magFilter == other.magFilter) &&
+        (borderColor == other.borderColor) &&
+        (enableCompare == other.enableCompare) &&
+        (compareFunction == other.compareFunction);
 }
 
 bool

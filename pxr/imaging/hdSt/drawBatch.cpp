@@ -31,7 +31,6 @@
 #include "pxr/imaging/hdSt/lightingShader.h"
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/package.h"
-#include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
@@ -238,10 +237,13 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
     boost::hash_combine(shaderHash,
                         firstDrawItem->GetGeometricShader()->ComputeHash());
 
-    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader  =
-        state->GetUseSceneMaterials()
-            ? firstDrawItem->GetMaterialNetworkShader()
-            : _GetFallbackMaterialNetworkShader();
+    HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader =
+        firstDrawItem->GetMaterialNetworkShader();
+    if (materialNetworkShader && materialNetworkShader->IsSceneMaterial()) {
+        if (!state->GetUseSceneMaterials()) {
+            materialNetworkShader = _GetFallbackMaterialNetworkShader();
+        }
+    }
 
     size_t materialNetworkShaderHash =
         materialNetworkShader ? materialNetworkShader->ComputeHash() : 0;
@@ -299,6 +301,12 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
 }
 
 bool
+HdSt_DrawBatch::_DrawingProgram::IsValid() const
+{
+    return _glslProgram && _glslProgram->Validate();
+}
+
+bool
 HdSt_DrawBatch::_DrawingProgram::CompileShader(
         HdStDrawItem const *drawItem,
         bool indirect,
@@ -333,7 +341,9 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
                                     codeGen.GetMetaData(),
                                     indirect,
                                     instanceDraw,
-                                    customBindings);
+                                    customBindings,
+                                    resourceRegistry->GetHgi()->
+                                        GetCapabilities());
 
     HdStGLSLProgram::ID hash = codeGen.ComputeHash();
 
@@ -353,9 +363,7 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
 
         _glslProgram = programInstance.GetValue();
 
-        if (_glslProgram) {
-            _resourceBinder.IntrospectBindings(_glslProgram->GetProgram());
-        } else {
+        if (!_glslProgram) {
             // Failed to compile and link a valid glsl program.
             return false;
         }

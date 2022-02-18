@@ -37,6 +37,18 @@ HgiGLGraphicsPipeline::HgiGLGraphicsPipeline(
     : HgiGraphicsPipeline(desc)
     , _vao(0)
 {
+}
+
+HgiGLGraphicsPipeline::~HgiGLGraphicsPipeline() = default;
+
+void
+HgiGLGraphicsPipeline::BindPipeline()
+{
+    if (_vao) {
+        glBindVertexArray(0);
+        glDeleteVertexArrays(1, &_vao);
+    }
+
     if (!_descriptor.vertexBuffers.empty()) {
         glCreateVertexArrays(1, &_vao);
 
@@ -57,32 +69,38 @@ HgiGLGraphicsPipeline::HgiGLGraphicsPipeline(
                 uint32_t idx = va.shaderBindLocation;
                 glEnableVertexArrayAttrib(_vao, idx);
                 glVertexArrayAttribBinding(_vao, idx, vbo.bindingIndex);
-                glVertexArrayAttribFormat(
-                    _vao,
-                    idx,
-                    HgiGetComponentCount(va.format),
-                    HgiGLConversions::GetFormatType(va.format),
-                    GL_FALSE,
-                    va.offset);
+
+                if (HgiGLConversions::IsVertexAttribIntegerFormat(va.format)) {
+                    glVertexArrayAttribIFormat(
+                        _vao,
+                        idx,
+                        HgiGetComponentCount(va.format),
+                        HgiGLConversions::GetFormatType(va.format),
+                        va.offset);
+                } else {
+                    glVertexArrayAttribFormat(
+                        _vao,
+                        idx,
+                        HgiGetComponentCount(va.format),
+                        HgiGLConversions::GetFormatType(va.format),
+                        GL_FALSE,
+                        va.offset);
+                }
+
+                if (vbo.vertexStepFunction ==
+                                HgiVertexBufferStepFunctionPerDrawCommand) {
+                    // Set the divisor such that the attribute index will
+                    // advance only according to the base instance at the
+                    // start of each draw in a multi-draw command.
+                    glVertexArrayBindingDivisor(
+                        _vao,
+                        vbo.bindingIndex,
+                        std::numeric_limits<GLint>::max());
+                }
             }
         }
     }
 
-    HGIGL_POST_PENDING_GL_ERRORS();
-}
-
-HgiGLGraphicsPipeline::~HgiGLGraphicsPipeline()
-{
-    if (_vao) {
-        glBindVertexArray(0);
-        glDeleteVertexArrays(1, &_vao);
-    }
-    HGIGL_POST_PENDING_GL_ERRORS();
-}
-
-void
-HgiGLGraphicsPipeline::BindPipeline()
-{
     if (_vao) {
         glBindVertexArray(_vao);
     }
@@ -92,20 +110,53 @@ HgiGLGraphicsPipeline::BindPipeline()
     //
     if (_descriptor.depthState.depthTestEnabled) {
         glEnable(GL_DEPTH_TEST);
-        GLenum depthFn = HgiGLConversions::GetDepthCompareFunction(
+        GLenum const depthFn = HgiGLConversions::GetCompareFunction(
             _descriptor.depthState.depthCompareFn);
         glDepthFunc(depthFn);
     } else {
         glDisable(GL_DEPTH_TEST);
     }
 
+    if (_descriptor.depthState.depthBiasEnabled) {
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(_descriptor.depthState.depthBiasSlopeFactor,
+                        _descriptor.depthState.depthBiasConstantFactor);
+    } else {
+        glDisable(GL_POLYGON_OFFSET_FILL);
+    }
+
     glDepthMask(_descriptor.depthState.depthWriteEnabled ? GL_TRUE : GL_FALSE);
 
     if (_descriptor.depthState.stencilTestEnabled) {
-        TF_CODING_ERROR("Missing implementation stencil mask enabled");
-    } else {
-        glStencilMaskSeparate(GL_FRONT, 0);
-        glStencilMaskSeparate(GL_BACK, 0);
+        glStencilFuncSeparate(GL_FRONT,
+            HgiGLConversions::GetCompareFunction(
+                _descriptor.depthState.stencilFront.compareFn),
+            _descriptor.depthState.stencilFront.referenceValue,
+            _descriptor.depthState.stencilFront.readMask);
+        glStencilOpSeparate(GL_FRONT,
+            HgiGLConversions::GetStencilOp(
+                _descriptor.depthState.stencilFront.stencilFailOp),
+            HgiGLConversions::GetStencilOp(
+                _descriptor.depthState.stencilFront.depthFailOp),
+            HgiGLConversions::GetStencilOp(
+                _descriptor.depthState.stencilFront.depthStencilPassOp));
+        glStencilMaskSeparate(GL_FRONT,
+            _descriptor.depthState.stencilFront.writeMask);
+
+        glStencilFuncSeparate(GL_BACK,
+            HgiGLConversions::GetCompareFunction(
+                _descriptor.depthState.stencilBack.compareFn),
+            _descriptor.depthState.stencilBack.referenceValue,
+            _descriptor.depthState.stencilBack.readMask);
+        glStencilOpSeparate(GL_BACK,
+            HgiGLConversions::GetStencilOp(
+                _descriptor.depthState.stencilBack.stencilFailOp),
+            HgiGLConversions::GetStencilOp(
+                _descriptor.depthState.stencilBack.depthFailOp),
+            HgiGLConversions::GetStencilOp(
+                _descriptor.depthState.stencilBack.depthStencilPassOp));
+        glStencilMaskSeparate(GL_BACK,
+            _descriptor.depthState.stencilBack.writeMask);
     }
 
     //
@@ -113,9 +164,12 @@ HgiGLGraphicsPipeline::BindPipeline()
     //
     if (_descriptor.multiSampleState.alphaToCoverageEnable) {
         glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-        glEnable(GL_SAMPLE_ALPHA_TO_ONE);
     } else {
         glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    }
+    if (_descriptor.multiSampleState.alphaToOneEnable) {
+        glEnable(GL_SAMPLE_ALPHA_TO_ONE);
+    } else {
         glDisable(GL_SAMPLE_ALPHA_TO_ONE);
     }
 
@@ -150,6 +204,8 @@ HgiGLGraphicsPipeline::BindPipeline()
     } else {
         glEnable(GL_RASTERIZER_DISCARD);
     }
+
+    glEnable(GL_PROGRAM_POINT_SIZE);
 
     //
     // Shader program

@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+from __future__ import division
+
 import unittest
 
 class TestUsdBugs(unittest.TestCase):
@@ -237,6 +239,7 @@ class TestUsdBugs(unittest.TestCase):
         self.assertEqual(a.Get(), Vt.Vec3fArray(3, [(1,2,3), (2,3,4), (3,4,5)]))
         a.Set(((3,2,1), (4,3,2), (5,4,3)))
         self.assertEqual(a.Get(), Vt.Vec3fArray(3, [(3,2,1), (4,3,2), (5,4,3)]))
+        # pylint: disable=range-builtin-not-iterating,zip-builtin-not-iterating
         a.Set(zip(range(3), range(3), range(3)))
         self.assertEqual(a.Get(), Vt.Vec3fArray(3, [(0,0,0), (1,1,1), (2,2,2)]))
 
@@ -419,7 +422,7 @@ class TestUsdBugs(unittest.TestCase):
             layer = Sdf.Layer.CreateNew(f.name)
             foo = Sdf.CreatePrimInLayer(layer, '/foo')
             attr = Sdf.AttributeSpec(foo, 'attr', Sdf.ValueTypeNames.IntArray)
-            ints = range(1024**2)
+            ints = list(range(1024**2))
             random.shuffle(ints)
             attr.default = Vt.IntArray(ints)
             layer.Save()

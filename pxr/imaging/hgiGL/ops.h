@@ -141,13 +141,16 @@ public:
     HGIGL_API
     static HgiGLOpsFn Draw(
         HgiPrimitiveType primitiveType,
+        uint32_t primitiveIndexSize,
         uint32_t vertexCount,
         uint32_t firstVertex,
-        uint32_t instanceCount);
+        uint32_t instanceCount,
+        uint32_t firstInstance);
 
     HGIGL_API
     static HgiGLOpsFn DrawIndirect(
         HgiPrimitiveType primitiveType,
+        uint32_t primitiveIndexSize,
         HgiBufferHandle const& drawParameterBuffer,
         uint32_t drawBufferOffset,
         uint32_t drawCount,
@@ -156,15 +159,18 @@ public:
     HGIGL_API
     static HgiGLOpsFn DrawIndexed(
         HgiPrimitiveType primitiveType,
+        uint32_t primitiveIndexSize,
         HgiBufferHandle const& indexBuffer,
         uint32_t indexCount,
         uint32_t indexBufferByteOffset,
         uint32_t vertexOffset,
-        uint32_t instanceCount);
+        uint32_t instanceCount,
+        uint32_t firstInstance);
 
     HGIGL_API
     static HgiGLOpsFn DrawIndexedIndirect(
         HgiPrimitiveType primitiveType,
+        uint32_t primitiveIndexSize,
         HgiBufferHandle const& indexBuffer,
         HgiBufferHandle const& drawParameterBuffer,
         uint32_t drawBufferOffset,

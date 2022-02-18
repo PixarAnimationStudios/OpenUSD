@@ -183,6 +183,7 @@ HdSt_FlatNormalsComputationGPU::Execute(
     // select shader by datatype
     TfToken shaderToken;
     int indexArity = HdGetComponentCount(indices->GetTupleType().type);
+    int indexCount = indices->GetTupleType().count;
     if (indexArity == 3) {
         if (_srcDataType == HdTypeFloatVec3) {
             if (_dstDataType == HdTypeFloatVec3) {
@@ -197,7 +198,7 @@ HdSt_FlatNormalsComputationGPU::Execute(
                 shaderToken = HdStGLSLProgramTokens->flatNormalsTriDoubleToPacked;
             }
         }
-    } else if (indexArity == 4) {
+    } else if (indexCount == 4) {
         if (_srcDataType == HdTypeFloatVec3) {
             if (_dstDataType == HdTypeFloatVec3) {
                 shaderToken = HdStGLSLProgramTokens->flatNormalsQuadFloatToFloat;
@@ -209,6 +210,20 @@ HdSt_FlatNormalsComputationGPU::Execute(
                 shaderToken = HdStGLSLProgramTokens->flatNormalsQuadDoubleToDouble;
             } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
                 shaderToken = HdStGLSLProgramTokens->flatNormalsQuadDoubleToPacked;
+            }
+        }
+    } else if (indexCount == 6) {
+        if (_srcDataType == HdTypeFloatVec3) {
+            if (_dstDataType == HdTypeFloatVec3) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsTriQuadFloatToFloat;
+            } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsTriQuadFloatToPacked;
+            }
+        } else if (_srcDataType == HdTypeDoubleVec3) {
+            if (_dstDataType == HdTypeDoubleVec3) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsTriQuadDoubleToDouble;
+            } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
+                shaderToken = HdStGLSLProgramTokens->flatNormalsTriQuadDoubleToPacked;
             }
         }
     }
@@ -226,6 +241,7 @@ HdSt_FlatNormalsComputationGPU::Execute(
         int indexStride;
         int pParamOffset;
         int pParamStride;
+        int primIndexEnd;
     } uniform;
 
     HdStResourceRegistry* hdStResourceRegistry =
@@ -235,6 +251,7 @@ HdSt_FlatNormalsComputationGPU::Execute(
           [&](HgiShaderFunctionDesc &computeDesc) {
             computeDesc.debugName = shaderToken.GetString();
             computeDesc.shaderStage = HgiShaderStageCompute;
+            computeDesc.computeDescriptor.localSize = GfVec3i(64, 1, 1);
 
             TfToken srcType;
             TfToken dstType;
@@ -251,12 +268,18 @@ HdSt_FlatNormalsComputationGPU::Execute(
             } else if (_dstDataType == HdTypeInt32_2_10_10_10_REV) {
                 dstType = HdStTokens->_int;
             }
-            HgiShaderFunctionAddBuffer(&computeDesc, "points", srcType);
-            HgiShaderFunctionAddBuffer(&computeDesc, "normals", dstType);
             HgiShaderFunctionAddBuffer(
-                &computeDesc, "indices", HdStTokens->_int);
+                &computeDesc, "points", srcType,
+                BufferBinding_Points, HgiBindingTypePointer);
+            HgiShaderFunctionAddWritableBuffer(
+                &computeDesc, "normals", dstType,
+                BufferBinding_Normals);
             HgiShaderFunctionAddBuffer(
-                &computeDesc, "primitiveParam", HdStTokens->_int);
+                &computeDesc, "indices", HdStTokens->_int,
+                BufferBinding_Indices, HgiBindingTypePointer);
+            HgiShaderFunctionAddBuffer(
+                &computeDesc, "primitiveParam", HdStTokens->_int,
+                BufferBinding_PrimitiveParam, HgiBindingTypePointer);
 
             static const std::string params[] = {
                 "vertexOffset",       // offset in aggregated buffer
@@ -269,7 +292,8 @@ HdSt_FlatNormalsComputationGPU::Execute(
                 "indexOffset",        // interleave offset
                 "indexStride",        // interleave stride
                 "pParamOffset",       // interleave offset
-                "pParamStride"        // interleave stride
+                "pParamStride",       // interleave stride
+                "primIndexEnd"
             };
             static_assert((sizeof(Uniform) / sizeof(int)) ==
                           (sizeof(params) / sizeof(params[0])), "");
@@ -319,6 +343,9 @@ HdSt_FlatNormalsComputationGPU::Execute(
         HdDataSizeOfType(HdGetComponentType(primitiveParam->GetTupleType().type));
     uniform.pParamOffset = primitiveParam->GetOffset() / pParamComponentSize;
     uniform.pParamStride = primitiveParam->GetStride() / pParamComponentSize;
+    
+    const int numPrims = topologyRange->GetNumElements();
+    uniform.primIndexEnd = numPrims;
 
     Hgi* hgi = hdStResourceRegistry->GetHgi();
 
@@ -374,7 +401,6 @@ HdSt_FlatNormalsComputationGPU::Execute(
         pipeline, BufferBinding_Uniforms, sizeof(uniform), &uniform);
 
     // Queue compute work
-    int numPrims = topologyRange->GetNumElements();
     computeCmds->Dispatch(numPrims, 1);
 
     computeCmds->PopDebugGroup();

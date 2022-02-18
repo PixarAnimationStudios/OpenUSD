@@ -34,6 +34,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class HdSt_GeometricShader;
+
 class HdStGLConversions {
 public:
     HDST_API
@@ -52,7 +54,10 @@ public:
     static GLenum GetGlBlendFactor(HdBlendFactor factor);
 
     HDST_API
-    static int GetGLAttribType(HdType type);
+    static GLenum GetGLAttribType(HdType type);
+
+    HDST_API
+    static GLenum GetPrimitiveMode(HdSt_GeometricShader const *geometricShader);
 
     /// Return the name of the given type as represented in GLSL.
     HDST_API

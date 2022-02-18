@@ -46,7 +46,7 @@ class Volume "Volume" (
 }
 
 class "FieldBase" (
-    inherits = </Boundable>
+    inherits = </Xformable>
     doc = """Base class for field primitives."""
 )
 {

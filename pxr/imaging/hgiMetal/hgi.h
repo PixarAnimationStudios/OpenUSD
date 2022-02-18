@@ -61,6 +61,9 @@ public:
     ~HgiMetal() override;
 
     HGIMETAL_API
+    bool IsBackendSupported() const override;
+
+    HGIMETAL_API
     HgiGraphicsCmdsUniquePtr CreateGraphicsCmds(
         HgiGraphicsCmdsDesc const& desc) override;
     
@@ -164,7 +167,8 @@ public:
     // For example, the client code may record in a HgiBlitCmds and a
     // HgiComputeCmds at the same time.
     HGIMETAL_API
-    id<MTLCommandBuffer> GetPrimaryCommandBuffer(bool flush = true);
+    id<MTLCommandBuffer> GetPrimaryCommandBuffer(HgiCmds *requester = nullptr,
+                                                 bool flush = true);
 
     HGIMETAL_API
     id<MTLCommandBuffer> GetSecondaryCommandBuffer();
@@ -210,7 +214,6 @@ private:
     std::unique_ptr<HgiMetalCapabilities> _capabilities;
 
     int _frameDepth;
-    int _apiVersion;
     bool _workToFlush;
 };
 

@@ -25,8 +25,6 @@
 
 #include "pxr/imaging/hdx/oitBufferAccessor.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
-
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
@@ -47,12 +45,7 @@ TF_DEFINE_ENV_SETTING(HDX_ENABLE_OIT, true,
 bool
 HdxOitBufferAccessor::IsOitEnabled()
 {
-    if (!bool(TfGetEnvSetting(HDX_ENABLE_OIT))) return false;
-
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-    if (!caps.shaderStorageBufferEnabled) return false;
-
-    return true;
+    return TfGetEnvSetting(HDX_ENABLE_OIT);
 }
 
 HdxOitBufferAccessor::HdxOitBufferAccessor(HdTaskContext *ctx)
@@ -166,7 +159,6 @@ HdxOitBufferAccessor::InitializeOitBuffersIfNecessary()
     HdStBufferResourceSharedPtr stCounterResource = 
         stCounterBar->GetResource(HdxTokens->hdxOitCounterBuffer);
 
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
     const GLint clearCounter = -1;
 
     // XXX todo add a Clear() fn on HdStBufferResource so that we do not have
@@ -179,19 +171,11 @@ HdxOitBufferAccessor::InitializeOitBuffersIfNecessary()
         return;
     }
 
-    if (ARCH_LIKELY(caps.directStateAccessEnabled)) {
-        glClearNamedBufferData(glBuffer->GetBufferId(),
-                                GL_R32I,
-                                GL_RED_INTEGER,
-                                GL_INT,
-                                &clearCounter);
-    } else {
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, glBuffer->GetBufferId());
-        glClearBufferData(
-            GL_SHADER_STORAGE_BUFFER, GL_R32I, GL_RED_INTEGER, GL_INT,
-            &clearCounter);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-    }
+    glClearNamedBufferData(glBuffer->GetBufferId(),
+                           GL_R32I,
+                           GL_RED_INTEGER,
+                           GL_INT,
+                           &clearCounter);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

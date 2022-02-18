@@ -32,7 +32,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
-struct HdPrman_Context;
+class HdPrman_RenderParam;
 
 /// \class HdPrmanMaterial
 ///
@@ -42,17 +42,17 @@ class HdPrmanMaterial final : public HdMaterial
 {
 public:
     HdPrmanMaterial(SdfPath const& id);
-    virtual ~HdPrmanMaterial();
+    ~HdPrmanMaterial() override;
 
     /// Synchronizes state from the delegate to this object.
-    virtual void Sync(HdSceneDelegate *sceneDelegate,
-                      HdRenderParam   *renderParam,
-                      HdDirtyBits     *dirtyBits) override;
-
+    void Sync(HdSceneDelegate *sceneDelegate,
+              HdRenderParam   *renderParam,
+              HdDirtyBits     *dirtyBits) override;
+    
     /// Returns the minimal set of dirty bits to place in the
     /// change tracker for use in the first sync of this prim.
     /// Typically this would be all dirty bits.
-    virtual HdDirtyBits GetInitialDirtyBitsMask() const override;
+    HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     riley::MaterialId GetMaterialId() const { return _materialId; }
     riley::DisplacementId GetDisplacementId() const { return _displacementId; }
@@ -60,7 +60,7 @@ public:
     /// Return true if this material is valid.
     bool IsValid() const;
 
-    virtual void Finalize(HdRenderParam *renderParam) override;
+    void Finalize(HdRenderParam *renderParam) override;
 
     /// Return the static list of tokens supported.
     static TfTokenVector const& GetShaderSourceTypes();
@@ -71,11 +71,15 @@ public:
     /// Set material filtering chain.
     static void SetFilterChain(MatfiltFilterChain const& chain);
 
+    /// Returns whether it's possible and preferred to use scene indices
+    /// in place of matfilt callbacks
+    static bool GetUseSceneIndexForMatfilt();
+
     /// Return the material network after filtering.
     HdMaterialNetwork2 const& GetMaterialNetwork() const;
 
 private:
-    void _ResetMaterial(HdPrman_Context *context);
+    void _ResetMaterial(HdPrman_RenderParam *renderParam);
 
     riley::MaterialId _materialId;
     riley::DisplacementId _displacementId;
@@ -91,6 +95,12 @@ HdPrman_ConvertHdMaterialNetwork2ToRmanNodes(
     HdMaterialNetwork2 const& network,
     SdfPath const& nodePath,
     std::vector<riley::ShadingNode> *result);
+
+/// Return the fallback surface material network description.  This network
+/// is meant to resemble Storm's fallback material.  It uses displayColor,
+/// displayRoughness, displayOpacity, and displayMetallic.
+HdMaterialNetwork2
+HdPrmanMaterial_GetFallbackSurfaceMaterialNetwork();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

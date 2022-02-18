@@ -335,66 +335,22 @@ constexpr uint8_t USDC_MAJOR = 0;
 constexpr uint8_t USDC_MINOR = 9;
 constexpr uint8_t USDC_PATCH = 0;
 
-struct CrateFile::Version
+CrateFile::Version
+CrateFile::Version::FromString(char const *str)
 {
-    // Not named 'major' since that's a macro name conflict on POSIXes.
-    uint8_t majver, minver, patchver;
-
-    constexpr Version() : Version(0,0,0) {}
-    constexpr Version(uint8_t majver, uint8_t minver, uint8_t patchver)
-        : majver(majver), minver(minver), patchver(patchver) {}
-
-    explicit Version(CrateFile::_BootStrap const &boot)
-        : Version(boot.version[0], boot.version[1], boot.version[2]) {}
-    
-    static Version FromString(char const *str) {
-        uint32_t maj, min, pat;
-        if (sscanf(str, "%u.%u.%u", &maj, &min, &pat) != 3 ||
-            maj > 255 || min > 255 || pat > 255) {
-            return Version();
-        }
-        return Version(maj, min, pat);
+    uint32_t maj, min, pat;
+    if (sscanf(str, "%u.%u.%u", &maj, &min, &pat) != 3 ||
+        maj > 255 || min > 255 || pat > 255) {
+        return Version();
     }
+    return Version(maj, min, pat);
+}
 
-    constexpr uint32_t AsInt() const {
-        return static_cast<uint32_t>(majver) << 16 |
-            static_cast<uint32_t>(minver) << 8 |
-            static_cast<uint32_t>(patchver);
-    }
-
-    std::string AsString() const {
-        return TfStringPrintf("%" PRId8 ".%" PRId8 ".%" PRId8,
-                              majver, minver, patchver);
-    }
-
-    bool IsValid() const { return AsInt() != 0; }
-
-    // Return true if fileVer has the same major version as this, and has a
-    // lesser or same minor version.  Patch version irrelevant, since the
-    // versioning scheme specifies that patch level changes are
-    // forward-compatible.
-    bool CanRead(Version const &fileVer) const {
-        return fileVer.majver == majver && fileVer.minver <= minver;
-    }
-
-    // Return true if fileVer has the same major version as this, and has a
-    // lesser minor version, or has the same minor version and a lesser or equal
-    // patch version.
-    bool CanWrite(Version const &fileVer) const {
-        return fileVer.majver == majver &&
-            (fileVer.minver < minver ||
-             (fileVer.minver == minver && fileVer.patchver <= patchver));
-    }        
-    
-#define LOGIC_OP(op)                                                    \
-    constexpr bool operator op(Version const &other) const {            \
-        return AsInt() op other.AsInt();                                \
-    }
-    LOGIC_OP(==); LOGIC_OP(!=);
-    LOGIC_OP(<);  LOGIC_OP(>);
-    LOGIC_OP(<=); LOGIC_OP(>=);
-#undef LOGIC_OP
-};
+std::string
+CrateFile::Version::AsString() const {
+    return TfStringPrintf(
+        "%" PRId8 ".%" PRId8 ".%" PRId8, majver, minver, patchver);
+}
 
 constexpr CrateFile::Version
 _SoftwareVersion { USDC_MAJOR, USDC_MINOR, USDC_PATCH };
@@ -951,65 +907,63 @@ struct CrateFile::_PackingContext
         
         // Populate this context with everything we need from \p crate in order
         // to do deduplication, etc.
-        WorkWithScopedParallelism([this, crate]() {
-                WorkDispatcher wd;
-
-                // Read in any unknown sections so we can rewrite them later.
-                wd.Run([this, crate]() {
-                        for (auto const &sec: crate->_toc.sections) {
-                            if (!_IsKnownSection(sec.name)) {
-                                unknownSections.emplace_back(
-                                    sec.name, _ReadSectionBytes(sec, crate),
-                                    sec.size);
-                            }
-                        }
-                    });
-                
-                // Ensure that pathToPathIndex is correctly populated.
-                wd.Run([this, crate]() {
-                        for (size_t i = 0; i != crate->_paths.size(); ++i)
-                            pathToPathIndex[crate->_paths[i]] = PathIndex(i);
-                    });
-                
-                // Ensure that fieldToFieldIndex is correctly populated.
-                wd.Run([this, crate]() {
-                        for (size_t i = 0; i != crate->_fields.size(); ++i)
-                            fieldToFieldIndex[
-                                crate->_fields[i]] = FieldIndex(i);
-                    });
-                
-                // Ensure that fieldsToFieldSetIndex is correctly populated.
-                auto const &fsets = crate->_fieldSets;
-                wd.Run([this, &fsets]() {
-                        vector<FieldIndex> fieldIndexes;
-                        for (auto fsBegin = fsets.begin(),
-                                 fsEnd = find(
-                                     fsBegin, fsets.end(), FieldIndex());
-                             fsBegin != fsets.end();
-                             fsBegin = fsEnd + 1,
-                                 fsEnd = find(
-                                     fsBegin, fsets.end(), FieldIndex())) {
-                            fieldIndexes.assign(fsBegin, fsEnd);
-                            fieldsToFieldSetIndex[fieldIndexes] =
-                                FieldSetIndex(fsBegin - fsets.begin());
-                        }
-                    });
-
-                // Ensure that tokenToTokenIndex is correctly populated.
-                wd.Run([this, crate]() {
-                        for (size_t i = 0; i != crate->_tokens.size(); ++i)
-                            tokenToTokenIndex[
-                                crate->_tokens[i]] = TokenIndex(i);
-                    });
-                
-                // Ensure that stringToStringIndex is correctly populated.
-                wd.Run([this, crate]() {
-                        for (size_t i = 0; i != crate->_strings.size(); ++i)
-                            stringToStringIndex[
-                                crate->GetString(StringIndex(i))] =
-                                StringIndex(i);
-                    });
-            });
+        WorkDispatcher wd;
+        
+        // Read in any unknown sections so we can rewrite them later.
+        wd.Run([this, crate]() {
+            for (auto const &sec: crate->_toc.sections) {
+                if (!_IsKnownSection(sec.name)) {
+                    unknownSections.emplace_back(
+                        sec.name, _ReadSectionBytes(sec, crate),
+                        sec.size);
+                }
+            }
+        });
+        
+        // Ensure that pathToPathIndex is correctly populated.
+        wd.Run([this, crate]() {
+            for (size_t i = 0; i != crate->_paths.size(); ++i)
+                pathToPathIndex[crate->_paths[i]] = PathIndex(i);
+        });
+        
+        // Ensure that fieldToFieldIndex is correctly populated.
+        wd.Run([this, crate]() {
+            for (size_t i = 0; i != crate->_fields.size(); ++i)
+                fieldToFieldIndex[
+                    crate->_fields[i]] = FieldIndex(i);
+        });
+        
+        // Ensure that fieldsToFieldSetIndex is correctly populated.
+        auto const &fsets = crate->_fieldSets;
+        wd.Run([this, &fsets]() {
+            vector<FieldIndex> fieldIndexes;
+            for (auto fsBegin = fsets.begin(),
+                     fsEnd = find(
+                         fsBegin, fsets.end(), FieldIndex());
+                 fsBegin != fsets.end();
+                 fsBegin = fsEnd + 1,
+                     fsEnd = find(
+                         fsBegin, fsets.end(), FieldIndex())) {
+                fieldIndexes.assign(fsBegin, fsEnd);
+                fieldsToFieldSetIndex[fieldIndexes] =
+                    FieldSetIndex(fsBegin - fsets.begin());
+            }
+        });
+        
+        // Ensure that tokenToTokenIndex is correctly populated.
+        wd.Run([this, crate]() {
+            for (size_t i = 0; i != crate->_tokens.size(); ++i)
+                tokenToTokenIndex[
+                    crate->_tokens[i]] = TokenIndex(i);
+        });
+        
+        // Ensure that stringToStringIndex is correctly populated.
+        wd.Run([this, crate]() {
+            for (size_t i = 0; i != crate->_strings.size(); ++i)
+                stringToStringIndex[
+                    crate->GetString(StringIndex(i))] =
+                    StringIndex(i);
+        });
         
         // Set file pos to start of the structural sections in the current TOC.
         bufferedOutput.Seek(crate->_toc.GetMinimumSectionStart());
@@ -2240,11 +2194,24 @@ CrateFile::Open(string const &assetPath, ArAssetSharedPtr const &asset)
 }
 
 /* static */
+CrateFile::Version
+CrateFile::GetSoftwareVersion()
+{
+    return _SoftwareVersion;
+}
+
+/* static */
 TfToken const &
 CrateFile::GetSoftwareVersionToken()
 {
-    static TfToken tok(_SoftwareVersion.AsString());
+    static TfToken tok(GetSoftwareVersion().AsString());
     return tok;
+}
+
+CrateFile::Version
+CrateFile::GetFileVersion() const
+{
+    return Version(_boot);
 }
 
 TfToken
@@ -2445,6 +2412,12 @@ CrateFile::~CrateFile()
     if (_useMmap && _mmapSrc) {
         _mmapSrc.reset();
     }
+
+    WorkMoveDestroyAsync(_paths);
+    WorkMoveDestroyAsync(_tokens);
+    WorkMoveDestroyAsync(_strings);
+    WorkMoveDestroyAsync(_sharedTimes);
+    WorkMoveDestroyAsync(_packValueFunctions);
 
     _DeleteValueHandlers();
 }
@@ -3515,26 +3488,24 @@ CrateFile::_ReadTokens(Reader reader)
     _tokens.clear();
     _tokens.resize(numTokens);
 
-    WorkWithScopedParallelism([this, &p, charsEnd, numTokens]() {
-            WorkDispatcher wd;
-            struct MakeToken {
-                void operator()() const { (*tokens)[index] = TfToken(str); }
-                vector<TfToken> *tokens;
-                size_t index;
-                char const *str;
-            };
-            size_t i = 0;
-            for (; p < charsEnd && i != numTokens; ++i) {
-                MakeToken mt { &_tokens, i, p };
-                wd.Run(mt);
-                p += strlen(p) + 1;
-            }
-            wd.Wait();
-            if (i != numTokens) {
-                TF_RUNTIME_ERROR("Crate file claims %zu tokens, found %zu",
-                                 numTokens, i);
-            }
-        });
+    WorkDispatcher wd;
+    struct MakeToken {
+        void operator()() const { (*tokens)[index] = TfToken(str); }
+        vector<TfToken> *tokens;
+        size_t index;
+        char const *str;
+    };
+    size_t i = 0;
+    for (; p < charsEnd && i != numTokens; ++i) {
+        MakeToken mt { &_tokens, i, p };
+        wd.Run(mt);
+        p += strlen(p) + 1;
+    }
+    wd.Wait();
+    if (i != numTokens) {
+        TF_RUNTIME_ERROR("Crate file claims %zu tokens, found %zu",
+                         numTokens, i);
+    }
 
     WorkSwapDestroyAsync(chars);
 }
@@ -3555,19 +3526,17 @@ CrateFile::_ReadPaths(Reader reader)
     _paths.resize(reader.template Read<uint64_t>());
     std::fill(_paths.begin(), _paths.end(), SdfPath());
 
-    WorkWithScopedParallelism([this, &reader]() {
-            WorkDispatcher dispatcher;
-            // VERSIONING: PathItemHeader changes size from 0.0.1 to 0.1.0.
-            Version fileVer(_boot);
-            if (fileVer == Version(0,0,1)) {
-                _ReadPathsImpl<_PathItemHeader_0_0_1>(reader, dispatcher);
-            } else if (fileVer < Version(0,4,0)) {
-                _ReadPathsImpl<_PathItemHeader>(reader, dispatcher);
-            } else {
-                // 0.4.0 has compressed paths.
-                _ReadCompressedPaths(reader, dispatcher);
-            }
-        });
+    WorkDispatcher dispatcher;
+    // VERSIONING: PathItemHeader changes size from 0.0.1 to 0.1.0.
+    Version fileVer(_boot);
+    if (fileVer == Version(0,0,1)) {
+        _ReadPathsImpl<_PathItemHeader_0_0_1>(reader, dispatcher);
+    } else if (fileVer < Version(0,4,0)) {
+        _ReadPathsImpl<_PathItemHeader>(reader, dispatcher);
+    } else {
+        // 0.4.0 has compressed paths.
+        _ReadCompressedPaths(reader, dispatcher);
+    }
 }
 
 template <class Header, class Reader>

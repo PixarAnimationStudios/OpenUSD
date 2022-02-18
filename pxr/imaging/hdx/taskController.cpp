@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/light.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hdx/aovInputTask.h"
 #include "pxr/imaging/hdx/colorizeSelectionTask.h"
@@ -80,10 +81,19 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // for the stage orientation
     (StageOrientation)
+
+    // for the builtin light's HdMaterialNetworkMap 
+    (materialNetworkMap)
+    (PxrDistantLight)
+    (PxrDomeLight)
 );
 
 // XXX: WBN to expose this to the application.
 static const uint32_t MSAA_SAMPLE_COUNT = 4;
+
+// Distant Light values
+static const float DISTANT_LIGHT_ANGLE = 0.53;
+static const float DISTANT_LIGHT_INTENSITY = 15000.0;
 
 // ---------------------------------------------------------------------------
 // Delegate implementation.
@@ -125,6 +135,13 @@ HdxTaskController::_Delegate::GetLightParamValue(SdfPath const& id,
                                                  TfToken const& paramName)
 {   
     return Get(id, paramName);
+}
+
+/* virtual */
+VtValue
+HdxTaskController::_Delegate::GetMaterialResource(SdfPath const& id)
+{
+    return Get(id, _tokens->materialNetworkMap);
 }
 
 /* virtual */
@@ -218,10 +235,7 @@ HdxTaskController::~HdxTaskController()
         GetRenderIndex()->RemoveTask(id);
     }
 
-    const TfToken cameraLightType = 
-        (GetRenderIndex()->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight))
-            ? HdPrimTypeTokens->simpleLight
-            : HdPrimTypeTokens->sphereLight;
+    const TfToken cameraLightType = _GetCameraLightType();
     for (auto const& id : _lightIds) {
         GetRenderIndex()->RemoveSprim(cameraLightType, id);
         GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->domeLight, id);
@@ -262,10 +276,8 @@ HdxTaskController::_CreateRenderGraph()
             _CreateColorCorrectionTask();
             _CreateVisualizeAovTask();
             _CreatePresentTask();
+            _CreatePickTask();
         }
-
-        // Picking rendergraph
-        _CreatePickTask();
 
         // XXX AOVs are OFF by default for Storm TaskController because hybrid
         // rendering in Presto spawns an ImagineGLEngine, which creates a task
@@ -780,6 +792,10 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
                                   GlfSimpleLight const& light)
 {
     _delegate.SetParameter(pathName, HdLightTokens->intensity, VtValue(1.0f));
+    _delegate.SetParameter(pathName, HdLightTokens->exposure, VtValue(0.f));
+    _delegate.SetParameter(pathName, HdLightTokens->normalize, false);
+    _delegate.SetParameter(pathName, HdLightTokens->color, 
+        VtValue(GfVec3f(1, 1, 1)));
     _delegate.SetParameter(pathName, HdTokens->transform,
         VtValue(light.GetTransform()));
     _delegate.SetParameter(pathName, HdLightTokens->shadowParams,
@@ -803,7 +819,74 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
         const GfVec4d& pos = light.GetPosition();
         trans.SetTranslateOnly(GfVec3d(pos[0], pos[1], pos[2]));
         _delegate.SetParameter(pathName, HdTokens->transform, VtValue(trans));
+
+        // Initialize distant light specific parameters
+        _delegate.SetParameter(pathName, HdLightTokens->angle, 
+            VtValue(DISTANT_LIGHT_ANGLE));
+        _delegate.SetParameter(pathName, HdLightTokens->intensity, 
+            VtValue(DISTANT_LIGHT_INTENSITY));
     }
+}
+
+void 
+HdxTaskController::_SetMaterialNetwork(SdfPath const& pathName, 
+                                       GlfSimpleLight const& light)
+{
+    HdMaterialNetworkMap networkMap;
+
+    // Build a HdMaterialNetwork for the Light
+    HdMaterialNetwork lightNetwork;
+    HdMaterialNode node;
+    node.path = pathName;
+    // XXX Using these Pxr**Light tokens works for now since HdPrman is 
+    // currently the only renderer that supports material networks for lights. 
+    node.identifier = light.IsDomeLight() 
+        ? _tokens->PxrDomeLight : _tokens->PxrDistantLight;
+
+    // Initialize parameters - same as above, but without Storm specific 
+    // parameters (ShadowParams, ShadowCollection, params)
+    node.parameters[HdLightTokens->intensity] = 1.0f;
+    node.parameters[HdLightTokens->exposure] = 0.0f;
+    node.parameters[HdLightTokens->normalize] = false;
+    node.parameters[HdLightTokens->color] = GfVec3f(1, 1, 1);
+    node.parameters[HdTokens->transform] = light.GetTransform();
+
+    if (light.IsDomeLight()) {
+        // For the domelight, add the default domelight texture resource.
+        node.parameters[HdLightTokens->textureFile] = 
+            SdfAssetPath(HdxPackageDefaultDomeLightTexture(),
+                         HdxPackageDefaultDomeLightTexture());
+    }
+    else {
+        // For the camera light, initialize the transform based on the
+        // SimpleLight position
+        GfMatrix4d trans(1.0);
+        const GfVec4d& pos = light.GetPosition();
+        trans.SetTranslateOnly(GfVec3d(pos[0], pos[1], pos[2]));
+        node.parameters[HdTokens->transform] = trans;
+
+        // Initialize distant light specific parameters
+        node.parameters[HdLightTokens->angle] = DISTANT_LIGHT_ANGLE;
+        node.parameters[HdLightTokens->intensity] = DISTANT_LIGHT_INTENSITY;
+    }
+    lightNetwork.nodes.push_back(node);
+
+    // Material network maps for lights will contain a single network with the
+    // terminal name "light'.
+    networkMap.map.emplace(HdMaterialTerminalTokens->light, lightNetwork);
+    networkMap.terminals.push_back(pathName);
+
+    _delegate.SetParameter(pathName, _tokens->materialNetworkMap, 
+        VtValue(networkMap));
+}
+
+TfToken
+HdxTaskController::_GetCameraLightType()
+{
+    return GetRenderIndex()->
+        IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)
+            ? HdPrimTypeTokens->simpleLight
+            : HdPrimTypeTokens->distantLight;
 }
 
 GlfSimpleLight
@@ -821,11 +904,7 @@ void
 HdxTaskController::_RemoveLightSprim(size_t const& pathIdx)
 {
     if (pathIdx < _lightIds.size()) {
-        const TfToken cameraLightType = (GetRenderIndex()->
-                IsSprimTypeSupported(HdPrimTypeTokens->simpleLight))
-            ? HdPrimTypeTokens->simpleLight
-            : HdPrimTypeTokens->sphereLight;
-        GetRenderIndex()->RemoveSprim(cameraLightType, _lightIds[pathIdx]);
+        GetRenderIndex()->RemoveSprim(_GetCameraLightType(),_lightIds[pathIdx]);
         GetRenderIndex()->RemoveSprim(HdPrimTypeTokens->domeLight, 
                         _lightIds[pathIdx]);
     }
@@ -841,14 +920,14 @@ HdxTaskController::_ReplaceLightSprim(size_t const& pathIdx,
                         &_delegate, pathName);
     }
     else {
-        const TfToken cameraLightType = (GetRenderIndex()->
-                IsSprimTypeSupported(HdPrimTypeTokens->simpleLight))
-            ? HdPrimTypeTokens->simpleLight
-            : HdPrimTypeTokens->sphereLight;
-        GetRenderIndex()->InsertSprim(cameraLightType, &_delegate, pathName);
+        GetRenderIndex()->InsertSprim(_GetCameraLightType(),
+                        &_delegate, pathName);
     }
-    // set the parameters for lights[i] and mark as dirty
+    // Set the parameters for lights[i] and mark as dirty
     _SetParameters(pathName, light);
+    // Create a HdMaterialNetworkMap for the light if we are not using Storm
+    if (_simpleLightTaskId.IsEmpty())
+        _SetMaterialNetwork(pathName, light);
     GetRenderIndex()->GetChangeTracker().MarkSprimDirty(pathName, 
                                                 HdLight::AllDirty);
 
@@ -1520,8 +1599,8 @@ HdxTaskController::_SupportBuiltInLightTypes()
     // Dome Light
     bool dome = index->IsSprimTypeSupported(HdPrimTypeTokens->domeLight);
     // Camera Light
-    bool camera = index->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight);
-    camera |= index->IsSprimTypeSupported(HdPrimTypeTokens->sphereLight);
+    bool camera = (index->IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)
+                || index->IsSprimTypeSupported(HdPrimTypeTokens->distantLight));
     return dome && camera;
 } 
 

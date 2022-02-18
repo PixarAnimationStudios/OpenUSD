@@ -213,9 +213,41 @@ void wrapUsdPhysicsRigidBodyAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/base/tf/pyFunction.h"
+
 namespace {
 
-WRAP_CUSTOM {
-}
+    static tuple
+    ComputeMassPropertiesHelper( const UsdPhysicsRigidBodyAPI &self, const UsdPhysicsRigidBodyAPI::MassInformationFn& massInfoFn)
+    {    
+        GfVec3f diagonalInertia;
+        GfVec3f com;
+        GfQuatf principalAxes;
+        float mass = self.ComputeMassProperties(&diagonalInertia, &com, &principalAxes, massInfoFn);        
+        return boost::python::make_tuple( mass, diagonalInertia, com, principalAxes );
+    }
+        
 
-}
+    WRAP_CUSTOM {
+
+        typedef UsdPhysicsRigidBodyAPI This;        
+
+        TfPyFunctionFromPython<UsdPhysicsRigidBodyAPI::MassInformationFnSig>();
+
+        scope s = _class
+            .def("ComputeMassProperties", ComputeMassPropertiesHelper)
+
+        ;
+
+        class_<UsdPhysicsRigidBodyAPI::MassInformation>("MassInformation")
+            .def_readwrite("volume", &UsdPhysicsRigidBodyAPI::MassInformation::volume)
+            .def_readwrite("inertia", &UsdPhysicsRigidBodyAPI::MassInformation::inertia)
+            .def_readwrite("centerOfMass", &UsdPhysicsRigidBodyAPI::MassInformation::centerOfMass)
+            .def_readwrite("localPos", &UsdPhysicsRigidBodyAPI::MassInformation::localPos)
+            .def_readwrite("localRot", &UsdPhysicsRigidBodyAPI::MassInformation::localRot)
+        ;
+
+
+    }
+
+} // anonymous namespace 

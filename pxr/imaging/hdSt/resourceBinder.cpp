@@ -23,8 +23,6 @@
 //
 #include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
-
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
@@ -44,6 +42,8 @@
 #include "pxr/imaging/hgiGL/texture.h"
 #include "pxr/imaging/hgiGL/sampler.h"
 #include "pxr/imaging/hgiGL/shaderProgram.h"
+
+#include "pxr/imaging/hgi/resourceBindings.h"
 
 #include "pxr/base/tf/staticTokens.h"
 
@@ -152,8 +152,6 @@ namespace {
 }
 
 HdSt_ResourceBinder::HdSt_ResourceBinder()
-    : _numReservedUniformBlockLocations(0)
-    , _numReservedTextureUnits(0)
 {
 }
 
@@ -195,30 +193,28 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                                    HdSt_ResourceBinder::MetaData *metaDataOut,
                                    bool indirect,
                                    bool instanceDraw,
-                                   HdBindingRequestVector const &customBindings)
+                                   HdBindingRequestVector const &customBindings,
+                                   HgiCapabilities const *capabilities)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
     if (!TF_VERIFY(metaDataOut)) return;
 
-    // GL context caps
-    const bool ssboEnabled
-        = GlfContextCaps::GetInstance().shaderStorageBufferEnabled;
-    const bool bindlessUniformEnabled
-        = GlfContextCaps::GetInstance().bindlessBufferEnabled;
-    const bool bindlessTextureEnabled
-        = GlfContextCaps::GetInstance().bindlessTextureEnabled;
+    const bool bindlessBuffersEnabled = 
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers);
+    const bool bindlessTexturesEnabled = 
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
 
     HdBinding::Type arrayBufferBindingType = HdBinding::SSBO;
-    if (bindlessUniformEnabled) {
+    if (bindlessBuffersEnabled) {
         arrayBufferBindingType = HdBinding::BINDLESS_UNIFORM; // EXT
     }
 
     HdBinding::Type structBufferBindingType = HdBinding::UBO;  // 3.1
-    if (bindlessUniformEnabled) {
+    if (bindlessBuffersEnabled) {
         structBufferBindingType = HdBinding::BINDLESS_UNIFORM; // EXT
-    } else if (ssboEnabled) {
+    } else {
         structBufferBindingType = HdBinding::SSBO;             // 4.3
     }
 
@@ -668,7 +664,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 ((*shader) == drawItem->GetMaterialNetworkShader());
 
             // renderpass texture should be bindfull (for now)
-            const bool bindless = bindlessTextureEnabled && isMaterialShader;
+            const bool bindless = bindlessTexturesEnabled && isMaterialShader;
             std::string const& glSwizzle = param.swizzle;                    
             HdTupleType valueType = param.GetTupleType();
             TfToken glType =
@@ -759,23 +755,59 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                     // used for non-bindless
                     _bindingMap[layoutName] = layoutBinding;
                 } else if (param.textureType == HdTextureType::Uv) {
-                    // 2d texture
-                    HdBinding textureBinding = bindless
-                        ? HdBinding(HdBinding::BINDLESS_TEXTURE_2D,
+                    if (param.IsArrayOfTextures()) {
+                        size_t const numTextures = param.arrayOfTexturesSize;
+                        
+                        // Create binding for each texture in array of textures.
+                        HdBinding firstBinding;
+                        for (size_t i = 0; i < numTextures; i++) {
+                            HdBinding textureBinding = bindless
+                                ? HdBinding(
+                                    HdBinding::BINDLESS_ARRAY_OF_TEXTURE_2D,
                                     bindlessTextureLocation++)
-                        : HdBinding(HdBinding::TEXTURE_2D,
+                                : HdBinding(
+                                    HdBinding::ARRAY_OF_TEXTURE_2D,
                                     locator.uniformLocation++,
                                     locator.textureUnit++);
+                            if (i == 0) {
+                                firstBinding = textureBinding;
+                            }            
+                            TfToken const indexedName(
+                                name.GetString() + std::to_string(i));
+                            // used for non-bindless
+                            _bindingMap[indexedName] = textureBinding;
+                        } 
 
-                    metaDataOut->shaderParameterBinding[textureBinding] =
-                        MetaData::ShaderParameterAccessor(
-                            /*name=*/glName,
-                            /*type=*/glType,
-                            /*swizzle=*/glSwizzle,
-                            /*inPrimvars=*/param.samplerCoords,
-                            /*isPremultiplied=*/param.isPremultiplied,
-                            /*processTextureFallbackValue=*/isMaterialShader);
-                    _bindingMap[name] = textureBinding; // used for non-bindless
+                        // Only fill metadata for the first binding.
+                        metaDataOut->shaderParameterBinding[firstBinding] =
+                            MetaData::ShaderParameterAccessor(
+                                /*name=*/glName,
+                                /*type=*/glType,
+                                /*swizzle=*/glSwizzle,
+                                /*inPrimvars=*/param.samplerCoords,
+                                /*isPremultiplied=*/param.isPremultiplied,
+                                /*processTextureFallbackValue=*/isMaterialShader,
+                                /*arrayOfTexturesSize*/numTextures);
+                    } else {
+                        // 2d texture
+                        HdBinding textureBinding = bindless
+                            ? HdBinding(HdBinding::BINDLESS_TEXTURE_2D,
+                                        bindlessTextureLocation++)
+                            : HdBinding(HdBinding::TEXTURE_2D,
+                                        locator.uniformLocation++,
+                                        locator.textureUnit++);
+
+                        metaDataOut->shaderParameterBinding[textureBinding] =
+                            MetaData::ShaderParameterAccessor(
+                                /*name=*/glName,
+                                /*type=*/glType,
+                                /*swizzle=*/glSwizzle,
+                                /*inPrimvars=*/param.samplerCoords,
+                                /*isPremultiplied=*/param.isPremultiplied,
+                                /*processTextureFallbackValue=*/isMaterialShader);
+                        // used for non-bindless
+                        _bindingMap[name] = textureBinding;
+                    }
                 } else if (param.textureType == HdTextureType::Field) {
                     // 3d texture
                     HdBinding textureBinding = bindless
@@ -842,6 +874,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             // Interleaved resource, only need a single binding point
             HdBinding binding = locator.GetBinding(it->GetBindingType(),
                                                    it->GetName());
+            bool const concatenateNames = it->ConcatenateNames();
+
             MetaData::StructBlock sblock(it->GetName());
 
             HdBufferArrayRangeSharedPtr bar_ = it->GetBar();
@@ -855,8 +889,10 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                 sblock.entries.emplace_back(nameRes.first,
                                             glType,
                                              nameRes.second->GetOffset(),
-                                            valueType.count);
+                                            valueType.count,
+                                            concatenateNames);
             }
+            sblock.arraySize = it->GetArraySize();
             metaDataOut->customInterleavedBindings.insert(
                 std::make_pair(binding, sblock));
             _bindingMap[it->GetName()] = binding;
@@ -896,8 +932,6 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
             }
         }
     }
-    _numReservedUniformBlockLocations = locator.uboLocation;
-    _numReservedTextureUnits = locator.textureUnit;
 }
 
 void
@@ -905,7 +939,8 @@ HdSt_ResourceBinder::ResolveComputeBindings(
                     HdBufferSpecVector const &readWriteBufferSpecs,
                     HdBufferSpecVector const &readOnlyBufferSpecs,
                     HdStShaderCodeSharedPtrVector const &shaders,
-                    MetaData *metaDataOut)
+                    MetaData *metaDataOut,
+                    HgiCapabilities const *capabilities)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -915,9 +950,9 @@ HdSt_ResourceBinder::ResolveComputeBindings(
     }
 
     // GL context caps
-    HdBinding::Type bindingType =
-        (GlfContextCaps::GetInstance().bindlessBufferEnabled
-         ? HdBinding::BINDLESS_SSBO_RANGE : HdBinding::SSBO);
+    HdBinding::Type bindingType = 
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers) ?
+            HdBinding::BINDLESS_SSBO_RANGE : HdBinding::SSBO;
 
     // binding assignments
     BindingLocator locator;
@@ -946,6 +981,181 @@ HdSt_ResourceBinder::ResolveComputeBindings(
     }
 }
 
+////////////////////////////////////////////////////////////
+// Hgi Binding
+////////////////////////////////////////////////////////////
+
+void
+HdSt_ResourceBinder::GetBufferBindingDesc(
+    HgiResourceBindingsDesc * bindingsDesc,
+    TfToken const & name,
+    HdStBufferResourceSharedPtr const & resource,
+    int offset,
+    int level,
+    int numElements) const
+{
+    if (!resource || !resource->GetHandle()) return;
+
+    HdBinding binding = GetBinding(name, level);
+
+    HgiShaderStage stageUsage = HgiShaderStageVertex | HgiShaderStageFragment;
+    HgiBufferBindDesc desc;
+
+    switch (binding.GetType()) {
+    case HdBinding::SSBO:
+        // Bind the entire buffer at offset zero.
+        desc.buffers = { resource->GetHandle() };
+        desc.offsets = { 0 };
+        desc.sizes = { 0 };
+        desc.bindingIndex = static_cast<uint32_t>(binding.GetLocation());
+        desc.resourceType = HgiBindResourceTypeStorageBuffer;
+        desc.stageUsage = stageUsage;
+        bindingsDesc->buffers.push_back(desc);
+        break;
+    case HdBinding::UBO:
+        // Bind numElements slices of the buffer at the specified offset.
+        desc.buffers = { resource->GetHandle() };
+        desc.offsets = { static_cast<uint32_t>(offset) };
+        desc.sizes =
+            { static_cast<uint32_t>(numElements * resource->GetStride()) };
+        desc.bindingIndex = static_cast<uint32_t>(binding.GetLocation());
+        desc.resourceType = HgiBindResourceTypeUniformBuffer;
+        desc.stageUsage = stageUsage;
+        bindingsDesc->buffers.push_back(desc);
+        break;
+    default:
+        // Do nothing here for other binding types.
+        break;
+    }
+}
+
+void
+HdSt_ResourceBinder::GetBufferArrayBindingDesc(
+    HgiResourceBindingsDesc * bindingsDesc,
+    HdStBufferArrayRangeSharedPtr const & bar) const
+{
+    if (!bar) return;
+
+    for (auto const & it : bar->GetResources()) {
+        GetBufferBindingDesc(bindingsDesc,
+                             it.first,
+                             it.second, it.second->GetOffset());
+    }
+}
+
+void
+HdSt_ResourceBinder::GetInterleavedBufferArrayBindingDesc(
+    HgiResourceBindingsDesc *bindingsDesc,
+    HdStBufferArrayRangeSharedPtr const & bar,
+    TfToken const & name) const
+{
+    if (!bar) return;
+
+    GetBufferBindingDesc(bindingsDesc,
+                         name,
+                         bar->GetResource(),
+                         bar->GetResource()->GetOffset());
+}
+
+void
+HdSt_ResourceBinder::GetInstanceBufferArrayBindingDesc(
+    HgiResourceBindingsDesc * bindingsDesc,
+    HdStBufferArrayRangeSharedPtr const & bar,
+    int level) const
+{
+    if (!bar) return;
+
+    for (auto const & it : bar->GetResources()) {
+        if (HasBinding(it.first, level)) {
+            GetBufferBindingDesc(
+                bindingsDesc,
+                it.first, it.second, it.second->GetOffset(), level);
+        }
+    }
+}
+
+void
+HdSt_ResourceBinder::GetBindingRequestBindingDesc(
+    HgiResourceBindingsDesc * bindingsDesc,
+    HdBindingRequest const & req) const
+{
+    if (req.IsTypeless()) {
+        return;
+    } else if (req.IsResource()) {
+        HdStBufferResourceSharedPtr resource =
+            std::static_pointer_cast<HdStBufferResource>(req.GetResource());
+
+        GetBufferBindingDesc(bindingsDesc,
+                             req.GetName(),
+                             resource,
+                             req.GetByteOffset());
+
+    } else if (req.IsInterleavedBufferArray()) {
+        // note: interleaved buffer needs only 1 binding
+        HdStBufferArrayRangeSharedPtr bar =
+            std::static_pointer_cast<HdStBufferArrayRange>(req.GetBar());
+
+        GetBufferBindingDesc(bindingsDesc,
+                             req.GetName(),
+                             bar->GetResource(),
+                             req.GetByteOffset());
+
+    } else if (req.IsBufferArray()) {
+        HdStBufferArrayRangeSharedPtr bar =
+            std::static_pointer_cast<HdStBufferArrayRange>(req.GetBar());
+
+        GetBufferArrayBindingDesc(bindingsDesc, bar);
+    }
+}
+
+void
+HdSt_ResourceBinder::GetTextureBindingDesc(
+    HgiResourceBindingsDesc * bindingsDesc,
+    TfToken const & name,
+    HgiSamplerHandle const & texelSampler,
+    HgiTextureHandle const & texelTexture) const
+{
+    if (!texelSampler.Get() || !texelTexture.Get()) {
+        return;
+    }
+
+    HdBinding const binding = GetBinding(name);
+
+    HgiTextureBindDesc texelDesc;
+    texelDesc.textures = { texelTexture };
+    texelDesc.samplers = { texelSampler };
+    texelDesc.resourceType = HgiBindResourceTypeSampledImage;
+    texelDesc.bindingIndex = binding.GetTextureUnit();
+    bindingsDesc->textures.push_back(std::move(texelDesc));
+}
+
+void
+HdSt_ResourceBinder::GetTextureWithLayoutBindingDesc(
+    HgiResourceBindingsDesc * bindingsDesc,
+    TfToken const & name,
+    HgiSamplerHandle const & texelSampler,
+    HgiTextureHandle const & texelTexture,
+    HgiTextureHandle const & layoutTexture) const
+{
+    if (!texelSampler.Get() || !texelTexture.Get() || !layoutTexture.Get()) {
+        return;
+    }
+
+    GetTextureBindingDesc(bindingsDesc, name, texelSampler, texelTexture);
+
+    HdBinding const layoutBinding = GetBinding(_ConcatLayout(name));
+    HgiTextureBindDesc layoutDesc;
+    layoutDesc.textures = { layoutTexture };
+    layoutDesc.samplers = { };
+    layoutDesc.resourceType = HgiBindResourceTypeSampledImage;
+    layoutDesc.bindingIndex = layoutBinding.GetTextureUnit();
+    bindingsDesc->textures.push_back(std::move(layoutDesc));
+}
+
+////////////////////////////////////////////////////////////
+// GL Binding
+////////////////////////////////////////////////////////////
+
 void
 HdSt_ResourceBinder::BindBuffer(TfToken const &name,
                               HdStBufferResourceSharedPtr const &buffer) const
@@ -957,7 +1167,8 @@ void
 HdSt_ResourceBinder::BindBuffer(TfToken const &name,
                               HdStBufferResourceSharedPtr const &buffer,
                               int offset,
-                              int level) const
+                              int level,
+                              int numElements) const
 {
     HD_TRACE_FUNCTION();
 
@@ -1071,7 +1282,7 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
         glBindBufferRange(GL_UNIFORM_BUFFER, loc,
                           buffer->GetHandle()->GetRawResource(),
                           offset,
-                          buffer->GetStride());
+                          buffer->GetStride() * numElements);
         break;
     case HdBinding::TEXTURE_2D:
     case HdBinding::TEXTURE_FIELD:
@@ -1255,7 +1466,8 @@ HdSt_ResourceBinder::Bind(HdBindingRequest const& req) const
         HdBufferArrayRangeSharedPtr bar_ = req.GetBar();
         HdStBufferArrayRangeSharedPtr bar =
             std::static_pointer_cast<HdStBufferArrayRange> (bar_);
-        BindBuffer(req.GetName(), bar->GetResource(), req.GetByteOffset());
+        BindBuffer(req.GetName(), bar->GetResource(), req.GetByteOffset(), 
+            /*level*/-1, bar->GetNumElements());
     } else if (req.IsBufferArray()) {
         HdBufferArrayRangeSharedPtr bar_ = req.GetBar();
         HdStBufferArrayRangeSharedPtr bar =
@@ -1384,89 +1596,6 @@ HdSt_ResourceBinder::BindUniformf(TfToken const &name,
         glUniformMatrix4fv(location, 1, /*transpose=*/false, value);
     } else {
         TF_CODING_ERROR("Invalid count %d.", count);
-    }
-}
-
-void
-HdSt_ResourceBinder::IntrospectBindings(HgiShaderProgramHandle const & hgiProgram)
-{
-    GlfContextCaps const &caps = GlfContextCaps::GetInstance();
-
-    GLuint program = hgiProgram->GetRawResource();
-
-    if (ARCH_UNLIKELY(!caps.shadingLanguage420pack)) {
-        GLint numUBO = 0;
-        glGetProgramiv(program, GL_ACTIVE_UNIFORM_BLOCKS, &numUBO);
-
-        const int MAX_NAME = 256;
-        int length = 0;
-        char name[MAX_NAME+1];
-        for (int i = 0; i < numUBO; ++i) {
-            glGetActiveUniformBlockName(program, i, MAX_NAME, &length, name);
-            // note: ubo_ prefix is added in HdCodeGen::_EmitDeclaration()
-            if (strstr(name, "ubo_") == name) {
-                HdBinding binding;
-                if (TfMapLookup(_bindingMap, NameAndLevel(TfToken(name+4)), &binding)) {
-                    // set uniform block binding.
-                    glUniformBlockBinding(program, i, binding.GetLocation());
-                }
-            }
-        }
-    }
-
-    if (ARCH_UNLIKELY(!caps.explicitUniformLocation)) {
-        for (auto & it: _bindingMap) {
-            HdBinding binding = it.second;
-            HdBinding::Type type = binding.GetType();
-            std::string name = it.first.name;
-            int level = it.first.level;
-            if (level >=0) {
-                // follow nested instancing naming convention.
-                std::stringstream n;
-                n << name << "_" << level;
-                name = n.str();
-            }
-            if (type == HdBinding::UNIFORM       ||
-                type == HdBinding::UNIFORM_ARRAY) {
-                GLint loc = glGetUniformLocation(program, name.c_str());
-                // update location in resource binder.
-                // some uniforms may be optimized out.
-                if (loc < 0) loc = HdBinding::NOT_EXIST;
-                it.second.Set(type, loc, binding.GetTextureUnit());
-            }
-        }
-    }
-
-    if (ARCH_UNLIKELY(!caps.shadingLanguage420pack)) {
-        for (auto & it: _bindingMap) {
-            HdBinding binding = it.second;
-            HdBinding::Type type = binding.GetType();
-            std::string name = it.first.name;
-            std::string textureName;
-
-            // note: sampler prefix is added in
-            // HdCodeGen::_GenerateShaderParameters
-            if (type == HdBinding::TEXTURE_2D) {
-                textureName = "sampler2d_" + name;
-            } else if (type == HdBinding::TEXTURE_FIELD) {
-                textureName = "sampler3d_" + name;
-            } else if (type == HdBinding::TEXTURE_PTEX_TEXEL) {
-                textureName = "sampler2darray_" + name;
-            } else if (type == HdBinding::TEXTURE_PTEX_LAYOUT) {
-                textureName = "isampler1darray_" + name;
-            } else if (type == HdBinding::TEXTURE_UDIM_ARRAY) {
-                textureName = "sampler2dArray_" + name;
-            } else if (type == HdBinding::TEXTURE_UDIM_LAYOUT) {
-                textureName = "sampler1d_" + name;
-            }
-
-            if (!textureName.empty()) {
-                GLint loc = glGetUniformLocation(program, textureName.c_str());
-                glProgramUniform1i(program, loc, binding.GetTextureUnit());
-                if (loc < 0) loc = HdBinding::NOT_EXIST;
-                it.second.Set(type, loc, binding.GetTextureUnit());
-            }
-        }
     }
 }
 
@@ -1610,13 +1739,6 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
 }
 
 /* static */
-bool
-HdSt_ResourceBinder::UseBindlessHandles()
-{
-    return GlfContextCaps::GetInstance().bindlessTextureEnabled;
-}
-
-/* static */
 uint64_t
 HdSt_ResourceBinder::GetSamplerBindlessHandle(
         HgiSamplerHandle const &samplerHandle,
@@ -1659,6 +1781,7 @@ _IsBindless(HdBinding const & binding)
 {
     switch (binding.GetType()) {
         case HdBinding::BINDLESS_TEXTURE_2D:
+        case HdBinding::BINDLESS_ARRAY_OF_TEXTURE_2D:
         case HdBinding::BINDLESS_TEXTURE_FIELD:
         case HdBinding::BINDLESS_TEXTURE_UDIM_ARRAY:
         case HdBinding::BINDLESS_TEXTURE_UDIM_LAYOUT:
@@ -1676,6 +1799,7 @@ _GetTextureTarget(HdBinding const & binding)
 {
     switch (binding.GetType()) {
         case HdBinding::TEXTURE_2D:
+        case HdBinding::ARRAY_OF_TEXTURE_2D:
             return GL_TEXTURE_2D;
         case HdBinding::TEXTURE_FIELD:
             return GL_TEXTURE_3D;

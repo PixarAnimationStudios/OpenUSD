@@ -64,7 +64,7 @@ class HdSceneIndexBase : public TfRefBase, public TfWeakBase
 public:
 
     HD_API
-    virtual ~HdSceneIndexBase();
+    ~HdSceneIndexBase() override;
 
     // ------------------------------------------------------------------------
     // Scene Observer API
@@ -127,6 +127,7 @@ protected:
     /// prim type, in case it changed, and resync the prim. This function is
     /// not threadsafe; some observers expect it to be called from a single
     /// thread.
+    HD_API
     void _SendPrimsAdded(
         const HdSceneIndexObserver::AddedPrimEntries &entries);
 
@@ -134,6 +135,7 @@ protected:
     /// this message is considered hierarchical: if \p /Path is removed,
     /// \p /Path/child is considered removed as well. This function is not
     /// threadsafe; some observers expect it to be called from a single thread.
+    HD_API
     void _SendPrimsRemoved(
         const HdSceneIndexObserver::RemovedPrimEntries &entries);
 
@@ -144,12 +146,14 @@ protected:
     /// dirtied on a prim, \p primvars/color is considered dirtied as well.
     /// This function is not threadsafe; some observers expect it to be called
     /// from a single thread.
+    HD_API
     void _SendPrimsDirtied(
         const HdSceneIndexObserver::DirtiedPrimEntries &entries);
 
     /// Returns whether the scene index has any registered observers; this
     /// information can be used to skip work preparing notices when there are
     /// no observers.
+    HD_API
     bool _IsObserved() const;
 
 private:
@@ -183,15 +187,18 @@ public:
 
     /// Registers an \p instance of a scene index with a given \p name.
     ///
+    HD_API
     void RegisterNamedSceneIndex(
         const std::string &name, HdSceneIndexBasePtr instance);
 
     /// Returns the names of all registered scene indexes.
     ///
+    HD_API
     std::vector<std::string> GetRegisteredNames();
 
     /// Returns the scene index that was registered with the given \p name.
     ///
+    HD_API
     HdSceneIndexBaseRefPtr GetNamedSceneIndex(const std::string &name);
 
 private:

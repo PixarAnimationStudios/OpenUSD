@@ -114,7 +114,7 @@ HdSt_DrawItemsCache::GetDrawItems(
             << collection << ", render tags " << renderTags << "\n";
         }
 
-        TfDebug::Helper().Msg(ss.str().c_str());
+        TfDebug::Helper().Msg(ss.str());
     }
     
     if (cacheMiss || staleEntry) {
@@ -196,17 +196,20 @@ HdSt_DrawItemsCache::_UpdateCacheEntry(
     val->geomSubsetDrawItemsVersion = _GetGeomSubsetDrawItemsVersion(
         renderIndex);
 
+    val->drawItems = std::make_shared<HdDrawItemConstPtrVector>();
+
     const HdStRenderParam * const renderParam =
         static_cast<HdStRenderParam *>(
             renderIndex->GetRenderDelegate()->GetRenderParam());
-    if (renderParam->HasMaterialTag(collection.GetMaterialTag())) {
-        val->drawItems = std::make_shared<HdDrawItemConstPtrVector>(
-            renderIndex->GetDrawItems(collection, renderTags));
-    } else {
-        // No need to even call GetDrawItems when we know that
-        // there is no prim with the desired material tag.
-        val->drawItems = std::make_shared<HdDrawItemConstPtrVector>();
+    if (renderParam->HasMaterialTag(collection.GetMaterialTag()) &&
+        (renderTags.empty() || renderParam->HasAnyRenderTag(renderTags)))
+    {
+            HdDrawItemConstPtrVector drawItems = 
+                renderIndex->GetDrawItems(collection, renderTags);
+            val->drawItems->swap(drawItems);
     }
+    // No need to even call GetDrawItems when we know that
+    // there is no prim with the desired tags.
 }
 
 

@@ -204,5 +204,5 @@ vec3 GetShadingNormal(vec3 N, bool isFlipped)
 {
     // note that negative scaling isn't taken into account in gl_FrontFacing
     // so we have to consider isFlipped here too.
-    return (isFlipped ^^ gl_FrontFacing) ? N : -N;
+    return (isFlipped != gl_FrontFacing) ? N : -N;
 }

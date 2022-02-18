@@ -53,28 +53,15 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory<HgiFactory<HgiMetal>>();
 }
 
-static int _GetAPIVersion()
-{
-    if (@available(macOS 10.15, ios 13.0, *)) {
-        return APIVersion_Metal3_0;
-    }
-    if (@available(macOS 10.13, ios 11.0, *)) {
-        return APIVersion_Metal2_0;
-    }
-    
-    return APIVersion_Metal1_0;
-}
-
 HgiMetal::HgiMetal(id<MTLDevice> device)
 : _device(device)
 , _currentCmds(nullptr)
 , _frameDepth(0)
-, _apiVersion(_GetAPIVersion())
 , _workToFlush(false)
 {
     if (!_device) {
         if( TfGetenvBool("HGIMETAL_USE_INTEGRATED_GPU", false)) {
-            _device = MTLCopyAllDevices()[1];
+            _device = MTLCopyAllDevices().lastObject;
         }
 
         if (!_device) {
@@ -110,6 +97,17 @@ HgiMetal::~HgiMetal()
     [_commandQueue release];
 }
 
+bool
+HgiMetal::IsBackendSupported() const
+{
+    // Want Metal 2.0 and Metal Shading Language 2.2 or higher.
+    if (@available(macOS 10.15, ios 13.0, *)) {
+        return true;
+    }
+
+    return false;
+}
+
 id<MTLDevice>
 HgiMetal::GetPrimaryDevice() const
 {
@@ -120,17 +118,8 @@ HgiGraphicsCmdsUniquePtr
 HgiMetal::CreateGraphicsCmds(
     HgiGraphicsCmdsDesc const& desc)
 {
-    // XXX We should TF_CODING_ERROR here when there are no attachments, but
-    // during the Hgi transition we allow it to render to global gl framebuffer.
-    if (!desc.HasAttachments()) {
-        // TF_CODING_ERROR("Graphics encoder desc has no attachments");
-        return nullptr;
-    }
-
-    HgiMetalGraphicsCmds* encoder(
-        new HgiMetalGraphicsCmds(this, desc));
-
-    return HgiGraphicsCmdsUniquePtr(encoder);
+    HgiMetalGraphicsCmds* gfxCmds(new HgiMetalGraphicsCmds(this, desc));
+    return HgiGraphicsCmdsUniquePtr(gfxCmds);
 }
 
 HgiComputeCmdsUniquePtr
@@ -321,10 +310,10 @@ HgiMetal::GetQueue() const
 }
 
 id<MTLCommandBuffer>
-HgiMetal::GetPrimaryCommandBuffer(bool flush)
+HgiMetal::GetPrimaryCommandBuffer(HgiCmds *requester, bool flush)
 {
     if (_workToFlush) {
-        if (_currentCmds) {
+        if (_currentCmds && requester != _currentCmds) {
             return nil;
         }
     }
@@ -345,7 +334,7 @@ HgiMetal::GetSecondaryCommandBuffer()
 int
 HgiMetal::GetAPIVersion() const
 {
-    return _apiVersion;
+    return GetCapabilities()->GetAPIVersion();
 }
 
 void

@@ -151,17 +151,6 @@ public:
         _time(ts) {
     }
 
-    /// Constructor for Timespan events that takes a TimeStamp \a starttime
-    /// and automatically sets the end timestamp from the current time.
-    TraceEvent(
-        TimespanTag, const Key& key, TimeStamp startTime, TraceCategoryId cat) :
-        _key(key),
-        _category(cat),
-        _type(_InternalEventType::Timespan),
-        _time(ArchGetTickTime()) {
-        new (&_payload) TimeStamp(startTime);
-    }
-
     /// Constructor for Timespan events that takes the start time and end time.
     TraceEvent(
         TimespanTag, const Key& key, 

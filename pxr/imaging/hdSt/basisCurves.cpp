@@ -71,6 +71,14 @@ HdStBasisCurves::HdStBasisCurves(SdfPath const& id)
 HdStBasisCurves::~HdStBasisCurves() = default;
 
 void
+HdStBasisCurves::UpdateRenderTag(HdSceneDelegate *delegate,
+                                 HdRenderParam *renderParam)
+{
+    HdStUpdateRenderTag(delegate, renderParam, this);
+}
+
+
+void
 HdStBasisCurves::Sync(HdSceneDelegate *delegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits,
@@ -117,6 +125,7 @@ HdStBasisCurves::Sync(HdSceneDelegate *delegate,
                           updateMaterialNetworkShader, updateGeometricShader);
     }
 
+
     // This clears all the non-custom dirty bits. This ensures that the rprim
     // doesn't have pending dirty bits that add it to the dirty list every
     // frame.
@@ -149,6 +158,7 @@ HdStBasisCurves::Finalize(HdRenderParam *renderParam)
             stRenderParam->DecreaseMaterialTagCount(drawItem->GetMaterialTag());
         }
     }
+    stRenderParam->DecreaseRenderTagCount(GetRenderTag());
 }
 
 void
@@ -612,11 +622,16 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         // Topological visibility (of points, curves) comes in as DirtyTopology.
         // We encode this information in a separate BAR.
         if (dirtyTopology) {
+            // The points primvar is permitted to be larger than the number of
+            // CVs implied by the topology.  So here we allow for
+            // invisiblePoints being larger as well.
+            size_t minInvisiblePointsCapacity = srcTopology.GetNumPoints();
+
             HdStProcessTopologyVisibility(
                 srcTopology.GetInvisibleCurves(),
                 srcTopology.GetNumCurves(),
                 srcTopology.GetInvisiblePoints(),
-                srcTopology.CalculateNeededNumberOfControlPoints(),
+                minInvisiblePointsCapacity,
                 &_sharedData,
                 drawItem,
                 renderParam,
@@ -1208,6 +1223,40 @@ HdStBasisCurves::GetInitialDirtyBitsMask() const
         ;
 
     return mask;
+}
+
+/*override*/
+TfTokenVector const &
+HdStBasisCurves::GetBuiltinPrimvarNames() const
+{
+    // screenSpaceWidths toggles the interpretation of widths to be in
+    // screen-space pixels.  We expect this to be useful for implementing guides
+    // or other UI elements drawn with BasisCurves.  The pointsSizeScale primvar
+    // similarly is intended to give clients a way to emphasize or supress
+    // certain  points by scaling their default size.
+
+    // minScreenSpaceWidth gives a minimum screen space width in pixels for
+    // BasisCurves when rendered as tubes or camera-facing ribbons. We expect
+    // this to be useful for preventing thin curves such as hair from 
+    // undesirably aliasing when their screen space width would otherwise dip
+    // below one pixel.
+
+    // pointSizeScale, screenSpaceWidths, and minScreenSpaceWidths are
+    // explicitly claimed here as "builtin" primvar names because they are 
+    // consumed in the low-level baisCurves.glslfx rather than declared as 
+    // inputs in any material shader's metadata.  Mentioning them here means
+    // they will always survive primvar filtering.
+
+    auto _ComputePrimvarNames = [this](){
+        TfTokenVector primvarNames =
+            this->HdBasisCurves::GetBuiltinPrimvarNames();
+        primvarNames.push_back(HdStTokens->pointSizeScale);
+        primvarNames.push_back(HdStTokens->screenSpaceWidths);
+        primvarNames.push_back(HdStTokens->minScreenSpaceWidths);
+        return primvarNames;
+    };
+    static TfTokenVector primvarNames = _ComputePrimvarNames();
+    return primvarNames;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

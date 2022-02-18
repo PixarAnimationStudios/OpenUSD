@@ -2900,12 +2900,6 @@ _ComposeAuthoredAppliedSchemas(
 }
 
 void
-UsdStage::_ComposeSubtreeInParallel(Usd_PrimDataPtr prim)
-{
-    _ComposeSubtreesInParallel(vector<Usd_PrimDataPtr>(1, prim));
-}
-
-void
 UsdStage::_ComposeSubtreesInParallel(
     const vector<Usd_PrimDataPtr> &prims,
     const vector<SdfPath> *primIndexPaths)
@@ -2933,10 +2927,12 @@ UsdStage::_ComposeSubtreesInParallel(
             try {
                 for (size_t i = 0; i != prims.size(); ++i) {
                     Usd_PrimDataPtr p = prims[i];
-                    _dispatcher->Run(
-                        &UsdStage::_ComposeSubtreeImpl, this, p, p->GetParent(),
-                        &_populationMask,
-                        primIndexPaths ? (*primIndexPaths)[i] : p->GetPath());
+                    _dispatcher->Run([this, p, &primIndexPaths, i]() {
+                        _ComposeSubtreeImpl(
+                            p, p->GetParent(), &_populationMask,
+                            primIndexPaths
+                            ? (*primIndexPaths)[i] : p->GetPath());
+                    });
                 }
             }
             catch (...) {
@@ -2957,9 +2953,9 @@ UsdStage::_ComposeSubtree(
     const SdfPath& primIndexPath)
 {
     if (_dispatcher) {
-        _dispatcher->Run(
-            &UsdStage::_ComposeSubtreeImpl, this,
-            prim, parent, mask, primIndexPath);
+        _dispatcher->Run([this, prim, parent, mask, primIndexPath]() {
+            _ComposeSubtreeImpl(prim, parent, mask, primIndexPath);
+        });
     } else {
         // TF_DEBUG(USD_COMPOSITION).Msg("Composing Subtree at <%s>\n",
         //                               prim->GetPath().GetText());
@@ -3057,7 +3053,8 @@ UsdStage::_DestroyDescendents(Usd_PrimDataPtr prim)
     prim->_firstChild = nullptr;
     while (childIt != childEnd) {
         if (_dispatcher) {
-            _dispatcher->Run(&UsdStage::_DestroyPrim, this, *childIt++);
+            _dispatcher->Run([this, childIt]() { _DestroyPrim(*childIt); });
+            ++childIt;
         } else {
             _DestroyPrim(*childIt++);
         }
@@ -3083,7 +3080,9 @@ UsdStage::_DestroyPrimsInParallel(const vector<SdfPath>& paths)
                 // so we preserve a guard for resiliency.  See
                 // testUsdBug141491.py
                 if (TF_VERIFY(prim)) {
-                    _dispatcher->Run(&UsdStage::_DestroyPrim, this, prim);
+                    _dispatcher->Run([this, prim]() {
+                            _DestroyPrim(prim);
+                        });
                 }
             }
             _dispatcher = boost::none;

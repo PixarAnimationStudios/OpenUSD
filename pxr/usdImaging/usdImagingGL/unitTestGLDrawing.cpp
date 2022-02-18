@@ -238,6 +238,7 @@ UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     , _cameraLight(false)
     , _testIdRender(false)
     , _enableSceneMaterials(true)
+    , _unloadedAsBounds(false)
     , _complexity(1.0f)
     , _drawMode(UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH)
     , _shouldFrameAll(false)
@@ -547,6 +548,9 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         }
         else if (strcmp(argv[i], "-disableSceneMaterials") == 0) {
             _enableSceneMaterials = false;
+        }
+        else if (strcmp(argv[i], "-unloadedAsBounds") == 0) {
+            _unloadedAsBounds = true;
         }
         else if (strcmp(argv[i], "-stage") == 0) {
             CheckForMissingArguments(i, 1, argc, argv);

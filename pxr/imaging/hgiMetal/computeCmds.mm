@@ -54,7 +54,7 @@ void
 HgiMetalComputeCmds::_CreateEncoder()
 {
     if (!_encoder) {
-        _commandBuffer = _hgi->GetPrimaryCommandBuffer();
+        _commandBuffer = _hgi->GetPrimaryCommandBuffer(this);
         if (_commandBuffer == nil) {
             _commandBuffer = _hgi->GetSecondaryCommandBuffer();
             _secondaryCommandBuffer = true;

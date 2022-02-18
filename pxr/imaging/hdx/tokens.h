@@ -75,9 +75,10 @@ TF_DECLARE_PUBLIC_TOKENS(HdxTokens, HDX_API, HDX_TOKENS);
     (lightTypeSpot)             \
                                 \
     (aovInputTask)              \
+    (colorCorrectionTask)       \
+    (colorizeSelectionTask)     \
     (drawTargetTask)            \
     (drawTargetResolveTask)     \
-    (colorizeSelectionTask)     \
     (oitRenderTask)             \
     (oitResolveTask)            \
     (oitVolumeRenderTask)       \
@@ -101,15 +102,15 @@ TF_DECLARE_PUBLIC_TOKENS(HdxPrimitiveTokens, HDX_API, HDX_PRIMITIVE_TOKENS);
     (inCameraGuide)             \
     (streamline)                \
     (interactiveOnlyGeom)       \
-    (path)
+    (path)                      \
+    (widget)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxRenderTagTokens, HDX_API, HDX_RENDERTAG_TOKENS);
 
 #define HDX_COLOR_CORRECTION_TOKENS             \
     (disabled)                                  \
     (sRGB)                                      \
-    (openColorIO)                               \
-    (channelsOnly)
+    (openColorIO)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxColorCorrectionTokens, HDX_API, 
                          HDX_COLOR_CORRECTION_TOKENS);
@@ -136,6 +137,39 @@ TF_DECLARE_PUBLIC_TOKENS(HdxColorChannelTokens, HDX_API,
 
 TF_DECLARE_PUBLIC_TOKENS(HdxAovTokens, HDX_API, 
                          HDX_AOV_TOKENS);
+
+// Simple lighting
+#define HDX_SIMPLELIGHTTASK_TOKENS \
+    (lighting)                     \
+    (lightingContext)              \
+    (useLighting)                  \
+    (useColorMaterialDiffuse)      \
+    (lightSource)                  \
+    (position)                     \
+    (ambient)                      \
+    (diffuse)                      \
+    (specular)                     \
+    (spotDirection)                \
+    (spotCutoff)                   \
+    (spotFalloff)                  \
+    (attenuation)                  \
+    (worldToLightTransform)        \
+    (shadowIndexStart)             \
+    (shadowIndexEnd)               \
+    (hasShadow)                    \
+    (isIndirectLight)              \
+    (shadow)                       \
+    (worldToShadowMatrix)          \
+    (shadowToWorldMatrix)          \
+    (blur)                         \
+    (bias)                         \
+    (material)                     \
+    (emission)                     \
+    (sceneColor)                   \
+    (shininess)     
+
+TF_DECLARE_PUBLIC_TOKENS(HdxSimpleLightTaskTokens, HDX_API, 
+                         HDX_SIMPLELIGHTTASK_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -48,9 +48,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((normalsDoubleSidedFS,    "MeshNormal.Fragment.DoubleSided"))
     ((normalsSingleSidedFS,    "MeshNormal.Fragment.SingleSided"))
 
-    ((faceCullHardwareFS,      "MeshFaceCull.Fragment.None"))
-    ((faceCullSingleSidedFS,   "MeshFaceCull.Fragment.SingleSided"))
-    ((faceCullDoubleSidedFS,   "MeshFaceCull.Fragment.DoubleSided"))
+    ((faceCullNoneFS,          "MeshFaceCull.Fragment.None"))
+    ((faceCullFrontFacingFS,   "MeshFaceCull.Fragment.FrontFacing"))
+    ((faceCullBackFacingFS,    "MeshFaceCull.Fragment.BackFacing"))
 
     // wireframe mixins
     ((edgeNoneFS,              "MeshWire.Fragment.NoEdge"))
@@ -58,6 +58,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((edgeMaskTriangleFS,      "MeshWire.Fragment.EdgeMaskTriangle"))
     ((edgeMaskQuadFS,          "MeshWire.Fragment.EdgeMaskQuad"))
     ((edgeMaskRefinedQuadFS,   "MeshWire.Fragment.EdgeMaskRefinedQuad"))
+    ((edgeMaskTriQuadFS,       "MeshWire.Fragment.EdgeMaskTriQuad"))
+    ((edgeMaskRefinedTriQuadFS,"MeshWire.Fragment.EdgeMaskRefinedTriQuad"))
     ((edgeMaskNoneFS,          "MeshWire.Fragment.EdgeMaskNone"))
 
     ((edgeCommonFS,            "MeshWire.Fragment.EdgeCommon"))
@@ -81,7 +83,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((selElementSelGS,         "Selection.Geometry.ElementSel"))
 
     // edge id mixins (for edge picking & selection)
-    ((edgeIdFallbackFS,        "EdgeId.Fragment.Fallback"))
     ((edgeIdCommonFS,          "EdgeId.Fragment.Common"))
     ((edgeIdTriangleSurfFS,    "EdgeId.Fragment.TriangleSurface"))
     ((edgeIdTriangleLineFS,    "EdgeId.Fragment.TriangleLines"))
@@ -109,7 +110,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainVaryingInterpTES,    "Mesh.TessEval.VaryingInterpolation"))
     ((mainTriangleTessGS,      "Mesh.Geometry.TriangleTess"))
     ((mainTriangleGS,          "Mesh.Geometry.Triangle"))
+    ((mainTriQuadGS,           "Mesh.Geometry.TriQuad"))
     ((mainQuadGS,              "Mesh.Geometry.Quad"))
+    ((mainPatchCoordFS,        "Mesh.Fragment.PatchCoord"))
+    ((mainPatchCoordTriangleFS,"Mesh.Fragment.PatchCoord.Triangle"))
+    ((mainPatchCoordQuadFS,    "Mesh.Fragment.PatchCoord.Quad"))
+    ((mainPatchCoordTriQuadFS, "Mesh.Fragment.PatchCoord.TriQuad"))
     ((mainFS,                  "Mesh.Fragment"))
 
     // instancing related mixins
@@ -133,20 +139,21 @@ TF_DEFINE_PRIVATE_TOKENS(
 HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     HdSt_GeometricShader::PrimitiveType primitiveType,
     TfToken shadingTerminal,
-    bool useCustomDisplacement,
     NormalSource normalsSource,
     HdInterpolation normalsInterpolation,
-    bool doubleSided,
-    bool forceGeometryShader,
-    bool hasTopologicalVisibility,
-    bool blendWireframeColor,
     HdCullStyle cullStyle,
     HdMeshGeomStyle geomStyle,
+    HdSt_GeometricShader::FvarPatchType fvarPatchType,
     float lineWidth,
+    bool doubleSided,
+    bool hasBuiltinBarycentrics,
+    bool hasCustomDisplacement,
+    bool hasPerFaceInterpolation,
+    bool hasTopologicalVisibility,
+    bool blendWireframeColor,
     bool hasMirroredTransform,
     bool hasInstancer,
-    bool enableScalarOverride,
-    HdSt_GeometricShader::FvarPatchType fvarPatchType)
+    bool enableScalarOverride)
     : primType(primitiveType)
     , cullStyle(cullStyle)
     , hasMirroredTransform(hasMirroredTransform)
@@ -166,8 +173,10 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     useHardwareFaceCulling = !hasInstancer;
 
     bool isPrimTypePoints = HdSt_GeometricShader::IsPrimTypePoints(primType);
-    bool isPrimTypeQuads  = HdSt_GeometricShader::IsPrimTypeQuads(primType);
     bool isPrimTypeTris   = HdSt_GeometricShader::IsPrimTypeTriangles(primType);
+    bool isPrimTypeQuads  = HdSt_GeometricShader::IsPrimTypeQuads(primType);
+    bool isPrimTypeTriQuads =
+        HdSt_GeometricShader::IsPrimTypeTriQuads(primType);
     bool isPrimTypeRefinedMesh =
         HdSt_GeometricShader::IsPrimTypeRefinedMesh(primType);
     const bool isPrimTypePatches =
@@ -178,6 +187,12 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     const bool isPrimTypePatchesBoxSplineTriangle =
         primType ==
             HdSt_GeometricShader::PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE;
+
+    const bool renderWireframe = geomStyle == HdMeshGeomStyleEdgeOnly ||
+                                 geomStyle == HdMeshGeomStyleHullEdgeOnly;    
+
+    const bool renderEdges = geomStyle == HdMeshGeomStyleEdgeOnSurf ||
+                             geomStyle == HdMeshGeomStyleHullEdgeOnSurf;
 
     /* Normals configurations:
      * Smooth normals:
@@ -254,8 +269,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     GS[gsIndex++] = (normalsSource == NormalSourceGeometryShader) ?
             _tokens->normalsGeometryFlat : _tokens->normalsGeometryNoFlat;
 
-    const bool renderWireframe = geomStyle == HdMeshGeomStyleEdgeOnly ||
-                                 geomStyle == HdMeshGeomStyleHullEdgeOnly;    
     // emit "ComputeSelectionOffset" GS function.
     if (renderWireframe) {
         // emit necessary selection decoding and helper mixins
@@ -268,25 +281,38 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // Displacement shading can be disabled explicitly, or if the entrypoint
     // doesn't exist (resolved in HdStMesh).
-    GS[gsIndex++] = (!useCustomDisplacement) ?
+    GS[gsIndex++] = (!hasCustomDisplacement) ?
         _tokens->noCustomDisplacementGS :
         _tokens->customDisplacementGS;
 
-    GS[gsIndex++] = isPrimTypeQuads ? _tokens->mainQuadGS :
-                    (isPrimTypePatches ? _tokens->mainTriangleTessGS
-                                       : _tokens->mainTriangleGS);
+    GS[gsIndex++] = isPrimTypeQuads
+                        ? _tokens->mainQuadGS
+                        : isPrimTypeTriQuads
+                            ? _tokens->mainTriQuadGS
+                            : isPrimTypePatches
+                                ? _tokens->mainTriangleTessGS
+                                    : _tokens->mainTriangleGS;
     GS[gsIndex] = TfToken();
 
-    // Optimization : If the mesh is skipping displacement shading, we have an
-    // opportunity to fully disable the geometry stage.
-    if (!useCustomDisplacement
+    // Optimization : See if we can skip the geometry shader.
+    bool canSkipGS =
+            // whether we can skip executing the displacement shading terminal
+            !hasCustomDisplacement
+            // whether we can skip geometry shader normals plumbing
             && (normalsSource != NormalSourceLimit)
             && (normalsSource != NormalSourceGeometryShader)
-            && (geomStyle == HdMeshGeomStyleSurf ||
-                geomStyle == HdMeshGeomStyleHull)
-            && HdSt_GeometricShader::IsPrimTypeTriangles(primType)
-            && (!forceGeometryShader)) {
+            // whether we can skip splitting quads to triangles
+            && (isPrimTypeTris ||
+                isPrimTypeTriQuads)
+            // whether we can skip generating coords for edges
+            && ((!renderWireframe && !renderEdges) ||
+                hasBuiltinBarycentrics)
+            // whether we can skip generating coords for per-face interpolation
+            && (!hasPerFaceInterpolation ||
+                hasBuiltinBarycentrics)
+            ;
             
+    if (canSkipGS) {
         GS[0] = TfToken();
     }
 
@@ -297,6 +323,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     }
 
     bool gsStageEnabled = !GS[0].IsEmpty();
+
     // fragment shader
     uint8_t fsIndex = 0;
     FS[fsIndex++] = _tokens->instancing;
@@ -313,61 +340,62 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     FS[fsIndex++] = doubleSided ?
         _tokens->normalsDoubleSidedFS : _tokens->normalsSingleSidedFS;
 
-    FS[fsIndex++] = useHardwareFaceCulling ? _tokens->faceCullHardwareFS :
-                    (doubleSided ? _tokens->faceCullDoubleSidedFS :
-                                   _tokens->faceCullSingleSidedFS);
+    bool const faceCullFrontFacing =
+        !useHardwareFaceCulling &&
+            (cullStyle == HdCullStyleFront ||
+             (cullStyle == HdCullStyleFrontUnlessDoubleSided && !doubleSided));
+    bool const faceCullBackFacing =
+        !useHardwareFaceCulling &&
+            (cullStyle == HdCullStyleBack ||
+             (cullStyle == HdCullStyleBackUnlessDoubleSided && !doubleSided));
+    FS[fsIndex++] =
+        faceCullFrontFacing
+            ? _tokens->faceCullFrontFacingFS
+            : faceCullBackFacing
+                ? _tokens->faceCullBackFacingFS
+                : _tokens->faceCullNoneFS; // DontCare, Nothing, HW
 
     // Wire (edge) related mixins
-    if ((geomStyle == HdMeshGeomStyleEdgeOnly ||
-         geomStyle == HdMeshGeomStyleHullEdgeOnly)) {
-
+    if (renderWireframe || renderEdges) {
         if (isPrimTypeRefinedMesh) {
-            if (isPrimTypeQuads) {
+            if (isPrimTypeTriQuads) {
+                FS[fsIndex++] = _tokens->edgeMaskRefinedTriQuadFS;
+            } else if (isPrimTypeQuads) {
                 FS[fsIndex++] = _tokens->edgeMaskRefinedQuadFS;
             } else {
                 FS[fsIndex++] = _tokens->edgeMaskNoneFS;
             }
         } else if (isPrimTypeTris) {
             FS[fsIndex++] = _tokens->edgeMaskTriangleFS;
+        } else if (isPrimTypeTriQuads) {
+            FS[fsIndex++] = _tokens->edgeMaskTriQuadFS;
         } else {
             FS[fsIndex++] = _tokens->edgeMaskQuadFS;
         }
+
         FS[fsIndex++] = _tokens->edgeCommonFS;
         FS[fsIndex++] = _tokens->edgeParamFS;
-        if (isPrimTypePatches) {
-            FS[fsIndex++] = _tokens->patchEdgeOnlyFS;
-        } else {
-            FS[fsIndex++] = blendWireframeColor ? _tokens->edgeOnlyBlendFS
-                                        : _tokens->edgeOnlyNoBlendFS;
-        }
 
-    } else if ((geomStyle == HdMeshGeomStyleEdgeOnSurf ||
-                geomStyle == HdMeshGeomStyleHullEdgeOnSurf)) {
-
-        if (isPrimTypeRefinedMesh) {
-            if (isPrimTypeQuads) {
-                FS[fsIndex++] = _tokens->edgeMaskRefinedQuadFS;
+        if (renderWireframe) {
+            if (isPrimTypePatches) {
+                FS[fsIndex++] = _tokens->patchEdgeOnlyFS;
             } else {
-                FS[fsIndex++] = _tokens->edgeMaskNoneFS;
+                FS[fsIndex++] = blendWireframeColor
+                                    ? _tokens->edgeOnlyBlendFS
+                                    : _tokens->edgeOnlyNoBlendFS;
             }
-        } else if (isPrimTypeTris) {
-            FS[fsIndex++] = _tokens->edgeMaskTriangleFS;
         } else {
-            FS[fsIndex++] = _tokens->edgeMaskQuadFS;
+            if (isPrimTypeTris || isPrimTypePatchesBoxSplineTriangle) {
+                FS[fsIndex++] = _tokens->patchEdgeTriangleFS;
+            } else {
+                FS[fsIndex++] = _tokens->patchEdgeQuadFS;
+            }
+            if (isPrimTypeRefinedMesh) {
+                FS[fsIndex++] = _tokens->patchEdgeOnSurfFS;
+            } else {
+                FS[fsIndex++] = _tokens->edgeOnSurfFS;
+            }
         }
-        FS[fsIndex++] = _tokens->edgeCommonFS;
-        FS[fsIndex++] = _tokens->edgeParamFS;
-        if (isPrimTypeTris || isPrimTypePatchesBoxSplineTriangle) {
-            FS[fsIndex++] = _tokens->patchEdgeTriangleFS;
-        } else {
-            FS[fsIndex++] = _tokens->patchEdgeQuadFS;
-        }
-        if (isPrimTypeRefinedMesh) {
-            FS[fsIndex++] = _tokens->patchEdgeOnSurfFS;
-        } else {
-            FS[fsIndex++] = _tokens->edgeOnSurfFS;
-        }
-
     } else {
         FS[fsIndex++] = _tokens->edgeNoneFS;
         FS[fsIndex++] = _tokens->edgeParamFS;
@@ -403,7 +431,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                                             _tokens->noScalarOverrideFS;
 
     // EdgeId mixin(s) for edge picking and selection
-    if (gsStageEnabled) {
+    // Note: When rendering a mesh as points, we handle this in code gen.
+    if (!isPrimTypePoints) {
         FS[fsIndex++] = _tokens->edgeIdCommonFS;
         if (isPrimTypeTris || isPrimTypePatchesBoxSplineTriangle) {
             if (polygonMode == HdPolygonModeLine) {
@@ -420,22 +449,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             }
             FS[fsIndex++] = _tokens->edgeIdQuadParamFS;
         }
-    } else {
-        // the GS stage is skipped if we're dealing with points or triangles.
-        // (see "Optimization" above)
-
-        // for triangles, emit the fallback version.
-        if (isPrimTypeTris) {
-            FS[fsIndex++] = _tokens->edgeIdFallbackFS;
-        }
-
-        // for points, it isn't so simple. we don't know if the 'edgeIndices'
-        // buffer was bound.
-        // if the points repr alone is used, then it won't be generated.
-        // (see GetPointsIndexBuilderComputation)
-        // if any other *IndexBuilderComputation was used, and we then use the
-        // points repr, the binding will exist.
-        // we handle this scenario in hdStCodeGen since it has the binding info.
     }
 
     // PointId mixin for point picking and selection
@@ -443,6 +456,16 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                                       _tokens->pointIdFallbackFS;
     FS[fsIndex++] = hasTopologicalVisibility? _tokens->topVisFS :
                                               _tokens->topVisFallbackFS;
+
+    if (isPrimTypeTris && !gsStageEnabled) {
+        FS[fsIndex++] = _tokens->mainPatchCoordTriangleFS;
+    } else if (isPrimTypeQuads && !gsStageEnabled) {
+        FS[fsIndex++] = _tokens->mainPatchCoordQuadFS;
+    } else if (isPrimTypeTriQuads) {
+        FS[fsIndex++] = _tokens->mainPatchCoordTriQuadFS;
+    } else {
+        FS[fsIndex++] = _tokens->mainPatchCoordFS;
+    }
     FS[fsIndex++] = _tokens->mainFS;
     FS[fsIndex] = TfToken();
 }

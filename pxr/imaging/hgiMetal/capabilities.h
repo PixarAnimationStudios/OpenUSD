@@ -41,6 +41,12 @@ class HgiMetalCapabilities final : public HgiCapabilities
 public:
     HGIMETAL_API
     ~HgiMetalCapabilities() override;
+    
+    HGIMETAL_API
+    int GetAPIVersion() const override;
+    
+    HGIMETAL_API
+    int GetShaderVersion() const override;
 
     MTLResourceOptions defaultStorageMode;
 

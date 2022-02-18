@@ -16,6 +16,137 @@ over "GLOBAL" (
 {
 }
 
+class "PxrProjectionPluginBase" (
+    customData = {
+        string className = "ProjectionPluginBase"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+        }
+    }
+    doc = """Base Schema class which other PxrProjection plugins will inherit.
+    It also provides UsdShade connectability for all classes that derive from
+    it."""
+    inherits = </Typed>
+)
+{
+    token outputs:result (
+        doc = """Connect PxrCameraProjectionAPI's outputs:ri:projection terminal
+        to this output"""
+    )
+}
+
+class "PxrSampleFilterPluginBase" (
+    customData = {
+        string className = "SampleFilterPluginBase"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+        }
+    }
+    doc = """Base Schema class which other PxrSampleFilter plugins will inherit. 
+    It also provides UsdShade connectability for all classes that derive from
+    it."""
+    inherits = </Typed>
+)
+{
+    token outputs:result (
+        doc = """Connect PxrRenderTerminalsAPI's outputs:ri:sampleFilters
+        terminal to this output to add the filter for processing."""
+    )
+}
+
+class "PxrDisplayFilterPluginBase" (
+    customData = {
+        string className = "DisplayFilterPluginBase"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+        }
+    }
+    doc = """Base Schema class which other PxrDisplayFilter plugins will inherit.
+    It also provides UsdShade connectability for all classes that derive from
+    it."""
+    inherits = </Typed>
+)
+{
+    token outputs:result (
+        doc = """Connect PxrRenderTerminalsAPI's outputs:ri:displayFilters
+        terminal to this output to add the filter for processing."""
+    )
+}
+
+class "PxrIntegratorPluginBase" (
+    customData = {
+        string className = "IntegratorPluginBase"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+        }
+    }
+    doc = """Base Schema class which other PxrIntegrator plugins will inherit.
+    It also provides UsdShade connectability for all classes that derive from
+    it."""
+    inherits = </Typed>
+)
+{
+    token outputs:result (
+        doc = """Connect PxrRenderTerminalsAPI's outputs:ri:integrator
+        terminal to this output to add the integrator for processing."""
+    )
+}
+
+class "PxrRenderTerminalsAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["RenderSettings"]
+        token[] apiSchemaCanOnlyApplyTo = ["RenderSettings"]
+        string className = "RenderTerminalsAPI"
+        dictionary extraPlugInfo = {
+            bool providesUsdShadeConnectableAPIBehavior = 1
+            bool requiresUsdShadeEncapsulation = 0
+        }
+        dictionary schemaTokens = {
+            dictionary displayFilters = {
+                string doc = "Terminal for connecting display filters"
+            }
+            dictionary integrator = {
+                string doc = "Terminal for connecting an integrator"
+            }
+            dictionary sampleFilters = {
+                string doc = "Terminal for connecting sample filters"
+            }
+        }
+    }
+    doc = """API schema that provides a means of connecting a sample filter,
+    display filter and an integrator. The API can be applied to provide hooks to
+    the same for rman settings."""
+    inherits = </APISchemaBase>
+)
+{
+    token outputs:ri:displayFilters (
+        customData = {
+            string apiName = "displayFilters"
+        }
+        displayGroup = "OutputFilters"
+        doc = """Represents the display filter terminals for a render setting. A
+        display filter inheriting PxrDisplayFilterPluginBase can be connected to
+        this terminal."""
+    )
+    token outputs:ri:integrator (
+        customData = {
+            string apiName = "integrator"
+        }
+        doc = """Represents the integrator terminal for a render setting. A
+        integrator inheriting PxrIntegratorPluginBase can be connected to this
+        terminal."""
+    )
+    token outputs:ri:sampleFilters (
+        customData = {
+            string apiName = "sampleFilters"
+        }
+        displayGroup = "OutputFilters"
+        doc = """Represents the sample filter terminals for a render setting. A
+        sample filter inheriting PxrSampleFilterPluginBase can be connected to
+        this terminal."""
+    )
+}
+
 class "PxrCameraProjectionAPI" (
     customData = {
         token[] apiSchemaAutoApplyTo = ["Camera"]
@@ -44,6 +175,304 @@ class "PxrCameraProjectionAPI" (
         }
         displayGroup = "Outputs"
         doc = "Represents the projection output terminal on a camera prim."
+    )
+}
+
+class PxrBlockerLightFilter "PxrBlockerLightFilter" (
+    customData = {
+        string className = "BlockerLightFilter"
+    }
+    inherits = </LightFilter>
+)
+{
+    int inputs:ri:lightFilter:colorRamp = 4 (
+        displayGroup = "Color Ramp"
+        doc = """colorRamp: This is Optional.  It sets the color gradient
+                  for the transition.
+           """
+    )
+    color3f[] inputs:ri:lightFilter:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:colorRamp_Interpolation = "linear" (
+        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    float[] inputs:ri:lightFilter:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Color Ramp"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:combineMode = "mult" (
+        allowedTokens = ["mult", "max", "min", "screen"]
+        connectability = "interfaceOnly"
+        displayName = "Combine Mode"
+        doc = """
+\t<p>
+        combineMode: Light filters on a light are grouped by their combine mode. Light filters
+        in the same group are executed together and combined by the corresponding
+        operation:
+        </p>
+\t<ol>
+\t\t<li>max: the maximum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>min: the minimum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>screen: similar to the max operation, but it combines gradients
+              in a smoother way. This works best for grey scale light filters.</li>
+\t\t<li>mult (default): the results of all the filters are multiplied together
+              (Technically, they are applied one after the other.)</li>
+\t</ol>
+\t<p>
+        The groups are executed in the above order and are multiplied together,
+        which means a filter that turns things black in the mult group will zero out
+        all other filters.
+        </p>
+"""
+    )
+    float inputs:ri:lightFilter:density = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Density"
+        doc = "density: How much effect the filter has (0-1)."
+    )
+    float inputs:ri:lightFilter:depth = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Depth"
+        doc = "depth: Depth of inner region of the rod (z axis)."
+    )
+    float inputs:ri:lightFilter:diffuse = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Diffuse"
+        doc = "diffuse: How much this light filter affects diffuse lighting."
+    )
+    float inputs:ri:lightFilter:edge = 0.25 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Edge"
+        doc = "edge: Thickness of edge region."
+    )
+    int inputs:ri:lightFilter:falloff = 6 (
+        connectability = "interfaceOnly"
+        displayGroup = "Falloff"
+        doc = "falloff: Controls the transition from the core to the edge."
+    )
+    float[] inputs:ri:lightFilter:falloff_Floats = [0, 0, 0.2, 0.8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Falloff"
+        hidden = true
+    )
+    token inputs:ri:lightFilter:falloff_Interpolation = "bspline" (
+        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
+        displayGroup = "Falloff"
+        hidden = true
+    )
+    float[] inputs:ri:lightFilter:falloff_Knots = [0, 0, 0.3, 0.7, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+        displayGroup = "Falloff"
+        hidden = true
+    )
+    float inputs:ri:lightFilter:height = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Height"
+        doc = "height: Height of inner region of the rod (y axis)."
+    )
+    float inputs:ri:lightFilter:intensity = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Intensity"
+        doc = """intensity: Multiplier for both the diffuse and specular result.
+            """
+    )
+    bool inputs:ri:lightFilter:invert = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Invert"
+        doc = "invert: Inverts the entire effect of the filter."
+    )
+    float inputs:ri:lightFilter:radius = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Radius"
+        doc = "radius: Radius of corners of inner rod box."
+    )
+    float inputs:ri:lightFilter:saturation = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Saturation"
+        doc = """saturation: Saturation of the light before hitting the surface
+                  (0=greyscale,1=normal,>1=boosted colors)."""
+    )
+    float inputs:ri:lightFilter:specular = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Specular"
+        doc = "specular: How much this light filter affects specular lighting."
+    )
+    float inputs:ri:lightFilter:width = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Rod Shape"
+        displayName = "Width"
+        doc = "width: Width of inner region of the rod (x axis)."
+    )
+    uniform token ri:lightFilter:shaderId = "PxrBlockerLightFilter" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrGoboLightFilter "PxrGoboLightFilter" (
+    customData = {
+        string className = "GoboLightFilter"
+    }
+    inherits = </LightFilter>
+)
+{
+    token inputs:ri:lightFilter:combineMode = "mult" (
+        allowedTokens = ["mult", "max", "min", "screen"]
+        connectability = "interfaceOnly"
+        displayName = "Combine Mode"
+        doc = """
+\t<p>
+        combineMode: Light filters on a light are grouped by their combine mode. Light filters
+        in the same group are executed together and combined by the corresponding
+        operation:
+        </p>
+\t<ol>
+\t\t<li>max: the maximum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>min: the minimum result from all filters is used.
+              This works best for grey scale light filters.</li>
+\t\t<li>screen: similar to the max operation, but it combines gradients
+              in a smoother way. This works best for grey scale light filters.</li>
+\t\t<li>mult (default): the results of all the filters are multiplied together
+              (technically: they are applied one after the other)</li>
+\t</ol>
+\t<p>
+        The groups are executed in the above order and are multiplied together,
+        which means a filter that turns things black in the mult group will zero out
+        all other filters.
+        </p>
+"""
+    )
+    float inputs:ri:lightFilter:density = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Density"
+        doc = "density: Controls the strength of the projected effect."
+    )
+    float inputs:ri:lightFilter:diffuse = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Diffuse"
+        doc = "diffuse: How much this light filter affects diffuse lighting."
+    )
+    color3f inputs:ri:lightFilter:fillColor = (1, 1, 1) (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Fill Color"
+        doc = """
+                fillColor: If the texture is not repeating, this specifies the
+                color for the region outside of and behind the projected rectangle.
+            """
+    )
+    float inputs:ri:lightFilter:height = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Height"
+        doc = "height: Height of the rect the light is shining through."
+    )
+    float inputs:ri:lightFilter:intensity = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Intensity"
+        doc = """intensity: Multiplier for both the diffuse and specular result.
+            """
+    )
+    bool inputs:ri:lightFilter:invert = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Invert"
+        doc = """invert: When this is on, the texture will be inverted before it is applied.
+            """
+    )
+    bool inputs:ri:lightFilter:linearize = 0 (
+        displayGroup = "Map"
+        displayName = "Linearize"
+        doc = "Linearize the texture, assuming an sRGB transfer function."
+    )
+    asset inputs:ri:lightFilter:map = @ratGrid.tex@ (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Map"
+        doc = "map: Filename of the projected texture."
+    )
+    float inputs:ri:lightFilter:offsetU = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Offset U"
+        doc = "offsetU: Offset of the texture in the U direction"
+    )
+    float inputs:ri:lightFilter:offsetV = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Offset V"
+        doc = "offsetV: Offset of the texture in the V direction"
+    )
+    bool inputs:ri:lightFilter:premultipliedAlpha = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Premultiplied Alpha"
+        doc = """
+                premultipliedAlpha: Textures are usually premultiplied by their alpha. If this not
+                the case, uncheck this.
+            """
+    )
+    int inputs:ri:lightFilter:refreshMap = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        doc = """
+                Press this button to force a refresh of the texture during
+                Live Rendering.
+            """
+    )
+    float inputs:ri:lightFilter:scaleU = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Scale U"
+        doc = "scaleU: Scale of the texture in the U direction"
+    )
+    float inputs:ri:lightFilter:scaleV = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Scale V"
+        doc = "scaleV: Scale of the texture in the V direction"
+    )
+    float inputs:ri:lightFilter:specular = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Specular"
+        doc = "specular: How much this light filter affects specular lighting."
+    )
+    int inputs:ri:lightFilter:tileMode = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Texture Mapping"
+        displayName = "Tile Mode"
+        doc = '''tileMode:
+                "No Repeat"   - texture does not repeat.
+                "Edge Extent" - extends the color of the edge to infinity.
+                "Tile"        - texture repeats (tileable texture).
+            '''
+    )
+    float inputs:ri:lightFilter:width = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Map"
+        displayName = "Width"
+        doc = "width: Width of the rect the light is shining through."
+    )
+    uniform token ri:lightFilter:shaderId = "PxrGoboLightFilter" (
+        displayGroup = "Internal"
     )
 }
 
@@ -100,10 +529,6 @@ class PxrAovLight "PxrAovLight" (
         doc = """
                 If this is on, it inverts the signal for the AOV.
             """
-    )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
     )
     bool inputs:ri:light:onVolumeBoundaries = 1 (
         connectability = "interfaceOnly"
@@ -165,6 +590,16 @@ class "PxrCylinderLightAPI" (
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
             """
     )
+    bool inputs:ri:light:emissionFocusNormalize = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Emission Focus Normalize"
+        doc = """
+                 When normalize is enabled, the emissionFocus will scale itself so that it
+                 does not change the total energy output of the light.
+                 (Note that there is no way to set emissionFocusTint in this mode).
+             """
+    )
     int inputs:ri:light:fixedSampleCount = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -175,16 +610,6 @@ class "PxrCylinderLightAPI" (
                 sampling performed by the integrator. It's recommended to leave this at the default unless
                 you experience unsolvable noise from the light.
             """
-    )
-    bool inputs:ri:light:focusNormalize = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus Normalize"
-        doc = """
-                 When normalize is enabled, the emissionFocus will scale itself so that it
-                 does not change the total energy output of the light.
-                 (Note that there is no way to set emissionFocusTint in this mode).
-             """
     )
     float inputs:ri:light:importanceMultiplier = 1 (
         connectability = "interfaceOnly"
@@ -236,10 +661,6 @@ class "PxrCylinderLightAPI" (
         doc = """
                 MsApprox: Coloration of contributing light.
             """
-    )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
     )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
@@ -305,6 +726,16 @@ class "PxrDiskLightAPI" (
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
             """
     )
+    bool inputs:ri:light:emissionFocusNormalize = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Emission Focus Normalize"
+        doc = """
+                 When normalize is enabled, the emissionFocus will scale itself so that it
+                 does not change the total energy output of the light.
+                 (Note that there is no way to set emissionFocusTint in this mode).
+             """
+    )
     int inputs:ri:light:fixedSampleCount = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -315,16 +746,6 @@ class "PxrDiskLightAPI" (
                 sampling performed by the integrator.  It's recommended to leave this at the default unless
                 you experience unsolvable noise from the light.
             """
-    )
-    bool inputs:ri:light:focusNormalize = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus Normalize"
-        doc = """
-                 When normalize is enabled, the emissionFocus will scale itself so that it
-                 does not change the total energy output of the light.
-                 (Note that there is no way to set emissionFocusTint in this mode).
-             """
     )
     float inputs:ri:light:importanceMultiplier = 1 (
         connectability = "interfaceOnly"
@@ -376,10 +797,6 @@ class "PxrDiskLightAPI" (
         doc = """
                 MsApprox: Coloration of contributing light.
             """
-    )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
     )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
@@ -446,6 +863,16 @@ class "PxrDistantLightAPI" (
                 to prevent occlusion during the search of caustic paths.
             """
     )
+    bool inputs:ri:light:emissionFocusNormalize = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Emission Focus Normalize"
+        doc = """
+                 When normalize is enabled, the emissionFocus will scale itself so that it
+                 does not change the total energy output of the light.
+                 (Note that there is no way to set emissionFocusTint in this mode).
+             """
+    )
     int inputs:ri:light:fixedSampleCount = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -456,16 +883,6 @@ class "PxrDistantLightAPI" (
                 sampling performed by the integrator. You might find need for this if you have
                 unsolvable noise from this light and need more samples.
             """
-    )
-    bool inputs:ri:light:focusNormalize = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus Normalize"
-        doc = """
-                 When normalize is enabled, the emissionFocus will scale itself so that it
-                 does not change the total energy output of the light.
-                 (Note that there is no way to set emissionFocusTint in this mode).
-             """
     )
     float inputs:ri:light:importanceMultiplier = 1 (
         connectability = "interfaceOnly"
@@ -507,10 +924,6 @@ class "PxrDistantLightAPI" (
         doc = """
                 MsApprox: Coloration of contributing light.
             """
-    )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
     )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
@@ -644,10 +1057,6 @@ class "PxrDomeLightAPI" (
                 MsApprox: Coloration of contributing light.
             """
     )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
-    )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -693,38 +1102,6 @@ class PxrEnvDayLight "PxrEnvDayLight" (
     inherits = </NonboundableLightBase>
 )
 {
-    float inputs:diffuse = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Diffuse Amount"
-        doc = """
-                diffuse: Amount of diffuse light that is emitted. This is a non-physical control.
-                You could use a light with Diffuse Amount 0.0 to act purely as a source of
-                highlights for your scene objects.
-            """
-    )
-    float inputs:exposure = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Basic"
-        displayName = "Exposure"
-        doc = """
-              exposure:  Specify the intensity of the light source as a power of 2 (in stops).
-              Increasing the exposure by 1 will double the energy emitted by the light source.
-              A value of 0 produces an intensity of 1, -1 produces .5. You may wonder why you
-              might use Exposure, and the answer is that real world lighting has high energies
-              and typical exposures are low values while you may have to type a really large
-              number for equivalent Intensity. This is also comfortable to artists familiar with
-              photographic measurements.
-            """
-    )
-    float inputs:intensity = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Basic"
-        displayName = "Intensity"
-        doc = """
-              intensity: Scales the contribution of this light linearly.
-            """
-    )
     bool inputs:ri:light:cheapCaustics = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -874,10 +1251,6 @@ class PxrEnvDayLight "PxrEnvDayLight" (
                 MsApprox: Coloration of contributing light.
             """
     )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
-    )
     color3f inputs:ri:light:skyTint = (1, 1, 1) (
         connectability = "interfaceOnly"
         displayGroup = "Basic"
@@ -969,65 +1342,6 @@ class PxrEnvDayLight "PxrEnvDayLight" (
                 negative for west.  For example, this would be -8 for Pacific time.
 
                 This is ignored if month is 0.
-            """
-    )
-    color3f inputs:shadow:color = (0, 0, 0) (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Color"
-        doc = """
-                shadowColor:  The color of the shadows cast by emitted light.
-            """
-    )
-    float inputs:shadow:distance = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Max Distance"
-        doc = """
-                shadowDistance: The maximum distance of the shadow starting from the position
-                of the point being shaded.
-                -1.0 is unset which will use the distance between the point being
-                shaded and the point on the light. You may use this control to artificially
-                reduce the distance shadows are cast. This may also increase render speed by
-                not calculating shadows outside this distance
-            """
-    )
-    bool inputs:shadow:enable = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Enable Shadows"
-        doc = """
-                enableShadows: Enable raytraced shadows.
-            """
-    )
-    float inputs:shadow:falloff = -1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff"
-        doc = """
-                shadowFalloff: the distance from the light at which shadow falloff begins.
-                -1.0 turns off shadow falloff. This is used along with Shadow Max Distance to
-                create a false fade for shadows that are reduced or cut off by the Shadow Max
-                Distance parameter.
-            """
-    )
-    float inputs:shadow:falloffGamma = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Shadows"
-        displayName = "Shadow Falloff Gamma"
-        doc = """
-                shadowFalloffGamma: The gamma of the shadow strength in the falloff zone. This
-                requires the use of Shadow Max Distance and Shadow Falloff.
-            """
-    )
-    float inputs:specular = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Specular Amount"
-        doc = """
-                specular: Amount of specular light that is emitted. This is a non-physical control.
-                You could use a light with Specular Amount 0.0 to act purely as a source of diffuse
-                light for your scene objects and avoid adding highlights.
             """
     )
     uniform token ri:light:shaderId = "PxrEnvDayLight" (
@@ -1257,10 +1571,6 @@ class "PxrPortalLightAPI" (
                 MsApprox: Coloration of contributing light.
             """
     )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
-    )
     string inputs:ri:light:portalName (
         displayGroup = "Advanced"
         hidden = true
@@ -1357,6 +1667,16 @@ class "PxrRectLightAPI" (
                 colorMapSaturation: Adjust the texture's saturation.
             """
     )
+    bool inputs:ri:light:emissionFocusNormalize = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Emission Focus Normalize"
+        doc = """
+                 When normalize is enabled, the emissionFocus will scale itself so that it
+                 does not change the total energy output of the light.
+                 (Note that there is no way to set emissionFocusTint in this mode).
+             """
+    )
     int inputs:ri:light:fixedSampleCount = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -1368,16 +1688,6 @@ class "PxrRectLightAPI" (
                 have lots of lights, resulting in some lights that are under-sampled, you may want to set it
                 to non-zero.
             """
-    )
-    bool inputs:ri:light:focusNormalize = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus Normalize"
-        doc = """
-                 When normalize is enabled, the emissionFocus will scale itself so that it
-                 does not change the total energy output of the light.
-                 (Note that there is no way to set emissionFocusTint in this mode).
-             """
     )
     float inputs:ri:light:importanceMultiplier = 1 (
         connectability = "interfaceOnly"
@@ -1429,10 +1739,6 @@ class "PxrRectLightAPI" (
         doc = """
                 MsApprox: Coloration of contributing light.
             """
-    )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
     )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
@@ -1498,6 +1804,16 @@ class "PxrSphereLightAPI" (
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
             """
     )
+    bool inputs:ri:light:emissionFocusNormalize = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Emission Focus Normalize"
+        doc = """
+                 When normalize is enabled, the emissionFocus will scale itself so that it
+                 does not change the total energy output of the light.
+                 (Note that there is no way to set emissionFocusTint in this mode).
+             """
+    )
     int inputs:ri:light:fixedSampleCount = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -1508,16 +1824,6 @@ class "PxrSphereLightAPI" (
                 sampling performed by the integrator. It's recommended to leave this at the default unless
                 you experience unsolvable noise from the light.
             """
-    )
-    bool inputs:ri:light:focusNormalize = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Refine"
-        displayName = "Emission Focus Normalize"
-        doc = """
-                 When normalize is enabled, the emissionFocus will scale itself so that it
-                 does not change the total energy output of the light.
-                 (Note that there is no way to set emissionFocusTint in this mode).
-             """
     )
     float inputs:ri:light:importanceMultiplier = 1 (
         connectability = "interfaceOnly"
@@ -1569,10 +1875,6 @@ class "PxrSphereLightAPI" (
         doc = """
                 MsApprox: Coloration of contributing light.
             """
-    )
-    string inputs:ri:light:notes (
-        displayGroup = "Notes"
-        doc = "General comment field for this light."
     )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
@@ -1792,10 +2094,6 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
                     leftEdge: When edge is > 0, this scales the edge of the left region (-x axis).
                 """
     )
-    string inputs:ri:lightFilter:notes = "" (
-        displayGroup = "Notes"
-        doc = "General comment field for this light filter."
-    )
     int inputs:ri:lightFilter:preBarn = 2 (
         connectability = "interfaceOnly"
         displayGroup = "Barn Shape"
@@ -1889,154 +2187,6 @@ class PxrBarnLightFilter "PxrBarnLightFilter" (
         doc = "width: Width of the inner region of the barn (x axis)."
     )
     uniform token ri:lightFilter:shaderId = "PxrBarnLightFilter" (
-        displayGroup = "Internal"
-    )
-}
-
-class PxrBlockerLightFilter "PxrBlockerLightFilter" (
-    customData = {
-        string className = "BlockerLightFilter"
-    }
-    inherits = </LightFilter>
-)
-{
-    int inputs:ri:lightFilter:colorRamp = 4 (
-        displayGroup = "Color Ramp"
-        doc = """colorRamp: This is Optional.  It sets the color gradient
-                  for the transition.
-           """
-    )
-    color3f[] inputs:ri:lightFilter:colorRamp_Colors = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)] (
-        displayGroup = "Color Ramp"
-        hidden = true
-    )
-    token inputs:ri:lightFilter:colorRamp_Interpolation = "linear" (
-        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
-        displayGroup = "Color Ramp"
-        hidden = true
-    )
-    float[] inputs:ri:lightFilter:colorRamp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
-        displayGroup = "Color Ramp"
-        hidden = true
-    )
-    token inputs:ri:lightFilter:combineMode = "mult" (
-        allowedTokens = ["mult", "max", "min", "screen"]
-        connectability = "interfaceOnly"
-        displayName = "Combine Mode"
-        doc = """
-\t<p>
-        combineMode: Light filters on a light are grouped by their combine mode. Light filters
-        in the same group are executed together and combined by the corresponding
-        operation:
-        </p>
-\t<ol>
-\t\t<li>max: the maximum result from all filters is used.
-              This works best for grey scale light filters.</li>
-\t\t<li>min: the minimum result from all filters is used.
-              This works best for grey scale light filters.</li>
-\t\t<li>screen: similar to the max operation, but it combines gradients
-              in a smoother way. This works best for grey scale light filters.</li>
-\t\t<li>mult (default): the results of all the filters are multiplied together
-              (Technically, they are applied one after the other.)</li>
-\t</ol>
-\t<p>
-        The groups are executed in the above order and are multiplied together,
-        which means a filter that turns things black in the mult group will zero out
-        all other filters.
-        </p>
-"""
-    )
-    float inputs:ri:lightFilter:density = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Density"
-        doc = "density: How much effect the filter has (0-1)."
-    )
-    float inputs:ri:lightFilter:depth = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Rod Shape"
-        displayName = "Depth"
-        doc = "depth: Depth of inner region of the rod (z axis)."
-    )
-    float inputs:ri:lightFilter:diffuse = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Diffuse"
-        doc = "diffuse: How much this light filter affects diffuse lighting."
-    )
-    float inputs:ri:lightFilter:edge = 0.25 (
-        connectability = "interfaceOnly"
-        displayGroup = "Rod Shape"
-        displayName = "Edge"
-        doc = "edge: Thickness of edge region."
-    )
-    int inputs:ri:lightFilter:falloff = 6 (
-        connectability = "interfaceOnly"
-        displayGroup = "Falloff"
-        doc = "falloff: Controls the transition from the core to the edge."
-    )
-    float[] inputs:ri:lightFilter:falloff_Floats = [0, 0, 0.2, 0.8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
-        displayGroup = "Falloff"
-        hidden = true
-    )
-    token inputs:ri:lightFilter:falloff_Interpolation = "bspline" (
-        allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
-        displayGroup = "Falloff"
-        hidden = true
-    )
-    float[] inputs:ri:lightFilter:falloff_Knots = [0, 0, 0.3, 0.7, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
-        displayGroup = "Falloff"
-        hidden = true
-    )
-    float inputs:ri:lightFilter:height = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Rod Shape"
-        displayName = "Height"
-        doc = "height: Height of inner region of the rod (y axis)."
-    )
-    float inputs:ri:lightFilter:intensity = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Intensity"
-        doc = """intensity: Multiplier for both the diffuse and specular result.
-            """
-    )
-    bool inputs:ri:lightFilter:invert = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Invert"
-        doc = "invert: Inverts the entire effect of the filter."
-    )
-    string inputs:ri:lightFilter:notes = "" (
-        displayGroup = "Notes"
-        doc = "General comment field for this light filter."
-    )
-    float inputs:ri:lightFilter:radius = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Rod Shape"
-        displayName = "Radius"
-        doc = "radius: Radius of corners of inner rod box."
-    )
-    float inputs:ri:lightFilter:saturation = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Saturation"
-        doc = """saturation: Saturation of the light before hitting the surface
-                  (0=greyscale,1=normal,>1=boosted colors)."""
-    )
-    float inputs:ri:lightFilter:specular = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Specular"
-        doc = "specular: How much this light filter affects specular lighting."
-    )
-    float inputs:ri:lightFilter:width = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Rod Shape"
-        displayName = "Width"
-        doc = "width: Width of inner region of the rod (x axis)."
-    )
-    uniform token ri:lightFilter:shaderId = "PxrBlockerLightFilter" (
         displayGroup = "Internal"
     )
 }
@@ -2322,10 +2472,6 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
         displayName = "Midpoint"
         doc = "midpoint: Midpoint for the contrast control."
     )
-    string inputs:ri:lightFilter:notes = "" (
-        displayGroup = "Notes"
-        doc = "General comment field for this light filter."
-    )
     float inputs:ri:lightFilter:offsetU = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Texture Mapping"
@@ -2466,164 +2612,6 @@ class PxrCookieLightFilter "PxrCookieLightFilter" (
     )
 }
 
-class PxrGoboLightFilter "PxrGoboLightFilter" (
-    customData = {
-        string className = "GoboLightFilter"
-    }
-    inherits = </LightFilter>
-)
-{
-    token inputs:ri:lightFilter:combineMode = "mult" (
-        allowedTokens = ["mult", "max", "min", "screen"]
-        connectability = "interfaceOnly"
-        displayName = "Combine Mode"
-        doc = """
-\t<p>
-        combineMode: Light filters on a light are grouped by their combine mode. Light filters
-        in the same group are executed together and combined by the corresponding
-        operation:
-        </p>
-\t<ol>
-\t\t<li>max: the maximum result from all filters is used.
-              This works best for grey scale light filters.</li>
-\t\t<li>min: the minimum result from all filters is used.
-              This works best for grey scale light filters.</li>
-\t\t<li>screen: similar to the max operation, but it combines gradients
-              in a smoother way. This works best for grey scale light filters.</li>
-\t\t<li>mult (default): the results of all the filters are multiplied together
-              (technically: they are applied one after the other)</li>
-\t</ol>
-\t<p>
-        The groups are executed in the above order and are multiplied together,
-        which means a filter that turns things black in the mult group will zero out
-        all other filters.
-        </p>
-"""
-    )
-    float inputs:ri:lightFilter:density = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Density"
-        doc = "density: Controls the strength of the projected effect."
-    )
-    float inputs:ri:lightFilter:diffuse = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Diffuse"
-        doc = "diffuse: How much this light filter affects diffuse lighting."
-    )
-    color3f inputs:ri:lightFilter:fillColor = (1, 1, 1) (
-        connectability = "interfaceOnly"
-        displayGroup = "Map"
-        displayName = "Fill Color"
-        doc = """
-                fillColor: If the texture is not repeating, this specifies the
-                color for the region outside of and behind the projected rectangle.
-            """
-    )
-    float inputs:ri:lightFilter:height = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Map"
-        displayName = "Height"
-        doc = "height: Height of the rect the light is shining through."
-    )
-    float inputs:ri:lightFilter:intensity = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Intensity"
-        doc = """intensity: Multiplier for both the diffuse and specular result.
-            """
-    )
-    bool inputs:ri:lightFilter:invert = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Invert"
-        doc = """invert: When this is on, the texture will be inverted before it is applied.
-            """
-    )
-    bool inputs:ri:lightFilter:linearize = 0 (
-        displayGroup = "Map"
-        displayName = "Linearize"
-        doc = "Linearize the texture, assuming an sRGB transfer function."
-    )
-    asset inputs:ri:lightFilter:map = @ratGrid.tex@ (
-        connectability = "interfaceOnly"
-        displayGroup = "Map"
-        displayName = "Map"
-        doc = "map: Filename of the projected texture."
-    )
-    string inputs:ri:lightFilter:notes = "" (
-        displayGroup = "Notes"
-        doc = "General comment field for this light filter."
-    )
-    float inputs:ri:lightFilter:offsetU = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Texture Mapping"
-        displayName = "Offset U"
-        doc = "offsetU: Offset of the texture in the U direction"
-    )
-    float inputs:ri:lightFilter:offsetV = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Texture Mapping"
-        displayName = "Offset V"
-        doc = "offsetV: Offset of the texture in the V direction"
-    )
-    bool inputs:ri:lightFilter:premultipliedAlpha = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Map"
-        displayName = "Premultiplied Alpha"
-        doc = """
-                premultipliedAlpha: Textures are usually premultiplied by their alpha. If this not
-                the case, uncheck this.
-            """
-    )
-    int inputs:ri:lightFilter:refreshMap = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Map"
-        doc = """
-                Press this button to force a refresh of the texture during
-                Live Rendering.
-            """
-    )
-    float inputs:ri:lightFilter:scaleU = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Texture Mapping"
-        displayName = "Scale U"
-        doc = "scaleU: Scale of the texture in the U direction"
-    )
-    float inputs:ri:lightFilter:scaleV = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Texture Mapping"
-        displayName = "Scale V"
-        doc = "scaleV: Scale of the texture in the V direction"
-    )
-    float inputs:ri:lightFilter:specular = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Multiplier"
-        displayName = "Specular"
-        doc = "specular: How much this light filter affects specular lighting."
-    )
-    int inputs:ri:lightFilter:tileMode = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Texture Mapping"
-        displayName = "Tile Mode"
-        doc = '''tileMode:
-                "No Repeat"   - texture does not repeat.
-                "Edge Extent" - extends the color of the edge to infinity.
-                "Tile"        - texture repeats (tileable texture).
-            '''
-    )
-    float inputs:ri:lightFilter:width = 1 (
-        connectability = "interfaceOnly"
-        displayGroup = "Map"
-        displayName = "Width"
-        doc = "width: Width of the rect the light is shining through."
-    )
-    uniform token ri:lightFilter:shaderId = "PxrGoboLightFilter" (
-        displayGroup = "Internal"
-    )
-}
-
 class PxrIntMultLightFilter "PxrIntMultLightFilter" (
     customData = {
         string className = "IntMultLightFilter"
@@ -2686,10 +2674,6 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
                 will be divided by (instead of multiplied by) the light filter's
                 intensity.
             """
-    )
-    string inputs:ri:lightFilter:notes = "" (
-        displayGroup = "Notes"
-        doc = "General comment field for this light filter."
     )
     float inputs:ri:lightFilter:saturation = 1 (
         connectability = "interfaceOnly"
@@ -2798,10 +2782,6 @@ class PxrRampLightFilter "PxrRampLightFilter" (
         displayGroup = "Multiplier"
         displayName = "Invert"
         doc = "invert: If the multipliers should be inverted"
-    )
-    string inputs:ri:lightFilter:notes = "" (
-        displayGroup = "Notes"
-        doc = "General comment field for this light filter."
     )
     int inputs:ri:lightFilter:ramp = 4 (
         connectability = "interfaceOnly"
@@ -3016,10 +2996,6 @@ class PxrRodLightFilter "PxrRodLightFilter" (
                    leftEdge: When edge is > 0, this scales the left edge up or down (-x axis).
                 """
     )
-    string inputs:ri:lightFilter:notes = "" (
-        displayGroup = "Notes"
-        doc = "General comment field for this light filter."
-    )
     float inputs:ri:lightFilter:radius = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Rod Shape"
@@ -3092,6 +3068,500 @@ class PxrRodLightFilter "PxrRodLightFilter" (
         doc = "width: Width of the inner region of the rod (X-axis)."
     )
     uniform token ri:lightFilter:shaderId = "PxrRodLightFilter" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrCamera "PxrCamera" (
+    customData = {
+        string className = "Camera"
+    }
+    doc = """
+    A camera model that approximates a number of real world physical
+    effects.  This supports all of the traditional prman perspective camera
+    settings including shaped motion blur and bokeh.
+  """
+    inherits = </PxrProjectionPluginBase>
+)
+{
+    float inputs:ri:assymX = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Lens Distortion"
+        displayName = "Assymetric Distortion X"
+        doc = """
+        Distortion applied only in the X direction.  Horizontal lines will
+        remain straight.  Positive values produce pincushion-like
+        distortion.  Negative values produce barrel-like distortion.
+      """
+    )
+    float inputs:ri:assymY = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Lens Distortion"
+        displayName = "Assymetric Distortion Y"
+        doc = """
+        Distortion applied only in the Y direction.  Vertical lines will
+        remain straight.  Positive values produce pincushion-like
+        distortion.  Negative values produce barrel-like distortion.
+      """
+    )
+    color3f inputs:ri:axial = (0, 0, 0) (
+        connectability = "interfaceOnly"
+        displayGroup = "Chromatic Aberration"
+        displayName = "Axial"
+        doc = """
+        Axial (or longitudinal) chromatic aberration.  This specifies the
+        chromatic focal shift for the red, green, and blue primaries
+        respectively.  When unequal, this can produce a tinge on bokeh and
+        out of focus objects.  It will increase color noise, however.
+      """
+    )
+    float inputs:ri:detail = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Detail Bias"
+        doc = """
+        Detail bias.  Positive values will shift all texture lookups
+        towards coarser, lower resolution, MIP map levels than would
+        normally be used.  Negative values will shift them towards finer,
+        higher resolution, levels.  Also affects the level-of-detail
+        selected for geometry.
+      """
+    )
+    float inputs:ri:duration = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Shutter"
+        displayName = "Duration"
+        doc = """
+        Exposure duration.  Zero means an ideal rolling shutter where each
+        line is exposed instantaneously when read.  The default, one, is
+        equivalent to a global shutter where all lines are exposed and read
+        at the same time.
+      """
+    )
+    vector3f inputs:ri:enhance = (0, 0, 1) (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Enhancement"
+        doc = """
+        Enhancement.  Embiggens the region around a pixel (X,Y) by zoom
+        factor Z for trouble-shooting.  The magnified pixel will remain
+        anchored in place relative to the image.  Camera effects such as
+        vignetting will be scaled accordingly.  Intentionally does not
+        affect level-of-detail, dicing, displacement, or MIP map levels.
+      """
+    )
+    float inputs:ri:focalDistance = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Standard Perspective"
+        displayName = "Focal Distance"
+        doc = """
+         Distance at which objects will be in focus.  This should be in
+         units of distance along the view direction in camera coordinates.
+         Effectively ignored if F-stop is huge.
+      """
+    )
+    float inputs:ri:focalLength = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Standard Perspective"
+        displayName = "Focal Length"
+        doc = """
+         Focal length of the camera lens.  Used to determine depth of
+         field and defocus.  This should be in units of distance along the
+         view direction in camera coordinates.  Effectively ignored if
+         F-stop is huge.
+      """
+    )
+    point3f inputs:ri:focus1 = (0, 0, 0) (
+        connectability = "interfaceOnly"
+        displayGroup = "Tilt-Shift"
+        displayName = "Focus 1"
+        doc = """
+        First point to keep in focus.  Specified in world space.  If all
+        three focus points are set then the tilt angles and focal distance
+        will be automatically solved to match the plane of focus they
+        define.  Note that there may not be a solution.
+      """
+    )
+    point3f inputs:ri:focus2 = (0, 0, 0) (
+        connectability = "interfaceOnly"
+        displayGroup = "Tilt-Shift"
+        displayName = "Focus 2"
+        doc = """
+        Second point to keep in focus.  Specified in world space.  If all
+        three focus points are set then the tilt angles and focal distance
+        will be automatically solved to match the plane of focus they
+        define.  Note that there may not be a solution.
+      """
+    )
+    point3f inputs:ri:focus3 = (0, 0, 0) (
+        connectability = "interfaceOnly"
+        displayGroup = "Tilt-Shift"
+        displayName = "Focus 3"
+        doc = """
+        Third point to keep in focus.  Specified in world space.  If all
+        three focus points are set then the tilt angles and focal distance
+        will be automatically solved to match the plane of focus they
+        define.  Note that there may not be a solution.
+      """
+    )
+    float inputs:ri:fov = 90 (
+        connectability = "interfaceOnly"
+        displayGroup = "Standard Perspective"
+        displayName = "Field of View"
+        doc = """
+        Field of view (FOV) in degrees at the beginning of the frame.  For
+        rectangular images this is normally the FOV along the narrower
+        image dimension.
+      """
+    )
+    float inputs:ri:fovEnd = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Standard Perspective"
+        displayName = "Field of View (End)"
+        doc = """
+        Field of view (FOV) in degrees at the end of the frame.  Used to
+        motion blur very fast zooms.  The default, zero, means to assume it
+        is the same as at the beginning of the frame.
+      """
+    )
+    float inputs:ri:fStop = 16 (
+        connectability = "interfaceOnly"
+        displayGroup = "Standard Perspective"
+        displayName = "F-stop"
+        doc = """
+        F-stop or aperture number.  Used to determine depth of field and
+        defocus.  This determines the lens diameter.  If the f-stop is a
+        huge number, then effectively a pin-hole camera is used and depth
+        of field is turned off.
+      """
+    )
+    asset inputs:ri:matte = @@ (
+        connectability = "interfaceOnly"
+        displayGroup = "Advanced"
+        displayName = "Matte file"
+        doc = """
+        Matte file.  An EXR image that cuts away parts of the render.  If
+        it is a deep image, it removes anything in the render that is
+        farther away than opaque objects in the matte file, leaving behind
+        transparent holes.  If it is a shallow image, it removes parts of
+        the render where the matte file is opaque.
+      """
+    )
+    float inputs:ri:natural = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Vignetting"
+        displayName = "Natural"
+        doc = """
+        Natural vignetting.  When one, directions off of the primary camera
+        axis will be darkened realistically.  Wide-angle perspectives will
+        show this effect more strongly.  Setting to zero disables this and
+        intermediate values will blend accordingly.
+      """
+    )
+    float inputs:ri:optical = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Vignetting"
+        displayName = "Optical"
+        doc = """
+        Optical vignetting.  Simulates light blockage due to a hood or
+        other additional lens elements.  With depth of field enabled, this
+        creates cat's eye bokeh.  However, it also increases image noise.
+      """
+    )
+    float inputs:ri:radial1 = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Lens Distortion"
+        displayName = "Radial Distortion 1"
+        doc = """
+        Quadratic radial lens distortion coefficient.  Positive values
+        produce pincushion distortion.  Negative values produce barrel
+        distortion.
+      """
+    )
+    float inputs:ri:radial2 = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Lens Distortion"
+        displayName = "Radial Distortion 2"
+        doc = """
+        Quartic radial lens distortion coefficient.  Positive values
+        produce pincushion distortion.  Negative values produce barrel
+        distortion.
+      """
+    )
+    float inputs:ri:roll = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Tilt-Shift"
+        displayName = "Roll Angle"
+        doc = """
+        Roll the lens clockwise.  If the lens tilt is non-zero this can be
+        used to rotate the plane of focus around the image center.  Ignored
+        if focus points are set.
+      """
+    )
+    float inputs:ri:shiftX = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Tilt-Shift"
+        displayName = "Shift X"
+        doc = """
+        Shift the lens horizontally.  This can be used to correct for
+        perspective distortion.  Positive values shift towards the right.
+      """
+    )
+    float inputs:ri:shiftY = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Tilt-Shift"
+        displayName = "Shift Y"
+        doc = '''
+        Shift the lens vertically.  This can be used to correct for
+        perspective distortion "keystone" effects.  To keep vertical lines
+        parallel, aim the camera horizontally and adjust this to include
+        the subject.  Positive values shift towards the top.
+      '''
+    )
+    float inputs:ri:squeeze = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Lens Distortion"
+        displayName = "Anamorphic Squeeze"
+        doc = """
+        Anamorphic lens squeeze.  Values greater than one decrease the
+        effect of the lens distortion in the X direction.  Values less than
+        one increase it.
+      """
+    )
+    token inputs:ri:sweep = "down" (
+        allowedTokens = ["down", "right", "up", "left"]
+        connectability = "interfaceOnly"
+        displayGroup = "Shutter"
+        displayName = "Sweep"
+        doc = """
+        Shutter direction.  Specifies the direction that the shutter
+        sweeps.  The default, down, is the most common direction for
+        rolling shutters.
+      """
+    )
+    float inputs:ri:tilt = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Tilt-Shift"
+        displayName = "Tilt Angle"
+        doc = """
+        Angle in degrees to tilt the lens.  Makes the plane of focus
+        non-parallel to the image plane.  Has no effect unless depth of
+        field is enabled.  Positive tilts up, bringing the focus in the top
+        of the image closer and pushing the focus in the bottom further.
+        Negative does the reverse.  Ignored if focus points are set.
+      """
+    )
+    color3f inputs:ri:transverse = (1, 1, 1) (
+        connectability = "interfaceOnly"
+        displayGroup = "Chromatic Aberration"
+        displayName = "Transverse"
+        doc = """
+        Transverse (or lateral) chromatic aberration.  This specifies the
+        magnification factors for the red, green, and blue primaries
+        respectively.  When unequal, this can produce a tinge which is most
+        pronounced near the image edges.  It will increase color noise,
+        however.
+      """
+    )
+    uniform token ri:projection:shaderId = "PxrCamera" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrCylinderCamera "PxrCylinderCamera" (
+    customData = {
+        string className = "CylinderCamera"
+    }
+    doc = """
+    A simple camera model that projects through a section of a cylinder
+    from the point at the cylinder's center.  For very wide aspect images,
+    this may be useful for rendering a circular panorama.
+  """
+    inherits = </PxrProjectionPluginBase>
+)
+{
+    float inputs:ri:hsweep = 360 (
+        connectability = "interfaceOnly"
+        displayName = "Horizontal Sweep"
+        doc = """
+      The horizontal angle of the cylinder subtended by the image.  The
+      default, 360, means that the image wraps all the way around and the
+      left and right edges of the image align.
+    """
+    )
+    float inputs:ri:vsweep = 90 (
+        connectability = "interfaceOnly"
+        displayName = "Vertical Sweep"
+        doc = """
+      The vertical field of view of the image.
+    """
+    )
+    uniform token ri:projection:shaderId = "PxrCylinderCamera" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrPanini "PxrPanini" (
+    customData = {
+        string className = "Panini"
+    }
+    doc = """
+    The Panini projection is designed for producing ultra-wide angle images
+    with large fields of view.  It can be particularly effective for
+    architectural scenes.  Like the traditional rectilinear perspective
+    projection, vertical lines remain vertical when the view direction is
+    horizontal, and radial lines that converge towards the vanishing point
+    also remain straight.  However, it can do this while accommodating wide
+    angles up to 180 degrees and beyond.
+  """
+    inherits = </PxrProjectionPluginBase>
+)
+{
+    float inputs:ri:compression = 1 (
+        connectability = "interfaceOnly"
+        displayName = "Compression"
+        doc = """
+      Determines the type of projection and the amount of compression at
+      the peripheriphy.  At 0.0, this produces the equivalent of the
+      traditional perspective projection and the FOV is limited to less
+      than 180 degrees.  At 1.0, this produces the full Panini projection
+      and allows the FOV to go up to almost 360 degrees.
+    """
+    )
+    float inputs:ri:fov = 90 (
+        connectability = "interfaceOnly"
+        displayName = "Field of View"
+        doc = """
+      Field of view (FOV) in degrees.  For rectangular images this is
+      normally the FOV along the wider image dimension.  Note that the
+      actual FOV may be limited to somewhere between 180 and 360 depending
+      on the Compression setting.
+    """
+    )
+    uniform token ri:projection:shaderId = "PxrPanini" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrPerspective "PxrPerspective" (
+    customData = {
+        string className = "Perspective"
+    }
+    doc = """
+    A simple pinhole camera.
+  """
+    inherits = </PxrProjectionPluginBase>
+)
+{
+    float inputs:ri:focalDistance = 1 (
+        connectability = "interfaceOnly"
+        displayName = "Focal Distance"
+        doc = """
+       Distance at which objects will be in focus.  This should be in
+       units of distance along the view direction in camera coordinates.
+       Effectively ignored if F-stop is huge.
+    """
+    )
+    float inputs:ri:focalLength = 0 (
+        connectability = "interfaceOnly"
+        displayName = "Focal Length"
+        doc = """
+       Focal length of the camera lens.  Used to determine depth of
+       field and defocus.  This should be in units of distance along the
+       view direction in camera coordinates.  Effectively ignored if
+       F-stop is huge.
+    """
+    )
+    float inputs:ri:fov = 90 (
+        connectability = "interfaceOnly"
+        displayName = "Field of View"
+        doc = """
+      Field of view (FOV) in degrees.  For rectangular images this is
+      normally the FOV along the narrower image dimension.
+    """
+    )
+    float inputs:ri:fovEnd = 0 (
+        connectability = "interfaceOnly"
+        displayName = "Field of View (End)"
+        doc = """
+      Field of view (FOV) in degrees at the end of the frame.  Used to
+      motion blur very fast zooms.  The default, zero, means to assume it
+      is the same as at the beginning of the frame.
+    """
+    )
+    float inputs:ri:fStop = 16 (
+        connectability = "interfaceOnly"
+        displayName = "F-stop"
+        doc = """
+      F-stop or aperture number.  Used to determine depth of field and
+      defocus.  This determines the lens diameter.  If the f-stop is a
+      huge number, then effectively a pin-hole camera is used and depth
+      of field is turned off.
+    """
+    )
+    uniform token ri:projection:shaderId = "PxrPerspective" (
+        displayGroup = "Internal"
+    )
+}
+
+class PxrSphereCamera "PxrSphereCamera" (
+    customData = {
+        string className = "SphereCamera"
+    }
+    doc = """
+    A simple camera model that projects through a section of a sphere from
+    the point at the sphere's center.  With its default settings, this may
+    be useful for rendering a latlong environment map.
+  """
+    inherits = </PxrProjectionPluginBase>
+)
+{
+    float inputs:ri:hsweep = 360 (
+        connectability = "interfaceOnly"
+        displayName = "Horizontal Sweep"
+        doc = """
+      The horizontal angle of the sphere subtended by the image.  The
+      default, 360, means that the image wraps all the way around and the
+      left and right edges of the image align.
+    """
+    )
+    float inputs:ri:vsweep = 180 (
+        connectability = "interfaceOnly"
+        displayName = "Vertical Sweep"
+        doc = """
+      The vertical angle of the sphere subtended by the image.  The
+      default, 180, means that the top and bottom of the image shows the
+      through the sphere's poles directly above and below the camera.
+    """
+    )
+    uniform token ri:projection:shaderId = "PxrSphereCamera" (
+        displayGroup = "Internal"
+    )
+}
+
+class OmnidirectionalStereo "OmnidirectionalStereo" (
+    customData = {
+        string className = "OmnidirectionalStereo"
+    }
+    doc = """
+        This camera projection renders the scene as a stereo pair of 360 degree
+        projections. It is intended to be rendered in a square format with
+        the top half as the left eye and the bottom half as the right eye.
+
+        Author: Mach Kobayashi
+  """
+    inherits = </PxrProjectionPluginBase>
+)
+{
+    float inputs:ri:interpupilaryDistance = 0.0635 (
+        connectability = "interfaceOnly"
+        displayName = "Interpupilary Distance"
+        doc = """
+        The distance between the two eyes. The default, 0.0635, should work if
+        your scene is measured in meters.
+      """
+    )
+    uniform token ri:projection:shaderId = "OmnidirectionalStereo" (
         displayGroup = "Internal"
     )
 }

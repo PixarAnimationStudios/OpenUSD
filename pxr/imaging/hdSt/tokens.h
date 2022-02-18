@@ -43,6 +43,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (flatNormalsQuadFloatToPacked)              \
     (flatNormalsQuadDoubleToDouble)             \
     (flatNormalsQuadDoubleToPacked)             \
+    (flatNormalsTriQuadFloatToFloat)            \
+    (flatNormalsTriQuadFloatToPacked)           \
+    (flatNormalsTriQuadDoubleToDouble)          \
+    (flatNormalsTriQuadDoubleToPacked)          \
     (quadrangulateFloat)                        \
     (quadrangulateDouble)
 
@@ -67,7 +71,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     (coarseFaceIndex)                           \
     (processedFaceCounts)                       \
     (processedFaceIndices)                      \
-    (geomSubsetFaceIndices)
+    (geomSubsetFaceIndices)                     \
+    (pointSizeScale)                            \
+    (screenSpaceWidths)                         \
+    (minScreenSpaceWidths)                      \
+    (shadowCompareTextures)
 
 #define HDST_TEXTURE_TOKENS                     \
     (wrapS)                                     \

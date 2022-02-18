@@ -1,0 +1,11 @@
+{% extends "!layout.html" %}
+
+{% block content %}
+  <style>
+    .version_warning {
+        margin-bottom: 10px;
+    }
+  </style>
+  <div class="version_warning_placeholder"></div>
+  {{ super() }}
+{% endblock %}

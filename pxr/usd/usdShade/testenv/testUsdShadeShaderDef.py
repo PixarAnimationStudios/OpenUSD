@@ -179,6 +179,28 @@ class TestUsdShadeShaderDef(unittest.TestCase):
                 "TestShaderPropertiesNode.glslfx")
         self.assertEqual(os.path.basename(node.GetResolvedDefinitionURI()),
                 "shaderDefs.usda")
+        
+        # Test GetOptions on an attribute via allowdTokens and 
+        # sdrMetadata["options"]
+        expectedOptionsList = [('token1', ''), ('token2', '')]
+        self.assertEqual(node.GetInput("testAllowedTokens").GetOptions(), 
+                expectedOptionsList)
+        self.assertEqual(node.GetInput("testMetadataOptions").GetOptions(), 
+                expectedOptionsList)
+
+        # sdrMetadata options will win over explicitly specified allowedTokens
+        # on the attr.
+        attr = shaderDef.GetPrim(). \
+                GetAttribute('inputs:testAllowedTokenAndMetdataOptions')
+        expectedMetdataOptions = "token3|token4"
+        expectedAttrAllowedTokens = ["token1", "token2"]
+        expectedOptionsList = [('token3', ''), ('token4', '')]
+        self.assertEqual(node.GetInput("testAllowedTokenAndMetdataOptions"). \
+                GetMetadata()["options"], expectedMetdataOptions)
+        self.assertEqual([t for t in attr.GetMetadata('allowedTokens')], 
+                expectedAttrAllowedTokens)
+        self.assertEqual(node.GetInput("testAllowedTokenAndMetdataOptions"). \
+                GetOptions(), expectedOptionsList)
 
 
         utils.TestShaderPropertiesNode(node)

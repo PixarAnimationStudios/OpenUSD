@@ -41,7 +41,7 @@ using HdBindingRequestVector = std::vector<HdBindingRequest>;
 /// Drawing batch that is executed from an indirect dispatch buffer.
 ///
 /// An indirect drawing batch accepts draw items that have the same
-/// primitive mode and that share aggregated drawing resources,
+/// primitive type and that share aggregated drawing resources,
 /// e.g. uniform and non uniform primvar buffers.
 ///
 class HdSt_IndirectDrawBatch : public HdSt_DrawBatch
@@ -66,6 +66,7 @@ public:
     /// Executes the drawing commands for this batch.
     HDST_API
     void ExecuteDraw(
+        HgiGraphicsCmds *gfxCmds,
         HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const &resourceRegistry) override;
 
@@ -94,6 +95,10 @@ protected:
     void _Init(HdStDrawItemInstance * drawItemInstance) override;
 
 private:
+    void _ExecuteDraw(
+        HdStRenderPassStateSharedPtr const &renderPassState,
+        HdStResourceRegistrySharedPtr const &resourceRegistry);
+
     void _ValidateCompatibility(
         HdStBufferArrayRangeSharedPtr const& constantBar,
         HdStBufferArrayRangeSharedPtr const& indexBar,
@@ -111,10 +116,10 @@ private:
     {
     public:
         _CullingProgram()
-            : _useDrawArrays(false)
+            : _useDrawIndexed(true)
             , _useInstanceCulling(false)
             , _bufferArrayHash(0) { }
-        void Initialize(bool useDrawArrays, bool useInstanceCulling,
+        void Initialize(bool useDrawIndexed, bool useInstanceCulling,
                         size_t bufferArrayHash);
     protected:
         // _DrawingProgram overrides
@@ -122,7 +127,7 @@ private:
             HdBindingRequestVector *customBindings,
             bool *enableInstanceDraw) const override;
     private:
-        bool _useDrawArrays;
+        bool _useDrawIndexed;
         bool _useInstanceCulling;
         size_t _bufferArrayHash;
     };
@@ -132,17 +137,12 @@ private:
 
     void _CompileBatch(HdStResourceRegistrySharedPtr const &resourceRegistry);
 
-    void _GPUFrustumInstanceCulling(
-        HdStDrawItem const *item,
-        GfMatrix4f const &cullMatrix,
-        GfVec2f const &drawRangeNdc,
-        HdStResourceRegistrySharedPtr const &resourceRegistry);
+    bool _HasNothingToDraw() const;
 
-    void _GPUFrustumNonInstanceCulling(
-        HdStDrawItem const *item,
-        GfMatrix4f const &cullMatrix,
-        GfVec2f const &drawRangeNdc,
-        HdStResourceRegistrySharedPtr const &resourceRegistry);
+    void _ExecuteFrustumCull(
+                bool updateDispatchBuffer,
+                HdStRenderPassStateSharedPtr const & renderPassState,
+                HdStResourceRegistrySharedPtr const & resourceRegistry);
 
     void _BeginGPUCountVisibleInstances(
         HdStResourceRegistrySharedPtr const &resourceRegistry);
@@ -169,10 +169,10 @@ private:
     bool _useTinyPrimCulling;
     bool _dirtyCullingProgram;
 
-    bool _useDrawArrays;
+    bool _useDrawIndexed;
     bool _useInstancing;
     bool _useGpuCulling;
-    bool _useGpuInstanceCulling;
+    bool _useInstanceCulling;
 
     int _instanceCountOffset;
     int _cullInstanceCountOffset;

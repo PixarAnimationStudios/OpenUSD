@@ -39,7 +39,7 @@ ArFilesystemAsset::Open(const ArResolvedPath& resolvedPath)
         return nullptr;
     }
 
-    return std::shared_ptr<ArFilesystemAsset>(new ArFilesystemAsset(f));
+    return std::make_shared<ArFilesystemAsset>(f);
 }
 
 ArTimestamp

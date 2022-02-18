@@ -1,0 +1,202 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+def Xform "Scene" (
+kind = "component"
+)
+{
+    def Scope "Looks"
+    {
+        def Material "Material_0_0"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_0/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:opacityThreshold = 0.0
+            }
+        }
+
+        def Material "Material_0_1"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_1/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:opacityThreshold = 0.1
+            }
+        }
+
+        def Material "Material_0_2"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_2/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:opacityThreshold = 0.3
+            }
+        }
+
+        def Material "Material_0_3"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_3/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:opacityThreshold = 0.5
+            }
+        }
+
+        def Material "Material_0_4"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_4/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:opacityThreshold = 0.9
+            }
+        }
+
+        def Material "Material_0_5"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material_0_5/PbrPreview.outputs:surface>
+
+            def "PbrPreview" (
+                inherits = [</_class_Preview>]
+            )
+            {
+
+                float inputs:opacityThreshold = 1
+            }
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def Xform "Geom0"
+        {
+            def "pPlane0" (
+                references = </Prototypes/Plane>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_0>
+                double3 xformOp:translate = (0, 0, 0)
+            }
+
+            def "pPlane1" (
+                references = </Prototypes/Plane>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_1>
+                double3 xformOp:translate = (1.5, 0, 0)
+            }
+
+            def "pPlane2" (
+                references = </Prototypes/Plane>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_2>
+                double3 xformOp:translate = (3, 0, 0)
+            }
+
+            def "pPlane3" (
+                references = </Prototypes/Plane>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_3>
+                double3 xformOp:translate = (4.5, 0, 0)
+            }
+
+            def "pPlane4" (
+                references = </Prototypes/Plane>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_4>
+                double3 xformOp:translate = (6, 0, 0)
+            }
+
+            def "pPlane5" (
+                references = </Prototypes/Plane>
+            )
+            {
+                rel material:binding = </Scene/Looks/Material_0_5>
+                double3 xformOp:translate = (7.5, 0, 0)
+            }
+        }
+
+    }
+}
+
+def Scope "Prototypes"(
+    active=false
+    )
+{
+    def Sphere "Sphere"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        color3f[] primvars:displayColor = [(0.0, 1.0, 0.0)]
+        uniform token[] xformOpOrder = [ "xformOp:translate" ]
+    }
+
+    def Mesh "Plane" {
+        uniform bool doubleSided = 1
+        float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        point3f[] points = [(0,0,0), (1,0,0), (1,1,0), (0,1,0)]
+
+        uniform token[] xformOpOrder = [ "xformOp:translate" ]
+        Vec3f xformOp:translate=(0,0,0)
+    }
+}
+
+class Shader "_class_Preview"
+{
+    uniform token info:id = "UsdPreviewSurface"
+
+    color3f inputs:diffuseColor.connect  = </Color.outputs:rgb>
+    float inputs:opacity.connect = </Color.outputs:a>
+    float inputs:roughness = 1
+    
+    token outputs:surface
+}
+
+def Shader "Primvar"
+{
+    uniform token info:id = "UsdPrimvarReader_float2"
+    token inputs:varname = "st"
+    float2 outputs:result
+}
+
+def Shader "Color"
+{
+    uniform token info:id = "UsdUVTexture"
+
+    asset inputs:file = @textureCutout.png@
+    token inputs:wrapS = "clamp"
+    token inputs:wrapT = "clamp"
+    float2 inputs:st.connect = </Primvar.outputs:result>
+    float3 outputs:rgb
+    float outputs:a
+}

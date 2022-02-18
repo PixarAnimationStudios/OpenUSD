@@ -237,6 +237,8 @@ HgiGLOps::CopyBufferGpuToGpu(HgiBufferGpuToGpuOp const& copyOp)
                                  copyOp.sourceByteOffset,
                                  copyOp.destinationByteOffset,
                                  copyOp.byteSize);
+        
+        HGIGL_POST_PENDING_GL_ERRORS();
     };
 }
 
@@ -609,19 +611,26 @@ HgiGLOps::BindVertexBuffers(
 HgiGLOpsFn
 HgiGLOps::Draw(
     HgiPrimitiveType primitiveType,
+    uint32_t primitiveIndexSize,
     uint32_t vertexCount,
     uint32_t firstVertex,
-    uint32_t instanceCount)
+    uint32_t instanceCount,
+    uint32_t firstInstance)
 {
-    return [primitiveType, vertexCount, firstVertex, instanceCount] {
+    return [primitiveType, primitiveIndexSize,
+            vertexCount, firstVertex, instanceCount, firstInstance] {
         TRACE_SCOPE("HgiGLOps::Draw");
-        TF_VERIFY(instanceCount>0);
 
-        glDrawArraysInstanced(
+        if (primitiveType == HgiPrimitiveTypePatchList) {
+            glPatchParameteri(GL_PATCH_VERTICES, primitiveIndexSize);
+        }
+
+        glDrawArraysInstancedBaseInstance(
             HgiGLConversions::GetPrimitiveType(primitiveType),
             firstVertex,
             vertexCount,
-            instanceCount);
+            instanceCount,
+            firstInstance);
 
         HGIGL_POST_PENDING_GL_ERRORS();
     };
@@ -630,19 +639,24 @@ HgiGLOps::Draw(
 HgiGLOpsFn
 HgiGLOps::DrawIndirect(
     HgiPrimitiveType primitiveType,
+    uint32_t primitiveIndexSize,
     HgiBufferHandle const& drawParameterBuffer,
     uint32_t drawBufferOffset,
     uint32_t drawCount,
     uint32_t stride)
 {
-    return [primitiveType, drawParameterBuffer, drawBufferOffset, drawCount, 
-            stride] {
+    return [primitiveType, primitiveIndexSize,
+            drawParameterBuffer, drawBufferOffset, drawCount, stride] {
         TRACE_SCOPE("HgiGLOps::DrawIndirect");
 
         HgiGLBuffer* drawBuf =
             static_cast<HgiGLBuffer*>(drawParameterBuffer.Get());
 
         glBindBuffer(GL_DRAW_INDIRECT_BUFFER, drawBuf->GetBufferId());
+
+        if (primitiveType == HgiPrimitiveTypePatchList) {
+            glPatchParameteri(GL_PATCH_VERTICES, primitiveIndexSize);
+        }
 
         glMultiDrawArraysIndirect(
             HgiGLConversions::GetPrimitiveType(primitiveType),
@@ -658,33 +672,36 @@ HgiGLOps::DrawIndirect(
 HgiGLOpsFn
 HgiGLOps::DrawIndexed(
     HgiPrimitiveType primitiveType,
+    uint32_t primitiveIndexSize,
     HgiBufferHandle const& indexBuffer,
     uint32_t indexCount,
     uint32_t indexBufferByteOffset,
     uint32_t vertexOffset,
-    uint32_t instanceCount)
+    uint32_t instanceCount,
+    uint32_t firstInstance)
 {
-    return [primitiveType, indexBuffer, indexCount, indexBufferByteOffset,
-            vertexOffset, instanceCount] {
+    return [primitiveType, primitiveIndexSize,
+            indexBuffer, indexCount, indexBufferByteOffset,
+            vertexOffset, instanceCount, firstInstance] {
         TRACE_SCOPE("HgiGLOps::DrawIndexed");
-        TF_VERIFY(instanceCount>0);
 
         HgiGLBuffer* indexBuf = static_cast<HgiGLBuffer*>(indexBuffer.Get());
-        HgiBufferDesc const& indexDesc = indexBuf->GetDescriptor();
-
-        // We assume 32bit indices: GL_UNSIGNED_INT
-        TF_VERIFY(indexDesc.usage & HgiBufferUsageIndex32);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuf->GetBufferId());
 
-        glDrawElementsInstancedBaseVertex(
+        if (primitiveType == HgiPrimitiveTypePatchList) {
+            glPatchParameteri(GL_PATCH_VERTICES, primitiveIndexSize);
+        }
+
+        glDrawElementsInstancedBaseVertexBaseInstance(
             HgiGLConversions::GetPrimitiveType(primitiveType),
             indexCount,
             GL_UNSIGNED_INT,
             reinterpret_cast<const void*>(
                 static_cast<uintptr_t>(indexBufferByteOffset)),
             instanceCount,
-            vertexOffset);
+            vertexOffset,
+            firstInstance);
 
         HGIGL_POST_PENDING_GL_ERRORS();
     };
@@ -693,21 +710,19 @@ HgiGLOps::DrawIndexed(
 HgiGLOpsFn
 HgiGLOps::DrawIndexedIndirect(
     HgiPrimitiveType primitiveType,
+    uint32_t primitiveIndexSize,
     HgiBufferHandle const& indexBuffer,
     HgiBufferHandle const& drawParameterBuffer,
     uint32_t drawBufferOffset,
     uint32_t drawCount,
     uint32_t stride)
 {
-    return [primitiveType, indexBuffer, drawParameterBuffer, drawBufferOffset,
+    return [primitiveType, primitiveIndexSize,
+            indexBuffer, drawParameterBuffer, drawBufferOffset,
             drawCount, stride] {
         TRACE_SCOPE("HgiGLOps::DrawIndexedIndirect");
 
         HgiGLBuffer* indexBuf = static_cast<HgiGLBuffer*>(indexBuffer.Get());
-        HgiBufferDesc const& indexDesc = indexBuf->GetDescriptor();
-
-        // We assume 32bit indices: GL_UNSIGNED_INT
-        TF_VERIFY(indexDesc.usage & HgiBufferUsageIndex32);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuf->GetBufferId());
 
@@ -715,6 +730,10 @@ HgiGLOps::DrawIndexedIndirect(
             static_cast<HgiGLBuffer*>(drawParameterBuffer.Get());
 
         glBindBuffer(GL_DRAW_INDIRECT_BUFFER, drawBuf->GetBufferId());
+
+        if (primitiveType == HgiPrimitiveTypePatchList) {
+            glPatchParameteri(GL_PATCH_VERTICES, primitiveIndexSize);
+        }
 
         glMultiDrawElementsIndirect(
             HgiGLConversions::GetPrimitiveType(primitiveType),
@@ -791,6 +810,10 @@ HgiGLOps::BindFramebufferOp(
 
             glBlendFuncSeparatei(i, srcColor, dstColor, srcAlpha, dstAlpha);
             glBlendEquationSeparatei(i, colorOp, alphaOp);
+            glBlendColor(colorAttachment.blendConstantColor[0],
+                         colorAttachment.blendConstantColor[1],
+                         colorAttachment.blendConstantColor[2],
+                         colorAttachment.blendConstantColor[3]);
         }
 
         HgiAttachmentDesc const& depthAttachment =

@@ -174,14 +174,14 @@ bool IsFlipped()
 #ifdef HD_HAS_INSTANCE_scale
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
-        flip = flip ^^ ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
+        flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
     }
 #endif
 
 #ifdef HD_HAS_INSTANCE_instanceTransform
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
-        flip = flip ^^ (determinant(m) < 0.0);
+        flip = flip != (determinant(m) < 0.0);
     }
 #endif
 

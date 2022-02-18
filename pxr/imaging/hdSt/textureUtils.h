@@ -27,13 +27,17 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 
-#include "pxr/imaging/hio/types.h"
 #include "pxr/imaging/hio/image.h"
+
+#include "pxr/imaging/hgi/handle.h"
 #include "pxr/imaging/hgi/types.h"
 
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class Hgi;
+using HgiTextureHandle = HgiHandle<class HgiTexture>;
 
 /// \class HdStTextureUtils
 ///
@@ -110,6 +114,17 @@ public:
         const HgiMipInfo &mipInfo,
         size_t layer,
         void * bufferStart);
+
+    // Read back the GPU contents of the HgiTexture to the CPU using the memory
+    // in the buffer vector.
+    // The vector is resized to accommodate the required memory.
+    // Returns true if the process was successful.
+    HDST_API
+    static
+    bool
+    HgiTextureReadback(Hgi * const hgi,
+                       HgiTextureHandle const & texture,
+                       std::vector<uint8_t> * buffer);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

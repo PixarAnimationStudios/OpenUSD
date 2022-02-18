@@ -57,11 +57,7 @@ class Sdf_TextParserContext {
 public:
     // Constructor.
     Sdf_TextParserContext();
-
-    // Destructor.
-    ~Sdf_TextParserContext() {
-    }
-
+    
     std::string magicIdentifierToken;
     std::string versionString;
     std::string fileContext;

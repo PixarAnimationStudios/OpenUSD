@@ -137,15 +137,48 @@ _SetupValue(const std::string& typeName, Sdf_TextParserContext *context)
 
 template <class T>
 static bool
+_GeneralHasDuplicates(const std::vector<T> &v)
+{
+    // Copy and sort to look for dupes.
+    std::vector<T> copy(v);
+    std::sort(copy.begin(), copy.end());
+    return std::adjacent_find(copy.begin(), copy.end()) != copy.end();
+}
+
+template <class T>
+static inline bool
 _HasDuplicates(const std::vector<T> &v)
 {
-    std::set<T> s;
-    TF_FOR_ALL(i, v) {
-        if (!s.insert(*i).second) {
-            return true;
-        }
+    // Many of the vectors we see here are either just a few elements long
+    // (references, payloads) or are already sorted and unique (topology
+    // indexes, etc).
+    if (v.size() <= 1) {
+        return false;
     }
-    return false;
+
+    // Many are of small size, just check all pairs.
+    if (v.size() <= 10) {
+       using iter = typename std::vector<T>::const_iterator;
+       iter iend = std::prev(v.end()), jend = v.end();
+       for (iter i = v.begin(); i != iend; ++i) {
+           for (iter j = std::next(i); j != jend; ++j) {
+               if (*i == *j) {
+                   return true;
+               }
+           }
+       }
+       return false;
+    }
+
+    // Check for strictly sorted order.
+    if (std::adjacent_find(v.begin(), v.end(),
+                           [](T const &l, T const &r) {
+                               return l >= r;
+                           }) == v.end()) {
+        return false;
+    }
+    // Otherwise do a more expensive copy & sort to check for dupes.
+    return _GeneralHasDuplicates(v);
 }
 
 namespace
@@ -976,29 +1009,42 @@ _SetGenericMetadataListOpItems(const TfType& fieldType,
 }
 
 template <class ListOpType>
-static bool
-_IsListOpType(const TfType& type, TfType* itemArrayType = nullptr)
-{
-    if (type.IsA<ListOpType>()) {
-        if (itemArrayType) {
-            typedef VtArray<typename ListOpType::value_type> ArrayType;
-            *itemArrayType = TfType::Find<ArrayType>();
-        }
-        return true;
-    }
-    return false;
+static std::pair<TfType, TfType>
+_GetListOpAndArrayTfTypes() {
+    return {
+        TfType::Find<ListOpType>(),
+        TfType::Find<VtArray<typename ListOpType::value_type>>()
+    };
 }
 
 static bool
 _IsGenericMetadataListOpType(const TfType& type,
                              TfType* itemArrayType = nullptr)
 {
-    return _IsListOpType<SdfIntListOp>(type, itemArrayType)    ||
-           _IsListOpType<SdfInt64ListOp>(type, itemArrayType)  || 
-           _IsListOpType<SdfUIntListOp>(type, itemArrayType)   ||
-           _IsListOpType<SdfUInt64ListOp>(type, itemArrayType) ||
-           _IsListOpType<SdfStringListOp>(type, itemArrayType) ||
-           _IsListOpType<SdfTokenListOp>(type, itemArrayType);
+    static std::pair<TfType, TfType> listOpAndArrayTypes[] = {
+        _GetListOpAndArrayTfTypes<SdfIntListOp>(),
+        _GetListOpAndArrayTfTypes<SdfInt64ListOp>(),
+        _GetListOpAndArrayTfTypes<SdfUIntListOp>(),
+        _GetListOpAndArrayTfTypes<SdfUInt64ListOp>(),
+        _GetListOpAndArrayTfTypes<SdfStringListOp>(),
+        _GetListOpAndArrayTfTypes<SdfTokenListOp>(),
+    };
+
+    auto iter = std::find_if(std::begin(listOpAndArrayTypes),
+                             std::end(listOpAndArrayTypes),
+                             [&type](auto const &p) {
+                                 return p.first == type;
+                             });
+
+    if (iter == std::end(listOpAndArrayTypes)) {
+        return false;
+    }
+
+    if (itemArrayType) {
+        *itemArrayType = iter->second;
+    }
+    
+    return true;
 }
 
 static void

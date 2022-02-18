@@ -1204,7 +1204,7 @@ public:
     ///
     /// \sa \ref VtValue_Casting
     VtValue &CastToTypeOf(VtValue const &other) {
-        return *this = _PerformCast(other.GetTypeid(), *this);
+        return CastToTypeid(other.GetTypeid());
     }
 
     /// Return \c this holding value type cast to \a type.  This value is
@@ -1215,7 +1215,10 @@ public:
     ///
     /// \sa \ref VtValue_Casting
     VtValue &CastToTypeid(std::type_info const &type) {
-        return *this = _PerformCast(type, *this);
+        if (!TfSafeTypeCompare(GetTypeid(), type)) {
+            *this = _PerformCast(type, *this);
+        }
+        return *this;
     }
 
     /// Return if \c this can be cast to \a T.
@@ -1407,9 +1410,13 @@ private:
                                      std::type_info const &to,
                                      VtValue (*castFn)(VtValue const &));
 
+    // Cast \p value to the type \p to.  Caller must ensure that val's type is
+    // not already \p to.
     VT_API static VtValue
     _PerformCast(std::type_info const &to, VtValue const &val);
-
+ 
+    // Return true if \p from == \p to or if there is a registered cast to
+    // convert VtValues holding \p from to \p to.
     VT_API static bool
     _CanCast(std::type_info const &from, std::type_info const &to);
 

@@ -21,6 +21,9 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
+# pylint: disable=dict-keys-not-iterating
+
 from __future__ import print_function
 
 from pxr import Tf

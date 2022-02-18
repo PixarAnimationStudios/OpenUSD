@@ -46,6 +46,10 @@ public:
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     HDST_API
+    void UpdateRenderTag(HdSceneDelegate *delegate,
+                         HdRenderParam *renderParam) override;
+
+    HDST_API
     void Sync(HdSceneDelegate* delegate,
               HdRenderParam*   renderParam,
               HdDirtyBits*     dirtyBits,
@@ -55,13 +59,16 @@ public:
     void Finalize(HdRenderParam *renderParam) override;
 
     /// Default step size used for raymarching
+    HDST_API
     static const float defaultStepSize;
 
     /// Default step size used for raymarching for lighting computation
+    HDST_API
     static const float defaultStepSizeLighting;
 
     /// Default memory limit for a field texture (in Mb) if not
     /// overridden by field prim with textureMemory.
+    HDST_API
     static const float defaultMaxTextureMemoryPerField;
 
 protected:

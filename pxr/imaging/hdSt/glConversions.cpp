@@ -24,6 +24,7 @@
 #include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hdSt/glConversions.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -145,7 +146,7 @@ HdStGLConversions::GetGlBlendFactor(HdBlendFactor factor)
     return HD_2_GL_BLEND_FACTOR[factor];
 }
 
-int
+GLenum
 HdStGLConversions::GetGLAttribType(HdType type)
 {
     switch (type) {
@@ -182,6 +183,43 @@ HdStGLConversions::GetGLAttribType(HdType type)
         break;
     };
     return -1;
+}
+
+GLenum 
+HdStGLConversions::GetPrimitiveMode(
+        HdSt_GeometricShader const *geometricShader)
+{
+    GLenum primMode = GL_POINTS;
+
+    using PrimitiveType = HdSt_GeometricShader::PrimitiveType;
+    switch (geometricShader->GetPrimitiveType())
+    {
+        case PrimitiveType::PRIM_POINTS:
+            primMode = GL_POINTS;
+            break;
+        case PrimitiveType::PRIM_BASIS_CURVES_LINES:
+            primMode = GL_LINES;
+            break;
+        case PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
+        case PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
+        case PrimitiveType::PRIM_MESH_COARSE_TRIQUADS:
+        case PrimitiveType::PRIM_MESH_REFINED_TRIQUADS:
+        case PrimitiveType::PRIM_VOLUME:
+            primMode = GL_TRIANGLES;
+            break;
+        case PrimitiveType::PRIM_MESH_COARSE_QUADS:
+        case PrimitiveType::PRIM_MESH_REFINED_QUADS:
+            primMode = GL_LINES_ADJACENCY;
+            break;
+        case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
+        case PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES:
+        case PrimitiveType::PRIM_MESH_BSPLINE:
+        case PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
+            primMode = GL_PATCHES;
+            break;    
+    }
+
+    return primMode;
 }
 
 TF_DEFINE_PRIVATE_TOKENS(

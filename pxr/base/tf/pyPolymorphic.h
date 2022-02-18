@@ -104,10 +104,16 @@ struct TfPyPolymorphic :
                     PyErr_Clear();
 
                     // do the appropriate conversion, if possible
+#if PY_MAJOR_VERSION > 2
+                    if (borrowed_f && PyCallable_Check(borrowed_f.get())) {
+                        func_object = borrowed_f.get();
+                    }
+#else
                     if (borrowed_f && PyMethod_Check(borrowed_f.get())) {
                         func_object =
                             ((PyMethodObject*)borrowed_f.get())->im_func;
                     }
+#endif
                 }
 
                 // now, func_object is either NULL, or pointing at the method

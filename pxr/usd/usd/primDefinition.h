@@ -320,13 +320,15 @@ private:
     // Helpers for constructing the prim definition.
     USD_API
     void _ComposePropertiesFromPrimSpec(
-        const SdfPrimSpecHandle &weakerPrimSpec, 
-        const std::string &propPrefix = "");
+        const SdfLayerRefPtr &layer,
+        const SdfPath &weakerPrimSpecPath,
+        const std::string &instanceName = "");
 
     USD_API
     void _ComposePropertiesFromPrimDef(
         const UsdPrimDefinition &weakerPrimDef, 
-        const std::string &propPrefix = "");
+        bool useWeakerPropertyForTypeConflict,
+        const std::string &instanceName = "");
 
     // Path to the prim in the schematics for this prim definition.
     SdfPath _schematicsPrimPath;

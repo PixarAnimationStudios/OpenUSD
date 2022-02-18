@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hgiMetal/capabilities.h"
+#include "pxr/imaging/hgiMetal/hgi.h"
 
 #include "pxr/base/arch/defines.h"
 #include <Metal/Metal.h>
@@ -48,13 +49,42 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
 
     _SetFlag(HgiDeviceCapabilitiesBitsUnifiedMemory, unifiedMemory);
 
+    _SetFlag(HgiDeviceCapabilitiesBitsBuiltinBarycentrics, true);
+
+    _SetFlag(HgiDeviceCapabilitiesBitsShaderDoublePrecision, false);
+
 #if defined(ARCH_OS_MACOS)
     if (!unifiedMemory) {
         defaultStorageMode = MTLResourceStorageModeManaged;
     }
 #endif
+
+    _maxUniformBlockSize          = 64 * 1024;
+    _maxShaderStorageBlockSize    = 1 * 1024 * 1024 * 1024;
+    _uniformBufferOffsetAlignment = 16;
 }
 
 HgiMetalCapabilities::~HgiMetalCapabilities() = default;
+
+int
+HgiMetalCapabilities::GetAPIVersion() const
+{
+    if (@available(macOS 10.15, ios 13.0, *)) {
+        return APIVersion_Metal3_0;
+    }
+    if (@available(macOS 10.13, ios 11.0, *)) {
+        return APIVersion_Metal2_0;
+    }
+    
+    return APIVersion_Metal1_0;
+}
+
+int
+HgiMetalCapabilities::GetShaderVersion() const
+{
+    // Note: This is not the Metal Shader Language version. It is provided for
+    // compatibility with code that is asking for the GLSL version.
+    return 450;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

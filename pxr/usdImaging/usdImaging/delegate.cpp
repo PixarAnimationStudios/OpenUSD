@@ -924,12 +924,21 @@ UsdImagingDelegate::_GatherDependencies(SdfPath const& subtree,
         return;
     }
 
-    // Binary search for the first path not in the subtree, starting at "start".
-    _DependencyMap::const_iterator end =
-        std::upper_bound(start, _dependencyInfo.cend(), subtree,
+    // std::upper_bound makes O(N) iterator increments and O(log N) HasPrefix
+    // calls, because _DependencyMap::iterator is not a
+    // LegacyRandomAccessIterator. Test to see if there are any children at all
+    // before making this expensive call.
+    _DependencyMap::const_iterator end = start;
+    end++;
+    if (end != _dependencyInfo.cend() && end->first.HasPrefix(subtree)) {
+        // Binary search for the first path not in the subtree, starting at
+        // "end".
+        end = std::upper_bound(
+            end, _dependencyInfo.cend(), subtree,
             [](SdfPath const& lhs, _DependencyMap::value_type const& rhs) {
-                    return !rhs.first.HasPrefix(lhs);
-                });
+                return !rhs.first.HasPrefix(lhs);
+            });
+    }
 
     SdfPathVector affectedPaths;
     for (_DependencyMap::const_iterator it = start; it != end; ++it) {
@@ -2685,22 +2694,15 @@ UsdImagingDelegate::GetMaterialId(SdfPath const &rprimId)
 VtValue
 UsdImagingDelegate::GetMaterialResource(SdfPath const &materialId)
 {
-    VtValue vtMatResource;
-
-    // If custom shading is disabled, use fallback
-    if (!_sceneMaterialsEnabled) {
-        return vtMatResource;
-    }
-
     SdfPath cachePath = ConvertIndexPathToCachePath(materialId);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
 
-    if (TF_VERIFY(primInfo)) {
-        vtMatResource = primInfo->adapter->GetMaterialResource(
-            primInfo->usdPrim, cachePath, _time);
+    if (!TF_VERIFY(primInfo)) {
+        return VtValue();
     }
 
-    return vtMatResource;
+    return primInfo->adapter->GetMaterialResource(
+        primInfo->usdPrim, cachePath, _time);
 }
 
 VtValue 

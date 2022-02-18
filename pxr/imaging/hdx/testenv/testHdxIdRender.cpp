@@ -23,31 +23,15 @@
 //
 #include "pxr/pxr.h"
 
-#include "pxr/imaging/garch/glApi.h"
-
-#include "pxr/imaging/glf/drawTarget.h"
-
-#include "pxr/imaging/hd/driver.h"
-#include "pxr/imaging/hd/engine.h"
-#include "pxr/imaging/hd/renderPassState.h"
-
-#include "pxr/imaging/hdSt/renderDelegate.h"
+#include "pxr/imaging/hdSt/textureUtils.h"
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
+#include "pxr/imaging/hdSt/unitTestHelper.h"
 
 #include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/unitTestDelegate.h"
 
-#include "pxr/imaging/hgi/hgi.h"
-#include "pxr/imaging/hgi/tokens.h"
-
-#include "pxr/base/gf/frustum.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/vec2d.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/gf/vec4d.h"
 #include "pxr/base/tf/errorMark.h"
 
 #include <iostream>
@@ -55,7 +39,184 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-class My_TestGLDrawing : public HdSt_UnitTestGLDrawing {
+struct PickParam {
+    GfVec2d location;
+    GfVec4d viewport;
+};
+
+class Hdx_TestDriver : public HdSt_TestDriverBase<Hdx_UnitTestDelegate>
+{
+public:
+    Hdx_TestDriver(TfToken const &reprName);
+    
+    void SetupPickableAovs(int width, int height);
+    void UpdatePickableAovDimensions(int width, int height);
+
+    void Draw(GfVec4d const &viewport, PickParam const * pickParam);
+
+    template<typename T>
+    T const * ReadAovBuffer(TfToken const &aovName,
+                            std::vector<uint8_t> * buffer);
+
+protected:
+    void _Init(HdReprSelector const &reprSelector) override;
+    HdRenderBuffer const * _FindAovBuffer(TfToken const &aovName) const;
+
+private:
+    HdRenderPassAovBindingVector _pickableAovBindings;
+    SdfPathVector _pickableAovBufferIds;
+};
+
+Hdx_TestDriver::Hdx_TestDriver(TfToken const &reprName)
+{
+    _Init(HdReprSelector(reprName));
+}
+
+void
+Hdx_TestDriver::_Init(HdReprSelector const &reprSelector)
+{   
+    _SetupSceneDelegate();
+    
+    Hdx_UnitTestDelegate &delegate = GetDelegate();
+
+    // prepare render task
+    SdfPath renderSetupTask("/renderSetupTask");
+    SdfPath renderTask("/renderTask");
+    delegate.AddRenderSetupTask(renderSetupTask);
+    delegate.AddRenderTask(renderTask);
+
+    // render task parameters.
+    HdxRenderTaskParams param = delegate.GetTaskParam(
+        renderSetupTask, HdTokens->params).Get<HdxRenderTaskParams>();
+    param.enableLighting = true; // use default lighting
+    delegate.SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
+    delegate.SetTaskParam(renderTask, HdTokens->collection,
+        VtValue(HdRprimCollection(HdTokens->geometry, reprSelector)));
+}
+
+void
+Hdx_TestDriver::Draw(GfVec4d const &viewport, PickParam const * pickParam)
+{
+    Hdx_UnitTestDelegate &delegate = GetDelegate();
+
+    HdTaskSharedPtrVector tasks;
+    SdfPath renderSetupTask("/renderSetupTask");
+    SdfPath renderTask("/renderTask");
+    tasks.push_back(delegate.GetRenderIndex().GetTask(renderSetupTask));
+    tasks.push_back(delegate.GetRenderIndex().GetTask(renderTask));
+
+    HdxRenderTaskParams param = delegate.GetTaskParam(
+        renderSetupTask, HdTokens->params).Get<HdxRenderTaskParams>();
+    param.enableIdRender = (pickParam != nullptr);
+    param.viewport = viewport;
+    param.aovBindings = pickParam ? _pickableAovBindings : _aovBindings;
+    delegate.SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
+
+    _GetEngine()->Execute(&delegate.GetRenderIndex(), &tasks);
+}
+
+static TfTokenVector _pickableAovOutputs = {
+    HdAovTokens->primId,
+    HdAovTokens->instanceId,
+    HdAovTokens->depth
+};
+
+void
+Hdx_TestDriver::SetupPickableAovs(int width, int height)
+{
+    if (_pickableAovBindings.empty()) {    
+        // Delete old render buffers.
+        for (auto const &id : _pickableAovBufferIds) {
+            GetDelegate().GetRenderIndex().RemoveBprim(
+                HdPrimTypeTokens->renderBuffer, id);
+        }
+
+        _pickableAovBufferIds.clear();
+        _pickableAovBindings.clear();
+        _pickableAovBindings.resize(_pickableAovOutputs.size());
+        
+        GfVec3i dimensions(width, height, 1);
+
+        // Create aov bindings and render buffers.
+        for (size_t i = 0; i < _pickableAovOutputs.size(); i++) {
+            SdfPath aovId = _GetAovPath(_pickableAovOutputs[i]);
+
+            _pickableAovBufferIds.push_back(aovId);
+
+            HdAovDescriptor aovDesc = 
+                _GetRenderDelegate()->GetDefaultAovDescriptor(
+                    _pickableAovOutputs[i]); 
+
+            HdRenderBufferDescriptor desc = { dimensions, aovDesc.format, 
+                /*multiSampled*/false};
+            GetDelegate().AddRenderBuffer(aovId, desc);
+
+            HdRenderPassAovBinding &binding = _pickableAovBindings[i];
+            binding.aovName = _pickableAovOutputs[i];
+            binding.aovSettings = aovDesc.aovSettings;
+            binding.renderBufferId = aovId;
+            binding.renderBuffer = dynamic_cast<HdRenderBuffer*>(
+                GetDelegate().GetRenderIndex().GetBprim(
+                    HdPrimTypeTokens->renderBuffer, aovId));
+            binding.clearValue = VtValue(GfVec4f(1));
+        }
+    }
+}
+
+HdRenderBuffer const *
+Hdx_TestDriver::_FindAovBuffer(TfToken const &aovName) const
+{
+    HdRenderPassAovBindingVector::const_iterator bindingIt =
+        std::find_if(_pickableAovBindings.begin(), _pickableAovBindings.end(),
+            [&aovName](HdRenderPassAovBinding const & binding) {
+                return binding.aovName == aovName;
+            });
+
+    if (!TF_VERIFY(bindingIt != _pickableAovBindings.end())) {
+        return nullptr;
+    }
+
+    return bindingIt->renderBuffer;
+}
+
+template<typename T>
+T const *
+Hdx_TestDriver::ReadAovBuffer(TfToken const &aovName, 
+    std::vector<uint8_t> * buffer)
+{
+    HdRenderBuffer const * renderBuffer = _FindAovBuffer(aovName);
+    
+    VtValue aov = renderBuffer->GetResource(false);
+    if (aov.IsHolding<HgiTextureHandle>()) {
+        HgiTextureHandle texture = aov.UncheckedGet<HgiTextureHandle>();
+
+        if (texture) {
+            HdStTextureUtils::HgiTextureReadback(_GetHgi(), texture, buffer);
+        }
+    }
+
+    return reinterpret_cast<T const *>(buffer->data());
+}
+
+void
+Hdx_TestDriver::UpdatePickableAovDimensions(int width, int height)
+{
+    const GfVec3i dimensions(width, height, 1);
+
+    for (auto const& id : _pickableAovBufferIds) {
+        HdRenderBufferDescriptor desc =
+            GetDelegate().GetRenderBufferDescriptor(id);
+        if (desc.dimensions != dimensions) {
+            desc.dimensions = dimensions;
+            GetDelegate().UpdateRenderBuffer(id, desc);
+        }
+    }
+}
+
+// --------------------------------------------------------------------------
+
+class My_TestGLDrawing : public HdSt_UnitTestGLDrawing
+{
 public:
     My_TestGLDrawing()
     {
@@ -65,20 +226,15 @@ public:
         _refineLevel = 0;
     }
 
-    struct PickParam {
-        GfVec2d location;
-        GfVec4d viewport;
-    };
-
     void DrawScene(PickParam const * pickParam = nullptr);
 
     SdfPath PickScene(int pickX, int pickY, int * outInstanceIndex = nullptr);
 
     // HdSt_UnitTestGLDrawing overrides
     void InitTest() override;
-    void UninitTest() override;
     void DrawTest() override;
     void OffscreenTest() override;
+    void Present(uint32_t framebuffer) override;
 
     void MousePress(int button, int x, int y, int modKeys) override;
 
@@ -86,22 +242,13 @@ protected:
     void ParseArgs(int argc, char *argv[]) override;
 
 private:
-    // Hgi and HdDriver should be constructed before HdEngine to ensure they
-    // are destructed last. Hgi may be used during engine/delegate destruction.
-    HgiUniquePtr _hgi;
-    std::unique_ptr<HdDriver> _driver;
-    HdEngine              _engine;
-    HdStRenderDelegate    _renderDelegate;
-    HdRenderIndex        *_renderIndex;
-    Hdx_UnitTestDelegate *_delegate;
+    std::unique_ptr<Hdx_TestDriver> _driver;
 
     TfToken _reprName;
     int _refineLevel;
 };
 
 ////////////////////////////////////////////////////////////
-
-GLuint vao;
 
 static GfMatrix4d
 _GetTranslate(float tx, float ty, float tz)
@@ -114,30 +261,11 @@ _GetTranslate(float tx, float ty, float tz)
 void
 My_TestGLDrawing::InitTest()
 {
-    _hgi = Hgi::CreatePlatformDefaultHgi();
-    _driver.reset(new HdDriver{HgiTokens->renderDriver, VtValue(_hgi.get())});
+    _driver = std::make_unique<Hdx_TestDriver>(_reprName);
 
-    _renderIndex = HdRenderIndex::New(&_renderDelegate, {_driver.get()});
-    TF_VERIFY(_renderIndex != nullptr);
-    _delegate = new Hdx_UnitTestDelegate(_renderIndex);
+    Hdx_UnitTestDelegate &delegate = _driver->GetDelegate();
 
-    _delegate->SetRefineLevel(_refineLevel);
-
-    // prepare render task
-    SdfPath renderSetupTask("/renderSetupTask");
-    SdfPath renderTask("/renderTask");
-    _delegate->AddRenderSetupTask(renderSetupTask);
-    _delegate->AddRenderTask(renderTask);
-
-    // render task parameters.
-    HdxRenderTaskParams param
-        = _delegate->GetTaskParam(
-            renderSetupTask, HdTokens->params).Get<HdxRenderTaskParams>();
-    param.enableLighting = true; // use default lighting
-    _delegate->SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
-    _delegate->SetTaskParam(renderTask, HdTokens->collection,
-                           VtValue(HdRprimCollection(HdTokens->geometry,
-                                   HdReprSelector(_reprName))));
+    delegate.SetRefineLevel(_refineLevel);
 
     // prepare scene
     // To ensure that the non-aggregated element index returned via picking, 
@@ -155,26 +283,26 @@ My_TestGLDrawing::InitTest()
     VtValue vertColor = VtValue(_BuildArray(&vertColors[0],
                                  sizeof(vertColors)/sizeof(vertColors[0])));
 
-    _delegate->AddCube(SdfPath("/cube0"), _GetTranslate( 5, 0, 5),
+    delegate.AddCube(SdfPath("/cube0"), _GetTranslate( 5, 0, 5),
                        /*guide=*/false, /*instancerId=*/SdfPath(),
                        /*scheme=*/PxOsdOpenSubdivTokens->catmullClark,
                        /*color=*/faceColor,
                        /*colorInterpolation=*/HdInterpolationUniform);
-    _delegate->AddCube(SdfPath("/cube1"), _GetTranslate(-5, 0, 5),
+    delegate.AddCube(SdfPath("/cube1"), _GetTranslate(-5, 0, 5),
                        /*guide=*/false, /*instancerId=*/SdfPath(),
                        /*scheme=*/PxOsdOpenSubdivTokens->catmullClark,
                        /*color=*/faceColor,
                        /*colorInterpolation=*/HdInterpolationUniform);
-    _delegate->AddCube(SdfPath("/cube2"), _GetTranslate(-5, 0,-5));
-    _delegate->AddCube(SdfPath("/cube3"), _GetTranslate( 5, 0,-5),
+    delegate.AddCube(SdfPath("/cube2"), _GetTranslate(-5, 0,-5));
+    delegate.AddCube(SdfPath("/cube3"), _GetTranslate( 5, 0,-5),
                         /*guide=*/false, /*instancerId=*/SdfPath(),
                        /*scheme=*/PxOsdOpenSubdivTokens->catmullClark,
                        /*color=*/vertColor,
                        /*colorInterpolation=*/HdInterpolationVertex);
 
     {
-        _delegate->AddInstancer(SdfPath("/instancerTop"));
-        _delegate->AddCube(SdfPath("/protoTop"),
+        delegate.AddInstancer(SdfPath("/instancerTop"));
+        delegate.AddCube(SdfPath("/protoTop"),
                          GfMatrix4d(1), false, SdfPath("/instancerTop"));
 
         std::vector<SdfPath> prototypes;
@@ -200,14 +328,14 @@ My_TestGLDrawing::InitTest()
         translate[2] = GfVec3f(-3, 0, 2);
         prototypeIndex[2] = 0;
 
-        _delegate->SetInstancerProperties(SdfPath("/instancerTop"),
+        delegate.SetInstancerProperties(SdfPath("/instancerTop"),
                                         prototypeIndex,
                                         scale, rotate, translate);
     }
 
     {
-        _delegate->AddInstancer(SdfPath("/instancerBottom"));
-        _delegate->AddCube(SdfPath("/protoBottom"),
+        delegate.AddInstancer(SdfPath("/instancerBottom"));
+        delegate.AddCube(SdfPath("/protoBottom"),
                          GfMatrix4d(1), false, SdfPath("/instancerBottom"));
 
         std::vector<SdfPath> prototypes;
@@ -233,35 +361,22 @@ My_TestGLDrawing::InitTest()
         translate[2] = GfVec3f(-3, 0, -2);
         prototypeIndex[2] = 0;
 
-        _delegate->SetInstancerProperties(SdfPath("/instancerBottom"),
+        delegate.SetInstancerProperties(SdfPath("/instancerBottom"),
                                         prototypeIndex,
                                         scale, rotate, translate);
     }
 
     SetCameraTranslate(GfVec3f(0, 0, -20));
 
-    // XXX: Setup a VAO, the current drawing engine will not yet do this.
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-    glBindVertexArray(0);
-}
-
-void
-My_TestGLDrawing::UninitTest()
-{
-    delete _delegate;
-    delete _renderIndex;
+    _driver->SetClearColor(GfVec4f(0.1f, 0.1f, 0.1f, 1.0f));
+    _driver->SetClearDepth(1.0f);
+    _driver->SetupAovs(GetWidth(), GetHeight());
+    _driver->SetupPickableAovs(GetWidth(), GetHeight());
 }
 
 void
 My_TestGLDrawing::DrawTest()
 {
-    GLfloat clearColor[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-
-    GLfloat clearDepth[1] = { 1.0f };
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
     DrawScene();
 }
 
@@ -288,8 +403,7 @@ My_TestGLDrawing::OffscreenTest()
 }
 
 void
-My_TestGLDrawing::
-DrawScene(PickParam const * pickParam)
+My_TestGLDrawing::DrawScene(PickParam const * pickParam)
 {
     int width = GetWidth(), height = GetHeight();
 
@@ -307,31 +421,12 @@ DrawScene(PickParam const * pickParam)
     }
 
     GfMatrix4d projMatrix = frustum.ComputeProjectionMatrix();
-    _delegate->SetCamera(viewMatrix, projMatrix);
+    _driver->GetDelegate().SetCamera(viewMatrix, projMatrix);
 
-    glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+    _driver->UpdateAovDimensions(width, height);
+    _driver->UpdatePickableAovDimensions(width, height);
 
-    HdTaskSharedPtrVector tasks;
-    SdfPath renderSetupTask("/renderSetupTask");
-    SdfPath renderTask("/renderTask");
-    tasks.push_back(_delegate->GetRenderIndex().GetTask(renderSetupTask));
-    tasks.push_back(_delegate->GetRenderIndex().GetTask(renderTask));
-
-    HdxRenderTaskParams param
-        = _delegate->GetTaskParam(
-            renderSetupTask, HdTokens->params).Get<HdxRenderTaskParams>();
-    param.enableIdRender = (pickParam != nullptr);
-    param.viewport = viewport;
-    _delegate->SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
-
-
-    glEnable(GL_DEPTH_TEST);
-
-    glBindVertexArray(vao);
-
-    _engine.Execute(&_delegate->GetRenderIndex(), &tasks);
-
-    glBindVertexArray(0);
+    _driver->Draw(viewport, pickParam);
 }
 
 SdfPath
@@ -340,62 +435,30 @@ My_TestGLDrawing::PickScene(int pickX, int pickY, int * outInstanceIndex)
     int width = 128;
     int height = 128;
 
-    GlfDrawTargetRefPtr drawTarget = GlfDrawTarget::New(GfVec2i(width, height));
-    drawTarget->Bind();
-    drawTarget->AddAttachment(
-        "primId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
-    drawTarget->AddAttachment(
-        "instanceId", GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8);
-    drawTarget->AddAttachment(
-        "depth", GL_DEPTH_COMPONENT, GL_FLOAT, GL_DEPTH_COMPONENT32F);
-    drawTarget->Unbind();
-
-    drawTarget->Bind();
-
-    GLenum drawBuffers[] = { 
-        GL_COLOR_ATTACHMENT0,
-        GL_COLOR_ATTACHMENT1,
-    };
-    glDrawBuffers(2, drawBuffers);
-
-    glEnable(GL_DEPTH_TEST);
-
-    GLfloat clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_COLOR, 1, clearColor);
-
-    GLfloat clearDepth[1] = { 1.0f };
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
     PickParam pickParam;
     pickParam.location = GfVec2d(pickX, pickY);
     pickParam.viewport = GfVec4d(0, 0, width, height);
 
     DrawScene(&pickParam);
 
-    drawTarget->Unbind();
+    std::vector<uint8_t> primId;
+    unsigned char const *primIdPtr = _driver->ReadAovBuffer<unsigned char>(
+        HdAovTokens->primId, &primId);
 
-    GLubyte primId[width*height*4];
-    glBindTexture(GL_TEXTURE_2D,
-        drawTarget->GetAttachments().at("primId")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, primId);
+    std::vector<uint8_t> instanceId;
+    unsigned char const *instanceIdPtr = _driver->ReadAovBuffer<unsigned char>(
+        HdAovTokens->instanceId, &instanceId);
 
-    GLubyte instanceId[width*height*4];
-    glBindTexture(GL_TEXTURE_2D,
-        drawTarget->GetAttachments().at("instanceId")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, instanceId);
-
-    GLfloat depths[width*height];
-    glBindTexture(GL_TEXTURE_2D,
-        drawTarget->GetAttachments().at("depth")->GetGlTextureName());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, depths);
+    std::vector<uint8_t> depths;
+    float const *depthPtr = _driver->ReadAovBuffer<float>(
+        HdAovTokens->depth, &depths);
 
     double zMin = 1.0;
     int zMinIndex = -1;
     for (int y=0, i=0; y<height; y++) {
         for (int x=0; x<width; x++, i++) {
-            if (depths[i] < zMin) {
-                    zMin = depths[i];
+            if (depthPtr[i] < zMin) {
+                    zMin = depthPtr[i];
                     zMinIndex = i;
             }
         }
@@ -407,15 +470,21 @@ My_TestGLDrawing::PickScene(int pickX, int pickY, int * outInstanceIndex)
     if (didHit) {
         int idIndex = zMinIndex*4;
 
-        result = _delegate->GetRenderIndex().GetRprimPathFromPrimId(
-                HdxPickTask::DecodeIDRenderColor(&primId[idIndex]));
+        result = _driver->GetDelegate().GetRenderIndex().GetRprimPathFromPrimId(
+                HdxPickTask::DecodeIDRenderColor(&primIdPtr[idIndex]));
         if (outInstanceIndex) {
             *outInstanceIndex = HdxPickTask::DecodeIDRenderColor(
-                    &instanceId[idIndex]);
+                    &instanceIdPtr[idIndex]);
         }
     }
 
     return result;
+}
+
+void
+My_TestGLDrawing::Present(uint32_t framebuffer)
+{
+    _driver->Present(GetWidth(), GetHeight(), framebuffer);
 }
 
 void

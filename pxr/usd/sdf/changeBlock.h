@@ -73,8 +73,16 @@ class SdfChangeBlock {
 public:
     SDF_API
     SdfChangeBlock();
+    ~SdfChangeBlock() {
+        if (_key) {
+            _CloseChangeBlock(_key);
+        }
+    }
+private:
     SDF_API
-    ~SdfChangeBlock();
+    void _CloseChangeBlock(void const *key) const;
+    
+    void const *_key;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -41,6 +41,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStDrawItem;
 class HdStDrawItemInstance;
+class HgiCapabilities;
+class HgiGraphicsCmds;
 
 using HdStRenderPassStateSharedPtr = std::shared_ptr<class HdStRenderPassState>;
 using HdStResourceRegistrySharedPtr = 
@@ -75,7 +77,8 @@ public:
 
     /// Execute the command buffer
     HDST_API
-    void ExecuteDraw(HdStRenderPassStateSharedPtr const &renderPassState,
+    void ExecuteDraw(HgiGraphicsCmds *gfxCmds,
+                     HdStRenderPassStateSharedPtr const &renderPassState,
                      HdStResourceRegistrySharedPtr const &resourceRegistry);
 
     /// Cull drawItemInstances based on passed in combined view and projection matrix
@@ -91,11 +94,13 @@ public:
     /// the batch version is updated.
     HDST_API
     void SetDrawItems(HdDrawItemConstPtrVectorSharedPtr const &drawItems,
-                       unsigned currentBatchVersion);
+                      unsigned currentBatchVersion,
+                      HgiCapabilities const &hgiCapabilities);
 
     /// Rebuild all draw batches if any underlying buffer array is invalidated.
     HDST_API
-    void RebuildDrawBatchesIfNeeded(unsigned currentBatchVersion);
+    void RebuildDrawBatchesIfNeeded(unsigned currentBatchVersion,
+                                    HgiCapabilities const &hgiCapabilities);
 
     /// Returns the total number of draw items, including culled items.
     size_t GetTotalSize() const {
@@ -118,7 +123,7 @@ public:
     void SetEnableTinyPrimCulling(bool tinyPrimCulling);
 
 private:
-    void _RebuildDrawBatches();
+    void _RebuildDrawBatches(HgiCapabilities const &hgiCapabilities);
 
     HdDrawItemConstPtrVectorSharedPtr _drawItems;
     std::vector<HdStDrawItemInstance> _drawItemInstances;

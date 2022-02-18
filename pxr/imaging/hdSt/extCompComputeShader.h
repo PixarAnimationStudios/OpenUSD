@@ -28,15 +28,12 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
-#include "pxr/imaging/hd/bufferSource.h"
 
 #include "pxr/usd/sdf/path.h"
 
-#include "pxr/base/vt/value.h"
 #include "pxr/base/tf/token.h"
 
 #include <string>
-#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -69,13 +66,11 @@ public:
 
     HDST_API
     void BindResources(int program,
-                       HdSt_ResourceBinder const &binder,
-                       HdRenderPassState const &state) override;
+                       HdSt_ResourceBinder const &binder) override;
 
     HDST_API
     void UnbindResources(int program,
-                         HdSt_ResourceBinder const &binder,
-                         HdRenderPassState const &state) override;
+                         HdSt_ResourceBinder const &binder) override;
 
     HDST_API
     void AddBindings(HdBindingRequestVector *customBindings) override;

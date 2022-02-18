@@ -24,7 +24,6 @@
 
 #include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/testGLContext.h"
 
@@ -139,8 +138,8 @@ static void CameraAndLightTest()
 
     // Update camera matrix
     delegate->SetCamera(camera, GfMatrix4d(2), GfMatrix4d(2));
-    tracker.MarkSprimDirty(camera, HdCamera::DirtyViewMatrix);
-    tracker.MarkSprimDirty(camera, HdCamera::DirtyProjMatrix);
+    tracker.MarkSprimDirty(camera, HdCamera::DirtyTransform);
+    tracker.MarkSprimDirty(camera, HdCamera::DirtyParams);
 
     engine.Execute(index.get(), &tasks);
 
@@ -174,11 +173,9 @@ int main()
 {
     TfErrorMark mark;
 
-    // Test uses ContextCaps, so need to create a GL instance.
     GlfTestGLContext::RegisterGLContextCallbacks();
     GarchGLApiLoad();
     GlfSharedGLContextScopeHolder sharedContext;
-    GlfContextCaps::InitInstance();
 
     CameraAndLightTest();
 

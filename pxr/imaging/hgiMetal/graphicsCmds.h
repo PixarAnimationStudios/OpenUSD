@@ -77,7 +77,8 @@ public:
     void Draw(
         uint32_t vertexCount,
         uint32_t firstVertex,
-        uint32_t instanceCount) override;
+        uint32_t instanceCount,
+        uint32_t firstInstance) override;
 
     HGIMETAL_API
     void DrawIndirect(
@@ -92,7 +93,8 @@ public:
         uint32_t indexCount,
         uint32_t indexBufferByteOffset,
         uint32_t vertexOffset,
-        uint32_t instanceCount) override;
+        uint32_t instanceCount,
+        uint32_t firstInstance) override;
 
     HGIMETAL_API
     void DrawIndexedIndirect(
@@ -128,12 +130,40 @@ private:
     HgiMetalGraphicsCmds(const HgiMetalGraphicsCmds&) = delete;
 
     void _CreateEncoder();
+
+    // We implement multi-draw commands on Metal by iterating and encoding
+    // separate draw commands and we support per draw command data by
+    // setting vertex buffer offsets appropriately before each of these
+    // draw commands. We determine which vertex buffers are affected when
+    // binding the graphics pipeline and we capture the base byte offset
+    // when binding an affected vertex buffer.
+    struct _VertexBufferStepFunctionDesc
+    {
+        _VertexBufferStepFunctionDesc(
+                uint32_t bindingIndex,
+                uint32_t byteOffset,
+                uint32_t vertexStride)
+            : bindingIndex(bindingIndex)
+            , byteOffset(byteOffset)
+            , vertexStride(vertexStride)
+            { }
+        uint32_t bindingIndex;
+        uint32_t byteOffset;
+        uint32_t vertexStride;;
+    };
+    std::vector<_VertexBufferStepFunctionDesc> _vertexBufferStepFunctionDescs;
+
+    void _InitVertexBufferStepFunction(HgiGraphicsPipeline const * pipeline);
+    void _BindVertexBufferStepFunction(uint32_t byteOffset,
+                                       uint32_t bindingIndex);
+    void _SetVertexBufferStepFunctionOffsets(uint32_t firstInstance);
     
     HgiMetal* _hgi;
     MTLRenderPassDescriptor* _renderPassDescriptor;
     id<MTLRenderCommandEncoder> _encoder;
     HgiGraphicsCmdsDesc _descriptor;
     HgiPrimitiveType _primitiveType;
+    uint32_t _primitiveIndexSize;
     bool _hasWork;
     MTLViewport _viewport;
     NSString* _debugLabel;

@@ -21,49 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdPrman/interactiveContext.h"
-#include "hdPrman/offlineContext.h"
 #include "hdPrman/renderDelegate.h"
 #include "pxr/imaging/plugin/hdPrmanLoader/rendererPlugin.h"
-#include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+// Macro defined in hdPrmanLoader/rendererPlugin.h to export
+// a symbol here that can be picked up by HdPrmanLoader::Load.
 HDPRMAN_LOADER_CREATE_DELEGATE
 {
-    bool isInteractive = true;
-    const auto & itInteractive = 
-        settingsMap.find(HdRenderSettingsTokens->enableInteractive);
-    if (itInteractive != settingsMap.end()) {
-        VtValue res = itInteractive->second;
-        if (res.IsHolding<bool>()) {
-            isInteractive = res.UncheckedGet<bool>();
-        }
-    }
-
-    HdRenderDelegate* renderDelegate = nullptr;
-    if (isInteractive) {
-        // Prman only supports one delegate at a time
-        std::shared_ptr<HdPrman_InteractiveContext> context =
-            std::make_shared<HdPrman_InteractiveContext>();
-        if (!context->IsValid()) {
-            TF_WARN("Failed to create the HdPrman render delegate due to"
-                    " an invalid HdPrman_InteractiveContext.");
-            return nullptr;
-        }
-
-        renderDelegate = new HdPrmanRenderDelegate(context, settingsMap);
-    } else {
-        TF_WARN("Failed to create the non-interactive HdPrman render delegate,"
-                " this is not yet supported via plugin loading.");
-        return nullptr;
-    }
-    return renderDelegate;
+    return new HdPrmanRenderDelegate(settingsMap);
 }
 
 HDPRMAN_LOADER_DELETE_DELEGATE
 {
-    // The HdPrman_InteractiveContext is owned by delegate and
+    // The HdPrman_InteractiveRenderParam is owned by delegate and
     // will be automatically destroyed by ref-counting, shutting
     // down the attached PRMan instance.
     delete renderDelegate;

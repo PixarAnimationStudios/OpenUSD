@@ -28,6 +28,10 @@
 
 #include "pxr/base/tf/api.h"
 
+// Include this header first to pick up additional mitigations
+// for build issues when including Python.h
+#include "pxr/base/tf/pySafePython.h"
+
 #include <boost/functional/hash.hpp>
 #include <boost/python/object_fwd.hpp>
 #include <boost/python/object_operators.hpp>

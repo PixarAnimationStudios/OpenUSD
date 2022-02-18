@@ -48,7 +48,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// that is is not available, all OpenGL calls become no-ops, but all other work
 /// is performed as usual.
 ///
-class Hd_TestDriver final {
+class Hd_TestDriver final
+{
 public:
     HD_API
     Hd_TestDriver();
@@ -67,9 +68,9 @@ public:
 
     /// Set camera to renderpass
     HD_API
-    void SetCamera(GfMatrix4d const &modelViewMatrix,
+    void SetCamera(GfMatrix4d const &viewMatrix,
                    GfMatrix4d const &projectionMatrix,
-                   GfVec4d const &viewport);
+                   CameraUtilFraming const &framing);
 
     /// Set cull style
     HD_API

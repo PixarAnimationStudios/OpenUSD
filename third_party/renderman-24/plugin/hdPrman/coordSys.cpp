@@ -22,9 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "hdPrman/coordSys.h"
-#include "hdPrman/context.h"
-#include "hdPrman/debugCodes.h"
 #include "hdPrman/renderParam.h"
+#include "hdPrman/debugCodes.h"
 #include "hdPrman/rixStrings.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -41,22 +40,20 @@ HdPrmanCoordSys::HdPrmanCoordSys(SdfPath const& id)
     /* NOTHING */
 }
 
-HdPrmanCoordSys::~HdPrmanCoordSys()
-{
-}
+HdPrmanCoordSys::~HdPrmanCoordSys() = default;
 
 void
 HdPrmanCoordSys::Finalize(HdRenderParam *renderParam)
 {
-    HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
-    _ResetCoordSys(context);
+    HdPrman_RenderParam *param =
+        static_cast<HdPrman_RenderParam*>(renderParam);
+    _ResetCoordSys(param);
 }
 
 void
-HdPrmanCoordSys::_ResetCoordSys(HdPrman_Context *context)
+HdPrmanCoordSys::_ResetCoordSys(HdPrman_RenderParam *param)
 {
-    riley::Riley *riley = context->riley;
+    riley::Riley *riley = param->AcquireRiley();
     if (_coordSysId != riley::CoordinateSystemId::InvalidId()) {
         riley->DeleteCoordinateSystem(_coordSysId);
         _coordSysId = riley::CoordinateSystemId::InvalidId();
@@ -69,12 +66,12 @@ HdPrmanCoordSys::Sync(HdSceneDelegate *sceneDelegate,
                       HdRenderParam   *renderParam,
                       HdDirtyBits     *dirtyBits)
 {
-    HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+    HdPrman_RenderParam *param =
+        static_cast<HdPrman_RenderParam*>(renderParam);
 
     SdfPath id = GetId();
 
-    riley::Riley *riley = context->riley;
+    riley::Riley *riley = param->AcquireRiley();
 
     if (*dirtyBits) {
         // Sample transform

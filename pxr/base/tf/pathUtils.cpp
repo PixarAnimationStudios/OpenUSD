@@ -75,12 +75,14 @@ _ExpandSymlinks(const std::string& path)
             prefix.push_back('\\');
         }
         if (TfIsLink(prefix)) {
-            // Expand the link and repeat with the new path.
-            return _ExpandSymlinks(TfReadLink(prefix) + path.substr(i));
+            // Expand the link and repeat with the new path if the path changed.
+            // The path may remain unchanged or be empty if the link type is
+            // unsupported or the mount destination is not available.
+            auto newPrefix = TfReadLink(prefix);
+            if (!newPrefix.empty() && newPrefix != prefix)
+                return _ExpandSymlinks(newPrefix + path.substr(i));
         }
-        else {
-            i = path.find_first_of("/\\", i + 1);
-        }
+        i = path.find_first_of("/\\", i + 1);
     }
 
     // No ancestral symlinks.

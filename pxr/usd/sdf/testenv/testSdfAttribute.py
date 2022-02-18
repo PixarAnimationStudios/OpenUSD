@@ -22,6 +22,8 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
+# pylint: disable=range-builtin-not-iterating
+
 from pxr import Sdf, Tf, Gf, Vt
 import sys, unittest
 

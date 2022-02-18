@@ -128,6 +128,16 @@ Hgi::CreatePlatformDefaultHgi()
     return HgiUniquePtr(_MakeNewPlatformDefaultHgi());
 }
 
+bool
+Hgi::IsSupported()
+{
+    Hgi* instance = _MakeNewPlatformDefaultHgi();
+    const bool supported = instance->IsBackendSupported();
+    delete instance;
+
+    return supported;
+}
+
 uint64_t
 Hgi::GetUniqueId()
 {

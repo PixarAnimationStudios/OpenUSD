@@ -118,7 +118,10 @@ _GetTextureHandleHash(
         samplerParams.wrapT,
         samplerParams.wrapR,
         samplerParams.minFilter,
-        samplerParams.magFilter);
+        samplerParams.magFilter,
+        samplerParams.borderColor,
+        samplerParams.enableCompare,
+        samplerParams.compareFunction);
 }
 
 void

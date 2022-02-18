@@ -23,9 +23,8 @@
 //
 #include "hdPrman/light.h"
 #include "hdPrman/material.h"
-#include "hdPrman/context.h"
-#include "hdPrman/debugCodes.h"
 #include "hdPrman/renderParam.h"
+#include "hdPrman/debugCodes.h"
 #include "hdPrman/rixStrings.h"
 #include "pxr/base/arch/library.h"
 #include "pxr/base/gf/vec3f.h"
@@ -63,7 +62,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((colorMapSaturation,           "inputs:ri:light:colorMapSaturation"))
 );
 
-TF_DEFINE_ENV_SETTING(HD_PRMAN_ENABLE_LIGHT_MATERIAL_NETWORKS, false,
+TF_DEFINE_ENV_SETTING(HD_PRMAN_ENABLE_LIGHT_MATERIAL_NETWORKS, true,
                       "bool env setting to enable material networks for lights "
                       "and light filters");
 
@@ -76,23 +75,23 @@ HdPrmanLight::HdPrmanLight(SdfPath const& id, TfToken const& lightType)
     /* NOTHING */
 }
 
-HdPrmanLight::~HdPrmanLight()
-{
-}
+HdPrmanLight::~HdPrmanLight() = default;
 
 void
 HdPrmanLight::Finalize(HdRenderParam *renderParam)
 {
-    HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
-    _ResetLight(context, true);
+    HdPrman_RenderParam *param =
+        static_cast<HdPrman_RenderParam*>(renderParam);
+    _ResetLight(param, true);
 }
 
 void
-HdPrmanLight::_ResetLight(HdPrman_Context *context, bool clearFilterPaths)
+HdPrmanLight::_ResetLight(HdPrman_RenderParam *renderParam, bool clearFilterPaths)
 {
+    riley::Riley *riley = renderParam->AcquireRiley();
+
     if (!_lightLink.IsEmpty()) {
-        context->DecrementLightLinkCount(_lightLink);
+        renderParam->DecrementLightLinkCount(_lightLink);
         _lightLink = TfToken();
     }
     if (clearFilterPaths && !_lightFilterPaths.empty()) {
@@ -100,11 +99,10 @@ HdPrmanLight::_ResetLight(HdPrman_Context *context, bool clearFilterPaths)
     }
     if (!_lightFilterLinks.empty()) {
         for (const TfToken &filterLink: _lightFilterLinks)
-            context->DecrementLightFilterCount(filterLink);
+            renderParam->DecrementLightFilterCount(filterLink);
         _lightFilterLinks.clear();
     }
 
-    riley::Riley *riley = context->riley;
     if (_instanceId != riley::LightInstanceId::InvalidId()) {
         riley->DeleteLightInstance(
             riley::GeometryPrototypeId::InvalidId(),
@@ -579,12 +577,12 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     static const RtUString us_shadowSubset("shadowSubset");
     static const RtUString us_default("default");
 
-    HdPrman_Context *context =
-        static_cast<HdPrman_RenderParam*>(renderParam)->AcquireContext();
+    HdPrman_RenderParam * const param =
+        static_cast<HdPrman_RenderParam*>(renderParam);
+
+    riley::Riley *const riley = param->AcquireRiley();
 
     SdfPath id = GetId();
-
-    riley::Riley *riley = context->riley;
 
     HdChangeTracker& changeTracker = 
         sceneDelegate->GetRenderIndex().GetChangeTracker();
@@ -603,7 +601,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     
     // For simplicity just re-create the light.  In the future we may
     // want to consider adding a path to use the Modify() API in Riley.
-    _ResetLight(context, clearFilterPaths);
+    _ResetLight(param, clearFilterPaths);
 
     std::vector<riley::ShadingNode> lightNodes;
 
@@ -631,7 +629,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     riley::ShadingNode &lightNode = lightNodes.back();
 
     // Attributes.
-    RtParamList attrs = context->ConvertAttributes(sceneDelegate, id);
+    RtParamList attrs = param->ConvertAttributes(sceneDelegate, id);
 
     // Light linking
     {
@@ -642,7 +640,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         }
         
         if (!_lightLink.IsEmpty()) {
-            context->IncrementLightLinkCount(_lightLink);
+            param->IncrementLightLinkCount(_lightLink);
             // For lights to link geometry, the lights must
             // be assigned a grouping membership, and the
             // geometry must subscribe to that grouping.
@@ -731,7 +729,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
 
                 HdPrmanLightFilterGenerateCoordSysAndLinks(
                     &filterNodes.back(), filterPath, &coordsysIds,
-                    &_lightFilterLinks, sceneDelegate, context, riley, 
+                    &_lightFilterLinks, sceneDelegate, param, riley, 
                     lightNode);
                 sa.push_back(filterNodes.back().handle);
             }

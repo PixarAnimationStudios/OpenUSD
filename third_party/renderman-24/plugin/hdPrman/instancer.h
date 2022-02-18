@@ -25,7 +25,7 @@
 #define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_INSTANCER_H
 
 #include "pxr/pxr.h"
-#include "hdPrman/context.h"
+#include "hdPrman/renderParam.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/timeSampleArray.h"

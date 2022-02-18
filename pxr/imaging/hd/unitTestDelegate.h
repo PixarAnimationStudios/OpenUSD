@@ -48,7 +48,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// A simple delegate class for unit test driver.
 ///
-class HdUnitTestDelegate : public HdSceneDelegate {
+class HdUnitTestDelegate : public HdSceneDelegate
+{
 public:
     HD_API
     HdUnitTestDelegate(HdRenderIndex *parentIndex,
@@ -280,8 +281,11 @@ public:
 
     /// Render buffers
     HD_API
-    void AddRenderBuffer(SdfPath const &id, GfVec3i const& dims,
-                         HdFormat format, bool multiSampled);
+    void AddRenderBuffer(SdfPath const &id, 
+                         HdRenderBufferDescriptor const &desc);
+    HD_API
+    void UpdateRenderBuffer(SdfPath const &id, 
+                            HdRenderBufferDescriptor const &desc);
 
     /// Camera
     HD_API
@@ -520,6 +524,7 @@ private:
 
     struct _Camera {
         VtDictionary params;
+        GfMatrix4f transform;
     };
     struct _Light {
         VtDictionary params;

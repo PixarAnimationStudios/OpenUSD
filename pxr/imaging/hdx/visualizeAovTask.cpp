@@ -29,11 +29,10 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hio/glslfx.h"
 
-#include "pxr/imaging/hgi/blitCmdsOps.h"
-#include "pxr/imaging/hgi/graphicsCmds.h"
-#include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
+
+#include "pxr/imaging/hdSt/textureUtils.h"
 
 #include <iostream>
 #include <limits>
@@ -122,7 +121,8 @@ HdxVisualizeAovTask::_UpdateVizKernel(TfToken const &aovName)
 
     if (aovName == HdAovTokens->color) {
         vk = VizKernelNone;
-    } else if (HdAovHasDepthSemantic(aovName)) {
+    } else if (HdAovHasDepthSemantic(aovName) ||
+               HdAovHasDepthStencilSemantic(aovName)) {
         vk = VizKernelDepth;
     } else if (_IsIdAov(aovName)) {
         vk = VizKernelId;
@@ -195,10 +195,6 @@ HdxVisualizeAovTask::_CreateShaderResources(
             &vertDesc, "position", "vec4");
         HgiShaderFunctionAddStageInput(
             &vertDesc, "uvIn", "vec2");
-        if(_hgi->GetAPIName() == HgiTokens->OpenGL ||
-        _hgi->GetAPIName() == HgiTokens->Vulkan) {
-            vsCode = "#version 450 \n";
-        }
         HgiShaderFunctionAddStageOutput(
             &vertDesc, "gl_Position", "vec4", "position");
         HgiShaderFunctionAddStageOutput(
@@ -234,10 +230,6 @@ HdxVisualizeAovTask::_CreateShaderResources(
         TfToken const &mixin = _GetFragmentMixin();
         fragDesc.debugName = mixin.GetString();
         fragDesc.shaderStage = HgiShaderStageFragment;
-        if (_hgi->GetAPIName() == HgiTokens->OpenGL ||
-            _hgi->GetAPIName() == HgiTokens->Vulkan) {
-            fsCode = "#version 450 \n";
-        }
         fsCode += glslfx.GetSource(mixin);
         fragDesc.shaderCode = fsCode.c_str();
 
@@ -482,28 +474,13 @@ HdxVisualizeAovTask::_UpdateMinMaxDepth(HgiTextureHandle const &inputAovTexture)
          return;
     }
 
-    const size_t formatByteSize = HgiGetDataSizeOfFormat(textureDesc.format);
-    const size_t width = textureDesc.dimensions[0];
-    const size_t height = textureDesc.dimensions[1];
-    const size_t dataByteSize = width * height * formatByteSize;
-    
-    // For Metal the CPU buffer has to be rounded up to multiple of 4096 bytes.
-    constexpr size_t bitMask = 4096 - 1;
-    const size_t alignedByteSize = (dataByteSize + bitMask) & (~bitMask);
-    std::vector<uint8_t> buffer(alignedByteSize);
+    std::vector<uint8_t> buffer;
+    HdStTextureUtils::HgiTextureReadback(_GetHgi(), inputAovTexture, &buffer);
 
-    HgiBlitCmdsUniquePtr const blitCmds = _GetHgi()->CreateBlitCmds();
-    HgiTextureGpuToCpuOp copyOp;
-    copyOp.gpuSourceTexture = inputAovTexture;
-    copyOp.sourceTexelOffset = GfVec3i(0);
-    copyOp.mipLevel = 0;
-    copyOp.cpuDestinationBuffer = buffer.data();
-    copyOp.destinationByteOffset = 0;
-    copyOp.destinationBufferByteSize = alignedByteSize;
-    blitCmds->CopyTextureGpuToCpu(copyOp);
-    _GetHgi()->SubmitCmds(blitCmds.get(), HgiSubmitWaitTypeWaitUntilCompleted);
-    
     {
+        const HgiTextureDesc& textureDesc = inputAovTexture.Get()->GetDescriptor();
+        const size_t width = textureDesc.dimensions[0];
+        const size_t height = textureDesc.dimensions[1];
         float *ptr = reinterpret_cast<float*>(&buffer[0]);
         float min = std::numeric_limits<float>::max();
         float max = std::numeric_limits<float>::min();
@@ -570,7 +547,7 @@ HdxVisualizeAovTask::_ApplyVisualizationKernel(
     }
 
     gfxCmds->SetViewport(vp);
-    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1);
+    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1, 0);
     gfxCmds->PopDebugGroup();
 
     // Done recording commands, submit work.

@@ -82,9 +82,15 @@ public:
     /// Sets the bufferSpecs for all resources.
     HDST_API
     virtual void GetBufferSpecs(HdBufferSpecVector *bufferSpecs) const override;
+
+    virtual int GetElementStride() const {
+        return 0;
+    }
     
 protected:
     HdStResourceRegistry* GetResourceRegistry();
+
+    HdStResourceRegistry* GetResourceRegistry() const;
     
 private:
     HdStResourceRegistry* _resourceRegistry;

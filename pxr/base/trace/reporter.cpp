@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/trace/aggregateTree.h"
+#include "pxr/base/trace/collector.h"
 #include "pxr/base/trace/eventTree.h"
 #include "pxr/base/trace/reporterDataSourceCollector.h"
 #include "pxr/base/trace/threads.h"
@@ -56,7 +57,8 @@ TraceReporter::TraceReporter(const string& label,
     TraceReporterBase(std::move(dataSource)),
     _label(label),
     _groupByFunction(true),
-    _foldRecursiveCalls(false)
+    _foldRecursiveCalls(false),
+    _shouldAdjustForOverheadAndNoise(true)
 {
     _aggregateTree = TraceAggregateTree::New();
     _eventTree = TraceEventTree::New();
@@ -207,6 +209,13 @@ TraceReporter::Report(
 
     UpdateTraceTrees();
 
+    // Adjust for overhead.
+    if (ShouldAdjustForOverheadAndNoise()) {
+        _aggregateTree->GetRoot()->AdjustForOverheadAndNoise(
+            TraceCollector::GetInstance().GetScopeOverhead(),
+            ArchGetTickQuantum());
+    }
+
     // Fold recursive calls if we need to.
     if (GetFoldRecursiveCalls()) {
         _aggregateTree->GetRoot()->MarkRecursiveChildren();
@@ -343,6 +352,18 @@ bool
 TraceReporter::GetFoldRecursiveCalls() const
 {
     return _foldRecursiveCalls;
+}
+
+void
+TraceReporter::SetShouldAdjustForOverheadAndNoise(bool shouldAdjust)
+{
+    _shouldAdjustForOverheadAndNoise = shouldAdjust;
+}
+
+bool
+TraceReporter::ShouldAdjustForOverheadAndNoise() const
+{
+    return _shouldAdjustForOverheadAndNoise;
 }
 
 /* static */

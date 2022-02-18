@@ -92,7 +92,8 @@ class TestShaderNode(unittest.TestCase):
         # The _NdrTestDiscoveryPlugin should find discovery results that have
         # source types of RmanCpp and OSL
         cls.reg.SetExtraDiscoveryPlugins([cls.tdpType])
-        assert cls.reg.GetAllNodeSourceTypes() == [cls.oslType, cls.argsType]
+        assert sorted(cls.reg.GetAllNodeSourceTypes()) == \
+            [cls.oslType, cls.argsType]
 
         # The _NdrTestDiscoveryPlugin2 should find discovery results that have
         # source types of RmanCpp and glslfx
@@ -106,7 +107,7 @@ class TestShaderNode(unittest.TestCase):
 
         # Test that the registry does not see 'RmanCpp' twice as a source type,
         # and that it finds 'glslfx' as a source type
-        assert self.reg.GetAllNodeSourceTypes() == \
+        assert sorted(self.reg.GetAllNodeSourceTypes()) == \
             [self.oslType, self.argsType, self.glslfxType]
 
         # Calling SdrRegistry::GetShaderNodesByFamily() will actually parse the
@@ -157,7 +158,6 @@ class TestShaderNode(unittest.TestCase):
 
         nodeName = "TestNodeSameName"
         nodeIdentifier = "TestNodeSameName"
-        nodeAlias = "Alias_TestNodeSameName"
 
         # Ensure that the registry can retrieve two nodes of the same name but
         # different source types
@@ -182,38 +182,6 @@ class TestShaderNode(unittest.TestCase):
         assert node.GetSourceType() == self.oslType
         node = self.reg.GetShaderNodeByIdentifier(nodeIdentifier, [self.argsType, self.oslType])
         assert node.GetSourceType() == self.argsType
-
-        # Test aliases. The discovery result for the args type 
-        # "TestNodeSameName" has been given an alias by its discovery plugin
-        # (see TestSdrPlugin_discoveryPlugin.cpp).
-        # The args type node can be found by its alias through the 
-        # GetShaderNodeByIdentifier APIs. The osl type node is not found 
-        # by this alias
-        assert len(self.reg.GetShaderNodesByIdentifier(nodeAlias)) == 1
-        node = self.reg.GetShaderNodeByIdentifierAndType(nodeAlias, self.oslType)
-        assert node is None
-        node = self.reg.GetShaderNodeByIdentifierAndType(nodeAlias, self.argsType)
-        assert node is not None
-        assert node.GetIdentifier() == nodeIdentifier
-        assert node.GetSourceType() == self.argsType
-        node = self.reg.GetShaderNodeByIdentifier(nodeAlias, [self.oslType, self.argsType])
-        assert node.GetIdentifier() == nodeIdentifier
-        assert node.GetSourceType() == self.argsType
-        node = self.reg.GetShaderNodeByIdentifier(nodeAlias, [self.argsType, self.oslType])
-        assert node.GetIdentifier() == nodeIdentifier
-        assert node.GetSourceType() == self.argsType
-
-        # Ensure that GetShaderNodeByName APIs are NOT able to find nodes using 
-        # aliases.
-        assert len(self.reg.GetShaderNodesByName(nodeAlias)) == 0
-        node = self.reg.GetShaderNodeByNameAndType(nodeAlias, self.oslType)
-        assert node is None
-        node = self.reg.GetShaderNodeByNameAndType(nodeAlias, self.argsType)
-        assert node is None
-        node = self.reg.GetShaderNodeByName(nodeAlias, [self.oslType, self.argsType])
-        assert node is None
-        node = self.reg.GetShaderNodeByName(nodeAlias, [self.argsType, self.oslType])
-        assert node is None
 
         # Test GetShaderNodeFromAsset to check that a subidentifier is part of
         # the node's identifier if one is specified

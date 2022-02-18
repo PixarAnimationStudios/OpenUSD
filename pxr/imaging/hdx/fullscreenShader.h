@@ -35,6 +35,7 @@
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/texture.h"
 
+#include <map>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE

@@ -1,0 +1,40 @@
+#usda 1.0
+(
+    doc = "Geometry with different purposes"
+    upAxis = "Y"
+)
+
+def Xform "World"
+{
+    def Cube "RenderCube"
+    {
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-3, 0, -3, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+        color3f[] primvars:displayColor = [(0.8, 0.0, 0.1)]
+        uniform token purpose = "render"
+    }
+
+    def Sphere "RenderSphere"
+    {
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-3, 2, -3, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+        color3f[] primvars:displayColor = [(0.8, 0.0, 0.1)]
+        uniform token purpose = "render"
+    }
+
+    def Cube "ProxyCube"
+    {
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (3, 0, -3, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+        color3f[] primvars:displayColor = [(0.8, 0.8, 0.1)]
+        uniform token purpose = "proxy"
+    }
+
+    def Sphere "ProxySphere"
+    {
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (3, 2, -3, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+        color3f[] primvars:displayColor = [(0.8, 0.8, 0.1)]
+        uniform token purpose = "proxy"
+    }
+}

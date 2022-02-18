@@ -88,6 +88,29 @@ UsdImagingPrimAdapter::~UsdImagingPrimAdapter()
 {
 }
 
+TfTokenVector
+UsdImagingPrimAdapter::GetImagingSubprims()
+{
+    TF_WARN("Datasource support not yet added for adapter '%s'",
+            TfType::GetCanonicalTypeName(typeid(*this)).c_str());
+    return TfTokenVector();
+}
+
+TfToken
+UsdImagingPrimAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingPrimAdapter::GetImagingSubprimData(
+        TfToken const& subprim,
+        UsdPrim const& prim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    return nullptr;
+}
+
 /*static*/
 bool
 UsdImagingPrimAdapter::ShouldCullSubtree(UsdPrim const& prim)
@@ -131,7 +154,7 @@ UsdImagingPrimAdapter::ProcessPrimChange(UsdPrim const& prim,
                                          SdfPath const& cachePath,
                                          TfTokenVector const& changedFields)
 {
-    // By default, resync the prim if there are any changes to non-plugin
+    // By default, resync the prim if there are any changes to plugin
     // fields and ignore changes to built-in fields. Schemas typically register
     // their own plugin metadata fields instead of relying on built-in fields.
     const SdfSchema& schema = SdfSchema::GetInstance();
@@ -656,6 +679,18 @@ UsdImagingPrimAdapter::_GetMaterialRenderContexts() const
 {
     return _delegate->GetRenderIndex().GetRenderDelegate()->
         GetMaterialRenderContexts();
+}
+
+bool 
+UsdImagingPrimAdapter::_GetSceneMaterialsEnabled() const
+{
+    return _delegate->_sceneMaterialsEnabled;
+}
+
+bool 
+UsdImagingPrimAdapter::_GetSceneLightsEnabled() const
+{
+    return _delegate->_sceneLightsEnabled;
 }
 
 bool

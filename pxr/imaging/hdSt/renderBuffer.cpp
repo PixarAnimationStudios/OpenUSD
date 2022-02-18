@@ -28,12 +28,10 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/tokens.h"
+#include "pxr/imaging/hdSt/textureUtils.h"
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hgi/blitCmds.h"
-#include "pxr/imaging/hgi/blitCmdsOps.h"
-#include "pxr/imaging/hgi/texture.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,11 +39,10 @@ static
 HgiTextureUsage _GetTextureUsage(HdFormat format, TfToken const &name)
 {
     if (HdAovHasDepthSemantic(name)) {
-        if (format == HdFormatFloat32UInt8) {
-            return HgiTextureUsageBitsDepthTarget |
-                   HgiTextureUsageBitsStencilTarget;
-        }
         return HgiTextureUsageBitsDepthTarget;
+    } else if (HdAovHasDepthStencilSemantic(name)) {
+        return HgiTextureUsageBitsDepthTarget |
+               HgiTextureUsageBitsStencilTarget;
     }
 
     return HgiTextureUsageBitsColorTarget;
@@ -211,20 +208,6 @@ HdStRenderBuffer::Map()
     }
 
     HgiTextureHandle const texture = _textureObject->GetTexture();
-    if (!texture) {
-        return nullptr;
-    }
-
-    const HgiTextureDesc &desc = texture->GetDescriptor();
-    const size_t dataByteSize =
-        desc.dimensions[0] * desc.dimensions[1] * desc.dimensions[2] *
-        HgiGetDataSizeOfFormat(desc.format);
-    
-    if (dataByteSize == 0) {
-        return nullptr;
-    }
-
-    _mappedBuffer.resize(dataByteSize);
 
     if (!TF_VERIFY(_resourceRegistry)) {
         return nullptr;
@@ -235,21 +218,7 @@ HdStRenderBuffer::Map()
         return nullptr;
     }
 
-    // Use blit work to record resource copy commands.
-    HgiBlitCmdsUniquePtr blitCmds = hgi->CreateBlitCmds();
-
-    {
-        HgiTextureGpuToCpuOp copyOp;
-        copyOp.gpuSourceTexture = texture;
-        copyOp.sourceTexelOffset = GfVec3i(0);
-        copyOp.mipLevel = 0;
-        copyOp.cpuDestinationBuffer = _mappedBuffer.data();
-        copyOp.destinationByteOffset = 0;
-        copyOp.destinationBufferByteSize = dataByteSize;
-        blitCmds->CopyTextureGpuToCpu(copyOp);
-    }
-        
-    hgi->SubmitCmds(blitCmds.get(), HgiSubmitWaitTypeWaitUntilCompleted);
+    HdStTextureUtils::HgiTextureReadback(hgi, texture, &_mappedBuffer);
 
     return _mappedBuffer.data();
 }
@@ -297,6 +266,12 @@ bool
 HdStRenderBuffer::IsMultiSampled() const
 {
     return bool(_textureMSAAObject);
+}
+
+uint32_t
+HdStRenderBuffer::GetMSAASampleCount() const
+{
+    return _msaaSampleCount;
 }
 
 static

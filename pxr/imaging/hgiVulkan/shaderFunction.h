@@ -90,7 +90,8 @@ protected:
     HGIVULKAN_API
     HgiVulkanShaderFunction(
         HgiVulkanDevice* device,
-        HgiShaderFunctionDesc const& desc);
+        HgiShaderFunctionDesc const& desc,
+        int shaderVersion);
 
 private:
     HgiVulkanShaderFunction() = delete;

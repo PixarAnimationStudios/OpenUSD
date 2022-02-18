@@ -29,6 +29,8 @@
 #include "pxr/imaging/hgiGL/shaderSection.h"
 #include "pxr/imaging/hgiGL/api.h"
 
+#include <map>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HgiGLShaderSectionUniquePtrVector =
@@ -42,7 +44,8 @@ class HgiGLShaderGenerator final: public HgiShaderGenerator
 {
 public:
     HGIGL_API
-    explicit HgiGLShaderGenerator(const HgiShaderFunctionDesc &descriptor);
+    explicit HgiGLShaderGenerator(const HgiShaderFunctionDesc &descriptor,
+        const std::string &version);
 
     //This is not commonly consumed by the end user, but is available.
     HGIGL_API
@@ -72,6 +75,8 @@ private:
         const std::string &qualifier);
     
     HgiGLShaderSectionUniquePtrVector _shaderSections;
+    std::vector<std::string> _shaderLayoutAttributes;
+    std::string _version;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

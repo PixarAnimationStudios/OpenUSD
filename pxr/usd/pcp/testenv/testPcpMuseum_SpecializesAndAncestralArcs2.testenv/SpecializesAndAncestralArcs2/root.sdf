@@ -1,0 +1,54 @@
+#sdf 1.4.32
+
+over "_shared_HumanHair"
+{
+    over "Hair_Chiang_Head_Chiang_Hair"
+    {
+        over "Class"
+        {
+        }
+
+        over "Inner"
+        {
+        }
+    }
+
+    over "Hair_Chiang"
+    {
+        over "Class"
+        {
+        }
+
+        over "Inner"
+        {
+        }
+    }
+}
+
+def "HumanMaleStdHair" (
+    add references = @./ref.sdf@</HumanMaleStdHair>
+)
+{
+    over "Hair_Chiang_Head_Chiang_Hair"
+    {
+        over "Class"
+        {
+        }
+
+        over "Inner"
+        {
+        }
+    }
+
+    over "Hair_Chiang"
+    {
+        over "Class"
+        {
+        }
+
+        over "Inner"
+        {
+        }
+    }
+}
+

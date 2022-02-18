@@ -32,8 +32,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRenderDelegate;
-
 using HdSt_VolumeShaderSharedPtr = std::shared_ptr<class HdSt_VolumeShader>;
 using HdSt_MaterialParamVector = std::vector<class HdSt_MaterialParam>;
 using HdVolumeFieldDescriptorVector =
@@ -52,7 +50,7 @@ using HdVolumeFieldDescriptorVector =
 class HdSt_VolumeShader final : public HdSt_MaterialNetworkShader
 {
 public:
-    explicit HdSt_VolumeShader(HdRenderDelegate * const renderDelegate);
+    explicit HdSt_VolumeShader();
     ~HdSt_VolumeShader() override;
 
     /// Adds custom bindings for step sizes so that codegen will make them
@@ -64,12 +62,10 @@ public:
     /// calls base class's method.
     ///
     void BindResources(int program,
-                       HdSt_ResourceBinder const &binder,
-                       HdRenderPassState const &state) override;
+                       HdSt_ResourceBinder const &binder) override;
 
     void UnbindResources(int program,
-                         HdSt_ResourceBinder const &binder,
-                         HdRenderPassState const &state) override;
+                         HdSt_ResourceBinder const &binder) override;
 
     /// Adds buffer sources to the shader bar (for volume bounding
     /// box) and points bar if requested (besides calling
@@ -135,12 +131,6 @@ public:
     static GfVec3d GetSafeMax(const GfRange3d &range);
 
 private:
-
-    HdRenderDelegate * const _renderDelegate;
-    int _lastRenderSettingsVersion;
-    float _stepSize;
-    float _stepSizeLighting;
-
     HdBufferArrayRangeSharedPtr _pointsBar;
     bool _fillsPointsBar;
 

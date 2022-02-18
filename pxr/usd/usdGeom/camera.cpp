@@ -552,7 +552,15 @@ UsdGeomCamera::SetFromCamera(const GfCamera &camera, const UsdTimeCode &time)
 
     const GfMatrix4d camMatrix = camera.GetTransform() * parentToWorldInverse;
 
-    MakeMatrixXform().Set(camMatrix, time);
+    UsdGeomXformOp xformOp = MakeMatrixXform();
+    if (!xformOp) {
+        // The returned xformOp may be invalid if there are xform op
+        // opinions in the composed layer stack stronger than that of
+        // the current edit target.
+        return;
+    }
+    xformOp.Set(camMatrix, time);
+
     GetProjectionAttr().Set(_ProjectionToToken(camera.GetProjection()), time);
     GetHorizontalApertureAttr().Set(camera.GetHorizontalAperture(), time);
     GetVerticalApertureAttr().Set(camera.GetVerticalAperture(), time);

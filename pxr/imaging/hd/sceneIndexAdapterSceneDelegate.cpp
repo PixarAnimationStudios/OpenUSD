@@ -109,7 +109,6 @@ HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
     // disabling flattening as it's not yet needed for pure emulation
     //result = HdFlatteningSceneIndex::New(result);
 
-
     return result;
 }
 
@@ -118,8 +117,7 @@ HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
 HdSceneIndexAdapterSceneDelegate::HdSceneIndexAdapterSceneDelegate(
     HdSceneIndexBaseRefPtr inputSceneIndex,
     HdRenderIndex *parentIndex,
-    SdfPath const &delegateID,
-    SdfPath ownerPath)
+    SdfPath const &delegateID)
 : HdSceneDelegate(parentIndex, delegateID)
 , _inputSceneIndex(inputSceneIndex)
 , _sceneDelegatesBuilt(false)
@@ -1174,20 +1172,17 @@ HdSceneIndexAdapterSceneDelegate::GetPrimvarDescriptors(
         }
     }
 
-    if (it->second.primvarDescriptorsState.load() ==
-            _PrimCacheEntry::ReadStateUnread) {
-        it->second.primvarDescriptorsState.store(
-            _PrimCacheEntry::ReadStateReading);
+    _PrimCacheEntry::ReadState current = _PrimCacheEntry::ReadStateUnread;
+    if (it->second.primvarDescriptorsState.compare_exchange_strong(
+            current, _PrimCacheEntry::ReadStateReading)) {
         it->second.primvarDescriptors = std::move(descriptors);
         it->second.primvarDescriptorsState.store(
             _PrimCacheEntry::ReadStateRead);
-    } else {
-        // if someone is in the process of filling the entry, just
-        // return our value instead of trying to assign
-        return descriptors[interpolation];
+
+        return it->second.primvarDescriptors[interpolation];
     }
-    
-    return it->second.primvarDescriptors[interpolation];
+
+    return descriptors[interpolation];
 }
 
 HdExtComputationPrimvarDescriptorVector
@@ -1486,24 +1481,44 @@ HdSceneIndexAdapterSceneDelegate::_SamplePrimvar(
 
     HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
 
-    HdPrimvarsSchema primvars =
-        HdPrimvarsSchema::GetFromParent(prim.dataSource);
-    if (!primvars) {
-        return 0;
-    }
-    HdPrimvarSchema primvar = primvars.GetPrimvar(key);
-    if (!primvar) {
-        return 0;
-    }
-
     HdSampledDataSourceHandle valueSource = nullptr;
     HdIntArrayDataSourceHandle indicesSource = nullptr;
-    if (sampleIndices) {
-        valueSource = primvar.GetIndexedPrimvarValue();
-        indicesSource = primvar.GetIndices();
-    } else {
-        valueSource = primvar.GetPrimvarValue();
+    
+    HdPrimvarsSchema primvars =
+        HdPrimvarsSchema::GetFromParent(prim.dataSource);
+    if (primvars) {
+        HdPrimvarSchema primvar = primvars.GetPrimvar(key);
+        if (primvar) {
+            if (sampleIndices) {
+                valueSource = primvar.GetIndexedPrimvarValue();
+                indicesSource = primvar.GetIndices();
+            } else {
+                valueSource = primvar.GetPrimvarValue();
+            }
+        }
     }
+
+    // NOTE: SamplePrimvar is used by some render delegates to get multiple
+    //       samples from camera parameters. While this works from UsdImaging,
+    //       it's not due to intentional scene delegate specification but
+    //       by UsdImaging fallback behavior which goes directly to USD attrs
+    //       in absence of a matching primvar.
+    //       In order to support legacy uses of this, we will also check
+    //       camera parameter datasources
+    if (!valueSource && prim.primType == HdPrimTypeTokens->camera) {
+        if (HdCameraSchema cameraSchema =
+                HdCameraSchema::GetFromParent(prim.dataSource)) {
+            // Ask for the key directly from the schema's container data source
+            // as immediate child data source names match the legacy camera
+            // parameter names (e.g. focalLength)
+            // For a native data source, this will naturally have time samples.
+            // For a emulated data source, we are accounting for the possibly
+            // that it needs to call SamplePrimvar
+            valueSource = HdSampledDataSource::Cast(
+                cameraSchema.GetContainer()->Get(key));
+        }
+    }
+
     if (!valueSource) {
         return 0;
     }

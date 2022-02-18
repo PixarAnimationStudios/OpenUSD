@@ -1,0 +1,26 @@
+#sdf 1.4.32
+
+over "SetClass"
+{
+    over "Metal"
+    {
+    }
+
+    over "CorrodedMetal"
+    {
+    }
+}
+
+def "Set" (
+    prepend references = @./package.sdf@</SetPackage>
+)
+{
+    over "Metal"
+    {
+    }
+
+    over "CorrodedMetal"
+    {
+    }
+}
+

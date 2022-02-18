@@ -30,6 +30,7 @@
 #include "pxr/usd/ar/resolver.h"
 
 #include "pxr/usd/sdf/assetPath.h"
+#include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h"
 
 #include "pxr/usd/sdr/shaderMetadataHelpers.h"
@@ -382,6 +383,25 @@ _CreateSdrShaderProperty(
     if (shaderProperty.GetTypeName() == SdfValueTypeNames->Asset ||
         shaderProperty.GetTypeName() == SdfValueTypeNames->AssetArray) {
         metadata[SdrPropertyMetadata->IsAssetIdentifier] = "1";
+    }
+
+    // look for sdrMetadata options field first (which overrides a schema's
+    // allowedTokens list)
+    auto optionsMetadata = shaderMetadata.find(SdrPropertyMetadata->Options);
+    if (optionsMetadata != shaderMetadata.end()) {
+        options = ShaderMetadataHelpers::OptionVecVal(
+                shaderMetadata.at(SdrPropertyMetadata->Options));
+    }
+
+    if (options.empty()) {
+        // No options were found in sdrMetadata, look for allowedTokens on the
+        // schema attr.
+        VtTokenArray attrAllowedTokens;
+        shaderProperty.GetAttr().GetMetadata(SdfFieldKeys->AllowedTokens, 
+                &attrAllowedTokens);
+        for (const TfToken &token : attrAllowedTokens) {
+            options.emplace_back(std::make_pair(token, TfToken()));
+        }
     }
 
     TfToken propertyType;

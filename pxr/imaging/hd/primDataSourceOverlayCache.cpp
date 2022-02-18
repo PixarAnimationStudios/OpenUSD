@@ -193,7 +193,7 @@ HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::GetNames()
     auto cache = _cache.lock();
     if (TF_VERIFY(cache)) {
         bool sortMe = false;
-        for (const auto overlay : cache->_overlayTopology) {
+        for (const auto &overlay : cache->_overlayTopology) {
             if (overlay.second.dependenciesOptional) {
                 names.push_back(overlay.first);
                 sortMe = true;

@@ -98,12 +98,14 @@ transformPoint(mat4 m, vec3 point)
     return result.xyz / result.w;
 }
 
+#ifdef HD_SHADER_SUPPORTS_DOUBLE_PRECISION   
 vec3
 transformPoint(dmat4 m, vec3 point)
 {
     const vec4 result = vec4(m * vec4(point, 1.0));
     return result.xyz / result.w;
 }
+#endif
 
 // Transform a direction by a 4x4 matrix
 vec3
@@ -113,12 +115,14 @@ transformDir(mat4 m, vec3 dir)
     return result.xyz;
 }
 
+#ifdef HD_SHADER_SUPPORTS_DOUBLE_PRECISION   
 vec3
 transformDir(dmat4 m, vec3 dir)
 {
     const vec4 result = vec4(m * vec4(dir, 0.0));
     return result.xyz;
 }
+#endif
 
 // Compute time when a ray starting at pos with direction dir
 // exits the axis-aligned box with vertices lMin and lMax.
@@ -275,8 +279,9 @@ lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
 {
     vec3 result = vec3(0.0);
     for (int i = 0; i < NUM_LIGHTS; ++i) {
+        LightSource light = GetLightSource(i);
 
-        const vec4 Plight = lightSource[i].position;
+        const vec4 Plight = light.position;
 
         const vec3 lightDirectionEye = normalize(
             (Plight.w == 0.0) ? Plight.xyz : Plight.xyz - rayPointEye);
@@ -287,7 +292,7 @@ lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
 
 // For now, not using shadows for volumes.
 #if USE_SHADOWS && 0
-        const float shadow = (lightSource[i].hasShadow) ?
+        const float shadow = light.hasShadow ?
             shadowing(/*lightIndex=*/i, rayPointEye) : 1.0;
 #else
         const float shadow = 1.0;
@@ -302,7 +307,7 @@ lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
                 // beyond light source).
                 accumulatedTransmittance(rayPointEye, lightDirectionEye) *
                 phaseFunction(-rayDirectionEye, lightDirectionEye) *
-                lightSource[i].diffuse.rgb;
+                light.diffuse.rgb;
         }
     }
 
@@ -353,7 +358,7 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayLength)
 
         // If this is the first time the ray is hitting a non-empty voxel,
         // record the coordinates.
-        if (result.firstHitPeye == vec3(0.0)) {
+        if (all(equal(result.firstHitPeye, vec3(0.0)))) {
             if (  extinctionValue > 0 ||
                   scatteringValue > 0 ||
                   any(greaterThan(emissionValue, vec3(0)))) {
@@ -586,7 +591,7 @@ void main(void)
     // Discard front faces - ray marching stops at fragment eye position
     // and starts at the intersection of ray with volume bounding box or
     // near plane.
-    if (gl_FrontFacing ^^ (determinant(instanceModelViewInverse) < 0.0)) {
+    if (gl_FrontFacing != (determinant(instanceModelViewInverse) < 0.0)) {
         discard;
     }
 

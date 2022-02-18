@@ -54,6 +54,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (preamble)                  \
     (tessControlShader)         \
     (tessEvalShader)            \
+    (postTessControlShader)     \
+    (postTessVertexShader)      \
     (vertexShader)              \
     (vertexShaderInjection)     \
                                 \
@@ -201,6 +203,13 @@ public:
 
     /// @}
 
+    /// Get the layout config as a VtDictionary parsed from the JSON
+    /// layout config corresponding to the shader source associated
+    /// with the given keys.
+    HIO_API
+    VtDictionary GetLayoutAsDictionary(const TfTokenVector &shaderStageKeys,
+                                       std::string *errorStr) const;
+
     /// Get the shader source associated with given key
     HIO_API
     std::string GetSource(const TfToken &shaderStageKey) const;
@@ -250,11 +259,19 @@ private:
     bool _ParseSectionLine(_ParseContext & context);
     bool _ParseGLSLSectionLine(std::vector<std::string> const &tokens,
                                _ParseContext & context);
+    bool _ParseLayoutSectionLine(std::vector<std::string> const &tokens,
+                                 _ParseContext & context);
     bool _ParseVersionLine(std::vector<std::string> const &tokens,
                            _ParseContext & context);
     bool _ParseConfigurationLine(_ParseContext & context);
     bool _ComposeConfiguration(std::string *reason);
+
+    std::string _GetLayout(const TfToken &shaderStageKey) const;
     std::string _GetSource(const TfToken &shaderStageKey) const;
+
+    /// Get the layout config as a string formatted as JSON corresponding
+    /// to the shader source associated with the given keys.
+    std::string _GetLayoutAsString(const TfTokenVector &shaderStageKeys) const;
 
 private:
     _ParseContext _globalContext;
@@ -262,6 +279,7 @@ private:
     typedef std::map<std::string, std::string> _SourceMap;
 
     _SourceMap _sourceMap;
+    _SourceMap _layoutMap;
     _SourceMap _configMap;
     std::vector<std::string> _configOrder;
     std::set<std::string> _seenFiles;

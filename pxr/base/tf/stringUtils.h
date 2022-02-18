@@ -132,6 +132,9 @@ TF_API double TfStringToDouble(const std::string& txt);
 /// \overload
 TF_API double TfStringToDouble(const char *text);
 
+/// \overload
+TF_API double TfStringToDouble(const char *text, int len);
+
 /// Convert a sequence of digits in \p txt to a long int value.  Caller is
 /// responsible for ensuring that \p txt has content matching:
 ///

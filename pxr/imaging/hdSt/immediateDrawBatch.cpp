@@ -23,6 +23,10 @@
 //
 #include "pxr/imaging/garch/glApi.h"
 
+// XXX We do not want to include specific HgiXX backends, but we need to do
+// this temporarily until Storm has transitioned fully to Hgi.
+#include "pxr/imaging/hgiGL/graphicsCmds.h"
+
 #include "pxr/imaging/glf/diagnostic.h"
 
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
@@ -33,6 +37,7 @@
 #include "pxr/imaging/hdSt/drawItemInstance.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
+#include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
@@ -128,6 +133,26 @@ _GetElementOffset(HdBufferArrayRangeSharedPtr const& range)
 
 void
 HdSt_ImmediateDrawBatch::ExecuteDraw(
+    HgiGraphicsCmds *gfxCmds,
+    HdStRenderPassStateSharedPtr const &renderPassState,
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
+{
+    HgiGLGraphicsCmds* glGfxCmds = dynamic_cast<HgiGLGraphicsCmds*>(gfxCmds);
+
+    if (glGfxCmds) {
+        // XXX Tmp code path to allow non-hgi code to insert functions into
+        // HgiGL ops-stack. Will be removed once Storms uses Hgi everywhere
+        auto executeDrawOp = [this, renderPassState, resourceRegistry] {
+            this->_ExecuteDraw(renderPassState, resourceRegistry);
+        };
+        glGfxCmds->InsertFunctionOp(executeDrawOp);
+    } else {
+        _ExecuteDraw(renderPassState, resourceRegistry);
+    }
+}
+
+void
+HdSt_ImmediateDrawBatch::_ExecuteDraw(
     HdStRenderPassStateSharedPtr const &renderPassState,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
@@ -158,6 +183,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
     if (!TF_VERIFY(glslProgram)) return;
     if (!TF_VERIFY(glslProgram->Validate())) return;
 
+    renderPassState->Bind();
+
     const HdSt_ResourceBinder &binder = program.GetBinder();
     const HdStShaderCodeSharedPtrVector &shaders = program.GetComposedShaders();
 
@@ -167,14 +194,21 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
     glUseProgram(programId);
 
     for (HdStShaderCodeSharedPtr const & shader : shaders) {
-        shader->BindResources(programId, binder, *renderPassState);
+        shader->BindResources(programId, binder);
     }
 
     // Set up geometric shader states
     // all batch item should have the same geometric shader.
-    HdSt_GeometricShaderSharedPtr const &geometricShader
-        = program.GetGeometricShader();
-    geometricShader->BindResources(programId, binder, *renderPassState);
+    HdSt_GeometricShaderSharedPtr const &geometricShader =
+                                                program.GetGeometricShader();
+    geometricShader->BindResources(programId, binder);
+
+    renderPassState->ApplyStateFromGeometricShader(binder, geometricShader);
+
+    if (geometricShader->IsPrimTypePatches()) {
+        glPatchParameteri(GL_PATCH_VERTICES,
+                          geometricShader->GetPrimitiveIndexSize());
+    }
 
     size_t numItemsDrawn = 0;
     for (HdStDrawItemInstance const * drawItemInstance : _drawItemInstances) {
@@ -361,7 +395,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
         //
         if (program.GetMaterialNetworkShader()) {
             program.GetMaterialNetworkShader()->BindResources(
-                programId, binder, *renderPassState);
+                programId, binder);
         }
 
         /*
@@ -461,7 +495,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
 
         if (indexCount > 0 && indexBar) {
             glDrawElementsInstancedBaseVertex(
-                geometricShader->GetPrimitiveMode(),
+                HdStGLConversions::GetPrimitiveMode(geometricShader.get()),
                 indexCount,
                 GL_UNSIGNED_INT, // GL_INT is invalid: indexBar->GetResource(HdTokens->indices)->GetGLDataType(),
                 (void *)(firstIndex * sizeof(uint32_t)),
@@ -469,7 +503,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
                 baseVertex);
         } else if (vertexCount > 0) {
             glDrawArraysInstanced(
-                geometricShader->GetPrimitiveMode(),
+                HdStGLConversions::GetPrimitiveMode(geometricShader.get()),
                 baseVertex,
                 vertexCount,
                 instanceCount);
@@ -477,7 +511,7 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
 
         if (program.GetMaterialNetworkShader()) {
             program.GetMaterialNetworkShader()->UnbindResources(
-                programId, binder, *renderPassState);
+                programId, binder);
         }
 
         HD_PERF_COUNTER_INCR(HdPerfTokens->drawCalls);
@@ -486,9 +520,9 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
     HD_PERF_COUNTER_ADD(HdTokens->itemsDrawn, numItemsDrawn);
 
     for (HdStShaderCodeSharedPtr const & shader : shaders) {
-        shader->UnbindResources(programId, binder, *renderPassState);
+        shader->UnbindResources(programId, binder);
     }
-    geometricShader->UnbindResources(programId, binder, *renderPassState);
+    geometricShader->UnbindResources(programId, binder);
 
     // unbind (make non resident all bindless buffers)
     if (constantBarCurrent)
@@ -516,6 +550,8 @@ HdSt_ImmediateDrawBatch::ExecuteDraw(
     }
 
     glUseProgram(0);
+
+    renderPassState->Unbind();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

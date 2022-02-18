@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/basisCurvesAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourceBasisCurves.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -38,6 +39,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// XXX: These primvar names are known here so that they may be exempted from 
+// the filtering procedure that would normally exclude them.  This primvar
+// filtering procedure is slated for removal in favor of the one in hdSt, 
+// but in the mean time we must know these names here, despite them not yet
+// being part of any formal schema and thus subject to change or deletion.
+TF_DEFINE_PRIVATE_TOKENS(
+    _rprimPrimvarNameTokens,
+    (pointSizeScale)
+    (screenSpaceWidths)
+    (minScreenSpaceWidths)
+);
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -48,6 +60,36 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingBasisCurvesAdapter::~UsdImagingBasisCurvesAdapter() 
 {
+}
+
+TfTokenVector
+UsdImagingBasisCurvesAdapter::GetImagingSubprims()
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingBasisCurvesAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->basisCurves;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingBasisCurvesAdapter::GetImagingSubprimData(
+        TfToken const& subprim,
+        UsdPrim const& prim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceBasisCurvesPrim::New(
+            prim.GetPath(),
+            prim,
+            stageGlobals);
+    }
+    return nullptr;
 }
 
 bool
@@ -411,6 +453,25 @@ UsdImagingBasisCurvesAdapter::Get(UsdPrim const& prim,
     }
 
     return BaseAdapter::Get(prim, cachePath, key, time, outIndices);
+}
+
+/*override*/
+TfTokenVector const&
+UsdImagingBasisCurvesAdapter::_GetRprimPrimvarNames() const
+{
+    // This result should match the GetBuiltinPrimvarNames result from
+    // HdStBasisCurves, which we're not allowed to call here. Points, normals
+    // and widths are already handled explicitly in GprimAdapter, so there's no
+    // need to except them from filtering by claiming them here.
+    //
+    // See comment on _rprimPrimvarNameTokens warning regarding using these 
+    // primvars.
+    static TfTokenVector primvarNames{
+        _rprimPrimvarNameTokens->pointSizeScale,
+        _rprimPrimvarNameTokens->screenSpaceWidths,
+        _rprimPrimvarNameTokens->minScreenSpaceWidths
+    };
+    return primvarNames;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/imaging/hdSt/glUtils.h"
 #include "pxr/imaging/hdSt/imageShaderRenderPass.h"
 #include "pxr/imaging/hdSt/imageShaderShaderKey.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -30,30 +29,30 @@
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
-#include "pxr/imaging/hdSt/glslfxShader.h"
 #include "pxr/imaging/hdSt/immediateDrawBatch.h"
-#include "pxr/imaging/hdSt/package.h"
+#include "pxr/imaging/hdSt/pipelineDrawBatch.h"
 #include "pxr/imaging/hd/drawingCoord.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/hgi.h"
-#include "pxr/imaging/hgi/tokens.h"
 
-
-// XXX We do not want to include specific HgiXX backends, but we need to do
-// this temporarily until Storm has transitioned fully to Hgi.
-#include "pxr/imaging/hgiGL/graphicsCmds.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-void
-_ExecuteDraw(
-    HdSt_DrawBatchSharedPtr const& drawBatch,
-    HdStRenderPassStateSharedPtr const& stRenderPassState,
-    HdStResourceRegistrySharedPtr const& resourceRegistry)
+static
+HdSt_DrawBatchSharedPtr
+_NewDrawBatch(HdStDrawItemInstance * drawItemInstance)
 {
-    drawBatch->ExecuteDraw(stRenderPassState, resourceRegistry);
+    if (HdSt_PipelineDrawBatch::IsEnabled()) {
+        std::shared_ptr<HdSt_PipelineDrawBatch> pipelineDrawBatch =
+            std::make_shared<HdSt_PipelineDrawBatch>(drawItemInstance);
+        // We don't want or need frustum culling of our fullscreen triangle.
+        pipelineDrawBatch->SetAllowGpuFrustumCulling(false);
+        return pipelineDrawBatch;
+    } else {
+        return std::make_shared<HdSt_ImmediateDrawBatch>(drawItemInstance);
+    }
 }
 
 HdSt_ImageShaderRenderPass::HdSt_ImageShaderRenderPass(
@@ -67,23 +66,20 @@ HdSt_ImageShaderRenderPass::HdSt_ImageShaderRenderPass(
 {
     _sharedData.instancerLevels = 0;
     _sharedData.rprimID = SdfPath("/imageShaderRenderPass");
-    _immediateBatch = 
-        std::make_shared<HdSt_ImmediateDrawBatch>(&_drawItemInstance);
+    _drawBatch = _NewDrawBatch(&_drawItemInstance);
 
     HdStRenderDelegate* renderDelegate =
         static_cast<HdStRenderDelegate*>(index->GetRenderDelegate());
     _hgi = renderDelegate->GetHgi();
 }
 
-HdSt_ImageShaderRenderPass::~HdSt_ImageShaderRenderPass()
-{
-}
+HdSt_ImageShaderRenderPass::~HdSt_ImageShaderRenderPass() = default;
 
 void
 HdSt_ImageShaderRenderPass::_SetupVertexPrimvarBAR(
     HdStResourceRegistrySharedPtr const& registry)
 {
-    // The current logic in HdSt_ImmediateDrawBatch::ExecuteDraw will use
+    // The current logic in HdSt_PipelineDrawBatch::ExecuteDraw will use
     // glDrawArraysInstanced if it finds a VertexPrimvar buffer but no
     // index buffer, We setup the BAR to meet this requirement to draw our
     // full-screen triangle for post-process shaders.
@@ -152,48 +148,23 @@ HdSt_ImageShaderRenderPass::_Execute(
         GetRenderIndex()->GetResourceRegistry());
     TF_VERIFY(resourceRegistry);
 
-    _immediateBatch->PrepareDraw(stRenderPassState, resourceRegistry);
+    _drawBatch->PrepareDraw(stRenderPassState, resourceRegistry);
 
     // Create graphics work to render into aovs.
     const HgiGraphicsCmdsDesc desc =
         stRenderPassState->MakeGraphicsCmdsDesc(GetRenderIndex());
     HgiGraphicsCmdsUniquePtr gfxCmds = _hgi->CreateGraphicsCmds(desc);
-
-    // XXX When there are no aovBindings we get a null work object.
-    // This would ideally never happen, but currently happens for some
-    // custom prims that spawn an imagingGLengine  with a task controller that
-    // has no aovBindings.
-
-    if (gfxCmds) {
-        gfxCmds->PushDebugGroup(__ARCH_PRETTY_FUNCTION__);
+    if (!TF_VERIFY(gfxCmds)) {
+        return;
     }
 
-    // XXX: The Bind/Unbind calls below set/restore GL state.
-    // This will be reworked to use Hgi.
-    stRenderPassState->Bind();
+    // Camera state needs to be updated once per pass (not per batch).
+    stRenderPassState->ApplyStateFromCamera();
 
-    // Draw
-    HdSt_DrawBatchSharedPtr const& batch = _immediateBatch;
-    HgiGLGraphicsCmds* glGfxCmds = 
-        dynamic_cast<HgiGLGraphicsCmds*>(gfxCmds.get());
+    _drawBatch->ExecuteDraw(gfxCmds.get(), stRenderPassState, resourceRegistry);
 
-    if (gfxCmds && glGfxCmds) {
-        // XXX Tmp code path to allow non-hgi code to insert functions into
-        // HgiGL ops-stack. Will be removed once Storms uses Hgi everywhere
-        auto executeDrawOp = [batch, stRenderPassState, resourceRegistry] {
-            _ExecuteDraw(batch, stRenderPassState, resourceRegistry);
-        };
-        glGfxCmds->InsertFunctionOp(executeDrawOp);
-    } else {
-        _ExecuteDraw(batch, stRenderPassState, resourceRegistry);
-    }
-
-    if (gfxCmds) {
-        gfxCmds->PopDebugGroup();
-        _hgi->SubmitCmds(gfxCmds.get());
-    }
-
-    stRenderPassState->Unbind();
+    gfxCmds->PopDebugGroup();
+    _hgi->SubmitCmds(gfxCmds.get());
 }
 
 

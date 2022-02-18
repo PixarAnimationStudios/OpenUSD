@@ -39,9 +39,8 @@
 #include "pxr/usd/usdGeom/tokens.h"
 
 #include "pxr/imaging/hdx/types.h"
-#include "pxr/imaging/hgi/blitCmds.h"
-#include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hdSt/textureUtils.h"
 
 #include <string>
 
@@ -125,35 +124,6 @@ _ComputeCameraToFrameStage(const UsdStagePtr& stage, UsdTimeCode timeCode,
     }
     gfCamera.SetTransform(xf);
     return gfCamera;
-}
-
-static void
-_ReadbackTexture(Hgi* const hgi,
-                 HgiTextureHandle const& textureHandle,
-                 std::vector<uint8_t>& buffer)
-{
-    const HgiTextureDesc& textureDesc = textureHandle.Get()->GetDescriptor();
-    const size_t formatByteSize = HgiGetDataSizeOfFormat(textureDesc.format);
-    const size_t width = textureDesc.dimensions[0];
-    const size_t height = textureDesc.dimensions[1];
-    const size_t dataByteSize = width * height * formatByteSize;
-    
-    // For Metal the CPU buffer has to be rounded up to multiple of 4096 bytes.
-    constexpr size_t bitMask = 4096 - 1;
-    const size_t alignedByteSize = (dataByteSize + bitMask) & (~bitMask);
-    
-    buffer.resize(alignedByteSize);
-
-    HgiBlitCmdsUniquePtr const blitCmds = hgi->CreateBlitCmds();
-    HgiTextureGpuToCpuOp copyOp;
-    copyOp.gpuSourceTexture = textureHandle;
-    copyOp.sourceTexelOffset = GfVec3i(0);
-    copyOp.mipLevel = 0;
-    copyOp.cpuDestinationBuffer = buffer.data();
-    copyOp.destinationByteOffset = 0;
-    copyOp.destinationBufferByteSize = alignedByteSize;
-    blitCmds->CopyTextureGpuToCpu(copyOp);
-    hgi->SubmitCmds(blitCmds.get(), HgiSubmitWaitTypeWaitUntilCompleted);
 }
 
 static bool
@@ -297,7 +267,8 @@ UsdAppUtilsFrameRecorder::Record(
     }
     
     std::vector<uint8_t> buffer;
-    _ReadbackTexture(_imagingEngine.GetHgi(), handle, buffer);
+    HdStTextureUtils::HgiTextureReadback(
+        _imagingEngine.GetHgi(), handle, &buffer);
 
     return _WriteTextureToFile(handle.Get()->GetDescriptor(),
                                buffer,

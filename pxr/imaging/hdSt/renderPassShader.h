@@ -64,12 +64,10 @@ public:
     std::string GetSource(TfToken const &shaderStageKey) const override;
     HDST_API
     void BindResources(int program,
-                               HdSt_ResourceBinder const &binder,
-                               HdRenderPassState const &state) override;
+                       HdSt_ResourceBinder const &binder) override;
     HDST_API
     void UnbindResources(int program,
-                                 HdSt_ResourceBinder const &binder,
-                                 HdRenderPassState const &state) override;
+                         HdSt_ResourceBinder const &binder) override;
     HDST_API
     void AddBindings(HdBindingRequestVector *customBindings) override;
     HDST_API
@@ -90,14 +88,6 @@ public:
     HDST_API
     void ClearBufferBindings();
 
-    HdCullStyle GetCullStyle() const {
-        return _cullStyle;
-    }
-
-    void SetCullStyle(HdCullStyle cullStyle) {
-        _cullStyle = cullStyle;
-    }
-
     // Sets the textures and params such that the shader can access
     // the requested aovs with HdGet_AOVNAMEReadback().
     //
@@ -116,7 +106,6 @@ private:
     mutable bool    _hashValid;
 
     TfHashMap<TfToken, HdBindingRequest, TfToken::HashFunctor> _customBuffers;
-    HdCullStyle _cullStyle;
 
     NamedTextureHandleVector _namedTextureHandles;
 
@@ -125,6 +114,8 @@ private:
     // No copying
     HdStRenderPassShader(const HdStRenderPassShader &)                     = delete;
     HdStRenderPassShader &operator =(const HdStRenderPassShader &)         = delete;
+
+    HioGlslfx const * _GetGlslfx() const override;
 };
 
 

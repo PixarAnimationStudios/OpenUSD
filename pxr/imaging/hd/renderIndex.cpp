@@ -35,6 +35,7 @@
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/points.h"
+#include "pxr/imaging/hd/prefixingSceneIndex.h"
 #include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/repr.h"
@@ -43,6 +44,7 @@
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sceneIndexAdapterSceneDelegate.h"
+#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/task.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -71,6 +73,12 @@ _IsEnabledSceneIndexEmulation()
     static bool enabled = 
         (TfGetEnvSetting(HD_ENABLE_SCENE_INDEX_EMULATION) == true);
     return enabled;
+}
+
+bool
+HdRenderIndex::IsSceneIndexEmulationEnabled()
+{
+    return _IsEnabledSceneIndexEmulation();
 }
 
 HdRenderIndex::HdRenderIndex(
@@ -105,12 +113,29 @@ HdRenderIndex::HdRenderIndex(
     // data structures now.
     if (_IsEnabledSceneIndexEmulation()) {
         _emulationSceneIndex = HdLegacyPrimSceneIndex::New();
-        
-        _siSd = std::make_unique<HdSceneIndexAdapterSceneDelegate>(
+        _mergingSceneIndex = HdMergingSceneIndex::New();
+        _mergingSceneIndex->AddInputScene(
+            _emulationSceneIndex, SdfPath::AbsoluteRootPath());
+
+        HdSceneIndexBaseRefPtr terminalSceneIndex = _mergingSceneIndex;
+
+        terminalSceneIndex =
             HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
-                _emulationSceneIndex, SdfPath::AbsoluteRootPath()), 
+                terminalSceneIndex, SdfPath::AbsoluteRootPath());
+
+        const std::string &rendererDisplayName =
+            renderDelegate->GetRendererDisplayName();
+
+        if (!rendererDisplayName.empty()) {
+            terminalSceneIndex =
+                HdSceneIndexPluginRegistry::GetInstance()
+                    .AppendSceneIndicesForRenderer(
+                        rendererDisplayName, terminalSceneIndex);
+        }
+
+        _siSd = std::make_unique<HdSceneIndexAdapterSceneDelegate>(
+            terminalSceneIndex, 
             this, 
-            SdfPath::AbsoluteRootPath(), 
             SdfPath::AbsoluteRootPath());
 
         _tracker._SetTargetSceneIndex(get_pointer(_emulationSceneIndex));
@@ -145,6 +170,36 @@ HdRenderIndex::New(
         return nullptr;
     }
     return new HdRenderIndex(renderDelegate, drivers);
+}
+
+void
+HdRenderIndex::InsertSceneIndex(
+        HdSceneIndexBaseRefPtr inputSceneIndex,
+        SdfPath const& scenePathPrefix)
+{
+    if (!_IsEnabledSceneIndexEmulation()) {
+        TF_WARN("Unable to add scene index at prefix %s because emulation is off.",
+                scenePathPrefix.GetText());
+        return;
+    }
+
+    if (scenePathPrefix != SdfPath::AbsoluteRootPath()) {
+        inputSceneIndex = HdPrefixingSceneIndex::New(
+                inputSceneIndex, scenePathPrefix);
+    }
+    _mergingSceneIndex->AddInputScene(
+            inputSceneIndex, scenePathPrefix);
+}
+
+void
+HdRenderIndex::RemoveSceneIndex(
+        HdSceneIndexBaseRefPtr inputSceneIndex)
+{
+    if (!_IsEnabledSceneIndexEmulation()) {
+        return;
+    }
+
+    _mergingSceneIndex->RemoveInputScene(inputSceneIndex);
 }
 
 void
@@ -223,7 +278,10 @@ HdRenderIndex::_InsertRprim(TfToken const& typeId,
 
     _rprimIds.Insert(rprimId);
 
-    _tracker.RprimInserted(rprimId, rprim->GetInitialDirtyBitsMask());
+    // Force an initial "renderTag" sync.  We add the bit here since the
+    // render index manages render tags, rather than the rprim implementation.
+    _tracker.RprimInserted(rprimId, rprim->GetInitialDirtyBitsMask() |
+                                    HdChangeTracker::DirtyRenderTag);
     _AllocatePrimId(rprim);
 
     _RprimInfo info = {
@@ -860,7 +918,25 @@ HdRenderIndex::GetRenderTag(SdfPath const& id) const
         return HdRenderTagTokens->hidden;
     }
 
-    return info->rprim->GetRenderTag(info->sceneDelegate);
+    return info->rprim->GetRenderTag();
+}
+
+TfToken
+HdRenderIndex::UpdateRenderTag(SdfPath const& id,
+                               HdDirtyBits bits)
+{
+    _RprimInfo const* info = TfMapLookupPtr(_rprimMap, id);
+    if (info == nullptr) {
+        return HdRenderTagTokens->hidden;
+    }
+
+    if (bits & HdChangeTracker::DirtyRenderTag) {
+        info->rprim->UpdateRenderTag(info->sceneDelegate,
+                                    _renderDelegate->GetRenderParam());
+        _tracker.MarkRprimClean(id,
+                                bits & ~HdChangeTracker::DirtyRenderTag);
+    }
+    return info->rprim->GetRenderTag();
 }
 
 SdfPathVector
@@ -1305,9 +1381,14 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
     _CollectionReprSpecVector reprSpecs = _GatherReprSpecs(_collectionsToSync);
     HdReprSelectorVector reprSelectors = _GetReprSelectors(reprSpecs);
 
-    // b. Update dirty list state and get dirty rprim ids
+    // b. Update dirty list params, if needed sync render tags, 
+    // and get dirty rprim ids
     _rprimDirtyList.UpdateRenderTagsAndReprSelectors(taskRenderTags,
-                                                      reprSelectors);
+                                                     reprSelectors);
+
+    // NOTE: GetDirtyRprims relies on up-to-date render tags; if render tags
+    // are dirty, this call will sync render tags before compiling the dirty
+    // list. This is outside of the usual sync order, but is necessary for now.
     SdfPathVector const& dirtyRprimIds = _rprimDirtyList.GetDirtyRprims();
  
     // c. Bucket rprims by their scene delegate to help build the the list
@@ -1388,7 +1469,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
                     << ratioNonVarying * 100.0f << "% ("
                     << numNonVarying << " / "  << numDirtyRprims << ") \n";
 
-                TfDebug::Helper().Msg(ss.str().c_str());
+                TfDebug::Helper().Msg(ss.str());
             }
         }
     }

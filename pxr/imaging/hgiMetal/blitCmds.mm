@@ -60,7 +60,7 @@ void
 HgiMetalBlitCmds::_CreateEncoder()
 {
     if (!_blitEncoder) {
-        _commandBuffer = _hgi->GetPrimaryCommandBuffer();
+        _commandBuffer = _hgi->GetPrimaryCommandBuffer(this);
         if (_commandBuffer == nil) {
             _commandBuffer = _hgi->GetSecondaryCommandBuffer();
             _secondaryCommandBuffer = true;
@@ -257,6 +257,19 @@ HgiMetalBlitCmds::CopyBufferGpuToGpu(
                         toBuffer:dstBuffer->GetBufferId()
                destinationOffset:copyOp.destinationByteOffset
                             size:copyOp.byteSize];
+
+#if defined(ARCH_OS_MACOS)
+    // APPLE METAL: We need to do this copy host side, otherwise later
+    // cpu copies into OTHER parts of this destination buffer see some of
+    // our GPU copied range trampled by alignment of the blit. The Metal
+    // spec says bytes outside of the range may be copied when calling
+    // didModifyRange
+    if ([srcBuffer->GetBufferId() storageMode] == MTLStorageModeManaged) {
+        memcpy((char*)dstBuffer->GetCPUStagingAddress() + copyOp.destinationByteOffset,
+               (char*)srcBuffer->GetCPUStagingAddress() + copyOp.sourceByteOffset,
+               copyOp.byteSize);
+    }
+#endif
 }
 
 void HgiMetalBlitCmds::CopyBufferCpuToGpu(

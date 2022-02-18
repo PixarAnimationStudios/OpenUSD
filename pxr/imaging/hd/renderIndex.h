@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/mergingSceneIndex.h"
 #include "pxr/imaging/hd/legacyPrimSceneIndex.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -232,6 +233,10 @@ public:
     HD_API
     TfToken GetRenderTag(SdfPath const& id) const;
 
+    /// Like GetRenderTag, but updates the render tag if dirty.
+    TfToken UpdateRenderTag(SdfPath const& id,
+                            HdDirtyBits bits);
+
     /// Returns a sorted list of all Rprims in the render index.
     /// The list is sorted by std::less<SdfPath>
     HD_API
@@ -348,6 +353,18 @@ public:
     HdBprim *GetFallbackBprim(TfToken const& typeId) const;
 
     // ---------------------------------------------------------------------- //
+    /// \name Scene indices
+    // ---------------------------------------------------------------------- //
+    HD_API
+    void InsertSceneIndex(
+            HdSceneIndexBaseRefPtr inputSceneIndex,
+            SdfPath const& scenePathPrefix);
+
+    HD_API
+    void RemoveSceneIndex(
+            HdSceneIndexBaseRefPtr inputSceneIndex);
+
+    // ---------------------------------------------------------------------- //
     /// \name Render Delegate
     // ---------------------------------------------------------------------- //
     /// Currently, a render index only supports connection to one type of
@@ -365,6 +382,12 @@ public:
     /// delegate.
     HD_API
     HdResourceRegistrySharedPtr GetResourceRegistry() const;
+
+    /// Returns true if scene index features are available
+    /// This is true by default but can be controlled via an
+    /// HD_ENABLE_SCENE_INDEX_EMULATION environment variable.
+    HD_API
+    static bool IsSceneIndexEmulationEnabled();
 
 private:
     // The render index constructor is private so we can check
@@ -452,6 +475,8 @@ private:
 
     HdLegacyPrimSceneIndexRefPtr _emulationSceneIndex;
     std::unique_ptr<class HdSceneIndexAdapterSceneDelegate> _siSd;
+
+    HdMergingSceneIndexRefPtr _mergingSceneIndex;
 
     struct _TaskInfo {
         HdSceneDelegate *sceneDelegate;

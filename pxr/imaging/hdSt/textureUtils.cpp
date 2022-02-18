@@ -28,6 +28,11 @@
 #include "pxr/base/gf/math.h"
 #include "pxr/base/trace/trace.h"
 
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/blitCmds.h"
+#include "pxr/imaging/hgi/blitCmdsOps.h"
+#include "pxr/imaging/hgi/texture.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -531,6 +536,46 @@ HdStTextureUtils::ReadAndConvertImage(
     if (conversionFunction) {
         conversionFunction(spec.data, spec.width * spec.height, mipLayerStart);
     }
+
+    return true;
+}
+
+bool
+HdStTextureUtils::HgiTextureReadback(
+    Hgi * const hgi,
+    HgiTextureHandle const & texture,
+    std::vector<uint8_t> * buffer)
+{
+    if (!texture) {
+        return false;
+    }
+
+    const HgiTextureDesc& textureDesc = texture.Get()->GetDescriptor();
+    const size_t formatByteSize = HgiGetDataSizeOfFormat(textureDesc.format);
+    const size_t width = textureDesc.dimensions[0];
+    const size_t height = textureDesc.dimensions[1];
+    const size_t dataByteSize = width * height * formatByteSize;
+
+    if (dataByteSize == 0) {
+        return false;
+    }
+    
+    // For Metal the CPU buffer has to be rounded up to multiple of 4096 bytes.
+    constexpr size_t bitMask = 4096 - 1;
+    const size_t alignedByteSize = (dataByteSize + bitMask) & (~bitMask);
+    
+    buffer->resize(alignedByteSize);
+
+    HgiBlitCmdsUniquePtr const blitCmds = hgi->CreateBlitCmds();
+    HgiTextureGpuToCpuOp copyOp;
+    copyOp.gpuSourceTexture = texture;
+    copyOp.sourceTexelOffset = GfVec3i(0);
+    copyOp.mipLevel = 0;
+    copyOp.cpuDestinationBuffer = buffer->data();
+    copyOp.destinationByteOffset = 0;
+    copyOp.destinationBufferByteSize = alignedByteSize;
+    blitCmds->CopyTextureGpuToCpu(copyOp);
+    hgi->SubmitCmds(blitCmds.get(), HgiSubmitWaitTypeWaitUntilCompleted);
 
     return true;
 }

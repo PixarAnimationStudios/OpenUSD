@@ -61,7 +61,7 @@ protected:
     friend class HgiGL;
 
     HGIGL_API
-    HgiGLShaderFunction(HgiShaderFunctionDesc const& desc);
+    HgiGLShaderFunction(HgiShaderFunctionDesc const& desc, int shaderVersion);
 
 private:
     HgiGLShaderFunction() = delete;

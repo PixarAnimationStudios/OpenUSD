@@ -40,11 +40,13 @@ pxr_library(hd
         command
         compExtCompInputSource
         computation
+        containerDataSourceEditor
         coordSys
         coordSysBindingSchema
         dataSource
         dataSourceLegacyPrim
         dataSourceLocator
+        dataSourceMaterialNetworkInterface
         debugCodes
         dependenciesSchema
         dependencySchema
@@ -86,9 +88,12 @@ pxr_library(hd
         material
         materialBindingSchema
         materialConnectionSchema
+        materialFilteringSceneIndexBase
         materialNetworkSchema
+        materialNetwork2Interface
         materialNodeSchema
         materialSchema
+        mergingSceneIndex
         mesh
         meshSchema
         meshTopology
@@ -128,6 +133,8 @@ pxr_library(hd
         sceneIndex
         sceneIndexAdapterSceneDelegate
         sceneIndexObserver
+        sceneIndexPlugin
+        sceneIndexPluginRegistry
         schema
         selection
         smoothNormals
@@ -156,6 +163,7 @@ pxr_library(hd
         api.h
         dataSourceTypeDefs.h
         driver.h
+        materialNetworkInterface.h
         version.h
 
     PRIVATE_CLASSES
@@ -169,51 +177,209 @@ pxr_library(hd
         overview.dox
 )
 
-pxr_build_test(testHdDirtyList
-    LIBRARIES
-        hd
+pxr_build_test(testHdBufferSourceEmptyVal
+   LIBRARIES
+       hd
+       vt
+       gf
+       tf
+       arch
 
-    CPPFILES
-        testenv/testHdDirtyList.cpp
+   CPPFILES
+       testenv/testHdBufferSourceEmptyVal.cpp
+)
+
+pxr_build_test(testHdBufferSpec
+   LIBRARIES
+       hd
+
+   CPPFILES
+       testenv/testHdBufferSpec.cpp
+)
+
+# Removing test from build while we modernize the Hydra architecture.
+# pxr_build_test(testHdChangeTracker
+#    LIBRARIES
+#        hd
+
+#    CPPFILES
+#        testenv/testHdChangeTracker.cpp
+# )
+
+pxr_build_test(testHdCommand
+   LIBRARIES
+       hd
+
+   CPPFILES
+       testenv/testHdCommand.cpp
+)
+
+pxr_build_test(testHdDataSourceLocator
+   LIBRARIES
+       hd
+
+   CPPFILES
+       testenv/testHdDataSourceLocator.cpp
+)
+
+pxr_build_test(testHdDirtyList
+   LIBRARIES
+       hd
+       tf
+
+   CPPFILES
+       testenv/testHdDirtyList.cpp
+)
+
+pxr_build_test(testHdExtCompDependencySort
+   LIBRARIES
+       hd
+       sdf
+       tf
+
+   CPPFILES
+       testenv/testHdExtCompDependencySort.cpp
+)
+
+pxr_build_test(testHdExtComputationUtils
+   LIBRARIES
+       hd
+
+   CPPFILES
+       testenv/testHdExtComputationUtils.cpp
+)
+
+pxr_build_test(testHdPerfLog
+   LIBRARIES
+       hd
+       sdf
+       tf
+       arch
+
+   CPPFILES
+       testenv/testHdPerfLog.cpp
+)
+
+# Removing test from build while we modernize the Hydra architecture.
+# pxr_build_test(testHdRenderIndex
+#    LIBRARIES
+#        hd
+
+#    CPPFILES
+#        testenv/testHdRenderIndex.cpp
+# )
+
+pxr_build_test(testHdDataSource
+   LIBRARIES
+       hd
+       sdf
+       tf
+
+   CPPFILES
+       testenv/testHdDataSource.cpp
+)
+
+pxr_build_test(testHdSceneIndex
+   LIBRARIES
+       hd
+       sdf
+       tf
+
+   CPPFILES
+       testenv/testHdSceneIndex.cpp
+)
+
+pxr_build_test(testHdSortedIds
+   LIBRARIES
+       hd
+       sdf
+       tf
+
+   CPPFILES
+       testenv/testHdSortedIds.cpp
+)
+
+pxr_build_test(testHdTimeSampleArray
+   LIBRARIES
+       hd
+
+   CPPFILES
+       testenv/testHdTimeSampleArray.cpp
+)
+
+pxr_build_test(testHdTypes
+   LIBRARIES
+       hd
+
+   CPPFILES
+       testenv/testHdTypes.cpp
+)
+
+
+pxr_install_test_dir(
+    SRC testenv/testHdSortedIds
+    DEST testHdSortedIds
+)
+
+
+pxr_register_test(testHdBufferSourceEmptyVal
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdBufferSourceEmptyVal"
+)
+
+pxr_register_test(testHdBufferSpec
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdBufferSpec"
+)
+
+# pxr_register_test(testHdChangeTracker
+#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdChangeTracker"
+# )
+
+pxr_register_test(testHdCommand
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdCommand"
+)
+
+pxr_register_test(testHdDataSourceLocator
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDataSourceLocator"
 )
 
 pxr_register_test(testHdDirtyList
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDirtyList"
 )
 
-
-pxr_build_test(testHdExtComputationUtils
-    LIBRARIES
-        hd
-
-    CPPFILES
-        testenv/testHdExtComputationUtils.cpp
+pxr_register_test(testHdExtCompDependencySort
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdExtCompDependencySort"
 )
 
 pxr_register_test(testHdExtComputationUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdExtComputationUtils"
 )
 
-pxr_build_test(testHdSceneIndex
-    LIBRARIES
-        hd
+pxr_register_test(testHdPerfLog
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdPerfLog"
+)
 
-    CPPFILES
-        testenv/testHdSceneIndex.cpp
+# pxr_register_test(testHdRenderIndex
+#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdRenderIndex"
+# )
+
+pxr_register_test(testHdDataSource
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDataSource"
 )
 
 pxr_register_test(testHdSceneIndex
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdSceneIndex"
 )
 
-pxr_build_test(testHdTimeSampleArray
-    LIBRARIES
-        hd
-
-    CPPFILES
-        testenv/testHdTimeSampleArray.cpp
+pxr_register_test(testHdSortedIds
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdSortedIds"
+    # XXX Disabling compare for now. testHdSortedId_removeTest.txt differs on Mac and Windows.
+    # DIFF_COMPARE testHdSortedId_populateTest.txt testHdSortedId_singleInsertTest.txt testHdSortedId_multiInsertTest.txt testHdSortedId_removeTest.txt testHdSortedId_removeOnlyElementTest.txt testHdSortedId_removeRangeTest.txt testHdSortedId_removeBatchTest.txt testHdSortedId_removeSortedTest.txt testHdSortedId_removeUnsortedTest.txt testHdSortedId_removeAfterInsertNoSyncTest.txt
 )
 
 pxr_register_test(testHdTimeSampleArray
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTimeSampleArray"
+)
+
+pxr_register_test(testHdTypes
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTypes"
 )

@@ -288,22 +288,50 @@ class PropInfo(object):
         Generated = 'generated'
         Custom = 'custom'
         
-    def __init__(self, sdfProp):
+    def __init__(self, sdfProp, classInfo):
         # Allow user to specify custom naming through customData metadata.
         self.customData = dict(sdfProp.customData)
 
-        self.name       = _CamelCase(sdfProp.name)
-        self.apiName    = self.customData.get('apiName', self.name)
+        if classInfo.propertyNamespacePrefix:
+            # A property namespace prefix will only exist for multiple apply API
+            # schemas and is used to create the instanceable namespace prefix 
+            # prepended to all its properties. We prepend this instanceable 
+            # prefix to the raw name here.
+            self.rawName = Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
+                classInfo.propertyNamespacePrefix, sdfProp.name)
+            # Since the property info's name is used to create the identifier 
+            # used for tokens and such, we make it from the instanced property 
+            # name with the instance name placeholder replaced with 
+            # "_MultipleApplyTemplate_". This is so we don't end up with an
+            # the implementation detail of "__INSTANCE_NAME__" in the identifier
+            # itself.
+            self.name = _CamelCase(
+                Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
+                    self.rawName, "_MultipleApplyTemplate_"))
+        else:
+            self.rawName = sdfProp.name
+            self.name = _CamelCase(self.rawName)
+
+        self.apiName    = self.customData.get('apiName', _CamelCase(sdfProp.name))
         self.apiGet     = self.customData.get('apiGetImplementation', self.CodeGen.Generated)
         if self.apiGet not in [self.CodeGen.Generated, self.CodeGen.Custom]:
             Print.Err("Token '%s' is not valid." % self.apiGet)
-        self.rawName    = sdfProp.name
         self.doc        = _SanitizeDoc(sdfProp.documentation, '\n    /// ')
-        self.custom     = sdfProp.custom
+        # Keep around the property spec so that we can pull any other data we
+        # may need from it.
+        self._sdfPropSpec = sdfProp
+        # Also keep a reference to the layer so that it doesn't close while 
+        # we're still holding on to one of its property specs.
+        self._layer = sdfProp.layer
+
+    # Anything that isn't explicitly set as an attribute in the PropInfo, we can
+    # fall back to grabbing directly from the SdfProperty spec if requested.
+    def __getattr__(self, attr):
+        return getattr(self._sdfPropSpec, attr)
 
 class RelInfo(PropInfo):
-    def __init__(self, sdfProp):
-        super(RelInfo, self).__init__(sdfProp)
+    def __init__(self, sdfProp, classInfo):
+        super(RelInfo, self).__init__(sdfProp, classInfo)
 
 # Map an Sdf.ValueTypeName.XXX object to the 'XXX' token string -- we use this
 # to go from sdf attribute types to their symbolic tokens, for example:
@@ -324,8 +352,8 @@ def _GetSchemaDefException(msg, path):
     return Exception(errorMsg(msg))
 
 class AttrInfo(PropInfo):
-    def __init__(self, sdfProp):
-        super(AttrInfo, self).__init__(sdfProp)
+    def __init__(self, sdfProp, classInfo):
+        super(AttrInfo, self).__init__(sdfProp, classInfo)
         self.allowedTokens = sdfProp.GetInfo('allowedTokens')
         
         self.variability = str(sdfProp.variability).replace('Sdf.', 'Sdf')
@@ -463,6 +491,33 @@ class ClassInfo(object):
         self.doc = _SanitizeDoc(sdfPrim.documentation, '\n/// ')
         self.typeName = sdfPrim.typeName
         self.extraIncludes = self.customData.get('extraIncludes', None)
+
+        # Built-in API schemas metadata.
+        #
+        # We get metadata which is the token list op directly authored for the 
+        # schema class (does not include inherited API schemas from parent 
+        # classes)
+        self.apiSchemasMetadata = sdfPrim.GetInfo('apiSchemas')
+
+        # We also get the full list of authored applied API schemas directly
+        # from the USD prim. This will contain the API schemas authored in the
+        # parent classes.
+        self.allAppliedAPISchemas = \
+            usdPrim.GetPrimTypeInfo().GetAppliedAPISchemas()
+
+        # If a type specifies applied API schemas as built-in it must specify
+        # them as a prepend. I.e. schema types can only add additional applied
+        # API schemas that will be stronger then any inherited built-in API
+        # schemas from parent classes.
+        if self.apiSchemasMetadata != Sdf.TokenListOp():
+            if (self.apiSchemasMetadata.isExplicit or
+                    self.apiSchemasMetadata.addedItems or
+                    self.apiSchemasMetadata.deletedItems or
+                    self.apiSchemasMetadata.explicitItems or
+                    self.apiSchemasMetadata.orderedItems) :
+                raise _GetSchemaDefException(
+                    "The 'apiSchemas' metadata list operation is only allowed "
+                    "to prepend API schemas.", sdfPrim.path)
 
         # Do not to inherit the type name of parent classes.
         if inherits:
@@ -631,6 +686,33 @@ def GetClassInfo(classes, cppClassName):
             return c
     return None
 
+def _MakeMultipleApplySchemaNameTemplate(apiSchemaName):
+    # Multiple apply API schemas are allowed to specify other built-in 
+    # mulitple apply API schemas with or without a sub-instance name.
+    # For example a multiple apply API schema named "MultiApplyAPI" can include
+    # the metadata:
+    #
+    #     prepend apiSchemas = ["OtherMultiApplyAPI", "AnotherMultiApplyAPI:foo"]
+    #
+    # Since a multiple apply API schema is always applied with an instance name,
+    # its built-in API schemas will also need to be applied using the same 
+    # instance name. Thus, we convert the authored built-in API schema names 
+    # into template names in the generatedSchema just like we do for property
+    # names.
+    #
+    # This function would convert the example built-in API schema names above to
+    #   "OtherMultiApplyAPI:__INSTANCE_NAME__" and 
+    #   "AnotherMultiApplyAPI:__INSTANCE_NAME__:foo"
+    # 
+    # This templating allows the schema registry to determine that when 
+    # MultiApplyAPI is applied with an instance name like "bar", that 
+    # OtherMultiApplyAPI also needs to be applied with instance name "bar" and 
+    # AnotherMultiApplyAPI needs to be applied with the instance name "bar:foo".
+    typeName, instanceName = \
+        Usd.SchemaRegistry.GetTypeNameAndInstance(apiSchemaName)
+    return Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
+        typeName, instanceName) 
+
 def ParseUsd(usdFilePath):
     sdfLayer = Sdf.Layer.FindOrOpen(usdFilePath)
     stage = Usd.Stage.Open(sdfLayer)
@@ -665,6 +747,16 @@ def ParseUsd(usdFilePath):
                         "have a propertyNamespacePrefix metadata field must "
                         "have zero properties", sdfPrim.path)
 
+            # Templatize all the included API schema names for this multiple
+            # apply API (see _MakeMultipleApplySchemaNameTemplate for the
+            # explanation as to why).
+            classInfo.allAppliedAPISchemas = [
+                _MakeMultipleApplySchemaNameTemplate(s) 
+                for s in classInfo.allAppliedAPISchemas]
+            classInfo.apiSchemasMetadata.prependedItems = [
+                _MakeMultipleApplySchemaNameTemplate(s) 
+                for s in classInfo.apiSchemasMetadata.prependedItems]
+
         classes.append(classInfo)
         #
         # We don't want to use the composed property names here because we only
@@ -680,7 +772,7 @@ def ParseUsd(usdFilePath):
 
             # Attribute
             if isinstance(sdfProp, Sdf.AttributeSpec):
-                attrInfo = AttrInfo(sdfProp)
+                attrInfo = AttrInfo(sdfProp, classInfo)
 
                 # Assert unique attribute names
                 if (attrInfo.apiName != ''):
@@ -702,7 +794,7 @@ def ParseUsd(usdFilePath):
 
             # Relationship
             else:
-                relInfo = RelInfo(sdfProp)
+                relInfo = RelInfo(sdfProp, classInfo)
 
                 # Assert unique relationship names
                 if (relInfo.apiName != ''):
@@ -990,7 +1082,7 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
         raise RuntimeError("Template not found: {0}".format(str(tnf)))
     except TemplateSyntaxError as tse:
         raise RuntimeError("Syntax error in template {0} at line {1}: {2}"
-                           .format(tse.filename, tse.lineno, tse.message))
+                           .format(tse.filename, tse.lineno, tse))
 
     if useExportAPI:
         Print('Writing API:')
@@ -1106,7 +1198,7 @@ def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env,
         raise RuntimeError("Template not found: {0}".format(str(tnf)))
     except TemplateSyntaxError as tse:
         raise RuntimeError("Syntax error in template {0} at line {1}: {2}"
-                           .format(tse.filename, tse.lineno, tse.message))
+                           .format(tse.filename, tse.lineno, tse))
 
     #
     # Generate plugInfo.json.
@@ -1237,6 +1329,40 @@ def _MakeFlattenedRegistryLayer(filePath):
 
     return flatLayer
     
+def _RenamePropertiesWithInstanceablePrefix(usdPrim):
+    # Properties of multiple apply API schemas must be prefixed with an 
+    # instanceable property name so we rename the properties here. Since we 
+    # can't move/rename properties through Usd APIs (yet), we copy the existing
+    # properties using the prefixed name and delete the original properties 
+    # after.
+
+    # Store the original property names for deletion.
+    originalPropNames = usdPrim.GetPropertyNames()
+    if not originalPropNames:
+        return
+
+    # Multiple apply API schemas require a property namespace prefix that will
+    # be prepended along with the instance name for all its properties.
+    namespacePrefix = usdPrim.GetCustomDataByKey(PROPERTY_NAMESPACE_PREFIX)
+    if not namespacePrefix:
+        raise _GetSchemaDefException("propertyNamespacePrefix "
+            "must exist as a metadata field on multiple-apply "
+            "API schemas with properties", p.GetPath())
+
+    # For each property create a copy with the prefixed instanceable property
+    # name.
+    for prop in usdPrim.GetProperties():
+        newPropName = Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
+            namespacePrefix, prop.GetName())
+        if usdPrim.HasProperty(newPropName):
+            raise _GetSchemaDefException("Prefixed property name '%s' already "
+                "exists as property base name in the schema." % newPropName, 
+                usdPrim.GetPath())
+        prop.FlattenTo(usdPrim, newPropName)
+
+    # Remove all the original properties after they've all been copied.
+    for name in originalPropNames:
+        usdPrim.RemoveProperty(name)
 
 def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
 
@@ -1249,27 +1375,21 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     # so because it is more convenient for these kinds of operations.
     flatStage = Usd.Stage.Open(flatLayer)
     pathsToDelete = []
-    primsToKeep = set(cls.usdPrimTypeName for cls in classes)
+    primsToKeep = {cls.usdPrimTypeName : cls for cls in classes}
     if not flatStage.RemovePrim('/GLOBAL'):
         Print.Err("ERROR: Could not remove GLOBAL prim.")
-    allMultipleApplyAPISchemaNamespaces = {}
     allFallbackSchemaPrimTypes = {}
     for p in flatStage.GetPseudoRoot().GetAllChildren():
+        if p.GetName() not in primsToKeep:
+            pathsToDelete.append(p.GetPath())
+            continue
+
         # If this is an API schema, check if it's applied and record necessary
         # information.
-        if p.GetName() in primsToKeep and p.GetName().endswith('API'):
+        if p.GetName().endswith('API'):
             apiSchemaType = p.GetCustomDataByKey(API_SCHEMA_TYPE) or SINGLE_APPLY
             if apiSchemaType == MULTIPLE_APPLY:
-                namespacePrefix = p.GetCustomDataByKey(PROPERTY_NAMESPACE_PREFIX)
-                if namespacePrefix:
-                    allMultipleApplyAPISchemaNamespaces[p.GetName()] = \
-                        namespacePrefix
-                elif not p.GetPropertyNames():
-                    allMultipleApplyAPISchemaNamespaces[p.GetName()] = ""
-                else:
-                    raise _GetSchemaDefException("propertyNamespacePrefix "
-                        "must exist as a metadata field on multiple-apply "
-                        "API schemas with properties", p.GetPath())
+                _RenamePropertiesWithInstanceablePrefix(p)
 
             # API schema classes must not have authored metadata except for 
             # these exceptions:
@@ -1281,7 +1401,7 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
                 'specifier', 'customData', 'documentation']
             # Single apply API schemas are also allowed to specify 'apiSchemas'
             # metadata to include other API schemas.
-            if apiSchemaType == SINGLE_APPLY:
+            if apiSchemaType == SINGLE_APPLY or apiSchemaType == MULTIPLE_APPLY:
                 allowedAPIMetadata.append('apiSchemas')
             invalidMetadata = [key for key in p.GetAllAuthoredMetadata().keys()
                                if key not in allowedAPIMetadata]
@@ -1299,23 +1419,25 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
                 allFallbackSchemaPrimTypes[p.GetName()] = \
                     Vt.TokenArray(fallbackTypes)
 
+        # Set the full list of the class's applied API apiSchemas as an explicit
+        # list op in the apiSchemas metadata. Note that this API schemas list
+        # will have been converted to template names if the class is a multiple
+        # apply API schema.
+        appliedAPISchemas = primsToKeep[p.GetName()].allAppliedAPISchemas
+        if appliedAPISchemas:
+            p.SetMetadata('apiSchemas',
+                          Sdf.TokenListOp.CreateExplicit(appliedAPISchemas))
+
         p.ClearCustomData()
         for myproperty in p.GetAuthoredProperties():
             myproperty.ClearCustomData()
-        if p.GetName() not in primsToKeep:
-            pathsToDelete.append(p.GetPath())
+
     for p in pathsToDelete:
         flatStage.RemovePrim(p)
         
     # Set layer's comment to indicate that the file is generated.
     flatLayer.comment = 'WARNING: THIS FILE IS GENERATED BY usdGenSchema. '\
                         ' DO NOT EDIT.'
-
-    # Add the list of all applied and multiple-apply API schemas.
-    if allMultipleApplyAPISchemaNamespaces:
-        flatLayer.customLayerData = {
-            'multipleApplyAPISchemas' : allMultipleApplyAPISchemaNamespaces
-        }
 
     if allFallbackSchemaPrimTypes:
         flatLayer.GetPrimAtPath('/').SetInfo(Usd.Tokens.fallbackPrimTypes, 
@@ -1469,7 +1591,6 @@ if __name__ == '__main__':
         libTokens, \
         skipCodeGen, \
         classes = ParseUsd(schemaPath)
-        tokenData = GatherTokens(classes, libName, libTokens)
         
         if args.validate:
             Print('Validation on, any diffs found will cause failure.')
@@ -1500,6 +1621,8 @@ if __name__ == '__main__':
 
         # Generate code for schema libraries that aren't specified as codeless.
         if not skipCodeGen:
+            # Gathered tokens are only used for code-full schemas.
+            tokenData = GatherTokens(classes, libName, libTokens)
             GenerateCode(templatePath, codeGenPath, tokenData, classes, 
                          args.validate,
                          namespaceOpen, namespaceClose, namespaceUsing,

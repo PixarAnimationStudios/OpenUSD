@@ -25,10 +25,7 @@
 #include "pxr/imaging/hdSt/package.h"
 
 #include "pxr/imaging/hd/binding.h"
-#include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/imaging/hf/perfLog.h"
 
 #include "pxr/imaging/hio/glslfx.h"
 
@@ -80,16 +77,14 @@ HdSt_FallbackLightingShader::SetCamera(GfMatrix4d const &worldToViewMatrix,
 
 void
 HdSt_FallbackLightingShader::BindResources(const int program,
-                                           HdSt_ResourceBinder const &binder,
-                                           HdRenderPassState const &state)
+                                           HdSt_ResourceBinder const &binder)
 {
     // nothing
 }
 
 void
 HdSt_FallbackLightingShader::UnbindResources(const int program,
-                                             HdSt_ResourceBinder const &binder,
-                                             HdRenderPassState const &state)
+                                             HdSt_ResourceBinder const &binder)
 {
     // nothing
 }

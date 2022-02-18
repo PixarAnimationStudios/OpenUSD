@@ -46,10 +46,6 @@ process follows.
 - UsdRenderSpec is a self-contained, evaluated specification
   of render settings, suitable for consumption by a backend.
 
-- UsdRenderSettingsAPI is a base class for renderer-specific
-  API schemas (provided by other schema libraries) that encode
-  renderer-specific settings.
-
 ## Reading settings {#UsdRenderReadingSettings}
 
 A UsdStage may contain multiple UsdRenderSettings prims representing

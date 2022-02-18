@@ -1,0 +1,20 @@
+ <?xml version="1.0"?>
+ <materialx version="1.38">
+   <UsdPreviewSurface name="SR_gold" type="surfaceshader">
+     <input name="diffuseColor" type="color3" output="diffuseColor" nodegraph="ComputeDiffuseColor" />
+     <input name="useSpecularWorkflow" type="integer" value="1" />
+     <input name="specularColor" type="color3" value="0, 0, 0" />
+     <input name="metallic" type="float" value="0.0" />
+     <input name="roughness" type="float" value="0.00" />
+     <input name="ior" type="float" value="50" />
+   </UsdPreviewSurface>
+   <surfacematerial name="USD_Gold" type="material">
+     <input name="surfaceshader" type="surfaceshader" nodename="SR_gold" />
+   </surfacematerial>
+   <nodegraph name="ComputeDiffuseColor">
+     <geompropvalue name="n1" type="color3">
+       <input name="geomprop" type="string" value="vertexColor2" />
+     </geompropvalue>	
+     <output name="diffuseColor" type="color3" nodename="n1" />
+   </nodegraph>
+ </materialx>

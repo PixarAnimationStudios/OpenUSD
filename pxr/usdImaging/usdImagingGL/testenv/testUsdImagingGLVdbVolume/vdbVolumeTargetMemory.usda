@@ -1,0 +1,91 @@
+#usda 1.0
+(
+    defaultPrim = "Volume"
+    upAxis = "Y"
+    startFrame = 1
+    endFrame = 3
+    doc = """A test scene for an animated Vdb volume. The volume has no material, so the fallback material will be used."""
+)
+
+def Scope "Background" (
+    doc = "Checkerboard pattern"
+)
+{
+    def Mesh "Checkerboard"
+    {
+        rel material:binding = </Background/CheckerboardMaterial>
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        point3f[] points = [(-10, -10, 0), (-10, 10, 0), (10, 10, 0), (10, -10, 0)]
+        texCoord2f[] primvars:st = [(0,0), (15,0), (15,15), (0,15)] (
+            interpolation = "varying"
+        )
+        double3 xformOp:translate = (-1, -1, -5)
+        token[] xformOpOrder = [ "xformOp:translate" ]
+    }
+
+    def Material "CheckerboardMaterial"
+    {
+        token outputs:surface.connect = </Background/CheckerboardMaterial/Surface.outputs:surface>
+
+        def Shader "Surface" (
+            doc = "Checkerboard material"
+        )
+        {
+            uniform token info:implementationSource = "sourceAsset"
+            uniform asset info:glslfx:sourceAsset = @checkerboardShader.glslfx@
+            float2 inputs:st.connect = </Background/CheckerboardMaterial/stReader.outputs:result>
+            token outputs:surface
+        }
+
+        def Shader "stReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            string inputs:varname = "st"
+            float2 outputs:result
+        }
+    }
+}
+
+def Camera "main_cam"
+{
+    float focalLength = 150.0
+    float focusDistance = 200.0
+    float fStop = 100.0
+
+    double3 xformOp:translate = (0, 0, 110)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "Lights"
+{
+    def DistantLight "Left"
+    {
+        color3f inputs:color = (1.0, 0.0, 0.0)
+        float inputs:exposure = 4
+        float xformOp:rotateY = -90
+        uniform token[] xformOpOrder = ["xformOp:rotateY"]
+    }
+}
+
+def Volume "VdbVolume" (
+    doc = "Volume without material testing the fallback volume material"
+)
+{
+    rel field:density = </VdbVolume/Density>
+    def OpenVDBAsset "Density"
+    {
+        token fieldName = "density"
+        asset filePath = @smoke_000002.vdb@
+        asset filePath.timeSamples = {
+            1: @smoke_000001.vdb@,
+            2: @smoke_000002.vdb@,
+            3: @smoke_000003.vdb@,
+        }
+        float textureMemory = 0.005
+    }
+
+    token[] xformOpOrder = [ "xformOp:translate", "xformOp:rotateX" ]
+    double3 xformOp:translate = (0, -4, 0)
+    double xformOp:rotateX = -90
+}

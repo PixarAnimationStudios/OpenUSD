@@ -37,6 +37,7 @@ HdSt_MaterialParam::HdSt_MaterialParam()
     , textureType(HdTextureType::Uv)
     , swizzle()
     , isPremultiplied(false)
+    , arrayOfTexturesSize(0)
 {
 }
 
@@ -46,7 +47,8 @@ HdSt_MaterialParam::HdSt_MaterialParam(ParamType paramType,
                                  TfTokenVector const& samplerCoords,
                                  HdTextureType textureType,
                                  std::string const& swizzle,
-                                 bool const isPremultiplied)
+                                 bool const isPremultiplied,
+                                 size_t const arrayOfTexturesSize)
     : paramType(paramType)
     , name(name)
     , fallbackValue(fallbackValue)
@@ -54,6 +56,7 @@ HdSt_MaterialParam::HdSt_MaterialParam(ParamType paramType,
     , textureType(textureType)
     , swizzle(swizzle)
     , isPremultiplied(isPremultiplied)
+    , arrayOfTexturesSize(arrayOfTexturesSize)
 {
 }
 
@@ -70,6 +73,7 @@ HdSt_MaterialParam::ComputeHash(HdSt_MaterialParamVector const &params)
         boost::hash_combine(hash, param.textureType);
         boost::hash_combine(hash, param.swizzle);
         boost::hash_combine(hash, param.isPremultiplied);
+        boost::hash_combine(hash, param.arrayOfTexturesSize);
     }
     return hash;
 }

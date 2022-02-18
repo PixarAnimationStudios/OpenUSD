@@ -398,20 +398,32 @@ UsdImagingGprimAdapter::UpdateForTime(UsdPrim const& prim,
         primvars.insert(primvars.end(), local.begin(), local.end());
 
         // Some backends may not want to load all primvars due to memory limits.
-        // We filter the list of primvars based on what the materials need.
+        // We filter the list of primvars, removing any the materials and rprims
+        // don't expect.
+        TfTokenVector rprimPrimvarNames;
         TfTokenVector matPrimvarNames;
-        if (_IsPrimvarFilteringNeeded() && !materialUsdPaths.empty()) {
-            matPrimvarNames = _CollectMaterialPrimvars(materialUsdPaths, time);
+        if (_IsPrimvarFilteringNeeded()) {
+            rprimPrimvarNames = _GetRprimPrimvarNames();
+            if (!materialUsdPaths.empty()) {
+                matPrimvarNames = _CollectMaterialPrimvars(materialUsdPaths,
+                                                           time);
+            }
         }
 
         for (auto const &pv : primvars) {
             if (_IsBuiltinPrimvar(pv.GetPrimvarName())) {
+                // This primvar has been handled explicitly above already.
                 continue;
             }
             if (_IsPrimvarFilteringNeeded() &&
+                std::find(rprimPrimvarNames.begin(),
+                          rprimPrimvarNames.end(),
+                          pv.GetPrimvarName()) == rprimPrimvarNames.end() &&
                 std::find(matPrimvarNames.begin(),
                           matPrimvarNames.end(),
                           pv.GetPrimvarName()) == matPrimvarNames.end()) {
+                // No material or rprim expects this primvar, so it doesn't
+                // pass filtering, so skip it.
                 continue;
             }
 
@@ -996,6 +1008,14 @@ UsdImagingGprimAdapter::_CollectMaterialPrimvars(
 
     return primvars;
 }
+
+TfTokenVector const&
+UsdImagingGprimAdapter::_GetRprimPrimvarNames() const
+{
+    static TfTokenVector primvarNames;
+    return primvarNames;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

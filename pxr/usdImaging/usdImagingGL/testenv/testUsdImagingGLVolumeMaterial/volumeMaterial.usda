@@ -1,0 +1,392 @@
+#usda 1.0
+(
+    defaultPrim = "Volume"
+    doc = '''A test scene for volumes with different volume materials.'''
+    endFrame = 100
+    startFrame = 1
+    upAxis = "Y"
+)
+
+def Material "VolumeParameterMaterial" (
+    doc = "A material producing an ellipsoidal volume where extinction, scattering, and emission can be controlled by constant primvars"
+)
+{
+    token outputs:volume.connect = </VolumeParameterMaterial/Volume.outputs:volume>
+
+    def Shader "Volume"
+    {
+        uniform asset info:glslfx:sourceAsset = @volumeShaderParameter.glslfx@
+        uniform token info:implementationSource = "sourceAsset"
+        float3 inputs:emissionColor.connect = </VolumeParameterMaterial/Volume/EmissionColorReader.outputs:result>
+        float inputs:extinctionScale.connect = </VolumeParameterMaterial/Volume/ExtinctionScaleReader.outputs:result>
+        float inputs:scatteringScale.connect = </VolumeParameterMaterial/Volume/ScatteringScaleReader.outputs:result>
+        token outputs:volume
+
+        def Shader "ExtinctionScaleReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float"
+            string inputs:varname = "extinctionScale"
+            float outputs:result
+        }
+
+        def Shader "ScatteringScaleReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float"
+            string inputs:varname = "scatteringScale"
+            float outputs:result
+        }
+
+        def Shader "EmissionColorReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float"
+            string inputs:varname = "emissionColor"
+            float outputs:result
+        }
+    }
+}
+
+def Material "VolumeShapeMaterial" (
+    doc = """A material producing a volume which uses constant hard-coded
+             extinction and scattering (but zero emission) on a different
+             shapes controlled by the constant primvar eta.
+             The shape is a sphere with respect to the L^p."""
+)
+{
+    token outputs:volume.connect = </VolumeShapeMaterial/Volume.outputs:volume>
+
+    def Shader "Volume" (
+        doc = "Shadeless semi-transparent green"
+    )
+    {
+        uniform asset info:glslfx:sourceAsset = @volumeShaderShape.glslfx@
+        uniform token info:implementationSource = "sourceAsset"
+        float inputs:eta.connect = </VolumeShapeMaterial/Volume/EtaReader.outputs:result>
+        token outputs:volume
+
+        def Shader "EtaReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float"
+            string inputs:varname = "eta"
+            float outputs:result
+        }
+    }
+}
+
+def Scope "Background" (
+    doc = "Checkerboard pattern"
+)
+{
+    def Mesh "Checkerboard"
+    {
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        rel material:binding = </Background/CheckerboardMaterial>
+        point3f[] points = [(-10, -10, 0), (-10, 10, 0), (10, 10, 0), (10, -10, 0)]
+        texCoord2f[] primvars:st = [(0, 0), (15, 0), (15, 15), (0, 15)] (
+            interpolation = "varying"
+        )
+        double3 xformOp:translate = (-1, -1, -5)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Material "CheckerboardMaterial"
+    {
+        token outputs:surface.connect = </Background/CheckerboardMaterial/Surface.outputs:surface>
+
+        def Shader "Surface" (
+            doc = "Shadeless semi-transparent green"
+        )
+        {
+            uniform asset info:glslfx:sourceAsset = @checkerboardShader.glslfx@
+            uniform token info:implementationSource = "sourceAsset"
+            float2 inputs:st.connect = </Background/CheckerboardMaterial/stReader.outputs:result>
+            token outputs:surface
+        }
+
+        def Shader "stReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            string inputs:varname = "st"
+            float2 outputs:result
+        }
+    }
+}
+
+def Camera "main_cam"
+{
+    float focalLength = 150
+    double3 xformOp:translate = (0, 0, 110)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "Lights"
+{
+    def DistantLight "Left"
+    {
+        color3f inputs:color = (1, 0, 0)
+        float inputs:exposure = 1
+        float xformOp:rotateY = -90
+        uniform token[] xformOpOrder = ["xformOp:rotateY"]
+    }
+
+    def DistantLight "Right"
+    {
+        color3f inputs:color = (0, 1, 0)
+        float inputs:exposure = 1
+        float xformOp:rotateY = 90
+        uniform token[] xformOpOrder = ["xformOp:rotateY"]
+    }
+
+    def DistantLight "top"
+    {
+        color3f inputs:color = (0, 0, 1)
+        float inputs:exposure = 1
+        float xformOp:rotateX = -90
+        uniform token[] xformOpOrder = ["xformOp:rotateX"]
+    }
+}
+
+def Scope "ParameterExamples" (
+    doc = "Using different parameters for extinction, scattering, and emission"
+)
+{
+    def Volume "Emission"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        rel material:binding = </VolumeParameterMaterial>
+        float3 primvars:emissionColor = (0, 0.5, 0) (
+            interpolation = "constant"
+        )
+        float primvars:extinctionScale = 0 (
+            interpolation = "constant"
+        )
+        float primvars:scatteringScale = 0 (
+            interpolation = "constant"
+        )
+        double3 xformOp:translate = (-6, 4, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Volume "EmissionAndExtinction"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        rel material:binding = </VolumeParameterMaterial>
+        float3 primvars:emissionColor = (0, 1, 0) (
+            interpolation = "constant"
+        )
+        float primvars:extinctionScale = 2 (
+            interpolation = "constant"
+        )
+        float primvars:scatteringScale = 0 (
+            interpolation = "constant"
+        )
+        double3 xformOp:translate = (-4, 4, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Volume "ScatteringAndExtinction"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        rel material:binding = </VolumeParameterMaterial>
+        float3 primvars:emissionColor = (0, 0, 0) (
+            interpolation = "constant"
+        )
+        float primvars:extinctionScale = 2 (
+            interpolation = "constant"
+        )
+        float primvars:scatteringScale = 2 (
+            interpolation = "constant"
+        )
+        double3 xformOp:translate = (-2, 4, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Volume "ScatteringAndExtinction2"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        rel material:binding = </VolumeParameterMaterial>
+        float3 primvars:emissionColor = (0, 0, 0) (
+            interpolation = "constant"
+        )
+        float primvars:extinctionScale = 1.5 (
+            interpolation = "constant"
+        )
+        float primvars:scatteringScale = 2 (
+            interpolation = "constant"
+        )
+        double3 xformOp:translate = (0, 4, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Volume "ScatteringAndExtinction3"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        rel material:binding = </VolumeParameterMaterial>
+        float3 primvars:emissionColor = (0, 0, 0) (
+            interpolation = "constant"
+        )
+        float primvars:extinctionScale = 1 (
+            interpolation = "constant"
+        )
+        float primvars:scatteringScale = 2 (
+            interpolation = "constant"
+        )
+        double3 xformOp:translate = (2, 4, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Volume "Scattering"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        rel material:binding = </VolumeParameterMaterial>
+        float3 primvars:emissionColor = (0, 0, 0) (
+            interpolation = "constant"
+        )
+        float primvars:extinctionScale = 0 (
+            interpolation = "constant"
+        )
+        float primvars:scatteringScale = 0.1 (
+            interpolation = "constant"
+        )
+        double3 xformOp:translate = (4, 4, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Scope "ShapeExamples" (
+    doc = "Tests the other material where the shape of the volume can be controlled"
+)
+{
+    def Volume "AlmostCube"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        rel material:binding = </VolumeShapeMaterial>
+        float primvars:eta = 6 (
+            interpolation = "constant"
+        )
+        double3 xformOp:translate = (-6, 2, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Volume "AlmostOctahedron"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        rel material:binding = </VolumeShapeMaterial>
+        float primvars:eta = 1.1 (
+            interpolation = "constant"
+        )
+        double3 xformOp:translate = (-4, 2, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+over "Master" (
+    instancable = true
+)
+{
+    def Volume "Volume1"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        rel material:binding = </VolumeParameterMaterial>
+        float3 primvars:emissionColor = (0, 0, 0) (
+            interpolation = "constant"
+        )
+        float primvars:eta = 5 (
+            interpolation = "constant"
+        )
+        float primvars:extinctionScale = 1 (
+            interpolation = "constant"
+        )
+        float primvars:scatteringScale = 0.5 (
+            interpolation = "constant"
+        )
+    }
+
+    def Volume "Volume2"
+    {
+        float3[] extent = [(0, 0, -1), (2, 2, 1)]
+        rel material:binding = </VolumeShapeMaterial>
+        float primvars:eta = 100 (
+            interpolation = "constant"
+        )
+        double3 xformOp:translate = (1, -1, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Xform "InstancedVolumes" (
+    doc = "Tests instancing for volumes"
+)
+{
+    double3 xformOp:translate = (-6, -4, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Xform "One" (
+        add inherits = </Master>
+    )
+    {
+        double3 xformOp:scale = (0.25, 0.5, 0.5)
+        double3 xformOp:translate = (0, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+
+    def Xform "Two" (
+        add inherits = </Master>
+    )
+    {
+        double3 xformOp:scale = (0.5, 0.5, 0.5)
+        double3 xformOp:translate = (0, 1, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+}
+
+over "RecursiveMaster" (
+    instancable = true
+)
+{
+    def Xform "M1" (
+        add inherits = </Master>
+    )
+    {
+        double3 xformOp:translate = (0, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "M2" (
+        add inherits = </Master>
+    )
+    {
+        double3 xformOp:translate = (5, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Xform "RecursivelyInstancedVolumes" (
+    doc = """Tests recursive instancing for volumes with materials.
+             In particular, the volumes should pick up different materials
+             from different instancing levels."""
+)
+{
+    double3 xformOp:translate = (-6, -2, 0)
+    token[] xformOpOrder = ["xformOp:translate"]
+
+    def Xform "One" (
+        add inherits = </RecursiveMaster>
+    )
+    {
+        rel material:binding = </VolumeShapeMaterial>
+        double3 xformOp:scale = (0.5, 0.5, 0.5)
+        double3 xformOp:translate = (0, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+
+    def Xform "Two" (
+        add inherits = </RecursiveMaster>
+    )
+    {
+        double3 xformOp:scale = (0.5, 0.5, 0.5)
+        double3 xformOp:translate = (0, 1, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+}
+

@@ -60,6 +60,7 @@ public:
     /// Executes the drawing commands for this batch.
     HDST_API
     void ExecuteDraw(
+        HgiGraphicsCmds *gfxCmds,
         HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry) override;
 
@@ -68,6 +69,10 @@ protected:
     void _Init(HdStDrawItemInstance * drawItemInstance) override;
 
 private:
+    void _ExecuteDraw(
+        HdStRenderPassStateSharedPtr const &renderPassState,
+        HdStResourceRegistrySharedPtr const & resourceRegistry);
+
     size_t _bufferArraysHash;
 };
 

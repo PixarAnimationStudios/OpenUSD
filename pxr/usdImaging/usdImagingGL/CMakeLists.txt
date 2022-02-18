@@ -74,19 +74,71 @@ pxr_library(usdImagingGL
         shaders/drawMode.glslfx
 )
 
-if (X11_FOUND OR APPLE)
-    pxr_build_test(testUsdImagingGLBasicDrawing
-        LIBRARIES
-            hd
-            garch
-            glf
-            usd
-            usdUtils
-            usdImaging
-            usdImagingGL
-            sdf
-        CPPFILES
-            unitTestGLDrawing.cpp
-            testenv/testUsdImagingGLBasicDrawing.cpp
-    )
-endif()
+#
+# C++ tests - Only build on all platforms for now.
+# 
+set(TEST_LIBS "arch" "garch" "glf" "hd" "sdf" "tf" "usd" "usdUtils" "usdImaging" "usdImagingGL")
+
+pxr_build_test(testUsdImagingGLBasicDrawing
+    LIBRARIES
+        ${TEST_LIBS}
+    CPPFILES
+        unitTestGLDrawing.cpp
+        testenv/testUsdImagingGLBasicDrawing.cpp
+)
+
+pxr_build_test(testUsdImagingGLBatchedDrawing
+    LIBRARIES
+        ${TEST_LIBS}
+    CPPFILES
+        unitTestGLDrawing.cpp
+        testenv/testUsdImagingGLBatchedDrawing.cpp
+)
+
+pxr_build_test(testUsdImagingGLHighlight
+    LIBRARIES
+        ${TEST_LIBS}
+    CPPFILES
+        unitTestGLDrawing.cpp
+        testenv/testUsdImagingGLHighlight.cpp
+)
+
+pxr_build_test(testUsdImagingGLPickAndHighlight
+    LIBRARIES
+        ${TEST_LIBS}
+    CPPFILES
+        unitTestGLDrawing.cpp
+        testenv/testUsdImagingGLPickAndHighlight.cpp
+)
+
+pxr_build_test(testUsdImagingGLPopOut
+    LIBRARIES
+        ${TEST_LIBS}
+    CPPFILES
+        unitTestGLDrawing.cpp
+        testenv/testUsdImagingGLPopOut.cpp
+)
+
+pxr_build_test(testUsdImagingGLPurpose
+    LIBRARIES
+        ${TEST_LIBS}
+    CPPFILES
+        unitTestGLDrawing.cpp
+        testenv/testUsdImagingGLPurpose.cpp
+)
+
+pxr_build_test(testUsdImagingGLResync
+    LIBRARIES
+        ${TEST_LIBS}
+    CPPFILES
+        unitTestGLDrawing.cpp
+        testenv/testUsdImagingGLResync.cpp
+)
+
+pxr_build_test(testUsdImagingGLSurfaceShader
+    LIBRARIES
+        ${TEST_LIBS}
+    CPPFILES
+        unitTestGLDrawing.cpp
+        testenv/testUsdImagingGLSurfaceShader.cpp
+)

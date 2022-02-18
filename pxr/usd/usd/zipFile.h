@@ -111,13 +111,9 @@ public:
     /// Iterator for traversing and inspecting the contents of the zip archive.
     class Iterator 
     {
-    public:
-        USD_API
-        Iterator();
-
         // Proxy type for operator->(), needed since this iterator's value
         // is generated on the fly.
-        class _ArrowProxy 
+        class _ArrowProxy
         {
         public:
             explicit _ArrowProxy(const std::string& s) : _s(s) { }
@@ -125,6 +121,25 @@ public:
         private:
             std::string _s;
         };
+
+    public:
+        USD_API
+        Iterator();
+
+        USD_API
+        ~Iterator();
+
+        USD_API
+        Iterator(const Iterator& rhs);
+
+        USD_API
+        Iterator(Iterator&& rhs);
+
+        USD_API
+        Iterator& operator=(const Iterator& rhs);
+
+        USD_API
+        Iterator& operator=(Iterator&& rhs);
 
         using difference_type = std::ptrdiff_t;
         using value_type = std::string;
@@ -166,10 +181,10 @@ public:
 
     private:
         friend class UsdZipFile;
-        Iterator(const _Impl* impl);
+        Iterator(const _Impl* impl, size_t offset = 0);
 
-        const _Impl* _impl;
-        size_t _offset;
+        class _IteratorData;
+        std::unique_ptr<_IteratorData> _data;
     };
 
     /// Returns iterator pointing to the first file in the zip archive.

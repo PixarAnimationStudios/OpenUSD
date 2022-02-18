@@ -104,7 +104,7 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
         true);
     
     // Determine if the light material network is time varying.
-    if (UsdImaging_IsHdMaterialNetworkTimeVarying(prim)) {
+    if (UsdImagingIsHdMaterialNetworkTimeVarying(prim)) {
         *timeVaryingBits |= HdLight::DirtyBits::DirtyResource;
     }
 
@@ -223,6 +223,10 @@ UsdImagingLightAdapter::GetMaterialResource(UsdPrim const &prim,
                                             SdfPath const& cachePath, 
                                             UsdTimeCode time) const
 {
+    if (!_GetSceneLightsEnabled()) {
+        return VtValue();
+    }
+
     if (!prim.HasAPI<UsdLuxLightAPI>()) {
         TF_RUNTIME_ERROR("Expected light prim at <%s> to have an applied API "
                          "of type 'UsdLuxLightAPI'; ignoring",
@@ -236,7 +240,7 @@ UsdImagingLightAdapter::GetMaterialResource(UsdPrim const &prim,
 
     HdMaterialNetworkMap networkMap;
 
-    UsdImaging_BuildHdMaterialNetworkFromTerminal(
+    UsdImagingBuildHdMaterialNetworkFromTerminal(
         prim, 
         HdMaterialTerminalTokens->light,
         _GetShaderSourceTypes(),

@@ -57,6 +57,12 @@ public:
     HGIMETAL_API
     virtual bool VisitScopeFunctionDefinitions(std::ostream &ss);
     HGIMETAL_API
+    virtual bool VisitScopeConstructorDeclarations(std::ostream &ss);
+    HGIMETAL_API
+    virtual bool VisitScopeConstructorInitialization(std::ostream &ss);
+    HGIMETAL_API
+    virtual bool VisitScopeConstructorInstantiation(std::ostream &ss);
+    HGIMETAL_API
     virtual bool VisitEntryPointParameterDeclarations(std::ostream &ss);
     HGIMETAL_API
     virtual bool VisitEntryPointFunctionExecutions(
@@ -170,8 +176,10 @@ public:
         const std::string &samplerSharedIdentifier,
         const HgiShaderSectionAttributeVector &attributes,
         const HgiMetalSamplerShaderSection *samplerShaderSectionDependency,
-        const std::string &defaultValue = std::string(),
-        uint32_t dimension = 2);
+        uint32_t dimensions,
+        HgiFormat format,
+        bool writable,
+        const std::string &defaultValue = std::string());
 
     HGIMETAL_API
     void WriteType(std::ostream& ss) const override;
@@ -187,9 +195,13 @@ private:
         const HgiMetalTextureShaderSection&) = delete;
     HgiMetalTextureShaderSection(const HgiMetalTextureShaderSection&) = delete;
 
+    const std::string _samplerSharedIdentifier;
     const HgiMetalSamplerShaderSection* const _samplerShaderSectionDependency;
     const uint32_t _dimensionsVar;
-    const std::string _samplerSharedIdentifier;
+    const HgiFormat _format;
+    const bool _writable;
+    std::string _baseType;
+    std::string _returnType;
 };
 
 /// \class HgiMetalBufferShaderSection
@@ -204,6 +216,8 @@ public:
     HgiMetalBufferShaderSection(
         const std::string &samplerSharedIdentifier,
         const std::string &type,
+        const HgiBindingType binding,
+        const bool writable,
         const HgiShaderSectionAttributeVector &attributes);
 
     HGIMETAL_API
@@ -211,6 +225,12 @@ public:
 
     HGIMETAL_API
     bool VisitScopeMemberDeclarations(std::ostream &ss) override;
+    HGIMETAL_API
+    bool VisitScopeConstructorDeclarations(std::ostream &ss) override;
+    HGIMETAL_API
+    bool VisitScopeConstructorInitialization(std::ostream &ss) override;
+    HGIMETAL_API
+    bool VisitScopeConstructorInstantiation(std::ostream &ss) override;
     HGIMETAL_API
     bool VisitEntryPointParameterDeclarations(std::ostream &ss)  override;
     HGIMETAL_API
@@ -225,6 +245,8 @@ private:
     HgiMetalBufferShaderSection(const HgiMetalBufferShaderSection&) = delete;
 
     const std::string _type;
+    const HgiBindingType _binding;
+    const bool _writable;
     const std::string _samplerSharedIdentifier;
 };
 

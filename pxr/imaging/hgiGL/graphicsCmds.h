@@ -90,7 +90,8 @@ public:
     void Draw(
         uint32_t vertexCount,
         uint32_t firstVertex,
-        uint32_t instanceCount) override;
+        uint32_t instanceCount,
+        uint32_t firstInstance) override;
 
     HGIGL_API
     void DrawIndirect(
@@ -105,7 +106,8 @@ public:
         uint32_t indexCount,
         uint32_t indexBufferByteOffset,
         uint32_t vertexOffset,
-        uint32_t instanceCount) override;
+        uint32_t instanceCount,
+        uint32_t firstInstance) override;
 
     HGIGL_API
     void DrawIndexedIndirect(
@@ -140,8 +142,11 @@ private:
     bool _recording;
     HgiGraphicsCmdsDesc _descriptor;
     HgiPrimitiveType _primitiveType;
+    int _primitiveIndexSize;
     HgiGLOpsVector _ops;
     int _pushStack;
+    int32_t _restoreReadFramebuffer;
+    int32_t _restoreDrawFramebuffer;
 
     // Cmds is used only one frame so storing multi-frame state on will not
     // survive.

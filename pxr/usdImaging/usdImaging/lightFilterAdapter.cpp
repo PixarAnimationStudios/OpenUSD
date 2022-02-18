@@ -91,7 +91,7 @@ UsdImagingLightFilterAdapter::TrackVariability(UsdPrim const& prim,
         timeVaryingBits);
 
     // Determine if the light filter material network is time varying.
-    if (UsdImaging_IsHdMaterialNetworkTimeVarying(prim)) {
+    if (UsdImagingIsHdMaterialNetworkTimeVarying(prim)) {
         *timeVaryingBits |= HdLight::DirtyBits::DirtyResource;
     }
 
@@ -175,6 +175,10 @@ UsdImagingLightFilterAdapter::GetMaterialResource(UsdPrim const &prim,
                                                   SdfPath const& cachePath, 
                                                   UsdTimeCode time) const
 {
+    if (!_GetSceneLightsEnabled()) {
+        return VtValue();
+    }
+
     UsdLuxLightFilter lightFilter(prim);
     if (!lightFilter) {
         TF_RUNTIME_ERROR("Expected light filter prim at <%s> to be a subclass of type "
@@ -190,7 +194,7 @@ UsdImagingLightFilterAdapter::GetMaterialResource(UsdPrim const &prim,
 
     HdMaterialNetworkMap networkMap;
 
-    UsdImaging_BuildHdMaterialNetworkFromTerminal(
+    UsdImagingBuildHdMaterialNetworkFromTerminal(
         prim, 
         HdMaterialTerminalTokens->lightFilter,
         _GetShaderSourceTypes(),

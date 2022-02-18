@@ -48,6 +48,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// <li>format
 ///   Format of the texture. This is required in APIs where sampler types depend
 ///   on the texture (e.g., GL) </li>
+/// <li>writable
+///   Whether the texture is writable.</li>
 /// </ul>
 ///
 struct HgiShaderFunctionTextureDesc
@@ -58,6 +60,7 @@ struct HgiShaderFunctionTextureDesc
     std::string nameInShader;
     uint32_t dimensions;
     HgiFormat format;
+    bool writable;
 };
 
 using HgiShaderFunctionTextureDescVector =
@@ -82,6 +85,14 @@ bool operator!=(
 ///   The name written from the codegen into shader file for the texture.</li>
 /// <li>type:
 ///   Type of the param within the shader file.</li>
+/// <li>bindIndex:
+///   The index of the resource.</li>
+/// <li>arraySize:
+///   The size of the array when binding is a HgiBindingTypeArray.</li>
+/// <li>bindingType:
+///   The binding model to use to expose the buffer to the shader.</li>
+/// <li>writeable:
+///   Whether the resource is writable.</li>
 /// </ul>
 ///
 struct HgiShaderFunctionBufferDesc
@@ -91,6 +102,10 @@ struct HgiShaderFunctionBufferDesc
 
     std::string nameInShader;
     std::string type;
+    int32_t bindIndex;
+    uint32_t arraySize;
+    HgiBindingType binding;
+    bool writable;
 };
 
 using HgiShaderFunctionBufferDescVector =
@@ -148,6 +163,74 @@ bool operator!=(
     const HgiShaderFunctionParamDesc& lhs,
     const HgiShaderFunctionParamDesc& rhs);
 
+/// \struct HgiShaderFunctionComputeDesc
+///
+/// Describes a compute function's description
+///
+/// <ul>
+/// <li>localSize:
+///   Optional. Specifices the 3D size of the local thread grouping. Defaults to
+///   0, meaning it is not set. When x > 0, y and z must also be set > 0. 
+///   When localSize is set to > 0, the following source is generated:
+///   GLSL: layout(local_size_x = localSize[0],
+///      local_size_y = localSize[1], local_size_z = localSize[2]) in;
+///   MSL: [[max_total_threads_per_threadgroup(localSize[0] * 
+///      localSize[1] * localSize[w])]]
+/// </li>
+/// </ul>
+///
+struct HgiShaderFunctionComputeDesc
+{
+    HGI_API
+    HgiShaderFunctionComputeDesc();
+
+    GfVec3i localSize;
+};
+
+HGI_API
+bool operator==(
+        const HgiShaderFunctionComputeDesc& lhs,
+        const HgiShaderFunctionComputeDesc& rhs);
+
+HGI_API
+bool operator!=(
+        const HgiShaderFunctionComputeDesc& lhs,
+        const HgiShaderFunctionComputeDesc& rhs);
+
+/// \struct HgiShaderFunctionTessellationDesc
+///
+/// Describes a tessellation function's description
+///
+/// <ul>
+/// <li>patchType:
+///   The type of patch</li>
+/// <li>numVertsInPerPatch:
+///   The number of vertices in per patch</li>
+/// <li>numVertsOutPerPatch:
+///   The number of vertices out per patch</li>
+/// </ul>
+///
+struct HgiShaderFunctionTessellationDesc
+{
+    enum class PatchType { Quad, Triangle };
+    HGI_API
+    HgiShaderFunctionTessellationDesc();
+
+    PatchType patchType = PatchType::Triangle;
+    uint32_t numVertsPerPatchIn = 3;
+    uint32_t numVertsPerPatchOut = 3;
+};
+
+HGI_API
+bool operator==(
+        const HgiShaderFunctionTessellationDesc& lhs,
+        const HgiShaderFunctionTessellationDesc& rhs);
+
+HGI_API
+bool operator!=(
+        const HgiShaderFunctionTessellationDesc& lhs,
+        const HgiShaderFunctionTessellationDesc& rhs);
+
 /// \struct HgiShaderFunctionDesc
 ///
 /// Describes the properties needed to create a GPU shader function.
@@ -169,6 +252,10 @@ bool operator!=(
 ///   List of descriptions of the inputs of the shader.</li>
 /// <li>stageOutputs:
 ///   List of descriptions of the outputs of the shader.</li>
+/// <li>tessellationDesc:
+///   Description of tessellation shader function.</li>
+/// <li>computeDescriptor:
+///   Description of compute shader function.</li>
 /// </ul>
 ///
 struct HgiShaderFunctionDesc
@@ -183,6 +270,8 @@ struct HgiShaderFunctionDesc
     std::vector<HgiShaderFunctionParamDesc> constantParams;
     std::vector<HgiShaderFunctionParamDesc> stageInputs;
     std::vector<HgiShaderFunctionParamDesc> stageOutputs;
+    HgiShaderFunctionTessellationDesc tessellationDescriptor;
+    HgiShaderFunctionComputeDesc computeDescriptor;
 };
 
 using HgiShaderFunctionDescVector =
@@ -207,13 +296,36 @@ HgiShaderFunctionAddTexture(
     uint32_t dimensions = 2,
     const HgiFormat &format = HgiFormatFloat32Vec4);
 
+/// Adds writable texture descriptor to given shader function descriptor.
+HGI_API
+void
+HgiShaderFunctionAddWritableTexture(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    uint32_t dimensions = 2,
+    const HgiFormat &format = HgiFormatFloat32Vec4);
+
 /// Adds buffer descriptor to given shader function descriptor.
 HGI_API
 void
 HgiShaderFunctionAddBuffer(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
-    const std::string &type);
+    const std::string &type,
+    const uint32_t bindIndex,
+    HgiBindingType binding,
+    const uint32_t arraySize = 0
+    );
+
+/// Adds buffer descriptor to given shader function descriptor.
+HGI_API
+void
+HgiShaderFunctionAddWritableBuffer(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    const std::string &type,
+    const uint32_t bindIndex
+    );
 
 /// Adds constant function param descriptor to given shader function
 /// descriptor.

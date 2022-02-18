@@ -1,0 +1,10 @@
+#usda 1.0
+(
+    metersPerUnit = 0.01
+    upAxis = "Z"
+)
+
+def Scope "World"
+{
+}
+

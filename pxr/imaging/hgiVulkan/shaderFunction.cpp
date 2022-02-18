@@ -37,7 +37,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiVulkanShaderFunction::HgiVulkanShaderFunction(
     HgiVulkanDevice* device,
-    HgiShaderFunctionDesc const& desc)
+    HgiShaderFunctionDesc const& desc,
+    int shaderVersion)
     : HgiShaderFunction(desc)
     , _device(device)
     , _spirvByteSize(0)
@@ -52,7 +53,10 @@ HgiVulkanShaderFunction::HgiVulkanShaderFunction(
     const char* debugLbl = _descriptor.debugName.empty() ?
         "unknown" : _descriptor.debugName.c_str();
 
-    HgiVulkanShaderGenerator shaderGenerator {desc};
+    const std::string versionStr = 
+        "#version " + std::to_string(shaderVersion) + "\n";
+
+    HgiVulkanShaderGenerator shaderGenerator(desc, versionStr);
     std::stringstream ss;
     shaderGenerator.Execute(ss);
     std::string shaderStr = ss.str();

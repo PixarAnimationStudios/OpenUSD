@@ -28,8 +28,6 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/lightingShader.h"
 
-#include "pxr/base/gf/vec4d.h"
-
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -55,12 +53,10 @@ public:
     std::string GetSource(TfToken const &shaderStageKey) const override;
     HDST_API
     void BindResources(int program,
-                       HdSt_ResourceBinder const &binder,
-                       HdRenderPassState const &state) override;
+                       HdSt_ResourceBinder const &binder) override;
     HDST_API
     void UnbindResources(int program,
-                         HdSt_ResourceBinder const &binder,
-                         HdRenderPassState const &state) override;
+                         HdSt_ResourceBinder const &binder) override;
     HDST_API
     void AddBindings(HdBindingRequestVector *customBindings) override;
 

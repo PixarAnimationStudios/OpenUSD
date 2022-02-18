@@ -52,7 +52,8 @@ _BuildArray(T values[], int numValues)
 class Hdx_UnitTestDelegate : public HdSceneDelegate
 {
 public:
-    Hdx_UnitTestDelegate(HdRenderIndex *renderIndex);
+    Hdx_UnitTestDelegate(HdRenderIndex *renderIndex, 
+        SdfPath const &delegateId = SdfPath::AbsoluteRootPath());
 
     void SetRefineLevel(int level);
 
@@ -63,14 +64,21 @@ public:
         GfMatrix4d const &viewMatrix, 
         GfMatrix4d const &projMatrix);
     void AddCamera(SdfPath const &id);
+    void UpdateCamera(SdfPath const &id, TfToken const &key, VtValue value);
 
     // light
     void AddLight(SdfPath const &id, GlfSimpleLight const &light);
     void SetLight(SdfPath const &id, TfToken const &key, VtValue value);
+    void RemoveLight(SdfPath const &id);
+
+    // transform
+    void UpdateTransform(SdfPath const& id, GfMatrix4f const& mat);
 
     // render buffer
-    void AddRenderBuffer(SdfPath const &id,
-                         const HdRenderBufferDescriptor &desc);
+    void AddRenderBuffer(SdfPath const &id, 
+                         HdRenderBufferDescriptor const &desc);
+    void UpdateRenderBuffer(SdfPath const &id, 
+                            HdRenderBufferDescriptor const &desc);
 
     // draw target
     void AddDrawTarget(SdfPath const &id);
@@ -250,6 +258,7 @@ private:
     std::map<SdfPath, VtValue> _materials;
     std::map<SdfPath, int> _refineLevels;
     std::map<SdfPath, _DrawTarget> _drawTargets;
+    std::map<SdfPath, GfMatrix4d> _cameraTransforms;
     int _refineLevel;
 
     using SdfPathMap = std::map<SdfPath, SdfPath>;

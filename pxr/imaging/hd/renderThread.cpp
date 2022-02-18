@@ -32,6 +32,7 @@ HdRenderThread::HdRenderThread()
     , _requestedState(StateInitial)
     , _stopRequested(false)
     , _pauseRender(false)
+    , _pauseDirty(false)
     , _rendering(false)
 {
 }

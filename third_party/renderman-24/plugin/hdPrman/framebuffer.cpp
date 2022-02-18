@@ -27,12 +27,14 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/tf.h"
+#include "pxr/base/work/loops.h"
 #include "RixDspy.h"
 #include "hdPrman/rixStrings.h"
 #include "display/display.h"
 #include "display/renderoutput.h"
 #include <map>
 #include <unordered_map>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -42,7 +44,7 @@ static RixDspy* s_dspy = nullptr;
 
 ////////////////////////////////////////////////////////////////////////
 // PRMan Display Driver API entrypoints
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////otify//////////////////////////////////////
 
 static PtDspyError HydraDspyImageOpen(
     PtDspyImageHandle* handle_p,
@@ -120,7 +122,7 @@ static PtDspyError HydraDspyImageData(
     const unsigned char *data)
 {
     // XXX: This assumes the AOV list matches what was declared to riley
-    // in hdPrman/interactiveContext.cpp CreateDisplays
+    // in hdPrman/renderParam.cpp CreateDisplays
     int nComponents = entrysize / sizeof(float);
 
     HdPrmanFramebuffer* buf = reinterpret_cast<HdPrmanFramebuffer*>(handle);
@@ -131,6 +133,8 @@ static PtDspyError HydraDspyImageData(
     {
         return PkDspyErrorBadParams;
     }
+
+    buf->newData = true;
 
     if (buf->pendingClear)
     {
@@ -152,22 +156,21 @@ static PtDspyError HydraDspyImageData(
         for (int x=xmin_plusorigin; x < xmax_plusorigin; x++) {
             int dataIdx = 0;
             int32_t primIdVal = 0;
-            for(HdPrmanFramebuffer::HdPrmanAovIt it = buf->aovs.begin();
-                it != buf->aovs.end(); ++it)
-            {
-                int cc = HdGetComponentCount(it->format);
-                if(it->format == HdFormatInt32)
+            for(HdPrmanFramebuffer::AovBuffer &aovBuffer : buf->aovBuffers) {
+                const HdPrmanFramebuffer::AovDesc &aovDesc = aovBuffer.desc;
+                const int cc = HdGetComponentCount(aovDesc.format);
+                if(aovDesc.format == HdFormatInt32)
                 {
-                    int32_t* aovData = reinterpret_cast<int32_t*>(
-                        &it->pixels[offset * cc + pixelOffset * cc]);
+                    int32_t* const aovData = reinterpret_cast<int32_t*>(
+                        &aovBuffer.pixels[offset * cc + pixelOffset * cc]);
 
-                    if(it->name == HdAovTokens->primId)
+                    if(aovDesc.name == HdAovTokens->primId)
                     {
                         aovData[0] = (data_i32[dataIdx++]-1);
                         primIdVal = aovData[0];
                     }
-                    else if((it->name == HdAovTokens->instanceId ||
-                             it->name == HdAovTokens->elementId) &&
+                    else if((aovDesc.name == HdAovTokens->instanceId ||
+                             aovDesc.name == HdAovTokens->elementId) &&
                             // Note, this will always fail if primId
                             // isn't in the AOV list"
                             primIdVal == -1)
@@ -182,9 +185,9 @@ static PtDspyError HydraDspyImageData(
                 }
                 else
                 {
-                    float* aovData = reinterpret_cast<float*>(
-                        &it->pixels[offset*cc + pixelOffset * cc]);
-                    if(it->name == HdAovTokens->depth)
+                    float* const aovData = reinterpret_cast<float*>(
+                        &aovBuffer.pixels[offset*cc + pixelOffset * cc]);
+                    if(aovDesc.name == HdAovTokens->depth)
                     {
                         if(std::isfinite(data_f32[dataIdx]))
                         {
@@ -202,7 +205,7 @@ static PtDspyError HydraDspyImageData(
                         // Premultiply color with alpha
                         // to blend pixels with background.
                         float alphaInv = 1-data_f32[3];
-                        GfVec4f const& clear = it->clearValue.Get<GfVec4f>();
+                        GfVec4f const& clear = aovDesc.clearValue.Get<GfVec4f>();
                         aovData[0] = data_f32[dataIdx++] +
                             (alphaInv) * clear[0]; // R
                         aovData[1] = data_f32[dataIdx++] +
@@ -292,7 +295,7 @@ static PtDspyError HydraDspyImageQuery (
 struct _BufferRegistry
 {
     // Map of ID's to buffers
-    typedef std::map<int32_t, HdPrmanFramebuffer*> IDMap;
+    using IDMap = std::map<int32_t, HdPrmanFramebuffer*>;
 
     std::mutex mutex;
     IDMap buffers;
@@ -300,7 +303,13 @@ struct _BufferRegistry
 };
 static TfStaticData<_BufferRegistry> _bufferRegistry;
 
-HdPrmanFramebuffer::HdPrmanFramebuffer() : w(0), h(0)
+HdPrmanFramebuffer::HdPrmanFramebuffer()
+  : w(0)
+  , h(0)
+  , cropOrigin{0,0}
+  , cropRes{0,0}
+  , pendingClear(true)
+  , newData(false)
 {
     // Add this buffer to the registry, assigning an id.
     _BufferRegistry& registry = *_bufferRegistry;
@@ -340,20 +349,24 @@ HdPrmanFramebuffer::GetByID(int32_t id)
 }
 
 void
-HdPrmanFramebuffer::AddAov(TfToken aovName, HdFormat format,
-                            VtValue clearValue)
+HdPrmanFramebuffer::CreateAovBuffers(const AovDescVector &aovDescs)
 {
-    HdPrmanAov aov;
-    aov.name = aovName;
-    aov.format = format;
-    aov.clearValue = clearValue;
-    aovs.push_back(aov);
+    aovBuffers.clear();
+    aovBuffers.reserve(aovDescs.size());
+
+    for (const AovDesc &aovDesc : aovDescs) {
+        aovBuffers.push_back({aovDesc, {}});
+    }
+
+    // Reset w and h so that pixels will be allocated on the next resize
+    w = 0;
+    h = 0;
 }
 
 void
 HdPrmanFramebuffer::Resize(int width, int height,
-                            int cropXMin, int cropYMin,
-                            int cropWidth, int cropHeight)
+                           int cropXMin, int cropYMin,
+                           int cropWidth, int cropHeight)
 {
     if (w != width || h != height ||
         cropOrigin[0] != cropXMin || cropOrigin[1] != cropYMin ||
@@ -365,12 +378,11 @@ HdPrmanFramebuffer::Resize(int width, int height,
         cropOrigin[0] = cropXMin;
         cropOrigin[1] = cropYMin;
         pendingClear = true;
+        newData = true;
 
-        for(HdPrmanFramebuffer::HdPrmanAovIt it = aovs.begin();
-            it != aovs.end(); ++it)
-        {
-            int cc = HdGetComponentCount(it->format);
-            it->pixels.resize(w*h*cc);
+        for(HdPrmanFramebuffer::AovBuffer &aovBuffer : aovBuffers) {
+            const int cc = HdGetComponentCount(aovBuffer.desc.format);
+            aovBuffer.pixels.resize(w*h*cc);
         }
     }
 }
@@ -378,14 +390,15 @@ HdPrmanFramebuffer::Resize(int width, int height,
 void
 HdPrmanFramebuffer::Clear()
 {
-    int size = w * h;
+    const int size = w * h;
 
-    for (HdPrmanAovIt it = aovs.begin(); it != aovs.end(); ++it)
-    {
-        if(it->format == HdFormatInt32)
+    for(AovBuffer &aovBuffer : aovBuffers) {
+        const AovDesc &aovDesc = aovBuffer.desc;
+        if(aovDesc.format == HdFormatInt32)
         {
-            int32_t clear = it->clearValue.Get<int32_t>();
-            int32_t *data = reinterpret_cast<int32_t*>(it->pixels.data());
+            const int32_t clear = aovDesc.clearValue.Get<int32_t>();
+            int32_t * const data = reinterpret_cast<int32_t*>(
+                aovBuffer.pixels.data());
             for(int i = 0; i < size; i++ )
             {
                 data[i] = clear;
@@ -393,11 +406,11 @@ HdPrmanFramebuffer::Clear()
         }
         else
         {
-            float *data = reinterpret_cast<float*>(it->pixels.data());
-            int cc = HdGetComponentCount(it->format);
+            float * const data = reinterpret_cast<float*>(aovBuffer.pixels.data());
+            const int cc = HdGetComponentCount(aovDesc.format);
             if(cc == 1)
             {
-                float clear = it->clearValue.Get<float>();
+                const float clear = aovDesc.clearValue.Get<float>();
                 for(int i=0; i < size; i++)
                 {
                     data[i] = clear;
@@ -405,7 +418,7 @@ HdPrmanFramebuffer::Clear()
             }
             else if(cc == 3)
             {
-                GfVec3f const& clear = it->clearValue.Get<GfVec3f>();
+                GfVec3f const& clear = aovDesc.clearValue.Get<GfVec3f>();
                 for(int i=0; i < size; i++)
                 {
                     data[i*cc+0] = clear[0];
@@ -415,7 +428,7 @@ HdPrmanFramebuffer::Clear()
             }
             else if(cc == 4)
             {
-                GfVec4f const& clear = it->clearValue.Get<GfVec4f>();
+                GfVec4f const& clear = aovDesc.clearValue.Get<GfVec4f>();
                 for(int i=0; i < size; i++)
                 {
                     data[i*cc+0] = clear[0];
@@ -454,6 +467,8 @@ HdPrmanFramebuffer::Register(RixContext* ctx)
 
 constexpr size_t k_invalidOffset = size_t(-1);
 
+namespace {
+
 class DisplayHydra final : public display::Display
 {
 public:
@@ -470,16 +485,14 @@ public:
         m_buf = HdPrmanFramebuffer::GetByID(bufferID);
     }
 
-    ~DisplayHydra()
-    {
-    }
+    ~DisplayHydra() override = default;
 
     // Display interface
     bool Rebind(const uint32_t width, const uint32_t height,
                 const char* /*srfaddrhandle*/, const void* srfaddr,
                 const size_t /*srfsizebytes*/, const size_t weightsoffset,
                 const size_t* offsets, const display::RenderOutput* outputs,
-                const size_t noutputs)
+                const size_t noutputs) override
     {
         m_surface = static_cast<const uint8_t*>(srfaddr);
         m_width = width;
@@ -501,14 +514,14 @@ public:
         return true;
     }
 
-    void Close()
+    void Close() override
     {
     }
 
     void Notify(const uint32_t /*iteration*/,
                 const uint32_t /*totaliterations*/,
                 const Display::NotifyFlags flags,
-                const pxrcore::ParamList& /*metadata*/)
+                const pxrcore::ParamList& /*metadata*/) override
     {
         // We're only interested in displaying iterations.
         // renderComplete indicates the last valid set of
@@ -521,25 +534,30 @@ public:
         // Copy planar data into buffer
         std::lock_guard<std::mutex> lock(m_buf->mutex);
 
+        m_buf->newData = true;
+
         if (m_buf->pendingClear) {
             m_buf->pendingClear = false;
             m_buf->Clear();
         }
 
-        int hydraAovIdx = 0;
         int offsetIdx = 0;
         int primIdIdx = -1;
-        for(HdPrmanFramebuffer::HdPrmanAovIt it = m_buf->aovs.begin();
-            it != m_buf->aovs.end(); ++it, ++hydraAovIdx, ++offsetIdx)
-        {
-            const float* srcWeights =
+        for(size_t hydraAovIdx = 0;
+            hydraAovIdx < m_buf->aovBuffers.size();
+            hydraAovIdx++, offsetIdx++) {
+
+            HdPrmanFramebuffer::AovBuffer &aovBuffer =
+                m_buf->aovBuffers[hydraAovIdx];
+            const HdPrmanFramebuffer::AovDesc &aovDesc =
+                aovBuffer.desc;
+
+            const float* const srcWeights =
                 reinterpret_cast<const float*>(m_surface+m_weightsOffset);
 
-
-            int cc = HdGetComponentCount(it->format);
-            size_t srcOffset = m_offsets[offsetIdx];
-            if (it->format == HdFormatInt32)
-            {
+            const int cc = HdGetComponentCount(aovDesc.format);
+            const size_t srcOffset = m_offsets[offsetIdx];
+            if (aovDesc.format == HdFormatInt32) {
                 const int32_t* srcInt =
                     reinterpret_cast<const int32_t*>(
                         m_surface + srcOffset);
@@ -557,218 +575,261 @@ public:
                 // id values to have been manipulated in this way.
                 // NB: There's an assumption here that the primId
                 // aov is processed before elementId and instanceId aovs
-                if (it->name == HdAovTokens->primId)
-                {
+                if (aovDesc.name == HdAovTokens->primId) {
                     primIdIdx = hydraAovIdx;
 
-                    for (uint32_t y = 0; y < m_height; y++)
-                    {
-                        // Flip Y
-                        int32_t* aovData =
-                            reinterpret_cast<int32_t*>(it->pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w);
+                    WorkParallelForN(m_height,
+                                     [this, &srcInt, &aovBuffer]
+                                     (size_t begin, size_t end) {
 
-                        for (uint32_t x = 0; x < m_width; x++)
-                        {
-                            *aovData = (*srcInt) - 1;
-                            srcInt++;
-                            aovData++;
-                        }
-                    }
-                }
-                else if (it->name == HdAovTokens->instanceId ||
-                                    it->name == HdAovTokens->elementId)
-                {
-                    for (uint32_t y = 0; y < m_height; y++)
-                    {
-                        // Flip Y
-                        int32_t* aovData =
-                            reinterpret_cast<int32_t*>(it->pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w);
-                        int32_t* primIdData =
-                            reinterpret_cast<int32_t*>(
-                                m_buf->aovs[primIdIdx].pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w);
+                        const int32_t* src = srcInt + begin * m_width;
+                        for (size_t y=begin; y<end; ++y) {
+                            int32_t* aovData =
+                                reinterpret_cast<int32_t*>(aovBuffer.pixels.data()) +
+                                ((m_buf->h-1-y)*m_width);
 
-                        for (uint32_t x = 0; x < m_width; x++)
-                        {
-                            if(*primIdData == -1)
-                            {
-                                *aovData = -1;
+                            for (uint32_t x = 0; x < m_width; x++) {
+                                *aovData = (*src) - 1;
+                                src++;
+                                aovData++;
                             }
-                            else
-                            {
-                                *aovData = *srcInt;
-                            }
-                            srcInt++;
-                            aovData++;
-                            primIdData++;
                         }
-                    }
+                    });
+
+                    srcInt += m_width * m_height;
                 }
-                else
-                {
-                    for (uint32_t y = 0; y < m_height; y++)
-                    {
-                        // Flip Y
-                        int32_t* aovData =
-                            reinterpret_cast<int32_t*>(it->pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w);
-                        memcpy(aovData, srcInt, sizeof(int32_t) * m_width);
-                        srcInt += m_width;
-                    }
+                else if (aovDesc.name == HdAovTokens->instanceId ||
+                         aovDesc.name == HdAovTokens->elementId) {
+                    WorkParallelForN(m_height,
+                                     [this, &srcInt, &aovBuffer, &primIdIdx]
+                                     (size_t begin, size_t end) {
+                                         
+                                   
+                        const int32_t* src = srcInt + begin * m_width;
+                        for (size_t y=begin; y<end; ++y) {
+                            int32_t* aovData =
+                                reinterpret_cast<int32_t*>(
+                                    aovBuffer.pixels.data()) +
+                                ((m_buf->h-1-y)*m_width);
+
+                            int32_t* primIdData =
+                                reinterpret_cast<int32_t*>(
+                                    m_buf->aovBuffers[primIdIdx].pixels.data()) +
+                                ((m_buf->h-1-y)*m_buf->w);
+
+                            for (uint32_t x = 0; x < m_width; x++)
+                            {
+                                if(*primIdData == -1) {
+                                    *aovData = -1;
+                                }
+                                else {
+                                    *aovData = *src;
+                                }
+                                src++;
+                                aovData++;
+                                primIdData++;
+                            }
+                        }
+                    });
+
+                    srcInt += m_width * m_height;
+                }
+                else {
+                    WorkParallelForN(m_height,
+                                     [this, &srcInt, &aovBuffer]
+                                     (size_t begin, size_t end) {
+                                         
+                        const int32_t* src = srcInt + begin * m_width;
+                        for (size_t y=begin; y<end; ++y) {
+                            int32_t* const aovData = 
+                                reinterpret_cast<int32_t*>(
+                                    aovBuffer.pixels.data()) +
+                                ((m_buf->h-1-y)*m_width);
+                            memcpy(aovData, src, sizeof(int32_t) * m_width);
+                            src += m_width;
+                        }
+                    });
                 }   
-                    
+
+                srcInt += m_width * m_height;
             }
-            else
-            {
-                if(it->name == HdAovTokens->depth)
-                {
-                    const float* srcScalar =
-                        reinterpret_cast<const float*>(m_surface +
-                                                       srcOffset);
 
-                    for (uint32_t y = 0; y < m_height; y++)
-                    {
-                        // Flip Y
-                        float* aovData =
-                            reinterpret_cast<float*>(it->pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w);
+            else {
+                if(aovDesc.name == HdAovTokens->depth) {
 
-                        for (uint32_t x = 0; x < m_width; x++)
-                        {
-                            float value = *srcScalar;
-                            if(std::isfinite(value))
+                    WorkParallelForN(m_height,
+                                     [this, &aovBuffer, &srcOffset]
+                                     (size_t begin, size_t end) {
+
+                        const float* srcScalar =
+                            reinterpret_cast<const float*>(
+                                m_surface + srcOffset)
+                            + begin * m_width;
+                                       
+                        for (size_t y=begin; y<end; ++y) {
+  
+                            // Flip Y
+                            float* aovData =
+                                reinterpret_cast<float*>(
+                                    aovBuffer.pixels.data()) +
+                                ((m_buf->h-1-y)*m_buf->w);
+
+                            for (uint32_t x = 0; x < m_width; x++)
                             {
-                                value =
-                                    m_buf->proj.Transform(
-                                        GfVec3f(0,0,-value))[2];
-                            }
-                            else
-                            {
-                                value = -1.0f;
-                            }
-                            *aovData = value;
+                                float value = *srcScalar;
+                                if(std::isfinite(value))
+                                {
+                                    value =
+                                        m_buf->proj.Transform(
+                                            GfVec3f(0,0,-value))[2];
+                                }
+                                else
+                                {
+                                    value = -1.0f;
+                                }
+                                *aovData = value;
                             
-                            aovData++;
-                            srcScalar++;
+                                aovData++;
+                                srcScalar++;
+                            }
                         }
-                    }
+                    });
                 }
-                else if( cc == 4 )
-                {
-                    const float* srcColorR =
-                        reinterpret_cast<const float*>(m_surface +
-                                                       srcOffset);
-                    const float* srcColorA =
-                        reinterpret_cast<const float*>(
-                            m_surface + m_alphaOffset);
+                else if( cc == 4 ) {
+                    WorkParallelForN(m_height,
+                                     [this, &aovBuffer, &srcWeights, &srcOffset]
+                                     (size_t begin, size_t end) {
 
-                    GfVec4f clear =
-                        it->clearValue.Get<GfVec4f>();
+                        const float* weights =
+                            srcWeights + begin * m_width;
+ 
+                        const float* srcColorR =
+                            reinterpret_cast<const float*>(
+                                m_surface + srcOffset)
+                            + begin * m_width;
+                        const float* srcColorA =
+                            reinterpret_cast<const float*>(
+                                m_surface + m_alphaOffset)
+                            + begin * m_width;
 
-                    for (uint32_t y = 0; y < m_height; y++)
-                    {
-                        // Flip Y and assume RGBA (i.e. 4) color width
-                        float* aovData =
-                            reinterpret_cast<float*>(it->pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w)*4;
+                        const GfVec4f clear =
+                            aovBuffer.desc.clearValue.Get<GfVec4f>();
 
-                        for (uint32_t x = 0; x < m_width; x++)
-                        {
-                            float isc = 1.f;
-                            if(*srcWeights > 0.f)
-                                isc = 1.f / *srcWeights;
+                        for (size_t y=begin; y<end; ++y) {
+                            // Flip Y and assume RGBA (i.e. 4) color width
+                            float* aovData =
+                                reinterpret_cast<float*>(
+                                    aovBuffer.pixels.data()) +
+                                ((m_buf->h-1-y)*m_buf->w)*4;
 
-                            const float* srcColorG =
-                                srcColorR + (m_height * m_width);
-                            const float* srcColorB =
-                                srcColorG + (m_height * m_width);
+                            for (uint32_t x = 0; x < m_width; x++) {
+                                float isc = 1.f;
+                                if(*weights > 0.f)
+                                    isc = 1.f / *weights;
 
-                            // Premultiply color with alpha
-                            // to blend pixels with background.
-                            float alphaInv = 1-(*srcColorA * isc);
-                            aovData[0] = *srcColorR * isc +
-                                (alphaInv) * clear[0]; // R
-                            aovData[1] = *srcColorG * isc +
-                                (alphaInv) * clear[1]; // G
-                            aovData[2] = *srcColorB * isc +
-                                (alphaInv) * clear[2]; // B
-                            aovData[3] = *srcColorA * isc; // A
+                                const float* const srcColorG =
+                                    srcColorR + (m_height * m_width);
+                                const float* const srcColorB =
+                                    srcColorG + (m_height * m_width);
 
-                            aovData += 4;
-                            srcColorR++;
-                            srcColorA++;
-                            srcWeights++;
+                                // Premultiply color with alpha
+                                // to blend pixels with background.
+                                const float alphaInv = 1-(*srcColorA * isc);
+                                aovData[0] = *srcColorR * isc +
+                                    (alphaInv) * clear[0]; // R
+                                aovData[1] = *srcColorG * isc +
+                                    (alphaInv) * clear[1]; // G
+                                aovData[2] = *srcColorB * isc +
+                                    (alphaInv) * clear[2]; // B
+                                aovData[3] = *srcColorA * isc; // A
+
+                                aovData += 4;
+                                srcColorR++;
+                                srcColorA++;
+                                weights++;
+                            }
                         }
-                    }
+                    });
 
                     // When component count is 4 (rgba) in the hydra aov,
                     // xpu's aovs will have a rgb aov followed by an alpha,
                     // so need to do an extra increment to skip past the alpha
                     offsetIdx++;
                 }
-                else if (cc == 1)
-                {
-                    const float* srcColorR =
-                        reinterpret_cast<const float*>(m_surface +
-                                                       srcOffset);
+                else if (cc == 1) {
+                    WorkParallelForN(m_height,
+                                     [this, &aovBuffer, &srcWeights, &srcOffset]
+                                     (size_t begin, size_t end) {
 
-                    for (uint32_t y = 0; y < m_height; y++)
-                    {
-                        // Flip Y
-                        float* aovData =
-                            reinterpret_cast<float*>(it->pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w);
 
-                        for (uint32_t x = 0; x < m_width; x++)
-                        {
-                            float isc = 1.f;
-                            if(*srcWeights > 0.f)
-                                isc = 1.f / *srcWeights;
+                        const float* weights =
+                            srcWeights + begin * m_width;
+                        const float* srcColorR =
+                            reinterpret_cast<const float*>(
+                                m_surface + srcOffset)
+                            + begin * m_width;
+                        for (size_t y=begin; y<end; ++y) {
 
-                            *aovData = *srcColorR * isc;
+                            // Flip Y
+                            float* aovData =
+                                reinterpret_cast<float*>(
+                                    aovBuffer.pixels.data()) +
+                                ((m_buf->h-1-y)*m_buf->w);
 
-                            aovData++;
-                            srcColorR++;
-                            srcWeights++;
+                            for (uint32_t x = 0; x < m_width; x++)
+                            {
+                                float isc = 1.f;
+                                if(*weights > 0.f)
+                                    isc = 1.f / *weights;
+
+                                *aovData = *srcColorR * isc;
+
+                                aovData++;
+                                srcColorR++;
+                                weights++;
+                            }
                         }
-                    }
+                    });
                 }                
-                else
-                {
+                else {
                     assert(cc == 3);
-                    const float* srcColorR =
-                        reinterpret_cast<const float*>(m_surface +
-                                                       srcOffset);
+                    WorkParallelForN(m_height,
+                                     [this, &aovBuffer, &srcWeights, &srcOffset]
+                                     (size_t begin, size_t end) {
 
-                    for (uint32_t y = 0; y < m_height; y++)
-                    {
-                        // Flip Y and assume RGBA (i.e. 4) color width
-                        float* aovData =
-                            reinterpret_cast<float*>(it->pixels.data()) +
-                            ((m_buf->h-1-y)*m_buf->w)*cc;
+                        const float* weights =
+                            srcWeights + begin * m_width;
+                        const float* srcColorR =
+                            reinterpret_cast<const float*>(
+                                m_surface + srcOffset)
+                            + begin * m_width;
 
-                        for (uint32_t x = 0; x < m_width; x++)
-                        {
-                            float isc = 1.f;
-                            if(*srcWeights > 0.f)
-                                isc = 1.f / *srcWeights;
+                        for (size_t y=begin; y<end; ++y) {
+                            // Flip Y and assume RGBA (i.e. 4) color width
+                            float* aovData =
+                                reinterpret_cast<float*>(aovBuffer.pixels.data()) +
+                                ((m_buf->h-1-y)*m_buf->w)*3;
 
-                            const float* srcColorG =
-                                srcColorR + (m_height * m_width);
-                            const float* srcColorB =
-                                srcColorG + (m_height * m_width);
+                            for (uint32_t x = 0; x < m_width; x++) {
+                                float isc = 1.f;
+                                if(*weights > 0.f)
+                                    isc = 1.f / *weights;
 
-                            aovData[0] = *srcColorR * isc;
-                            aovData[1] = *srcColorG * isc;
-                            aovData[2] = *srcColorB * isc;
+                                const float* const srcColorG =
+                                    srcColorR + (m_height * m_width);
+                                const float* const srcColorB =
+                                    srcColorG + (m_height * m_width);
 
-                            aovData += cc;
-                            srcColorR++;
-                            srcWeights++;
+                                aovData[0] = *srcColorR * isc;
+                                aovData[1] = *srcColorG * isc;
+                                aovData[2] = *srcColorB * isc;
+
+                                aovData += 3;
+                                srcColorR++;
+                                weights++;
+                            }
                         }
-                    }
+                    });
                 }
             }
         }
@@ -784,6 +845,8 @@ private:
 
     HdPrmanFramebuffer* m_buf;
 };
+
+}
 
 extern "C" DISPLAYEXPORT
 display::Display* CreateDisplay(const pxrcore::UString& name,

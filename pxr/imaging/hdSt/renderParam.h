@@ -94,6 +94,22 @@ public:
     void DecreaseMaterialTagCount(const TfToken &materialTag);
 
     // ---------------------------------------------------------------------- //
+    /// Render tag tracking
+    // ---------------------------------------------------------------------- /
+
+    /// Does render index have rprims with given renderTag?
+    HDST_API
+    bool HasAnyRenderTag(const TfTokenVector &renderTags) const;
+
+    /// Register that there is an rprim with given renderTag.
+    HDST_API
+    void IncreaseRenderTagCount(const TfToken &renderTag);
+    
+    /// Unregister that there is an rprim with given renderTag.
+    HDST_API
+    void DecreaseRenderTagCount(const TfToken &renderTag);
+
+    // ---------------------------------------------------------------------- //
     /// Garbage collection tracking
     // ---------------------------------------------------------------------- //
     void SetGarbageCollectionNeeded() {
@@ -109,7 +125,18 @@ public:
     }
     
 private:
-    void _AdjustMaterialTagCount(const TfToken &materialTag, int i);
+    typedef std::unordered_map<TfToken, std::atomic_int, TfHash> _TagToCountMap;
+
+    void _AdjustTagCount(
+        std::shared_timed_mutex *mutex,
+        _TagToCountMap *tagToCountMap,
+        const TfToken &tag,
+        const int increment);
+
+    bool _HasTag(
+        std::shared_timed_mutex *mutex,
+        const _TagToCountMap *tagToCountMap,
+        const TfToken &tag) const;
 
     std::atomic_uint _drawBatchesVersion;
     std::atomic_uint _materialTagsVersion;
@@ -118,7 +145,10 @@ private:
                                   // sync might only set it (and not clear).
 
     mutable std::shared_timed_mutex _materialTagToCountMutex;
-    std::unordered_map<TfToken, std::atomic_int, TfHash> _materialTagToCount;
+    _TagToCountMap _materialTagToCount;
+
+    mutable std::shared_timed_mutex _renderTagToCountMutex;
+    _TagToCountMap _renderTagToCount;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

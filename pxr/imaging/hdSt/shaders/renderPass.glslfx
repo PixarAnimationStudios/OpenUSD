@@ -138,29 +138,6 @@ bool ShouldDiscardByAlpha(vec4 color)
     return (color.a < alphaThreshold);
 }
 
--- glsl RenderPass.ShouldCullFace
-
-bool ShouldCullFace(bool frontFacing, bool doubleSided)
-{
-    const uint HdCullStyleDontCare               = uint(0);
-    const uint HdCullStyleNothing                = uint(1);
-    const uint HdCullStyleBack                   = uint(2);
-    const uint HdCullStyleFront                  = uint(3);
-    const uint HdCullStyleBackUnlessDoubleSided  = uint(4);
-    const uint HdCullStyleFrontUnlessDoubleSided = uint(5);
-
-#if defined(HD_HAS_cullStyle)
-    uint cullStyle = HdGet_cullStyle();
-#else
-    uint cullStyle = HdCullStyleNothing;
-#endif
-
-    return ((cullStyle == HdCullStyleBack                   && !frontFacing) ||
-            (cullStyle == HdCullStyleFront                  &&  frontFacing) ||
-            (cullStyle == HdCullStyleBackUnlessDoubleSided  && !frontFacing && !doubleSided) ||
-            (cullStyle == HdCullStyleFrontUnlessDoubleSided &&  frontFacing && !doubleSided));
-}
-
 -- glsl RenderPass.ApplyClipPlanes
 
 void ApplyClipPlanes(vec4 Peye)

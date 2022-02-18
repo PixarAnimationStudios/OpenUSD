@@ -33,8 +33,11 @@
 #endif
 
 #include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hdSt/udimTextureObject.h"
+
+#include "pxr/imaging/hgi/capabilities.h"
 
 #include "pxr/imaging/hio/glslfx.h"
 
@@ -684,7 +687,10 @@ _GetSamplerParameters(
              _ResolveMinSamplerParameter(
                  nodePath, node, sdrNode),
              _ResolveMagSamplerParameter(
-                 nodePath, node, sdrNode)};
+                 nodePath, node, sdrNode),
+             HdBorderColorTransparentBlack, 
+             /*enableCompare*/false, 
+             HdCmpFuncNever };
 }
 
 //
@@ -1227,8 +1233,12 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
         if (!isVolume) {
+            const bool bindlessTexturesEnabled = 
+                resourceRegistry->GetHgi()->GetCapabilities()->IsSet(
+                    HgiDeviceCapabilitiesBitsBindlessTextures);
             HdSt_ApplyMaterialXFilter(&surfaceNetwork, materialId,
-                                      *surfTerminal, surfTerminalPath);
+                                      *surfTerminal, surfTerminalPath,
+                                      &_materialParams, bindlessTexturesEnabled);
         }
 #endif
         // Extract the glslfx and metadata for surface/volume.

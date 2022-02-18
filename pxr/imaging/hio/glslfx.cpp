@@ -24,6 +24,7 @@
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/hio/glslfxConfig.h"
 #include "pxr/imaging/hio/debugCodes.h"
+#include "pxr/imaging/hio/dictionary.h"
 
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/resolvedPath.h"
@@ -67,6 +68,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (version)
     (configuration)
     (glsl)
+    (layout)
     ((import, "#import"))
     ((shaderResources, "ShaderResources"))
     ((toolSubst, "$TOOLS"))
@@ -391,6 +393,10 @@ HioGlslfx::_ProcessInput(std::istream * input,
             _sourceMap[context.currentSectionId].append(
                 context.currentLine + "\n");
         } else
+        if (context.currentSectionType == _tokens->layout) {
+            _layoutMap[context.currentSectionId].append(
+                context.currentLine + "\n");
+        } else
         if (context.currentSectionType == _tokens->configuration) {
             // this is added to the config dictionary which we will compose
             // later
@@ -472,6 +478,9 @@ HioGlslfx::_ParseSectionLine(_ParseContext & context)
     } else
     if (context.currentSectionType == _tokens->glsl.GetText()) {
         return _ParseGLSLSectionLine(tokens, context);
+    } else
+    if (context.currentSectionType == _tokens->layout.GetText()) {
+        return _ParseLayoutSectionLine(tokens, context);
     }
 
     TF_RUNTIME_ERROR("Syntax Error on line %d of %s. Unknown section tag \"%s\"",
@@ -509,6 +518,35 @@ HioGlslfx::_ParseGLSLSectionLine(vector<string> const & tokens,
     _sourceMap[context.currentSectionId].append(
         TfStringPrintf("// line %d \"%s\"\n",
                        context.lineNo, context.filename.c_str()));
+
+    return true;
+}
+
+bool
+HioGlslfx::_ParseLayoutSectionLine(vector<string> const & tokens,
+                                         _ParseContext & context)
+{
+    if (tokens.size() < 3) {
+        TF_RUNTIME_ERROR("Syntax Error on line %d of %s. \"layout\" tag "
+                         "must be followed by a valid identifier.",
+                         context.lineNo, context.filename.c_str());
+        return false;
+    }
+
+    context.currentSectionId = tokens[2];
+
+    // if we already have a section id that is registered in our layout map,
+    // bail
+    _SourceMap::const_iterator cit =
+                        _layoutMap.find(context.currentSectionId);
+    if (cit != _layoutMap.end()) {
+        TF_RUNTIME_ERROR("Syntax Error on line %d of %s. "
+                         "Layout for \"%s\" "
+                         "has already been defined", context.lineNo,
+                         context.filename.c_str(),
+                         context.currentSectionId.c_str());
+        return false;
+    }
 
     return true;
 }
@@ -650,13 +688,65 @@ HioGlslfx::GetMetadata() const
 }
 
 string
+HioGlslfx::_GetLayout(const TfToken &shaderStageKey) const
+{
+    if (!_config) {
+        return "";
+    }
+
+    vector<string> configKeys = _config->GetSourceKeys(shaderStageKey);
+
+    string ret;
+
+    for (std::string const& key : configKeys) {
+        // now look up the keys and concatenate them together..
+        _SourceMap::const_iterator cit = _layoutMap.find(key);
+
+        if (cit == _layoutMap.end()) {
+            // do nothing if there is no layout section with a matching key
+            continue;
+        }
+
+        if (!ret.empty()) {
+            ret += ",\n";
+        }
+        ret += cit->second + "\n";
+    }
+
+    return ret;
+}
+
+string
+HioGlslfx::_GetLayoutAsString(const TfTokenVector &shaderStageKeys) const
+{
+    std::string ret;
+    for (TfToken const &shaderStageKey : shaderStageKeys) {
+        if (!ret.empty()) {
+            ret += ", ";
+        }
+        ret += "\"" + shaderStageKey.GetString() +
+               "\" : [ " + _GetLayout(shaderStageKey) + " ]";
+    }
+    ret = "{ " + ret + " }";
+
+    return ret;
+}
+
+VtDictionary
+HioGlslfx::GetLayoutAsDictionary(const TfTokenVector &shaderStageKeys,
+                                 std::string *errorStr) const
+{
+    return Hio_GetDictionaryFromInput(
+        _GetLayoutAsString(shaderStageKeys), "no filename", errorStr);
+}
+
+string
 HioGlslfx::_GetSource(const TfToken &shaderStageKey) const
 {
     if (!_config) {
         return "";
     }
 
-    string errors;
     vector<string> sourceKeys = _config->GetSourceKeys(shaderStageKey);
 
     string ret;

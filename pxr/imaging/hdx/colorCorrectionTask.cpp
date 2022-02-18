@@ -223,10 +223,6 @@ HdxColorCorrectionTask::_CreateShaderResources()
         &vertDesc, "position", "vec4");
     HgiShaderFunctionAddStageInput(
         &vertDesc, "uvIn", "vec2");
-    if(_hgi->GetAPIName() == HgiTokens->OpenGL ||
-       _hgi->GetAPIName() == HgiTokens->Vulkan) {
-        vsCode = "#version 450 \n";
-    }
     HgiShaderFunctionAddStageOutput(
         &vertDesc, "gl_Position", "vec4", "position");
     HgiShaderFunctionAddStageOutput(
@@ -252,10 +248,6 @@ HdxColorCorrectionTask::_CreateShaderResources()
         &fragDesc, "screenSize", "vec2");
     fragDesc.debugName = _tokens->colorCorrectionFragment.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
-    if(_hgi->GetAPIName() == HgiTokens->OpenGL ||
-       _hgi->GetAPIName() == HgiTokens->Vulkan) {
-        fsCode = "#version 450 \n";
-    }
     if (useOCIO) {
         fsCode += "#define GLSLFX_USE_OCIO\n";
         // Our current version of OCIO outputs 130 glsl and texture3D is
@@ -487,7 +479,7 @@ HdxColorCorrectionTask::_ApplyColorCorrection(
         sizeof(_screenSize),
         &_screenSize);
     gfxCmds->SetViewport(vp);
-    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1);
+    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1, 0);
     gfxCmds->PopDebugGroup();
 
     // Done recording commands, submit work.

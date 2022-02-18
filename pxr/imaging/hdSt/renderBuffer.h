@@ -73,6 +73,9 @@ public:
     HDST_API
     bool IsMultiSampled() const override;
 
+    HDST_API
+    uint32_t GetMSAASampleCount() const;
+
     /// Map the buffer for reading. The control flow should be Map(),
     /// before any I/O, followed by memory access, followed by Unmap() when
     /// done.

@@ -227,6 +227,11 @@ protected:
         SdfPathVector const& materialUsdPaths, 
         UsdTimeCode time) const;
 
+    /// Returns the primvar names known to be supported for the rprims 
+    /// this adapter produces.  These primvar names are excepted from primvar
+    /// filtering.
+    USDIMAGING_API
+    virtual TfTokenVector const& _GetRprimPrimvarNames() const;
 };
 
 

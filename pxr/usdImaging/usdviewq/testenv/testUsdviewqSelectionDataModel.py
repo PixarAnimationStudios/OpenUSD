@@ -121,6 +121,9 @@ class FakeComputedProp:
 
         return (self._prim == other._prim) and (self._name == other._name)
 
+    def __hash__(self):
+        return hash(self._prim, self._name)
+
     def GetName(self):
 
         return self._name

@@ -36,7 +36,8 @@ class SchemaDefiningKeys(ConstantsGroup):
     SCHEMA_NAME = "schemaName"
     SCHEMA_BASE = "schemaBase"
     SCHEMA_KIND = "schemaKind"
-    USD_SCHEMA_CLASS = "usdSchemaClass"
+    API_SCHEMAS_FOR_ATTR_PRUNING = "apiSchemasForAttrPruning"
+    TYPED_SCHEMA_FOR_ATTR_PRUNING = "typedSchemaForAttrPruning"
     TF_TYPENAME_SUFFIX = "tfTypeNameSuffix"
 
 class SchemaDefiningMiscConstants(ConstantsGroup):
@@ -57,33 +58,18 @@ class PropertyDefiningKeys(ConstantsGroup):
     NULL_VALUE = "null"
     INTERNAL_DISPLAY_GROUP = "Internal"
 
-def _CreateAttrSpecFromNodeAttribute(primSpec, prop, usdSchemaNode, 
+def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning, 
         isInput=True):
-    propName = prop.GetName()
-    attrType = prop.GetTypeAsSdfType()[0]
-    
-    # error and early out if duplicate property on usdSchemaNode exists and has
-    # different types
-    if usdSchemaNode:
-        usdSchemaNodeProp = usdSchemaNode.GetInput(propName) if isInput else \
-            usdSchemaNode.GetOutput(propName)
-        if usdSchemaNodeProp:
-            usdAttrType = usdSchemaNodeProp.GetTypeAsSdfType()[0]
-            if (usdAttrType != attrType):
-                Tf.Warn("Generated schema's property type '%s', "
-                        "differs usd schema's property type '%s', for "
-                        "duplicated property '%s'" %(attrType, usdAttrType, 
-                        propName))
-            return
-
     propMetadata = prop.GetMetadata()
-    
     # Early out if the property should be suppressed from being translated to
     # propertySpec
     if ((PropertyDefiningKeys.USD_SUPPRESS_PROPERTY in propMetadata) and
             propMetadata[PropertyDefiningKeys.USD_SUPPRESS_PROPERTY] == "True"):
         return
 
+    propName = prop.GetName()
+    attrType = prop.GetTypeAsSdfType()[0]
+    
     if not Sdf.Path.IsValidNamespacedIdentifier(propName):
         Tf.RaiseRuntimeError("Property name (%s) for schema (%s) is an " \
                 "invalid namespace identifier." %(propName, primSpec.name))
@@ -96,6 +82,19 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, usdSchemaNode,
             if isInput else \
                 Sdf.Path.JoinIdentifier( \
                 [UsdShade.Tokens.outputs[:-1], propName])
+
+    # error and early out if duplicate property on primDefForAttrPruning exists
+    # and has different types
+    if primDefForAttrPruning:
+        primDefAttr = primDefForAttrPruning.GetSchemaAttributeSpec(propName)
+        if primDefAttr:
+            usdAttrType = primDefAttr.typeName
+            if (usdAttrType != attrType):
+                Tf.Warn("Generated schema's property type '%s', "
+                        "differs usd schema's property type '%s', for "
+                        "duplicated property '%s'" %(attrType, usdAttrType, 
+                        propName))
+            return
 
     # Copy over property parameters
     options = prop.GetOptions()
@@ -124,7 +123,27 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, usdSchemaNode,
     if prop.GetLabel():
         attrSpec.displayName = prop.GetLabel()
     if options and attrType == Sdf.ValueTypeNames.Token:
-        attrSpec.allowedTokens = [ x[0] for x in options ]
+        # If the value for token list is empty then use the name
+        # If options list has a mix of empty and non-empty value thats an error.
+        tokenList = []
+        hasEmptyValue = len(options[0][1]) == 0
+        for option in options:
+            if len(option[1]) == 0:
+                if not hasEmptyValue:
+                    Tf.Warn("Property (%s) for schema (%s) has mix of empty " \
+                    "non-empty values for token options (%s)." \
+                    %(propName, primSpec.name, options))
+                hasEmptyValue = True
+                tokenList.append(option[0])
+            else:
+                if hasEmptyValue:
+                    Tf.Warn("Property (%s) for schema (%s) has mix of empty " \
+                    "non-empty values for token options (%s)." \
+                    %(propName, primSpec.name, options))
+                hasEmptyValue = False
+                tokenList.append(option[1])
+        attrSpec.allowedTokens = tokenList
+
     attrSpec.default = prop.GetDefaultValueAsSdfType()
 
     # The core UsdLux inputs should remain connectable (interfaceOnly)
@@ -167,11 +186,15 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
         - "schemaBase": Base schema from which the new schema should inherit
           from. Note this defaults to "APISchemaBase" for an API schema or 
           "Typed" for a concrete scheme.
-        - "usdSchemaClass": Specifies the equivalent schema directly generated
-          by USD (sourceType: USD). This is used to make sure duplicate
-          properties already specified in the USD schema are not populated in
-          the new API schema. Note this is only used when we are dealing with an
-          API schema.
+        - "apiSchemasForAttrPruning": A list of core API schemas which will be
+          composed together and any shared shader property from this prim
+          definition is pruned from the resultant schema. 
+        - "typedSchemaForAttrPruning": A core typed schema which will be
+          composed together with the apiSchemasForAttrPruning and any shared 
+          shader property from this prim definition is pruned from the 
+          resultant schema. If no typedSchemaForAttrPruning is provided then 
+          only the apiSchemasForAttrPruning are composed to create a prim 
+          definition. This will only be used when creating an APISchema.
         - "apiSchemaAutoApplyTo": The schemas to which the sdrNode populated 
           API schema will autoApply to.
         - "apiSchemaCanOnlyApplyTo": If specified, the API schema generated 
@@ -219,7 +242,11 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
     if not schemaLayer:
         Tf.Warn("No Schema Layer provided")
         return
-    if not sdrNode:
+    if sdrNode is None:
+        # This is a workaround to iterate through invalid sdrNodes (nodes not 
+        # having any input or output properties). Currently these nodes return
+        # false when queried for IsValid().
+        # Refer: pxr/usd/ndr/node.h#140-149
         Tf.Warn("No valid sdrNode provided")
         return
 
@@ -290,10 +317,17 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
             distutils.util.strtobool(sdrNodeMetadata[SchemaDefiningKeys. \
                 PROVIDES_USD_SHADE_CONNECTABLE_API_BEHAVIOR])
 
-    usdSchemaClass = None
-    if isAPI and SchemaDefiningKeys.USD_SCHEMA_CLASS in sdrNodeMetadata:
-        usdSchemaClass = \
-            sdrNodeMetadata[SchemaDefiningKeys.USD_SCHEMA_CLASS]
+    apiSchemasForAttrPruning = None
+    if SchemaDefiningKeys.API_SCHEMAS_FOR_ATTR_PRUNING in sdrNodeMetadata:
+        apiSchemasForAttrPruning = \
+            sdrNodeMetadata[SchemaDefiningKeys.API_SCHEMAS_FOR_ATTR_PRUNING] \
+                .split('|')
+
+    typedSchemaForAttrPruning = ""
+    if isAPI and \
+            SchemaDefiningKeys.TYPED_SCHEMA_FOR_ATTR_PRUNING in sdrNodeMetadata:
+        typedSchemaForAttrPruning = \
+            sdrNodeMetadata[SchemaDefiningKeys.TYPED_SCHEMA_FOR_ATTR_PRUNING]
 
     primSpec = schemaLayer.GetPrimAtPath(schemaName)
 
@@ -349,50 +383,23 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
     if doc != "":
         primSpec.documentation = doc
 
-    # gather properties from node directly generated from USD (sourceType: USD)
-    # Use the usdSchemaClass tag when the generated schema being defined is an 
-    # API schema
-    usdSchemaNode = None
-    if usdSchemaClass:
-        reg = Sdr.Registry()
-        if usdSchemaClass.endswith(SchemaDefiningMiscConstants.API_STRING):
-            # This usd schema is an API schema, we need to extract the shader
-            # identifier from its primDef's shaderId field.
-            primDef = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
-                    usdSchemaClass)
-            if primDef:
-                # We are dealing with USD source type here, hence no render
-                # context is required but we can still borrow node context
-                # information from the sdrNode in question, since the usd source
-                # type node should also belong to the same context.
-                shaderIdAttrName = Sdf.Path.JoinIdentifier( \
-                        sdrNode.GetContext(), PropertyDefiningKeys.SHADER_ID)
-                sdrIdentifier = primDef.GetAttributeFallbackValue(
-                        shaderIdAttrName)
-                if sdrIdentifier is not "":
-                    usdSchemaNode = reg.GetNodeByIdentifierAndType(
-                            sdrIdentifier,
-                            SchemaDefiningMiscConstants.USD_SOURCE_TYPE)
-                else:
-                    Tf.Warn("No sourceId authored for '%s'." %(usdSchemaClass))
-            else:
-                Tf.Warn("Illegal API schema provided for the usdSchemaClass "
-                        "metadata. No prim definition registered for '%s'" %(
-                            usdSchemaClass))
-                
-        else:
-            usdSchemaNode = reg.GetNodeByIdentifierAndType(usdSchemaClass, 
-                    SchemaDefiningMiscConstants.USD_SOURCE_TYPE)
+    # gather properties from a prim definition generated by composing apiSchemas
+    # provided by apiSchemasForAttrPruning metadata.
+    primDefForAttrPruning = None
+    if apiSchemasForAttrPruning:
+        primDefForAttrPruning = Usd.SchemaRegistry(). \
+                BuildComposedPrimDefinition(typedSchemaForAttrPruning,
+                        apiSchemasForAttrPruning)
 
     # Create attrSpecs from input parameters
     for propName in sdrNode.GetInputNames():
         _CreateAttrSpecFromNodeAttribute(primSpec, sdrNode.GetInput(propName), 
-                usdSchemaNode)
+                primDefForAttrPruning)
 
     # Create attrSpecs from output parameters
     for propName in sdrNode.GetOutputNames():
         _CreateAttrSpecFromNodeAttribute(primSpec, sdrNode.GetOutput(propName), 
-                usdSchemaNode, False)
+                primDefForAttrPruning, False)
 
     # Create token shaderId attrSpec
     shaderIdAttrName = Sdf.Path.JoinIdentifier( \

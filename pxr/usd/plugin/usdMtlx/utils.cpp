@@ -200,7 +200,10 @@ UsdMtlxStandardLibraryPaths()
 {
     static const auto materialxLibraryPaths =
         UsdMtlxMergeSearchPaths(
-            UsdMtlxGetSearchPathsFromEnvVar("PXR_USDMTLX_STDLIB_SEARCH_PATHS"),
+            // Note this is the same envar used in HdMtlxSearchPaths() 
+            // This is used to indicate the location of the MaterialX/libraries
+            // folder if moved/changed from the path in PXR_MATERIALX_STDLIB_DIR
+            UsdMtlxGetSearchPathsFromEnvVar("PXR_MTLX_STDLIB_SEARCH_PATHS"),
             NdrStringVec{
 #ifdef PXR_MATERIALX_STDLIB_DIR
                 PXR_MATERIALX_STDLIB_DIR

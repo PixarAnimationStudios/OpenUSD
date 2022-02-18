@@ -58,6 +58,14 @@ HdStPoints::HdStPoints(SdfPath const& id)
 HdStPoints::~HdStPoints() = default;
 
 void
+HdStPoints::UpdateRenderTag(HdSceneDelegate *delegate,
+                            HdRenderParam *renderParam)
+{
+    HdStUpdateRenderTag(delegate, renderParam, this);
+}
+
+
+void
 HdStPoints::Sync(HdSceneDelegate *delegate,
                  HdRenderParam   *renderParam,
                  HdDirtyBits     *dirtyBits,
@@ -95,11 +103,11 @@ HdStPoints::Finalize(HdRenderParam *renderParam)
 {
     HdStMarkGarbageCollectionNeeded(renderParam);
 
+    HdStRenderParam * const stRenderParam =
+        static_cast<HdStRenderParam*>(renderParam);
+
     // Decrement material tag counts for each draw item material tag
     if (!_reprs.empty()) {
-        HdStRenderParam * const stRenderParam =
-            static_cast<HdStRenderParam*>(renderParam);
-
         const std::pair<TfToken, HdReprSharedPtr> &reprPair = _reprs.front();
         const TfToken &reprToken = reprPair.first;
         _PointsReprConfig::DescArray const &descs = _GetReprDesc(reprToken);
@@ -114,6 +122,8 @@ HdStPoints::Finalize(HdRenderParam *renderParam)
             stRenderParam->DecreaseMaterialTagCount(drawItem->GetMaterialTag());
         }
     }
+
+    stRenderParam->DecreaseRenderTagCount(GetRenderTag());
 }
 
 void

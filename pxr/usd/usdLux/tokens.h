@@ -126,6 +126,10 @@ struct UsdLuxTokensType {
     /// 
     /// Default value for UsdLuxGeometryLight schema attribute light:shaderId
     const TfToken geometryLight;
+    /// \brief "guideRadius"
+    /// 
+    /// UsdLuxDomeLight
+    const TfToken guideRadius;
     /// \brief "ignore"
     /// 
     /// Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()

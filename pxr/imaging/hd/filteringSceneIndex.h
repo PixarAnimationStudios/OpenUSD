@@ -67,11 +67,11 @@ TF_DECLARE_WEAK_AND_REF_PTRS(HdSingleInputFilteringSceneIndexBase);
 class HdSingleInputFilteringSceneIndexBase : public HdFilteringSceneIndexBase
 {
 public:
-
+    HD_API
     std::vector<HdSceneIndexBaseRefPtr> GetInputScenes() const final;
 
 protected:
-
+    HD_API
     HdSingleInputFilteringSceneIndexBase(
             const HdSceneIndexBaseRefPtr &inputSceneIndex);
 

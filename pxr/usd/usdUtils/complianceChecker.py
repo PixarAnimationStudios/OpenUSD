@@ -263,7 +263,8 @@ class TextureChecker(BaseRuleChecker):
 
     def __init__(self, verbose, consumerLevelChecks, assetLevelChecks):
         # Check if the prim has an allowed type.
-        super(TextureChecker, self).__init__(verbose, consumerLevelChecks, assetLevelChecks)
+        super(TextureChecker, self).__init__(verbose, consumerLevelChecks, 
+                                             assetLevelChecks)
         # a None value for _allowedFormats indicates all formats are allowed
         self._allowedFormats = None
 
@@ -414,16 +415,16 @@ class PrimEncapsulationChecker(BaseRuleChecker):
                     # a Container like a Material
                     connAnstr = self._FindConnectableAncestor(parent)
                     if connAnstr is not None:
-                        self.AddFailedCheck("Connectable %s <%s> can only have "
-                                            "Connectable Container ancestors up "
-                                            "to %s ancestor <%s>, but its parent"
-                                            "%s is a %s." %
-                                            (prim.GetTypeName(),
-                                             prim.GetPath(),
-                                             connAnstr.GetTypeName(),
-                                             connAnstr.GetPath(),
-                                             parent.GetName(),
-                                             parent.GetTypeName()))
+                        self._AddFailedCheck("Connectable %s <%s> can only have"
+                                             " Connectable Container ancestors"
+                                             " up to %s ancestor <%s>, but its"
+                                             " parent %s is a %s." %
+                                             (prim.GetTypeName(),
+                                              prim.GetPath(),
+                                              connAnstr.GetTypeName(),
+                                              connAnstr.GetPath(),
+                                              parent.GetName(),
+                                              parent.GetTypeName()))
                 
 
     def ResetCaches(self):

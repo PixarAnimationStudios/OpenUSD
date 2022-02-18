@@ -39,6 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStDrawItem;
 class HdStDrawItemInstance;
+class HgiGraphicsCmds;
 
 using HdSt_DrawBatchSharedPtr = std::shared_ptr<class HdSt_DrawBatch>;
 using HdSt_DrawBatchSharedPtrVector = std::vector<HdSt_DrawBatchSharedPtr>;
@@ -95,6 +96,7 @@ public:
 
     /// Executes the drawing commands for this batch.
     virtual void ExecuteDraw(
+        HgiGraphicsCmds *gfxCmds,
         HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry) = 0;
 
@@ -120,6 +122,9 @@ protected:
     class _DrawingProgram {
     public:
         _DrawingProgram() {}
+
+        HDST_API
+        bool IsValid() const;
 
         HDST_API
         bool CompileShader(

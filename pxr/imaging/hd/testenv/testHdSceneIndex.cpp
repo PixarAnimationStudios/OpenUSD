@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/prefixingSceneIndex.h"
+#include "pxr/imaging/hd/mergingSceneIndex.h"
 
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/retainedSceneIndex.h"
@@ -64,7 +65,7 @@ public:
             const HdSceneIndexBase &sender,
             const AddedPrimEntries &entries) override
     {
-        for (const AddedPrimEntry entry : entries) {
+        for (const AddedPrimEntry &entry : entries) {
             std::cout << _prefix << "PrimAdded: " << entry.primPath << ", "
                 << entry.primType << std::endl;
         }
@@ -74,7 +75,7 @@ public:
             const HdSceneIndexBase &sender,
             const RemovedPrimEntries &entries) override
     {
-        for (const RemovedPrimEntry entry : entries) {
+        for (const RemovedPrimEntry &entry : entries) {
             std::cout << _prefix << "PrimRemoved: " << entry.primPath << ", "
                 << std::endl;
         }
@@ -84,7 +85,7 @@ public:
             const HdSceneIndexBase &sender,
             const DirtiedPrimEntries &entries) override
     {
-        for (const DirtiedPrimEntry entry : entries) {
+        for (const DirtiedPrimEntry &entry : entries) {
             std::cout << _prefix << "PrimDirtied: " << entry.primPath << ", ";
 
             for (const HdDataSourceLocator &locator : entry.dirtyLocators) {
@@ -611,6 +612,108 @@ TestPrefixingSceneIndex()
 
 //-----------------------------------------------------------------------------
 
+static bool _CompareSceneValue(
+    const std::string &label,
+    HdSceneIndexBaseRefPtr scene,
+    const SdfPath &primPath,
+    const HdDataSourceLocator &locator,
+    const VtValue &value)
+{
+    if (auto sampledDataSource = HdSampledDataSource::Cast(
+            scene->GetDataSource(primPath, locator))) {
+        if (sampledDataSource->GetValue(0.0) == value) {
+            std::cout << label << " matches." << std::endl;
+            return true;
+        } else {
+            std::cerr << label << " doesn't match. Expecting " << value 
+                << " got " << sampledDataSource->GetValue(0.0) << std::endl;
+            return false;
+        }
+    } else {
+        std::cerr << label << " value not found. Expecting " << value
+            << std::endl;
+        return false;
+    }
+}
+
+bool TestMergingSceneIndex()
+{
+    HdRetainedSceneIndexRefPtr retainedSceneA = HdRetainedSceneIndex::New();
+
+    retainedSceneA->AddPrims({
+        {SdfPath("/A"), TfToken("group"),
+            HdRetainedContainerDataSource::New(
+                TfToken("uniqueToA"),
+                HdRetainedTypedSampledDataSource<int>::New(0),
+                TfToken("common"),
+                HdRetainedTypedSampledDataSource<int>::New(0))
+        },
+        {SdfPath("/A/AA"), TfToken("group"),
+            HdRetainedContainerDataSource::New(
+                TfToken("value"),
+                HdRetainedTypedSampledDataSource<int>::New(1)
+            )},
+    });
+
+    HdRetainedSceneIndexRefPtr retainedSceneB = HdRetainedSceneIndex::New();
+
+    retainedSceneB->AddPrims({
+        {SdfPath("/A"), TfToken("group"),
+            HdRetainedContainerDataSource::New(
+                TfToken("uniqueToB"),
+                HdRetainedTypedSampledDataSource<int>::New(1),
+                TfToken("common"),
+                HdRetainedTypedSampledDataSource<int>::New(1))
+        },
+        {SdfPath("/A/BB"), TfToken("group"),
+            HdRetainedContainerDataSource::New(
+                TfToken("value"),
+                HdRetainedTypedSampledDataSource<int>::New(1)
+            )},
+        {SdfPath("/B"), TfToken("group"),
+            HdRetainedContainerDataSource::New(
+                TfToken("value"),
+                HdRetainedTypedSampledDataSource<int>::New(1)
+            )},
+    });
+
+    HdMergingSceneIndexRefPtr mergingSceneIndex = HdMergingSceneIndex::New();
+    mergingSceneIndex->AddInputScene(retainedSceneA,
+        SdfPath::AbsoluteRootPath());
+    mergingSceneIndex->AddInputScene(retainedSceneB,
+        SdfPath::AbsoluteRootPath());
+
+    PrintSceneIndexPrim(
+        *mergingSceneIndex,
+        SdfPath::AbsoluteRootPath(),
+        true);
+
+    if (!_CompareSceneValue("testing common value:", mergingSceneIndex,
+        SdfPath("/A"), HdDataSourceLocator(TfToken("common")), VtValue(0))) {
+        return false;
+    }
+    if (!_CompareSceneValue("testing uniqueToA value:", mergingSceneIndex,
+        SdfPath("/A"), HdDataSourceLocator(TfToken("uniqueToA")), VtValue(0))) {
+        return false;
+    }
+    if (!_CompareSceneValue("testing uniqueToB value:", mergingSceneIndex,
+        SdfPath("/A"), HdDataSourceLocator(TfToken("uniqueToB")), VtValue(1))) {
+        return false;
+    }
+    if (!_CompareSceneValue("testing /A/AA value:", mergingSceneIndex,
+        SdfPath("/A/AA"), HdDataSourceLocator(TfToken("value")), VtValue(1))) {
+        return false;
+    }
+    if (!_CompareSceneValue("testing /A/BB value:", mergingSceneIndex,
+        SdfPath("/A/AA"), HdDataSourceLocator(TfToken("value")), VtValue(1))) {
+        return false;
+    }
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+
 #define xstr(s) str(s)
 #define str(s) #s
 #define TEST(X) std::cout << (++i) << ") " <<  str(X) << "..." << std::endl; \
@@ -626,6 +729,7 @@ main(int argc, char**argv)
     int i = 0;
     TEST(TestFlatteningSceneIndex);
     TEST(TestPrefixingSceneIndex);
+    TEST(TestMergingSceneIndex);
 
     //--------------------------------------------------------------------------
     std::cout << "DONE testHdSceneIndex" << std::endl;

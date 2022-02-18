@@ -94,6 +94,9 @@ static const _FormatDesc FORMAT_DESC[] =
 
     {GL_DEPTH_STENCIL, GL_FLOAT, GL_DEPTH32F_STENCIL8}, // Float32UInt8
 
+    {GL_INT_2_10_10_10_REV, GL_INT_2_10_10_10_REV, GL_RGBA },
+                                                // PackedInt10Int10Int10Int2
+
 };
 
 // A few random format validations to make sure out GL table stays aligned
@@ -186,6 +189,19 @@ _compareFunctionTable[HgiCompareFunctionCount][2] =
 };
 
 static uint32_t
+_stencilOpTable[HgiStencilOpCount][2] =
+{
+    {HgiStencilOpKeep,           GL_KEEP},
+    {HgiStencilOpZero,           GL_ZERO},
+    {HgiStencilOpReplace,        GL_REPLACE},
+    {HgiStencilOpIncrementClamp, GL_INCR},
+    {HgiStencilOpDecrementClamp, GL_DECR},
+    {HgiStencilOpInvert,         GL_INVERT},
+    {HgiStencilOpIncrementWrap,  GL_INCR_WRAP},
+    {HgiStencilOpDecrementWrap,  GL_DECR_WRAP},
+};
+
+static uint32_t
 _textureTypeTable[HgiTextureTypeCount][2] =
 {
     {HgiTextureType1D,      GL_TEXTURE_1D},
@@ -223,7 +239,47 @@ _primitiveTypeTable[HgiPrimitiveTypeCount][2] =
     {HgiPrimitiveTypeLineList,     GL_LINES},
     {HgiPrimitiveTypeLineStrip,    GL_LINES_ADJACENCY},
     {HgiPrimitiveTypeTriangleList, GL_TRIANGLES},
-    {HgiPrimitiveTypePatchList,    GL_PATCHES}
+    {HgiPrimitiveTypePatchList,    GL_PATCHES},
+    {HgiPrimitiveTypeLineListWithAdjacency, GL_LINES_ADJACENCY}
+};
+
+static const std::string
+_imageLayoutFormatTable[HgiFormatCount][2] =
+{ 
+    {"HgiFormatUNorm8",            "r8"},
+    {"HgiFormatUNorm8Vec2",        "rg8"},
+    {"HgiFormatUNorm8Vec4",        "rgba8"},
+    {"HgiFormatSNorm8",            "r8_snorm"},
+    {"HgiFormatSNorm8Vec2",        "rg8_snorm"},
+    {"HgiFormatSNorm8Vec4",        "rgba8_snorm"},
+    {"HgiFormatFloat16",           "r16f"},
+    {"HgiFormatFloat16Vec2",       "rg16f"},
+    {"HgiFormatFloat16Vec3",       ""},
+    {"HgiFormatFloat16Vec4",       "rgba16f"},
+    {"HgiFormatFloat32",           "r32f"},
+    {"HgiFormatFloat32Vec2",       "rg32f"},
+    {"HgiFormatFloat32Vec3",       ""},
+    {"HgiFormatFloat32Vec4",       "rgba32f" },
+    {"HgiFormatInt16",             "r16i"},
+    {"HgiFormatInt16Vec2",         "rg16i"},
+    {"HgiFormatInt16Vec3",         ""},
+    {"HgiFormatInt16Vec4",         "rgba16i"},
+    {"HgiFormatUInt16",            "r16ui"},
+    {"HgiFormatUInt16Vec2",        "rg16ui"},
+    {"HgiFormatUInt16Vec3",        ""},
+    {"HgiFormatUInt16Vec4",        "rgba16ui"},
+    {"HgiFormatInt32",             "r32i"},
+    {"HgiFormatInt32Vec2",         "rg32i"},
+    {"HgiFormatInt32Vec3",         ""},
+    {"HgiFormatInt32Vec4",         "rgba32i"},
+    {"HgiFormatUNorm8Vec4srgb",    ""},
+    {"HgiFormatBC6FloatVec3",      ""},
+    {"HgiFormatBC6UFloatVec3",     ""},
+    {"HgiFormatBC7UNorm8Vec4",     ""},
+    {"HgiFormatBC7UNorm8Vec4srgb", ""},
+    {"HgiFormatBC1UNorm8Vec4",     ""},
+    {"HgiFormatBC3UNorm8Vec4",     ""},
+    {"HgiFormatFloat32UInt8",      ""},
 };
 
 void
@@ -267,6 +323,18 @@ HgiGLConversions::GetFormatType(HgiFormat inFormat)
     return desc.type;
 }
 
+bool
+HgiGLConversions::IsVertexAttribIntegerFormat(HgiFormat inFormat)
+{
+    const _FormatDesc &desc = FORMAT_DESC[inFormat];
+    return desc.type == GL_BYTE ||
+           desc.type == GL_UNSIGNED_BYTE ||
+           desc.type == GL_SHORT ||
+           desc.type == GL_UNSIGNED_SHORT ||
+           desc.type == GL_INT ||
+           desc.type == GL_UNSIGNED_INT;
+}
+
 std::vector<GLenum>
 HgiGLConversions::GetShaderStages(HgiShaderStage ss)
 {
@@ -306,9 +374,15 @@ HgiGLConversions::GetBlendEquation(HgiBlendOp bo)
 }
 
 GLenum
-HgiGLConversions::GetDepthCompareFunction(HgiCompareFunction cf)
+HgiGLConversions::GetCompareFunction(HgiCompareFunction cf)
 {
     return _compareFunctionTable[cf][1];
+}
+
+GLenum
+HgiGLConversions::GetStencilOp(HgiStencilOp op)
+{
+    return _stencilOpTable[op][1];
 }
 
 GLenum
@@ -373,6 +447,20 @@ HgiGLConversions::GetMinFilter(
     return GL_NONE;
 }
 
+GfVec4f
+HgiGLConversions::GetBorderColor(HgiBorderColor borderColor)
+{
+    switch(borderColor) {
+        case HgiBorderColorTransparentBlack: return GfVec4f(0, 0, 0, 0);
+        case HgiBorderColorOpaqueBlack: return GfVec4f(0, 0, 0, 1);
+        case HgiBorderColorOpaqueWhite: return GfVec4f(1, 1, 1, 1);
+        default: break;
+    }
+
+    TF_CODING_ERROR("Unsupported sampler options");
+    return GfVec4f(0, 0, 0, 0);
+}
+
 GLenum
 HgiGLConversions::GetComponentSwizzle(HgiComponentSwizzle componentSwizzle)
 {
@@ -383,6 +471,18 @@ GLenum
 HgiGLConversions::GetPrimitiveType(HgiPrimitiveType pt)
 {
     return _primitiveTypeTable[pt][1];
+}
+
+std::string 
+HgiGLConversions::GetImageLayoutFormatQualifier(HgiFormat inFormat)
+{
+    const std::string layoutQualifier = _imageLayoutFormatTable[inFormat][1];
+    if (layoutQualifier.empty()) {
+        TF_WARN("Given HgiFormat is not a supported image unit format, "
+                "defaulting to rgba16f");
+        return _imageLayoutFormatTable[9][1];
+    }
+    return layoutQualifier;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

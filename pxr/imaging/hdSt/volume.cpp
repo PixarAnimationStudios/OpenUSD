@@ -119,6 +119,13 @@ HdStVolume::_InitRepr(TfToken const &reprToken, HdDirtyBits* dirtyBits)
 }
 
 void
+HdStVolume::UpdateRenderTag(HdSceneDelegate *delegate,
+                            HdRenderParam *renderParam)
+{
+    HdStUpdateRenderTag(delegate, renderParam, this);
+}
+
+void
 HdStVolume::Sync(HdSceneDelegate *delegate,
                  HdRenderParam   *renderParam,
                  HdDirtyBits     *dirtyBits,
@@ -155,6 +162,7 @@ HdStVolume::Finalize(HdRenderParam *renderParam)
 
     // Decrement material tag count for volume material tag
     stRenderParam->DecreaseMaterialTagCount(HdStMaterialTagTokens->volume);
+    stRenderParam->DecreaseRenderTagCount(GetRenderTag());
 }
 
 void
@@ -314,8 +322,7 @@ _ComputeMaterialNetworkShader(
 
     // Generate new shader from volume shader
     HdSt_VolumeShaderSharedPtr const result =
-        std::make_shared<HdSt_VolumeShader>(
-            sceneDelegate->GetRenderIndex().GetRenderDelegate());
+        std::make_shared<HdSt_VolumeShader>();
 
     // Buffer specs and source for the shader BAR
     HdBufferSpecVector bufferSpecs;
@@ -397,6 +404,12 @@ _ComputeMaterialNetworkShader(
             { textureName, textureType, nullptr, desc->fieldId.GetHash() });
     }
 
+    result->SetNamedTextureHandles(namedTextureHandles);
+    result->SetFieldDescriptors(fieldDescs);
+    result->UpdateTextureHandles(sceneDelegate);
+    // Get now allocated texture handles
+    namedTextureHandles = result->GetNamedTextureHandles();
+
     // Get buffer specs for textures (i.e., for
     // field sampling transforms and bindless texture handles).
     HdSt_TextureBinder::GetBufferSpecs(namedTextureHandles, &bufferSpecs);
@@ -423,9 +436,7 @@ _ComputeMaterialNetworkShader(
     result->SetParams(params);
     result->SetBufferSources(
         bufferSpecs, std::move(bufferSources), resourceRegistry);
-    result->SetNamedTextureHandles(namedTextureHandles);
-    result->SetFieldDescriptors(fieldDescs);
-
+    
     // Append the volume shader (calling into the GLSL functions
     // generated above)
     result->SetFragmentSource(volumeMaterialData.source);
@@ -505,7 +516,8 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                                      dirtyBits,
                                      constantPrimvars);
     }
-        
+
+    bool updatedTextureHandles = false;
     if ((*dirtyBits) & HdChangeTracker::DirtyMaterialId) {
         /* MATERIAL SHADER (may affect subsequent primvar population) */
 
@@ -535,6 +547,7 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                 GetId(),
                 _ComputeVolumeMaterialData(material),
                 _sharedData.bounds.GetRange()));
+        updatedTextureHandles = true;
     }        
 
     HdStResourceRegistrySharedPtr resourceRegistry =
@@ -550,8 +563,11 @@ HdStVolume::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         return;
     }
 
-    if ((*dirtyBits) & (HdChangeTracker::DirtyVolumeField |
-                        HdChangeTracker::DirtyMaterialId)) {
+    // We do not need to call UpdateTextureHandles() on the 
+    // materialNetworkShader if DirtyMaterialId, as it was already called
+    // during _ComputeMaterialNetworkShader().
+    if (((*dirtyBits) & (HdChangeTracker::DirtyVolumeField)) && 
+        !updatedTextureHandles) {
         /* FIELD TEXTURES */
         
         // (Re-)Allocate the textures associated with the field prims.

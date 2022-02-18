@@ -174,6 +174,7 @@ public:
         const uint32_t layoutIndex,
         const uint32_t dimensions,
         const HgiFormat format,
+        const bool writable,
         const HgiShaderSectionAttributeVector &attributes,
         const std::string &defaultValue = std::string());
 
@@ -199,6 +200,7 @@ private:
 
     const uint32_t _dimensions;
     const HgiFormat _format;
+    const bool _writable;
     static const std::string _storageQualifier;
 };
 

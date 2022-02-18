@@ -38,9 +38,6 @@ HdRenderPassState::HdRenderPassState()
     : _camera(nullptr)
     , _viewport(0, 0, 1, 1)
     , _overrideWindowPolicy{false, CameraUtilFit}
-    , _cullMatrix(1)
-    , _worldToViewMatrix(1)
-    , _projectionMatrix(1)
 
     , _overrideColor(0.0f, 0.0f, 0.0f, 0.0f)
     , _wireframeColor(0.0f, 0.0f, 0.0f, 0.0f)
@@ -64,6 +61,8 @@ HdRenderPassState::HdRenderPassState()
     , _depthFunc(HdCmpFuncLEqual)
     , _depthMaskEnabled(true)
     , _depthTestEnabled(true)
+    , _depthClampEnabled(false)
+    , _depthRange(GfVec2f(0, 1))
     , _cullStyle(HdCullStyleNothing)
     , _stencilFunc(HdCmpFuncAlways)
     , _stencilRef(0)
@@ -84,7 +83,7 @@ HdRenderPassState::HdRenderPassState()
     , _alphaToCoverageEnabled(false)
     , _colorMaskUseDefault(true)
     , _useMultiSampleAov(true)
-
+    , _conservativeRasterizationEnabled(false)
 {
 }
 
@@ -94,9 +93,6 @@ HdRenderPassState::~HdRenderPassState() = default;
 void
 HdRenderPassState::Prepare(HdResourceRegistrySharedPtr const &resourceRegistry)
 {
-    if(!TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM)) {
-        _cullMatrix = GetWorldToViewMatrix() * GetProjectionMatrix();
-    }
 }
 
 void
@@ -132,10 +128,10 @@ GfMatrix4d
 HdRenderPassState::GetWorldToViewMatrix() const
 {
     if (!_camera) {
-        return _worldToViewMatrix;
+        return GfMatrix4d(1.0);
     }
-
-    return _camera->GetViewMatrix();
+     
+    return _camera->GetTransform().GetInverse();
 }
 
 CameraUtilConformWindowPolicy
@@ -155,13 +151,13 @@ GfMatrix4d
 HdRenderPassState::GetProjectionMatrix() const
 {
     if (!_camera) {
-        return _projectionMatrix;
+        return GfMatrix4d(1.0);
     }
 
     if (_framing.IsValid()) {
         return
             _framing.ApplyToProjectionMatrix(
-                _camera->GetProjectionMatrix(),
+                _camera->ComputeProjectionMatrix(),
                 GetWindowPolicy());
     }
 
@@ -171,20 +167,17 @@ HdRenderPassState::GetProjectionMatrix() const
 
     // Adjust the camera frustum based on the window policy.
     return CameraUtilConformedWindow(
-        _camera->GetProjectionMatrix(), policy, aspect);
+        _camera->ComputeProjectionMatrix(), policy, aspect);
 }
 
 HdRenderPassState::ClipPlanesVector const &
 HdRenderPassState::GetClipPlanes() const
 {
-    if (!_clippingEnabled) {
+    if (!(_clippingEnabled && _camera)) {
         const static HdRenderPassState::ClipPlanesVector empty;
         return empty;
     }
 
-    if (!_camera) {
-        return _clipPlanes;
-    }
     return _camera->GetClipPlanes();
 }
 
@@ -336,7 +329,7 @@ HdRenderPassState::SetEnableDepthMask(bool state)
 }
 
 bool
-HdRenderPassState::GetEnableDepthMask()
+HdRenderPassState::GetEnableDepthMask() const
 {
     return _depthMaskEnabled;
 }
@@ -351,6 +344,30 @@ bool
 HdRenderPassState::GetEnableDepthTest() const
 {
     return _depthTestEnabled;
+}
+
+void
+HdRenderPassState::SetEnableDepthClamp(bool enabled)
+{
+    _depthClampEnabled = enabled;
+}
+
+bool
+HdRenderPassState::GetEnableDepthClamp() const
+{
+    return _depthClampEnabled;
+}
+
+void
+HdRenderPassState::SetDepthRange(GfVec2f const &depthRange)
+{
+    _depthRange = depthRange;
+}
+
+const GfVec2f&
+HdRenderPassState::GetDepthRange() const
+{
+    return _depthRange;
 }
 
 void
@@ -425,10 +442,33 @@ HdRenderPassState::SetColorMaskUseDefault(bool useDefault)
 }
 
 void
+HdRenderPassState::SetConservativeRasterizationEnabled(bool enabled)
+{
+    _conservativeRasterizationEnabled = enabled;
+}
+
+void
 HdRenderPassState::SetColorMasks(
     std::vector<HdRenderPassState::ColorMask> const& masks)
 {
     _colorMasks = masks;
+}
+
+GfVec2f
+HdRenderPassState::GetDrawingRangeNDC() const
+{
+    int width;
+    int height;
+    if (_framing.IsValid()) {
+        width  = _framing.dataWindow.GetWidth();
+        height = _framing.dataWindow.GetHeight();
+    } else {
+        width  = _viewport[2];
+        height = _viewport[3];
+    }
+   
+    return GfVec2f(2*_drawRange[0]/width,
+                   2*_drawRange[1]/height);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

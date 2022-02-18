@@ -22,9 +22,6 @@ endif()
 set(optionalIncludeDirs "")
 set(optionalPublicClasses "")
 if (${PXR_ENABLE_MATERIALX_SUPPORT})
-    add_definitions(-DPXR_MATERIALX_STDLIB_DIR="${MATERIALX_STDLIB_DIR}")
-    add_definitions(-DPXR_MATERIALX_BASE_DIR="${MATERIALX_BASE_DIR}")
-
     list(APPEND optionalLibs ${MATERIALX_LIBRARIES} hdMtlx)
     list(APPEND optionalIncludeDirs ${MATERIALX_INCLUDE_DIRS})
     list(APPEND optionalPublicClasses matfiltMaterialX)
@@ -33,6 +30,10 @@ if (${PXR_ENABLE_MATERIALX_SUPPORT})
         list(APPEND optionalLibs ${OSL_COMP_LIBRARY})
         list(APPEND optionalIncludeDirs ${OSL_INCLUDE_DIR})
     endif()
+endif()
+
+if (${PXR_ENABLE_OPENVDB_SUPPORT})
+    list(APPEND optionalLibs hioOpenVDB)
 endif()
 
 pxr_plugin(${PXR_PACKAGE}
@@ -57,7 +58,6 @@ pxr_plugin(${PXR_PACKAGE}
     PUBLIC_CLASSES
         basisCurves
         camera
-        context
         coordSys
         debugCodes
         gprim
@@ -70,7 +70,7 @@ pxr_plugin(${PXR_PACKAGE}
         matfiltFilterChain
         matfiltResolveVstructs
         mesh
-        offlineContext
+        paramsSetter
         points
         renderDelegate
         rixStrings
@@ -79,26 +79,26 @@ pxr_plugin(${PXR_PACKAGE}
         ${optionalPublicClasses}
 
     PRIVATE_CLASSES
-        interactiveContext
-        interactiveRenderPass
-        framebuffer
-        offlineRenderPass
-        renderBuffer
-        rendererPlugin
+        cameraContext
         renderPass
+        framebuffer
+        renderBuffer
+        renderParam
+        renderViewContext
         resourceRegistry
+        velocityMotionBlurSceneIndexPlugin
+        virtualStructResolvingSceneIndex
 
     PUBLIC_HEADERS
         api.h
-        renderParam.h
 
     PRIVATE_HEADERS
-        interactiveRenderParam.h
         virtualStructConditionalGrammar.tab.h
 
     CPPFILES
         virtualStructConditionalGrammar.tab.cpp
         virtualStructConditionalGrammar.lex.cpp
+        rendererPlugin.cpp
 
     RESOURCE_FILES
         plugInfo.json

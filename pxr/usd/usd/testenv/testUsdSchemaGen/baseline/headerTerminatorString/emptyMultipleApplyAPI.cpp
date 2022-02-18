@@ -116,8 +116,7 @@ UsdContrivedEmptyMultipleApplyAPI::_GetTfType() const
 
 /*static*/
 const TfTokenVector&
-UsdContrivedEmptyMultipleApplyAPI::GetSchemaAttributeNames(
-    bool includeInherited, const TfToken instanceName)
+UsdContrivedEmptyMultipleApplyAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
     static TfTokenVector allNames =
@@ -127,6 +126,24 @@ UsdContrivedEmptyMultipleApplyAPI::GetSchemaAttributeNames(
         return allNames;
     else
         return localNames;
+}
+
+/*static*/
+TfTokenVector
+UsdContrivedEmptyMultipleApplyAPI::GetSchemaAttributeNames(
+    bool includeInherited, const TfToken &instanceName)
+{
+    const TfTokenVector &attrNames = GetSchemaAttributeNames(includeInherited);
+    if (instanceName.IsEmpty()) {
+        return attrNames;
+    }
+    TfTokenVector result;
+    result.reserve(attrNames.size());
+    for (const TfToken &attrName : attrNames) {
+        result.push_back(
+            UsdSchemaRegistry::MakeMultipleApplyNameInstance(attrName, instanceName));
+    }
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -32,7 +32,6 @@
 #include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -50,12 +49,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 
-HdSt_VolumeShader::HdSt_VolumeShader(HdRenderDelegate * const renderDelegate)
-  : _renderDelegate(renderDelegate),
-    _lastRenderSettingsVersion(0),
-    _stepSize(HdStVolume::defaultStepSize),
-    _stepSizeLighting(HdStVolume::defaultStepSizeLighting),
-    _fillsPointsBar(false)
+HdSt_VolumeShader::HdSt_VolumeShader()
+    : _fillsPointsBar(false)
 {
 }
 
@@ -66,48 +61,20 @@ void
 HdSt_VolumeShader::AddBindings(HdBindingRequestVector * const customBindings)
 {
     HdSt_MaterialNetworkShader::AddBindings(customBindings);
-    customBindings->push_back(
-        HdBindingRequest(
-            HdBinding::UNIFORM,
-            _tokens->stepSize,
-            HdTypeFloat));
-    customBindings->push_back(
-        HdBindingRequest(
-            HdBinding::UNIFORM,
-            _tokens->stepSizeLighting,
-            HdTypeFloat));
 }
 
 void 
 HdSt_VolumeShader::BindResources(const int program,
-                                 HdSt_ResourceBinder const &binder,
-                                 HdRenderPassState const &state)
+                                 HdSt_ResourceBinder const &binder)
 {
-    HdSt_MaterialNetworkShader::BindResources(program, binder, state);
-    
-    const int currentRenderSettingsVersion =
-        _renderDelegate->GetRenderSettingsVersion();
-    
-    if (_lastRenderSettingsVersion != currentRenderSettingsVersion) {
-        _lastRenderSettingsVersion = currentRenderSettingsVersion;
-        _stepSize = _renderDelegate->GetRenderSetting<float>(
-            HdStRenderSettingsTokens->volumeRaymarchingStepSize,
-            HdStVolume::defaultStepSize);
-        _stepSizeLighting = _renderDelegate->GetRenderSetting<float>(
-            HdStRenderSettingsTokens->volumeRaymarchingStepSizeLighting,
-            HdStVolume::defaultStepSizeLighting);
-    }
-    
-    binder.BindUniformf(_tokens->stepSize, 1, &_stepSize);
-    binder.BindUniformf(_tokens->stepSizeLighting, 1, &_stepSizeLighting);
+    HdSt_MaterialNetworkShader::BindResources(program, binder);
 }
 
 void
 HdSt_VolumeShader::UnbindResources(const int program,
-                                   HdSt_ResourceBinder const &binder,
-                                   HdRenderPassState const &state)
+                                   HdSt_ResourceBinder const &binder)
 {
-    HdSt_MaterialNetworkShader::UnbindResources(program, binder, state);
+    HdSt_MaterialNetworkShader::UnbindResources(program, binder);
 }
 
 void
@@ -424,9 +391,9 @@ HdSt_VolumeShader::UpdateTextureHandles(
         const size_t textureMemory =
             TF_VERIFY(fieldPrim) ?
             fieldPrim->GetTextureMemory() : 0;
-        static const HdSamplerParameters samplerParams{
+        static const HdSamplerParameters samplerParams(
             HdWrapBlack, HdWrapBlack, HdWrapBlack,
-            HdMinFilterLinear, HdMagFilterLinear };
+            HdMinFilterLinear, HdMagFilterLinear);
         
         // allocate texture handle and assign it.
         textureHandles[i].handle =

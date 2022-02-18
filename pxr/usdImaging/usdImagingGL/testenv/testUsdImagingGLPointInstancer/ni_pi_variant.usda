@@ -1,0 +1,41 @@
+#usda 1.0
+(
+    defaultPrim = "Root"
+)
+
+def Xform "Root" (
+    variants = {
+        string modelingVariant = "VAR_S"
+    }
+    add variantSets = "modelingVariant"
+)
+{
+    def Xform "Geom"
+    {
+        def PointInstancer "DG_PointInstancer" (
+            kind = "subcomponent"
+        )
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 4)]
+            point3f[] positions = [(0, 0, 0), (0, 0, 3)]
+            int[] protoIndices = [0, 0]
+            rel prototypes = </Root/Geom/DG_PointInstancer/prototypes/Cube1>
+
+            def "prototypes"
+            {
+                def Cube "Cube1"
+                {
+                }
+            }
+        }
+    }
+    variantSet "modelingVariant" = {
+        "ALL_VARIANTS" {
+
+        }
+        "VAR_S" {
+
+        }
+    }
+}
+

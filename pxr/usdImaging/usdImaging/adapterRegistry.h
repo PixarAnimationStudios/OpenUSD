@@ -51,7 +51,9 @@ TF_DECLARE_PUBLIC_TOKENS(UsdImagingAdapterKeyTokens,
 
 /// \class UsdImagingAdapterRegistry
 ///
-/// Registry of PrimAdapter plug-ins.
+/// Registry of PrimAdapter plug-ins. Note: this is a registry of adapter
+/// factories, and not adapter instances; we expect to store adapter instances
+/// (created via ConstructAdapter) with per-stage data.
 ///
 class UsdImagingAdapterRegistry : public TfSingleton<UsdImagingAdapterRegistry> 
 {
@@ -60,6 +62,7 @@ class UsdImagingAdapterRegistry : public TfSingleton<UsdImagingAdapterRegistry>
 
     typedef std::unordered_map<TfToken,TfType,TfToken::HashFunctor> _TypeMap;
     _TypeMap _typeMap;
+    TfTokenVector _adapterKeys;
 
 public:
 
@@ -89,6 +92,11 @@ public:
     /// Returns NULL if no adapter was registered for this key.
     USDIMAGING_API
     UsdImagingPrimAdapterSharedPtr ConstructAdapter(TfToken const& adapterKey);
+
+    /// Returns the set of adapter keys this class responds to; i.e. the set of
+    /// usd prim types for which we've registered a prim adapter.
+    USDIMAGING_API
+    const TfTokenVector& GetAdapterKeys();
 };
 
 USDIMAGING_API_TEMPLATE_CLASS(TfSingleton<UsdImagingAdapterRegistry>);

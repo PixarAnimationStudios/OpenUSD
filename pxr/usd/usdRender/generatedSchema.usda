@@ -193,13 +193,6 @@ class RenderSettings "RenderSettings" (
     )
 }
 
-class "RenderSettingsAPI" (
-    doc = """UsdRenderSettingsAPI is a base class for API schemas
-    to encode renderer-specific settings."""
-)
-{
-}
-
 class RenderVar "RenderVar" (
     doc = """A UsdRenderVar describes a custom data variable for
     a render to produce.  The prim describes the source of the data, which

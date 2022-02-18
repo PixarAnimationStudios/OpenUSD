@@ -30,20 +30,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static std::string
-_ExtractVersionString(const std::string &originalShader)
-{
-    if (TfStringStartsWith(originalShader, "#version")) {
-        return originalShader.substr(0, originalShader.find('\n'));
-    }
-    return std::string();
-}
-
 HgiShaderGenerator::HgiShaderGenerator(const HgiShaderFunctionDesc &descriptor)
-    // As we append to the top of complete GLSLFX files, the version
-    // string has to be hoisted for OpenGL and removed for Metal
-    : _version(_ExtractVersionString(descriptor.shaderCode))
-    , _originalShader(descriptor.shaderCode)
+    : _originalShader(descriptor.shaderCode)
     , _stage(descriptor.shaderStage)
 {
 }
@@ -67,12 +55,6 @@ HgiShaderStage
 HgiShaderGenerator::_GetShaderStage() const
 {
     return _stage;
-}
-
-const std::string&
-HgiShaderGenerator::_GetVersion() const
-{
-    return _version;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

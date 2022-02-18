@@ -58,8 +58,48 @@ class TestUsdShadeConnectabaleAPIBehavior(unittest.TestCase):
             Tf.Type.FindByName('UsdGeomScope')))
 
 
+    def test_InvalidAppliedSchemaWithDefaultBehavior(self):
+        stage = Usd.Stage.CreateInMemory()
+
+        # create a typeless prim, add a multi-apply schema
+        multiAPIPrim = stage.DefinePrim("/PrimA")
+        self.assertEqual(multiAPIPrim.GetTypeName(), "")
+        Usd.CollectionAPI.Apply(multiAPIPrim, "fanciness")
+        connectableMultiAPIPrim = UsdShade.ConnectableAPI(multiAPIPrim)
+        self.assertFalse(connectableMultiAPIPrim)
+        self.assertFalse(connectableMultiAPIPrim.IsContainer())
+
+        # create a typeless prim, add a non-existent API Schema
+        invalidAPIPrim = stage.DefinePrim("/PrimB")
+        self.assertEqual(invalidAPIPrim.GetTypeName(), "")
+        invalidAPIPrim.AddAppliedSchema("NoSuchLuckInvalidAPISchemaAPI")
+        connectableInvalidAPIPrim = UsdShade.ConnectableAPI(invalidAPIPrim)
+        self.assertFalse(connectableInvalidAPIPrim)
+        self.assertFalse(connectableInvalidAPIPrim.IsContainer())
+
+        # create a typeless prim, add a typed schema as an API Schema!
+        typedAPIPrim = stage.DefinePrim("/PrimC")
+        self.assertEqual(typedAPIPrim.GetTypeName(), "")
+        typedAPIPrim.AddAppliedSchema("Material")
+        connectableTypedAPIPrim = UsdShade.ConnectableAPI(typedAPIPrim)
+        self.assertFalse(connectableTypedAPIPrim)
+        self.assertFalse(connectableTypedAPIPrim.IsContainer())
+
+
     def test_AppliedSchemaWithDefaultBehavior(self):
         stage = Usd.Stage.CreateInMemory()
+
+        # create a typeless prim
+        typelessPrim = stage.DefinePrim("/Prim")
+        self.assertEqual(typelessPrim.GetTypeName(), "")
+        connectableTypelessPrim = UsdShade.ConnectableAPI(typelessPrim)
+        self.assertFalse(connectableTypelessPrim)
+        self.assertFalse(connectableTypelessPrim.IsContainer())
+        # Apply an API Schema which imparts connectability to this typeless prim
+        typelessPrim.AddAppliedSchema("ModifiedDefaultConnectableBehaviorAPI")
+        self.assertTrue(connectableTypelessPrim)
+        self.assertTrue(connectableTypelessPrim.IsContainer())
+
 
         # imparts connectability traits to UsdShadeTestTyped prim while still
         # having no connectability trails on the type itself.

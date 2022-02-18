@@ -29,6 +29,7 @@
 #include "pxr/imaging/garch/glApi.h"
 #include "pxr/imaging/hgi/enums.h"
 #include "pxr/imaging/hgi/types.h"
+#include "pxr/base/gf/vec4f.h"
 
 #include <vector>
 
@@ -53,6 +54,9 @@ public:
     static GLenum GetFormatType(HgiFormat inFormat);
 
     HGIGL_API
+    static bool IsVertexAttribIntegerFormat(HgiFormat inFormat);
+
+    HGIGL_API
     static std::vector<GLenum> GetShaderStages(HgiShaderStage ss);
 
     HGIGL_API
@@ -68,7 +72,10 @@ public:
     static GLenum GetBlendEquation(HgiBlendOp bo);
 
     HGIGL_API
-    static GLenum GetDepthCompareFunction(HgiCompareFunction cf);
+    static GLenum GetCompareFunction(HgiCompareFunction cf);
+
+    HGIGL_API
+    static GLenum GetStencilOp(HgiStencilOp op);
 
     HGIGL_API
     static GLenum GetTextureType(HgiTextureType tt);
@@ -85,10 +92,16 @@ public:
         HgiMipFilter mipFilter);
 
     HGIGL_API
+    static GfVec4f GetBorderColor(HgiBorderColor borderColor);
+
+    HGIGL_API
     static GLenum GetComponentSwizzle(HgiComponentSwizzle);
 
     HGIGL_API
     static GLenum GetPrimitiveType(HgiPrimitiveType pt);
+    
+    HGIGL_API
+    static std::string GetImageLayoutFormatQualifier(HgiFormat inFormat);
 };
 
 

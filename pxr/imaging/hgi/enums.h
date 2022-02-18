@@ -46,14 +46,30 @@ using HgiBits = uint32_t;
 ///   The device can execute commands concurrently</li>
 /// <li>HgiDeviceCapabilitiesBitsUnifiedMemory:
 ///   The device shares all GPU and CPU memory</li>
+/// <li>HgiDeviceCapabilitiesBitsBuiltinBarycentrics:
+///   The device can provide built-in barycentric coordinates</li>
+/// <li>HgiDeviceCapabilitiesBitsShaderDrawParameters:
+///   The device can provide additional built-in shader variables corresponding
+///   to draw command parameters</li>
+/// <li>HgiDeviceCapabilitiesBitsMultiDrawIndirect:
+///   The device supports multiple primitive, indirect drawing</li>
+/// <li>HgiDeviceCapabilitiesBitsBindlessTextures:
+///   The device can access GPU textures using bindless handles</li>
+/// <li>HgiDeviceCapabilitiesBitsShaderDoublePrecision:
+///   The device supports double precision types in shaders</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
 {
-    HgiDeviceCapabilitiesBitsPresentation       = 1 << 0,
-    HgiDeviceCapabilitiesBitsBindlessBuffers    = 1 << 1,
-    HgiDeviceCapabilitiesBitsConcurrentDispatch = 1 << 2,
-    HgiDeviceCapabilitiesBitsUnifiedMemory      = 1 << 3,
+    HgiDeviceCapabilitiesBitsPresentation          = 1 << 0,
+    HgiDeviceCapabilitiesBitsBindlessBuffers       = 1 << 1,
+    HgiDeviceCapabilitiesBitsConcurrentDispatch    = 1 << 2,
+    HgiDeviceCapabilitiesBitsUnifiedMemory         = 1 << 3,
+    HgiDeviceCapabilitiesBitsBuiltinBarycentrics   = 1 << 4,
+    HgiDeviceCapabilitiesBitsShaderDrawParameters  = 1 << 5,
+    HgiDeviceCapabilitiesBitsMultiDrawIndirect     = 1 << 6,
+    HgiDeviceCapabilitiesBitsBindlessTextures      = 1 << 7,
+    HgiDeviceCapabilitiesBitsShaderDoublePrecision = 1 << 8
 };
 
 using HgiDeviceCapabilities = HgiBits;
@@ -179,6 +195,25 @@ enum HgiMipFilter
     HgiMipFilterCount
 };
 
+/// \enum HgiBorderColor
+///
+/// Border color to use for clamped texture values.
+///
+/// <ul>
+/// <li>HgiBorderColorTransparentBlack</li>
+/// <li>HgiBorderColorOpaqueBlack</li>
+/// <li>HgiBorderColorOpaqueWhite</li>
+/// </ul>
+///
+enum HgiBorderColor
+{
+    HgiBorderColorTransparentBlack = 0,
+    HgiBorderColorOpaqueBlack      = 1,
+    HgiBorderColorOpaqueWhite      = 2,
+
+    HgiBorderColorCount
+};
+
 /// \enum HgiSampleCount
 ///
 /// Sample count for multi-sampling
@@ -282,21 +317,24 @@ using HgiBufferUsage = HgiBits;
 /// <li>HgiShaderStageTessellationEval:
 ///   Generates the surface geometry (the points) from the transformed control
 ///   points for every coordinate coming out of the tessellator fixed function
-///  stage. </li>
+///  stage.</li>
 /// <li>HgiShaderStageGeometry:
 ///   Governs the processing of Primitives.</li>
+/// <li>HgiShaderStagePostTessellationVertex:
+///   Metal specific stage which performs tessellation and 
+///   vertex processing.</li>
 /// </ul>
 ///
 enum HgiShaderStageBits : HgiBits
 {
-    HgiShaderStageVertex               = 1 << 0,
-    HgiShaderStageFragment             = 1 << 1,
-    HgiShaderStageCompute              = 1 << 2,
-    HgiShaderStageTessellationControl  = 1 << 3,
-    HgiShaderStageTessellationEval     = 1 << 4,
-    HgiShaderStageGeometry             = 1 << 5,
-
-    HgiShaderStageCustomBitsBegin      = 1 << 6,
+    HgiShaderStageVertex                 = 1 << 0,
+    HgiShaderStageFragment               = 1 << 1,
+    HgiShaderStageCompute                = 1 << 2,
+    HgiShaderStageTessellationControl    = 1 << 3,
+    HgiShaderStageTessellationEval       = 1 << 4,
+    HgiShaderStageGeometry               = 1 << 5,
+    HgiShaderStagePostTessellationVertex = 1 << 6,
+    HgiShaderStageCustomBitsBegin        = 1 << 7,
 };
 using HgiShaderStage = HgiBits;
 
@@ -447,6 +485,19 @@ enum HgiBlendFactor
     HgiBlendFactorCount
 };
 
+/// \enum HgiColorMaskBits
+///
+/// Describes whether to permit or restrict writing to color components
+/// of a color attachment.
+///
+enum HgiColorMaskBits : HgiBits
+{
+    HgiColorMaskRed             = 1 << 0,
+    HgiColorMaskGreen           = 1 << 1,
+    HgiColorMaskBlue            = 1 << 2,
+    HgiColorMaskAlpha           = 1 << 3,
+};
+using HgiColorMask = HgiBits;
 
 /// \enum HgiCompareFunction
 ///
@@ -464,6 +515,24 @@ enum HgiCompareFunction
     HgiCompareFunctionAlways,
 
     HgiCompareFunctionCount
+};
+
+/// \enum HgiStencilOp
+///
+/// Stencil operations.
+///
+enum HgiStencilOp
+{
+    HgiStencilOpKeep = 0,
+    HgiStencilOpZero,
+    HgiStencilOpReplace,
+    HgiStencilOpIncrementClamp,
+    HgiStencilOpDecrementClamp,
+    HgiStencilOpInvert,
+    HgiStencilOpIncrementWrap,
+    HgiStencilOpDecrementWrap,
+
+    HgiStencilOpCount
 };
 
 /// \enum HgiComponentSwizzle
@@ -498,6 +567,9 @@ enum HgiComponentSwizzle
 /// <li>HgiPrimitiveTypePatchList:
 ///   A user-defined number of vertices, which is tessellated into
 ///   points, lines, or triangles.</li>
+/// <li>HgiPrimitiveTypeLineListWithAdjacency:
+///   A four-vertex encoding used to draw untriangulated quads.
+///   Rasterize two triangles for every separate set of four vertices.</li>
 /// </ul>
 ///
 enum HgiPrimitiveType
@@ -507,8 +579,34 @@ enum HgiPrimitiveType
     HgiPrimitiveTypeLineStrip,
     HgiPrimitiveTypeTriangleList,
     HgiPrimitiveTypePatchList,
+    HgiPrimitiveTypeLineListWithAdjacency,
 
     HgiPrimitiveTypeCount
+};
+
+/// \enum HgiVertexBufferStepFunction
+///
+/// Describes the rate at which vertex attributes are pulled from buffers.
+///
+/// <ul>
+/// <li>HgiVertexBufferStepFunctionConstant:
+///   The same attribute data is used for every vertex.</li>
+/// <li>HgiVertexBufferStepFunctionPerVertex:
+///   New attribute data is fetched for each vertex.</li>
+/// <li>HgiVertexBufferStepFunctionPerInstance:
+///   New attribute data is fetched for each instance.</li>
+/// <li>HgiVertexBufferStepFunctionPerDrawCommand:
+///   New attribute data is fetched for each draw in a multi-draw command.</li>
+/// </ul>
+///
+enum HgiVertexBufferStepFunction
+{
+    HgiVertexBufferStepFunctionConstant = 0,
+    HgiVertexBufferStepFunctionPerVertex,
+    HgiVertexBufferStepFunctionPerInstance,
+    HgiVertexBufferStepFunctionPerDrawCommand,
+
+    HgiVertexBufferStepFunctionCount
 };
 
 /// \enum HgiSubmitWaitType
@@ -545,6 +643,58 @@ enum HgiMemoryBarrierBits
     HgiMemoryBarrierAll  = 1 << 0
 };
 using HgiMemoryBarrier = HgiBits;
+
+/// \enum HgiBindingType
+///
+/// Describes the type of shader resource binding model to use.
+///
+/// <ul>
+/// <li>HgiBindingTypeValue:
+///   Shader declares binding as a value.
+///   Glsl example: uniform int parameter;
+///   Msl example: int parameter;</li>
+/// <li>HgiBindingTypeArray:
+///   Shader declares binding as array value.
+///   Glsl example: uniform int parameter[n];
+///   Msl example: int parameter[n];</li>
+/// <li>HgiBindingTypePointer:
+///   Shader declares binding as pointer value.
+///   Glsl example: buffer { int parameter[] };
+///   Msl example: int *parameter;</li>
+/// </ul>
+///
+enum HgiBindingType
+{
+    HgiBindingTypeValue = 0,
+    HgiBindingTypeArray,
+    HgiBindingTypePointer,
+};
+
+/// \enum HgiInterpolationType
+///
+/// Describes the type of shader resource binding model to use.
+///
+/// <ul>
+/// <li>HgiInterpolationDefault:
+///   The shader input will have default interpolation.
+///   Glsl example: vec2 parameter;
+///   Msl example: vec2 parameter;</li>
+/// <li>HgiInterpolationFlat:
+///   The shader input will have no interpolation.
+///   Glsl example: flat vec2 parameter;
+///   Msl example: vec2 parameter[[flat]];</li>
+/// <li>HgiBindingTypeNoPerspective:
+///   The shader input will be linearly interpolated in screen-space
+///   Glsl example: noperspective vec2 parameter;
+///   Msl example: vec2 parameter[[center_no_perspective]];</li>
+/// </ul>
+///
+enum HgiInterpolationType
+{
+    HgiInterpolationDefault = 0,
+    HgiInterpolationFlat,
+    HgiInterpolationNoPerspective,
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

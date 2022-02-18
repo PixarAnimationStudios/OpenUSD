@@ -56,26 +56,19 @@ HdSt_BasisCurvesTopology::GetPointsIndexBuilderComputation()
     // using a computed buffer source.
     const VtIntArray& vertexCounts = GetCurveVertexCounts();
     int numVerts = 0;
-    std::vector<int> indices;
     for (int count : vertexCounts) {
         numVerts += count;
     }
 
-    int vi = 0;
-    while (vi < numVerts) {
-        indices.emplace_back(vi++);
-    }
-
-    VtIntArray finalIndices(indices.size());
+    VtIntArray finalIndices(numVerts);
     const VtIntArray& curveIndices = GetCurveIndices();
     if (curveIndices.empty()) {
-        std::copy(indices.begin(), indices.end(), finalIndices.begin());
+        for (int i=0; i<numVerts; ++i) {
+            finalIndices[i] = i;
+        }
     } else {
-        // If have topology has indices set, map the generated indices
-        // with the given indices.
-        int maxIndex = curveIndices.size() - 1;
-        for (const int& index : indices) {
-            finalIndices[index] = std::min(curveIndices[index], maxIndex);
+        for (int i=0; i<numVerts; ++i) {
+            finalIndices[i] = curveIndices[i];
         }
     }
 

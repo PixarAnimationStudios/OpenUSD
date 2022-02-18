@@ -55,6 +55,8 @@ class UsdImagingIndexProxy;
 class UsdImagingInstancerContext;
 class HdExtComputationContext;
 
+class UsdImagingDataSourceStageGlobals;
+
 using UsdImagingPrimAdapterSharedPtr = 
     std::shared_ptr<class UsdImagingPrimAdapter>;
 
@@ -67,16 +69,32 @@ class UsdImagingPrimAdapter
 {
 public:
     
-    // ---------------------------------------------------------------------- //
-    /// \name Initialization
-    // ---------------------------------------------------------------------- //
- 
     UsdImagingPrimAdapter()
     {}
 
     USDIMAGING_API
     virtual ~UsdImagingPrimAdapter();
 
+    // ---------------------------------------------------------------------- //
+    /// \name Scene Index Support
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    virtual TfTokenVector GetImagingSubprims();
+
+    USDIMAGING_API
+    virtual TfToken GetImagingSubprimType(TfToken const& subprim);
+
+    USDIMAGING_API
+    virtual HdContainerDataSourceHandle GetImagingSubprimData(
+            TfToken const& subprim,
+            UsdPrim const& prim,
+            const UsdImagingDataSourceStageGlobals &stageGlobals);
+
+    // ---------------------------------------------------------------------- //
+    /// \name Initialization
+    // ---------------------------------------------------------------------- //
+ 
     /// Called to populate the RenderIndex for this UsdPrim. The adapter is
     /// expected to create one or more prims in the render index using the
     /// given proxy.
@@ -653,6 +671,14 @@ protected:
     // Returns the material contexts from the renderer delegate.
     USDIMAGING_API
     TfTokenVector _GetMaterialRenderContexts() const;
+
+    /// Returns whether custom shading of prims is enabled.
+    USDIMAGING_API
+    bool _GetSceneMaterialsEnabled() const;
+
+    /// Returns whether lights found in the usdscene are enabled.
+    USDIMAGING_API
+    bool _GetSceneLightsEnabled() const;
 
     // Returns true if render delegate wants primvars to be filtered based.
     // This will filter the primvars based on the bound material primvar needs.

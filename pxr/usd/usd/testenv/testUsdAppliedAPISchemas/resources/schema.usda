@@ -152,7 +152,7 @@ class TestTypedSchema "TestTypedSchema" (
 class TestWithBuiltinAppliedSchema "TestWithBuiltinAppliedSchema" (
     inherits = </Typed>
     doc = """Test with built-in API schemas"""
-    apiSchemas = ["TestSingleApplyAPI", "TestMultiApplyAPI:builtin"]
+    prepend apiSchemas = ["TestSingleApplyAPI", "TestMultiApplyAPI:builtin"]
     hidden = false
 )
 {
@@ -174,7 +174,7 @@ class TestTypedSchemaForAutoApply "TestTypedSchemaForAutoApply" (
     inherits = </Typed>
     doc = "Testing typed schema"
     hidden = true
-    apiSchemas = ["TestMultiApplyAPI:builtin"]
+    prepend apiSchemas = ["TestMultiApplyAPI:builtin"]
 )
 {
     string testAttr = "foo" (
@@ -241,8 +241,8 @@ class TestDerivedTypedSchemaForAutoApplyAbstractBase "TestDerivedTypedSchemaForA
 class "TestNestedInnerSingleApplyAPI"
 (
     inherits = </APISchemaBase>
-    apiSchemas = ["TestSingleApplyAPI",
-                  "TestMultiApplyAPI:bar"]
+    prepend apiSchemas = ["TestSingleApplyAPI",
+                          "TestMultiApplyAPI:bar"]
     customData = {
         string className = "NestedInnerSingleApplyAPI"
     }
@@ -266,8 +266,8 @@ class "TestNestedInnerSingleApplyAPI"
 class "TestNestedOuterSingleApplyAPI"
 (
     inherits = </APISchemaBase>
-    apiSchemas = ["TestMultiApplyAPI:foo", 
-                  "TestNestedInnerSingleApplyAPI"]
+    prepend apiSchemas = ["TestMultiApplyAPI:foo", 
+                          "TestNestedInnerSingleApplyAPI"]
     customData = {
         string className = "NestedOuterSingleApplyAPI"
     }
@@ -289,10 +289,99 @@ class "TestNestedOuterSingleApplyAPI"
 
 }
 
+class "TestNestedInnerMultiApplyBaseAPI"
+(
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "innerMulti"
+        string className = "NestedInnerMultiApplyBaseAPI"
+    }
+    doc = """Test nested multi apply API schema: inner schema base class"""
+)
+{
+    uniform token token_attr = "inner_base" (
+        doc = """Token attribute"""
+    )
+    uniform int int_attr = 3 (
+        doc = """Int attribute"""
+    )
+    rel relationship (
+        doc = """Relationship"""
+    )
+}
+
+class "TestNestedInnerMultiApplyDerivedAPI"
+(
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestNestedInnerMultiApplyBaseAPI"]
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "innerMulti"
+        string className = "NestedInnerMultiApplyDerivedAPI"
+    }
+    doc = """Test nested multi apply API schema: inner schema derived"""
+)
+{
+    uniform token token_attr = "inner_derived" (
+        doc = """Override of TestNestedInnerMultiApplyBaseAPI token_attr"""
+    )
+    uniform int derived:int_attr = 4 (
+        doc = """Int attribute"""
+    )
+}
+
+class "TestNestedOuterMultiApplyAPI"
+(
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestNestedInnerMultiApplyDerivedAPI:builtin", 
+                  "TestNestedInnerMultiApplyDerivedAPI:outerMulti",
+                  "TestNestedInnerMultiApplyBaseAPI"]
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "outerMulti"
+        string className = "NestedOuterMultiApplyAPI"
+    }
+    doc = """Test nested multi apply API schema: outer schema"""
+)
+{
+    uniform token token_attr = "outer" (
+        doc = """Token attribute"""
+    )
+    uniform int int_attr = 5 (
+        doc = """Int attribute"""
+    )
+    rel relationship (
+        doc = """Relationship"""
+    )
+}
+
+class "TestNestedMultiApplyInSingleApplyAPI"
+(
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestNestedOuterMultiApplyAPI:foo", 
+                  "TestNestedInnerMultiApplyDerivedAPI:bar"]
+    customData = {
+        string className = "NestedMultiApplyInSingleApplyAPI"
+    }
+    doc = """Test single apply API with builtin nested multi apply API schema instances"""
+)
+{
+    uniform int int_attr = 10 (
+        doc = """Int attribute"""
+    )
+    uniform int innerMulti:foo:builtin:derived:int_attr = 20 (
+        doc = """Override of int attribute"""
+    )
+    uniform int innerMulti:bar:int_attr = 30 (
+        doc = """Override of int attribute"""
+    )
+}
+
 class "TestNestedCycle1API"
 (
     inherits = </APISchemaBase>
-    apiSchemas = ["TestNestedCycle2API"]
+    prepend apiSchemas = ["TestNestedCycle2API"]
     customData = {
         string className = "NestedCycle1API"
     }
@@ -310,7 +399,7 @@ class "TestNestedCycle1API"
 class "TestNestedCycle2API"
 (
     inherits = </APISchemaBase>
-    apiSchemas = ["TestNestedCycle3API"]
+    prepend apiSchemas = ["TestNestedCycle3API"]
     customData = {
         string className = "NestedCycle2API"
     }
@@ -328,7 +417,7 @@ class "TestNestedCycle2API"
 class "TestNestedCycle3API"
 (
     inherits = </APISchemaBase>
-    apiSchemas = ["TestNestedCycle1API"]
+    prepend apiSchemas = ["TestNestedCycle1API"]
     customData = {
         string className = "NestedCycle3API"
     }
@@ -346,7 +435,7 @@ class "TestNestedCycle3API"
 class TestWithBuiltinNestedAppliedSchema "TestWithBuiltinNestedAppliedSchema" (
     inherits = </Typed>
     doc = """Test with built-in nested API schemas"""
-    apiSchemas = ["TestNestedOuterSingleApplyAPI", "TestNestedCycle1API"]
+    prepend apiSchemas = ["TestNestedOuterSingleApplyAPI", "TestNestedCycle1API"]
     hidden = false
 )
 {
@@ -364,7 +453,7 @@ class TestWithBuiltinNestedAppliedSchema "TestWithBuiltinNestedAppliedSchema" (
 class "TestAutoAppliedToAPI" (
     inherits = </APISchemaBase>
     doc = "API that has other API schemas that auto apply to it"
-    apiSchemas = ["TestMultiApplyAPI:builtin"]
+    prepend apiSchemas = ["TestMultiApplyAPI:builtin"]
     customData = {
         token[] apiSchemaAutoApplyTo = ["TestNestedAutoAppliedToAPI"] 
     }
@@ -386,7 +475,7 @@ class "TestNestedAutoAppliedToAPI" (
     doc = """
 API that TestAutoAppliedToAPI auto applies to for testing that API schemas can 
 be nested through auto apply"""
-    apiSchemas = ["TestMultiApplyAPI:foo"]
+    prepend apiSchemas = ["TestMultiApplyAPI:foo"]
     customData = {
         token[] apiSchemaAutoApplyTo = ["TestNestedAutoAppliedToAPIAppliedToPrim"] 
     }
@@ -404,4 +493,124 @@ type schemas"""
 {
 }
 
+class "TestNestedMultiApplyCycle1API"
+(
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestNestedMultiApplyCycle2API:cycle1",
+                          "TestNestedMultiApplyCycle3API"]
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "cycle1"
+        string className = "NestedMultiApplyCycle1API"
+    }
+    doc = """Test nested multi apply API schema cycle"""
+)
+{
+    uniform token token_attr = "cycle1" (
+        doc = """Token attribute"""
+    )
+}
+
+class "TestNestedMultiApplyCycle2API"
+(
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestNestedMultiApplyCycle3API:cycle2",
+                          "TestNestedMultiApplyCycle1API"]
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "cycle2"
+        string className = "NestedMultiApplyCycle2API"
+    }
+    doc = """Test nested multi apply API schema cycle"""
+)
+{
+    uniform token token_attr = "cycle2" (
+        doc = """Token attribute"""
+    )
+}
+
+class "TestNestedMultiApplyCycle3API"
+(
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestNestedMultiApplyCycle1API:cycle3",
+                          "TestNestedMultiApplyCycle2API"]
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "cycle3"
+        string className = "NestedMultiApplyCycle3API"
+    }
+    doc = """Test nested multi apply API schema cycle"""
+)
+{
+    uniform token token_attr = "cycle3" (
+        doc = """Token attribute"""
+    )
+}
+
+class TestPropTypeConflictsPrim "TestPropTypeConflictsPrim" (
+    inherits = </Typed>
+    prepend apiSchemas = ["TestPropTypeConflictBuiltinAPI"]
+)
+{
+    int attr1 = 1 ( doc = "From TestPropTypeConflictsPrim" )
+    int attr2 = 2 ( doc = "From TestPropTypeConflictsPrim" )
+    int attr3 = 3 ( doc = "From TestPropTypeConflictsPrim" )
+    color3f attr5 = (1, 1, 1) ( doc = "From TestPropTypeConflictsPrim" )
+    int attr6 = 6 ( doc = "From TestPropTypeConflictsPrim" )
+    rel rel1 ( doc = "From TestPropTypeConflictsPrim" )
+    int rel2 ( doc = "From TestPropTypeConflictsPrim" )
+}
+
+class "TestPropTypeConflictBuiltinAPI" (
+    inherits = </APISchemaBase>
+)
+{
+    double attr2 = 0.0 ( doc = "From TestPropTypeConflictBuiltinAPI" )
+    int attr4 = 4 ( doc = "From TestPropTypeConflictBuiltinAPI" )
+    int rel1 ( doc = "From TestPropTypeConflictBuiltinAPI" )
+    rel rel2 ( doc = "From TestPropTypeConflictBuiltinAPI" )
+}
+
+class "TestPropTypeConflictAuthoredOneAPI" (
+    inherits = </APISchemaBase>
+)
+{
+    int attr1 = 0 ( doc = "From TestPropTypeConflictAuthoredOneAPI" )
+    double attr2 = 0.0 ( doc = "From TestPropTypeConflictAuthoredOneAPI" )
+    point3f attr5 = (0, 0, 0) ( doc = "From TestPropTypeConflictAuthoredOneAPI" )
+    int attr6 = 20 ( doc = "From TestPropTypeConflictAuthoredOneAPI" )
+    int rel1 ( doc = "From TestPropTypeConflictAuthoredOneAPI" )
+    rel rel2 ( doc = "From TestPropTypeConflictAuthoredOneAPI" )
+}
+
+class "TestPropTypeConflictAuthoredTwoAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token[] apiSchemaAutoApplyTo = [
+           "TestPropTypeConflictNestedAuthoredAPI"] 
+    }
+)
+{
+    int attr3 = 10 ( doc = "From TestPropTypeConflictAuthoredTwoAPI" )
+    string attr4 = "foo" ( doc = "From TestPropTypeConflictAuthoredTwoAPI" )
+    float3 attr5 = (1, 2, 3) ( doc = "From TestPropTypeConflictAuthoredTwoAPI" )
+    int attr6 = 10 ( doc = "From TestPropTypeConflictAuthoredTwoAPI" )
+    rel rel1 ( doc = "From TestPropTypeConflictAuthoredTwoAPI" )
+    int rel2 ( doc = "From TestPropTypeConflictAuthoredTwoAPI" )
+}
+
+class "TestPropTypeConflictNestedAuthoredAPI" (
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestPropTypeConflictAuthoredOneAPI"]
+)
+{
+    int attr1 = 1 ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+    int attr2 = 2 ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+    int attr3 = 3 ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+    int attr4 = 4 ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+    color3f attr5 = (1, 1, 1) ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+    token attr6 = "bar" ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+    rel rel1 ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+    int rel2 ( doc = "From TestPropTypeConflictNestedAuthoredAPI" )
+}
 

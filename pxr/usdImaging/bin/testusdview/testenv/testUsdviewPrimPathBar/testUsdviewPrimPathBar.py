@@ -40,8 +40,8 @@ def _getPath(appController):
 def _assertPathsEq(appController, pathStr):
     widgetText = _getPath(appController)
     assert widgetText == pathStr
-    for (actual, expected) in zip(map(str.strip, widgetText.split(',')), 
-                                  map(str.strip, pathStr.split(','))):
+    for (actual, expected) in zip(list(map(str.strip, widgetText.split(','))), 
+                                  list(map(str.strip, pathStr.split(',')))):
         assert Sdf.Path(actual)
         assert actual == expected
 

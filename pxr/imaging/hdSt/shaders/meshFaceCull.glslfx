@@ -37,21 +37,21 @@ void DiscardBasedOnShading(bool frontFacing, bool isFlipped)
 }
 
 --- --------------------------------------------------------------------------
--- glsl MeshFaceCull.Fragment.SingleSided
+-- glsl MeshFaceCull.Fragment.FrontFacing
 
 void DiscardBasedOnShading(bool frontFacing, bool isFlipped)
 {
-    if (ShouldCullFace(frontFacing ^^ isFlipped, /*doubleSided=*/false)) {
+    if (frontFacing != isFlipped) {
         discard;
     }
 }
 
 --- --------------------------------------------------------------------------
--- glsl MeshFaceCull.Fragment.DoubleSided
+-- glsl MeshFaceCull.Fragment.BackFacing
 
 void DiscardBasedOnShading(bool frontFacing, bool isFlipped)
 {
-    if (ShouldCullFace(frontFacing ^^ isFlipped, /*doubleSided=*/true)) {
+    if ((!frontFacing) != isFlipped) {
         discard;
     }
 }

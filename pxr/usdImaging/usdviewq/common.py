@@ -21,6 +21,10 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
+
+# pylint: disable=round-builtin
+
+from __future__ import division
 from __future__ import print_function
 
 from .qt import QtCore, QtGui, QtWidgets
@@ -426,16 +430,17 @@ class Timer(object):
        t.PrintTime("did some stuff")
     """
     def __enter__(self):
-        self._start = time.time()
+        self._stopwatch = Tf.Stopwatch()
+        self._stopwatch.Start()
         self.interval = 0
         return self
 
     def __exit__(self, *args):
-        self._end = time.time()
-        self.interval = self._end - self._start
+        self._stopwatch.Stop()
+        self.interval = self._stopwatch.seconds
 
     def PrintTime(self, action):
-        print("Time to %s: %2.3fs" % (action, self.interval))
+        print("Time to %s: %2.6fs" % (action, self.interval))
 
 
 class BusyContext(object):

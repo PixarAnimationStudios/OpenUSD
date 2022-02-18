@@ -50,6 +50,26 @@ public:
     USDIMAGING_API
     ~UsdImagingBasisCurvesAdapter() override;
 
+    // ---------------------------------------------------------------------- //
+    /// \name Scene Index Support
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    TfTokenVector GetImagingSubprims() override;
+
+    USDIMAGING_API
+    TfToken GetImagingSubprimType(TfToken const& subprim) override;
+
+    USDIMAGING_API
+    HdContainerDataSourceHandle GetImagingSubprimData(
+            TfToken const& subprim,
+            UsdPrim const& prim,
+            const UsdImagingDataSourceStageGlobals &stageGlobals) override;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Initialization
+    // ---------------------------------------------------------------------- //
+    
     USDIMAGING_API
     SdfPath Populate(
         UsdPrim const& prim,
@@ -110,6 +130,10 @@ public:
 protected:
     USDIMAGING_API
     bool _IsBuiltinPrimvar(TfToken const& primvarName) const override;
+
+    USDIMAGING_API
+    TfTokenVector const& _GetRprimPrimvarNames() const override;
+
 };
 
 

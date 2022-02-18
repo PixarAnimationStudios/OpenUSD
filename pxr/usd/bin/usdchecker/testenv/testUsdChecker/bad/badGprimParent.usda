@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    upAxis = "Y"
+    metersPerUnit = 0.01
+    defaultPrim = "World"
+)
+
+def "World"
+{
+    def Mesh "Scepter"
+    {
+        def Sphere "BaubleTop"
+        {
+
+        }
+    }
+}
+

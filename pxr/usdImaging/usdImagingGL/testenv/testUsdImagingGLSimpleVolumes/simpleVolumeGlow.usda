@@ -1,0 +1,84 @@
+#usda 1.0
+(
+    defaultPrim = "Volume"
+    doc = """A test scene checking emission/pre-multiplied alpha."""
+    endFrame = 100
+    startFrame = 1
+    upAxis = "Y"
+)
+
+def Camera "main_cam"
+{
+    float focalLength = 50
+    double3 xformOp:translate = (0, 0, 35)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Material "EllipsoidalVolumeMaterial" (
+    doc = "A simple material producing a volume that has blue emission in the bounding box and constant scattering/extinction in an ellipsoid."
+)
+{
+    token outputs:volume.connect = </EllipsoidalVolumeMaterial/Volume.outputs:volume>
+
+    def Shader "Volume"
+    {
+        uniform asset info:glslfx:sourceAsset = @ellipsoidalVolume.glslfx@
+        uniform token info:implementationSource = "sourceAsset"
+        float3 inputs:emissionColor = (0, 0, 0.3)
+        token outputs:volume
+    }
+}
+
+def Xform "Lights"
+{
+    def DistantLight "top"
+    {
+        color3f inputs:color = (1, 0, 0)
+        float inputs:exposure = 4
+        float xformOp:rotateX = -90
+        uniform token[] xformOpOrder = ["xformOp:rotateX"]
+    }
+}
+
+def Material "TranslucentTagMat"
+{
+    token outputs:surface.connect = </TranslucentTagMat/Surface.outputs:surface>
+
+    def Shader "Surface" (
+        doc = "Shadeless semi-transparent green"
+    )
+    {
+        uniform asset info:glslfx:sourceAsset = @constantShader.glslfx@
+        uniform token info:implementationSource = "sourceAsset"
+        token outputs:surface
+    }
+}
+
+def Xform "Volume" (
+    doc = "Volume with emission."
+)
+{
+    double3 xformOp:translate = (2, -2, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Volume "Volume"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        rel material:binding:preview = </EllipsoidalVolumeMaterial>
+        double3 xformOp:scale = (2.5, 2.5, 2.5)
+        double3 xformOp:translate = (0, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+
+    def Mesh "TranslucentGeometry" (
+        doc = "A shadeless semi-transparent green rectangle in front of the volume."
+    )
+    {
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        rel material:binding = </TranslucentTagMat>
+        point3f[] points = [(-3, -1.5, 0), (-3, 1, 0), (0, 1, 0), (0, -1.5, 0)]
+        double3 xformOp:translate = (-1, -1, 5)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
