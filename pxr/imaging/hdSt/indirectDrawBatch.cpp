@@ -944,9 +944,11 @@ struct _BindingState : public _DrawItemState
 
     // Bind core resources and additional resources needed for drawing.
     void BindResourcesForDrawing(
-                HdStRenderPassStateSharedPtr const & renderPassState) const;
+        HdStRenderPassStateSharedPtr const & renderPassState,
+        HgiCapabilities const &hgiCapabilities) const;
     void UnbindResourcesForDrawing(
-                HdStRenderPassStateSharedPtr const & renderPassState) const;
+        HdStRenderPassStateSharedPtr const & renderPassState,
+        HgiCapabilities const &hgiCapabilities) const;
 
     HdStDispatchBufferSharedPtr dispatchBuffer;
     HdSt_ResourceBinder const & binder;
@@ -995,7 +997,8 @@ _BindingState::UnbindResourcesForViewTransformation() const
 
 void
 _BindingState::BindResourcesForDrawing(
-        HdStRenderPassStateSharedPtr const & renderPassState) const
+    HdStRenderPassStateSharedPtr const & renderPassState,
+    HgiCapabilities const &hgiCapabilities) const
 {
     BindResourcesForViewTransformation();
 
@@ -1018,13 +1021,14 @@ _BindingState::BindResourcesForDrawing(
                 glslProgram->GetProgram()->GetRawResource(), binder);
     }
 
-    renderPassState->Bind();
+    renderPassState->Bind(hgiCapabilities);
     renderPassState->ApplyStateFromGeometricShader(binder, geometricShader);
 }
 
 void
 _BindingState::UnbindResourcesForDrawing(
-        HdStRenderPassStateSharedPtr const & renderPassState) const
+    HdStRenderPassStateSharedPtr const & renderPassState,
+    HgiCapabilities const &hgiCapabilities) const
 {
     UnbindResourcesForViewTransformation();
 
@@ -1046,7 +1050,7 @@ _BindingState::UnbindResourcesForDrawing(
         shader->UnbindResources(0, binder);
     }
 
-    renderPassState->Unbind();
+    renderPassState->Unbind(hgiCapabilities);
 }
 
 } // annonymous namespace
@@ -1115,7 +1119,8 @@ HdSt_IndirectDrawBatch::_ExecuteDraw(
                                state.instancePrimvarBars);
     }
 
-    state.BindResourcesForDrawing(renderPassState);
+    state.BindResourcesForDrawing(renderPassState, 
+        *(resourceRegistry->GetHgi()->GetCapabilities()));
 
     HdSt_GeometricShader const * geometricShader = state.geometricShader.get();
     if (geometricShader->IsPrimTypePatches()) {
@@ -1159,7 +1164,8 @@ HdSt_IndirectDrawBatch::_ExecuteDraw(
             _dispatchBuffer->GetCommandNumUints()*sizeof(uint32_t));
     }
 
-    state.UnbindResourcesForDrawing(renderPassState);
+    state.UnbindResourcesForDrawing(renderPassState,
+        *(resourceRegistry->GetHgi()->GetCapabilities()));
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->drawCalls);
     HD_PERF_COUNTER_ADD(HdTokens->itemsDrawn, _numVisibleItems);

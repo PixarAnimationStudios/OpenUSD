@@ -227,7 +227,7 @@ HgiGraphicsPipelineHandle
 HgiGL::CreateGraphicsPipeline(HgiGraphicsPipelineDesc const& desc)
 {
     return HgiGraphicsPipelineHandle(
-        new HgiGLGraphicsPipeline(desc), GetUniqueId());
+        new HgiGLGraphicsPipeline(this, desc), GetUniqueId());
 }
 
 void

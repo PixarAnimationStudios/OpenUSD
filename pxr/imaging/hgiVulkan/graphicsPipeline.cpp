@@ -24,6 +24,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/iterator.h"
 
+#include "pxr/imaging/hgiVulkan/capabilities.h"
 #include "pxr/imaging/hgiVulkan/conversions.h"
 #include "pxr/imaging/hgiVulkan/device.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
@@ -155,7 +156,9 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     rasterState.rasterizerDiscardEnable = !ras.rasterizerEnabled;
     rasterState.depthClampEnable = ras.depthClampEnabled;
 
-    if (ras.conservativeRaster) {
+    if (device->GetDeviceCapabilities().IsSet(
+        HgiDeviceCapabilitiesBitsConservativeRaster) &&
+        ras.conservativeRaster) {
         VkPipelineRasterizationConservativeStateCreateInfoEXT 
             conservativeRasterState = {};
         conservativeRasterState.sType = 

@@ -23,6 +23,7 @@
 //
 #include "pxr/base/tf/diagnostic.h"
 
+#include "pxr/imaging/hgiGL/hgi.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/graphicsPipeline.h"
@@ -33,8 +34,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGLGraphicsPipeline::HgiGLGraphicsPipeline(
+    HgiGL const* hgi,
     HgiGraphicsPipelineDesc const& desc)
     : HgiGraphicsPipeline(desc)
+    , _hgi(hgi)
     , _vao(0)
 {
 }
@@ -215,10 +218,13 @@ HgiGLGraphicsPipeline::BindPipeline()
 
     glEnable(GL_PROGRAM_POINT_SIZE);
 
-    if (_descriptor.rasterizationState.conservativeRaster) {
-        glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
-    } else {
-        glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+    if (_hgi->GetCapabilities()->IsSet(
+        HgiDeviceCapabilitiesBitsConservativeRaster)) {
+        if (_descriptor.rasterizationState.conservativeRaster) {
+            glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
+        } else {
+            glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+        }
     }
 
     for (size_t i = 0; i < _descriptor.rasterizationState.numClipDistances; i++)

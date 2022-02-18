@@ -585,7 +585,7 @@ HdStRenderPassState::ApplyStateFromCamera()
 }
 
 void
-HdStRenderPassState::Bind()
+HdStRenderPassState::Bind(HgiCapabilities const &hgiCapabilities)
 {
     GLF_GROUP_FUNCTION();
 
@@ -682,15 +682,17 @@ HdStRenderPassState::Bind()
         }
     }
     
-    if (_conservativeRasterizationEnabled) {
-        glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
-    } else {
-        glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+    if (hgiCapabilities.IsSet(HgiDeviceCapabilitiesBitsConservativeRaster)) {
+        if (_conservativeRasterizationEnabled) {
+            glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
+        } else {
+            glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+        }
     }
 }
 
 void
-HdStRenderPassState::Unbind()
+HdStRenderPassState::Unbind(HgiCapabilities const &hgiCapabilities)
 {
     GLF_GROUP_FUNCTION();
     // restore back to the GL defaults
@@ -723,6 +725,10 @@ HdStRenderPassState::Unbind()
 
     glColorMask(true, true, true, true);
     glDepthMask(true);
+
+    if (hgiCapabilities.IsSet(HgiDeviceCapabilitiesBitsConservativeRaster)) {
+        glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+    }
 }
 
 void

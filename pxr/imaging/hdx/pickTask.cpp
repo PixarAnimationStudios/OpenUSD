@@ -472,9 +472,6 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         HdStRenderSettingsTokens->volumeRaymarchingStepSizeLighting,
         HdStVolume::defaultStepSizeLighting);
 
-    const bool conservativeRaster = _hgi->GetCapabilities()->
-        IsSet(HgiDeviceCapabilitiesBitsConservativeRaster);
-
     // Update the renderpass states.
     for (auto& state : states) {
         if (needStencilConditioning) {
@@ -503,7 +500,7 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         state->SetVolumeRenderingConstants(stepSize, stepSizeLighting);
         
         // Enable conservative rasterization, if available.
-        state->SetConservativeRasterizationEnabled(conservativeRaster);
+        state->SetConservativeRasterizationEnabled(true);
 
         // If scene materials are disabled in this environment then
         // let's setup the override shader
