@@ -76,8 +76,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 namespace {
     struct BindingLocator {
         BindingLocator() :
-            uniformLocation(0), uboLocation(0),
-            ssboLocation(0), attribLocation(0),
+            uniformLocation(0),
+            bufferLocation(0),
+            attribLocation(0),
             textureUnit(0) {}
 
         HdBinding GetBinding(HdBinding::Type type, TfToken const &debugName) {
@@ -86,10 +87,10 @@ namespace {
                 return HdBinding(HdBinding::UNIFORM, uniformLocation++);
                 break;
             case HdBinding::UBO:
-                return HdBinding(HdBinding::UBO, uboLocation++);
+                return HdBinding(HdBinding::UBO, bufferLocation++);
                 break;
             case HdBinding::SSBO:
-                return HdBinding(HdBinding::SSBO, ssboLocation++);
+                return HdBinding(HdBinding::SSBO, bufferLocation++);
                 break;
             case HdBinding::BINDLESS_SSBO_RANGE:
                 return HdBinding(HdBinding::BINDLESS_SSBO_RANGE, uniformLocation++);
@@ -114,8 +115,7 @@ namespace {
         }
 
         int uniformLocation;
-        int uboLocation;
-        int ssboLocation;
+        int bufferLocation;
         int attribLocation;
         int textureUnit;
     };
