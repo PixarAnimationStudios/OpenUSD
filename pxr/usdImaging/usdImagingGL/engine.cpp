@@ -739,7 +739,7 @@ UsdImagingGLEngine::TestIntersection(
 
     HdxPickHitVector allHits;
     HdxPickTaskContextParams pickParams;
-    pickParams.resolveMode = HdxPickTokens->resolveNearestToCenter;
+    pickParams.resolveMode = HdxPickTokens->resolveDeep;
     pickParams.viewMatrix = viewMatrix;
     pickParams.projectionMatrix = projectionMatrix;
     pickParams.clipPlanes = params.clipPlanes;
@@ -779,6 +779,59 @@ UsdImagingGLEngine::TestIntersection(
     }
     if (outHitInstanceIndex) {
         *outHitInstanceIndex = hit.instanceIndex;
+    }
+
+    return true;
+}
+
+
+bool
+UsdImagingGLEngine::TestIntersectionAll(
+    const GfMatrix4d& viewMatrix,
+    const GfMatrix4d& projectionMatrix,
+    const UsdPrim& root,
+    const UsdImagingGLRenderParams& params,
+    SdfPathVector& outHitPrimPaths)
+{
+    TF_VERIFY(_sceneDelegate);
+    TF_VERIFY(_taskController);
+
+    PrepareBatch(root, params);
+
+    // XXX(UsdImagingPaths): This is incorrect...  "Root" points to a USD
+    // subtree, but the subtree in the hydra namespace might be very different
+    // (e.g. for native instancing).  We need a translation step.
+    const SdfPath cachePath = root.GetPath();
+    const SdfPathVector roots = {
+        _sceneDelegate->ConvertCachePathToIndexPath(cachePath) };
+    _UpdateHydraCollection(&_intersectCollection, roots, params);
+
+    _PrepareRender(params);
+
+    HdxPickHitVector allHits;
+    HdxPickTaskContextParams pickParams;
+    pickParams.resolveMode = HdxPickTokens->resolveDeep;
+    pickParams.viewMatrix = viewMatrix;
+    pickParams.projectionMatrix = projectionMatrix;
+    pickParams.clipPlanes = params.clipPlanes;
+    pickParams.collection = _intersectCollection;
+    pickParams.outHits = &allHits;
+    const VtValue vtPickParams(pickParams);
+
+    _engine->SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
+    _Execute(params, _taskController->GetPickingTasks());
+
+    // return false if there were no hits
+    if (allHits.size() == 0) {
+        return false;
+    }
+
+    for(HdxPickHit& hit : allHits)
+    {
+        hit.objectId = _sceneDelegate->GetScenePrimPath(
+            hit.objectId, hit.instanceIndex, nullptr);
+        if (hit.instanceIndex == 0)
+            outHitPrimPaths.push_back(hit.objectId);
     }
 
     return true;

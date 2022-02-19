@@ -316,6 +316,14 @@ public:
         int *outHitInstanceIndex = NULL,
         HdInstancerContext *outInstancerContext = NULL);
 
+    USDIMAGINGGL_API
+        bool TestIntersectionAll(
+            const GfMatrix4d& viewMatrix,
+            const GfMatrix4d& projectionMatrix,
+            const UsdPrim& root,
+            const UsdImagingGLRenderParams& params,
+            SdfPathVector& outHitPrimPaths);
+
     /// Decodes a pick result given hydra prim ID/instance ID (like you'd get
     /// from an ID render).
     USDIMAGINGGL_API
