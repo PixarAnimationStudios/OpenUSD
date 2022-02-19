@@ -105,6 +105,25 @@ public:
 
     typedef std::vector<TimeMapping> TimeMappings;
 
+    /// Structure used to sort TimeMapping objects. Used by both Usd_Clip and
+    /// Usd_ClipSet.
+    struct Usd_SortByExternalTime
+    {
+        bool
+        operator()(const Usd_Clip::TimeMapping& x,
+                   const Usd_Clip::ExternalTime y) const
+        {
+            return x.externalTime < y;
+        }
+
+        bool
+        operator()(const Usd_Clip::TimeMapping& x,
+                   const Usd_Clip::TimeMapping& y) const
+        {
+            return x.externalTime < y.externalTime;
+        }
+    };
+
     Usd_Clip();
     Usd_Clip(
         const PcpLayerStackPtr& clipSourceLayerStack,
@@ -115,7 +134,7 @@ public:
         ExternalTime clipAuthoredStartTime,
         ExternalTime clipStartTime,
         ExternalTime clipEndTime,
-        const TimeMappings& timeMapping);
+        const std::shared_ptr<TimeMappings> &timeMapping);
 
     bool HasField(const SdfPath& path, const TfToken& field) const;
 
@@ -201,7 +220,7 @@ public:
     ExternalTime endTime;
 
     /// Mapping of external to internal times.
-    TimeMappings times;
+    std::shared_ptr<const TimeMappings> times;
 
 private:
     friend class UsdStage;

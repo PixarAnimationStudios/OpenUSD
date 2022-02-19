@@ -69,23 +69,6 @@ UsdGetClipRelatedFields()
     };
 }
 
-struct Usd_SortByExternalTime
-{
-    bool 
-    operator()(const Usd_Clip::TimeMapping& x, 
-               const Usd_Clip::ExternalTime y) const
-    { 
-        return x.externalTime < y; 
-    }
-
-    bool 
-    operator()(const Usd_Clip::TimeMapping& x, 
-               const Usd_Clip::TimeMapping& y) const
-    { 
-        return x.externalTime < y.externalTime; 
-    }
-};
-
 std::ostream&
 operator<<(std::ostream& out, const Usd_ClipRefPtr& clip)
 {
@@ -118,7 +101,7 @@ Usd_Clip::Usd_Clip(
     ExternalTime clipAuthoredStartTime,
     ExternalTime clipStartTime,
     ExternalTime clipEndTime,
-    const TimeMappings& timeMapping)
+    const std::shared_ptr<TimeMappings> &timeMapping)
     : sourceLayerStack(clipSourceLayerStack)
     , sourcePrimPath(clipSourcePrimPath)
     , sourceLayerIndex(clipSourceLayerIndex)
@@ -129,29 +112,6 @@ Usd_Clip::Usd_Clip(
     , endTime(clipEndTime)
     , times(timeMapping)
 { 
-    if (!times.empty()) {
-        // Maintain the relative order of entries with the same stage time for
-        // jump discontinuities in case the authored times array was unsorted.
-        std::stable_sort(times.begin(), times.end(), Usd_SortByExternalTime());
-
-        // Jump discontinuities are represented by consecutive entries in the
-        // times array with the same stage time, e.g. (10, 10), (10, 0).
-        // We represent this internally as (10 - SafeStep(), 10), (10, 0)
-        // because a lot of the desired behavior just falls out from this
-        // representation.
-        for (size_t i = 0; i < times.size() - 1; ++i) {
-            if (times[i].externalTime == times[i + 1].externalTime) {
-                times[i].externalTime = 
-                    times[i].externalTime - UsdTimeCode::SafeStep();
-                times[i].isJumpDiscontinuity = true;
-            }
-        }
-
-        // Add sentinel values to the beginning and end for convenience.
-        times.insert(times.begin(), times.front());
-        times.insert(times.end(), times.back());
-    }
-
     // For performance reasons, we want to defer the loading of the layer
     // for this clip until absolutely needed. However, if the layer happens
     // to already be opened, we can take advantage of that here. 
@@ -195,8 +155,8 @@ _GetBracketingTimeSegment(
     }
     else {
         *m2 = std::distance(times.begin(), 
-                            std::lower_bound(times.begin(), times.end(),
-                                             time, Usd_SortByExternalTime()));
+                std::lower_bound(times.begin(), times.end(),
+                                 time, Usd_Clip::Usd_SortByExternalTime()));
         *m1 = *m2 - 1;
     }
 
@@ -336,7 +296,7 @@ Usd_Clip::_GetBracketingTimeSamplesForPathFromClipLayer(
     // s2, since s2 is in the range of (m2, m3), we use those mappings to map
     // s2 to e2. So, our final answer is (e1, e2).
     size_t m1, m2;
-    if (!_GetBracketingTimeSegment(times, time, &m1, &m2)) {
+    if (!_GetBracketingTimeSegment(*times, time, &m1, &m2)) {
         *tLower = lowerInClip;
         *tUpper = upperInClip;
         return true;
@@ -389,11 +349,11 @@ Usd_Clip::_GetBracketingTimeSamplesForPathFromClipLayer(
     };
 
     for (int i1 = m1, i2 = m2; i1 >= 0 && i2 >= 0; --i1, --i2) {
-        if (_CanTranslate(times, i1, i2, /*lower=*/true)) { break; }
+        if (_CanTranslate(*times, i1, i2, /*lower=*/true)) { break; }
     }
         
-    for (size_t i1 = m1, i2 = m2, sz = times.size(); i1 < sz && i2 < sz; ++i1, ++i2) {
-        if (_CanTranslate(times, i1, i2, /*lower=*/false)) { break; }
+    for (size_t i1 = m1, i2 = m2, sz = times->size(); i1 < sz && i2 < sz; ++i1, ++i2) {
+        if (_CanTranslate(*times, i1, i2, /*lower=*/false)) { break; }
     }
 
     if (translatedLower && !translatedUpper) {
@@ -414,18 +374,18 @@ Usd_Clip::_GetBracketingTimeSamplesForPathFromClipLayer(
         //
         // The 'timingOutsideClip' test case in testUsdModelClips exercises
         // this behavior.
-        if (lowerInClip < times.front().internalTime) {
-            translatedLower.reset(times.front().externalTime);
+        if (lowerInClip < times->front().internalTime) {
+            translatedLower.reset(times->front().externalTime);
         }
-        else if (lowerInClip > times.back().internalTime) {
-            translatedLower.reset(times.back().externalTime);
+        else if (lowerInClip > times->back().internalTime) {
+            translatedLower.reset(times->back().externalTime);
         }
 
-        if (upperInClip < times.front().internalTime) {
-            translatedUpper.reset(times.front().externalTime);
+        if (upperInClip < times->front().internalTime) {
+            translatedUpper.reset(times->front().externalTime);
         }
-        else if (upperInClip > times.back().internalTime) {
-            translatedUpper.reset(times.back().externalTime);
+        else if (upperInClip > times->back().internalTime) {
+            translatedUpper.reset(times->back().externalTime);
         }
     }
             
@@ -452,7 +412,7 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
     // Each external time in the clip times array is considered a time
     // sample.
     if (_GetBracketingTimeSamples(
-            times.cbegin(), times.cend(), time, 
+            times->cbegin(), times->cend(), time,
             &bracketingTimes[numTimes], &bracketingTimes[numTimes + 1])) {
         numTimes += 2;
     }
@@ -505,7 +465,7 @@ Usd_Clip::_ListTimeSamplesForPathFromClipLayer(
 {
     std::set<InternalTime> timeSamplesInClip = 
         _GetLayerForClip()->ListTimeSamplesForPath(_TranslatePathToClip(path));
-    if (times.empty()) {
+    if (times->empty()) {
         *timeSamples = std::move(timeSamplesInClip);
 
         // Filter out all samples that are outside the clip's active range
@@ -528,9 +488,9 @@ Usd_Clip::_ListTimeSamplesForPathFromClipLayer(
     // To deal with this, every internal time sample has to be checked 
     // against the entire mapping function.
     for (InternalTime t: timeSamplesInClip) {
-        for (size_t i = 0; i < times.size() - 1; ++i) {
-            const TimeMapping& m1 = times[i];
-            const TimeMapping& m2 = times[i+1];
+        for (size_t i = 0; i < times->size() - 1; ++i) {
+            const TimeMapping& m1 = (*times)[i];
+            const TimeMapping& m2 = (*times)[i+1];
 
             // Ignore time mappings whose external time domain does not 
             // intersect the times at which this clip is active.
@@ -576,7 +536,7 @@ Usd_Clip::ListTimeSamplesForPath(const SdfPath& path) const
 
     // Each entry in the clip's time mapping is considered a time sample,
     // so add them in here.
-    for (const TimeMapping& t : times) {
+    for (const TimeMapping& t : *times) {
         if (startTime <= t.externalTime && t.externalTime < endTime) {
             timeSamples.insert(t.externalTime);
         }
@@ -651,12 +611,12 @@ Usd_Clip::InternalTime
 Usd_Clip::_TranslateTimeToInternal(ExternalTime extTime) const
 {
     size_t i1, i2;
-    if (!_GetBracketingTimeSegment(times, extTime, &i1, &i2)) {
+    if (!_GetBracketingTimeSegment(*times, extTime, &i1, &i2)) {
         return extTime;
     }
 
-    const TimeMapping& m1 = times[i1];
-    const TimeMapping& m2 = times[i2];
+    const TimeMapping& m1 = (*times)[i1];
+    const TimeMapping& m2 = (*times)[i2];
 
     // If the time segment ends on the left side of a jump discontinuity
     // we use the authored external time for the translation. 
@@ -681,8 +641,8 @@ Usd_Clip::_TranslateTimeToInternal(ExternalTime extTime) const
     // This avoids all of the issues above and more closely matches the intent
     // expressed in the authored times metadata.
     if (m2.isJumpDiscontinuity) {
-        TF_VERIFY(i2 + 1 < times.size());
-        const TimeMapping& m3 = times[i2 + 1];
+        TF_VERIFY(i2 + 1 < times->size());
+        const TimeMapping& m3 = (*times)[i2 + 1];
         return _TranslateTimeToInternalHelper(
             extTime, m1, TimeMapping(m3.externalTime, m2.internalTime));
     }
@@ -718,8 +678,8 @@ Usd_Clip::ExternalTime
 Usd_Clip::_TranslateTimeToExternal(
     InternalTime intTime, size_t i1, size_t i2) const
 {
-    const TimeMapping& m1 = times[i1];
-    const TimeMapping& m2 = times[i2];
+    const TimeMapping& m1 = (*times)[i1];
+    const TimeMapping& m2 = (*times)[i2];
 
     // Clients should never be trying to map an internal time through a jump
     // discontinuity.
@@ -747,8 +707,8 @@ Usd_Clip::_TranslateTimeToExternal(
     // This avoids all of the issues above and more closely matches the intent
     // expressed in the authored times metadata.
     if (m2.isJumpDiscontinuity) {
-        TF_VERIFY(i2 + 1 < times.size());
-        const TimeMapping& m3 = times[i2 + 1];
+        TF_VERIFY(i2 + 1 < times->size());
+        const TimeMapping& m3 = (*times)[i2 + 1];
         return _TranslateTimeToExternalHelper(
             intTime, m1, TimeMapping(m3.externalTime, m2.internalTime));
     }
