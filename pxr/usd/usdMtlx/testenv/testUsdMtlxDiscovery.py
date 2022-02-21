@@ -39,7 +39,8 @@ class TestDiscovery(unittest.TestCase):
         names = sorted(registry.GetNodeIdentifiers('UsdMtlxTestNode',
                                                    Ndr.VersionFilterAllVersions))
         self.assertEqual(names,
-            ['pxr_nd_float',
+            ['pxr_nd_boolean',
+             'pxr_nd_float',
              'pxr_nd_integer',
              'pxr_nd_string',
              'pxr_nd_vector',
@@ -50,7 +51,8 @@ class TestDiscovery(unittest.TestCase):
         # Check node names.
         names = sorted(registry.GetNodeNames('UsdMtlxTestNode'))
         self.assertEqual(names,
-            ['pxr_nd_float',
+            ['pxr_nd_boolean',
+             'pxr_nd_float',
              'pxr_nd_integer',
              'pxr_nd_string',
              'pxr_nd_vector'])
@@ -63,7 +65,8 @@ class TestDiscovery(unittest.TestCase):
         nodes = registry.GetNodesByFamily('UsdMtlxTestNode')
         names = sorted([node.GetIdentifier() for node in nodes])
         self.assertEqual(names,
-            ['pxr_nd_float',
+            ['pxr_nd_boolean',
+             'pxr_nd_float',
              'pxr_nd_integer',
              'pxr_nd_string',
              'pxr_nd_vector_2',
@@ -83,6 +86,8 @@ class TestDiscovery(unittest.TestCase):
             [Ndr.Version(),
              Ndr.Version(),
              Ndr.Version(),
+             Ndr.Version(),
+             Ndr.Version(),
              Ndr.Version(1),
              Ndr.Version(2, 0),
              Ndr.Version(2, 1),
@@ -94,7 +99,9 @@ class TestDiscovery(unittest.TestCase):
                         filter=Ndr.VersionFilterDefaultOnly)
                                                 if name.startswith('pxr_')])
         self.assertEqual(names,
-            ['pxr_nd_float',
+            ['pxr_nd_boolean',
+             'pxr_nd_booleanDefaults',
+             'pxr_nd_float',
              'pxr_nd_integer',
              'pxr_nd_string',
              'pxr_nd_vector_2',
@@ -105,8 +112,21 @@ class TestDiscovery(unittest.TestCase):
             [Ndr.Version(),
              Ndr.Version(),
              Ndr.Version(),
+             Ndr.Version(),
+             Ndr.Version(),
              Ndr.Version(2, 0),
              Ndr.Version()])
+
+        # Check default values of boolean inputs:
+        node = registry.GetNodeByIdentifier("pxr_nd_booleanDefaults")
+        self.assertTrue(node)
+        trueInput = node.GetInput("inTrue")
+        self.assertTrue(trueInput.GetDefaultValue())
+        self.assertTrue(trueInput.GetDefaultValueAsSdfType())
+        falseInput = node.GetInput("inFalse")
+        self.assertFalse(falseInput.GetDefaultValue())
+        self.assertFalse(falseInput.GetDefaultValueAsSdfType())
+
 
 if __name__ == '__main__':
     unittest.main()
