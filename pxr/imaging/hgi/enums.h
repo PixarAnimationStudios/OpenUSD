@@ -63,6 +63,8 @@ using HgiBits = uint32_t;
 ///   Use CPP padding for shader language structures</li>
 /// <li>HgiDeviceCapabilitiesBitsConservativeRaster:
 ///   The device supports conservative rasterization</li>
+/// <li>HgiDeviceCapabilitiesBitsStencilReadback:
+///   Supports reading back the stencil buffer from GPU to CPU.</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
@@ -78,7 +80,8 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsShaderDoublePrecision   = 1 << 8,
     HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne = 1 << 9,
     HgiDeviceCapabilitiesBitsCppShaderPadding        = 1 << 10,
-    HgiDeviceCapabilitiesBitsConservativeRaster      = 1 << 11
+    HgiDeviceCapabilitiesBitsConservativeRaster      = 1 << 11,
+    HgiDeviceCapabilitiesBitsStencilReadback         = 1 << 12
 };
 
 using HgiDeviceCapabilities = HgiBits;

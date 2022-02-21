@@ -260,6 +260,7 @@ private:
     HdRenderPassAovBindingVector _pickableAovBindings;
     HdRenderPassAovBinding _occluderAovBinding;
     size_t _pickableDepthIndex;
+    TfToken _depthToken;
     std::unique_ptr<HdStRenderBuffer> _widgetDepthStencilBuffer;
     HdRenderPassAovBindingVector _widgetAovBindings;
 

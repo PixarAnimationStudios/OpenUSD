@@ -84,16 +84,6 @@ _IsStormRenderer(HdRenderDelegate *renderDelegate)
     return true;
 }
 
-// Generated renderbuffers
-static TfTokenVector _aovOutputs {
-    HdAovTokens->primId,
-    HdAovTokens->instanceId,
-    HdAovTokens->elementId,
-    HdAovTokens->edgeId,
-    HdAovTokens->pointId,
-    HdAovTokens->Neye,
-    HdAovTokens->depthStencil
-};
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
     (widgetDepthStencil)
 );
@@ -116,6 +106,7 @@ HdxPickTask::HdxPickTask(HdSceneDelegate* delegate, SdfPath const& id)
     , _index(nullptr)
     , _hgi(nullptr)
     , _pickableDepthIndex(0)
+    , _depthToken(HdAovTokens->depthStencil)
 {
 }
 
@@ -172,10 +163,27 @@ HdxPickTask::_CreateAovBindings()
         std::static_pointer_cast<HdStResourceRegistry>(
             _index->GetResourceRegistry());
 
-    HdRenderDelegate *renderDelegate = _index->GetRenderDelegate();
+    HdRenderDelegate const * renderDelegate = _index->GetRenderDelegate();
 
     GfVec3i dimensions(_contextParams.resolution[0],
                        _contextParams.resolution[1], 1);
+
+    bool const stencilReadback = _hgi->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsStencilReadback);
+
+    _depthToken = stencilReadback ? HdAovTokens->depthStencil
+                                  : HdAovTokens->depth;
+
+    // Generated renderbuffers
+    TfTokenVector const _aovOutputs {
+        HdAovTokens->primId,
+        HdAovTokens->instanceId,
+        HdAovTokens->elementId,
+        HdAovTokens->edgeId,
+        HdAovTokens->pointId,
+        HdAovTokens->Neye,
+        _depthToken
+    };
 
     // Add the new renderbuffers.
     for (size_t i = 0; i < _aovOutputs.size(); ++i) {
@@ -201,7 +209,8 @@ HdxPickTask::_CreateAovBindings()
 
         _pickableAovBindings.push_back(binding);
 
-        if (HdAovHasDepthStencilSemantic(aovOutput)) {
+        if (HdAovHasDepthSemantic(aovOutput) ||
+            HdAovHasDepthStencilSemantic(aovOutput)) {
             _pickableDepthIndex = i;
             _occluderAovBinding = binding;
         }
@@ -661,7 +670,7 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 
     std::vector<uint8_t> depths;
     float const * depthPtr =
-        _ReadAovBuffer<float>(HdAovTokens->depthStencil, &depths);
+        _ReadAovBuffer<float>(_depthToken, &depths);
 
     // For un-projection, get the current depth range.
     GLfloat p[2];

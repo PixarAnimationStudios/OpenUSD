@@ -87,6 +87,7 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne, false);
     _SetFlag(HgiDeviceCapabilitiesBitsConservativeRaster, 
         conservativeRasterEnabled);
+    _SetFlag(HgiDeviceCapabilitiesBitsStencilReadback, true);
 }
 
 HgiVulkanCapabilities::~HgiVulkanCapabilities() = default;
