@@ -64,31 +64,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 #define TRACE_DATA(name, value) \
     TraceCollector::GetInstance().StoreData(name, value);
 
-#if(TRACE_CUSTOM_CALLBACK)
-
-#define TRACE_FUNCTION_ARGS_INSTANCE(file, line, name, prettyName, ...) \
-constexpr static TraceStaticKeyData BOOST_PP_CAT(TraceKeyData_, line)( \
-    file, line, name, prettyName); \
-static void* BOOST_PP_CAT(TraceKeyCallbackData_, line) = nullptr; \
-_TRACE_ARGS_TO_STATIC_VARS(BOOST_PP_CAT(TraceKeyData_, line), __VA_ARGS__); \
-TraceScopeAuto BOOST_PP_CAT(TraceScopeAuto_, line)(\
-        BOOST_PP_CAT(TraceKeyData_, line), \
-        &BOOST_PP_CAT(TraceKeyCallbackData_, line), \
-        _TRACE_ARGS_TO_FUNC_PARAMS(BOOST_PP_CAT(TraceKeyData_, line), \
-            __VA_ARGS__));
-
-#define TRACE_SCOPE_ARGS_INSTANCE(file, line, name, ...) \
-constexpr static TraceStaticKeyData BOOST_PP_CAT(TraceKeyData_, line)(file, line, name); \
-static void* BOOST_PP_CAT(TraceKeyCallbackData_, line) = nullptr; \
-_TRACE_ARGS_TO_STATIC_VARS(BOOST_PP_CAT(TraceKeyData_, line), __VA_ARGS__); \
-TraceScopeAuto BOOST_PP_CAT(TraceScopeAuto_, line)(\
-        BOOST_PP_CAT(TraceKeyData_, line), \
-        &BOOST_PP_CAT(TraceKeyCallbackData_, line), \
-        _TRACE_ARGS_TO_FUNC_PARAMS(BOOST_PP_CAT(TraceKeyData_, line), \
-            __VA_ARGS__));
-
-#else // TRACE_CUSTOM_CALLBACK
-
 #define TRACE_FUNCTION_ARGS_INSTANCE(file, line, name, prettyName, ...) \
 constexpr static TraceStaticKeyData BOOST_PP_CAT(TraceKeyData_, line)( \
     file, line, name, prettyName); \
@@ -105,8 +80,6 @@ TraceScopeAuto BOOST_PP_CAT(TraceScopeAuto_, line)(\
         BOOST_PP_CAT(TraceKeyData_, line), \
         _TRACE_ARGS_TO_FUNC_PARAMS(BOOST_PP_CAT(TraceKeyData_, line), \
             __VA_ARGS__));
-
-#endif // TRACE_CUSTOM_CALLBACK
 
 #define _TRACE_KEY_FROM_TUPLE(r, data, elem) BOOST_PP_TUPLE_ELEM(2, 0, elem)
 #define _TRACE_VALUE_FROM_TUPLE(r, data, elem) BOOST_PP_TUPLE_ELEM(2, 1, elem)

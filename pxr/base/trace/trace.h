@@ -1,4 +1,3 @@
-#line 1 "C:/src/pxr-usd/pxr/base/trace/trace.h"
 //
 // Copyright 2018 Pixar
 //
@@ -222,9 +221,12 @@ public:
     ///
     template < typename... Args>
     TraceScopeAuto(const TraceStaticKeyData& key, Args&&... args)
-        : TraceScopeAuto(key) {
-        if (ARCH_UNLIKELY(_key)) {
-            TraceCollector::GetInstance().ScopeArgs(std::forward<Args>(args)...);
+        : _key(&key)
+        , _intervalTimer(/*start=*/false) {
+        if (TraceCollector::IsEnabled()) {
+            _intervalTimer.Start();
+            TraceCollector
+                ::GetInstance().ScopeArgs(std::forward<Args>(args)...);
         }
 #if(TRACE_CUSTOM_CALLBACK)
         if (ARCH_UNLIKELY(g_traceCustomCallback)) {
