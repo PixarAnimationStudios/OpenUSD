@@ -1,3 +1,4 @@
+#line 1 "C:/src/pxr-usd/pxr/base/trace/trace.h"
 //
 // Copyright 2018 Pixar
 //
@@ -36,7 +37,6 @@
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 
 #include <atomic>
-
 
 #if !defined(TRACE_DISABLE)
 
@@ -135,34 +135,6 @@
 /// code is executed or if the TraceScope expires.  Otherwise, the held
 /// TraceScope will be used to record begin and end events.
 
-#if(TRACE_CUSTOM_CALLBACK)
-
-#define _TRACE_FUNCTION_INSTANCE(file, line, name, prettyName) \
-constexpr static PXR_NS::TraceStaticKeyData \
-    TF_PP_CAT(TraceKeyData_, line)(file, line, name, prettyName); \
-static void* \
-    TF_PP_CAT(TraceKeyCallbackData_, line) = nullptr; \
-PXR_NS::TraceScopeAuto TF_PP_CAT(TraceScopeAuto_, line)(\
-    TF_PP_CAT(TraceKeyData_, line), &TF_PP_CAT(TraceKeyCallbackData_, line));
-
-#define _TRACE_SCOPE_INSTANCE(file, line, name) \
-constexpr static PXR_NS::TraceStaticKeyData \
-    TF_PP_CAT(TraceKeyData_, line)(file, line, name); \
-static void* \
-    TF_PP_CAT(TraceKeyCallbackData_, line) = nullptr; \
-PXR_NS::TraceScopeAuto TF_PP_CAT(TraceScopeAuto_, line)(\
-    TF_PP_CAT(TraceKeyData_, line), &TF_PP_CAT(TraceKeyCallbackData_, line));
-
-#define _TRACE_FUNCTION_SCOPE_INSTANCE(file, line, name, prettyName, scopeName) \
-constexpr static PXR_NS::TraceStaticKeyData \
-    TF_PP_CAT(TraceKeyData_, line)(file, line, name, prettyName, scopeName); \
-static void* \
-    TF_PP_CAT(TraceKeyCallbackData_, line) = nullptr; \
-PXR_NS::TraceScopeAuto TF_PP_CAT(TraceScopeAuto_, line)(\
-    TF_PP_CAT(TraceKeyData_, line), &TF_PP_CAT(TraceKeyCallbackData_, line));
-
-#else // TRACE_CUSTOM_CALLBACK
-
 #define _TRACE_FUNCTION_INSTANCE(file, line, name, prettyName) \
 constexpr static PXR_NS::TraceStaticKeyData \
     TF_PP_CAT(TraceKeyData_, line)(file, line, name, prettyName); \
@@ -180,8 +152,6 @@ constexpr static PXR_NS::TraceStaticKeyData \
     TF_PP_CAT(TraceKeyData_, line)(file, line, name, prettyName, scopeName); \
 PXR_NS::TraceScopeAuto TF_PP_CAT(TraceScopeAuto_, line)(\
     TF_PP_CAT(TraceKeyData_, line));
-
-#endif // TRACE_CUSTOM_CALLBACK
 
 #define _TRACE_MARKER_INSTANCE(file, line, name) \
 constexpr static PXR_NS::TraceStaticKeyData \
@@ -238,18 +208,12 @@ class TraceScopeAuto {
 public:
     /// Constructor for TRACE_FUNCTION macro.
     ///
-    explicit TraceScopeAuto(const TraceStaticKeyData& key
-#if(TRACE_CUSTOM_CALLBACK)
-                            , void** userData 
-#endif // TRACE_CUSTOM_CALLBACK
-    ) noexcept
+    explicit TraceScopeAuto(const TraceStaticKeyData& key) noexcept
         : _key(&key)
         , _intervalTimer(/*start=*/TraceCollector::IsEnabled()) {
-
-
 #if(TRACE_CUSTOM_CALLBACK)
         if (ARCH_UNLIKELY(g_traceCustomCallback)) {
-            g_traceCustomCallback->BeginStatic(key, userData);
+            g_traceCustomCallback->BeginStatic(key, &_userData);
         }
 #endif // TRACE_CUSTOM_CALLBACK
     }
@@ -257,20 +221,14 @@ public:
     /// Constructor that also records scope arguments.
     ///
     template < typename... Args>
-    TraceScopeAuto(const TraceStaticKeyData& key, 
-#if(TRACE_CUSTOM_CALLBACK)
-                   void** userData,
-                   Args&&... args)
-        : TraceScopeAuto(key, userData) {
-#else // TRACE_CUSTOM_CALLBACK
-                   Args&&... args)
+    TraceScopeAuto(const TraceStaticKeyData& key, Args&&... args)
         : TraceScopeAuto(key) {
         if (ARCH_UNLIKELY(_key)) {
             TraceCollector::GetInstance().ScopeArgs(std::forward<Args>(args)...);
         }
 #if(TRACE_CUSTOM_CALLBACK)
         if (ARCH_UNLIKELY(g_traceCustomCallback)) {
-            g_traceCustomCallback->BeginStatic(key, userData);
+            g_traceCustomCallback->BeginStatic(key, &_userData);
         }
 #endif // TRACE_CUSTOM_CALLBACK
     }
@@ -286,7 +244,7 @@ public:
         }
 #if(TRACE_CUSTOM_CALLBACK)
         if (ARCH_UNLIKELY(g_traceCustomCallback)) {
-            g_traceCustomCallback->End();
+            g_traceCustomCallback->End(&_userData);
         }
 #endif // TRACE_CUSTOM_CALLBACK
     }
@@ -294,6 +252,9 @@ public:
 private:
     const TraceStaticKeyData* const _key;
     ArchIntervalTimer _intervalTimer;
+#if(TRACE_CUSTOM_CALLBACK)
+    void* _userData = nullptr;
+#endif // TRACE_CUSTOM_CALLBACK
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -362,7 +323,7 @@ struct TraceAuto {
         std::atomic_thread_fence(std::memory_order_seq_cst);
 #if(TRACE_CUSTOM_CALLBACK)
         if (ARCH_UNLIKELY(g_traceCustomCallback)) {
-            g_traceCustomCallback->End();
+            g_traceCustomCallback->End(&_userData);
         }
 #endif // TRACE_CUSTOM_CALLBACK
     }
@@ -381,8 +342,9 @@ private:
 
     TraceCollector* _collector;
     TraceDynamicKey _key;
-    // We keep _userData even when TRACE_CUSTOM_CALLBACK is on for binary compatibility
+#if(TRACE_CUSTOM_CALLBACK)
     void* _userData = nullptr;
+#endif // TRACE_CUSTOM_CALLBACK
 };
 
 ////////////////////////////////////////////////////////////////////////////////

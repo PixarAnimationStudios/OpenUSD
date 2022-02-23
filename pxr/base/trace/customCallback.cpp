@@ -28,6 +28,7 @@
 #include "pxr/base/trace/customCallback.h"
 #include "pxr/base/tf/envSetting.h"
 
+TRACE_CUSTOM_CALLBACK_DEFINE
 
 PXR_NAMESPACE_OPEN_SCOPE
 

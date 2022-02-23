@@ -96,7 +96,7 @@ else()
    set(PXR_PREFER_SAFETY_OVER_SPEED "0")
 endif()
 
-# Optional carbonite sdk
+# Optional custom trace callback
 if (PXR_ENABLE_TRACE_CUSTOM_CALLBACK)
     set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} -DTRACE_CUSTOM_CALLBACK=1")
 else()

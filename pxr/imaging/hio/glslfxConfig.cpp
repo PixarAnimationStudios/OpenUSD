@@ -30,6 +30,10 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/customCallback.h"
+
+
+TRACE_CUSTOM_CALLBACK_DEFINE
 
 PXR_NAMESPACE_OPEN_SCOPE
 

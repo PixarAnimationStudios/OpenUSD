@@ -73,6 +73,9 @@ class Launcher(object):
             arg_parse_result = self.ParseOptions(parser)
             self.ValidateOptions(arg_parse_result)
 
+            if arg_parse_result.tracy:
+                from pxr import UsdTracy
+                UsdTracy.TracyClientWrapper.StartTracy()
             if arg_parse_result.traceToFile:
                 from pxr import Trace
                 traceCollector = Trace.Collector()
@@ -182,6 +185,11 @@ class Launcher(object):
                             help='Start tracing at application startup and '
                             'write --traceFormat specified format output to the '
                             'specified trace file when the application quits')
+
+        parser.add_argument('--tracy', action='store_true',
+                            dest='tracy',
+                            default=False,
+                            help='Use tracy profiling')
 
         parser.add_argument('--traceFormat', action='store',
                             type=str,

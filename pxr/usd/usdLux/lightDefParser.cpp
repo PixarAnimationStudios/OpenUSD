@@ -34,6 +34,10 @@
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/thisPlugin.h"
+#include "pxr/base/trace/customCallback.h"
+
+
+TRACE_CUSTOM_CALLBACK_DEFINE
 
 PXR_NAMESPACE_OPEN_SCOPE
 

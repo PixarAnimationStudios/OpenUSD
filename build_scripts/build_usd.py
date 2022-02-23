@@ -1366,6 +1366,27 @@ def InstallMaterialX(context, force, buildArgs):
 MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Library.h")
 
 ############################################################
+# Tracy
+
+TRACY_URL = "https://github.com/wolfpld/tracy/archive/refs/tags/v0.7.8.zip"
+TRACYWIN_URL = "https://github.com/wolfpld/tracy/releases/download/v0.7.8/Tracy-0.7.8.7z"
+
+def InstallTracy(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(TRACY_URL, context, force)):
+
+        srcDestDir = os.path.join(context.usdSrcDir, "extras", "usd", "examples", "usdTracy", "tracy")
+        if os.path.isdir(srcDestDir):
+            shutil.rmtree(srcDestDir)    
+        PrintCommandOutput("Copying tracy to {destDir}\n"
+                           .format(destDir=srcDestDir))
+        shutil.copytree(os.getcwd(), srcDestDir)
+        PrintCommandOutput("Please manually download Tracy prebuilt profiler from: {url}\n"
+                           .format(url=TRACYWIN_URL))
+        CopyFiles(context, "Tracy.hpp", "include")
+
+TRACY = Dependency("Tracy", InstallTracy, "include/Tracy.hpp")
+
+############################################################
 # Embree
 # For MacOS we use version 3.7.0 to include a fix from Intel
 # to build on Catalina.
@@ -1553,6 +1574,11 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=ON')
         else:
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
+
+        if context.buildTraceCb:
+            extraArgs.append('-DPXR_ENABLE_TRACE_CUSTOM_CALLBACK=ON')
+        if context.buildTracy:
+            extraArgs.append('-DPXR_BUILD_USDTRACY=ON')
 
         if Windows():
             # Increase the precompiled header buffer limit.
@@ -1856,6 +1882,17 @@ subgroup.add_argument("--materialx", dest="build_materialx", action="store_true"
 subgroup.add_argument("--no-materialx", dest="build_materialx", action="store_false",
                       help="Do not build MaterialX plugin for USD (default)")
 
+group = parser.add_argument_group(title="Trace Custom Callback Options")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--tracecb", dest="build_tracecb", action="store_true", 
+                      default=False,
+                      help="Enables custom callback for trace profiling")
+subgroup.add_argument("--no-tracecb", dest="build_tracecb", action="store_false",
+                      help="Disables custom callback for trace profiling (default)")
+group.add_argument("--tracy", dest="build_tracy", action="store_true", 
+                   default=False,
+                   help="Builds tracy profiler example, requires --tracecb!")
+
 args = parser.parse_args()
 
 class InstallContext:
@@ -1984,6 +2021,10 @@ class InstallContext:
         # - MaterialX Plugin
         self.buildMaterialX = args.build_materialx
 
+        # - Custom Trace Callbacks
+        self.buildTraceCb = args.build_tracecb
+        self.buildTracy = args.build_tracecb and args.build_tracy
+
     def GetBuildArguments(self, dep):
         return self.buildArgs.get(dep.name.lower(), [])
        
@@ -2032,6 +2073,9 @@ if context.buildDraco:
 
 if context.buildMaterialX:
     requiredDependencies += [MATERIALX]
+
+if context.buildTracy:
+    requiredDependencies += [TRACY]
 
 if context.buildImaging:
     if context.enablePtex:

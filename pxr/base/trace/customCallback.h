@@ -53,7 +53,7 @@ struct TraceCustomCallback
 {
     typedef void(* BeginStaticKeyFn)(const TraceStaticKeyData& key, void** customData);
     typedef void(* BeginDynamicKeyFn)(const TraceDynamicKey& key, void** customData);
-    typedef void(* EndFn)();
+    typedef void(* EndFn)(void** customData);
 
     /// Creates a new callback, this is used by the TRACE_CUSTOM_CALLBACK_DEFINE to automatically
     /// instanciate a new callback in each dll/so file that uses the TRACE_* macros.
@@ -90,9 +90,9 @@ struct TraceCustomCallback
     }
     
     /// Called by the TRACE_ macros when TRACE_CUSTOM_CALLBACK is defined
-    inline void End() {
+    inline void End(void** customData) {
         if (ARCH_UNLIKELY(_End)){
-            _End();
+            _End(customData);
         }
     }
 
