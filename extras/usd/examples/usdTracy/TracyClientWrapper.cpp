@@ -60,7 +60,7 @@ static inline TracyLocPair* getLocPair(const PXR_NS::TraceStaticKeyData& key,
 {
     TracyLocPair* id;
     if (*customData == nullptr) {
-        id = new(TracyLocPair);
+        id = new(TracyLocPair); // @TODO fix this memory leak with a thread-local vector of unique pointers
         if(key.GetName())
         {
             id->srcloc = ___tracy_alloc_srcloc_name(key.GetLine(), key.GetFile(), strlen(key.GetFile()), 
