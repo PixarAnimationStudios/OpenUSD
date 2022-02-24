@@ -47,8 +47,9 @@ class TestParser(unittest.TestCase):
 
         # Verify common info.
         for node in nodes:
-            self.assertEqual(node.GetResolvedImplementationURI(), 
-                    os.path.abspath("test.mtlx"))
+            implementationUri = node.GetResolvedImplementationURI()
+            self.assertEqual(os.path.normcase(implementationUri), 
+                    os.path.normcase(os.path.abspath("test.mtlx")))
             self.assertEqual(node.GetSourceType(), "mtlx")
             self.assertEqual(node.GetFamily(), "UsdMtlxTestNode")
             self.assertEqual(sorted(node.GetInputNames()), ["in", "note"])
