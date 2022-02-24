@@ -116,10 +116,13 @@ private:
     void _GenerateConstantPrimvar();
     void _GenerateInstancePrimvar();
     void _GenerateElementPrimvar();
-    void _GenerateVertexAndFaceVaryingPrimvar(bool hasGS, 
-        bool shaderDrawParametersEnabled, int glslVersion);
+    void _GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
+        bool shaderDrawParametersEnabled);
     void _GenerateShaderParameters(bool bindlessTextureEnabled);
     void _GenerateTopologyVisibilityParameters();
+
+    HdStGLSLProgramSharedPtr _CompileWithGeneratedGLSLResources(
+        HdStResourceRegistry * const registry);
 
     HdSt_ResourceBinder::MetaData _metaData;
     HdSt_GeometricShaderPtr _geometricShader;
@@ -127,7 +130,6 @@ private:
     TfToken _materialTag;
 
     // source buckets
-    std::stringstream _genHeader, _genHeaderFS;
     std::stringstream _genCommon, _genVS, _genTCS, _genTES;
     std::stringstream _genGS, _genFS, _genCS;
     std::stringstream _procVS, _procTCS, _procTES, _procGS;
@@ -139,6 +141,13 @@ private:
     std::string _gsSource;
     std::string _fsSource;
     std::string _csSource;
+
+    bool _hasVS;
+    bool _hasTCS;
+    bool _hasTES;
+    bool _hasGS;
+    bool _hasFS;
+    bool _hasCS;
 };
 
 

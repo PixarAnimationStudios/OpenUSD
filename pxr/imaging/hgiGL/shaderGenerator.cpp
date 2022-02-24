@@ -114,6 +114,49 @@ HgiGLShaderGenerator::_WriteVersion(std::ostream &ss)
 }
 
 void
+HgiGLShaderGenerator::_WriteExtensions(std::ostream &ss)
+{
+    const int glslVersion = _hgi->GetCapabilities()->GetShaderVersion();
+    const bool bindlessBufferEnabled = _hgi->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers);
+    const bool bindlessTextureEnabled = _hgi->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
+    const bool shaderDrawParametersEnabled = _hgi->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsShaderDrawParameters);
+    const bool builtinBarycentricsEnabled = _hgi->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+
+    if (bindlessBufferEnabled) {
+        ss << "#extension GL_NV_shader_buffer_load : require\n"
+           << "#extension GL_NV_gpu_shader5 : require\n";
+    }
+    if (bindlessTextureEnabled) {
+        ss << "#extension GL_ARB_bindless_texture : require\n";
+    }
+
+    if (_GetShaderStage() & HgiShaderStageVertex) {
+        if (glslVersion < 460 && shaderDrawParametersEnabled) {
+            ss << "#extension GL_ARB_shader_draw_parameters : require\n";
+        }
+        if (shaderDrawParametersEnabled) {
+            ss << "int HgiGetBaseVertex() {\n";
+            if (glslVersion < 460) { // use ARB extension
+                ss << "  return gl_BaseVertexARB;\n";
+            } else {
+                ss << "  return gl_BaseVertex;\n";
+            }
+            ss << "}\n";
+        }
+    }
+
+    if (_GetShaderStage() & HgiShaderStageFragment) {
+        if (builtinBarycentricsEnabled) {
+            ss << "#extension GL_NV_fragment_shader_barycentric: require\n";
+        }
+    }
+}
+
+void
 HgiGLShaderGenerator::_WriteTextures(
     const HgiShaderFunctionTextureDescVector &textures)
 {
@@ -245,6 +288,8 @@ HgiGLShaderGenerator::_Execute(std::ostream &ss)
 {
     // Version number must be first line in glsl shader
     _WriteVersion(ss);
+
+    _WriteExtensions(ss);
 
     ss << _GetShaderCodeDeclarations() << "\n";
 

@@ -64,6 +64,7 @@ private:
     HgiGLShaderGenerator(const HgiGLShaderGenerator&) = delete;
 
     void _WriteVersion(std::ostream &ss);
+    void _WriteExtensions(std::ostream &ss);
 
     void _WriteTextures(const HgiShaderFunctionTextureDescVector &textures);
 

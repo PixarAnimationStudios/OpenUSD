@@ -110,14 +110,28 @@ TF_DEFINE_PRIVATE_TOKENS(
 HdSt_CodeGen::HdSt_CodeGen(HdSt_GeometricShaderPtr const &geometricShader,
                        HdStShaderCodeSharedPtrVector const &shaders,
                        TfToken const &materialTag)
-    : _geometricShader(geometricShader), _shaders(shaders), 
-      _materialTag(materialTag)
+    : _geometricShader(geometricShader)
+    , _shaders(shaders)
+    , _materialTag(materialTag)
+    , _hasVS(false)
+    , _hasTCS(false)
+    , _hasTES(false)
+    , _hasGS(false)
+    , _hasFS(false)
+    , _hasCS(false)
 {
     TF_VERIFY(geometricShader);
 }
 
 HdSt_CodeGen::HdSt_CodeGen(HdStShaderCodeSharedPtrVector const &shaders)
-    : _geometricShader(), _shaders(shaders)
+    : _geometricShader()
+    , _shaders(shaders)
+    , _hasVS(false)
+    , _hasTCS(false)
+    , _hasTES(false)
+    , _hasGS(false)
+    , _hasFS(false)
+    , _hasCS(false)
 {
 }
 
@@ -506,29 +520,20 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     std::string fragmentShader =
         _geometricShader->GetSource(HdShaderTokens->fragmentShader);
 
-    bool hasVS  = (!vertexShader.empty());
-    bool hasTCS = (!tessControlShader.empty());
-    bool hasTES = (!tessEvalShader.empty());
-    bool hasGS  = (!geometryShader.empty());
-    bool hasFS  = (!fragmentShader.empty());
-
-    // create GLSL program.
-    HdStGLSLProgramSharedPtr glslProgram =
-        std::make_shared<HdStGLSLProgram>(HdTokens->drawingShader, registry);
+    _hasVS  = (!vertexShader.empty());
+    _hasTCS = (!tessControlShader.empty());
+    _hasTES = (!tessEvalShader.empty());
+    _hasGS  = (!geometryShader.empty());
+    _hasFS  = (!fragmentShader.empty());
 
     // initialize autogen source buckets
-    _genHeader.str(""); _genHeaderFS.str("");
     _genCommon.str(""); _genVS.str(""); _genTCS.str(""); _genTES.str("");
     _genGS.str(""); _genFS.str(""); _genCS.str("");
     _procVS.str(""); _procTCS.str(""), _procTES.str(""), _procGS.str("");
 
     // GL capabilities.
-    const int glslVersion = registry->GetHgi()->GetCapabilities()->
-        GetShaderVersion();
-    const bool bindlessTextureEnabled = registry->GetHgi()->GetCapabilities()->
-        IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
-    const bool bindlessBufferEnabled = registry->GetHgi()->GetCapabilities()->
-        IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers);
+    const bool bindlessTextureEnabled = registry->GetHgi()->
+        GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
     const bool shaderDrawParametersEnabled = registry->GetHgi()->
         GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsShaderDrawParameters);
     const bool builtinBarycentricsEnabled = registry->GetHgi()->
@@ -538,38 +543,12 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             HgiDeviceCapabilitiesBitsShaderDoublePrecision);
     const bool minusOneToOneDepth = registry->GetHgi()->
         GetCapabilities()->IsSet(
-          HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne);
-
-    if (bindlessBufferEnabled) {
-        _genHeader << "#extension GL_NV_shader_buffer_load : require\n"
-                   << "#extension GL_NV_gpu_shader5 : require\n";
-    }
-    if (bindlessTextureEnabled) {
-        _genHeader << "#extension GL_ARB_bindless_texture : require\n";
-    }
-    if (glslVersion < 460 && shaderDrawParametersEnabled) {
-        _genHeader << "#extension GL_ARB_shader_draw_parameters : require\n";
-    }
-    if (builtinBarycentricsEnabled) {
-        _genHeaderFS <<
-                "#extension GL_NV_fragment_shader_barycentric: require\n";
-    }
+            HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne);
 
     // Used in glslfx files to determine if it is using new/old
     // imaging system. It can also be used as API guards when
     // we need new versions of Storm shading. 
     _genCommon << "#define HD_SHADER_API " << HD_SHADER_API << "\n";
-
-    // XXX: this is a hacky workaround for experimental support of GL 3.3
-    //      the double is used in hd_dvec3 akin, so we are likely able to
-    //      refactor that helper functions.
-    if (glslVersion < 400) {
-        _genCommon << "#define double float\n"
-                   << "#define dvec2 vec2\n"
-                   << "#define dvec3 vec3\n"
-                   << "#define dvec4 vec4\n"
-                   << "#define dmat4 mat4\n";
-    }
 
     // XXX: this macro is still used in GlobalUniform.
     _genCommon << "#define MAT4 " <<
@@ -772,7 +751,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         HdSt_GeometricShader::FvarPatchType::PATCH_BOXSPLINETRIANGLE) {
         using PatchShaderSource = OpenSubdiv::Osd::GLSLPatchShaderSource;
 
-        if (hasGS) {
+        if (_hasGS) {
             _genGS << "#define OSD_PATCH_BASIS_GLSL\n";
             _genGS << PatchShaderSource::GetPatchBasisShaderSource();
         } else {
@@ -787,7 +766,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                   "  return gl_BaryCoordNoPerspNV;\n"
                   "}\n";
     } else {
-        if (hasGS) {
+        if (_hasGS) {
             _genGS << "noperspective out vec3 hd_barycentricCoord;\n";
             _genFS << "noperspective in vec3 hd_barycentricCoord;\n"
                       "vec3 GetBarycentricCoord() {\n"
@@ -892,7 +871,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _GenerateConstantPrimvar();
     _GenerateInstancePrimvar();
     _GenerateElementPrimvar();
-    _GenerateVertexAndFaceVaryingPrimvar(hasGS, shaderDrawParametersEnabled, glslVersion);
+    _GenerateVertexAndFaceVaryingPrimvar(_hasGS, shaderDrawParametersEnabled);
 
     _GenerateTopologyVisibilityParameters();
 
@@ -915,16 +894,16 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // other shaders (renderpass, lighting, surface) first
     TF_FOR_ALL(it, _shaders) {
         HdStShaderCodeSharedPtr const &shader = *it;
-        if (hasVS)
+        if (_hasVS)
             _genVS  << shader->GetSource(HdShaderTokens->vertexShader);
-        if (hasTCS)
+        if (_hasTCS)
             _genTCS << shader->GetSource(HdShaderTokens->tessControlShader);
-        if (hasTES)
+        if (_hasTES)
             _genTES << shader->GetSource(HdShaderTokens->tessEvalShader);
-        if (hasGS)
+        if (_hasGS)
             _genGS  << shader->GetSource(HdShaderTokens->geometryShader);
             _genGS  << shader->GetSource(HdShaderTokens->displacementShader);
-        if (hasFS)
+        if (_hasFS)
             _genFS  << shader->GetSource(HdShaderTokens->fragmentShader);
     }
 
@@ -961,59 +940,13 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
 
     // Sanity check that if you provide a control shader, you have also provided
     // an evaluation shader (and vice versa)
-    if (hasTCS ^ hasTES) {
+    if (_hasTCS ^ _hasTES) {
         TF_CODING_ERROR(
             "tessControlShader and tessEvalShader must be provided together.");
-        hasTCS = hasTES = false;
+        _hasTCS = _hasTES = false;
     };
 
-    bool shaderCompiled = false;
-    // compile shaders
-    // note: _vsSource, _fsSource etc are used for diagnostics (see header)
-    if (hasVS) {
-        _vsSource = _genHeader.str() + _genCommon.str() + _genVS.str();
-        if (!glslProgram->CompileShader(HgiShaderStageVertex, _vsSource)) {
-            return HdStGLSLProgramSharedPtr();
-        }
-        shaderCompiled = true;
-    }
-    if (hasFS) {
-        _fsSource = _genHeader.str() + _genHeaderFS.str() +
-                    _genCommon.str() + _genFS.str();
-        if (!glslProgram->CompileShader(HgiShaderStageFragment, _fsSource)) {
-            return HdStGLSLProgramSharedPtr();
-        }
-        shaderCompiled = true;
-    }
-    if (hasTCS) {
-        _tcsSource = _genHeader.str() + _genCommon.str() + _genTCS.str();
-        if (!glslProgram->CompileShader(
-                HgiShaderStageTessellationControl, _tcsSource)) {
-            return HdStGLSLProgramSharedPtr();
-        }
-        shaderCompiled = true;
-    }
-    if (hasTES) {
-        _tesSource = _genHeader.str() + _genCommon.str() + _genTES.str();
-        if (!glslProgram->CompileShader(
-                HgiShaderStageTessellationEval, _tesSource)) {
-            return HdStGLSLProgramSharedPtr();
-        }
-        shaderCompiled = true;
-    }
-    if (hasGS) {
-        _gsSource = _genHeader.str() + _genCommon.str() + _genGS.str();
-        if (!glslProgram->CompileShader(HgiShaderStageGeometry, _gsSource)) {
-            return HdStGLSLProgramSharedPtr();
-        }
-        shaderCompiled = true;
-    }
-
-    if (!shaderCompiled) {
-        return HdStGLSLProgramSharedPtr();
-    }
-
-    return glslProgram;
+    return _CompileWithGeneratedGLSLResources(registry);
 }
 
 HdStGLSLProgramSharedPtr
@@ -1150,6 +1083,90 @@ HdSt_CodeGen::CompileComputeProgram(HdStResourceRegistry*const registry)
         }
     }
     
+    return glslProgram;
+}
+
+HdStGLSLProgramSharedPtr
+HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
+    HdStResourceRegistry * const registry)
+{
+    // create GLSL program.
+    HdStGLSLProgramSharedPtr glslProgram =
+        std::make_shared<HdStGLSLProgram>(HdTokens->drawingShader, registry);
+
+    bool shaderCompiled = false;
+    // compile shaders
+    // note: _vsSource, _fsSource etc are used for diagnostics (see header)
+    if (_hasVS) {
+        std::string const source = _genCommon.str() + _genVS.str();
+
+        HgiShaderFunctionDesc desc;
+        desc.shaderStage = HgiShaderStageVertex;
+        desc.shaderCode = source.c_str();
+        desc.generatedShaderCodeOut = &_vsSource;
+
+        if (!glslProgram->CompileShader(desc)) {
+            return HdStGLSLProgramSharedPtr();
+        }
+        shaderCompiled = true;
+    }
+    if (_hasFS) {
+        std::string const source = _genCommon.str() + _genFS.str();
+
+        HgiShaderFunctionDesc desc;
+        desc.shaderStage = HgiShaderStageFragment;
+        desc.shaderCode = source.c_str();
+        desc.generatedShaderCodeOut = &_fsSource;
+
+        if (!glslProgram->CompileShader(desc)) {
+            return HdStGLSLProgramSharedPtr();
+        }
+        shaderCompiled = true;
+    }
+    if (_hasTCS) {
+        std::string const source = _genCommon.str() + _genTCS.str();
+
+        HgiShaderFunctionDesc desc;
+        desc.shaderStage = HgiShaderStageTessellationControl;
+        desc.shaderCode = source.c_str();
+        desc.generatedShaderCodeOut = &_tcsSource;
+
+        if (!glslProgram->CompileShader(desc)) {
+            return HdStGLSLProgramSharedPtr();
+        }
+        shaderCompiled = true;
+    }
+    if (_hasTES) {
+        std::string const source = _genCommon.str() + _genTES.str();
+
+        HgiShaderFunctionDesc desc;
+        desc.shaderStage = HgiShaderStageTessellationEval;
+        desc.shaderCode = source.c_str();
+        desc.generatedShaderCodeOut = &_tesSource;
+
+        if (!glslProgram->CompileShader(desc)) {
+            return HdStGLSLProgramSharedPtr();
+        }
+        shaderCompiled = true;
+    }
+    if (_hasGS) {
+        std::string const source = _genCommon.str() + _genGS.str();
+
+        HgiShaderFunctionDesc desc;
+        desc.shaderStage = HgiShaderStageGeometry;
+        desc.shaderCode = source.c_str();
+        desc.generatedShaderCodeOut = &_gsSource;
+
+        if (!glslProgram->CompileShader(desc)) {
+            return HdStGLSLProgramSharedPtr();
+        }
+        shaderCompiled = true;
+    }
+
+    if (!shaderCompiled) {
+        return HdStGLSLProgramSharedPtr();
+    }
+
     return glslProgram;
 }
 
@@ -2912,8 +2929,8 @@ HdSt_CodeGen::_GenerateElementPrimvar()
 }
 
 void
-HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS, 
-    bool shaderDrawParametersEnabled, int glslVersion)
+HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
+    bool shaderDrawParametersEnabled)
 {
     // VS specific accessor for the "vertex drawing coordinate"
     // Even though we currently always plumb vertexCoord as part of the drawing
@@ -2921,16 +2938,12 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar(bool hasGS,
     // vertex offset for a draw call.
     _genVS << "int GetBaseVertexOffset() {\n";
     if (shaderDrawParametersEnabled) {
-        if (glslVersion < 460) { // use ARB extension
-            _genVS << "  return gl_BaseVertexARB;\n";
-        } else {
-            _genVS << "  return gl_BaseVertex;\n";
-        }
+        _genVS << "  return HgiGetBaseVertex();\n";
     } else {
         _genVS << "  return GetDrawingCoord().vertexCoord;\n";
     }
     _genVS << "}\n";
-    
+
     // Vertex, Varying, and FVar primvar flow into the fragment shader as 
     // per-fragment attribute data that has been interpolated by the rasterizer,
     // and hence have similarities for code gen.
