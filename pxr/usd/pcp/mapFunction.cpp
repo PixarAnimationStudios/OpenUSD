@@ -246,7 +246,13 @@ PcpMapFunction::IdentityPathMap()
 bool
 PcpMapFunction::IsIdentity() const
 {
-    return *this == Identity();
+    return IsIdentityPathMapping() && _offset.IsIdentity();
+}
+
+bool
+PcpMapFunction::IsIdentityPathMapping() const
+{
+    return _data.numPairs == 0 && _data.hasRootIdentity;
 }
 
 void
