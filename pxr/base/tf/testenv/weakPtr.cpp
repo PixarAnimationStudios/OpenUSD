@@ -37,6 +37,7 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include <thread>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
