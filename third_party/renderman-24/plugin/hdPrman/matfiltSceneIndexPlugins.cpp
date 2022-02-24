@@ -25,7 +25,11 @@
 #include "hdPrman/material.h"
 #include "hdPrman/matfiltFilterChain.h"
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
+
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include "hdPrman/matfiltMaterialX.h"
+#endif
+
 #include "hdPrman/virtualStructResolvingSceneIndex.h"
 
 #include "pxr/base/tf/stringUtils.h"
@@ -155,6 +159,8 @@ protected:
 
 /// ----------------------------------------------------------------------------
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+
 void
 _TransformMaterialXNetwork(
     HdMaterialNetworkInterface *networkInterface)
@@ -196,6 +202,8 @@ protected:
     }
 };
 
+#endif
+
 /// ----------------------------------------------------------------------------
 
 // Note: HdPrman_VirtualStructResolvingSceneIndex is defined in its own
@@ -231,7 +239,11 @@ HdPrman_MaterialXFilteringSceneIndexPlugin::_AppendSceneIndex(
         const HdContainerDataSourceHandle &inputArgs)
 {
     TF_UNUSED(inputArgs);
+#if PXR_MATERIALX_SUPPORT_ENABLED
     return _MaterialXFilteringSceneIndex::New(inputScene);
+#else
+    return inputScene;
+#endif
 }
 
 /// ----------------------------------------------------------------------------
