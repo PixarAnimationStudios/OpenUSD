@@ -36,13 +36,13 @@ class TestParser(unittest.TestCase):
         # Find our nodes.
         nodes = Sdr.Registry().GetShaderNodesByFamily('UsdMtlxTestNode')
         self.assertEqual(sorted([node.GetName() for node in nodes]), [
-            'nd_boolean',
-            'nd_customtype',
-            'nd_float',
-            'nd_integer',
-            'nd_string',
-            'nd_surface',
-            'nd_vector',
+            'UsdMtlxTestNamespace:nd_boolean',
+            'UsdMtlxTestNamespace:nd_customtype',
+            'UsdMtlxTestNamespace:nd_float',
+            'UsdMtlxTestNamespace:nd_integer',
+            'UsdMtlxTestNamespace:nd_string',
+            'UsdMtlxTestNamespace:nd_surface',
+            'UsdMtlxTestNamespace:nd_vector',
         ])
 
         # Verify common info.
@@ -66,8 +66,8 @@ class TestParser(unittest.TestCase):
                                  # array size is not represented in the Type
         }
         for node in nodes:
-            # Strip leading nd_ from name.
-            name = node.GetName()[3:]
+            # Strip leading UsdMtlxTestNamespace:nd_ from name.
+            name = node.GetName()[24:]
 
             # Get the input.
             prop = node.GetInput('in')

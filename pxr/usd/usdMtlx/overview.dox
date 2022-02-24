@@ -63,7 +63,6 @@ token substitutions to be primvar-based.
 
 \section usdMtlx_unsupported Unsupported MaterialX Features
 
-+ _materialx_ **namespace** attribute.  This attribute is ignored.
 + Geometry Name Expressions are not supported.  USD cannot yet represent path
 expressions. Paths that require glob-like pattern matching are discarded with a
 warning.
