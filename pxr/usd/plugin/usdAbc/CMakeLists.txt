@@ -70,7 +70,6 @@ pxr_test_scripts(
     testenv/testUsdAbcConversionSubdiv.py
     testenv/testUsdAbcFaceset.py
     testenv/testUsdAbcIndexedProperties.py
-    testenv/testUsdAbcIndexedGeomArb.py
     testenv/testUsdAbcInstancing.py
     testenv/testUsdAbcIsConstant.py
     testenv/testUsdAbcP_OldEncoding.py
@@ -115,8 +114,8 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-        SRC testenv/testUsdAbcIndexedGeomArb
-        DEST testUsdAbcIndexedGeomArb
+    SRC testenv/testUsdAbcIndexedGeomArb
+    DEST testUsdAbcIndexedGeomArb
 )
 
 pxr_install_test_dir(
@@ -213,7 +212,7 @@ pxr_register_test(testUsdAbcIndexedProperties
 
 pxr_register_test(testUsdAbcIndexedGeomArb
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcIndexedGeomArb"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat hasColorSet.abc --out good_primvars_namespace_after_fix.usda"
     DIFF_COMPARE good_primvars_namespace_after_fix.usda
     EXPECTED_RETURN_CODE 0
     ENV
