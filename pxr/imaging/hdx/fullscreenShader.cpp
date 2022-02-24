@@ -494,6 +494,15 @@ HdxFullscreenShader::_CreatePipeline(
     // pixels that were set with a clearColor alpha of 0.0.
     desc.multiSampleState.alphaToCoverageEnable = false;
 
+    // The MSAA on renderPipelineState has to match the render target.
+    if (colorDst) {
+        desc.multiSampleState.sampleCount = 
+            colorDst->GetDescriptor().sampleCount;
+    } else if (depthDst) {
+        desc.multiSampleState.sampleCount = 
+            depthDst->GetDescriptor().sampleCount;
+    }
+
     // Setup rasterization state
     desc.rasterizationState.cullMode = HgiCullModeBack;
     desc.rasterizationState.polygonMode = HgiPolygonModeFill;

@@ -405,6 +405,9 @@ HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
     // pixels that were set with a clearColor alpha of 0.0.
     desc.multiSampleState.alphaToCoverageEnable = false;
 
+    // The MSAA on renderPipelineState has to match the render target.
+    desc.multiSampleState.sampleCount = aovTexture->GetDescriptor().sampleCount;
+
     // Setup rasterization state
     desc.rasterizationState.cullMode = HgiCullModeBack;
     desc.rasterizationState.polygonMode = HgiPolygonModeFill;
