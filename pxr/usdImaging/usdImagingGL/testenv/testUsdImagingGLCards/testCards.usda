@@ -67,6 +67,7 @@ def Xform "World" (
 
     def Xform "MyXform" (
         kind = "group"
+        prepend apiSchemas = ["GeomModelAPI"]
     )
     {
         uniform token model:drawMode = "cards"
@@ -187,6 +188,7 @@ def Xform "World" (
 
     def Xform "MyConeProto" (
         kind = "group"
+        prepend apiSchemas = ["GeomModelAPI"]
     )
     {
         custom double3 xformOp:translate = (-16, 0, 12)
@@ -226,7 +228,6 @@ def Xform "World" (
 
     def Xform "MyConeInstance3" (
         kind = "component"
-        prepend apiSchemas = ["GeomModelAPI"]
         instanceable = true
         references = </World/MyConeProto>
     )
@@ -246,6 +247,7 @@ def Xform "World" (
 
         def PointInstancer "PI" (
             kind = "group"
+            prepend apiSchemas = ["GeomModelAPI"]
         )
         {
             uniform token model:drawMode = "cards"
@@ -273,6 +275,7 @@ def Xform "World" (
 
                 def Sphere "P2" (
                     kind = "assembly"
+                    prepend apiSchemas = ["GeomModelAPI"]
                 )
                 {
                     float3[] extent = [(-1, -1, -1), (1, 1, 1)]
