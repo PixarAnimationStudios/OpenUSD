@@ -332,6 +332,9 @@ using HgiBufferUsage = HgiBits;
 ///  stage.</li>
 /// <li>HgiShaderStageGeometry:
 ///   Governs the processing of Primitives.</li>
+/// <li>HgiShaderStagePostTessellationControl:
+///   Metal specific stage which computes tess factors
+///   and modifies user post tess vertex data.</li>
 /// <li>HgiShaderStagePostTessellationVertex:
 ///   Metal specific stage which performs tessellation and 
 ///   vertex processing.</li>
@@ -345,8 +348,9 @@ enum HgiShaderStageBits : HgiBits
     HgiShaderStageTessellationControl    = 1 << 3,
     HgiShaderStageTessellationEval       = 1 << 4,
     HgiShaderStageGeometry               = 1 << 5,
-    HgiShaderStagePostTessellationVertex = 1 << 6,
-    HgiShaderStageCustomBitsBegin        = 1 << 7,
+    HgiShaderStagePostTessellationControl = 1 << 6,
+    HgiShaderStagePostTessellationVertex = 1 << 7,
+    HgiShaderStageCustomBitsBegin        = 1 << 8,
 };
 using HgiShaderStage = HgiBits;
 
