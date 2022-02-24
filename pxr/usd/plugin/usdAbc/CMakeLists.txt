@@ -216,8 +216,6 @@ pxr_register_test(testUsdAbcIndexedGeomArb
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcIndexedGeomArb"
     DIFF_COMPARE good_primvars_namespace_after_fix.usda
     EXPECTED_RETURN_CODE 0
-    ENV
-        USD_ABC_TESTSUFFIX=def
 )
 
 pxr_register_test(testUsdAbcInstancing

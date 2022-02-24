@@ -26,13 +26,13 @@ import unittest, os, sys
 
 class TestUsdAbcIndexedGeomArb(unittest.TestCase):
     def test_IndexedGeomArb(self):
-        name = "hasColorSet.abc"
-        abcFile = os.path.join("testUsdAbcIndexedGeomArb", name)
+        usdFile = "good_primvars_namespace_after_fix.usda"
+        abcFile = "hasColorSet.abc"
         cmd = 'usdcat'
         if sys.platform.startswith('win'):
-            cmd = 'usdcat.exe'
+            cmd = 'usdcat.cmd'
             
-        os.system("%s %s" % (cmd, abcFile))
+        os.system("%s -o %s %s" % (cmd, usdFile, abcFile))
 
 if __name__ == "__main__":
     unittest.main()
