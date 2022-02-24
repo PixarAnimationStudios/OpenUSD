@@ -32,10 +32,6 @@
 #include "pxr/base/trace/dynamicKey.h"
 #include "pxr/base/arch/hints.h"
 
-// Make TRACE_CUSTOM_CALLBACK the default for downstream library use simplicity
-#ifndef TRACE_CUSTOM_CALLBACK
-#define TRACE_CUSTOM_CALLBACK 1
-#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
