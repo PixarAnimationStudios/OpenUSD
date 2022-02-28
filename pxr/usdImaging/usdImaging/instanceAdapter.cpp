@@ -359,18 +359,16 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         instancerData.refreshVariability = true;
     }
 
-    // Add an entry to the instancer data for the given instance. Keep
-    // the vector sorted for faster lookups during change processing.
-    std::vector<SdfPath>& instancePaths = instancerData.instancePaths;
-    std::vector<SdfPath>::iterator it = std::lower_bound(
-        instancePaths.begin(), instancePaths.end(), instancePath);
+    // Add an entry to the instancer data for the given instance.
+    SdfPathSet& instancePaths = instancerData.instancePaths;
+    SdfPathSet::iterator it = instancePaths.find(instancePath);
 
     // We may repopulate instances we've already seen during change
     // processing when nested instances are involved. Rather than do
     // some complicated filtering in ProcessPrimResync to avoid this,
     // we just silently ignore duplicate instances here.
     if (it == instancePaths.end() || *it != instancePath) {
-        instancePaths.insert(it, instancePath);
+        instancePaths.insert(instancePath);
 
         TF_DEBUG(USDIMAGING_INSTANCER).Msg(
             "[Add Instance NI] <%s>  %s\n",
@@ -2098,8 +2096,10 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
         index->RemoveInstancer(instancerPath);
     }
 
-    // Keep a copy of the instancer's instances so we can repopulate them below.
-    const SdfPathVector instancePaths = instIt->second.instancePaths;
+    // Swap out the instancepPaths. They're going to be deleted anyways.
+    SdfPathSet instancePaths;
+    std::swap(instancePaths, instIt->second.instancePaths);
+    
 
     // Remove local instancer data.
     _instancerData.erase(instIt);
