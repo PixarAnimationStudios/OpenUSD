@@ -739,7 +739,7 @@ UsdImagingGLEngine::TestIntersection(
 
     HdxPickHitVector allHits;
     HdxPickTaskContextParams pickParams;
-    pickParams.resolveMode = HdxPickTokens->resolveDeep;
+    pickParams.resolveMode = HdxPickTokens->resolveNearestToCamera;
     pickParams.viewMatrix = viewMatrix;
     pickParams.projectionMatrix = projectionMatrix;
     pickParams.clipPlanes = params.clipPlanes;
