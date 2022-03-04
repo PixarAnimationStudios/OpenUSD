@@ -62,6 +62,7 @@ class SchemaLayerConstants(ConstantsGroup):
     GLOBAL_PRIM_PATH = "/GLOBAL"
     LIBRARY_NAME_STRING = "libraryName"
     SKIP_CODE_GENERATION = "skipCodeGeneration"
+    USE_LITERAL_IDENTIFIER = "useLiteralIdentifier"
     SCHEMA_PATH_STRING = "schema.usda"
 
 class MiscConstants(ConstantsGroup):
@@ -102,7 +103,8 @@ def _GetUsdGenSchemaCmd():
                     return cmd
     return None
 
-def _ConfigureSchemaLayer(schemaLayer, schemaSubLayers, skipCodeGeneration):
+def _ConfigureSchemaLayer(schemaLayer, schemaSubLayers, skipCodeGeneration,
+        useLiteralIdentifier):
     # - add sublayers
     subLayers = schemaLayer.subLayerPaths
     subLayersList = list(subLayers)
@@ -126,6 +128,9 @@ def _ConfigureSchemaLayer(schemaLayer, schemaSubLayers, skipCodeGeneration):
                 SchemaLayerConstants.LIBRARY_NAME_STRING))
     customDataDict[SchemaLayerConstants.SKIP_CODE_GENERATION] = \
             skipCodeGeneration
+    customDataDict[SchemaLayerConstants.USE_LITERAL_IDENTIFIER] = \
+            useLiteralIdentifier
+            
     globalPrim.customData = customDataDict
 
     schemaLayer.Save()
@@ -316,10 +321,15 @@ if __name__ == '__main__':
     # False in the config file
     skipCodeGeneration = config.get(
             SchemaLayerConstants.SKIP_CODE_GENERATION, True)
+    # set useLiteralIdentifier customData to true, unless explicitly marked
+    # False in the config file
+    useLiteralIdentifier = config.get(
+            SchemaLayerConstants.USE_LITERAL_IDENTIFIER, True)
 
     # configure schema.usda
     # fill in sublayers
-    _ConfigureSchemaLayer(schemaLayer, schemaSubLayers, skipCodeGeneration)
+    _ConfigureSchemaLayer(schemaLayer, schemaSubLayers, skipCodeGeneration,
+            useLiteralIdentifier)
 
     # for each sdrNode call updateSchemaFromSdrNode with schema.usda
     for node in sdrNodesToParse:
@@ -348,6 +358,12 @@ if __name__ == '__main__':
             json config. usdGenSchema is then run on this auto populated schema 
             (with skipCodeGeneration set to True) to output a 
             generatedSchema.usda and plugInfo.json.
+
+            Note that since users of this script have less control on direct
+            authoring of schema.usda, "useLiteralIdentifier" is unconditionally
+            set to true, which means the default camelCase token names will be
+            overriden and usdGenSchema will try keep the token names as-is
+            unless these are invalid.
             """) if skipCodeGeneration else \
             dedent("""
             The files ("schema.usda", "generatedSchema.usda", "plugInfo.json",
@@ -358,6 +374,12 @@ if __name__ == '__main__':
             json config. usdGenSchema is then run on this auto populated schema 
             to output a generatedSchema.usda and plugInfo.json and all the
             generated code.
+
+            Note that since users of this script have less control on direct
+            authoring of schema.usda, "useLiteralIdentifier" is unconditionally
+            set to true, which means the default camelCase token names will be
+            overriden and usdGenSchema will try keep the token names as-is
+            unless these are invalid.
             """)
         with open(readMeFile, "w") as file:
             file.write(description)

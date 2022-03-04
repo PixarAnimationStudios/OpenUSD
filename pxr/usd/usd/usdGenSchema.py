@@ -31,7 +31,8 @@ generated that will compile and work with USD Core successfully:
     
     * Must specify the libraryName as layer metadata.
     * Schema typenames must be unique across all libraries.
-    * Attribute names and tokens must be camelCased valid identifiers.
+    * Attribute names and tokens must be camelCased valid identifiers, else
+      provide the useLiteralIdentifier metadata in the library's schema.usda.
     * usd/schema.usda must exist in the LayerStack, not necessarily as a 
         directly subLayer.
 """
@@ -234,6 +235,15 @@ def _SkipCodeGenForLayer(layer):
     except:
         return False
 
+def _UseLiteralIdentifierForLayer(layer):
+    """ Return whether the layer specifies literalIdentifier metadata, and hence
+    opting in for using literal identifiers instead of the default camelCase
+    identifier."""
+    try:
+        return _GetLibMetadata(layer).get('useLiteralIdentifier', False)
+    except:
+        return False
+
 def _SkipCodeGenForSchemaLib(stage):
     """ Return whether the stage has a layer that specifies that code generation
     should be skipped for its schemas and therefore for the the entire schema
@@ -310,7 +320,12 @@ class PropInfo(object):
                     self.rawName, "_MultipleApplyTemplate_"))
         else:
             self.rawName = sdfProp.name
-            self.name = _CamelCase(self.rawName)
+            # For property names, camelCase all tokens irrespective of
+            # useLiteralIdentifier, so that we are consistent in our attribute
+            # naming when namespace prefix are provided and respect our coding
+            # convention. (Example: namespacePrefix:attrName ->
+            # namespacePrefixAttrName)
+            self.name = _MakeValidToken(self.rawName, False)
 
         self.apiName    = self.customData.get('apiName', _CamelCase(sdfProp.name))
         self.apiGet     = self.customData.get('apiGetImplementation', self.CodeGen.Generated)
@@ -421,7 +436,7 @@ def _IsTyped(p):
     return Sdf.Path('/Typed') in set(_FindAllInherits(p))
 
 class ClassInfo(object):
-    def __init__(self, usdPrim, sdfPrim):
+    def __init__(self, usdPrim, sdfPrim, useLiteralIdentifier=False):
         # First validate proper class naming...
         if (sdfPrim.typeName != sdfPrim.path.name and
             sdfPrim.typeName != ''):
@@ -448,6 +463,9 @@ class ClassInfo(object):
 
         # Allow user to specify custom naming through customData metadata.
         self.customData = dict(sdfPrim.customData)
+
+        # For token identifiers
+        self.useLiteralIdentifier = useLiteralIdentifier
 
         # For accumulation of AttrInfo objects
         self.attrs = {}
@@ -711,6 +729,11 @@ def ParseUsd(usdFilePath):
     classes = []
 
     hasInvalidFields = False
+    # Node that we do not want to auto promote the stage to use literal
+    # identifier if all any of the layers (this or sublayers) defined it. But we
+    # just care of the sdfLayer of the schema being generated, and hence only
+    # query the presence of useLiteralIdentifier on the sdfLayer metadata.
+    useLiteralIdentifier = _UseLiteralIdentifierForLayer(sdfLayer)
 
     # PARSE CLASSES
     for sdfPrim in sdfLayer.rootPrims:
@@ -721,7 +744,7 @@ def ParseUsd(usdFilePath):
             hasInvalidFields = True
 
         usdPrim = stage.GetPrimAtPath(sdfPrim.path)
-        classInfo = ClassInfo(usdPrim, sdfPrim)
+        classInfo = ClassInfo(usdPrim, sdfPrim, useLiteralIdentifier)
 
         # make sure that if we have a multiple-apply schema with a property
         # namespace prefix that the prim actually has some properties
@@ -920,8 +943,29 @@ def _ExtractCustomCode(filePath, default=None):
         Print.Err(e)
         return defaultTxt
 
+def _MakeValidToken(tokenId, useLiteralIdentifier):
+    originalToken = tokenId
+    # If token begins with a digit, then prefix it with an '_',
+    # TfMakeValidIdentifier currently replaced the digit with an '_' for such
+    # tokens.
+    if tokenId[0].isdigit():
+        tokenId = '_' + tokenId
+    if not useLiteralIdentifier or ':' in tokenId:
+        tokenId = _CamelCase(tokenId)
+    # Note that at this point default behavior of using camelCase for all
+    # identifier will result in a valid token, and hence a call to
+    # MakeValidIdentifier will only be made for schema libraries using
+    # useLiteralIdentifier and when a valid token was not provided, example
+    # tokens with non-alphanumeric characters (excluding ':', as its
+    # already covered above).
+    if not Tf.IsValidIdentifier(tokenId):
+        tokenId = Tf.MakeValidIdentifier(tokenId)
+        Print('Updated token {0} to a valid identifier {1}'.format( \
+                originalToken, tokenId))
+    return tokenId
 
-def _AddToken(tokenDict, tokenId, val, desc):
+
+def _AddToken(tokenDict, tokenId, val, desc, useLiteralIdentifier=False):
     """tokenId must be an identifier"""
 
     cppReservedKeywords = [
@@ -951,16 +995,11 @@ def _AddToken(tokenDict, tokenId, val, desc):
     if tokenId in reserved:
         tokenId = tokenId + '_'
     if not Tf.IsValidIdentifier(tokenId):
-        # TfMakeValidIdentifier currently replaces a tokenId's first element
-        # with a '_', if its a digit. In order to not have a broader impact
-        # we try to modify this behavior in schema gen such that, instead of
-        # replacing the first element digit, we prefix it with a '_' and
-        # then check for validity.
-        Print('Updating token {0} to a valid identifier'.format(tokenId))
-        if tokenId[0].isdigit():
-            tokenId = '_' + tokenId
-        if not Tf.IsValidIdentifier(tokenId):
-            tokenId = Tf.MakeValidIdentifier(tokenId)
+        tokenId = _MakeValidToken(tokenId, useLiteralIdentifier)
+    elif not useLiteralIdentifier:
+        # if not using literal identifier we always camelCase our valid
+        # identifiers as per convention.
+        tokenId = _CamelCase(tokenId)
 
     if tokenId in tokenDict:
         token = tokenDict[tokenId]
@@ -979,6 +1018,8 @@ def _AddToken(tokenDict, tokenId, val, desc):
     else:
         tokenDict[tokenId] = Token(tokenId, val, desc)
 
+    return tokenId
+
 
 def GatherTokens(classes, libName, libTokens):
     tokenDict = {}
@@ -996,20 +1037,25 @@ def GatherTokens(classes, libName, libTokens):
 
             # Add Attribute Names to token set
             cls.tokens.add(attr.name)
+            # For property names, camelCase all tokens irrespective of
+            # useLiteralIdentifier, so that we are consistent in our attribute
+            # naming when namespace prefix are provided and respect our coding
+            # convention. (Example: namespacePrefix:attrName ->
+            # namespacePrefixAttrName)
             _AddToken(tokenDict, attr.name, attr.rawName, cls.cppClassName)
 
             
             # Add default value (if token type) to token set
             if attr.typeName == Sdf.ValueTypeNames.Token and attr.fallback:
-                fallbackName = _CamelCase(attr.fallback)
                 if attr.apiName != '':
                     desc = 'Default value for %s::Get%sAttr()' % \
                            (cls.cppClassName, _ProperCase(attr.apiName))
                 else:
                     desc = 'Default value for %s schema attribute %s' % \
                            (cls.cppClassName, attr.rawName)
-                cls.tokens.add(fallbackName)
-                _AddToken(tokenDict, fallbackName, attr.fallback, desc)
+                fallbackNameToken = _AddToken(tokenDict, attr.fallback,
+                        attr.fallback, desc, cls.useLiteralIdentifier)
+                cls.tokens.add(fallbackNameToken)
             
             # Add Allowed Tokens for this attribute to token set
             if attr.allowedTokens:
@@ -1017,20 +1063,27 @@ def GatherTokens(classes, libName, libTokens):
                     # Empty string is a valid allowedTokens member,
                     # but do not declare a named literal for it.
                     if val != '':
-                        tokenId = _CamelCase(val)
                         if attr.apiName != '':
                             desc = 'Possible value for %s::Get%sAttr()' % \
                                    (cls.cppClassName, _ProperCase(attr.apiName))
                         else:
                             desc = 'Possible value for %s schema attribute %s' % \
                                    (cls.cppClassName, attr.rawName)
-                        cls.tokens.add(tokenId)
-                        _AddToken(tokenDict, tokenId, val, desc)
+                        valToken = _AddToken(tokenDict, val, val, desc, 
+                                cls.useLiteralIdentifier)
+                        cls.tokens.add(valToken)
+
+        # As per already established convention following tokens follow literal
+        # identifier pattern and not camelCased by default:
+        #- relationship names
+        #- schema tokens
+        #- property namespace prefix tokens
+        #- library tokens
 
         # Add tokens from relationships to the token set
         for rel in cls.rels.values():
             cls.tokens.add(rel.name)
-            _AddToken(tokenDict, rel.name, rel.rawName, cls.cppClassName)
+            _AddToken(tokenDict, rel.name, rel.rawName, cls.cppClassName, True)
             
         # Add schema tokens to token set
         schemaTokens = cls.customData.get("schemaTokens", {})
@@ -1039,7 +1092,7 @@ def GatherTokens(classes, libName, libTokens):
             _AddToken(tokenDict, token, tokenInfo.get("value", token),
                       _SanitizeDoc(tokenInfo.get("doc", 
                           "Special token for the %s schema." % \
-                                  cls.cppClassName), ' '))
+                                  cls.cppClassName), ' '), True)
 
         # Add property namespace prefix token for multiple-apply API
         # schema to token set
@@ -1048,13 +1101,13 @@ def GatherTokens(classes, libName, libTokens):
             _AddToken(tokenDict, cls.propertyNamespacePrefix,
                       cls.propertyNamespacePrefix,
                       "Property namespace prefix for the %s schema." \
-                              % cls.cppClassName)
+                              % cls.cppClassName, True)
 
     # Add library-wide tokens to token set
     for token, tokenInfo in libTokens.items():
         _AddToken(tokenDict, token, tokenInfo.get("value", token), 
                   _SanitizeDoc(tokenInfo.get("doc",
-                      "Special token for the %s library." % libName), ' '))
+                      "Special token for the %s library." % libName), ' '), True)
 
     # Sort the list of tokens lexicographically. This pair of keys will provide
     # a case insensitive primary key and a case sensitive secondary key. That
