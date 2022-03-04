@@ -356,6 +356,7 @@ HdxPickTask::_ConditionStencilWithGLCallback(
             glDisable(GL_CULL_FACE);
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             glFrontFace(GL_CCW);
+            glDisable(GL_STENCIL_TEST);
         }
     };
 
@@ -640,8 +641,6 @@ HdxPickTask::Execute(HdTaskContext* ctx)
         _widgetRenderPass->Execute(_widgetRenderPassState,
             {HdxRenderTagTokens->widget});
     }
-
-    glDisable(GL_STENCIL_TEST);
 
     // Capture the result buffers and cast to the appropriate types.
     std::vector<uint8_t> primIds;
