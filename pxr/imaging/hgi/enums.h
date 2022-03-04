@@ -65,6 +65,8 @@ using HgiBits = uint32_t;
 ///   The device supports conservative rasterization</li>
 /// <li>HgiDeviceCapabilitiesBitsStencilReadback:
 ///   Supports reading back the stencil buffer from GPU to CPU.</li>
+/// <li>HgiDeviceCapabilitiesBitsCustomDepthRange:
+///   The device supports setting a custom depth range.</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
@@ -81,7 +83,8 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne = 1 << 9,
     HgiDeviceCapabilitiesBitsCppShaderPadding        = 1 << 10,
     HgiDeviceCapabilitiesBitsConservativeRaster      = 1 << 11,
-    HgiDeviceCapabilitiesBitsStencilReadback         = 1 << 12
+    HgiDeviceCapabilitiesBitsStencilReadback         = 1 << 12,
+    HgiDeviceCapabilitiesBitsCustomDepthRange        = 1 << 13
 };
 
 using HgiDeviceCapabilities = HgiBits;

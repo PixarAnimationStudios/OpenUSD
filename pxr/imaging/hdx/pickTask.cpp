@@ -672,10 +672,13 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     float const * depthPtr =
         _ReadAovBuffer<float>(_depthToken, &depths);
 
-    // For un-projection, get the current depth range.
-    GLfloat p[2];
-    glGetFloatv(GL_DEPTH_RANGE, &p[0]);
-    GfVec2f depthRange(p[0], p[1]);
+    // For un-projection, get the depth range at time of drawing.
+    GfVec2f depthRange(0, 1);
+    if (_hgi->GetCapabilities()->IsSet(
+        HgiDeviceCapabilitiesBitsCustomDepthRange)) {
+        // Assume each of the render passes used the same depth range.
+        depthRange = _pickableRenderPassState->GetDepthRange();
+    }
 
     HdxPickResult result(
             primIdPtr, instanceIdPtr, elementIdPtr,
