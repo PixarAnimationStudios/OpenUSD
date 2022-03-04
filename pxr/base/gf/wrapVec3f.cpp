@@ -47,6 +47,7 @@
 #include <boost/python/make_constructor.hpp>
 #include <boost/python/operators.hpp>
 #include <boost/python/overloads.hpp>
+#include <boost/python/return_arg.hpp>
 #include <boost/python/tuple.hpp>
 #include <boost/python/slice.hpp>
 
@@ -351,17 +352,15 @@ static bool __contains__(const GfVec3f &self, float value) {
     return false;
 }
 
-#if PY_MAJOR_VERSION == 2
 static GfVec3f __truediv__(const GfVec3f &self, float value)
 {
     return self / value;
 }
 
-static GfVec3f __itruediv__(GfVec3f &self, float value)
+static GfVec3f& __itruediv__(GfVec3f &self, float value)
 {
     return self /= value;
 }
-#endif
 
 template <class V>
 static V *__init__() {
@@ -501,13 +500,6 @@ void wrapVec3f()
         .def(self * self)
         .def(str(self))
 
-#if PY_MAJOR_VERSION == 2
-        // Needed only to support "from __future__ import division" in
-        // python 2. In python 3 builds boost::python adds this for us.
-        .def("__truediv__", __truediv__ )
-        .def("__itruediv__", __itruediv__ )
-#endif
-
         .def("Axis", &Vec::Axis).staticmethod("Axis")
 
         .def("XAxis", &Vec::XAxis).staticmethod("XAxis")
@@ -552,4 +544,19 @@ void wrapVec3f()
     TfPyContainerConversions::from_python_sequence<
         std::vector<GfVec3f>,
         TfPyContainerConversions::variable_capacity_policy >();
+
+    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
+        // __truediv__ not added by .def( self / double() ) above, which
+        // happens when building with python 2, but we need it to support
+        // "from __future__ import division"
+        cls.def("__truediv__", __truediv__);
+    }
+    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
+        // __itruediv__ not added by .def( self /= double() ) above, which
+        // happens when building with python 2, but we need it to support
+        // "from __future__ import division". This is also a workaround for a 
+        // bug in the current version of boost::python that incorrectly wraps
+        // in-place division with __idiv__ when building with python 3.
+        cls.def("__itruediv__", __itruediv__, return_self<>{});
+    }
 }

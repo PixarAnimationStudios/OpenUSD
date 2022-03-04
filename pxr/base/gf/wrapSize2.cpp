@@ -68,17 +68,15 @@ static bool __contains__(const GfSize2 &self, size_t value) {
     return false;
 }
 
-#if PY_MAJOR_VERSION == 2
 static GfSize2 __truediv__(const GfSize2 &self, int value)
 {
     return self / value;
 }
 
-static GfSize2 __itruediv__(GfSize2 &self, int value)
+static GfSize2& __itruediv__(GfSize2 &self, int value)
 {
     return self /= value;
 }
-#endif
 
 static string _Repr(GfSize2 const &self) {
     return TF_PY_REPR_PREFIX + "Size2(" + TfPyRepr(self[0]) + ", " + TfPyRepr(self[1]) + ")";
@@ -92,7 +90,8 @@ void wrapSize2()
 
     static const int dimension = 2;
 
-    class_<This>( "Size2", "A 2D size class", init<>() )
+    class_<This> cls( "Size2", "A 2D size class", init<>() );
+    cls
         .def(init<const This &>())
         .def(init<const GfVec2i &>())
         .def(init<size_t, size_t>())
@@ -121,14 +120,6 @@ void wrapSize2()
         .def( int() * self )
         .def( self * int() )
         .def( self / int() )
-
-#if PY_MAJOR_VERSION == 2
-        // Needed only to support "from __future__ import division" in
-        // python 2. In python 3 builds boost::python adds this for us.
-        .def("__truediv__", __truediv__ )
-        .def("__itruediv__", __itruediv__ )
-#endif
-
         .def("__repr__", _Repr)
         
         ;
@@ -137,5 +128,19 @@ void wrapSize2()
 
     // conversion operator
     implicitly_convertible<This, GfVec2i>();
-    
+
+    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
+        // __truediv__ not added by .def( self / double() ) above, which
+        // happens when building with python 2, but we need it to support
+        // "from __future__ import division"
+        cls.def("__truediv__", __truediv__);
+    }
+    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
+        // __itruediv__ not added by .def( self /= double() ) above, which
+        // happens when building with python 2, but we need it to support
+        // "from __future__ import division". This is also a workaround for a 
+        // bug in the current version of boost::python that incorrectly wraps
+        // in-place division with __idiv__ when building with python 3.
+        cls.def("__itruediv__", __itruediv__, return_self<>());
+    }
 }
