@@ -170,7 +170,7 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning,
 
     defaultValue = prop.GetDefaultValueAsSdfType()
     if (attrType == Sdf.ValueTypeNames.String or
-            attrType == Sdf.ValueTypeNames.Tokens) and defaultValue is not None:
+            attrType == Sdf.ValueTypeNames.Token) and defaultValue is not None:
         attrSpec.default = defaultValue.replace('"', r'\"')
     else:
         attrSpec.default = defaultValue
