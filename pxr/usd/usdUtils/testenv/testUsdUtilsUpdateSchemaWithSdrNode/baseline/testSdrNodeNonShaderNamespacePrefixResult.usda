@@ -1,0 +1,14 @@
+#usda 1.0
+
+class TestNSPrefix "TestNSPrefix" (
+    customData = {
+        string className = "TestNS"
+    }
+    inherits = </Typed>
+)
+{
+    float input1withNONSPrefix = 0
+    float input2withNONSPrefix = 0
+    float propNSPrefix:input2withPropNS = 0
+}
+

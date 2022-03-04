@@ -27,39 +27,45 @@ from pxr import Tf, Sdf, Sdr, Usd, UsdShade, Vt
 from pxr.UsdUtils.constantsGroup import ConstantsGroup
 
 class SchemaDefiningKeys(ConstantsGroup):
+    API_SCHEMAS_FOR_ATTR_PRUNING = "apiSchemasForAttrPruning"
     API_SCHEMA_AUTO_APPLY_TO = "apiSchemaAutoApplyTo"
     API_SCHEMA_CAN_ONLY_APPLY_TO = "apiSchemaCanOnlyApplyTo"
+    IS_USD_SHADE_CONTAINER = "isUsdShadeContainer"
+    SCHEMA_PROPERTY_NS_PREFIX_OVERRIDE = "schemaPropertyNSPrefixOverride"
     PROVIDES_USD_SHADE_CONNECTABLE_API_BEHAVIOR = \
             "providesUsdShadeConnectableAPIBehavior"
-    IS_USD_SHADE_CONTAINER = "isUsdShadeContainer"
     REQUIRES_USD_SHADE_ENCAPSULATION = "requiresUsdShadeEncapsulation"
-    SCHEMA_NAME = "schemaName"
     SCHEMA_BASE = "schemaBase"
     SCHEMA_KIND = "schemaKind"
-    API_SCHEMAS_FOR_ATTR_PRUNING = "apiSchemasForAttrPruning"
-    TYPED_SCHEMA_FOR_ATTR_PRUNING = "typedSchemaForAttrPruning"
+    SCHEMA_NAME = "schemaName"
     TF_TYPENAME_SUFFIX = "tfTypeNameSuffix"
+    TYPED_SCHEMA_FOR_ATTR_PRUNING = "typedSchemaForAttrPruning"
 
 class SchemaDefiningMiscConstants(ConstantsGroup):
     API_SCHEMA_BASE = "APISchemaBase"
     API_STRING = "API"
+    NodeDefAPI = "NodeDefAPI"
     SINGLE_APPLY_SCHEMA = "singleApply"
     TYPED_SCHEMA = "Typed"
     USD_SOURCE_TYPE = "USD"
-    NodeDefAPI = "NodeDefAPI"
 
 class PropertyDefiningKeys(ConstantsGroup):
-    USD_VARIABILITY = "usdVariability"
-    USD_SUPPRESS_PROPERTY = "usdSuppressProperty"
-    SDF_VARIABILITY_UNIFORM_STRING = "Uniform"
     CONNECTABILITY = "connectability"
-    SHADER_ID = "shaderId"
-    WIDGET = "widget"
-    NULL_VALUE = "null"
     INTERNAL_DISPLAY_GROUP = "Internal"
+    NULL_VALUE = "null"
+    PROPERTY_NS_PREFIX_OVERRIDE = "propertyNSPrefixOverride"
+    SDF_VARIABILITY_UNIFORM_STRING = "Uniform"
+    SHADER_ID = "shaderId"
+    USD_SUPPRESS_PROPERTY = "usdSuppressProperty"
+    USD_VARIABILITY = "usdVariability"
+    WIDGET = "widget"
+
+def _IsNSPrefixConnectableAPICompliant(nsPrefix):
+    return (nsPrefix == UsdShade.Tokens.inputs[:1] or \
+            nsPrefix == UsdShade.Tokens.outputs[:1])
 
 def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning, 
-        isInput=True):
+        schemaPropertyNSPrefixOverride, isInput=True):
     propMetadata = prop.GetMetadata()
     # Early out if the property should be suppressed from being translated to
     # propertySpec
@@ -67,21 +73,39 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning,
             propMetadata[PropertyDefiningKeys.USD_SUPPRESS_PROPERTY] == "True"):
         return
 
+    propertyNSPrefixOverride = schemaPropertyNSPrefixOverride
+    if PropertyDefiningKeys.PROPERTY_NS_PREFIX_OVERRIDE in propMetadata:
+        propertyNSPrefixOverride = \
+            propMetadata[PropertyDefiningKeys.PROPERTY_NS_PREFIX_OVERRIDE]
+
     propName = prop.GetName()
+
+    # Error out if trying to use an explicit propertyNSPrefixOverride on an
+    # output attr
+    if (not isInput and propertyNSPrefixOverride is not None and \
+            propertyNSPrefixOverride != UsdShade.Tokens.outputs[:-1]):
+        Tf.RaiseRuntimeError("Presence of (%s) output parameter contradicts " \
+            "the presence of propertyNSPrefixOverride (\"%s\"), as it is " \
+            "illegal for non-shader nodes to contain output parameters, or " \
+            "shader nodes' outputs to not have the \"outputs\" namespace " \
+            "prefix." %(propName, propertyNSPrefixOverride))
+
     attrType = prop.GetTypeAsSdfType()[0]
     
     if not Sdf.Path.IsValidNamespacedIdentifier(propName):
         Tf.RaiseRuntimeError("Property name (%s) for schema (%s) is an " \
                 "invalid namespace identifier." %(propName, primSpec.name))
 
-    # Apply input/output prefix
+    # if propertyNSPrefixOverride is provided and we are an output then already
+    # thrown exception
     # Note that UsdShade inputs and outputs tokens contain the ":" delimiter, so
     # we need to strip this to be used with JoinIdentifier
-    propName = Sdf.Path.JoinIdentifier( \
-                [UsdShade.Tokens.inputs[:-1], propName]) \
-            if isInput else \
-                Sdf.Path.JoinIdentifier( \
-                [UsdShade.Tokens.outputs[:-1], propName])
+    if propertyNSPrefixOverride is None:
+        propertyNSPrefixOverride = UsdShade.Tokens.inputs[:-1] if isInput else \
+                UsdShade.Tokens.outputs[:-1]
+
+    # Apply propertyNSPrefixOverride
+    propName = Sdf.Path.JoinIdentifier([propertyNSPrefixOverride, propName])
 
     # error and early out if duplicate property on primDefForAttrPruning exists
     # and has different types
@@ -209,14 +233,21 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
           UsdShade encapsulation rules governing its connectableBehavior.
         - "tfTypeNameSuffix": Class name which will get registered with TfType 
           system. This gets appended to the domain name to register with TfType.
+        - "schemaPropertyNSPrefixOverride": Node level metadata which can drive
+          all node's properties namespace prefix. This can be useful for
+          non connectable nodes which should not get UsdShade inputs and outputs
+          namespace prefix.
 
     Property Level Metadata:
-        - USD_VARIABILITY: Property level metadata which specifies a specific 
+        - "usdVariability": Property level metadata which specifies a specific 
           sdrNodeProperty should have its USD variability set to Uniform or 
           Varying
-        - USD_SUPPRESS_PROPERTY: A property level metadata which determines if 
+        - "usdSuppressProperty": A property level metadata which determines if 
           the property should be suppressed from translation from args to 
           property spec.
+        - "propertyNSPrefixOverride": Provides a way to override a property's
+          namespace from the default (inputs:/outputs:) or from a node's
+          schemaPropertyNSPrefixOverride metadata.
 
     Sdr Property Metadata to SdfPropertySpec Translations
         - A "null" value for Widget sdrProperty metadata translates to 
@@ -329,6 +360,50 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
         typedSchemaForAttrPruning = \
             sdrNodeMetadata[SchemaDefiningKeys.TYPED_SCHEMA_FOR_ATTR_PRUNING]
 
+    schemaPropertyNSPrefixOverride = None
+    if SchemaDefiningKeys.SCHEMA_PROPERTY_NS_PREFIX_OVERRIDE in sdrNodeMetadata:
+        schemaPropertyNSPrefixOverride = \
+            sdrNodeMetadata[ \
+                SchemaDefiningKeys.SCHEMA_PROPERTY_NS_PREFIX_OVERRIDE]
+
+    usdSchemaReg = Usd.SchemaRegistry()
+
+    # determine if the node being processed provides UsdShade-Connectability, 
+    # this helps in determining what namespace to use and also to report error 
+    # if a non-connectable node has outputs properties, which is malformed.
+    # - Does the node derive from a schemaBase which provides connectable
+    # behavior. Warn if schemaPropertyNSPrefixOverride is also specified, as 
+    # these metadata won't be used.
+    # - If no schemaBase then we default to UsdShade connectable node's 
+    # inputs:/outputs: namespace prefix, unless schemaPropertyNSPrefixOverride 
+    # is provided. 
+    # - We also report an error if schemaPropertyNSPrefixOverride is provided 
+    # and an output property is found on the node being processed.
+    schemaBaseProvidesConnectability = UsdShade.ConnectableAPI. \
+            HasConnectableAPI(usdSchemaReg.GetTypeFromName(schemaBase))
+
+    if (len(sdrNode.GetOutputNames()) > 0 and \
+            schemaPropertyNSPrefixOverride is not None and \
+            not _IsNSPrefixConnectableAPICompliant( \
+                schemaPropertyNSPrefixOverride)):
+        Tf.RaiseRuntimeError("Presence of (%s) output parameters contradicts " \
+            "the presence of schemaPropertyNSPrefixOverride (\"%s\"), as it " \
+            "is illegal for non-connectable nodes to contain output " \
+            "parameters, or shader nodes' outputs to not have the \"outputs\"" \
+            "namespace prefix." %(len(sdrNode.GetOutputNames()), \
+            schemaPropertyNSPrefixOverride))
+
+    if (schemaBaseProvidesConnectability and \
+            schemaPropertyNSPrefixOverride is not None and \
+            not _IsNSPrefixConnectableAPICompliant( \
+                schemaPropertyNSPrefixOverride)):
+        Tf.Warn("Node %s provides UsdShade-Connectability as it derives from " \
+                "%s, schemaPropertyNSPrefixOverride \"%s\" will not be used." \
+                %(schemaName, schemaBase, schemaPropertyNSPrefixOverride))
+        # set schemaPropertyNSPrefixOverride to "inputs", assuming default 
+        # UsdShade Connectability namespace prefix
+        schemaPropertyNSPrefixOverride = "inputs"
+
     primSpec = schemaLayer.GetPrimAtPath(schemaName)
 
     if (primSpec):
@@ -387,35 +462,41 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
     # provided by apiSchemasForAttrPruning metadata.
     primDefForAttrPruning = None
     if apiSchemasForAttrPruning:
-        primDefForAttrPruning = Usd.SchemaRegistry(). \
-                BuildComposedPrimDefinition(typedSchemaForAttrPruning,
-                        apiSchemasForAttrPruning)
+        primDefForAttrPruning = usdSchemaReg.BuildComposedPrimDefinition(
+                typedSchemaForAttrPruning, apiSchemasForAttrPruning)
 
     # Create attrSpecs from input parameters
     for propName in sdrNode.GetInputNames():
         _CreateAttrSpecFromNodeAttribute(primSpec, sdrNode.GetInput(propName), 
-                primDefForAttrPruning)
+                primDefForAttrPruning, schemaPropertyNSPrefixOverride)
 
     # Create attrSpecs from output parameters
+    # Note that we always want outputs: namespace prefix for output attributes.
     for propName in sdrNode.GetOutputNames():
         _CreateAttrSpecFromNodeAttribute(primSpec, sdrNode.GetOutput(propName), 
-                primDefForAttrPruning, False)
+                primDefForAttrPruning, UsdShade.Tokens.outputs[:-1], False)
 
-    # Create token shaderId attrSpec
-    shaderIdAttrName = Sdf.Path.JoinIdentifier( \
-            [renderContext, sdrNode.GetContext(), PropertyDefiningKeys.SHADER_ID])
-    shaderIdAttrSpec = Sdf.AttributeSpec(primSpec, shaderIdAttrName,
-            Sdf.ValueTypeNames.Token, Sdf.VariabilityUniform)
+    # Create token shaderId attrSpec -- only for shader nodes
+    if (schemaBaseProvidesConnectability or \
+            schemaPropertyNSPrefixOverride is None or \
+            _IsNSPrefixConnectableAPICompliant(schemaPropertyNSPrefixOverride)):
+        shaderIdAttrName = Sdf.Path.JoinIdentifier( \
+                [renderContext, sdrNode.GetContext(), 
+                    PropertyDefiningKeys.SHADER_ID])
+        shaderIdAttrSpec = Sdf.AttributeSpec(primSpec, shaderIdAttrName,
+                Sdf.ValueTypeNames.Token, Sdf.VariabilityUniform)
 
-    # Since users shouldn't need to be aware of shaderId attribute, we put this
-    # in "Internal" displayGroup.
-    shaderIdAttrSpec.displayGroup = PropertyDefiningKeys.INTERNAL_DISPLAY_GROUP
+        # Since users shouldn't need to be aware of shaderId attribute, we put 
+        # this in "Internal" displayGroup.
+        shaderIdAttrSpec.displayGroup = \
+                PropertyDefiningKeys.INTERNAL_DISPLAY_GROUP
 
-    # Use the identifier if explicitly provided, (it could be a shader node
-    # queried using an explicit path), else use sdrNode's registered identifier.
-    nodeIdentifier = overrideIdentifier if overrideIdentifier else \
-            sdrNode.GetIdentifier()
-    shaderIdAttrSpec.default = nodeIdentifier
+        # Use the identifier if explicitly provided, (it could be a shader node
+        # queried using an explicit path), else use sdrNode's registered 
+        # identifier.
+        nodeIdentifier = overrideIdentifier if overrideIdentifier else \
+                sdrNode.GetIdentifier()
+        shaderIdAttrSpec.default = nodeIdentifier
 
     # Extra attrSpec
     schemaBasePrimDefinition = \
