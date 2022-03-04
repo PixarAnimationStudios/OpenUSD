@@ -168,7 +168,13 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning,
                 tokenList.append(option[1])
         attrSpec.allowedTokens = tokenList
 
-    attrSpec.default = prop.GetDefaultValueAsSdfType()
+    defaultValue = prop.GetDefaultValueAsSdfType()
+    if (attrType == Sdf.ValueTypeNames.String or
+            attrType == Sdf.ValueTypeNames.Tokens) and defaultValue is not None:
+        attrSpec.default = defaultValue.replace('"', r'\"')
+    else:
+        attrSpec.default = defaultValue
+
 
     # The core UsdLux inputs should remain connectable (interfaceOnly)
     # even if sdrProperty marks the input as not connectable
