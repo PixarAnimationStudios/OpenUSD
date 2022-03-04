@@ -63,6 +63,8 @@
 #include "RixShadingUtils.h"
 #include "RixPredefinedStrings.hpp"
 
+#include <thread>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -2103,16 +2105,20 @@ HdPrman_RenderParam::StopRender(bool blocking)
         return;
     }
 
-    // It is necessary to call riley->Stop() until it succeeds
-    // because it's possible for it to be skipped if called too early,
-    // before the render has gotten underway.
-    // Also keep checking if render thread is still active,
-    // in case it has somehow managed to stop already.
-    while((_riley->Stop() == riley::StopResult::k_NotRendering) &&
-          _renderThread->IsRendering())
-    {
+    // Note: if we were rendering, when the flag goes low we'll be back in
+    // render thread idle until another StartRender comes in, so we don't need
+    // to manually call renderThread->StopRender. Theoretically
+    // riley->Stop() is blocking, but we need the loop here because:
+    // 1. It's possible that IsRendering() is true because we're in the preamble
+    //    of the render loop, before calling into riley. In that case, Stop()
+    //    is a no-op and we need to call it again after we call into Riley.
+    // 2. We've occassionally seen cases where Stop() returns successfully,
+    //    but the riley threadpools don't shut down right away.
+    while (_renderThread->IsRendering()) {
+        _riley->Stop();
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(100us);
     }
-    _renderThread->StopRender();
 }
 
 bool
