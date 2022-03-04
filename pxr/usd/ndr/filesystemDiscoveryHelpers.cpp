@@ -184,6 +184,26 @@ NdrFsHelpersSplitShaderIdentifier(
     return true;
 }
 
+static void
+_WalkDirs(const NdrStringVec &searchPaths,
+          const TfWalkFunction &fn,
+          bool followSymlinks)
+{
+    for (const std::string& searchPath : searchPaths) {
+        if (!TfIsDir(searchPath)) {
+            continue;
+        }
+
+        TfWalkDirs(
+            searchPath,
+            fn,
+            /* topDown = */ true,
+            TfWalkIgnoreErrorHandler,
+            followSymlinks
+        );
+    }
+}
+
 NdrNodeDiscoveryResultVec
 NdrFsHelpersDiscoverNodes(
     const NdrStringVec& searchPaths,
@@ -200,29 +220,61 @@ NdrFsHelpersDiscoverNodes(
     // Cache the calls to Ar's `Resolve()`
     ArResolverScopedCache resolverCache;
 
-    for (const std::string& searchPath : searchPaths) {
-        if (!TfIsDir(searchPath)) {
-            continue;
-        }
-
-        TfWalkDirs(
-            searchPath,
-            std::bind(
-                &FsHelpersExamineFiles,
-                &foundNodes,
-                &foundNodesWithTypes,
-                std::ref(allowedExtensions),
-                context,
-                std::placeholders::_1,
-                std::placeholders::_3
-            ),
-            /* topDown = */ true,
-            TfWalkIgnoreErrorHandler,
-            followSymlinks
-        );
-    }
+    _WalkDirs(
+        searchPaths,
+        std::bind(
+            &FsHelpersExamineFiles,
+            &foundNodes,
+            &foundNodesWithTypes,
+            std::ref(allowedExtensions),
+            context,
+            std::placeholders::_1,
+            std::placeholders::_3
+        ),
+        followSymlinks
+    );
 
     return foundNodes;
+}
+
+NdrDiscoveryUriVec
+NdrFsHelpersDiscoverFiles(
+    const NdrStringVec& searchPaths,
+    const NdrStringVec& allowedExtensions,
+    bool followSymlinks)
+{
+    NdrDiscoveryUriVec foundUris;
+
+    // Cache the calls to Ar's `Resolve()`
+    ArResolverScopedCache resolverCache;
+
+    auto findUrisFn = [&](const std::string& dirPath,
+                          NdrStringVec *unused, 
+                          const NdrStringVec& dirFileNames) {
+
+        for (const std::string& fileName : dirFileNames) {
+            const std::string extension = 
+                TfStringToLower(TfGetExtension(fileName));
+
+            // Does the extension match one of the known-good extensions?
+            if (std::find(allowedExtensions.begin(), allowedExtensions.end(), 
+                          extension) != allowedExtensions.end()) {
+                // Found a node file w/ allowed extension
+                NdrDiscoveryUri discoveryUri;
+                discoveryUri.uri = TfStringCatPaths(dirPath, fileName);
+                discoveryUri.resolvedUri = 
+                    ArGetResolver().Resolve(discoveryUri.uri);
+                foundUris.push_back(std::move(discoveryUri));
+            }
+        }
+
+        // Continue walking directories
+        return true;
+    };
+
+    _WalkDirs(searchPaths, findUrisFn, followSymlinks);
+
+    return foundUris;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -86,6 +86,36 @@ NdrFsHelpersDiscoverNodes(
     const NdrDiscoveryPluginContext* context = nullptr
 );
 
+/// Struct for holding a URI and its resolved URI for a file discovered
+/// by NdrFsHelpersDiscoverFiles
+struct NdrDiscoveryUri 
+{
+    std::string uri;
+    std::string resolvedUri;
+};
+
+/// A vector of URI/resolved URI structs.
+using NdrDiscoveryUriVec = std::vector<NdrDiscoveryUri>;
+
+/// Returns a vector of discovered URIs (as both the unresolved URI and the 
+/// resolved URI) that are found while walking  the given search paths.
+///
+/// Each path in \p searchPaths is walked recursively, optionally following 
+/// symlinks if \p followSymlinks is true, looking for files that match one of 
+/// the provided \p allowedExtensions. These files' unresolved and resolved URIs
+/// are returned in the result vector.
+///
+/// This is an alternative to NdrFsHelpersDiscoverNodes for discovery plugins 
+/// that want to search for files that are not meant to be returned by discovery
+/// themselves, but can be parsed to generate the discovery results.
+NDR_API
+NdrDiscoveryUriVec
+NdrFsHelpersDiscoverFiles(
+    const NdrStringVec& searchPaths,
+    const NdrStringVec& allowedExtensions,
+    bool followSymlinks = true
+);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_NDR_FILESYSTEM_DISCOVERY_HELPERS_H

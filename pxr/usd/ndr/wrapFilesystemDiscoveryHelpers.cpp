@@ -24,8 +24,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ndr/filesystemDiscoveryHelpers.h"
+#include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/weakPtr.h"
 
+#include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/tuple.hpp>
 
@@ -62,6 +64,12 @@ _WrapFsHelpersSplitShaderIdentifier(const TfToken &identifier)
 
 void wrapFilesystemDiscoveryHelpers()
 {
+    class_<NdrDiscoveryUri>("DiscoveryUri")
+        .def(init<NdrDiscoveryUri>())
+        .def_readwrite("uri", &NdrDiscoveryUri::uri)
+        .def_readwrite("resolvedUri", &NdrDiscoveryUri::resolvedUri)
+    ;
+
     def("FsHelpersSplitShaderIdentifier", _WrapFsHelpersSplitShaderIdentifier,
         arg("identifier"));
     def("FsHelpersDiscoverNodes", _WrapFsHelpersDiscoverNodes,
@@ -69,4 +77,9 @@ void wrapFilesystemDiscoveryHelpers()
         args("allowedExtensions"),
         args("followSymlinks") = true,
         args("context") = TfWeakPtr<NdrDiscoveryPluginContext>()));
+    def("FsHelpersDiscoverFiles", NdrFsHelpersDiscoverFiles,
+        (args("searchPaths"),
+        args("allowedExtensions"),
+        args("followSymlinks") = true),
+        return_value_policy<TfPySequenceToList>());
 }

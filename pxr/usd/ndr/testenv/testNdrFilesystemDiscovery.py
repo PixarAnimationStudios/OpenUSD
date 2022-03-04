@@ -52,6 +52,16 @@ class TestNdrFilesystemDiscovery(unittest.TestCase):
             "TestNodeSameName"
         }
 
+        # Verify that the discovery files helper returns the same URIs as 
+        # full discovery plugin when run on the same search path and allowed
+        # extensions.
+        discoveryUris = Ndr.FsHelpersDiscoverFiles(
+            [os.getcwd()], ["oso","args"], True)
+        assert len(discoveryResults) == 6
+        for result, uris in zip(discoveryResults, discoveryUris):
+            assert result.uri == uris.uri
+            assert result.resolvedUri == result.resolvedUri
+
     def test_testSplitShaderIdentifier(self):
         self.assertEqual(
             Ndr.FsHelpersSplitShaderIdentifier('Primvar'),
