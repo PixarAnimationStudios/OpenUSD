@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDLUX_GENERATED_LISTAPI_H
-#define USDLUX_GENERATED_LISTAPI_H
+#ifndef USDLUX_GENERATED_LIGHTLISTAPI_H
+#define USDLUX_GENERATED_LIGHTLISTAPI_H
 
-/// \file usdLux/listAPI.h
+/// \file usdLux/lightListAPI.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLux/api.h"
@@ -47,14 +47,129 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// LISTAPI                                                                    //
+// LIGHTLISTAPI                                                               //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdLuxListAPI
+/// \class UsdLuxLightListAPI
 ///
+/// API schema to support discovery and publishing of lights in a scene.
 /// 
-/// \deprecated
-/// Use LightListAPI instead
+/// \section UsdLuxLightListAPI_Discovery Discovering Lights via Traversal
+/// 
+/// To motivate this API, consider what is required to discover all
+/// lights in a scene.  We must load all payloads and traverse all prims:
+/// 
+/// \code
+/// 01  // Load everything on the stage so we can find all lights,
+/// 02  // including those inside payloads
+/// 03  stage->Load();
+/// 04  
+/// 05  // Traverse all prims, checking if they have an applied UsdLuxLightAPI
+/// 06  // (Note: ignoring instancing and a few other things for simplicity)
+/// 07  SdfPathVector lights;
+/// 08  for (UsdPrim prim: stage->Traverse()) {
+/// 09      if (prim.HasAPI<UsdLuxLightAPI>()) {
+/// 10          lights.push_back(i->GetPath());
+/// 11      }
+/// 12  }
+/// \endcode
+/// 
+/// This traversal -- suitably elaborated to handle certain details --
+/// is the first and simplest thing UsdLuxLightListAPI provides.
+/// UsdLuxLightListAPI::ComputeLightList() performs this traversal and returns
+/// all lights in the scene:
+/// 
+/// \code
+/// 01  UsdLuxLightListAPI listAPI(stage->GetPseudoRoot());
+/// 02  SdfPathVector lights = listAPI.ComputeLightList();
+/// \endcode
+/// 
+/// \section UsdLuxLightListAPI_LightList Publishing a Cached Light List
+/// 
+/// Consider a USD client that needs to quickly discover lights but
+/// wants to defer loading payloads and traversing the entire scene
+/// where possible, and is willing to do up-front computation and
+/// caching to achieve that.
+/// 
+/// UsdLuxLightListAPI provides a way to cache the computed light list,
+/// by publishing the list of lights onto prims in the model
+/// hierarchy.  Consider a big set that contains lights:
+/// 
+/// \code
+/// 01  def Xform "BigSetWithLights" (
+/// 02      kind = "assembly"
+/// 03      payload = @BigSetWithLights.usd@   // Heavy payload
+/// 04  ) {
+/// 05      // Pre-computed, cached list of lights inside payload
+/// 06      rel lightList = [
+/// 07          <./Lights/light_1>,
+/// 08          <./Lights/light_2>,
+/// 09          ...
+/// 10      ]
+/// 11      token lightList:cacheBehavior = "consumeAndContinue";
+/// 12  }
+/// \endcode
+/// 
+/// The lightList relationship encodes a set of lights, and the
+/// lightList:cacheBehavior property provides fine-grained
+/// control over how to use that cache.  (See details below.)
+/// 
+/// The cache can be created by first invoking
+/// ComputeLightList(ComputeModeIgnoreCache) to pre-compute the list
+/// and then storing the result with UsdLuxLightListAPI::StoreLightList().
+/// 
+/// To enable efficient retrieval of the cache, it should be stored
+/// on a model hierarchy prim.  Furthermore, note that while you can
+/// use a UsdLuxLightListAPI bound to the pseudo-root prim to query the
+/// lights (as in the example above) because it will perform a
+/// traversal over descendants, you cannot store the cache back to the
+/// pseduo-root prim.
+/// 
+/// To consult the cached list, we invoke
+/// ComputeLightList(ComputeModeConsultModelHierarchyCache):
+/// 
+/// \code
+/// 01  // Find and load all lights, using lightList cache where available
+/// 02  UsdLuxLightListAPI list(stage->GetPseudoRoot());
+/// 03  SdfPathSet lights = list.ComputeLightList(
+/// 04      UsdLuxLightListAPI::ComputeModeConsultModelHierarchyCache);
+/// 05  stage.LoadAndUnload(lights, SdfPathSet());
+/// \endcode
+/// 
+/// In this mode, ComputeLightList() will traverse the model
+/// hierarchy, accumulating cached light lists.
+/// 
+/// \section UsdLuxLightListAPI_CacheBehavior Controlling Cache Behavior
+/// 
+/// The lightList:cacheBehavior property gives additional fine-grained
+/// control over cache behavior:
+/// 
+/// \li The fallback value, "ignore", indicates that the lightList should
+/// be disregarded.  This provides a way to invalidate cache entries.
+/// Note that unless "ignore" is specified, a lightList with an empty
+/// list of targets is considered a cache indicating that no lights
+/// are present.
+/// 
+/// \li The value "consumeAndContinue" indicates that the cache should
+/// be consulted to contribute lights to the scene, and that recursion
+/// should continue down the model hierarchy in case additional lights
+/// are added as descedants. This is the default value established when
+/// StoreLightList() is invoked. This behavior allows the lights within
+/// a large model, such as the BigSetWithLights example above, to be
+/// published outside the payload, while also allowing referencing and
+/// layering to add additional lights over that set.
+/// 
+/// \li The value "consumeAndHalt" provides a way to terminate recursive
+/// traversal of the scene for light discovery. The cache will be
+/// consulted but no descendant prims will be examined.
+/// 
+/// \section UsdLuxLightListAPI_Instancing Instancing
+/// 
+/// Where instances are present, UsdLuxLightListAPI::ComputeLightList() will
+/// return the instance-unique paths to any lights discovered within
+/// those instances.  Lights within a UsdGeomPointInstancer will
+/// not be returned, however, since they cannot be referred to
+/// solely via paths.
 /// 
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
@@ -62,7 +177,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdLuxTokens->rightHanded
 /// as the value.
 ///
-class UsdLuxListAPI : public UsdAPISchemaBase
+class UsdLuxLightListAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -70,26 +185,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::SingleApplyAPI;
 
-    /// Construct a UsdLuxListAPI on UsdPrim \p prim .
-    /// Equivalent to UsdLuxListAPI::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdLuxLightListAPI on UsdPrim \p prim .
+    /// Equivalent to UsdLuxLightListAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdLuxListAPI(const UsdPrim& prim=UsdPrim())
+    explicit UsdLuxLightListAPI(const UsdPrim& prim=UsdPrim())
         : UsdAPISchemaBase(prim)
     {
     }
 
-    /// Construct a UsdLuxListAPI on the prim held by \p schemaObj .
-    /// Should be preferred over UsdLuxListAPI(schemaObj.GetPrim()),
+    /// Construct a UsdLuxLightListAPI on the prim held by \p schemaObj .
+    /// Should be preferred over UsdLuxLightListAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdLuxListAPI(const UsdSchemaBase& schemaObj)
+    explicit UsdLuxLightListAPI(const UsdSchemaBase& schemaObj)
         : UsdAPISchemaBase(schemaObj)
     {
     }
 
     /// Destructor.
     USDLUX_API
-    virtual ~UsdLuxListAPI();
+    virtual ~UsdLuxLightListAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -98,17 +213,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdLuxListAPI holding the prim adhering to this
+    /// Return a UsdLuxLightListAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdLuxListAPI(stage->GetPrimAtPath(path));
+    /// UsdLuxLightListAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDLUX_API
-    static UsdLuxListAPI
+    static UsdLuxLightListAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
@@ -133,11 +248,11 @@ public:
     CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "ListAPI" to the 
+    /// This information is stored by adding "LightListAPI" to the 
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     /// 
-    /// \return A valid UsdLuxListAPI object is returned upon success. 
-    /// An invalid (or empty) UsdLuxListAPI object is returned upon 
+    /// \return A valid UsdLuxLightListAPI object is returned upon success. 
+    /// An invalid (or empty) UsdLuxLightListAPI object is returned upon 
     /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
     /// resulting in failure. 
     /// 
@@ -148,7 +263,7 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDLUX_API
-    static UsdLuxListAPI 
+    static UsdLuxLightListAPI 
     Apply(const UsdPrim &prim);
 
 protected:

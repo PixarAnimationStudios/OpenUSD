@@ -35,9 +35,9 @@ class TestUsdLuxListAPI(unittest.TestCase):
             Usd.Stage.LoadNone) )
 
     def _test(self, stage):
-        listAPI = UsdLux.ListAPI(stage.GetPrimAtPath('/World'))
-        consult = UsdLux.ListAPI.ComputeModeConsultModelHierarchyCache
-        ignore = UsdLux.ListAPI.ComputeModeIgnoreCache
+        listAPI = UsdLux.LightListAPI(stage.GetPrimAtPath('/World'))
+        consult = UsdLux.LightListAPI.ComputeModeConsultModelHierarchyCache
+        ignore = UsdLux.LightListAPI.ComputeModeIgnoreCache
 
         # no cache initially
         self.assertEqual(len(listAPI.GetLightListRel().GetTargets()), 0)

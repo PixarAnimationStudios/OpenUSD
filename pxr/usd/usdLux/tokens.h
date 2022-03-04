@@ -84,11 +84,11 @@ struct UsdLuxTokensType {
     const TfToken collectionShadowLinkIncludeRoot;
     /// \brief "consumeAndContinue"
     /// 
-    /// Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
+    /// Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr(), Possible value for UsdLuxLightListAPI::GetLightListCacheBehaviorAttr()
     const TfToken consumeAndContinue;
     /// \brief "consumeAndHalt"
     /// 
-    /// Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
+    /// Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr(), Possible value for UsdLuxLightListAPI::GetLightListCacheBehaviorAttr()
     const TfToken consumeAndHalt;
     /// \brief "cubeMapVerticalCross"
     /// 
@@ -132,7 +132,7 @@ struct UsdLuxTokensType {
     const TfToken guideRadius;
     /// \brief "ignore"
     /// 
-    /// Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr()
+    /// Possible value for UsdLuxListAPI::GetLightListCacheBehaviorAttr(), Possible value for UsdLuxLightListAPI::GetLightListCacheBehaviorAttr()
     const TfToken ignore;
     /// \brief "independent"
     /// 
@@ -264,11 +264,11 @@ struct UsdLuxTokensType {
     const TfToken lightLink;
     /// \brief "lightList"
     /// 
-    /// UsdLuxListAPI
+    /// UsdLuxListAPI, UsdLuxLightListAPI
     const TfToken lightList;
     /// \brief "lightList:cacheBehavior"
     /// 
-    /// UsdLuxListAPI
+    /// UsdLuxListAPI, UsdLuxLightListAPI
     const TfToken lightListCacheBehavior;
     /// \brief "light:materialSyncMode"
     /// 
