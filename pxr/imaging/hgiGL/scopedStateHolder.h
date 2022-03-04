@@ -101,6 +101,8 @@ private:
     bool _restoreFramebufferSRGB;
     bool _restoreConservativeRaster;
     std::vector<bool> _restoreClipDistances;
+    bool _restoreMultiSample;
+    bool _restorePointSmooth;
 };
 
 

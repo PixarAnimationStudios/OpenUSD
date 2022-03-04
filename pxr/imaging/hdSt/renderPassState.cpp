@@ -689,6 +689,16 @@ HdStRenderPassState::Bind(HgiCapabilities const &hgiCapabilities)
             glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
         }
     }
+
+    if (_multiSampleEnabled) {
+        glEnable(GL_MULTISAMPLE);
+    } else {
+        glDisable(GL_MULTISAMPLE);
+        // If not using GL_MULTISAMPLE, use GL_POINT_SMOOTH to render points as 
+        // circles instead of square.
+        // XXX Switch points rendering to emit quad with FS that draws circle.
+        glEnable(GL_POINT_SMOOTH);
+    }
 }
 
 void
@@ -729,6 +739,9 @@ HdStRenderPassState::Unbind(HgiCapabilities const &hgiCapabilities)
     if (hgiCapabilities.IsSet(HgiDeviceCapabilitiesBitsConservativeRaster)) {
         glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
     }
+
+    glEnable(GL_MULTISAMPLE);
+    glDisable(GL_POINT_SMOOTH);
 }
 
 void
@@ -1017,6 +1030,8 @@ void
 HdStRenderPassState::_InitMultiSampleState(
     HgiMultiSampleState * multiSampleState) const
 {
+    multiSampleState->multiSampleEnable = _multiSampleEnabled;
+
     if (_alphaToCoverageEnabled) {
         multiSampleState->alphaToCoverageEnable = true;
         multiSampleState->alphaToOneEnable = true;
@@ -1098,7 +1113,8 @@ HdStRenderPassState::GetGraphicsPipelineHash() const
         _colorMaskUseDefault,
         _useMultiSampleAov,
         _conservativeRasterizationEnabled,
-        GetClipPlanes().size());
+        GetClipPlanes().size(),
+        _multiSampleEnabled);
 }
 
 

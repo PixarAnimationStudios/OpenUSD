@@ -119,6 +119,9 @@ inline bool operator!=(
 /// Properties to configure multi sampling.
 ///
 /// <ul>
+/// <li>multiSampleEnable:
+///   When enabled and sampleCount and attachments match and allow for it, use 
+///   multi-sampling.</li>
 /// <li>alphaToCoverageEnable:
 ///   Fragment's color.a determines coverage (screen door transparency).</li>
 /// <li>alphaToOneEnable:
@@ -134,6 +137,7 @@ struct HgiMultiSampleState
     HGI_API
     HgiMultiSampleState();
 
+    bool multiSampleEnable;
     bool alphaToCoverageEnable;
     bool alphaToOneEnable;
     HgiSampleCount sampleCount;

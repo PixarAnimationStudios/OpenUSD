@@ -86,6 +86,7 @@ HdRenderPassState::HdRenderPassState()
     , _conservativeRasterizationEnabled(false)
     , _stepSize(0.f)
     , _stepSizeLighting(0.f)
+    , _multiSampleEnabled(true)
 {
 }
 
@@ -502,6 +503,12 @@ HdRenderPassState::SetColorMasks(
     std::vector<HdRenderPassState::ColorMask> const& masks)
 {
     _colorMasks = masks;
+}
+
+void
+HdRenderPassState::SetMultiSampleEnabled(bool enabled)
+{
+    _multiSampleEnabled = enabled;
 }
 
 GfVec2f

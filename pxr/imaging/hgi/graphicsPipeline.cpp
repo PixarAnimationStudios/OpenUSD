@@ -74,7 +74,8 @@ bool operator!=(
 }
 
 HgiMultiSampleState::HgiMultiSampleState()
-    : alphaToCoverageEnable(false)
+    : multiSampleEnable(true)
+    , alphaToCoverageEnable(false)
     , alphaToOneEnable(false)
     , sampleCount(HgiSampleCount1)
 {
@@ -84,7 +85,8 @@ bool operator==(
     const HgiMultiSampleState& lhs,
     const HgiMultiSampleState& rhs)
 {
-    return lhs.alphaToCoverageEnable == rhs.alphaToCoverageEnable &&
+    return lhs.multiSampleEnable == rhs.multiSampleEnable &&
+           lhs.alphaToCoverageEnable == rhs.alphaToCoverageEnable &&
            lhs.alphaToOneEnable == rhs.alphaToOneEnable &&
            lhs.sampleCount == rhs.sampleCount;
 }
