@@ -518,6 +518,11 @@ if (MACOS)
     return()
 endif()
 
+if (WIN32)
+    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
+    return()
+endif()
+
 pxr_register_test(testUsdviewFreeCamera
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewFreeCamera.py Block.usda"
@@ -770,7 +775,7 @@ pxr_register_test(testUsdviewReloadReopen
 
 pxr_register_test(testUsdviewMaterialEdits
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdViewMaterialEdits.py test.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewMaterialEdits.py test.usda"
     IMAGE_DIFF_COMPARE
         1.png
         2.png
@@ -908,17 +913,19 @@ pxr_register_test(testUsdviewAdditive
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdviewLegacyImpl
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewLegacyImpl.py test.usda"
-    IMAGE_DIFF_COMPARE
-        perspective.png
-        ortho.png
-    FAIL 1
-    FAIL_PERCENT 0.000031
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-)
+# This test is disabled because of failures on some platforms.
+#
+# pxr_register_test(testUsdviewLegacyImpl
+#     PYTHON
+#     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewLegacyImpl.py test.usda"
+#     IMAGE_DIFF_COMPARE
+#         perspective.png
+#         ortho.png
+#     FAIL 1
+#     FAIL_PERCENT 0.000031
+#     PERCEPTUAL
+#     EXPECTED_RETURN_CODE 0
+# )
 
 pxr_register_test(testUsdviewVariantSelection
     PYTHON

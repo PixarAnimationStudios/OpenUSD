@@ -163,6 +163,10 @@ if (MACOS)
     return()
 endif()
 
+if (WIN32)
+    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
+    return()
+endif()
 
 #
 # Install all the test data
@@ -459,11 +463,6 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdImagingGLMaterialX
-    DEST testUsdImagingGLMaterialX
-)
-
-pxr_install_test_dir(
     SRC testenv/testUsdImagingGLInstancePrimvars
     DEST testUsdImagingGLInstancePrimvars
 )
@@ -476,11 +475,6 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdImagingGLVolumeMaterial
     DEST testUsdImagingGLVolumeMaterial
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdImagingGLVdbVolume
-    DEST testUsdImagingGLVdbVolume
 )
 
 pxr_install_test_dir(
@@ -903,7 +897,7 @@ pxr_register_test(testUsdImagingGLDomeLight_multi
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -frameAll -offscreen -lighting -sceneLights -shading smooth -complexity 1.3 -stage multiDomeLights.usda -write testUsdImagingGLDomeLight_multi.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLDomeLight_multi.png
-    FAIL 0.01
+    FAIL 1
     FAIL_PERCENT 0.001
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -3161,6 +3155,11 @@ pxr_register_test(testUsdImagingGLMaterialTag
 )
 
 if (MATERIALX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
+    pxr_install_test_dir(
+        SRC testenv/testUsdImagingGLMaterialX
+        DEST testUsdImagingGLMaterialX
+    )
+
     pxr_register_test(testUsdImagingGLMaterialX_mxSimple
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -frameAll -stage mxSimple.usda -write mxSimple.png"
         IMAGE_DIFF_COMPARE
@@ -3956,6 +3955,16 @@ pxr_register_test(testUsdImagingGLAovVisualization_Storm_depth
 
 # Register Embree Specific Tests
 if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
+    pxr_install_test_dir(
+        SRC testenv/testUsdImagingGLHdEmbree
+        DEST testUsdImagingGLHdEmbree
+    )
+
+    pxr_install_test_dir(
+        SRC testenv/testUsdImagingGLHdEmbreePickAndHighlight
+        DEST testUsdImagingGLHdEmbreePickAndHighlight
+    )
+
     pxr_register_test(testUsdImagingGLHdEmbreePickAndHighlight
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPickAndHighlight -renderer HdEmbreeRendererPlugin -offscreen -frameAll -stage test.usda -write testUsdImagingGLHdEmbreePickAndHighlight.png"
         IMAGE_DIFF_COMPARE
@@ -4006,10 +4015,11 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 0 640 480 -displayWindow 0 0 640 480 -write testUsdImagingGLFramingEmbree1.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLFramingEmbree1.png
-        FAIL 0.01
-        FAIL_PERCENT 0.04
+        FAIL 1
+        FAIL_PERCENT 0.1
         WARN 0.02
         WARN_PERCENT 0.02
+        PERCEPTUAL
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLFraming
         ENV
@@ -4023,10 +4033,11 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 40 640 430 -displayWindow 0 0 1280 960 -write testUsdImagingGLFramingEmbree2.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLFramingEmbree2.png
-        FAIL 0.01
-        FAIL_PERCENT 0.04
+        FAIL 1
+        FAIL_PERCENT 0.1
         WARN 0.02
         WARN_PERCENT 0.02
+        PERCEPTUAL
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLFraming
         ENV
@@ -4040,10 +4051,11 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 0 640 480 -displayWindow 0 0 320 480 -write testUsdImagingGLFramingEmbree3.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLFramingEmbree3.png
-        FAIL 0.01
-        FAIL_PERCENT 0.04
+        FAIL 1
+        FAIL_PERCENT 0.1
         WARN 0.02
         WARN_PERCENT 0.02
+        PERCEPTUAL
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLFraming
         ENV
@@ -4057,10 +4069,11 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 0 640 480 -displayWindow 0 0 320 480 -pixelAspectRatio 1.5 -write testUsdImagingGLFramingEmbree4.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLFramingEmbree4.png
-        FAIL 0.01
-        FAIL_PERCENT 0.04
+        FAIL 1
+        FAIL_PERCENT 0.1
         WARN 0.02
         WARN_PERCENT 0.02
+        PERCEPTUAL
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLFraming
         ENV
@@ -4074,10 +4087,11 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 25 136 367 298 -displayWindow 50 80 320 400 -write testUsdImagingGLFramingEmbree5.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLFramingEmbree5.png
-        FAIL 0.01
-        FAIL_PERCENT 0.04
+        FAIL 1
+        FAIL_PERCENT 0.1
         WARN 0.02
         WARN_PERCENT 0.02
+        PERCEPTUAL
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLFraming
         ENV
@@ -4091,10 +4105,11 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /OrthoCam -dataWindow 25 136 367 298 -displayWindow 50 80 320 400 -write testUsdImagingGLFramingEmbree6.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLFramingEmbree6.png
-        FAIL 0.01
-        FAIL_PERCENT 0.04
+        FAIL 1
+        FAIL_PERCENT 0.1
         WARN 0.02
         WARN_PERCENT 0.02
+        PERCEPTUAL
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLFraming
         ENV
@@ -4108,9 +4123,10 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
         IMAGE_DIFF_COMPARE
             testUsdImagingGLAovVisualization_Embree_depth.png
         FAIL 0.05
-        FAIL_PERCENT 0.005
+        FAIL_PERCENT 0.025
         WARN 0.025
         WARN_PERCENT 0.005
+        PERCEPTUAL
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLAovVisualization
         ENV
@@ -4125,7 +4141,7 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
         IMAGE_DIFF_COMPARE
             testUsdImagingGLAovVisualization_Embree_primId.png
         FAIL 0.05
-        FAIL_PERCENT 0.005
+        FAIL_PERCENT 0.025
         WARN 0.025
         WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
@@ -4142,7 +4158,7 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
         IMAGE_DIFF_COMPARE
             testUsdImagingGLAovVisualization_Embree_normal.png
         FAIL 0.05
-        FAIL_PERCENT 0.005
+        FAIL_PERCENT 0.025
         WARN 0.025
         WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
@@ -4301,6 +4317,11 @@ endif()
 
 # Register OpenVDB Specific Tests
 if (OPENVDB_FOUND AND ${PXR_ENABLE_OPENVDB_SUPPORT})
+    pxr_install_test_dir(
+        SRC testenv/testUsdImagingGLVdbVolume
+        DEST testUsdImagingGLVdbVolume
+    )
+    
     pxr_register_test(testUsdImagingGLVdbVolume
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -rendererAov color -offscreen -stage vdbVolume.usda -clear 0 0 0 1 -lighting -camera /main_cam -write testUsdImagingGLVdbVolume.png"
         IMAGE_DIFF_COMPARE
