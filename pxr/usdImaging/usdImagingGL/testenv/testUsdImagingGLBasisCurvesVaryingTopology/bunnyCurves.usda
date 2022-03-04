@@ -2,6 +2,7 @@
 (
     endTimeCode = 5
     startTimeCode = 1
+    upAxis = "Z"
 )
 
 # A bunny made with basis curves that has a varying topology, including an empty
