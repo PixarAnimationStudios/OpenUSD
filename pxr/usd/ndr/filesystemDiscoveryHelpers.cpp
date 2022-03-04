@@ -47,13 +47,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 // \return `true` if the search should continue on to other paths in the
 //         search path
 static bool
-FsHelpersExamineFiles(
+_FsHelpersExamineFiles(
     NdrNodeDiscoveryResultVec* foundNodes,
     NdrStringSet* foundNodesWithTypes,
     const NdrStringVec& allowedExtensions,
     const NdrDiscoveryPluginContext* context,
     const std::string& dirPath,
-    const NdrStringVec& dirFileNames)
+    const NdrStringVec& dirFileNames,
+    const NdrParseIdentifierFn &parseIdentifierFn)
 {
     for (const std::string& fileName : dirFileNames) {
         std::string extension = TfStringToLower(TfGetExtension(fileName));
@@ -68,8 +69,9 @@ FsHelpersExamineFiles(
         if (extIter != allowedExtensions.end()) {
             // Found a node file w/ allowed extension
             std::string uri = TfStringCatPaths(dirPath, fileName);
-            std::string identifier = TfStringGetBeforeSuffix(fileName, '.');
-            std::string identifierAndType = identifier + "-" + extension;
+            TfToken identifier(TfStringGetBeforeSuffix(fileName, '.'));
+            std::string identifierAndType = 
+                identifier.GetString() + "-" + extension;
 
             // Don't allow duplicates. A "duplicate" is considered to be a node
             // with the same name AND discovery type.
@@ -77,24 +79,38 @@ FsHelpersExamineFiles(
                 TF_DEBUG(NDR_DISCOVERY).Msg(
                     "Found a duplicate node with identifier [%s] "
                     "and type [%s] at URI [%s]; ignoring.\n", 
-                    identifier.c_str(), extension.c_str(), uri.c_str());
+                    identifier.GetText(), extension.c_str(), uri.c_str());
+                continue;
+            }
+
+            TfToken family, name;
+            NdrVersion version;
+            const bool parsed = parseIdentifierFn ?
+                parseIdentifierFn(identifier, &family, &name, &version) :
+                NdrFsHelpersSplitShaderIdentifier(
+                    identifier, &family, &name, &version);
+            if (!parsed) {
+                TF_WARN("Could not parse the family, name, and version "
+                        "from shader indentifier '%s' for shader file '%s'. "
+                        "Skipping.", 
+                        identifier.GetText(), uri.c_str());
                 continue;
             }
 
             const auto discoveryType = TfToken(extension);
             foundNodes->emplace_back(
                 // Identifier
-                NdrIdentifier(identifier),
+                identifier,
 
                 // Version.  Use a default version for the benefit of
                 // naive clients.
-                NdrVersion().GetAsDefault(),
+                version.GetAsDefault(),
 
                 // Name
-                identifier,
+                name,
 
                 // Family
-                TfToken(),
+                family,
 
                 // Discovery type
                 discoveryType,
@@ -209,7 +225,8 @@ NdrFsHelpersDiscoverNodes(
     const NdrStringVec& searchPaths,
     const NdrStringVec& allowedExtensions,
     bool followSymlinks,
-    const NdrDiscoveryPluginContext* context)
+    const NdrDiscoveryPluginContext* context,
+    const NdrParseIdentifierFn &parseIdentifierFn)
 {
     NdrNodeDiscoveryResultVec foundNodes;
 
@@ -220,19 +237,15 @@ NdrFsHelpersDiscoverNodes(
     // Cache the calls to Ar's `Resolve()`
     ArResolverScopedCache resolverCache;
 
-    _WalkDirs(
-        searchPaths,
-        std::bind(
-            &FsHelpersExamineFiles,
-            &foundNodes,
-            &foundNodesWithTypes,
-            std::ref(allowedExtensions),
-            context,
-            std::placeholders::_1,
-            std::placeholders::_3
-        ),
-        followSymlinks
-    );
+    auto discoverNodesFn = [&](const std::string& dirPath,
+                               NdrStringVec *unused, 
+                               const NdrStringVec& dirFileNames) {
+        return _FsHelpersExamineFiles(
+            &foundNodes, &foundNodesWithTypes, allowedExtensions,
+            context, dirPath, dirFileNames, parseIdentifierFn);
+    };
+
+    _WalkDirs(searchPaths, discoverNodesFn, followSymlinks);
 
     return foundNodes;
 }

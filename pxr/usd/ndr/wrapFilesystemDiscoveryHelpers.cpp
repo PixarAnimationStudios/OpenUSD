@@ -51,8 +51,7 @@ _WrapFsHelpersDiscoverNodes(
 static object
 _WrapFsHelpersSplitShaderIdentifier(const TfToken &identifier)
 {
-    TfToken family;
-    TfToken name;
+    TfToken family, name;
     NdrVersion version;
     if (NdrFsHelpersSplitShaderIdentifier(identifier,
             &family, &name, &version)) {

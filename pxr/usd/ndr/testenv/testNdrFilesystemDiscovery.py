@@ -44,12 +44,36 @@ class TestNdrFilesystemDiscovery(unittest.TestCase):
         fsPlugin = Ndr._FilesystemDiscoveryPlugin()
         context = Ndr._FilesystemDiscoveryPlugin.Context()
         discoveryResults = fsPlugin.DiscoverNodes(context)
-        discoveredNodeNames = [result.name for result in discoveryResults]
+        discoveredNodeNames = [
+            (result.identifier, result.name, result.family, result.version) 
+            for result in discoveryResults]
 
-        assert len(discoveryResults) == 6
+        assert len(discoveryResults) == 13
         assert set(discoveredNodeNames) == {
-            "TestNodeARGS", "TestNodeOSL", "NestedTestARGS", "NestedTestOSL",
-            "TestNodeSameName"
+            ("TestNodeARGS", "TestNodeARGS", "TestNodeARGS", 
+             Ndr.Version()),
+            ("TestNodeOSL", "TestNodeOSL", "TestNodeOSL", 
+             Ndr.Version()),
+            ("NestedTestARGS", "NestedTestARGS", "NestedTestARGS", 
+             Ndr.Version()),
+            ("NestedTestOSL", "NestedTestOSL", "NestedTestOSL", 
+             Ndr.Version()),
+            ("TestNodeSameName", "TestNodeSameName", "TestNodeSameName", 
+             Ndr.Version()),
+            ("Primvar", "Primvar", "Primvar", 
+             Ndr.Version()),
+            ("Primvar_float", "Primvar_float", "Primvar", 
+             Ndr.Version()),
+            ("Primvar_float_3", "Primvar_float", "Primvar", 
+             Ndr.Version(3, 0)),
+            ("Primvar_float_3_4", "Primvar_float", "Primvar", 
+             Ndr.Version(3, 4)),
+            ("Primvar_float2", "Primvar_float2", "Primvar", 
+             Ndr.Version()),
+            ("Primvar_float2_3", "Primvar_float2", "Primvar", 
+             Ndr.Version(3, 0)),
+            ("Primvar_float2_3_4", "Primvar_float2", "Primvar", 
+             Ndr.Version(3, 4))
         }
 
         # Verify that the discovery files helper returns the same URIs as 
@@ -57,7 +81,7 @@ class TestNdrFilesystemDiscovery(unittest.TestCase):
         # extensions.
         discoveryUris = Ndr.FsHelpersDiscoverFiles(
             [os.getcwd()], ["oso","args"], True)
-        assert len(discoveryResults) == 6
+        assert len(discoveryResults) == 13
         for result, uris in zip(discoveryResults, discoveryUris):
             assert result.uri == uris.uri
             assert result.resolvedUri == result.resolvedUri

@@ -43,6 +43,14 @@ class NdrDiscoveryPluginContext;
 /// in a large chunk of the functionality.
 ///
 
+/// Type of a function that can be used to parse a discovery result's identifier
+/// into its family, name, and version.
+using NdrParseIdentifierFn = std::function<
+    bool (const TfToken &identifier, 
+          TfToken *family,
+          TfToken *name,
+          NdrVersion *version)>;
+
 /// Given a shader's \p identifier token, computes the corresponding 
 /// NdrNode's family name, implementation name and shader version 
 /// (as NdrVersion).
@@ -68,22 +76,33 @@ NdrFsHelpersSplitShaderIdentifier(
     TfToken *name,
     NdrVersion *version);
 
-/// Walks the specified search paths, optionally following symlinks. Paths
-/// are walked recursively, and each directory has `FsHelpersExamineFiles()`
-/// called on it. Only files that match one of the provided extensions (case
-/// insensitive) are candidates for being turned into `NdrDiscoveryResult`s.
 /// Returns a vector of discovery results that have been found while walking
-/// the search paths.  In each result the name and identifier will be the
-/// same, the version will be invalid and default, and the family will
-/// be empty.  The caller is expected to adjust these as appropriate.  A
-/// naive client with no versions and no family will work correctly.
+/// the given search paths.
+///
+/// Each path in \p searchPaths is walked recursively, optionally following 
+/// symlinks if \p followSymlinks is true, looking for files that match one of 
+/// the provided \p allowedExtensions. These files are represented in the 
+/// discovery results that are returned.
+///
+/// The identifier for each discovery result is the base name of the represented
+/// file with the extension removed. The \p parseIdentifierFn is used to parse 
+/// the family, name, and version from the identifier that will set in the 
+/// file's discovery result. By default, NdrFsHelpersSplitShaderIdentifier is 
+/// used to parse the identifier, but the family/name/version parsing behavior 
+/// can be changed by passing a custom parseIdentifierFn. Any identifiers that 
+/// cannot be parsed by whatever the parseIdentifierFn will be considered
+/// invalid and not added as a discovery result. Note that the version for 
+/// every discovery result returned by this function will be naively marked as 
+/// being default even if multiple versions with the same name are found.
 NDR_API
 NdrNodeDiscoveryResultVec
 NdrFsHelpersDiscoverNodes(
     const NdrStringVec& searchPaths,
     const NdrStringVec& allowedExtensions,
     bool followSymlinks = true,
-    const NdrDiscoveryPluginContext* context = nullptr
+    const NdrDiscoveryPluginContext* context = nullptr,
+    const NdrParseIdentifierFn &parseIdentifierFn = 
+        NdrFsHelpersSplitShaderIdentifier
 );
 
 /// Struct for holding a URI and its resolved URI for a file discovered
