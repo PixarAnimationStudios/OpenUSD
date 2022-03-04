@@ -1,25 +1,25 @@
-#!/pxrpythonsubst                                                                   
-#                                                                                   
-# Copyright 2017 Pixar                                                              
-#                                                                                   
-# Licensed under the Apache License, Version 2.0 (the "Apache License")             
-# with the following modification; you may not use this file except in              
-# compliance with the Apache License and the following modification to it:          
-# Section 6. Trademarks. is deleted and replaced with:                              
-#                                                                                   
-# 6. Trademarks. This License does not grant permission to use the trade            
-#    names, trademarks, service marks, or product names of the Licensor             
-#    and its affiliates, except as required to comply with Section 4(c) of          
-#    the License and to reproduce the content of the NOTICE file.                   
-#                                                                                   
-# You may obtain a copy of the Apache License at                                    
-#                                                                                   
-#     http://www.apache.org/licenses/LICENSE-2.0                                    
-#                                                                                   
-# Unless required by applicable law or agreed to in writing, software               
-# distributed under the Apache License with the above modification is               
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY          
-# KIND, either express or implied. See the Apache License for the specific          
+#!/pxrpythonsubst                                                              
+#                                                                              
+# Copyright 2017 Pixar                                                         
+#                                                                              
+# Licensed under the Apache License, Version 2.0 (the "Apache License")        
+# with the following modification; you may not use this file except in         
+# compliance with the Apache License and the following modification to it:     
+# Section 6. Trademarks. is deleted and replaced with:                         
+#                                                                              
+# 6. Trademarks. This License does not grant permission to use the trade       
+#    names, trademarks, service marks, or product names of the Licensor        
+#    and its affiliates, except as required to comply with Section 4(c) of     
+#    the License and to reproduce the content of the NOTICE file.              
+#                                                                              
+# You may obtain a copy of the Apache License at                               
+#                                                                              
+#     http://www.apache.org/licenses/LICENSE-2.0                               
+#                                                                              
+# Unless required by applicable law or agreed to in writing, software          
+# distributed under the Apache License with the above modification is          
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY     
+# KIND, either express or implied. See the Apache License for the specific     
 # language governing permissions and limitations under the Apache License. 
 
 from pxr import Sdf, Usd, UsdGeom, UsdShade
@@ -27,36 +27,44 @@ import unittest
 
 class TestUsdShadeMaterialAuthoring(unittest.TestCase):
     def test_Basic(self):
-        # There are a number of ways we could vary shading between wet and dry...
+
+        shadingDefs = Sdf.Path("/ShadingDefs")
+
+        # There are a number of ways we could vary shading between wet and dry.
         # We're choosing the biggest hammer, which is to completely swap out
-        # the surface shader (which is how it has been done in our pipeline)
+        # the surface shader (which is how it has been done in Pixar's pipeline)
         shadeVariations = ["Wet", "Dry"]
 
-        # For each "base" we will have a Material, and a single Shader as the surface.
-        # In reality there's likely be many more shading components/prims feeding
-        # the surfaces.
+        # For each "base" we will have a Material, and a single Shader as the
+        # surface.  In reality there's likely be many more shading
+        # components/prims feeding the surfaces.
         materialBases = ["Hair", "Skin", "Nails"]
 
-        shadersPath = Sdf.Path("/ShadingDefs/Shaders")
-        materialsPath   = Sdf.Path("/ShadingDefs/Materials")
+        # We often create Shaders "inline" under the Material that uses them,
+        # but here we put all Shaders in a common, external prim that will
+        # be referenced into each Material; since we will be creating inline 
+        # VariantSets for the materials, this structure ensures the Shader
+        # definitions are weaker than any of the Variant opinions.
+        shadersPath   = shadingDefs.AppendChild("Shaders")
+        materialsPath = shadingDefs.AppendChild("Materials")
 
-        def MakeSurfacePath(base, variant, prop = None):
-            retval = shadersPath.AppendChild(base + variant + "Surface")
-            if prop:
-                retval = retval.AppendProperty(prop)
-            return retval
+        # If `referencedPropName` is provided, construct a path to that
+        # prop in the *referenced location of the implied shader.  Otherwise,
+        # return a path to the _definition_ for the shader.
+        def MakeShadingPath(base, variant, category, referencedPropName = None):
+            if referencedPropName:
+                return materialsPath.AppendChild(base + "Material")\
+                                    .AppendChild(base + variant + category)\
+                                    .AppendProperty(referencedPropName)
+            else:
+                return shadersPath.AppendChild(base + variant + category)
 
-        def MakeDisplacementPath(base, variant, prop = None):
-            retval = shadersPath.AppendChild(base + variant + "Disp")
-            if prop:
-                retval = retval.AppendProperty(prop)
-            return retval
+        def MakeSurfacePath(base, variant, referencedPropName = None):
+            return MakeShadingPath(base, variant, "Surface", referencedPropName)
 
-        def MakePatternPath(base, variant, prop = None):
-            retval = shadersPath.AppendChild(base + variant + "Pattern")
-            if prop:
-                retval = retval.AppendProperty(prop)
-            return retval
+        def MakeDisplacementPath(base, variant, referencedPropName = None):
+            return MakeShadingPath(base, variant, "Displacement", 
+                                   referencedPropName)
 
         def MakeMaterialPath(base, prop = None):
             retval = materialsPath.AppendChild(base + "Material")
@@ -64,110 +72,124 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
                 retval = retval.AppendProperty(prop)
             return retval
 
-        #def CreateTerminal(material, name, targetPath):
-            #terminalRel = material.GetPrim().CreateRelationship("terminal:%s" % name)
-            #terminalRel.SetTargets([targetPath,]);
-            #return terminalRel
-
         def SetupShading(stage):
             # First create the shading prims
             UsdGeom.Scope.Define(stage, shadersPath)
             UsdGeom.Scope.Define(stage, materialsPath)
-            # .. and as we create each surface, bind the associated material's variant to it
+
             allMaterials = []
             for material in materialBases:
+                # Create and remember each Material, and reference in the
+                # complete set of shaders onto each Material prim
                 materialPrim = UsdShade.Material.Define(stage, 
                         MakeMaterialPath(material))
+                materialPrim.GetPrim().\
+                    GetReferences().AddInternalReference(shadersPath)
                 allMaterials.append(materialPrim.GetPrim())
+
                 for variant in shadeVariations:
+                    # .. and as we create each surface, bind the associated
+                    # material's variant to it
                     surface = UsdShade.Shader.Define(
                         stage, MakeSurfacePath(material, variant))
-                    colorOut = surface.CreateOutput("out", 
-                            Sdf.ValueTypeNames.Color3f)
+                    surfaceOut = surface.CreateOutput("surface", 
+                                                      Sdf.ValueTypeNames.Token)
 
                     disp = UsdShade.Shader.Define(
                         stage, MakeDisplacementPath(material, variant))
-                    dispOut = disp.CreateOutput('out', 
-                            Sdf.ValueTypeNames.Vector3f)
-
-                    pattern = UsdShade.Shader.Define(
-                        stage, MakePatternPath(material, variant))
-                    patternOut = pattern.CreateOutput("out", 
-                        Sdf.ValueTypeNames.FloatArray)
+                    dispOut = disp.CreateOutput("displacement", 
+                                                Sdf.ValueTypeNames.Token)
 
                     with materialPrim.GetEditContextForVariant(variant):
-                        surfaceOutput = materialPrim.CreateOutput("surf",
-                            colorOut.GetTypeName())
+                        surfaceOutput = materialPrim.CreateSurfaceOutput()
                         surfaceOutput.ConnectToSource(
-                            UsdShade.ConnectionSourceInfo(
-                                UsdShade.ConnectableAPI(colorOut.GetPrim()),
-                                colorOut.GetBaseName(), 
-                                UsdShade.AttributeType.Output))
+                            MakeSurfacePath(material, 
+                                            variant,
+                                            surfaceOut.GetFullName()))
 
-                        displacementOutput = materialPrim.CreateOutput(
-                                "disp", dispOut.GetTypeName())
-                        displacementOutput.ConnectToSource(dispOut)
+                        displacementOutput = materialPrim.\
+                                             CreateDisplacementOutput()
+                        displacementOutput.ConnectToSource(
+                            MakeDisplacementPath(material, 
+                                                 variant,
+                                                 dispOut.GetFullName()))
 
-                        patternOutput = materialPrim.CreateOutput("pattern", 
-                                patternOut.GetTypeName())
-                        patternOutput.ConnectToSource(patternOut)
-
+            # Change root prim to an over so it is not traversed by the stage
+            stage.GetPrimAtPath(shadingDefs).SetSpecifier(Sdf.SpecifierOver)
+            
             return allMaterials
 
         def ValidateMaterial(stage):
-            hairPrim = stage.GetPrimAtPath('/ModelShading/Materials/HairMaterial')
+            hairPath = Sdf.Path('/ModelShading/Materials/HairMaterial')
+            hairPrim = stage.GetPrimAtPath(hairPath)
             hairMaterial = UsdShade.Material(hairPrim)
             self.assertTrue(hairMaterial)
-            wetHairSurfPath = Sdf.Path('/ModelShading/Shaders/HairWetSurface.out')
-            wetHairDispPath = Sdf.Path('/ModelShading/Shaders/HairWetDisp.out')
-            wetHairPatternPath = Sdf.Path('/ModelShading/Shaders/HairWetPattern.out')
 
-            connectedSurface = hairMaterial.GetOutput('surf').GetConnectedSources()[0][0]
-            connectedSurfacePath = connectedSurface.source.GetPath().AppendProperty(
-                connectedSurface.sourceName)
-            self.assertEqual(connectedSurfacePath, wetHairSurfPath)
+            # Validate wet surface terminal connection
+            wetHairSurfPath = hairPath.AppendChild('HairWetSurface')\
+                                      .AppendProperty("outputs:surface")
+            surfaceTerminal = hairMaterial.GetSurfaceOutput()
+            self.assertTrue(surfaceTerminal.HasConnectedSource())
+            connectedSurfaceInfo = surfaceTerminal.GetConnectedSources()[0][0]
+            targetSurfacePath = UsdShade.Utils.GetConnectedSourcePath(connectedSurfaceInfo)
+            self.assertEqual(targetSurfacePath, wetHairSurfPath)
 
-            connectedDisplacement = hairMaterial.GetOutput('disp').GetConnectedSources()[0][0]
-            connectedDisplacementPath = connectedDisplacement.source.GetPath().AppendProperty(
-                connectedDisplacement.sourceName)
-            self.assertEqual(connectedDisplacementPath, wetHairDispPath)
 
-            connectedPattern = hairMaterial.GetOutput('pattern').GetConnectedSources()[0][0]
-            connectedPatternPath = connectedPattern.source.GetPath().AppendProperty(
-                connectedPattern.sourceName)
-            self.assertEqual(connectedPatternPath, wetHairPatternPath)
+            # Validate wet displacement terminal connection
+            wetHairDispPath = hairPath.AppendChild('HairWetDisplacement')\
+                                      .AppendProperty("outputs:displacement")
+            dispTerminal = hairMaterial.GetDisplacementOutput()
+            self.assertTrue(dispTerminal.HasConnectedSource())
+            connectedDispInfo = dispTerminal.GetConnectedSources()[0][0]
+            
+            targetDispPath = UsdShade.Utils.GetConnectedSourcePath(connectedDispInfo)
+            self.assertEqual(targetDispPath, wetHairDispPath)
 
-            # change the root-level variantSet, which should in turn change the Material's
-            self.assertTrue(rootPrim.GetVariantSets().SetSelection("materialVariant", "Dry"))
+
+            # change the root-level variantSet, which should in turn change
+            # the Material's
+            self.assertTrue(rootPrim\
+                            .GetVariantSets()\
+                            .SetSelection("materialVariant", "Dry"))
             self.assertTrue(hairMaterial)
-            dryHairSurfPath = Sdf.Path('/ModelShading/Shaders/HairDrySurface.out')
-            dryHairDispPath = Sdf.Path('/ModelShading/Shaders/HairDryDisp.out')
-            dryHairPatternPath = Sdf.Path('/ModelShading/Shaders/HairDryPattern.out')
 
-            connectedSurface = hairMaterial.GetOutput('surf').GetConnectedSources()[0][0]
-            connectedSurfacePath = connectedSurface.source.GetPath().AppendProperty(
-                connectedSurface.sourceName)
-            self.assertEqual(connectedSurfacePath, dryHairSurfPath)
+            # Validate dry surface terminal connection
+            dryHairSurfPath = hairPath.AppendChild('HairDrySurface')\
+                                      .AppendProperty("outputs:surface")
+            surfaceTerminal = hairMaterial.GetSurfaceOutput()
+            self.assertTrue(surfaceTerminal.HasConnectedSource())
+            connectedSurfaceInfo = surfaceTerminal.GetConnectedSources()[0][0]
+            
+            targetSurfacePath = UsdShade.Utils.GetConnectedSourcePath(connectedSurfaceInfo)
+            self.assertEqual(targetSurfacePath, dryHairSurfPath)
 
-            connectedDisplacement = hairMaterial.GetOutput('disp').GetConnectedSources()[0][0]
-            connectedDisplacementPath = connectedDisplacement.source.GetPath().AppendProperty(
-                connectedDisplacement.sourceName)
-            self.assertEqual(connectedDisplacementPath, dryHairDispPath)
 
-            connectedPattern = hairMaterial.GetOutput('pattern').GetConnectedSources()[0][0]
-            connectedPatternPath = connectedPattern.source.GetPath().AppendProperty(
-                connectedPattern.sourceName)
-            self.assertEqual(connectedPatternPath, dryHairPatternPath)
+            # Validate dry displacement terminal connection
+            dryHairDispPath = hairPath.AppendChild('HairDryDisplacement')\
+                                      .AppendProperty("outputs:displacement")
+            dispTerminal = hairMaterial.GetDisplacementOutput()
+            self.assertTrue(dispTerminal.HasConnectedSource())
+            connectedDispInfo = dispTerminal.GetConnectedSources()[0][0]
+            
+            targetDispPath = UsdShade.Utils.GetConnectedSourcePath(connectedDispInfo)
+            self.assertEqual(targetDispPath, dryHairDispPath)
 
-        fileName = "char_shading.usda"
-        stage = Usd.Stage.CreateNew(fileName)
+        def SetupStage(stage):
+            UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.y)
+            UsdGeom.SetStageMetersPerUnit(stage, 
+                                          UsdGeom.LinearUnits.centimeters)
+            
+            # Create this prim first, since it's the "entrypoint" to the
+            # layer, and we want it to appear at the top
+            rootPrim = stage.DefinePrim("/ModelShading")
+            stage.SetDefaultPrim(rootPrim)
+            return rootPrim
 
-        # Create this prim first, since it's the "entrypoint" to the layer, and
-        # we want it to appear at the top
-        rootPrim = stage.DefinePrim("/ModelShading")
+        stage = Usd.Stage.CreateNew("char_shading.usda")
+        rootPrim = SetupStage(stage)
 
-        # Next, create a tree that will "sit on top of ShadingDefs" to switch the
-        # materials in concert
+        # Next, create a tree that will "sit on top of ShadingDefs" to switch
+        # the materials in concert
         allMaterials = SetupShading(stage)
         bindingVariantRoot = stage.OverridePrim("/MaterialBindingVariants")
         UsdShade.Material.CreateMasterMaterialVariant(bindingVariantRoot, allMaterials)
@@ -175,30 +197,28 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
         # Finally, this is how we stitch them together into an interface.
         # This is the root prim that a client would target to pull in shading
         refs = rootPrim.GetReferences()
-        # XXX We need a better way of specifying self-references
-        refs.AddReference("./"+fileName, "/MaterialBindingVariants")
-        refs.AddReference("./"+fileName, "/ShadingDefs")
+        refs.AddInternalReference("/MaterialBindingVariants")
+        refs.AddInternalReference(shadingDefs)
 
-        stage.GetRootLayer().Save()
+        stage.Save()
 
         # Now let's do some validation that it performs as expected
         ValidateMaterial(stage)
 
 
-        # Now let's make a variation of the above in which we do the master variant
-        # on a composed stage in which rootPrim is already referencing the ShadingDefs,
-        # and operating on the composed Material prims
-        fileName = "char_shading_compact.usda"
-        stage = Usd.Stage.CreateNew(fileName)
+        # Now let's make a variation of the above in which we do the master
+        # variant on a composed stage in which rootPrim is already
+        # referencing the ShadingDefs, and operating on the composed Material
+        # prims
+        stage = Usd.Stage.CreateNew("char_shading_compact.usda")
+        rootPrim = SetupStage(stage)
 
-        # Create this prim first, since it's the "entrypoint" to the layer, and
-        # we want it to appear at the top
-        rootPrim = stage.DefinePrim("/ModelShading")
-
+        # Ignore the return value, since we do not process the materials in
+        # their authored namespace, in this version
         SetupShading(stage)
         # Reference the shading directly
         refs = rootPrim.GetReferences()
-        refs.AddReference("./"+fileName, "/ShadingDefs")
+        refs.AddInternalReference(shadingDefs)
 
         # Now pick up the newly composed material prims
         allMaterials = [ stage.GetPrimAtPath("/ModelShading/Materials/HairMaterial"),
@@ -207,7 +227,7 @@ class TestUsdShadeMaterialAuthoring(unittest.TestCase):
 
         UsdShade.Material.CreateMasterMaterialVariant(rootPrim, allMaterials)
 
-        stage.GetRootLayer().Save()
+        stage.Save()
 
         # Now let's do some validation that it performs as expected
         ValidateMaterial(stage)

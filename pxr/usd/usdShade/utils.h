@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usdShade/types.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/attribute.h"
 
 #include "pxr/base/tf/smallVector.h"
@@ -39,6 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdShadeInput;
 class UsdShadeOutput;
+struct UsdShadeConnectionSourceInfo;
 
 /// \class UsdShadeUtils
 ///
@@ -52,6 +54,12 @@ public:
     USDSHADE_API
     static std::string GetPrefixForAttributeType(
         UsdShadeAttributeType sourceType);
+
+    /// For a valid UsdShadeConnectionSourceInfo, return the complete path
+    /// to the source property; otherwise the empty path.
+    USDSHADE_API
+    static SdfPath 
+    GetConnectedSourcePath(const UsdShadeConnectionSourceInfo &srcInfo);
 
     /// Given the full name of a shading attribute, returns it's base name and
     /// shading attribute type.
